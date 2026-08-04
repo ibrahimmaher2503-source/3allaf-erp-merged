@@ -1,14 +1,18 @@
-# Selected Task: TSK-010
+# Selected Task: TSK-011
 
 ## Current State
 
-TSK-010 is **Completed for approved local scope (2026-08-04).** The local catalog identity foundation, DEC-038-approved view grants, server authorization, stable supplier duplicate/replay verification, and category hierarchy cycle verification are complete. Catalog `P`/`R` capabilities, production catalog inputs, UAT, and milestone/phase gates remain open.
+TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is completed for approved local scope and remains closed unless a regression or dependency defect is discovered. This closure covers only the existing Product implementation for the full bilingual product card, approved product types, searchable/reportable attributes, protected product media, and product detail/full edit screens.
+
+Do not start TSK-012 or TSK-013, pricing, inventory, labels, purchasing, or POS. Keep TSK-009 at its actual recorded status. No Phase 1 or Phase 2 gate, UAT acceptance, or production readiness claim is made.
 
 Verified DEC-038 `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. No catalog `P` or `R` capability was granted. `demo-cashier` received HTTP 200 view access but a forged create action returned HTTP 403; `demo-reviewer` received view access; `demo-branch-manager` and `demo-no-access` received HTTP 403 direct-route denial and no Catalog navigation.
 
 The stable browser evidence also passed supplier duplicate rejection and allocation-key replay without duplicate rows, category self-parent rejection, descendant-cycle rejection, valid root/child persistence, and the requested regression/static checks. Evidence is under `artifacts/tsk-010-browser/`.
 
-DEC-043 authorizes this local TSK-010 slice after the available TSK-009 foundations. This does not complete the Phase 1 gate, DM 1.1/1.2 production exit, UAT, or production readiness. TSK-009 remains **In Progress** at its actual closure-review status; no new TSK-009 implementation is authorized in this slice. TSK-011 and later tasks remain untouched.
+DEC-043 authorized the prior local TSK-010 sequencing exception after the available TSK-009 foundations. TSK-011 closure is recorded under the task routing above. This does not complete the Phase 1 gate, DM 1.1/1.2 production exit, UAT, or production readiness. TSK-009 remains **In Progress** at its actual recorded status and receives no new implementation here.
+
+Current TSK-011 closure boundary: the local card, approved types, explicit attributes, protected media, detail/full edit, audit, authorization, stale-update slice, and safe oversized-upload messages are implemented and verified. Composite component lines remain explicitly deferred because the approved Phase 1 composition contract is insufficient. The local PHP upload limit is stricter than the application limit and is documented as an infrastructure boundary; no upload policy was weakened.
 
 ## Previous TSK-009 Record
 

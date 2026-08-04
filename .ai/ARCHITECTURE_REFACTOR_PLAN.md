@@ -2,6 +2,12 @@
 
 **Status:** Foundation slices completed on 2026-08-03.
 
+## Current Catalog Extension — TSK-011 — 2026-08-04
+
+TSK-011 extends the existing Catalog identity slice with additive product-card columns, an ordered `product_images` link to the existing private `attachments` foundation, full-page Livewire product create/edit/detail screens, bounded attribute/type filters, source-authorized media delivery, lock-version stale-update protection, and shared audit events. It does not add a generic media/attribute/variant engine, supplier master/history, composition workflow, pricing, inventory, labels, imports, purchasing, POS, or a new permission grant. Composite component behavior is deferred because the approved Phase 1 contract does not define enough composition policy to implement safely.
+
+The local SQLite implementation and owner-authorized browser evidence remain local-development evidence only. TSK-010 is complete for approved local scope; TSK-009 remains at its actual recorded status; no Phase 1/Phase 2 gate, UAT, or production readiness is claimed.
+
 ## Current Catalog Extension — 2026-08-04
 
 DEC-043 permits the bounded TSK-010 Catalog module slice after the available TSK-009 foundations. It uses the existing Laravel modular-monolith, Livewire full-page components, Flux UI, Gate/policy boundary, shared `RecordAuditEvent`, SQLite local migrations, and no generic repository/service abstraction. The slice stops at catalog identity, category/brand masters, and barcode association/allocation; TSK-011 media/type/composition/service behavior and TSK-013 supplier master/history remain deferred.
@@ -126,3 +132,9 @@ The current Platform audit mutation boundary is verified: each representative su
 - The only implementation changes were narrow closure fixes: server-visible drawer validation and same-branch selling-store mapping filtering/guarding. No repository/service abstraction, generic workflow, package, ordinary-screen API, or separate frontend was introduced.
 - TSK-001 and TSK-005 remain open for named local gaps; TSK-002, TSK-003, TSK-004, TSK-006, and TSK-007 are closed for approved local scope; TSK-008 remains Completed; TSK-009 remains In Progress.
 - Static checks and browser evidence are recorded in `.ai/TEST_RESULTS.md`. Production runtime, backup/restore, devices, master data, policy values, UAT, Phase 1 gates, and production readiness remain outside this refactor audit.
+
+## TSK-011 Final Closure Review — 2026-08-04
+
+- TSK-011 is Completed for approved local scope. The additive product-card schema, protected product-image linkage, source-authorized delivery, full-page Livewire card/detail UI, stale/version guard, immutable identity guard, and audit boundaries remain narrow extensions of the existing Catalog and Platform foundations.
+- Composite component lines, assembly, bundle pricing, imports, supplier history, pricing, inventory, labels, and POS remain outside this architecture slice. The local PHP upload_max_filesize=2M boundary is documented; localized client/server-boundary messages handle oversized upload feedback without changing limits or adding a second upload engine.
+- No Phase 1/Phase 2 gate, UAT, production readiness, commit, or push is claimed.

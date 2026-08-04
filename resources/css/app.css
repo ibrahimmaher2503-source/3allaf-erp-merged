@@ -165,6 +165,55 @@
     .catalog-modal-section {
         @apply rounded-lg border border-border bg-surface-muted/45 p-3 sm:p-4;
     }
+
+    .catalog-form-card {
+        @apply border-border bg-surface shadow-card;
+    }
+
+    .catalog-detail-hero {
+        @apply border-border bg-surface shadow-card;
+    }
+
+    .catalog-detail-primary-media {
+        @apply min-h-64 bg-surface-muted;
+    }
+
+    .catalog-detail-primary-media img {
+        @apply h-full min-h-64 w-full object-cover;
+    }
+
+    .catalog-detail-label {
+        @apply text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-text-muted;
+    }
+
+    .catalog-detail-field {
+        @apply rounded-lg border border-border bg-surface-muted/45 p-3;
+    }
+
+    .catalog-bilingual-panel {
+        @apply rounded-xl border border-border bg-surface-muted/45 p-4;
+    }
+
+    .catalog-media-card {
+        @apply overflow-hidden rounded-xl border border-border bg-surface shadow-sm;
+    }
+
+    .catalog-media-frame {
+        @apply aspect-square overflow-hidden bg-surface-muted;
+    }
+
+    .catalog-media-frame img,
+    .catalog-media-thumb img {
+        @apply h-full w-full object-cover;
+    }
+
+    .catalog-media-thumb {
+        @apply relative block aspect-square overflow-hidden rounded-lg border border-border bg-surface-muted;
+    }
+
+    .catalog-media-thumb span {
+        @apply absolute inset-x-0 bottom-0 bg-black/65 px-2 py-1 text-[0.6875rem] font-medium text-white;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {

@@ -4,9 +4,11 @@
 **Implementation status:** In Progress  
 **Documentation status:** Baseline prepared and implementation tracking updated
 
+TSK-011 closure note (2026-08-04): local product-card fields, approved types, attributes, protected media, detail/full edit, authorization, audit, stale-update behavior, and safe oversized-upload messages are implemented. Composite component lines remain deferred by the insufficient approved Phase 1 contract. The local PHP upload limit is documented as an infrastructure dependency without weakening the application policy. TSK-011 is Completed for approved local scope. No Phase 1/Phase 2 gate, UAT, or production-readiness claim is made.
+
 ## Current Active Slice — 2026-08-04
 
-TSK-010 is **Completed for approved local scope** under DEC-043. Catalog identity foundations, approved DEC-038 view grants, server-side authorization, supplier duplicate/replay protection, category hierarchy guards, browser regression evidence, and static/integrity checks are complete locally. Catalog `P`/`R` permissions, production catalog inputs, UAT, and milestone/phase gates remain open. TSK-009 remains In Progress; TSK-011+ remain not started. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
+TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is **Completed for approved local scope** under DEC-043. Catalog identity foundations, full bilingual product-card fields, approved type identity, searchable/reportable attributes, protected media linkage/delivery, role-safe routes, stale-update protection, safe oversized-upload messaging, browser evidence, and static/integrity checks are implemented locally. Catalog `P`/`R` permissions, cost-field permission, production catalog inputs, UAT, and milestone/phase gates remain open. TSK-009 remains In Progress. TSK-012/TSK-013 and later work must not start. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
 
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
 |---|---|---:|---:|---|---|---|---|
@@ -14,7 +16,7 @@ TSK-010 is **Completed for approved local scope** under DEC-043. Catalog identit
 | Phase 1 | DM 1.2 Organisation and Branch Setup | In Progress | Closure audited | 2026-08-03 | - | TSK-005 to TSK-007 | TSK-005 effective-date/preview gaps remain; TSK-006 and TSK-007 closed for approved local scope |
 | Phase 1 | DM 1.3 Users, Roles and Permissions | Completed (current scope) | 100% | 2026-08-03 | 2026-08-03 | TSK-008 | DEC-038 matrix seeded and enforced on all existing surfaces; future-module enforcement deferred to its tasks |
 | Phase 1 | DM 1.4 Core Controls | Completed for approved local infrastructure scope | 100% local controls | 2026-08-03 | 2026-08-04 | TSK-009 | Four reusable foundations complete; source-module integration, UAT, production configuration, and Phase 1 gate remain open |
-| Phase 2 | DM 2.1 Product and Supplier Masters | In Progress (local TSK-010 exception) | TSK-010 approved local scope complete | 2026-08-04 | - | TSK-010 to TSK-013 | TSK-011 to TSK-013 remain not started; production catalog inputs and catalog `P`/`R` capability decisions remain open |
+| Phase 2 | DM 2.1 Product and Supplier Masters | In Progress (TSK-011 approved local scope closed) | TSK-010 and TSK-011 local scope complete | 2026-08-04 | - | TSK-010 to TSK-013 | Composite composition, supplier history, production catalog inputs, and catalog `P`/`R` capability decisions remain open; later tasks are not started |
 | Phase 2 | DM 2.2 Purchase Cycle | Not Started | 0% | - | - | TSK-014 to TSK-016 | Purchasing and import |
 | Phase 2 | DM 2.3 Pricing and Barcode Labels | Not Started | 0% | - | - | TSK-017 to TSK-018 | Approval and label queues |
 | Phase 2 | DM 2.4 Inventory Operations | Not Started | 0% | - | - | TSK-019 to TSK-022 | Ledgers, transfers, adjustments, and counts |

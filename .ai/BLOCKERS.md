@@ -40,6 +40,10 @@ The TSK-001 through TSK-008 closure audit did not close any production blocker. 
 
 Statuses are `Open`, `Mitigated`, or `Closed`. A Mitigated blocker has a documented temporary implementation assumption but still requires owner approval before production.
 
+### TSK-011 production boundary — 2026-08-04
+
+Local product-card fields, approved types, reportable attributes, and protected media are implemented for the approved local scope. BLK-009 and BLK-010 remain open for production catalog hierarchy/data, supplier codes and supplier master/history, final UOM/type/image-retention values, and final attribute/fractional-quantity policy. These production inputs do not authorize TSK-012 or TSK-013 and do not constitute a Phase 2 gate or production-readiness claim.
+
 | ID | Title | Description / Impact | Required Owner and Information | Affected Requirements | Affected Milestones / Tasks | Temporary Assumption | Status |
 |---|---|---|---|---|---|---|---|
 | BLK-001 | Runtime and hosting baseline | The local runtime is verified, but production hosting, database, domain, deployment, SSL, queue, scheduler, cache, and Redis remain unknown; production package and deployment design cannot be finalized. | Technical owner: hosting environment, production domain, database engine/version, runtime limits, Redis availability, queue/scheduler process. | NFR-04–NFR-07 | DM 1.1; TSK-001–TSK-004 | Use PHP 8.4.21, Laravel 13.23.0, and SQLite locally. This does not approve the production stack. | Mitigated |

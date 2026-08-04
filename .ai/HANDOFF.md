@@ -2,6 +2,14 @@
 
 ## Current State
 
+### Current TSK-011 Routing — 2026-08-04
+
+TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is complete for approved local scope and remains closed unless a regression or dependency defect is discovered. The completed local slice adds the full bilingual product card, approved standard/composite/service types, searchable/reportable attributes, protected product media, product detail/full edit screens, stale-update protection, audit, and source-authorized delivery.
+
+DEC-038 catalog `View (A)` grants remain the only granted catalog capability for the current verified roles. Catalog `P`/`R` capabilities and cost-field permission remain ungranted. TSK-009 remains at its actual recorded status, and TSK-012/TSK-013, pricing, inventory, labels, purchasing, and POS must not start. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
+
+The following TSK-010 section is historical handoff context. TSK-011 is the current closure-reviewed task; no later task is active.
+
 ### Active TSK-010 Slice — 2026-08-04
 
 TSK-010 is **Completed for approved local scope** under DEC-043. The local catalog identity foundation is implemented: category hierarchy, brands, product identity, immutable normalized item codes, supplier/local barcodes, exact-priority bounded search, audit events, authorization gates, routes/navigation, and Flux/Livewire screens. Stable browser and static evidence is recorded under `artifacts/tsk-010-browser/` and `.ai/TEST_RESULTS.md`.
@@ -211,3 +219,10 @@ Audit Foundation is browser-verified for current local Platform scope. Evidence 
 | TSK-008 | Completed | Future-module permissions remain deferred under DEC-038 and `docs/16-authorization-traceability.md`. |
 
 No Phase 1 gate, DM 1.1/1.2 production exit, UAT acceptance, or production readiness is claimed. New TSK-009 implementation is paused; the current task remains In Progress.
+No Phase 1 gate, DM 1.1/1.2 production exit, UAT acceptance, or production readiness is claimed. New TSK-009 implementation is paused; TSK-009 remains In Progress at its recorded status and the TSK-011 closure is recorded below.
+
+### TSK-011 Implementation Handoff — 2026-08-04
+
+TSK-011 closure is **Completed for approved local scope**. The local implementation covers full bilingual card identity/description, approved product types, searchable/reportable attributes, protected product media, product detail/full edit screens, stale-update and immutable-code guards, audit, source-authorized delivery, and safe oversized-upload messages. Browser evidence and static results are recorded in `artifacts/tsk-011-browser/verification-results.md` and the TSK-011 section of `.ai/TEST_RESULTS.md`.
+
+The exact deferred boundary is documented: composition lines/assembly/bundle pricing remain deferred because the approved Phase 1 composition contract is insufficient. Files above the 8 MB application limit receive a localized client-side message; files rejected by the stricter local PHP upload limit receive a localized server-boundary message without persistence. Do not start TSK-012/TSK-013 or later modules. No Phase 1/Phase 2 gate, UAT, production readiness, commit, or push was claimed.

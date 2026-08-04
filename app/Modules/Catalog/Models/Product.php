@@ -16,15 +16,44 @@ class Product extends Model
         'item_code',
         'name_ar',
         'name_en',
+        'description_ar',
+        'description_en',
+        'model_number',
+        'product_type',
+        'unit_of_measure',
         'category_id',
         'brand_id',
         'status',
         'barcode_mode',
+        'average_cost',
+        'reorder_threshold',
+        'dimension_length',
+        'dimension_width',
+        'dimension_height',
+        'dimension_unit',
+        'weight',
+        'target_age',
+        'suitable_gender',
+        'colour',
+        'size',
+        'character',
+        'key_points_ar',
+        'key_points_en',
+        'keywords_ar',
+        'keywords_en',
+        'fractional_quantity',
         'lock_version',
     ];
 
     protected $casts = [
         'lock_version' => 'integer',
+        'average_cost' => 'decimal:2',
+        'reorder_threshold' => 'decimal:3',
+        'dimension_length' => 'decimal:3',
+        'dimension_width' => 'decimal:3',
+        'dimension_height' => 'decimal:3',
+        'weight' => 'decimal:3',
+        'fractional_quantity' => 'boolean',
     ];
 
     public function category(): BelongsTo
@@ -40,6 +69,14 @@ class Product extends Model
     public function barcodes(): HasMany
     {
         return $this->hasMany(Barcode::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)
+            ->where('status', 'active')
+            ->orderByRaw("CASE WHEN role = 'main' THEN 0 ELSE 1 END")
+            ->orderBy('sort_order');
     }
 
     public function scopeActive(Builder $query): Builder

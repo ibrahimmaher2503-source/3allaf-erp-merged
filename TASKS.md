@@ -180,12 +180,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Permissions / Validation / Audit / States / Print:** catalog manage and cost-field scope; unique immutable item code/barcode, local format/serial concurrency, hierarchy cycle; audit identity/preference; label print blocked until pricing.
 - **Manual Browser Verification:** Create/search exact code/barcode/name, duplicate/concurrent allocation, supplier change stability, attributes no variants, hierarchy cycle, unauthorized fields, RTL/LTR.
 - **Definition of Done:** DoD; stable identity and search demonstrable with no stock or price side effect.
-- **Current local implementation:** Categories, brands, products, barcodes, and local barcode sequences are migrated with unique/FK/index constraints. Category cycle/dependency guards, immutable normalized item codes, exact-priority bounded search, supplier/local barcode actions, server authorization, transaction-bound audit events, responsive Flux screens, and catalog-gated routes/navigation are implemented. Local System Administrator browser evidence covers the implemented screens and mutation paths. Full supplier master/history, product media/type/composition/service behavior, pricing, stock, labels, and import remain deferred to later tasks.
-- **Local closure evidence:** DEC-038-approved catalog `View (A)` is seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Stable browser verification on `http://127.0.0.1:8094` passed cashier view-only/forged-create denial, reviewer view, branch-manager and no-access direct-route 403 denial, supplier duplicate rejection, allocation-key replay idempotency, category self-parent rejection, descendant-cycle rejection, and database integrity checks. TSK-010 is complete for approved local scope; TSK-011 and TSK-013 behavior remains deferred.
+- **Current local implementation:** Categories, brands, products, barcodes, and local barcode sequences are migrated with unique/FK/index constraints. Category cycle/dependency guards, immutable normalized item codes, exact-priority bounded search, supplier/local barcode actions, server authorization, transaction-bound audit events, responsive Flux screens, and catalog-gated routes/navigation are implemented. Local System Administrator browser evidence covers the implemented screens and mutation paths. TSK-010 remains complete for its identity scope; product-card fields, types, protected media, and detail/full edit behavior are implemented only under the active TSK-011 scope.
+- **Local closure evidence:** DEC-038-approved catalog `View (A)` is seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Stable browser verification on `http://127.0.0.1:8094` passed cashier view-only/forged-create denial, reviewer view, branch-manager and no-access direct-route 403 denial, supplier duplicate rejection, allocation-key replay idempotency, category self-parent rejection, descendant-cycle rejection, and database integrity checks. TSK-010 is complete for approved local scope; TSK-011 is the active task and TSK-012/TSK-013 remain deferred.
 
 ### TSK-011 — Complete Product Cards, Types, Attributes, and Media
 
-- **Task ID / Phase / Milestone / Status:** TSK-011; Phase 2; DM 2.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-011; Phase 2; DM 2.1; **Completed for approved local scope**.
 - **Title / Purpose / Description:** Deliver full bilingual product card, standard/composite/service type behavior, reportable attributes, main + four additional protected images and lifecycle.
 - **Traceability:** MD-04–MD-05, PRC-02; US-002, US-005; FLW-CAT-01; UI UI-CAT-001–003; AC-MD-04–05, AC-PRC-02; SEC-006–010, SEC-016–017, SEC-022–024.
 - **Dependencies / Required Inputs:** TSK-010; `docs/23-product-barcode-policy.md`; production types, composition data, UOM, required fields, images, and retention remain configurable or pending.
@@ -196,6 +196,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Permissions / Validation / Audit / States / Print:** product/type/media manage, cost scope; 1 main + max 4 extra, safe files, post-use type guard; changes audited; product card print optional.
 - **Manual Browser Verification:** All fields/types, invalid combinations, file attacks/limits/access, image order/count, search/report attributes, responsive RTL/LTR.
 - **Definition of Done:** DoD; all PRD fields usable and no implicit variant balances.
+- **Closure review (2026-08-04):** TSK-011 is **Completed for approved local scope**. Browser verification passed the approved card/type/attribute/media behavior, immutable item code, stale-update denial, protected media limits and authorization, cost denial, RTL/LTR/mobile layout, and the TSK-010 regression boundary. Oversized-file UX now renders a localized inline message before upload for the approved 8 MB application limit and renders a localized server-boundary message when the local PHP upload limit rejects the request. The PHP runtime boundary is documented; it does not weaken the application policy. Composite component behavior remains explicitly deferred by the insufficient approved contract. Production values, UAT, automated-test coverage, and later tasks remain open.
 
 ### TSK-012 — Implement Staged Product Excel Import
 
@@ -669,7 +670,9 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ## Backlog Status Confirmation
 
+Closure status (2026-08-04): TSK-011 is Completed for approved local scope. The task-specific status above and this closure note supersede the historical aggregate totals below; TSK-001, TSK-005, and TSK-009 remain In Progress, eight tasks are complete/closed for their approved scope, and later tasks remain Not Started.
+
 - Total tasks: 44.
-- Task status totals: 1 `In Progress`, 43 `Not Started`.
+- Task status totals: 3 `In Progress`, 8 completed for approved local scope/complete, 33 `Not Started`.
 - No task exists for creating or running automated tests.
-- Current implementation progress is 1%; no task is complete.
+- Current implementation progress remains tracked at the project level; TSK-011 is closed for approved local scope while DM 2.1 production exit remains open.

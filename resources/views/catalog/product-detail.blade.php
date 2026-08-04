@@ -1,0 +1,125 @@
+<?php
+
+use App\Modules\Catalog\Models\Product;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Title('Product Details')] class extends Component {
+    public Product $product;
+
+    public function mount(Product $product): void
+    {
+        Gate::authorize('products_categories_brands.view');
+        $this->product = $product->load([
+            'category',
+            'brand',
+            'barcodes' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('barcode'),
+            'images.attachment',
+        ]);
+    }
+
+    public function render()
+    {
+        return view('catalog.product-detail', [
+            'canEdit' => Gate::allows('products_categories_brands.edit'),
+            'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
+        ]);
+    }
+}; ?>
+
+<section class="catalog-screen w-full">
+    <x-page-header
+        :title="app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en"
+        :description="__('Product detail summary with role-safe identity, attributes, barcodes, and protected media.')"
+    >
+        <x-slot:actions>
+            <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+            @if ($canEdit)
+                <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="primary" icon="pencil">{{ __('Edit product card') }}</flux:button>
+            @endif
+        </x-slot:actions>
+    </x-page-header>
+
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,.7fr)]">
+        <div class="space-y-5">
+            <flux:card class="catalog-detail-hero overflow-hidden p-0">
+                <div class="grid gap-0 md:grid-cols-[minmax(14rem,.8fr)_minmax(0,1.2fr)]">
+                    <div class="catalog-detail-primary-media">
+                        @if (($mainImage = $product->images->firstWhere('role', 'main')) !== null)
+                            <img src="{{ route('catalog.products.media', ['product' => $product, 'attachment' => $mainImage->attachment]) }}" alt="{{ $mainImage->attachment->original_filename }}" />
+                        @else
+                            <div class="flex min-h-64 items-center justify-center"><flux:icon name="photo" class="size-16 text-text-muted" /></div>
+                        @endif
+                    </div>
+                    <div class="space-y-5 p-5 sm:p-7">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="catalog-code-chip">{{ $product->item_code }}</span>
+                            <flux:badge size="sm" color="{{ $product->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
+                            <flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge>
+                        </div>
+                        <div>
+                            <flux:heading size="xl">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</flux:heading>
+                            <flux:text class="mt-2 text-sm text-text-muted">{{ app()->getLocale() === 'ar' ? $product->name_en : $product->name_ar }}</flux:text>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ app()->getLocale() === 'ar' ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(app()->getLocale() === 'ar' ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Model / item number') }}</div><div class="font-medium">{{ $product->model_number ?: __('Not provided') }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Unit of measure') }}</div><div class="font-medium">{{ $product->unit_of_measure ?: __('Owner-configurable') }}</div></div>
+                        </div>
+                    </div>
+                </div>
+            </flux:card>
+
+            <flux:card class="space-y-5 p-5 sm:p-6">
+                <div><flux:heading size="lg">{{ __('Descriptions and key points') }}</flux:heading></div>
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div class="catalog-bilingual-panel" dir="rtl"><div class="catalog-detail-label">{{ __('Arabic') }}</div><p class="whitespace-pre-line text-sm leading-7">{{ $product->description_ar ?: __('No description provided.') }}</p><p class="mt-4 whitespace-pre-line text-sm leading-7 text-text-muted">{{ $product->key_points_ar }}</p></div>
+                    <div class="catalog-bilingual-panel" dir="ltr"><div class="catalog-detail-label">{{ __('English') }}</div><p class="whitespace-pre-line text-sm leading-7">{{ $product->description_en ?: __('No description provided.') }}</p><p class="mt-4 whitespace-pre-line text-sm leading-7 text-text-muted">{{ $product->key_points_en }}</p></div>
+                </div>
+            </flux:card>
+
+            <flux:card class="space-y-5 p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-3"><flux:heading size="lg">{{ __('Reportable attributes') }}</flux:heading><flux:badge size="sm" color="zinc">{{ __('No variants or balances') }}</flux:badge></div>
+                <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ([['Colour', $product->colour], ['Size', $product->size], ['Character', $product->character], ['Target age', $product->target_age], ['Suitable gender', $product->suitable_gender], ['Weight', $product->weight], ['Dimensions', collect([$product->dimension_length, $product->dimension_width, $product->dimension_height])->filter(fn ($value) => $value !== null && $value !== '')->implode(' × ').($product->dimension_unit ? ' '.$product->dimension_unit : '')], ['Keywords Arabic', $product->keywords_ar], ['Keywords English', $product->keywords_en]] as [$label, $value])
+                        <div class="catalog-detail-field"><dt class="catalog-detail-label">{{ __($label) }}</dt><dd class="mt-1 text-sm font-medium">{{ $value ?: __('Not provided') }}</dd></div>
+                    @endforeach
+                </dl>
+            </flux:card>
+        </div>
+
+        <aside class="space-y-5">
+            <flux:card class="space-y-4 p-5">
+                <flux:heading size="lg">{{ __('Barcode summary') }}</flux:heading>
+                <div class="space-y-2">
+                    @forelse ($product->barcodes as $barcode)
+                        <div class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"><span class="catalog-code-chip">{{ $barcode->barcode }}</span><flux:badge size="sm" color="{{ $barcode->source === 'local' ? 'sky' : 'zinc' }}">{{ __($barcode->source === 'local' ? 'Local' : 'Supplier') }}</flux:badge></div>
+                    @empty
+                        <x-state.empty :title="__('No barcode linked')" :message="__('Barcode identity can be managed from the catalog list.')" icon="tag" />
+                    @endforelse
+                </div>
+            </flux:card>
+
+            @if ($canViewCost)
+                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
+            @else
+                <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('DEC-038 grants no catalog cost-field capability in the current local matrix, so cost is omitted from this view.') }}</flux:callout>
+            @endif
+
+            <flux:card class="space-y-4 p-5">
+                <div class="flex items-center justify-between gap-3"><flux:heading size="lg">{{ __('Protected media') }}</flux:heading><span class="text-xs text-text-muted">{{ $product->images->count() }}/5</span></div>
+                <div class="grid grid-cols-2 gap-2">
+                    @forelse ($product->images as $image)
+                        <a class="catalog-media-thumb" href="{{ route('catalog.products.media', ['product' => $product, 'attachment' => $image->attachment]) }}" target="_blank" rel="noreferrer"><img src="{{ route('catalog.products.media', ['product' => $product, 'attachment' => $image->attachment]) }}" alt="{{ $image->attachment->original_filename }}" loading="lazy" /><span>{{ __($image->role === 'main' ? 'Main image' : 'Additional image') }}</span></a>
+                    @empty
+                        <div class="col-span-2"><x-state.empty :title="__('No images yet')" :message="__('Protected product media will appear here when linked.')" icon="photo" /></div>
+                    @endforelse
+                </div>
+            </flux:card>
+
+            <flux:callout variant="success" icon="shield-check" title="{{ __('Audit and scope protected') }}">{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</flux:callout>
+        </aside>
+    </div>
+</section>

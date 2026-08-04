@@ -21,9 +21,31 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 
 No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
 
-## Current Routing Override — TSK-010
+## Current Routing Override — TSK-011
 
-TSK-010 is the current local closure slice under approved DEC-043. Read only its routed sources and current-state files before changing catalog code. TSK-009 remains In Progress at its actual closure-review status; do not start TSK-011 or later tasks. The canonical catalog permissions remain those in DEC-038: the approved local `View (A)` grants are seeded for the verified catalog roles, while undocumented or unapproved `P`/`R` capabilities remain ungranted.
+TSK-011 is the current closure-reviewed task in DM 2.1 and is Completed for approved local scope.
+
+TSK-010 is completed for the approved local scope and must not be reopened unless a regression or dependency defect is discovered. TSK-011 must not be reopened unless a regression or dependency defect is discovered.
+
+TSK-011 may extend the existing Product implementation only for:
+
+- Full bilingual product-card fields.
+- Approved product types.
+- Searchable/reportable attributes.
+- Protected product media.
+- Product detail and full edit form.
+
+Do not begin:
+
+- TSK-012 staged Excel import.
+- TSK-013 full supplier master/history.
+- Pricing.
+- Inventory.
+- Labels.
+- Purchasing.
+- POS.
+
+Keep TSK-009 at its actual recorded status. Do not claim Phase 1 or Phase 2 gate completion.
 
 ## Minimal Mandatory Reading
 

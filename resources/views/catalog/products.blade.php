@@ -20,6 +20,11 @@ new #[Title('Product Masters')] class extends Component {
     public string $categoryFilter = 'all';
     public string $brandFilter = 'all';
     public string $statusFilter = 'all';
+    public string $productTypeFilter = 'all';
+    public string $colourFilter = '';
+    public string $ageFilter = '';
+    public string $genderFilter = 'all';
+    public string $characterFilter = '';
 
     public bool $showProductModal = false;
     public ?int $editingProductId = null;
@@ -27,6 +32,7 @@ new #[Title('Product Masters')] class extends Component {
         'item_code' => '',
         'name_ar' => '',
         'name_en' => '',
+        'product_type' => 'standard',
         'category_id' => '',
         'brand_id' => '',
         'status' => 'active',
@@ -70,6 +76,34 @@ new #[Title('Product Masters')] class extends Component {
         $this->resetPage();
     }
 
+    public function updatingProductTypeFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingColourFilter(string $value): void
+    {
+        $this->colourFilter = Str::limit($value, 100, '');
+        $this->resetPage();
+    }
+
+    public function updatingAgeFilter(string $value): void
+    {
+        $this->ageFilter = Str::limit($value, 100, '');
+        $this->resetPage();
+    }
+
+    public function updatingGenderFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCharacterFilter(string $value): void
+    {
+        $this->characterFilter = Str::limit($value, 100, '');
+        $this->resetPage();
+    }
+
     public function openCreateProductModal(): void
     {
         Gate::authorize('products_categories_brands.create');
@@ -79,6 +113,7 @@ new #[Title('Product Masters')] class extends Component {
             'item_code' => '',
             'name_ar' => '',
             'name_en' => '',
+            'product_type' => 'standard',
             'category_id' => '',
             'brand_id' => '',
             'status' => 'active',
@@ -97,6 +132,7 @@ new #[Title('Product Masters')] class extends Component {
             'item_code' => $product->item_code,
             'name_ar' => $product->name_ar,
             'name_en' => $product->name_en,
+            'product_type' => $product->product_type,
             'category_id' => (string) $product->category_id,
             'brand_id' => (string) ($product->brand_id ?? ''),
             'status' => $product->status,
@@ -119,6 +155,7 @@ new #[Title('Product Masters')] class extends Component {
             ],
             'productForm.name_ar' => ['required', 'string', 'max:255'],
             'productForm.name_en' => ['required', 'string', 'max:255'],
+            'productForm.product_type' => ['required', 'in:standard,composite,service'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             'productForm.status' => ['required', 'in:active,inactive'],
@@ -243,8 +280,11 @@ new #[Title('Product Masters')] class extends Component {
             $query->where(function ($scope) use ($term, $like): void {
                 $scope->whereRaw('LOWER(item_code) = ?', [$term])
                     ->orWhereHas('barcodes', fn ($barcode) => $barcode->whereRaw('LOWER(barcode) = ?', [$term]))
+                    ->orWhereRaw('LOWER(model_number) = ?', [$term])
                     ->orWhereRaw('LOWER(name_ar) LIKE ?', [$like])
-                    ->orWhereRaw('LOWER(name_en) LIKE ?', [$like]);
+                    ->orWhereRaw('LOWER(name_en) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(COALESCE(keywords_ar, \'\')) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(COALESCE(keywords_en, \'\')) LIKE ?', [$like]);
             });
         }
 
@@ -258,6 +298,20 @@ new #[Title('Product Masters')] class extends Component {
 
         if ($this->statusFilter !== 'all') {
             $query->where('status', $this->statusFilter);
+        }
+
+        if ($this->productTypeFilter !== 'all') {
+            $query->where('product_type', $this->productTypeFilter);
+        }
+
+        foreach ([['colour', $this->colourFilter], ['target_age', $this->ageFilter], ['character', $this->characterFilter]] as [$field, $value]) {
+            if (trim((string) $value) !== '') {
+                $query->whereRaw('LOWER('.$field.') LIKE ?', ['%'.mb_strtolower(trim((string) $value)).'%']);
+            }
+        }
+
+        if ($this->genderFilter !== 'all') {
+            $query->where('suitable_gender', $this->genderFilter);
         }
 
         if ($term !== '') {
@@ -275,6 +329,8 @@ new #[Title('Product Masters')] class extends Component {
             'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'productTypes' => ['standard', 'composite', 'service'],
+            'genderOptions' => ['unisex', 'female', 'male'],
         ]);
     }
 }; ?>
@@ -282,7 +338,7 @@ new #[Title('Product Masters')] class extends Component {
 <section class="catalog-screen w-full">
     <x-page-header
         :title="__('Product Masters')"
-        :description="__('Stable catalog identity, exact code/barcode search, and bilingual product names. Stock, price, media, types, and composition remain outside TSK-010.')"
+        :description="__('Browse stable identity, full product-card types, reportable attributes, exact barcode search, and protected media.')"
     >
         <x-slot:actions>
             @can('products_categories_brands.create')
@@ -291,8 +347,8 @@ new #[Title('Product Masters')] class extends Component {
         </x-slot:actions>
     </x-page-header>
 
-    <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('TSK-010 local identity foundation') }}">
-        {{ __('Item codes are manually entered, normalized, unique, and immutable. Product creation has no stock, price, or label effect. Supplier master/history and product media are deferred.') }}
+    <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('TSK-011 product-card extension') }}">
+        {{ __('Item codes remain immutable and independent from barcodes. Product types and attributes are catalog metadata only; protected images use the shared Attachment Foundation. No stock, price, label, import, or supplier-history effect is created here.') }}
     </flux:callout>
 
     @if ($errors->any())
@@ -332,6 +388,21 @@ new #[Title('Product Masters')] class extends Component {
             <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
             <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
         </flux:select>
+        <flux:select wire:model.live="productTypeFilter" :label="__('Product type')">
+            <flux:select.option value="all">{{ __('All product types') }}</flux:select.option>
+            @foreach ($productTypes as $type)
+                <flux:select.option :value="$type">{{ __(ucfirst($type)) }}</flux:select.option>
+            @endforeach
+        </flux:select>
+        <flux:select wire:model.live="genderFilter" :label="__('Gender')">
+            <flux:select.option value="all">{{ __('All genders') }}</flux:select.option>
+            @foreach ($genderOptions as $gender)
+                <flux:select.option :value="$gender">{{ __(ucfirst($gender)) }}</flux:select.option>
+            @endforeach
+        </flux:select>
+        <flux:input wire:model.live.debounce.300ms="colourFilter" :label="__('Colour')" :placeholder="__('Filter colour')" />
+        <flux:input wire:model.live.debounce.300ms="ageFilter" :label="__('Target age')" :placeholder="__('Filter age')" />
+        <flux:input wire:model.live.debounce.300ms="characterFilter" :label="__('Character')" :placeholder="__('Filter character')" />
         </div>
     </div>
 
@@ -355,6 +426,7 @@ new #[Title('Product Masters')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('Item code') }}</flux:table.column>
                     <flux:table.column>{{ __('Product name') }}</flux:table.column>
+                    <flux:table.column>{{ __('Type') }}</flux:table.column>
                     <flux:table.column>{{ __('Category / brand') }}</flux:table.column>
                     <flux:table.column>{{ __('Barcodes') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
@@ -368,6 +440,7 @@ new #[Title('Product Masters')] class extends Component {
                                 <div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</div>
                                 <div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $product->name_en : $product->name_ar }}</div>
                             </flux:table.cell>
+                            <flux:table.cell><flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
                             <flux:table.cell class="text-xs">
                                 <div>{{ $product->category?->code }} · {{ app()->getLocale() === 'ar' ? $product->category?->name_ar : $product->category?->name_en }}</div>
                                 @if ($product->brand)
@@ -389,6 +462,8 @@ new #[Title('Product Masters')] class extends Component {
                             <flux:table.cell class="whitespace-nowrap">
                                 @can('products_categories_brands.edit')
                                     <div class="catalog-actions">
+                                        <flux:button size="xs" variant="subtle" icon="eye" href="{{ route('catalog.products.show', ['product' => $product]) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}" />
+                                        <flux:button size="xs" variant="subtle" icon="arrow-top-right-on-square" href="{{ route('catalog.products.edit', ['product' => $product]) }}" title="{{ __('Full product card') }}" aria-label="{{ __('Full product card') }}" />
                                         <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditProductModal({{ $product->id }})" title="{{ __('Edit identity') }}" aria-label="{{ __('Edit identity') }}" />
                                         <flux:button size="xs" variant="subtle" icon="tag" wire:click="openBarcodeModal({{ $product->id }})" title="{{ __('Manage barcodes') }}" aria-label="{{ __('Manage barcodes') }}" />
                                         <flux:button size="xs" variant="subtle" :icon="$product->status === 'active' ? 'pause' : 'play'" wire:click="toggleProductStatus({{ $product->id }})" title="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" />
@@ -408,7 +483,7 @@ new #[Title('Product Masters')] class extends Component {
     <flux:modal wire:model="showProductModal" class="max-w-2xl">
         <div class="catalog-modal-section space-y-1">
             <flux:heading size="lg">{{ $editingProductId ? __('Edit product identity') : __('Create product identity') }}</flux:heading>
-            <flux:subheading>{{ __('Only TSK-010 identity fields are shown. Product type, media, attributes, pricing, and stock are later task boundaries.') }}</flux:subheading>
+            <flux:subheading>{{ __('This quick editor preserves the identity slice. Use the full product-card editor for descriptions, types, attributes, and protected media.') }}</flux:subheading>
         </div>
         <form wire:submit="saveProduct" novalidate class="space-y-4">
             <div>
@@ -419,6 +494,11 @@ new #[Title('Product Masters')] class extends Component {
                 <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" required />
             </div>
+            <flux:select wire:model="productForm.product_type" :label="__('Product type')" required>
+                <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
+                <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
+                <flux:select.option value="service">{{ __('Service') }}</flux:select.option>
+            </flux:select>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:select wire:model="productForm.category_id" :label="__('Category')" required>
                     <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
