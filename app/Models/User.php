@@ -3,10 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Role;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\UserBranchScope;
+use App\Modules\Platform\Models\UserStoreScope;
+use App\Modules\Platform\Models\UserUiPreference;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -14,11 +23,6 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use App\Modules\Platform\Models\CashDrawer;
-use App\Modules\Platform\Models\Role;
-use App\Modules\Platform\Models\Store;
-use App\Modules\Platform\Models\UserBranchScope;
-use App\Modules\Platform\Models\UserStoreScope;
 
 /**
  * @property int $id
@@ -68,12 +72,12 @@ class User extends Authenticatable implements PasskeyUser
             : $initials;
     }
 
-    public function assignedCashDrawers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function assignedCashDrawers(): HasMany
     {
         return $this->hasMany(CashDrawer::class, 'assigned_user_id');
     }
 
-    public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_user');
     }
@@ -116,13 +120,18 @@ class User extends Authenticatable implements PasskeyUser
         return $branchId !== null && $this->canAccessBranch((int) $branchId);
     }
 
-    public function branchScopes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function branchScopes(): HasMany
     {
         return $this->hasMany(UserBranchScope::class);
     }
 
-    public function storeScopes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function storeScopes(): HasMany
     {
         return $this->hasMany(UserStoreScope::class);
+    }
+
+    public function uiPreference(): HasOne
+    {
+        return $this->hasOne(UserUiPreference::class);
     }
 }

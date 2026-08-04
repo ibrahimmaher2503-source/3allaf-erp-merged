@@ -20,7 +20,7 @@ class ExpireAttachment
      * System/scheduler calls may run without an authenticated actor. An
      * authenticated invocation must provide its source-specific authorization.
      *
-     * @param callable(Attachment, User): void|null $authorize
+     * @param  callable(Attachment, User): void|null  $authorize
      */
     public function execute(Attachment $attachment, ?Closure $authorize = null): Attachment
     {

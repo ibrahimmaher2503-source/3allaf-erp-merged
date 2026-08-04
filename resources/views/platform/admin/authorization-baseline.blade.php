@@ -104,7 +104,7 @@ new #[Title('Authorization Baseline')] class extends Component {
     }
 }; ?>
 
-<section class="page-frame space-y-5">
+<section class="page-frame space-y-5" data-guide="auth-header">
     <x-page-header
         :title="__('Authorization Baseline')"
         :description="__('Manage approved roles and branch or store scopes.')"
@@ -112,7 +112,7 @@ new #[Title('Authorization Baseline')] class extends Component {
         badgeColor="teal"
     />
 
-    <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-5 sm:px-6" aria-labelledby="authorization-overview-title">
+    <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-5 sm:px-6" aria-labelledby="authorization-overview-title" data-guide="auth-overview">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="max-w-3xl space-y-1">
                 <p class="text-xs font-semibold uppercase tracking-[0.08em] text-primary">{{ __('Canonical authorization') }}</p>
@@ -124,10 +124,10 @@ new #[Title('Authorization Baseline')] class extends Component {
     </section>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <x-cards.stat-card :label="__('Users')" :value="$users->total()" :description="__('Searchable inventory')" icon="users" />
-        <x-cards.stat-card :label="__('Roles')" :value="$roleCount" :description="__('Canonical role catalog')" icon="shield-check" tone="info" />
-        <x-cards.stat-card :label="__('Permissions')" :value="$permissionCount" :description="__('Seeded canonical permissions')" icon="key" tone="success" />
-        <x-cards.stat-card :label="__('Scope assignments')" :value="$scopeAssignmentCount" :description="__('Branch and store access')" icon="map-pin" tone="warning" />
+        <div data-guide="auth-users-card"><x-cards.stat-card :label="__('Users')" :value="$users->total()" :description="__('Searchable inventory')" icon="users" /></div>
+        <div data-guide="auth-roles-card"><x-cards.stat-card :label="__('Roles')" :value="$roleCount" :description="__('Canonical role catalog')" icon="shield-check" tone="info" /></div>
+        <div data-guide="auth-permissions-card"><x-cards.stat-card :label="__('Permissions')" :value="$permissionCount" :description="__('Seeded canonical permissions')" icon="key" tone="success" /></div>
+        <div data-guide="auth-scopes-card"><x-cards.stat-card :label="__('Scope assignments')" :value="$scopeAssignmentCount" :description="__('Branch and store access')" icon="map-pin" tone="warning" /></div>
     </div>
 
     @if ($errors->any())
@@ -136,10 +136,10 @@ new #[Title('Authorization Baseline')] class extends Component {
         </flux:callout>
     @endif
 
-    <x-tables.data-panel :title="__('Users')" :description="__('Review current access before opening an authorized assignment.')">
+    <x-tables.data-panel :title="__('Users')" :description="__('Review current access before opening an authorized assignment.')" data-guide="auth-users-table">
         <x-slot:toolbar>
             <x-tables.filter-bar>
-                <flux:input wire:model.live.debounce.400ms="search" icon="magnifying-glass" :label="__('Search users')" :placeholder="__('Name or email')" />
+                <flux:input wire:model.live.debounce.400ms="search" icon="magnifying-glass" :label="__('Search users')" :placeholder="__('Name or email')" data-guide="auth-users-search" />
                 <x-slot:actions>
                     <flux:badge size="sm" variant="outline" icon="user-group">{{ __('Records: :count', ['count' => $users->total()]) }}</flux:badge>
                 </x-slot:actions>
@@ -175,7 +175,7 @@ new #[Title('Authorization Baseline')] class extends Component {
                             <td class="px-3 py-3"><x-status.badge :status="$user->email_verified_at ? 'active' : 'pending'" :label="$user->email_verified_at ? __('Verified') : __('Not verified')" /></td>
                             <td class="px-3 py-3 text-end">
                                 @can('users_roles_permissions.edit')
-                                    <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="editAuthorization({{ $user->id }})">{{ __('Manage') }}</flux:button>
+                                    <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="editAuthorization({{ $user->id }})" data-guide="auth-users-manage-action">{{ __('Manage') }}</flux:button>
                                 @endcan
                             </td>
                         </tr>

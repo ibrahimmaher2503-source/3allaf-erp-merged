@@ -8,7 +8,8 @@ TSK-011 closure note (2026-08-04): local product-card fields, approved types, at
 
 ## Current Active Slice — 2026-08-04
 
-TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is **Completed for approved local scope** under DEC-043. Catalog identity foundations, full bilingual product-card fields, approved type identity, searchable/reportable attributes, protected media linkage/delivery, role-safe routes, stale-update protection, safe oversized-upload messaging, browser evidence, and static/integrity checks are implemented locally. Catalog `P`/`R` permissions, cost-field permission, production catalog inputs, UAT, and milestone/phase gates remain open. TSK-009 remains In Progress. TSK-012/TSK-013 and later work must not start. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
+TSK-004B is **In Progress** as a shared Platform feature. Its initial registries, safe context, per-user preference persistence, shared controls, guide/flow routes, and bounded tour layer are implemented. Browser verification and final reconciliation remain open. TSK-012 remains completed for approved local scope; TSK-009 remains In Progress; no unrelated business task is changed or started.
+
 
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
 |---|---|---:|---:|---|---|---|---|

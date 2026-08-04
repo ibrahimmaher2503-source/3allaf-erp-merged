@@ -1,5 +1,9 @@
 # 08 - Application Architecture Minimal
 
+## TSK-004B Shared Platform Boundary
+
+The contextual Page Guide and Appearance Customizer are shared Platform capabilities. Registry content, safe context DTOs, per-user UI preference persistence, and server-side permission filtering live under the existing Laravel modular-monolith Platform boundary. See `docs/40-contextual-page-guide-specification.md`.
+
 ## 1. Authority and Purpose
 
 This is the authoritative technical architecture for TOY & JOY Phase 1. It implements the approved Laravel modular-monolith direction and supplements the PRD, Implementation Plan, canonical authorization matrix, approved decisions, and policies. It does not replace a higher-authority source.

@@ -91,6 +91,15 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Manual Browser Verification:** Component/pattern matrix across locales/directions/viewports/keyboard/touch/contrast/text expansion/print preview.
 - **Definition of Done:** DoD; no duplicate custom Flux components; pattern documentation and examples reflect actual implementation.
 
+### TSK-004B — Implement Persistent UI Customizer and Contextual Tutorial Assistant
+
+- **Task ID / Phase / Milestone / Status:** TSK-004B; Platform shared feature; **In Progress (2026-08-04)**.
+- **Purpose:** Add persistent Appearance Customizer and permission-aware, bilingual Contextual Page Guide/Tutorial Assistant without changing business workflows, authorization grants, commercial policy, or unrelated task statuses.
+- **Implementation:** Shared `TutorialRegistry`, `UserFlowRegistry`, `PageGuideContext`, `user_ui_preferences`, persistent dashboard/POS controls, bounded drawer/full guide/flow views, and a small explicit-selector guided tour.
+- **Initial real coverage:** UI-SYS-001/002/003/004, UI-ADM-002/003/004/005/010/011/012, UI-CAT-001/002/003/004/006/007. Non-existent proposed screens are not fabricated.
+- **Definition of Done:** Shared controls, persisted preferences, registered guides/flows, permission/scope filtering, tour behavior, documentation, and real-browser evidence under `artifacts/platform-dashboard-assistant/`; no Critical/High defect; no UAT/production-readiness claim.
+- **Traceability:** US-046; FLW-UI-01, FLW-HELP-01, FLW-HELP-02; AC-UI-06–15; `docs/40-contextual-page-guide-specification.md`.
+
 ### TSK-005 — Configure Company, Payment, Tax, Numbering, and Printer Settings
 
 - **Task ID / Phase / Milestone / Status:** TSK-005; Phase 1; DM 1.2; **In Progress — specific local work remains: effective-date fields/overlap validation and configuration print-preview flows are not implemented.**
@@ -200,7 +209,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-012 — Implement Staged Product Excel Import
 
-- **Task ID / Phase / Milestone / Status:** TSK-012; Phase 2; DM 2.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-012; Phase 2; DM 2.1; **Completed for approved local scope (2026-08-04)**.
 - **Title / Purpose / Description:** Stage upload, column mapping, Create Only/Update Existing, full validation, review/approval, valid-row write and rejected-row error download.
 - **Traceability:** PRC-01, NFR-04–NFR-05; US-004; FLW-CAT-02; UI UI-CAT-004–005; AC-PRC-01, AC-NFR-04–05; SEC-006, SEC-020, SEC-022–026.
 - **Dependencies / Required Inputs:** TSK-010–011; `docs/23-product-barcode-policy.md`; production import template, row limits, and final reference rules remain configurable or pending.
@@ -670,9 +679,9 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ## Backlog Status Confirmation
 
-Closure status (2026-08-04): TSK-011 is Completed for approved local scope. The task-specific status above and this closure note supersede the historical aggregate totals below; TSK-001, TSK-005, and TSK-009 remain In Progress, eight tasks are complete/closed for their approved scope, and later tasks remain Not Started.
+Closure status (2026-08-04): TSK-011 and TSK-012 are Completed for approved local scope. The task-specific statuses above supersede the historical aggregate totals below; TSK-001, TSK-005, and TSK-009 remain In Progress, and later tasks remain Not Started.
 
-- Total tasks: 44.
-- Task status totals: 3 `In Progress`, 8 completed for approved local scope/complete, 33 `Not Started`.
+- Total tasks: 45.
+- Task status totals: 3 `In Progress`, 9 completed for approved local scope/complete, 33 `Not Started`.
 - No task exists for creating or running automated tests.
-- Current implementation progress remains tracked at the project level; TSK-011 is closed for approved local scope while DM 2.1 production exit remains open.
+- Current implementation progress remains tracked at the project level; TSK-011 and TSK-012 are closed for approved local scope, TSK-004B is active, and DM 2.1/production exit remain open.

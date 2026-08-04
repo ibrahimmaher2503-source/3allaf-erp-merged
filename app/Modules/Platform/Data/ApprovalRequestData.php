@@ -24,8 +24,7 @@ readonly class ApprovalRequestData
         public ?string $sourceHash = null,
         public ?string $idempotencyKey = null,
         public ?CarbonInterface $expiresAt = null,
-    ) {
-    }
+    ) {}
 
     public function approvalPermission(): string
     {

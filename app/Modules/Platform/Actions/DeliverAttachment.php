@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Models\Attachment;
 use Closure;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +12,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DeliverAttachment
 {
-    /** @param Closure(\App\Models\User, Attachment): bool $sourceAuthorizer */
+    /** @param Closure(User, Attachment): bool $sourceAuthorizer */
     public function execute(Attachment $attachment, Closure $sourceAuthorizer): StreamedResponse
     {
         app(AuthorizeAttachmentAccess::class)->execute($attachment, $sourceAuthorizer);

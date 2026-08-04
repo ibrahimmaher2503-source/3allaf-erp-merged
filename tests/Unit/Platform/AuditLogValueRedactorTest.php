@@ -3,6 +3,7 @@
 namespace Tests\Unit\Platform;
 
 use App\Modules\Platform\Actions\AuditLogValueRedactor;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -28,7 +29,7 @@ class AuditLogValueRedactorTest extends TestCase
         ]));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('sensitiveKeys')]
+    #[DataProvider('sensitiveKeys')]
     public function test_a_sensitive_key_is_redacted_at_the_top_level(string $key): void
     {
         $redacted = app(AuditLogValueRedactor::class)->redact([$key => 'super-secret-value']);
@@ -36,7 +37,7 @@ class AuditLogValueRedactorTest extends TestCase
         $this->assertSame('[redacted]', $redacted[$key], "Key [{$key}] must be redacted.");
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('sensitiveKeys')]
+    #[DataProvider('sensitiveKeys')]
     public function test_a_sensitive_key_is_redacted_when_deeply_nested(string $key): void
     {
         $redacted = app(AuditLogValueRedactor::class)->redact([

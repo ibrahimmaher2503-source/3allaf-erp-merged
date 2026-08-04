@@ -13,6 +13,5 @@ readonly class ValidatedAttachment
         public int $sizeBytes,
         public string $sha256,
         public array $dimensions = [],
-    ) {
-    }
+    ) {}
 }

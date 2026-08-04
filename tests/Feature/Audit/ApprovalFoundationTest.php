@@ -14,8 +14,11 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use LogicException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
 
@@ -249,7 +252,7 @@ class ApprovalFoundationTest extends TestCase
         $scoped = $this->userWith('tsk009-approval-scoped', ['branch-manager'], false, [$this->branch->id]);
         $this->actingAs($scoped);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         app(RequestApproval::class)->execute($this->data([
             'branchId' => $foreignBranch->id,
@@ -265,7 +268,7 @@ class ApprovalFoundationTest extends TestCase
             $this->assertStringNotContainsString('RequestApproval', (string) file_get_contents($file));
         }
 
-        $approvalRoutes = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+        $approvalRoutes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_contains($route->uri(), 'approval'));
 
         $this->assertTrue($approvalRoutes->isEmpty());
@@ -276,7 +279,7 @@ class ApprovalFoundationTest extends TestCase
         // Recorded coverage fact for TSK-009: append-only guards exist on the
         // audit and approval models only. No document state machine, referenced
         // correction, or reversal document exists to test.
-        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasTable('document_states'));
+        $this->assertFalse(Schema::hasTable('document_states'));
 
         foreach (glob(app_path('Modules/Platform/Actions/Save*.php')) ?: [] as $file) {
             $contents = (string) file_get_contents($file);

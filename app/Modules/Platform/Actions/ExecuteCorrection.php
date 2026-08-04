@@ -22,11 +22,11 @@ use Illuminate\Support\Facades\DB;
 final class ExecuteCorrection
 {
     /**
-     * @param array<int, CorrectionType|string> $allowedTypes
-     * @param callable(User, ImmutableSourceContract, CorrectionReferenceData): void $authorize
-     * @param callable(CorrectionReferenceData, ImmutableSourceContract): mixed $createAndApply
-     * @param callable(CorrectionReferenceData): bool|null $duplicateLookup
-     * @param callable(CorrectionReferenceData): void|null $assertApproval
+     * @param  array<int, CorrectionType|string>  $allowedTypes
+     * @param  callable(User, ImmutableSourceContract, CorrectionReferenceData): void  $authorize
+     * @param  callable(CorrectionReferenceData, ImmutableSourceContract): mixed  $createAndApply
+     * @param  callable(CorrectionReferenceData): bool|null  $duplicateLookup
+     * @param  callable(CorrectionReferenceData): void|null  $assertApproval
      */
     public function execute(
         CorrectionReferenceData $reference,

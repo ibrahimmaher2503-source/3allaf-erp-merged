@@ -14,7 +14,9 @@ DEC-043 permits the bounded TSK-010 Catalog module slice after the available TSK
 
 TSK-010 local closure verification completed on 2026-08-04: DEC-038-approved catalog `View (A)` grants were seeded for the verified local roles, catalog `P`/`R` capabilities remained ungranted, supplier duplicate/replay protection and category self-parent/descendant-cycle rejection passed in stable browser control, and database/static integrity checks passed. This closes only the approved local identity slice; it does not advance TSK-009, start TSK-011/TSK-013, or close any production/milestone gate.
 
-## Inventory - 2026-08-03
+## Shared Platform Guidance Boundary — TSK-004B
+
+The existing modular monolith and Flux/Livewire shell are retained. TSK-004B adds a Platform Support registry, safe DTO, per-user presentation preference model, and shared Blade/Alpine controls without a new package, external AI provider, business module, or authorization matrix change. The bounded architecture is recorded in `docs/40-contextual-page-guide-specification.md`.
 
 Implemented Foundation scope is limited to Platform and starter Auth:
 

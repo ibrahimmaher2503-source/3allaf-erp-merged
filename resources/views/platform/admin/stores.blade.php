@@ -208,7 +208,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
 
 <section class="w-full space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="stores-header">
         <div>
             <flux:heading size="xl" level="1">{{ __('Store Masters & Branch Mapping') }}</flux:heading>
             <flux:subheading>{{ __('Manage physical/logical stores (selling, warehouse, party, damaged, transit) and POS branch assignments.') }}</flux:subheading>
@@ -216,7 +216,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
 
         <div class="flex items-center gap-3">
             @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Add Store') }}</flux:button>
+                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add Store') }}</flux:button>
             @endcan
         </div>
     </div>
@@ -227,7 +227,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
     </flux:callout>
 
     <!-- Filters & Search -->
-    <flux:card class="space-y-4">
+    <flux:card class="space-y-4" data-guide="stores-filters">
         <div class="grid gap-4 sm:grid-cols-4">
             <flux:input
                 wire:model.live.debounce.300ms="search"
@@ -299,7 +299,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
     ?>
 
     @if ($stores->isEmpty())
-        <flux:card class="p-8 text-center space-y-3">
+        <flux:card class="p-8 text-center space-y-3" data-guide="stores-empty">
             <div class="flex justify-center">
                 <flux:icon icon="building-storefront" class="size-12 text-zinc-400" />
             </div>
@@ -314,7 +314,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             </div>
         </flux:card>
     @else
-        <flux:table>
+        <flux:table data-guide="stores-table">
             <flux:table.columns>
                 <flux:table.column sortable>{{ __('Code') }}</flux:table.column>
                 <flux:table.column>{{ __('Store Name (AR / EN)') }}</flux:table.column>
@@ -430,7 +430,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             </flux:table.rows>
         </flux:table>
 
-        <div class="pt-4">
+        <div class="pt-4" data-guide="stores-pagination">
             {{ $stores->links() }}
         </div>
     @endif

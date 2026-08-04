@@ -223,7 +223,7 @@ new #[Title('Branch Management')] class extends Component {
 
 <section class="w-full space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="branches-header">
         <div>
             <flux:heading size="xl" level="1">{{ __('Branch Masters') }}</flux:heading>
             <flux:subheading>{{ __('Manage commercial branch locations and their authorized POS selling store assignments.') }}</flux:subheading>
@@ -231,7 +231,7 @@ new #[Title('Branch Management')] class extends Component {
 
         <div class="flex items-center gap-3">
             @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal">{{ __('Add Branch') }}</flux:button>
+                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
             @endcan
         </div>
     </div>
@@ -242,7 +242,7 @@ new #[Title('Branch Management')] class extends Component {
     </flux:callout>
 
     <!-- Filters & Controls -->
-    <flux:card class="space-y-4">
+    <flux:card class="space-y-4" data-guide="branches-filters">
         <div class="grid gap-4 sm:grid-cols-3">
             <flux:input
                 wire:model.live.debounce.300ms="search"
@@ -279,7 +279,7 @@ new #[Title('Branch Management')] class extends Component {
     ?>
 
     @if ($branches->isEmpty())
-        <flux:card class="p-8 text-center space-y-3">
+        <flux:card class="p-8 text-center space-y-3" data-guide="branches-empty">
             <div class="flex justify-center">
                 <flux:icon icon="building-office-2" class="size-12 text-zinc-400" />
             </div>
@@ -294,7 +294,7 @@ new #[Title('Branch Management')] class extends Component {
             </div>
         </flux:card>
     @else
-        <flux:table>
+        <flux:table data-guide="branches-table">
             <flux:table.columns>
                 <flux:table.column sortable>{{ __('Code') }}</flux:table.column>
                 <flux:table.column>{{ __('Branch Name (AR / EN)') }}</flux:table.column>
@@ -380,7 +380,7 @@ new #[Title('Branch Management')] class extends Component {
             </flux:table.rows>
         </flux:table>
 
-        <div class="pt-4">
+        <div class="pt-4" data-guide="branches-pagination">
             {{ $branches->links() }}
         </div>
     @endif

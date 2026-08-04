@@ -1,5 +1,9 @@
 # 12 — Acceptance Criteria
 
+## TSK-004B Criteria
+
+AC-UI-06 through AC-UI-15 cover persistent controls, per-user preferences, screen detection, permission-aware guidance, approved flows, accessible tours, sensitive-data protection, RTL/LTR responsive behavior, missing-guide fallback, and no business side effects. The detailed contract is in `docs/40-contextual-page-guide-specification.md`.
+
 ## Acceptance Contract
 
 All criteria are `Not Started` and require future manual evidence. Unless a criterion explicitly says otherwise: the actor is authenticated and server-authorized; branch/store/activity scope is enforced; inputs are server-validated; double submission and concurrent races are safe; successful sensitive changes are audited with source/reason/before-after; failures make no partial stock/financial/ledger effect; UI preserves recoverable input and shows localized feedback; lists are bounded/paginated; and relevant screens support default/loading/empty/error/success/disabled/permission-denied, Arabic RTL, English LTR, and responsive behavior.

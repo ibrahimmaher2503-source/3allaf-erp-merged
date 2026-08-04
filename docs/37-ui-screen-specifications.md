@@ -1,5 +1,9 @@
 # 37 — UI Screen Specifications
 
+## TSK-004B Shared Screen Guidance
+
+Registered screens may expose a deterministic Page Guide with localized purpose, approved actions, flow references, permission filtering, safe fallback, and stable tour selectors. Actual route mappings and initial coverage are recorded in `docs/40-contextual-page-guide-specification.md` and `.ai/UI_SCREENS.md`.
+
 **Product:** TOY & JOY  
 **Phase:** Phase 1  
 **Status:** Detailed implementation specification derived from the approved PRD, Implementation Plan, Architecture, Roles/Permissions, and policies 17–29  

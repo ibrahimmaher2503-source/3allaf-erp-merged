@@ -12,7 +12,7 @@ fi
 cd "$ROOT"
 
 TASK_FILE="${1:-.ai/CURRENT_TASK.md}"
-MODEL="${AGY_MODEL:-gemini-3.6-flash-high}"
+MODEL="${AGY_MODEL:-gemini-3.1-pro}"
 EFFORT="${AGY_EFFORT:-high}"
 
 if [[ ! -f "$TASK_FILE" ]]; then
@@ -35,7 +35,6 @@ PROMPT="$(cat "$TASK_FILE")"
 agy -p "$PROMPT" \
     --model "$MODEL" \
     --effort "$EFFORT" \
-    --add-dir "$ROOT" \
     --output-format json \
     --dangerously-skip-permissions \
     > "$LOG_FILE"

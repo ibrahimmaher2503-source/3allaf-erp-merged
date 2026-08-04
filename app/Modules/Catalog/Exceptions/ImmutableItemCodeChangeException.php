@@ -4,6 +4,4 @@ namespace App\Modules\Catalog\Exceptions;
 
 use InvalidArgumentException;
 
-class ImmutableItemCodeChangeException extends InvalidArgumentException
-{
-}
+class ImmutableItemCodeChangeException extends InvalidArgumentException {}

@@ -13,9 +13,9 @@ class RecordAuditEvent
     /**
      * Persist a single append-only audit event inside the caller's transaction.
      *
-     * @param array<string, mixed>|null $before
-     * @param array<string, mixed>|null $after
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>|null  $before
+     * @param  array<string, mixed>|null  $after
+     * @param  array<string, mixed>  $metadata
      */
     public function execute(
         string $category,

@@ -8,6 +8,7 @@ use App\Modules\Platform\Actions\SaveStoreAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -332,7 +333,7 @@ class BranchStoreMappingTest extends TestCase
         // no action, so override behavior cannot be tested.
         $this->assertDatabaseHas('permissions', ['code' => 'branches_stores.override']);
 
-        $granted = \App\Modules\Platform\Models\Role::query()
+        $granted = Role::query()
             ->whereHas('permissions', fn ($query) => $query->where('code', 'branches_stores.override'))
             ->exists();
 

@@ -30,7 +30,7 @@ class SaveStoreAction
     {
         Gate::authorize($id ? 'branches_stores.edit' : 'branches_stores.create');
         $type = $data['type'] ?? 'selling';
-        if (!in_array($type, self::ALLOWED_TYPES, true)) {
+        if (! in_array($type, self::ALLOWED_TYPES, true)) {
             throw new InvalidArgumentException(__('Invalid store type specified.'));
         }
 
@@ -91,6 +91,7 @@ class SaveStoreAction
     public function toggleStatus(int $id): Store
     {
         Gate::authorize('branches_stores.edit');
+
         return DB::transaction(function () use ($id) {
             $store = Store::findOrFail($id);
             $newStatus = $store->status === 'active' ? 'inactive' : 'active';

@@ -67,6 +67,8 @@
             </div>
         </header>
 
+        @include('components.platform.dashboard-tools', ['pageGuide' => \App\Modules\Platform\Data\PageGuideContext::fromRequest(auth()->user())])
+
         <!-- Main Content Area -->
         <main class="flex-1 flex flex-col p-4">
             {{ $slot }}

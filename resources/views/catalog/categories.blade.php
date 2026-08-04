@@ -127,10 +127,11 @@ new #[Title('Category Masters')] class extends Component {
     <x-page-header
         :title="__('Category Masters')"
         :description="__('Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.')"
+        data-guide="categories-header"
     >
         <x-slot:actions>
             @can('products_categories_brands.create')
-                <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal">{{ __('Add category') }}</flux:button>
+                <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
             @endcan
         </x-slot:actions>
     </x-page-header>
@@ -145,7 +146,7 @@ new #[Title('Category Masters')] class extends Component {
         </flux:callout>
     @endif
 
-    <div class="catalog-filter-card rounded-xl p-4 sm:p-5">
+    <div class="catalog-filter-card rounded-xl p-4 sm:p-5" data-guide="categories-filters">
         <div class="catalog-filter-heading mb-4">
             <div>
                 <flux:heading size="sm">{{ __('Search categories') }}</flux:heading>
@@ -165,13 +166,13 @@ new #[Title('Category Masters')] class extends Component {
     <div wire:loading.flex role="status" aria-live="polite" class="catalog-loading"><flux:icon name="arrow-path" class="size-4 animate-spin" />{{ __('Loading hierarchy...') }}</div>
 
     @if ($categories->isEmpty())
-        <flux:card class="space-y-3 p-10 text-center">
+        <flux:card class="space-y-3 p-10 text-center" data-guide="categories-empty">
             <flux:icon name="squares-2x2" class="mx-auto size-12 text-zinc-400" />
             <flux:heading size="lg">{{ __('No categories found') }}</flux:heading>
             <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('Create a root category, then add child categories from the same form.') }}</flux:text>
         </flux:card>
     @else
-        <div class="catalog-table-frame">
+        <div class="catalog-table-frame" data-guide="categories-table">
             <flux:table aria-label="{{ __('Category hierarchy') }}">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Code') }}</flux:table.column>
@@ -200,7 +201,7 @@ new #[Title('Category Masters')] class extends Component {
                 </flux:table.rows>
             </flux:table>
         </div>
-        {{ $categories->links() }}
+        <div data-guide="categories-pagination">{{ $categories->links() }}</div>
     @endif
 
     <flux:modal wire:model="showCategoryModal" class="max-w-xl">

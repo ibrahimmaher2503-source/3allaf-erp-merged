@@ -1,5 +1,9 @@
 # 13 — Definition of Done
 
+## Additional user-facing screen requirement — TSK-004B
+
+Every future user-facing task must register/update its canonical Screen ID, localized purpose, approved actions, related Stories/Flows/criteria, step-by-step guide content, stable tour selectors where useful, role-aware guidance, RTL/LTR/mobile behavior, and sensitive-data review. Explicit deferral must be documented.
+
 A feature/task is Done only when every applicable item below is satisfied and evidenced. `Not Applicable` requires a written reason. Automated tests are not part of the current Definition of Done.
 
 ## Requirement and Scope

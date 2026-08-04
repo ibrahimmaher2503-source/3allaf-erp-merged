@@ -12,8 +12,8 @@ class ApprovalRecordTransition
     /**
      * Apply a terminal approval-request decision and audit it in the same transaction.
      *
-     * @param array<string, mixed> $attributes
-     * @param callable(ApprovalRecord): void $authorize
+     * @param  array<string, mixed>  $attributes
+     * @param  callable(ApprovalRecord): void  $authorize
      */
     public function execute(
         ApprovalRecord $record,

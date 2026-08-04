@@ -3,8 +3,8 @@
 namespace App\Modules\Catalog\Models;
 
 use App\Modules\Platform\Models\Attachment;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductImage extends Model
 {

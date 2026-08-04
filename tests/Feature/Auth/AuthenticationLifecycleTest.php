@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -167,7 +168,7 @@ class AuthenticationLifecycleTest extends TestCase
         $user = $this->userWith('tsk002-unverified', ['system-administrator'], true);
         $user->forceFill(['email_verified_at' => null])->save();
 
-        $this->assertNotInstanceOf(\Illuminate\Contracts\Auth\MustVerifyEmail::class, $user);
+        $this->assertNotInstanceOf(MustVerifyEmail::class, $user);
 
         $this->actingAs($user->fresh());
         $this->get('/dashboard')->assertOk();

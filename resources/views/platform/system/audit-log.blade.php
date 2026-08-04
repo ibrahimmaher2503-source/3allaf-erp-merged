@@ -143,16 +143,16 @@ new #[Title('Audit Logs')] class extends Component {
     }
 }; ?>
 
-<section class="page-frame space-y-5">
+<section class="page-frame space-y-5" data-guide="audit-header">
     <x-page-header
         :title="__('Audit logs')"
         :description="__('Append-only, permission-scoped operational history with protected before and after values.')"
         icon="clock"
     />
 
-    <x-tables.data-panel :title="__('Audit events')" :description="__('Filter visible history by event, source, scope, actor, or request ID.')">
+    <x-tables.data-panel :title="__('Audit events')" :description="__('Filter visible history by event, source, scope, actor, or request ID.')" data-guide="audit-table">
         <x-slot:toolbar>
-            <x-tables.filter-bar>
+            <x-tables.filter-bar data-guide="audit-filters">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <flux:input wire:model.live.debounce.400ms="search" :label="__('Search')" icon="magnifying-glass" :placeholder="__('Event, source, actor, or request ID')" />
                     <flux:select wire:model.live="category" :label="__('Category')">
@@ -214,7 +214,7 @@ new #[Title('Audit Logs')] class extends Component {
                             <flux:table.cell class="font-mono text-xs">{{ class_basename((string) $log->source_type) }}{{ $log->source_id ? ' #'.$log->source_id : '' }}</flux:table.cell>
                             <flux:table.cell class="font-mono text-xs">{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</flux:table.cell>
                             <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
-                            <flux:table.cell><flux:button size="xs" variant="subtle" icon="eye" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</flux:button></flux:table.cell>
+                            <flux:table.cell><flux:button size="xs" variant="subtle" icon="eye" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</flux:button></flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -255,7 +255,7 @@ new #[Title('Audit Logs')] class extends Component {
                     <flux:button size="sm" variant="subtle" disabled>{{ __('Next') }}</flux:button>
                 @endif
             </div>
-            <div class="hidden sm:block">{{ $logs->links() }}</div>
+            <div class="hidden sm:block" data-guide="audit-pagination">{{ $logs->links() }}</div>
         </x-slot:footer>
     </x-tables.data-panel>
 

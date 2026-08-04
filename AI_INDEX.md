@@ -21,7 +21,10 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 
 No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
 
-## Current Routing Override — TSK-011
+## Current Routing Override — TSK-004B
+
+TSK-004B is the active shared Platform feature. TSK-012 remains completed for approved local scope and is not reopened. See `docs/40-contextual-page-guide-specification.md` and `.ai/CURRENT_TASK.md`.
+
 
 TSK-011 is the current closure-reviewed task in DM 2.1 and is Completed for approved local scope.
 

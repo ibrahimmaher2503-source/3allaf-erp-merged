@@ -124,4 +124,27 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 
 ## Coverage Summary
 
+### TSK-004B registered guidance coverage
+
+| Screen ID | Real route name(s) | Guide status |
+|---|---|---|
+| UI-SYS-001 | `dashboard` | Registered |
+| UI-SYS-002 | `system.app` | Registered |
+| UI-SYS-003 | `admin.audit` | Registered |
+| UI-SYS-004 | `system.health` | Registered |
+| UI-ADM-002 | `admin.settings` | Registered |
+| UI-ADM-003 | `admin.branches` | Registered |
+| UI-ADM-004 | `admin.stores` | Registered |
+| UI-ADM-005 | `admin.cash-drawers` | Registered |
+| UI-ADM-010/011/012 | `admin.authorization-baseline` | Registered on the shared real route |
+| UI-CAT-001 | `catalog.products` | Registered |
+| UI-CAT-002 | `catalog.products.show` | Registered |
+| UI-CAT-003 | `catalog.products.create`, `catalog.products.edit` | Registered |
+| UI-CAT-004 | `catalog.products.import` | Registered |
+| UI-CAT-006 | `catalog.categories` | Registered |
+| UI-CAT-007 | `catalog.brands` | Registered |
+
+Only live named routes are registered. Proposed screens without a real route remain unregistered and receive the safe missing-guide fallback.
+
+
 The inventory includes all screens explicitly required by the owner instructions plus platform states needed for the documented foundation. Every functional module has a visible UI; no backend-only business feature is treated as complete. Every task in `TASKS.md` lists the relevant Screen IDs and Flux UI components to reuse.

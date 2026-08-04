@@ -5,8 +5,10 @@ namespace Tests\Feature\Audit;
 use App\Modules\Platform\Actions\BackfillLegacySettingsAuditLogs;
 use App\Modules\Platform\Actions\SaveBranchAction;
 use App\Modules\Platform\Models\AuditLog;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
 
@@ -103,10 +105,10 @@ class AuditBackfillTest extends TestCase
         $this->seedLegacyRows(1);
         app(BackfillLegacySettingsAuditLogs::class)->execute();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DB::table('audit_logs')->insert([
-            'event_id' => (string) \Illuminate\Support\Str::uuid(),
+            'event_id' => (string) Str::uuid(),
             'legacy_source_key' => 'settings_audit_logs:1',
             'category' => 'master_data',
             'event' => 'duplicate_attempt',

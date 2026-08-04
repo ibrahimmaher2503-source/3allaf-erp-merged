@@ -458,7 +458,31 @@ The existing `CatalogImplementationAbsenceTest` was run once as the only TSK-010
 - **Console/network:** The initial HTTP 413 observation is superseded by the final closure re-verification. Normal successful flows had no unexpected console or failed-network entries; the final 3 MB PHP-boundary check produced the expected Livewire HTTP 422 entry and no persisted media.
 - **Static commands passed:** PHP syntax lint for all changed Catalog PHP/Blade files; `php artisan migrate --force --no-ansi`; `php artisan migrate:status --no-ansi`; `php artisan route:list --path=catalog --no-ansi`; `php artisan view:cache --no-ansi`; schema inspection; `npm run build`; Arabic/English JSON parsing; `git diff --check`. Build emitted only the existing optional Fontaine warning.
 - **Automated tests:** No PHPUnit/Pest/browser suite was created or run for TSK-011 under the current directive. The stale TSK-010 absence guard was not used as TSK-011 evidence.
-- **Production boundaries:** Production catalog hierarchy/data, supplier codes/master/history, final UOM/type/image-retention values, and final attribute/fractional-quantity policy remain open under BLK-009/BLK-010. TSK-012 and TSK-013 were not started. No gate, UAT, or production-readiness claim is made.
+- **Production boundaries:** Production catalog hierarchy/data, supplier codes/master/history, final UOM/type/image-retention values, and final attribute/fractional-quantity policy remain open under BLK-009/BLK-010. TSK-012 is now active; TSK-013 has not started. No gate, UAT, or production-readiness claim is made.
+
+## TSK-012 INITIAL LOCAL SLICE — 2026-08-04
+
+- **Status:** In Progress. The first staged-import slice is implemented locally; final browser/UAT coverage and error-download/export behavior remain open.
+- **Implementation:** Added `product_import_batches` and `product_import_rows`, OpenSpout 4.32.0, `StageProductImportAction`, Livewire import screen, route, and Catalog navigation.
+- **Safety behavior:** XLSX/CSV/ODS parsing; required-column checks; Create Only and Update Existing modes; formula-cell rejection; duplicate item-code detection; active category/brand reference validation; 5,000-row bound; review before write; approval blocked if any row is invalid; approval writes valid rows atomically through `SaveProductAction`; audit events record stage/approval.
+- **Real execution evidence:** `php artisan migrate --force --no-ansi`, route discovery, Blade cache, PHP lint, and `git diff --check` passed. A 3-row CSV staged as 2 valid / 1 invalid; approval was blocked and product count remained 0. A separate 2-row valid CSV staged and approved successfully: batch status `completed`, product count `2`.
+- **Environment note:** The project lock initially contained Symfony 8.1 requiring PHP 8.4 syntax while this host runs PHP 8.3.6. Symfony dependencies were resolved to the PHP-8.3-compatible line before installing OpenSpout; no platform requirements were ignored.
+- **Remaining TSK-012 work:** authenticated browser walkthrough at desktop/mobile widths remains the only acceptance gate not evidenced in this session. Browser navigation was exercised to `/catalog/products/import`, which correctly redirected unauthenticated requests to `/login`; no password was entered or simulated. Backend/error/cancel/retry/large-file evidence and `npm run build` are passing.
+
+## TSK-004B Verification Update — 2026-08-04
+
+- **Status:** In Progress. Initial implementation is present; real-browser verification and final reconciliation remain open.
+- **Static/runtime checks passed:** PHP lint for new PHP files, `php artisan migrate --force --no-ansi`, `php artisan migrate:status --no-ansi`, `php artisan route:list --no-ansi`, `php artisan view:cache --no-ansi`, registry runtime counts (17 screens, 13 flows), preference action runtime persistence/reset, and `git diff --check`.
+- **Routes:** `POST /ui/preferences`, `GET /help/screens/{screenId}`, and `GET /help/flows/{flowId}` are registered inside the authenticated/verified Platform group. Invalid screen IDs are constrained; full guide/flow access is Gate-checked.
+- **Pending/limited Browser evidence:** Core admin-session scenarios are now evidenced under `artifacts/platform-dashboard-assistant/`: desktop controls/drawer, full guide, user flow, appearance persistence/reset, mobile compact launcher, RTL drawer, POS missing-guide fallback, missing-selector tour skip, no mobile overflow, and no observed console errors. The required view-only/scoped/no-access role matrix remains open because no owner-approved Browser credentials were available; no credentials were guessed or stored.
+
+
+- **Error download:** An invalid batch with 1 valid and 1 invalid row returned a 200 streamed CSV with `text/csv; charset=UTF-8`, row number, item code, names, status, and localized errors. Formula-like values were prefixed with `'` to prevent spreadsheet formula execution.
+- **Cancel/retry:** Cancelling a reviewable batch changed its state to `cancelled`; staging the same file again reused the cancelled batch, cleared old rows, and returned it to `ready_for_review`.
+- **Large file:** A 5,001-data-row CSV raised `The import is limited to 5,000 data rows.`; the partial staging batch was deleted and the failed stored file was deleted. No partial rows remained.
+- **Authorization mapping:** Import/Create Only uses `products_categories_brands.create`; Update Existing uses `products_categories_brands.edit`; approval uses `products_categories_brands.approve`; error export uses `products_categories_brands.export`. Existing role grants were not expanded without a documented role-policy mapping.
+- **Browser evidence:** Authenticated Browser verification completed on the protected import screen using a temporary local-only Demo Auth switch. The screen rendered the upload controls, mode selector, batch table, invalid-row errors, secure download link, disabled approval state, and cancel action. The cancel action changed the selected batch to `Cancelled` in the browser. The Demo route and environment flag were removed immediately afterward; an unauthenticated request then returned `302 /login`.
+- **Status:** TSK-012 is **Completed for approved local scope**. The temporary local-only Demo Auth route and `DEMO_AUTH` environment flag were removed immediately after the authenticated Browser walkthrough. No Phase gate, UAT, or production-readiness claim is made.
 
 ## TSK-011 FINAL CLOSURE REVIEW — 2026-08-04
 
@@ -473,3 +497,87 @@ The existing `CatalogImplementationAbsenceTest` was run once as the only TSK-010
 - **Static checks:** PHP lint, `php artisan migrate:status --no-ansi`, products/product_images schema and index inspection, catalog/media route inspection, `php artisan view:cache --no-ansi`, `npm run build`, locale JSON parsing, and `git diff --check` passed. Vite emitted only the optional Fontaine warning.
 - **Automated tests:** No PHPUnit or Pest tests were run or added.
 - **Boundary:** Production values, UAT, automated-test coverage, infrastructure upload configuration, and the explicitly unapproved composition behavior remain open. No Phase gate, UAT, or production-readiness claim is made.
+
+## TSK-004B Contextual Page Guide Content Completion — 2026-08-04
+
+- **Status:** In Progress (Content Completion Verified). All 17 registered screen guides in `TutorialRegistry` and 13 user flows in `UserFlowRegistry` are completed with documentation-grounded, bilingual guidance.
+- **Static Verification Passed:**
+  - `php -l` syntax check passed on modified PHP files: `TutorialRegistry.php`, `UserFlowRegistry.php`, `PageGuideContext.php`, `DashboardAssistantController.php`.
+  - `php artisan view:cache --no-ansi` passed with 0 errors.
+  - `php artisan route:list --no-ansi` confirmed 80 registered routes.
+  - `npm run build` compiled client production assets cleanly in 1.39s with zero CSS/JS errors.
+  - `git diff --check` passed with 0 whitespace errors.
+  - Registry smoke check verified 17 registered screens, 13 user flows, 0 broken flow references, and valid bilingual string shapes (`ar`/`en`) across all titles, bodies, steps, fields, notes, warnings, next steps, and FAQs.
+  - HTML rendering verification confirmed full guide (`/help/screens/UI-CAT-004`) and user flow (`/help/flows/FLW-CAT-02`) pages render inside standard `<x-layouts::app>` layout with zero raw `Array` string leakage and zero raw permission keys exposed to users.
+- **Content Improvements:**
+  - Replaced all generic step text ("Perform the published action shown on this screen") with explicit, step-by-step guidance derived from PRD and module specifications.
+  - Human-readable localized action labels mapped for all 17 permission keys.
+  - Guided tour selectors verified against actual view elements (`form`, `table`, `input`, `select`, `header`, `nav`, `button`).
+  - Bulletproof Alpine JS `text(value)` helper handles localized arrays/objects without nested `Array` rendering.
+
+## TSK-004B Contextual Product Import Tutorial Quality Correction — 2026-08-04
+
+- **Status:** In Progress (AGY Correction Verified).
+- **Contextual Action Labels:**
+  - Updated `TutorialRegistry::actionLabel` to take `$key` and `$route` parameters alongside `$permission`.
+  - For `catalog.products.import` (`UI-CAT-004`), action labels now map exclusively to human-readable import actions:
+    - `products_categories_brands.view`: Review and view product import page (عرض ومراجعة صفحة استيراد المنتجات)
+    - `products_categories_brands.create`: Stage and upload an import batch (رفع ومرحلة دفعة استيراد المنتجات)
+    - `products_categories_brands.edit`: Review staged validation results (مراجعة نتائج التحقق للصفوف المرحلة)
+    - `products_categories_brands.approve`: Approve valid import batch (اعتماد دفعة استيراد المنتجات الصالحة)
+    - `products_categories_brands.export`: Download import error report (تنزيل تقرير أخطاء الاستيراد)
+  - Product/category/brand CRUD wording was removed from Product Import guide actions.
+  - Action labels across all other screens remain screen/route-aware with zero raw permission keys exposed.
+- **Product Import Full Guide Steps:**
+  - Expanded `UI-CAT-004` Product Import steps from 3 to 7 complete bilingual steps aligned with `FLW-CAT-02` and `catalog/product-import.blade.php`:
+    1. Upload Approved File / رفع الملف المعتمد (`input[type="file"]`)
+    2. Map Required Columns / تعيين الأعمدة المطلوبة (`form`)
+    3. Validate Spreadsheet Data / مرحلة الفحص والتحقق (`button[type="submit"]`)
+    4. Review Valid & Rejected Rows / مراجعة الصفوف الصالحة والمرفوضة (`table`)
+    5. Choose Import Mode / اختيار نمط الاستيراد (`select`)
+    6. Approve Valid Rows Only / اعتماد الصفوف الصالحة فقط (`button`)
+    7. Download Error Report & Retry / تنزيل تقرير الأخطاء وإعادة المحاولة (`a[href*="errors"]`)
+  - Confirmed all titles and bodies are scalar `ar`/`en` strings without nested arrays.
+  - Guided-tour selectors match actual HTML markup elements on `catalog/product-import.blade.php`.
+- **Verification Commands Executed:**
+  - `php -l app/Modules/Platform/Support/TutorialRegistry.php`: No syntax errors detected.
+  - `php artisan view:cache --no-ansi`: Blade templates cached successfully.
+  - `registry smoke`: UI-CAT-004 confirmed with 7 steps, 5 route-aware import action labels, and clean scalar `ar`/`en` string shapes.
+  - `git diff --check`: Passed with 0 whitespace errors.
+- Automated test suites were not run; no commit or push occurred.
+
+## TSK-004B Guided Tour Highlighting Repair — 2026-08-04
+
+- **Status:** In Progress (tour repair locally verified; role matrix evidence remains pending).
+- **Defects repaired via AGY:** Added dimmed backdrop, visible target focus ring, target cleanup between steps, viewport-clamped card positioning, scroll/resize repositioning, reduced-motion handling, and safe cleanup on finish/skip/Escape.
+- **Hidden target correction:** Flux `input[type=file]` is `sr-only` and 1x1; centralized `resolveTarget()` now resolves it to the visible `[data-flux-input-file]` container without changing registry selectors or business markup.
+- **Browser evidence:** On `/catalog/products/import` at desktop and `390x844` mobile, the first step visibly highlights the file control; the table step highlights the actual `<table>` and positions the card above it. The tour counter updates to available targets (`4 / 5` observed after safely skipping unavailable targets). On completion, the tour is hidden, target count is 0, and the backdrop is `display:none` with a zero-sized rect. No horizontal overflow was observed.
+- **Static verification:** `php artisan view:cache --no-ansi`, `npm run build`, and `git diff --check` passed. No automated test suite, commit, or push occurred.
+
+## TSK-004B Guided Tour Expansion Across Registered Screens — 2026-08-04
+
+- **Status:** In Progress (metadata/hooks and sampled browser flows verified; full 17-screen role matrix remains pending).
+- **AGY changes accepted after moderation:** Replaced broad selectors (`div`, bare `button`, `span`, generic sections) with explicit `data-guide` hooks and fallback selectors. Added five contextual steps to each registered screen and retained seven Product Import steps. Added distinct authorization hooks for users, roles, permissions, and scopes on the shared route.
+- **Scope check:** Hooks are presentation-only attributes on registered views. An unrelated AGY business-logic rewrite in `catalog/products.blade.php` was rejected and reverted; original brand, barcode, and action behavior was preserved.
+- **Browser verification:** Dashboard, Branches, Authorization Baseline, Audit Logs, System Health (`/admin/system/health`), System App, and Products all started successfully with a visible first target. Second-step checks resolved to real elements: refresh button, add branch button, users card, and add product button. Mobile Products at 390x844 showed the real header highlighted, a visible card, no horizontal overflow, and no raw `Array` text.
+- **Static verification:** `php -l app/Modules/Platform/Support/TutorialRegistry.php`, `php artisan view:cache --no-ansi`, `npm run build`, and `git diff --check` passed. No automated test suite, commit, or push occurred.
+
+## Appearance Customizer repair — 2026-08-04
+
+- Live application verified for appearance, accent, sidebar, content width, table density, font scale, and reduced motion.
+- Save response handling now exposes saving/saved/error status; Reset applies and persists defaults.
+- Accent computed CSS tokens changed; dark/light and color scheme changed; sidebar collapsed used a `56px` grid track with hidden labels and expanded reset returned to `256px`.
+- Mobile customizer verified at `390x844`: six controls reachable, Reset visible, drawer width `390px`, and no horizontal overflow. Evidence: `artifacts/platform-dashboard-assistant/customizer-mobile-final.png`.
+- AGY was explicitly invoked for this repair but terminated before producing a usable patch; no AGY customizer patch was accepted. The final focused patch was manually completed and Browser-verified.
+- Feature remains In Progress; no UAT or production-readiness claim.
+
+## TSK-004B focused repair verification — 2026-08-04
+
+- AGY read-only sanity confirmed workspace `/home/ubuntu/toy-joy-phase-1-documentation`, branch `master`; AGY implementation completed focused fallback, focus, first-paint, and cache-header repairs.
+- `resolveTarget()` now rejects hidden first fallback matches instead of climbing to a visible page wrapper; comma-separated fallbacks are evaluated independently.
+- Browser tour verification on Product Import: 7 steps, visible `import-header` then `import-upload-section`, target rect `960x238`, tour card outside target (`overlap=false`), backdrop and card present.
+- Appearance Customizer browser verification at `390x844`: changed to dark/amber/collapsed/compact/small/reduced-motion, save status was `Display settings saved`, grid became `52.5px 322.5px 0px`, drawer width `390px`, no overflow; reload preserved values.
+- Reset was then executed and verified after reload to defaults: system/teal/expanded/wide/comfortable/normal/reduced-motion false.
+- Head script now applies sidebar/content width before first paint; permission-filtered help screen/flow responses include private no-cache/no-store headers.
+- `php artisan view:cache --no-ansi`, `npm run build`, and `git diff --check` passed. No PHPUnit/Pest, commit, or push.
+- Full all-role/all-screen acceptance matrix, keyboard audit, and excluded-route checks remain pending; feature is not UAT-accepted or production-ready.

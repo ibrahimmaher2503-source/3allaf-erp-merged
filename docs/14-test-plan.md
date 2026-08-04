@@ -1,5 +1,9 @@
 # 14 — Manual Verification and User Acceptance Testing Plan
 
+## TSK-004B Manual Matrix
+
+Verify persistent controls, RTL/LTR, mobile launcher, keyboard/focus, registered and missing guides, full guide/flow access, admin/view-only/scoped/no-access filtering, tour missing-target handling, Livewire re-render behavior, preference persistence/reset, reduced motion, and no sensitive payload leakage. Evidence belongs under `artifacts/platform-dashboard-assistant/`.
+
 ## Binding Policy
 
 Automated tests are deferred. No automated test code shall be created. No automated test suite shall be run. This can change only through a new explicit project-owner instruction.

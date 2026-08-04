@@ -17,6 +17,7 @@ class SaveBranchAction
     public function execute(array $data, ?int $id = null): Branch
     {
         Gate::authorize($id ? 'branches_stores.edit' : 'branches_stores.create');
+
         return DB::transaction(function () use ($data, $id) {
             $attributes = [
                 'code' => strtoupper(trim($data['code'])),
@@ -73,6 +74,7 @@ class SaveBranchAction
     public function toggleStatus(int $id): Branch
     {
         Gate::authorize('branches_stores.edit');
+
         return DB::transaction(function () use ($id) {
             $branch = Branch::findOrFail($id);
             $newStatus = $branch->status === 'active' ? 'inactive' : 'active';

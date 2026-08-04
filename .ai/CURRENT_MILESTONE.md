@@ -1,20 +1,20 @@
 # Current Milestone
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
-**Current milestone:** DM 2.1, Product and Supplier Masters — TSK-011
-**Status:** In Progress (TSK-011 approved local scope closed; milestone and production gate open)
-**Progress:** TSK-010 and TSK-011 are complete for approved local scope. TSK-009 remains In Progress at its actual recorded status. Phase 1 production evidence, UAT, and all production exit criteria remain open.
+**Current milestone:** Shared Platform UI Guidance — TSK-004B
+**Status:** In Progress (TSK-004B active; TSK-012 remains closed for approved local scope; milestone and production gates open)
+**Progress:** TSK-004B initial framework is implemented. Browser evidence and final reconciliation remain open. TSK-009 remains In Progress at its actual recorded status. Phase 1 production evidence, UAT, and all production exit criteria remain open.
 **Started:** 2026-08-04
 
 ## Active Scope
 
-TSK-011 is the current closure-reviewed scope in DM 2.1 and is complete for approved local scope. TSK-010 is complete for approved local scope and must not be reopened absent regression or dependency defects. TSK-009 remains In Progress at its actual recorded status and receives no new implementation. Do not start TSK-012, TSK-013, pricing, inventory, labels, purchasing, or POS. DEC-039 adopts `docs/17-approval-policy.md` through `docs/29-rental-asset-policy.md` as the approved local-development policy baseline. DEC-040 adopts docs/30 through docs/39 as detailed local specifications and introduces `AI_INDEX.md` as the mandatory task-aware documentation router. Source-module integration, UAT, production configuration, and Phase 1 exit criteria remain open.
+TSK-004B is the active shared Platform scope. TSK-012 is closed for approved local scope and must not be reopened absent regression or dependency defects. TSK-009 remains In Progress at its actual recorded status and receives no new implementation. Do not start or modify unrelated business tasks. Production configuration, UAT, and Phase 1 exit criteria remain open.
 
 TSK-010 closure evidence: DEC-038-approved `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Browser verification passed supplier duplicate/replay protection, category self-parent/descendant-cycle rejection, authorized view-only access, and unauthorized direct-route/action denial on the stable local server at `http://127.0.0.1:8094`.
 
 DM 2.1 remains open because later supplier/import work is not authorized and production exit evidence is incomplete. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
 
-Do not begin future task scope outside TSK-011. TSK-010 is locally closed for its approved scope; TSK-012 and TSK-013 remain deferred. This current-state section supersedes historical Phase 1 and Phase 2 task sequencing notes below.
+Do not begin future task scope outside TSK-012. TSK-010 and TSK-011 are locally closed for their approved scopes; TSK-013 and later tasks remain deferred. This current-state section supersedes historical Phase 1 and Phase 2 task sequencing notes below.
 
 TSK-011 handoff boundary: local product-card fields/types/attributes/media/detail behavior and safe oversized-upload messages are implemented. Composition lines remain deferred because the approved contract lacks sufficient component, quantity, cycle, and bundle-policy definitions. The local PHP upload limit remains an infrastructure dependency and is documented without changing the application policy.
 

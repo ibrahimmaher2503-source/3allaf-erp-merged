@@ -2,7 +2,9 @@
 
 ## Current State
 
-### Current TSK-011 Routing — 2026-08-04
+### Current TSK-004B Routing — 2026-08-04
+
+TSK-004B is **In Progress** as the active shared Platform feature. TSK-012 remains Completed for approved local scope. The implementation must not change unrelated business workflows, permission grants, commercial policy, or task statuses. Browser evidence and final reconciliation remain pending; no UAT or production-readiness claim is made.
 
 TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is complete for approved local scope and remains closed unless a regression or dependency defect is discovered. The completed local slice adds the full bilingual product card, approved standard/composite/service types, searchable/reportable attributes, protected product media, product detail/full edit screens, stale-update protection, audit, and source-authorized delivery.
 

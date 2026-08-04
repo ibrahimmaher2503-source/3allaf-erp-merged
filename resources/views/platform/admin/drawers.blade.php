@@ -155,14 +155,14 @@ new #[Title('Cash Drawer Masters')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" data-guide="drawers-header">
     <x-page-header
         :title="__('Cash Drawer Masters')"
         :description="__('Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).')"
     >
         <x-slot:actions>
             @can('drawers_payments_tax_numbering_printers.create')
-                <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal">{{ __('Add Cash Drawer') }}</flux:button>
+                <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
             @endcan
         </x-slot:actions>
     </x-page-header>
@@ -183,7 +183,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
     </div>
 
     <!-- Filters & Search -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between" data-guide="drawers-filters">
         <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
             <div class="w-full sm:w-72">
                 <flux:input
@@ -237,7 +237,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
     @endphp
 
     <!-- Cash Drawers Data Table -->
-    <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden shadow-xs">
+    <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden shadow-xs" data-guide="drawers-table">
         @if($drawers->count() > 0)
             <div class="overflow-x-auto">
                 <table class="w-full text-start text-sm">
@@ -324,7 +324,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
                     </tbody>
                 </table>
             </div>
-            <div class="px-4 py-3 border-t border-zinc-200 dark:border-zinc-700">
+            <div class="px-4 py-3 border-t border-zinc-200 dark:border-zinc-700" data-guide="drawers-pagination">
                 {{ $drawers->links() }}
             </div>
         @else

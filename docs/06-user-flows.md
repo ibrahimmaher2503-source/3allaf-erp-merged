@@ -1,5 +1,9 @@
 # 06 — User Flows
 
+## Platform Guidance Flows — TSK-004B
+
+`FLW-UI-01`, `FLW-HELP-01`, and `FLW-HELP-02` are defined in `docs/40-contextual-page-guide-specification.md` and implemented in the shared UserFlowRegistry. They are documentation flows only and do not redefine business behavior.
+
 ## Flow Contract
 
 Every flow below inherits these rules: authenticate and resolve role/branch/store/activity scope; load only authorized records; validate on the server; prevent duplicate submission; enforce allowed state transitions; use a database transaction and locking/idempotency for document, stock, payment, wallet, loyalty, gift-card, shift, number, or synchronization effects; preserve approved history; append required audit; and return complete responsive RTL/LTR UI states. `None` under effects means the flow must not create that type of effect.

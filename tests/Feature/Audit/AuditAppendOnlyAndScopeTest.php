@@ -7,6 +7,7 @@ use App\Modules\Platform\Actions\SaveUserAuthorizationAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use LogicException;
 use Tests\Support\PlatformFixtures;
@@ -94,7 +95,7 @@ class AuditAppendOnlyAndScopeTest extends TestCase
         $this->actingAs($this->administrator('tsk009-append-raw'));
         $record = $this->event();
 
-        \Illuminate\Support\Facades\DB::table('audit_logs')->where('id', $record->id)->update(['event' => 'raw-bypass']);
+        DB::table('audit_logs')->where('id', $record->id)->update(['event' => 'raw-bypass']);
 
         $this->assertSame('raw-bypass', AuditLog::query()->whereKey($record->id)->value('event'));
     }
@@ -194,7 +195,7 @@ class AuditAppendOnlyAndScopeTest extends TestCase
             after: ['password_confirmation' => 'new-secret', 'nested' => ['deep' => ['refresh_token' => 'RT-123']]],
         );
 
-        $row = \Illuminate\Support\Facades\DB::table('audit_logs')->latest('id')->first();
+        $row = DB::table('audit_logs')->latest('id')->first();
         $raw = $row->before_values.$row->after_values;
 
         foreach (['old-secret', 'new-secret', 'AK-123', 'RT-123'] as $secret) {

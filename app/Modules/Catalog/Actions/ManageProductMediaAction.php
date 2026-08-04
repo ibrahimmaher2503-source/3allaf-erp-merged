@@ -57,8 +57,7 @@ class ManageProductMediaAction
             file: $file,
             purpose: 'product_image',
             source: $source,
-            sourceAuthorizer: fn (User $user, AttachmentSourceReference $reference): bool =>
-                Gate::forUser($user)->allows('products_categories_brands.edit')
+            sourceAuthorizer: fn (User $user, AttachmentSourceReference $reference): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                 && $reference->sourceType === Product::class
                 && $reference->sourceId === (string) $product->id,
         );
@@ -78,8 +77,7 @@ class ManageProductMediaAction
                         if ($oldMain->attachment !== null) {
                             app(RevokeAttachment::class)->execute(
                                 $oldMain->attachment,
-                                fn (User $user, Attachment $oldAttachment): bool =>
-                                    Gate::forUser($user)->allows('products_categories_brands.edit')
+                                fn (User $user, Attachment $oldAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                                     && $oldAttachment->source_type === Product::class
                                     && $oldAttachment->source_id === (string) $lockedProduct->id,
                             );
@@ -115,8 +113,7 @@ class ManageProductMediaAction
             // history rather than exposing an unlinked active file.
             app(RevokeAttachment::class)->execute(
                 $attachment,
-                fn (User $user, Attachment $failedAttachment): bool =>
-                    Gate::forUser($user)->allows('products_categories_brands.edit')
+                fn (User $user, Attachment $failedAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                     && $failedAttachment->source_type === Product::class
                     && $failedAttachment->source_id === (string) $product->id,
             );
@@ -162,8 +159,7 @@ class ManageProductMediaAction
             if ($attachment !== null) {
                 app(RevokeAttachment::class)->execute(
                     $attachment,
-                    fn (User $user, Attachment $linkedAttachment): bool =>
-                        Gate::forUser($user)->allows('products_categories_brands.edit')
+                    fn (User $user, Attachment $linkedAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                         && $linkedAttachment->source_type === Product::class
                         && $linkedAttachment->source_id === (string) $product->id,
                 );

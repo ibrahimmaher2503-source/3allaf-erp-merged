@@ -230,3 +230,79 @@ Append one factual entry for every agent session that changes repository or proj
 - **Task:** Published the completed TSK-011 approved-local-scope implementation at the owner's explicit request; no new business functionality was added.
 - **Commit:** Created commit `d65ab0b` (`Complete TSK-011 product card scope`) on `master` and pushed it to `origin/master` at `https://github.com/ibrahimmaher2503-source/toy-joy-phase-1-documentation.git`.
 - **Verification:** Confirmed the push succeeded. No PHPUnit/Pest or automated test suite was run during this Git operation. Phase gates, UAT, and production readiness remain unclaimed.
+
+## 2026-08-04 - TSK-012 Verification and Closure Review
+
+- **Task:** Completed the remaining local TSK-012 implementation and verification work.
+- **Completed:** Added safe rejected-row CSV download, server-scoped error export, cancel/retry behavior for staged batches, cleanup of partial batches/files on parse or row-limit failure, and an enforced 5,000-data-row bound.
+- **Backend verification actually run:** Error batch staged as 1 valid / 1 invalid; download returned HTTP 200 with `text/csv`, escaped formula-like cells, and included row errors. Cancel changed the batch to `cancelled`; restaging the same file reused the batch and returned it to `ready_for_review`. A 5,001-row file was rejected with the configured limit message; the partial batch count became 0 and the failed file was deleted.
+- **Browser verification actually run:** Authenticated Browser verification completed on the import screen through a temporary local-only Demo Auth switch, then the switch and environment flag were removed. The screen rendered upload controls, mode selection, batches, invalid-row errors, secure download link, disabled approval for rejected rows, and cancel. Browser Livewire action changed the selected batch to `cancelled`; backend retry was then verified by restaging the same file. A fresh unauthenticated request after cleanup returned `302 /login`.
+- **Permissions review:** Current mapping is Create Only/Import → `products_categories_brands.create`, Update Existing → `products_categories_brands.edit`, Approval → `products_categories_brands.approve`, Error download → `products_categories_brands.export`. No new role grants were guessed or added; existing catalog role grants remain unchanged.
+- **Static verification:** PHP lint, route discovery, view cache, `npm run build`, `composer validate`, and `git diff --check` passed. Vite emitted only the existing optional Fontaine warning. No automated tests were created or run.
+- **Result:** TSK-012 is **Completed for approved local scope**. No Phase gate, UAT, or production-readiness claim is made.
+
+## 2026-08-04 - Permanent Local Demo Auth Switch
+
+- **Owner request:** Keep the browser-test authentication switch available permanently for the local demo environment.
+- **Implementation:** Added `/__demo/auth`, which signs in the existing `demo.admin@toyjoy.local` user only when `APP_ENV=local` and `DEMO_AUTH=true`; it regenerates the session before redirecting to Product Import. No password or secret is stored in code.
+- **Configuration:** Local `.env` has `DEMO_AUTH=true`; `.env.example` documents the switch as `false` by default and explicitly marks it local-only.
+- **Verification:** `route:list --path=__demo` shows the route, unauthenticated request to `/__demo/auth` returns 302 to `/catalog/products/import`, PHP lint and `git diff --check` pass. The route contains a second runtime local/environment guard and cannot activate in non-local environments.
+
+## 2026-08-04 - TSK-004B Initial Implementation
+
+- **Routing:** TSK-004B is now the active shared Platform feature. TSK-012 remains closed for approved local scope; no unrelated task status or business workflow was changed.
+- **Implemented:** `TutorialRegistry` (17 real route-backed screens), `UserFlowRegistry` (13 documented flows), safe `PageGuideContext`, authenticated Gate-checked guide/flow routes, `user_ui_preferences`, server-validated preference action, persistent controls in app/POS shells, bilingual drawer, full guide/flow views, and bounded explicit-selector guided tour.
+- **Security:** No external AI provider, no raw model serialization, no secrets/private paths/attachment data/cost/customer payloads, no permission grants, and no business behavior changes. Missing/non-real screens are not fabricated.
+- **Verification:** Migration, migration status, PHP lint, route discovery, Blade cache, registry runtime counts, preference persistence/reset, and `git diff --check` passed. Browser evidence remains pending under `artifacts/platform-dashboard-assistant/`.
+
+## 2026-08-04 - TSK-004B Contextual Page Guide Content Completion
+
+- **Agent / scope:** TSK-004B shared Platform Contextual Page Guide content completion.
+- **Completed:** Replaced generic step copy with documentation-grounded, bilingual step-by-step guidance across all 17 registered screens in `TutorialRegistry`; mapped human-readable localized action labels (`ar`/`en`) for all 17 permission keys; updated `UserFlowRegistry` steps, actors, and attributes to be fully bilingual; verified guided tour selectors against actual screen markup; aligned full guide/flow layouts under `<x-layouts::app>`; refined Alpine JS `text()` helper to handle localized arrays/objects without nested `Array` string leakage.
+- **Files changed:** `app/Modules/Platform/Support/TutorialRegistry.php`, `app/Modules/Platform/Support/UserFlowRegistry.php`, `resources/views/platform/help/screen.blade.php`, `resources/views/platform/help/flow.blade.php`, `resources/views/components/platform/dashboard-tools.blade.php`, `.ai/TEST_RESULTS.md`, `.ai/CURRENT_TASK.md`, `.ai/SESSION_SUMMARY.md`.
+- **Verification actually run:** PHP syntax lint (`php -l`), `php artisan view:cache --no-ansi`, `php artisan route:list --no-ansi`, `npm run build`, `git diff --check`, registry smoke check (17 screens, 13 flows, 0 broken flow references, valid bilingual shapes), and HTML view rendering verification of `/help/screens/UI-CAT-004` and `/help/flows/FLW-CAT-02` with 0 raw `Array` text rendering and 0 raw permission key exposures.
+- **Remaining blockers / next action:** Four-role permission matrix UAT evidence and task closure review. TSK-004B remains In Progress.
+- **Code, tests, browser, commit, push:** Application PHP/Blade code changed. No automated tests created or run. Manual view rendering and registry checks executed. No commit or push occurred.
+
+## 2026-08-04 - TSK-004B AGY Correction — Contextual Product Import Tutorial Quality
+
+- **Agent / scope:** TSK-004B AGY Correction for Contextual Product Import Tutorial Quality.
+- **Work completed:**
+  - Updated `TutorialRegistry::actionLabel` to take screen key and primary route, generating route/screen-aware action labels across all screens.
+  - Formatted `catalog.products.import` (`UI-CAT-004`) action labels to display only human-readable import actions (review/import page, stage/upload import batch, review staged validation results, approve valid import batch, download import error report), completely removing product/category/brand CRUD wording from Product Import.
+  - Expanded `UI-CAT-004` Product Import guide to 7 complete bilingual steps matching `FLW-CAT-02` documentation and `catalog/product-import.blade.php` implementation (Upload approved file → map required columns → validate → review valid/rejected rows → choose Create Only or Update Existing → approve valid rows only → download error report/retry).
+  - Ensured all localized step titles and bodies are scalar `ar`/`en` strings without nested arrays.
+  - Validated all guided-tour selectors against existing markup (`input[type="file"]`, `form`, `button[type="submit"]`, `table`, `select`, `button`, `a[href*="errors"]`).
+- **Files changed:**
+  - `app/Modules/Platform/Support/TutorialRegistry.php`
+  - `.ai/TEST_RESULTS.md`
+  - `.ai/SESSION_SUMMARY.md`
+- **Verification actually run:**
+  - `php -l app/Modules/Platform/Support/TutorialRegistry.php`: No syntax errors detected.
+  - `php artisan view:cache --no-ansi`: Blade templates cached successfully.
+  - `registry smoke`: Verified `UI-CAT-004` has 7 steps, no nested title/body shape, and 5 route-aware import action labels.
+  - `git diff --check`: Passed with 0 errors.
+- **Code, tests, browser, commit, push:** Modified `TutorialRegistry.php`. No automated tests created or run. No browser executed. No commit or push occurred.
+
+## 2026-08-04 - TSK-004B AGY Follow-up — Resolve Hidden Tour Targets
+
+- **Agent / scope:** TSK-004B AGY Follow-up for resolving hidden tour targets in `resources/views/components/platform/dashboard-tools.blade.php`.
+- **Work completed:**
+  - Implemented centralized `resolveTarget(selectorOrElement)` with `isVisibleTarget` and `isUnsafeParent` helper methods.
+  - Resolved hidden, `sr-only`, or near-zero size targets to their nearest visible meaningful ancestor, specifically `[data-flux-input-file]` for file inputs, with safe generic parent resolution avoiding `body`, `html`, `main`, and tour dialog containers.
+  - Used `resolveTarget` consistently across `getValidSteps()`, `showTourStep()`, and `repositionTour()`.
+  - Kept backdrop, highlight, positioning, cleanup, keyboard, reduced-motion, and missing-target behavior intact without changing registry selectors or business screen markup.
+- **Files changed:**
+  - `resources/views/components/platform/dashboard-tools.blade.php`
+  - `.ai/SESSION_SUMMARY.md`
+- **Verification actually run:**
+  - `php artisan view:cache --no-ansi`: Cached successfully with code 0.
+  - `git diff --check`: Passed with 0 whitespace/conflict errors.
+- **Code, tests, browser, commit, push:** Modified `dashboard-tools.blade.php` and session summary log. No automated tests run. Browser verification completed on desktop and 390x844 mobile, including first-step visible highlight, table-step highlight, card positioning, and finish cleanup. No commit or push occurred.
+
+## 2026-08-04 - TSK-004B Guided Tour Expansion Across Registered Screens
+
+- AGY replaced broad selectors with explicit `data-guide` hooks across the 17 registered screen views and expanded metadata to five steps per screen, with seven Product Import steps.
+- Browser verification completed for Dashboard, Branches, Authorization Baseline, Audit Logs, System Health (`/admin/system/health`), System App, and Products. First targets and second-step targets resolved to visible page elements; mobile Products had no horizontal overflow.
+- An unrelated AGY business-logic rewrite in `catalog/products.blade.php` was manually rejected and reverted; only tour hooks remain there.
+- Static checks passed: PHP lint, Blade cache, npm build, and `git diff --check`. No automated tests, commit, or push occurred. Full 17-screen role matrix remains pending.

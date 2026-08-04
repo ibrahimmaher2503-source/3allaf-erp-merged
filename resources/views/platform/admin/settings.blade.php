@@ -382,7 +382,7 @@ new #[Title('System Settings')] class extends Component {
     }
 }; ?>
 
-<section class="w-full space-y-6">
+<section class="w-full space-y-6" data-guide="settings-header">
     <x-page-header
         :title="__('System Settings Baseline (TSK-005)')"
         :description="__('Local company identity, payment methods, tax rules, document sequence counters, printer profiles, and append-only settings audit trail.')"
@@ -411,7 +411,7 @@ new #[Title('System Settings')] class extends Component {
 
     <!-- Navigation Tabs -->
     <div class="border-b border-zinc-200 dark:border-zinc-700">
-        <nav class="-mb-px flex gap-6 overflow-x-auto text-sm font-medium" role="tablist" aria-label="{{ __('Settings Sections') }}">
+        <nav class="-mb-px flex gap-6 overflow-x-auto text-sm font-medium" role="tablist" aria-label="{{ __('Settings Sections') }}" data-guide="settings-tabs">
             <button
                 type="button"
                 id="tab-company"
@@ -485,7 +485,7 @@ new #[Title('System Settings')] class extends Component {
     @if ($activeTab === 'company')
         <div id="panel-company" role="tabpanel" aria-labelledby="tab-company" class="space-y-6">
             <form wire:submit="saveCompany" class="space-y-6">
-                <flux:card class="space-y-4">
+                <flux:card class="space-y-4" data-guide="settings-company-card">
                     <flux:heading size="lg">{{ __('Company Master Information') }}</flux:heading>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -527,7 +527,7 @@ new #[Title('System Settings')] class extends Component {
                     </div>
                 </flux:card>
 
-                <flux:card class="space-y-4">
+                <flux:card class="space-y-4" data-guide="settings-localization-card">
                     <flux:heading size="lg">{{ __('Localization & Currency Policy Baseline') }}</flux:heading>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -576,7 +576,7 @@ new #[Title('System Settings')] class extends Component {
                     />
 
                     <div class="flex justify-end">
-                        <flux:button type="submit" variant="primary" icon="check">
+                        <flux:button type="submit" variant="primary" icon="check" data-guide="settings-save-button">
                             {{ __('Save Company Baseline') }}
                         </flux:button>
                     </div>

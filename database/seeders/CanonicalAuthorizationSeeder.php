@@ -44,11 +44,11 @@ class CanonicalAuthorizationSeeder extends Seeder
         }
 
         $modules = [
-            'company_settings','branches_stores','drawers_payments_tax_numbering_printers','users_roles_permissions','products_categories_brands','suppliers','purchase_orders','purchase_invoices_supplier_returns','pricing_labels','inventory_stock_card','transfers','stock_counts','pos_sales','suspended_sales','shifts_cash_movements','customers_children','loyalty','product_wallet','party_wallet','returns_exchanges_gift_instruments','party_bookings_invoices','party_operating_orders_consumables','rental_assets','quotations','dashboard_reports','audit_logs','offline_queue_conflicts',
+            'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts', 'pos_sales', 'suspended_sales', 'shifts_cash_movements', 'customers_children', 'loyalty', 'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments', 'party_bookings_invoices', 'party_operating_orders_consumables', 'rental_assets', 'quotations', 'dashboard_reports', 'audit_logs', 'offline_queue_conflicts',
         ];
         foreach ($modules as $module) {
-            foreach (['view','create','edit','logical_delete','print','approve','export','reverse','cancel','override'] as $action) {
-                Permission::query()->updateOrCreate(['code' => $module.'.'.$action], ['module' => $module, 'action' => $action, 'sensitivity' => in_array($action, ['approve','export','reverse','cancel','override','logical_delete'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
+            foreach (['view', 'create', 'edit', 'logical_delete', 'print', 'approve', 'export', 'reverse', 'cancel', 'override'] as $action) {
+                Permission::query()->updateOrCreate(['code' => $module.'.'.$action], ['module' => $module, 'action' => $action, 'sensitivity' => in_array($action, ['approve', 'export', 'reverse', 'cancel', 'override', 'logical_delete'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
             }
         }
 

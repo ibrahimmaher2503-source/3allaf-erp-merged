@@ -65,6 +65,11 @@
                         <flux:sidebar.item icon="cube" :href="route('catalog.products')" :current="request()->routeIs('catalog.products')" wire:navigate>
                             {{ __('Products') }}
                         </flux:sidebar.item>
+                        @can('products_categories_brands.create')
+                            <flux:sidebar.item icon="arrow-up-tray" :href="route('catalog.products.import')" :current="request()->routeIs('catalog.products.import')" wire:navigate>
+                                {{ __('Product Import') }}
+                            </flux:sidebar.item>
+                        @endcan
                         <flux:sidebar.item icon="squares-2x2" :href="route('catalog.categories')" :current="request()->routeIs('catalog.categories')" wire:navigate>
                             {{ __('Categories') }}
                         </flux:sidebar.item>
@@ -169,6 +174,8 @@
                 </flux:menu>
             </flux:dropdown>
         </flux:header>
+
+        @include('components.platform.dashboard-tools', ['pageGuide' => \App\Modules\Platform\Data\PageGuideContext::fromRequest(auth()->user())])
 
         {{ $slot }}
 

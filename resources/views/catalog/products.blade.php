@@ -339,10 +339,11 @@ new #[Title('Product Masters')] class extends Component {
     <x-page-header
         :title="__('Product Masters')"
         :description="__('Browse stable identity, full product-card types, reportable attributes, exact barcode search, and protected media.')"
+        data-guide="products-header"
     >
         <x-slot:actions>
             @can('products_categories_brands.create')
-                <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Add Product') }}</flux:button>
+                <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
             @endcan
         </x-slot:actions>
     </x-page-header>
@@ -361,7 +362,7 @@ new #[Title('Product Masters')] class extends Component {
         </flux:callout>
     @endif
 
-    <div class="catalog-filter-card rounded-xl p-4 sm:p-5">
+    <div class="catalog-filter-card rounded-xl p-4 sm:p-5" data-guide="products-filters">
         <div class="catalog-filter-heading mb-4">
             <div>
                 <flux:heading size="sm">{{ __('Search') }}</flux:heading>
@@ -412,7 +413,7 @@ new #[Title('Product Masters')] class extends Component {
     </div>
 
     @if ($products->isEmpty())
-        <flux:card class="space-y-3 p-10 text-center">
+        <flux:card class="space-y-3 p-10 text-center" data-guide="products-empty">
             <flux:icon name="cube" class="mx-auto size-12 text-zinc-400" />
             <flux:heading size="lg">{{ __('No products found') }}</flux:heading>
             <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('Create a local identity record or adjust the search and filters. No inventory or pricing data is created here.') }}</flux:text>
@@ -421,7 +422,7 @@ new #[Title('Product Masters')] class extends Component {
             @endcan
         </flux:card>
     @else
-        <div class="catalog-table-frame">
+        <div class="catalog-table-frame" data-guide="products-table">
             <flux:table aria-label="{{ __('Product masters') }}">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Item code') }}</flux:table.column>
@@ -477,7 +478,7 @@ new #[Title('Product Masters')] class extends Component {
                 </flux:table.rows>
             </flux:table>
         </div>
-        {{ $products->links() }}
+        <div data-guide="products-pagination">{{ $products->links() }}</div>
     @endif
 
     <flux:modal wire:model="showProductModal" class="max-w-2xl">

@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('PWA Shell & Status')">
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-4 sm:p-6">
-        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between" data-guide="system-app-header">
             <div>
                 <flux:heading size="xl" level="1">{{ __('PWA Shell & Status') }}</flux:heading>
                 <flux:subheading>{{ __('Local application shell capabilities, network connectivity state, and non-sensitive static PWA cache policy.') }}</flux:subheading>
@@ -19,7 +19,7 @@
         <flux:separator variant="subtle" />
 
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-connectivity">
                 <div class="flex items-center gap-3">
                     <div class="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400">
                         <flux:icon name="signal" class="size-5" />
@@ -39,7 +39,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-cache">
                 <div class="flex items-center gap-3">
                     <div class="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
                         <flux:icon name="shield-check" class="size-5" />
@@ -56,7 +56,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-installable">
                 <div class="flex items-center gap-3">
                     <div class="flex size-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
                         <flux:icon name="device-phone-mobile" class="size-5" />
@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <div class="mt-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="mt-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-locale">
             <flux:heading size="md" class="mb-2">{{ __('Current Locale & Direction') }}</flux:heading>
             <div class="flex flex-wrap items-center gap-4 text-sm">
                 <div>

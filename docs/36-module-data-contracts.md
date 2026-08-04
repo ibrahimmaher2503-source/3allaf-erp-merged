@@ -1,5 +1,9 @@
 # 36 — Module Data Contracts
 
+## Shared UI Preference Contract — TSK-004B
+
+`user_ui_preferences` has one row per user and validated fields for appearance, accent color, sidebar/navbar mode, content width, table density, font scale, and reduced motion. It is user-owned presentation state and cannot change business or authorization behavior. Guide context uses the safe DTO described in `docs/40-contextual-page-guide-specification.md`.
+
 **Product:** TOY & JOY  
 **Phase:** Phase 1  
 **Status:** Detailed implementation specification derived from the approved PRD, Implementation Plan, Architecture, Roles/Permissions, and policies 17–29  

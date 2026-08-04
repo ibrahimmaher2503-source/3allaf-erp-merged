@@ -9,7 +9,6 @@ use Illuminate\Validation\ValidationException;
 
 class ValidateAttachment
 {
-    /** @param UploadedFile|File $file */
     public function execute(UploadedFile|File $file, string $purpose): ValidatedAttachment
     {
         $allowedMimes = config("attachments.allowed_mimes.{$purpose}");

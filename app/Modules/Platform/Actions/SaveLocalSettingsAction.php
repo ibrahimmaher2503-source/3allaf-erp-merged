@@ -80,7 +80,7 @@ class SaveLocalSettingsAction
         Gate::authorize('company_settings.edit');
         $correlationId = Context::get('request_id') ?? (string) Str::uuid();
 
-        return DB::transaction(function () use ($data, $id, $correlationId) {
+        return DB::transaction(function () use ($data, $id) {
             $attributes = [
                 'code' => strtoupper($data['code']),
                 'name_ar' => $data['name_ar'],
@@ -119,7 +119,7 @@ class SaveLocalSettingsAction
         Gate::authorize('company_settings.edit');
         $correlationId = Context::get('request_id') ?? (string) Str::uuid();
 
-        return DB::transaction(function () use ($data, $id, $correlationId) {
+        return DB::transaction(function () use ($data, $id) {
             $attributes = [
                 'code' => strtoupper($data['code']),
                 'name_ar' => $data['name_ar'],
@@ -158,7 +158,7 @@ class SaveLocalSettingsAction
         Gate::authorize('company_settings.edit');
         $correlationId = Context::get('request_id') ?? (string) Str::uuid();
 
-        return DB::transaction(function () use ($data, $id, $correlationId) {
+        return DB::transaction(function () use ($data, $id) {
             $attributes = [
                 'document_type' => $data['document_type'],
                 'prefix' => $data['prefix'] ?? null,
@@ -197,7 +197,7 @@ class SaveLocalSettingsAction
         Gate::authorize('company_settings.edit');
         $correlationId = Context::get('request_id') ?? (string) Str::uuid();
 
-        return DB::transaction(function () use ($data, $id, $correlationId) {
+        return DB::transaction(function () use ($data, $id) {
             $attributes = [
                 'name' => $data['name'],
                 'printer_type' => $data['printer_type'] ?? 'thermal',

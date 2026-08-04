@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\Attachment;
@@ -11,6 +12,14 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('catalog/products', 'catalog::products')
         ->middleware('can:products_categories_brands.view')
         ->name('catalog.products');
+
+    $router->livewire('catalog/products/import', 'catalog::product-import')
+        ->middleware('can:products_categories_brands.create')
+        ->name('catalog.products.import');
+
+    $router->get('catalog/products/import/{batch}/errors', function (\App\Modules\Catalog\Models\ProductImportBatch $batch, DownloadProductImportErrorsAction $action) {
+        return $action->execute($batch);
+    })->whereNumber('batch')->middleware('can:products_categories_brands.export')->name('catalog.products.import.errors');
 
     $router->livewire('catalog/products/create', 'catalog::product-form')
         ->middleware('can:products_categories_brands.view')

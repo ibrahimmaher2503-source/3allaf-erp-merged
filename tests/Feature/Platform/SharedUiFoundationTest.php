@@ -4,6 +4,7 @@ namespace Tests\Feature\Platform;
 
 use App\Modules\Platform\Models\Branch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
@@ -192,7 +193,7 @@ class SharedUiFoundationTest extends TestCase
     {
         // Recorded coverage fact for TSK-004: `layouts/print` exists as a shared
         // base layout, but no route renders a printable document today.
-        $printRoutes = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+        $printRoutes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_contains($route->uri(), 'print'));
 
         $this->assertTrue($printRoutes->isEmpty());

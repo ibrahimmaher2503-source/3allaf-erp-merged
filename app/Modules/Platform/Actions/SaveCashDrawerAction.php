@@ -21,6 +21,7 @@ class SaveCashDrawerAction
     public function execute(array $data, ?int $id = null): CashDrawer
     {
         Gate::authorize($id ? 'drawers_payments_tax_numbering_printers.edit' : 'drawers_payments_tax_numbering_printers.create');
+
         return DB::transaction(function () use ($data, $id) {
             $branch = Branch::findOrFail($data['branch_id']);
 

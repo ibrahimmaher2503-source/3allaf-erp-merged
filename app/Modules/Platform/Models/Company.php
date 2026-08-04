@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
@@ -24,12 +25,12 @@ class Company extends Model
         'policy_notes',
     ];
 
-    public function branches(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function branches(): HasMany
     {
         return $this->hasMany(Branch::class);
     }
 
-    public function stores(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function stores(): HasMany
     {
         return $this->hasMany(Store::class);
     }

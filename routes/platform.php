@@ -1,8 +1,11 @@
 <?php
 
+use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
+use Illuminate\Http\Request;
+
 $router = app('router');
 
-$router->post('locale', function (Illuminate\Http\Request $request) {
+$router->post('locale', function (Request $request) {
     $validated = $request->validate([
         'locale' => ['required', 'string', 'in:'.implode(',', config('app.supported_locales', ['ar', 'en']))],
     ]);
@@ -13,6 +16,10 @@ $router->post('locale', function (Illuminate\Http\Request $request) {
 })->name('locale.switch');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
+    $router->post('ui/preferences', [DashboardAssistantController::class, 'preferences'])->name('platform.ui-preferences');
+    $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', \App\Modules\Platform\Support\TutorialRegistry::screenIds())->name('platform.help.screen');
+    $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(\App\Modules\Platform\Support\UserFlowRegistry::all()))->name('platform.help.flow');
+
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');
     $router->livewire('admin/stores', 'platform::admin.stores')->middleware('can:branches_stores.view')->name('admin.stores');

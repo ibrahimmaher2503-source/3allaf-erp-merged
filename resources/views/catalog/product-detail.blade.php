@@ -32,6 +32,7 @@ new #[Title('Product Details')] class extends Component {
     <x-page-header
         :title="app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en"
         :description="__('Product detail summary with role-safe identity, attributes, barcodes, and protected media.')"
+        data-guide="product-detail-header"
     >
         <x-slot:actions>
             <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
@@ -43,7 +44,7 @@ new #[Title('Product Details')] class extends Component {
 
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,.7fr)]">
         <div class="space-y-5">
-            <flux:card class="catalog-detail-hero overflow-hidden p-0">
+            <flux:card class="catalog-detail-hero overflow-hidden p-0" data-guide="product-detail-hero">
                 <div class="grid gap-0 md:grid-cols-[minmax(14rem,.8fr)_minmax(0,1.2fr)]">
                     <div class="catalog-detail-primary-media">
                         @if (($mainImage = $product->images->firstWhere('role', 'main')) !== null)
@@ -72,7 +73,7 @@ new #[Title('Product Details')] class extends Component {
                 </div>
             </flux:card>
 
-            <flux:card class="space-y-5 p-5 sm:p-6">
+            <flux:card class="space-y-5 p-5 sm:p-6" data-guide="product-detail-descriptions">
                 <div><flux:heading size="lg">{{ __('Descriptions and key points') }}</flux:heading></div>
                 <div class="grid gap-5 md:grid-cols-2">
                     <div class="catalog-bilingual-panel" dir="rtl"><div class="catalog-detail-label">{{ __('Arabic') }}</div><p class="whitespace-pre-line text-sm leading-7">{{ $product->description_ar ?: __('No description provided.') }}</p><p class="mt-4 whitespace-pre-line text-sm leading-7 text-text-muted">{{ $product->key_points_ar }}</p></div>
@@ -80,7 +81,7 @@ new #[Title('Product Details')] class extends Component {
                 </div>
             </flux:card>
 
-            <flux:card class="space-y-5 p-5 sm:p-6">
+            <flux:card class="space-y-5 p-5 sm:p-6" data-guide="product-detail-attributes">
                 <div class="flex items-center justify-between gap-3"><flux:heading size="lg">{{ __('Reportable attributes') }}</flux:heading><flux:badge size="sm" color="zinc">{{ __('No variants or balances') }}</flux:badge></div>
                 <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach ([['Colour', $product->colour], ['Size', $product->size], ['Character', $product->character], ['Target age', $product->target_age], ['Suitable gender', $product->suitable_gender], ['Weight', $product->weight], ['Dimensions', collect([$product->dimension_length, $product->dimension_width, $product->dimension_height])->filter(fn ($value) => $value !== null && $value !== '')->implode(' × ').($product->dimension_unit ? ' '.$product->dimension_unit : '')], ['Keywords Arabic', $product->keywords_ar], ['Keywords English', $product->keywords_en]] as [$label, $value])
@@ -90,7 +91,7 @@ new #[Title('Product Details')] class extends Component {
             </flux:card>
         </div>
 
-        <aside class="space-y-5">
+        <aside class="space-y-5" data-guide="product-detail-media">
             <flux:card class="space-y-4 p-5">
                 <flux:heading size="lg">{{ __('Barcode summary') }}</flux:heading>
                 <div class="space-y-2">

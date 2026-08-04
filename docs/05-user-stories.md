@@ -1,5 +1,9 @@
 # 05 — User Stories
 
+## Derived Platform Story — US-046
+
+TSK-004B adds US-046, Customize and Learn the Application Interface. The authenticated user can persist approved UI preferences and receive localized, permission-aware, documentation-backed guidance for registered screens. See `docs/40-contextual-page-guide-specification.md`; no business workflow or authorization grant changes.
+
 All stories are `Not Started`. Alternate/failure paths are mandatory acceptance behavior, not optional enhancements. IDs in the Relationships line link the story to requirements, screens, flows, tasks, and acceptance criteria.
 
 ## US-001 — Govern Company and Operating Masters

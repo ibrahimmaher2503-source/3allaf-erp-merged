@@ -17,8 +17,7 @@ readonly class AttachmentSourceReference
         public string $visibility = 'private',
         public ?CarbonInterface $retentionUntil = null,
         public ?CarbonInterface $expiresAt = null,
-    ) {
-    }
+    ) {}
 
     public function isLinked(): bool
     {

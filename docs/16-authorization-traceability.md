@@ -1,5 +1,9 @@
 # Authorization Traceability
 
+## TSK-004B Guidance Boundary
+
+The assistant does not create permissions. It filters registered actions and full guide/flow access through existing server Gates, preserves branch/store scope, and uses a safe fallback for missing or unauthorized guides. UI visibility is never the authorization boundary.
+
 `docs/04-roles-permissions.md` is the Canonical Authorization Matrix under DEC-038. `CanonicalAuthorizationSeeder` seeds all nine canonical roles and 276 canonical module/action permissions. `P`, `R`, and `N` cells are not silently granted. Future-module permissions remain catalog data until the corresponding module exists.
 
 ## Current Application Surfaces

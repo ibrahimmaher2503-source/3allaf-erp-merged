@@ -36,7 +36,7 @@ new #[Title('System Health')] class extends Component {
 }; ?>
 
 <section class="w-full max-w-full min-w-0 space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="health-header">
         <div>
             <flux:heading size="xl" level="1">{{ __('System Health & Monitoring') }}</flux:heading>
             <flux:subheading>{{ __('Local platform baseline status, request context, and component indicators.') }}</flux:subheading>
@@ -47,27 +47,29 @@ new #[Title('System Health')] class extends Component {
                 {{ $status['request_id'] ?? 'REQ-LOCAL' }}
             </flux:badge>
 
-            <flux:button icon="arrow-path" size="sm" wire:click="refreshStatus" variant="subtle">
+            <flux:button icon="arrow-path" size="sm" wire:click="refreshStatus" variant="subtle" data-guide="health-refresh-action">
                 {{ __('Refresh') }}
             </flux:button>
         </div>
     </div>
 
-    @if (($status['status'] ?? 'healthy') === 'healthy')
-        <flux:callout variant="success" icon="check-circle" title="{{ __('System Operational') }}">
-            {{ __('All baseline local platform services are healthy and responsive.') }}
-        </flux:callout>
-    @elseif (($status['status'] ?? '') === 'degraded')
-        <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('System Degraded') }}">
-            {{ __('One or more non-critical local services are reporting a degraded state.') }}
-        </flux:callout>
-    @else
-        <flux:callout variant="danger" icon="x-circle" title="{{ __('System Critical') }}">
-            {{ __('Critical local platform services are currently down or unreachable.') }}
-        </flux:callout>
-    @endif
+    <div data-guide="health-banner">
+        @if (($status['status'] ?? 'healthy') === 'healthy')
+            <flux:callout variant="success" icon="check-circle" title="{{ __('System Operational') }}">
+                {{ __('All baseline local platform services are healthy and responsive.') }}
+            </flux:callout>
+        @elseif (($status['status'] ?? '') === 'degraded')
+            <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('System Degraded') }}">
+                {{ __('One or more non-critical local services are reporting a degraded state.') }}
+            </flux:callout>
+        @else
+            <flux:callout variant="danger" icon="x-circle" title="{{ __('System Critical') }}">
+                {{ __('Critical local platform services are currently down or unreachable.') }}
+            </flux:callout>
+        @endif
+    </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" data-guide="health-grid">
         <!-- Database Status Card -->
         <flux:card class="space-y-3">
             <div class="flex items-center justify-between">
@@ -126,7 +128,7 @@ new #[Title('System Health')] class extends Component {
     </div>
 
     <!-- Overview Table -->
-    <flux:card class="space-y-4">
+    <flux:card class="space-y-4" data-guide="health-table">
         <flux:heading size="lg">{{ __('Platform Overview & Metadata') }}</flux:heading>
 
         <div class="max-w-full overflow-x-auto">

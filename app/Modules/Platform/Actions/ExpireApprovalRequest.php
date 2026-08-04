@@ -5,10 +5,10 @@ namespace App\Modules\Platform\Actions;
 use App\Models\User;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
+use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Closure;
 
 class ExpireApprovalRequest
 {
@@ -16,7 +16,7 @@ class ExpireApprovalRequest
      * System/scheduler calls may run without an authenticated actor. An
      * authenticated invocation must provide its source-specific authorization.
      *
-     * @param callable(ApprovalRecord, User): void|null $authorize
+     * @param  callable(ApprovalRecord, User): void|null  $authorize
      */
     public function execute(ApprovalRecord $record, ?Closure $authorize = null): ApprovalRecord
     {

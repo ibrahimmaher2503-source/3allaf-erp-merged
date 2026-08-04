@@ -158,6 +158,144 @@
         @apply bg-info/70;
     }
 
+    .platform-assistant {
+        --assistant-ink: var(--color-text-primary);
+        --assistant-muted: var(--color-text-muted);
+        --assistant-panel: var(--color-surface);
+        --assistant-line: var(--color-border);
+    }
+
+    .platform-assistant [x-cloak] { display: none !important; }
+    .platform-assistant__desktop-launchers { @apply fixed end-3 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-2 lg:flex; }
+    .platform-assistant__launcher, .platform-assistant__mobile-launcher { @apply flex size-11 items-center justify-center rounded-full border border-border bg-surface text-lg font-semibold text-primary shadow-lg transition hover:-translate-y-0.5 hover:bg-primary-soft focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2; }
+    .platform-assistant__launcher--appearance { @apply text-sm; }
+    .platform-assistant__mobile-launcher { @apply fixed bottom-5 end-4 z-40 lg:hidden; }
+    .platform-assistant__mobile-menu { @apply fixed bottom-20 end-4 z-40 flex w-48 flex-col gap-1 rounded-xl border border-border bg-surface p-2 shadow-xl; }
+    .platform-assistant__menu-action { @apply rounded-lg px-3 py-2 text-start text-sm text-text-primary hover:bg-surface-muted; }
+    .platform-assistant__backdrop { @apply fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[1px]; }
+    .platform-assistant__drawer { @apply fixed inset-y-0 end-0 z-50 flex w-[min(100vw,25rem)] flex-col border-s border-border bg-surface shadow-2xl; }
+    .platform-assistant__drawer--customizer { @apply w-[min(100vw,22rem)]; }
+    .platform-assistant__header { @apply flex items-start justify-between gap-4 border-b border-border px-5 py-5; }
+    .platform-assistant__eyebrow { @apply mb-1 text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-primary; }
+    .platform-assistant__title { @apply text-lg font-semibold text-text-primary; }
+    .platform-assistant__screen { @apply mt-1 font-mono text-[0.6875rem] text-text-muted; }
+    .platform-assistant__close { @apply size-9 rounded-full text-2xl leading-none text-text-muted hover:bg-surface-muted hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-primary; }
+    .platform-assistant__body { @apply min-h-0 flex-1 overflow-y-auto px-5 py-5 text-sm text-text-muted; }
+    .platform-assistant__body h3 { @apply text-sm font-semibold text-text-primary; }
+    .platform-assistant__body section > p, .platform-assistant__body details > p { @apply mt-2 leading-6; }
+    .platform-assistant__body details { @apply rounded-lg border border-border px-3 py-3; }
+    .platform-assistant__body summary { @apply cursor-pointer font-semibold text-text-primary; }
+    .platform-assistant__list { @apply mt-2 list-disc space-y-1 ps-5; }
+    .platform-assistant__steps { @apply mt-2 space-y-2; }
+    .platform-assistant__steps li { @apply flex flex-col gap-0.5 border-s border-primary/30 ps-3; }
+    .platform-assistant__muted { @apply text-xs text-text-muted; }
+    .platform-assistant__fallback { @apply rounded-xl border border-dashed border-border bg-surface-muted p-4 leading-7; }
+    .platform-assistant__meta { @apply flex flex-wrap gap-3 border-t border-border pt-4 text-xs text-text-muted; }
+    .platform-assistant__footer { @apply flex flex-wrap gap-2 border-t border-border px-5 py-4; }
+    .platform-assistant__primary, .platform-assistant__secondary { @apply inline-flex min-h-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2; }
+    .platform-assistant__primary { @apply bg-primary text-accent-foreground hover:opacity-90; }
+    .platform-assistant__secondary { @apply border border-border bg-surface text-text-primary hover:bg-surface-muted; }
+    .platform-assistant__controls { @apply space-y-4; }
+    .platform-assistant__controls label { @apply flex flex-col gap-1.5 text-sm font-semibold text-text-primary; }
+    .platform-assistant__controls select { @apply min-h-10 rounded-lg border border-border bg-surface px-3 text-sm font-normal text-text-primary; }
+    .platform-assistant__check { @apply flex-row items-center gap-2 rounded-lg border border-border p-3; }
+    .platform-assistant__check input { @apply size-4 accent-primary; }
+    .platform-assistant__save-status { @apply rounded-lg border border-primary/20 bg-primary-soft/40 px-3 py-2 text-xs font-medium text-text-muted; }
+    .platform-assistant__save-status--error { @apply border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300; }
+    .platform-assistant__tour-backdrop { @apply fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[1px]; }
+    .platform-assistant__tour { @apply fixed z-[60] w-[min(calc(100vw-2rem),28rem)] rounded-2xl border border-primary/30 bg-surface p-5 shadow-2xl transition-[top,left] duration-150 ease-out; }
+    .platform-assistant__tour h2 { @apply text-base font-semibold text-text-primary; }
+    .platform-assistant__tour p:not(.platform-assistant__eyebrow):not(.platform-assistant__muted) { @apply mt-2 text-sm leading-6 text-text-muted; }
+    .platform-assistant__tour-actions { @apply mt-4 flex items-center justify-end gap-2; }
+    .platform-assistant__tour-actions button { @apply min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-text-primary hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-40; }
+    .platform-assistant__tour-target { position: relative !important; z-index: 55 !important; outline: 3px solid var(--color-primary, #0d9488) !important; outline-offset: 4px !important; box-shadow: 0 0 0 6px oklch(0.15 0.02 245 / 0.7), 0 0 20px oklch(0.47 0.105 194 / 0.5) !important; border-radius: var(--radius-medium, 0.5rem); }
+
+    .guide-page { @apply mx-auto w-full max-w-6xl px-4 pb-16 pt-2 sm:px-6 lg:px-8; color: var(--color-text-primary); }
+    .guide-page__topbar { @apply mb-5 flex items-center justify-between gap-4 text-sm; }
+    .guide-page__back { @apply inline-flex items-center gap-2 font-semibold text-text-muted transition hover:text-primary; }
+    .guide-page__kicker { @apply text-[0.6875rem] font-bold uppercase tracking-[0.18em] text-text-muted; }
+    .guide-page__hero { @apply relative isolate mb-6 flex overflow-hidden rounded-[1.75rem] border border-primary/20 bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-9 sm:py-9 lg:items-end lg:justify-between; }
+    .guide-page__hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 85% 10%, rgba(45, 212, 191, .34), transparent 36%), linear-gradient(135deg, #0f172a, #123b45); }
+    .guide-page__hero-glow { @apply absolute -end-12 -top-16 -z-10 size-48 rounded-full border border-white/10 bg-white/5 blur-2xl; }
+    .guide-page__hero-copy { @apply relative max-w-2xl; }
+    .guide-page__eyebrow-row { @apply mb-4 flex flex-wrap items-center gap-2; }
+    .guide-page__screen-id { @apply rounded-full border border-teal-300/30 bg-teal-300/10 px-2.5 py-1 font-mono text-[0.6875rem] font-semibold tracking-wide text-teal-200; }
+    .guide-page__published { @apply text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-slate-300; }
+    .guide-page__published span { @apply text-teal-300; }
+    .guide-page__hero h1 { @apply text-3xl font-semibold tracking-[-0.03em] sm:text-4xl; }
+    .guide-page__hero-copy > p { @apply mt-3 max-w-xl text-sm leading-6 text-slate-300 sm:text-base; }
+    .guide-page__hero-meta { @apply relative mt-6 flex shrink-0 flex-col gap-1 border-s border-white/15 ps-4 text-start text-xs text-slate-400 lg:mb-1 lg:mt-0; }
+    .guide-page__hero-meta strong { @apply text-sm font-semibold text-white; }
+    .guide-page__hero-meta small { @apply mt-1 text-slate-400; }
+    .guide-page__layout { @apply grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start; }
+    .guide-page__content { @apply min-w-0 space-y-5; }
+    .guide-page__aside { @apply order-first space-y-4 lg:order-none lg:sticky lg:top-6; }
+    .guide-card, .guide-summary-card { @apply rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6; }
+    .guide-card--intro { @apply border-primary/20 bg-primary-soft/30; }
+    .guide-card__heading { @apply mb-5 flex items-start gap-3; }
+    .guide-card__icon { @apply flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-semibold text-primary; }
+    .guide-card__icon--blue { @apply bg-sky-500/10 text-sky-600 dark:text-sky-300; }
+    .guide-card__icon--purple { @apply bg-violet-500/10 text-violet-600 dark:text-violet-300; }
+    .guide-card__eyebrow { @apply mb-1 text-[0.625rem] font-bold uppercase tracking-[0.18em] text-primary; }
+    .guide-card h2 { @apply text-lg font-semibold tracking-[-0.015em] text-text-primary; }
+    .guide-card > p, .guide-card__heading + p { @apply text-sm leading-7 text-text-muted; }
+    .guide-steps { @apply space-y-5; }
+    .guide-steps li { @apply flex gap-4; }
+    .guide-steps__number { @apply pt-0.5 font-mono text-xs font-bold text-primary; }
+    .guide-steps h3 { @apply text-sm font-semibold text-text-primary; }
+    .guide-steps p { @apply mt-1 text-sm leading-6 text-text-muted; }
+    .guide-fields { @apply divide-y divide-border rounded-xl border border-border; }
+    .guide-field { @apply p-4; }
+    .guide-field strong { @apply text-sm font-semibold text-text-primary; }
+    .guide-field p { @apply mt-1 text-sm leading-6 text-text-muted; }
+    .guide-page__split { @apply grid gap-5 sm:grid-cols-2; }
+    .guide-card--note { @apply border-amber-500/25 bg-amber-500/5; }
+    .guide-card--warning { @apply border-rose-500/25 bg-rose-500/5; }
+    .guide-card--next { @apply flex flex-col gap-5 border-primary/25 bg-primary-soft/20 sm:flex-row sm:items-end sm:justify-between; }
+    .guide-card--next h2 { @apply max-w-xl; }
+    .guide-card--next > div > p:last-child { @apply mt-2; }
+    .guide-page__flow-link { @apply inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-accent-foreground transition hover:opacity-90; }
+    .guide-summary-card { @apply p-5; }
+    .guide-summary-card nav { @apply mt-3 flex flex-col gap-2 border-s-2 border-border ps-3; }
+    .guide-summary-card nav a { @apply text-sm text-text-muted transition hover:text-primary; }
+    .guide-summary-card--actions ul { @apply mt-3 space-y-3; }
+    .guide-summary-card--actions li { @apply flex items-start gap-2 text-sm leading-5 text-text-muted; }
+    .guide-summary-card--actions li span { @apply mt-0.5 text-primary; }
+    .guide-summary-card--tour { @apply relative overflow-hidden border-primary/25 bg-slate-950 text-white; }
+    .guide-summary-card--tour::after { content: ''; @apply absolute -end-8 -top-10 size-28 rounded-full bg-teal-400/20 blur-2xl; }
+    .guide-summary-card__spark { @apply mb-4 block text-xl text-teal-300; }
+    .guide-summary-card--tour .guide-card__eyebrow { @apply text-teal-300; }
+    .guide-summary-card--tour h2 { @apply text-base text-white; }
+    .guide-summary-card--tour p:last-child { @apply mt-2 text-sm leading-6 text-slate-300; }
+
+    html[data-font-scale="small"] { font-size: 93.75%; }
+    html[data-font-scale="large"] { font-size: 106.25%; }
+    html[data-accent="teal"] { --color-primary: oklch(0.47 0.105 194); --color-primary-soft: oklch(0.93 0.027 194); --color-accent: var(--color-primary); --color-accent-content: var(--color-primary); --color-accent-foreground: oklch(0.99 0.002 205); }
+    html[data-accent="indigo"] { --color-primary: oklch(0.50 0.16 275); --color-primary-soft: oklch(0.93 0.03 275); --color-accent: var(--color-primary); --color-accent-content: var(--color-primary); --color-accent-foreground: oklch(0.99 0.002 205); }
+    html[data-accent="amber"] { --color-primary: oklch(0.68 0.16 75); --color-primary-soft: oklch(0.94 0.045 85); --color-accent: var(--color-primary); --color-accent-content: var(--color-primary); --color-accent-foreground: oklch(0.22 0.03 70); }
+    html[data-accent="rose"] { --color-primary: oklch(0.58 0.18 10); --color-primary-soft: oklch(0.94 0.035 10); --color-accent: var(--color-primary); --color-accent-content: var(--color-primary); --color-accent-foreground: oklch(0.99 0.002 205); }
+    html.dark[data-accent="teal"] { --color-primary: oklch(0.74 0.11 194); --color-primary-soft: oklch(0.31 0.045 194); --color-accent-foreground: oklch(0.2 0.015 245); }
+    html.dark[data-accent="indigo"] { --color-primary: oklch(0.75 0.13 275); --color-primary-soft: oklch(0.30 0.055 275); --color-accent-foreground: oklch(0.2 0.015 245); }
+    html.dark[data-accent="amber"] { --color-primary: oklch(0.79 0.14 85); --color-primary-soft: oklch(0.34 0.055 75); --color-accent-foreground: oklch(0.2 0.03 70); }
+    html.dark[data-accent="rose"] { --color-primary: oklch(0.75 0.13 10); --color-primary-soft: oklch(0.34 0.055 10); --color-accent-foreground: oklch(0.2 0.015 245); }
+    html[data-content-width="wide"] .page-frame { max-width: 96rem; }
+    html[data-content-width="compact"] .page-frame { max-width: 72rem; }
+    html[data-table-density="comfortable"] [data-flux-table-row] > [data-flux-table-cell] { padding-block: 0.75rem; }
+    html[data-table-density="compact"] [data-flux-table-row] > [data-flux-table-cell] { padding-block: 0.35rem; }
+    html[data-table-density="compact"] [data-flux-table-row] { min-height: 2.25rem; }
+    html[data-sidebar-mode="collapsed"] body { grid-template-columns: 3.5rem minmax(0, 1fr) 0px; }
+    html[data-sidebar-mode="collapsed"] .app-sidebar { width: 3.5rem !important; max-width: 3.5rem; padding-inline: 0.5rem; overflow-x: hidden; }
+    html[data-sidebar-mode="collapsed"] .app-sidebar [data-flux-sidebar-group] > div:first-child,
+    html[data-sidebar-mode="collapsed"] .app-sidebar [data-flux-sidebar-item] [data-content],
+    html[data-sidebar-mode="collapsed"] .app-sidebar [data-flux-sidebar-brand] [data-content] { display: none; }
+    html[data-sidebar-mode="collapsed"] .app-sidebar [data-flux-sidebar-item] { width: 2.5rem; justify-content: center; padding-inline: 0.75rem; }
+    html[data-sidebar-mode="collapsed"] .app-sidebar [data-flux-sidebar-nav] { gap: 0.5rem; }
+    html[data-reduced-motion="true"] *, html[data-reduced-motion="true"] *::before, html[data-reduced-motion="true"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+
+    @media (max-width: 640px) {
+        .platform-assistant__drawer { width: 100vw; }
+    }
+
     .catalog-loading {
         @apply items-center gap-2 rounded-lg border border-border bg-surface-muted/60 px-3 py-2 text-sm text-text-muted;
     }

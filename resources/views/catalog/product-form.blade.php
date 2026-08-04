@@ -253,6 +253,7 @@ new #[Title('Product Card')] class extends Component {
     <x-page-header
         :title="$isEditing ? __('Edit product card') : __('Create product card')"
         :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
+        data-guide="product-form-header"
     >
         <x-slot:actions>
             <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
@@ -270,7 +271,7 @@ new #[Title('Product Card')] class extends Component {
     @endif
 
     <form wire:submit="save" class="space-y-5" novalidate>
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6">
+        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-identity">
             <div class="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
@@ -292,7 +293,7 @@ new #[Title('Product Card')] class extends Component {
             </div>
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6">
+        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-classification">
             <div>
                 <flux:heading size="lg">{{ __('Classification and type') }}</flux:heading>
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Only the approved standard, composite, and service types are available. Composite component lines are deferred until their policy is sufficiently defined.') }}</flux:text>
@@ -327,7 +328,7 @@ new #[Title('Product Card')] class extends Component {
             @endif
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6">
+        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-attributes">
             <div>
                 <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.') }}</flux:text>
@@ -357,7 +358,7 @@ new #[Title('Product Card')] class extends Component {
             <flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity later')" description="{{ __('This flag is stored for future inventory policy; TSK-011 creates no stock.') }}" />
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-5 p-4 sm:p-6">
+        <flux:card class="catalog-form-card space-y-5 p-4 sm:p-6" data-guide="product-form-media">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <flux:heading size="lg">{{ __('Protected product media') }}</flux:heading>

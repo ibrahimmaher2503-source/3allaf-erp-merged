@@ -11,6 +11,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -86,7 +87,7 @@ class AuditRecordingTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk009-request-id'));
 
-        \Illuminate\Support\Facades\Context::add('request_id', 'CONTEXT-REQUEST-0001');
+        Context::add('request_id', 'CONTEXT-REQUEST-0001');
 
         app(SaveBranchAction::class)->execute(['code' => 'AUD-03', 'name_ar' => 'ر', 'name_en' => 'R']);
 
