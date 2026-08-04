@@ -2,65 +2,82 @@
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
     dir="{{ in_array(app()->getLocale(), config('app.rtl_locales'), true) ? 'rtl' : 'ltr' }}"
+    class="overflow-x-hidden"
 >
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen overflow-x-hidden">
+        <flux:sidebar sticky collapsible="mobile" class="app-sidebar border-e">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Workspace')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="shopping-cart" :href="route('pos')" :current="request()->routeIs('pos')" wire:navigate>
-                        {{ __('POS') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="device-phone-mobile" :href="route('system.app')" :current="request()->routeIs('system.app')" wire:navigate>
-                        {{ __('System App Shell') }}
-                    </flux:sidebar.item>
-                    @can('manage-settings')
+            <flux:sidebar.nav class="gap-5">
+                @can('dashboard_reports.view')
+                    <flux:sidebar.group :heading="__('Dashboard')" class="grid">
+                        <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
+
+                <flux:sidebar.group :heading="__('Platform')" class="grid">
+                    @can('company_settings.view')
                         <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
                             {{ __('System Settings') }}
                         </flux:sidebar.item>
                     @endcan
-                    @can('manage-branches-stores')
+                    @can('pos_sales.view')
+                        <flux:sidebar.item icon="shopping-cart" :href="route('pos')" :current="request()->routeIs('pos')" wire:navigate>{{ __('POS') }}</flux:sidebar.item>
+                    @endcan
+                    @can('branches_stores.view')
                         <flux:sidebar.item icon="building-office-2" :href="route('admin.branches')" :current="request()->routeIs('admin.branches')" wire:navigate>
                             {{ __('Branches') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="building-storefront" :href="route('admin.stores')" :current="request()->routeIs('admin.stores')" wire:navigate>
                             {{ __('Stores & Mapping') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="inbox-stack" :href="route('admin.cash-drawers')" :current="request()->routeIs('admin.cash-drawers')" wire:navigate>
-                            {{ __('Cash Drawers') }}
-                        </flux:sidebar.item>
                     @endcan
-                    @can('view-authorization-baseline')
+                    @can('drawers_payments_tax_numbering_printers.view')
+                        <flux:sidebar.item icon="inbox-stack" :href="route('admin.cash-drawers')" :current="request()->routeIs('admin.cash-drawers')" wire:navigate>{{ __('Cash Drawers') }}</flux:sidebar.item>
+                    @endcan
+                    @can('users_roles_permissions.view')
                         <flux:sidebar.item icon="shield-check" :href="route('admin.authorization-baseline')" :current="request()->routeIs('admin.authorization-baseline')" wire:navigate>
                             {{ __('Authorization Baseline') }}
                         </flux:sidebar.item>
                     @endcan
-                    @can('view-platform-status')
+                    @can('audit_logs.view')
+                        <flux:sidebar.item icon="clock" :href="route('admin.audit')" :current="request()->routeIs('admin.audit')" wire:navigate>
+                            {{ __('Audit Logs') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="server" :href="route('system.health')" :current="request()->routeIs('system.health')" wire:navigate>
                             {{ __('System Health') }}
                         </flux:sidebar.item>
                     @endcan
-                    @can('view-ui-showcase')
-                        <flux:sidebar.item icon="paint-brush" :href="route('system.ui-showcase')" :current="request()->routeIs('system.ui-showcase')" wire:navigate>
-                            {{ __('UI Pattern Showcase') }}
-                        </flux:sidebar.item>
+                    @can('dashboard_reports.view')
+                        <flux:sidebar.item icon="device-phone-mobile" :href="route('system.app')" :current="request()->routeIs('system.app')" wire:navigate>{{ __('System App Shell') }}</flux:sidebar.item>
+                        <flux:sidebar.item icon="paint-brush" :href="route('system.ui-showcase')" :current="request()->routeIs('system.ui-showcase')" wire:navigate>{{ __('UI Pattern Showcase') }}</flux:sidebar.item>
                     @endcan
                 </flux:sidebar.group>
+
+                @can('products_categories_brands.view')
+                    <flux:sidebar.group :heading="__('Catalog')" class="grid">
+                        <flux:sidebar.item icon="cube" :href="route('catalog.products')" :current="request()->routeIs('catalog.products')" wire:navigate>
+                            {{ __('Products') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="squares-2x2" :href="route('catalog.categories')" :current="request()->routeIs('catalog.categories')" wire:navigate>
+                            {{ __('Categories') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="tag" :href="route('catalog.brands')" :current="request()->routeIs('catalog.brands')" wire:navigate>
+                            {{ __('Brands') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
 
-            <div class="px-4 py-2 hidden lg:flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 text-xs">
+            <div class="px-4 py-3 hidden lg:flex items-center justify-between border-t border-border text-xs">
                 <div x-data="{ online: navigator.onLine }"
                      x-on:online.window="online = true"
                      x-on:offline.window="online = false"

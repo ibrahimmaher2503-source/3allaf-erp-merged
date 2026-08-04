@@ -19,18 +19,18 @@
                 <div class="hidden md:flex items-center gap-2 text-xs">
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Branch Context') }}:</span>
-                        <span class="font-semibold">Main Branch</span>
+                        <span class="font-semibold">{{ __('Not configured') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Selling Store') }}:</span>
-                        <span class="font-semibold">Main Retail Store</span>
+                        <span class="font-semibold">{{ __('Not configured') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Cash Drawer') }}:</span>
-                        <span class="font-semibold">Drawer 01</span>
+                        <span class="font-semibold">{{ __('Not configured') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        <span class="font-semibold">{{ __('Active Shift') }}</span>
+                        <span class="font-semibold">{{ __('No active shift') }}</span>
                     </div>
                 </div>
 

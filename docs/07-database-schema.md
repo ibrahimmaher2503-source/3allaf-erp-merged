@@ -147,3 +147,12 @@ This is a logical design, not SQL or a migration specification. The database eng
 ## Ledger Reconciliation Rules
 
 `stock_balances` equals approved `stock_movements` by product/store; gift-card summary equals `gift_card_ledger`; loyalty and each wallet balance equals its respective ledger; shift expected totals derive from approved payments and cash movements; party settlement derives from final invoice, party payments, and Party Wallet ledger. Any material mismatch is an incident requiring investigation and a referenced correction, not a direct balance edit.
+
+## Detailed Contract Alignment (DEC-040)
+
+`docs/36-module-data-contracts.md` is the detailed local contract baseline for already-approved entities, source references, idempotency, versions, ledgers, constraints, and cross-module relations. It supplements this schema; it does not authorize migrations or change the production database decision.
+
+- **Derived Implementation Convention:** business entities use stable references, audit/request correlation, explicit status, and optimistic versioning where the relevant contract requires them.
+- **Derived Implementation Convention:** approved/final records and ledger movements retain source references and are not physically deleted.
+- **Owner-Configurable Value:** exact field precision, production database types, retention durations, provider metadata, and printer/device configuration.
+- **Production Decision Pending:** production database engine/version, production master data, final legal wording, storage/backup provider, and final commercial or numeric limits.

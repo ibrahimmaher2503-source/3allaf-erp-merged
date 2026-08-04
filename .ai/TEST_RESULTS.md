@@ -1,12 +1,27 @@
 # Test and Verification Status
 
 **Implementation status:** In Progress  
-**Automated tests:** Not Created  
-**Automated test execution:** Not Run  
+**Automated tests:** Focused review-regression tests created under the explicit 2026-08-03 owner instruction
+**Automated test execution:** Passed (14 tests, 73 assertions)
 **Manual browser verification:** Partial — guest and 404 scenarios verified; authenticated health screen pending safe credentials
 **User acceptance testing:** Not Started
 
 Automated tests remain deferred by explicit project-owner directive. No automated test code was created or executed during this implementation run.
+
+## TSK-009 Approval Foundation Static Verification - 2026-08-03
+
+- PHP syntax lint passed for the new approval enum, source contract, model, policy, six named actions, transition helper, migration, and policy registration.
+- `php artisan migrate --force --no-ansi` applied `2026_08_03_000015_create_approval_records_table`; `php artisan migrate:status --no-ansi` reports it as ran. Schema inspection confirmed all 25 documented columns.
+- No approval UI, route, source document, or current Platform approval action exists legitimately. No browser verification was run for approval scenarios, and no approval fixture or fake workflow was created.
+- No PHPUnit, Pest, or other backend automated suite was created or run. No commit or push occurred.
+
+## TSK-009 Protected Attachment Foundation Local Verification - 2026-08-03
+
+- PHP syntax lint passed for attachment config, enum, data objects, model, validator, storage/access/delivery/link/revoke/expire Actions, and migration.
+- `php artisan migrate --force --no-ansi` applied `2026_08_03_000016_create_attachments_table`; migration status and schema inspection passed with 25 columns and the required indexes declared in the migration.
+- One temporary local verification script (removed immediately after execution; not a test file) confirmed: temporary safe PNG storage on the private disk; generated UUID filename; one `attachment_stored` audit event; unsafe script rejection; 8 MB product-image limit rejection; traversal filename neutralization; duplicate hash accepted only because no source policy was supplied; revoke to `deleted`; revoked/non-deliverable direct-ID delivery denied with 403; validation rejection events without successful-upload events; and no absolute storage path in attachment audit metadata.
+- No legitimate source record exists, so source-policy authorization, branch/store isolation against a real source, upload/link UI, browser delivery, replacement relation, and post-transaction storage-failure scenario were not claimed. The requested docs/37-validation-and-error-contracts.md and docs/38-output-and-file-contracts.md files are absent; existing numbered UI/print specifications were used.
+- No PHPUnit, Pest, or backend automated suite was created or run. No browser verification, commit, or push occurred.
 
 ## Command Verification
 
@@ -141,3 +156,291 @@ Local HTTP server smoke testing via curl confirmed status code 302 and correlati
 - Implemented local-only SQLite-compatible migration (`2026_08_03_000011_create_cash_drawers_table.php`), `CashDrawer` Eloquent model, relationships (`Branch`, `Store`, `User`), `SaveCashDrawerAction` with DB transactions, correlation ID logging, append-only settings audit log under DEC-035, and full-page Livewire management UI at `/admin/cash-drawers` under `@can('manage-branches-stores')` gate.
 - Verified PHP syntax (`php -l`), migration execution (`php artisan migrate --force`), migration status (`php artisan migrate:status`), route discovery (`php artisan route:list`), view caching (`php artisan view:cache`), Vite production build (`npx vite build`), git diff check (`git diff --check`), and guest HTTP redirect protection for `/admin/cash-drawers`.
 - Explicit BLK-006 callout banner and TBD shift dependency guards added to the UI and action methods without fabricating shift or opening balance records.
+
+## Local Demo Provisioning - 2026-08-03
+
+- Actual local SQLite migration execution completed successfully through migration `2026_08_03_000012_create_authorization_baseline_tables`.
+- Actual local seed execution completed successfully using `Database\\Seeders\\LocalDemoSeeder`.
+- Actual records after seeding: `users=1`, `companies=1`, `branches=1`, `stores=2`, `cash_drawers=1`; the `demo.admin@toyjoy.local` local super-admin account exists and is email-verified.
+- PHP syntax checks for both seeder files and `git diff --check` passed. No automated test suite was created or executed.
+- Authenticated browser scenarios are pending manual execution. No TSK-001 through TSK-008 task is marked complete by this provisioning step.
+- With the user-started local server running at `http://127.0.0.1:8092`, an actual HTTP check returned `200` for `/login`; an unauthenticated request to `/admin/settings` returned `302` to `/login`.
+
+## Local Route and Access Smoke Check - TSK-001 to TSK-008 - 2026-08-03
+
+**Method:** Actual manual HTTP smoke checks against the user-started local Laravel server at `http://127.0.0.1:8092`. This is not an authenticated browser interaction test and is not an automated suite.
+
+| Task | Actual result | Status |
+|---|---|---|
+| TSK-001 | `/` and `/forbidden` were reachable; `/forbidden` returned its expected 403 response. All 18 local migrations report `Ran`. | Partial evidence only |
+| TSK-002 | `/login` and `/forgot-password` returned 200; every protected route redirected a guest to `/login`. Credential entry, reset flow, rate limiting, logout, and session lifecycle were not exercised. | Pending authenticated browser verification |
+| TSK-003 | `/dashboard`, `/pos`, and `/system/app` redirected a guest to `/login`; routes exist. Responsive, RTL/LTR, PWA, and connectivity UI behavior were not exercised. | Pending authenticated browser verification |
+| TSK-004 | `/admin/system/ui-showcase` redirected a guest to `/login`; route exists. Shared UI interactive, print, responsive, and locale states were not exercised. | Pending authenticated browser verification |
+| TSK-005 | `/admin/settings` redirected a guest to `/login`; route exists and demo settings records are seeded. Authenticated CRUD, validation, audit, and print scenarios were not exercised. | Pending authenticated browser verification; BLK-008 remains open |
+| TSK-006 | `/admin/branches` and `/admin/stores` redirected a guest to `/login`; both routes exist and demo master records are seeded. Authenticated CRUD/mapping scenarios were not exercised. | Pending authenticated browser verification; BLK-006 remains open |
+| TSK-007 | `/admin/cash-drawers` redirected a guest to `/login`; route exists and a demo drawer is seeded. Authenticated lifecycle/dependency scenarios were not exercised. | Pending authenticated browser verification; BLK-006 remains open |
+| TSK-008 | `/admin/authorization-baseline` redirected a guest to `/login`; route exists. No roles, permissions, grants, or scopes were seeded or tested. | Blocked by BLK-005 and BLK-007 |
+
+- Protected routes checked as a guest: `/dashboard`, `/pos`, `/system/app`, `/admin/system/health`, `/admin/system/ui-showcase`, `/admin/settings`, `/admin/branches`, `/admin/stores`, `/admin/cash-drawers`, and `/admin/authorization-baseline`; every request returned `302` to `/login`.
+- Route inventory was checked with `php artisan route:list`; migration inventory was checked with `php artisan migrate:status`.
+- No automated tests were created or executed. No task has been marked complete.
+
+## Authenticated Local Route Verification - TSK-001 to TSK-008 - 2026-08-03
+
+**Method:** Manual authenticated HTTP verification against the user-started local server. The local demo account was authenticated through Fortify with username `demo-admin`; the login form intentionally uses `username`, not the seeded email address.
+
+- Login succeeded and redirected to the authenticated home path. The seeded password hash was independently confirmed before the request.
+- Each authenticated route returned `200`: `/dashboard`, `/pos`, `/system/app`, `/admin/system/health`, `/admin/system/ui-showcase`, `/admin/settings`, `/admin/branches`, `/admin/stores`, `/admin/cash-drawers`, and `/admin/authorization-baseline`.
+- During this verification, rendering defects were found and corrected: unsupported `flux:button size="lg"` on POS, server-side evaluation of `navigator.onLine` in the System App view, invalid `fingerprint` Flux icon names, and invalid combined `inset` values in branch/store badges. The affected authenticated routes were rechecked successfully after the fixes.
+- `php artisan view:clear`, `php artisan view:cache`, PHP syntax checks for affected Blade files, and `git diff --check` completed successfully. No automated test suite was created or run.
+- This evidence confirms authenticated route rendering and the current local super-admin gate behavior only. It does not verify visual browser behavior, Livewire mutation flows, print output, responsive layouts, RTL/LTR rendering, PWA/offline behavior, password reset lifecycle, or owner-required policy decisions.
+- TSK-008 remains blocked: this local account bypasses current temporary gates through `is_super_admin`; no roles, permissions, grants, scopes, or final authorization matrix were created, approved, or tested.
+
+## Local Visual Verification - TSK-001 to TSK-008 - 2026-08-03
+
+**Method:** Playwright controlled the locally installed Chrome browser under owner-authorized local exception DEC-036. The browser logged in with local username `demo-admin` and captured 23 screenshots under `artifacts/visual-verify/`.
+
+- Desktop Arabic RTL verification passed for Dashboard, POS, System App, System Health, UI Pattern Showcase, Settings, Branches, Stores, Cash Drawers, and Authorization Baseline at `1440x1000`.
+- Mobile Arabic RTL verification passed for POS, System App, UI Pattern Showcase, Settings, Branches, Stores, and Cash Drawers at `390x844`.
+- Desktop English LTR verification passed for Dashboard, POS, Settings, Branches, Stores, and Cash Drawers at `1440x1000`.
+- Every captured page had the expected `dir` value, no horizontal document overflow, and no browser console or page errors. Representative screenshots were visually inspected for layout, clipping, and overlap.
+- Default/empty/disabled POS presentation and the shared loading, empty, error, denied, success, and disabled pattern examples are present on the verified UI Pattern Showcase route. Guest protection was previously verified separately through redirects to `/login`.
+- A visual audit found and removed hardcoded operational context from the POS header. Branch, store, and drawer now display `Not configured`; shift displays `No active shift` until the required approved context and shift rules exist.
+- Verification artifacts: `artifacts/visual-verify/results.json` and 23 PNG screenshots. `node scripts/ai/visual-verify.mjs`, `php artisan view:cache`, and `git diff --check` completed successfully after the correction.
+- This local visual evidence does not close TSK-001 through TSK-007: their Definition of Done still requires owner-controlled infrastructure, security, device, business-master, policy, and print/backup evidence. TSK-008 remains blocked by BLK-007 and DM 1.3.
+
+## TSK-008 Authorization Foundation - 2026-08-03
+
+- `CanonicalAuthorizationSeeder` seeded 9 canonical roles and 276 canonical permissions from the approved module/action matrix.
+- `demo-admin` is assigned the canonical System Administrator role; existing current-scope permissions are enforced through `User::hasPermission()` and Laravel Gate evaluation.
+- Browser verification confirmed opening and saving the audited user role/branch/store scope modal. `update_user_authorization` audit records were created.
+- Future-module permissions are seeded but have no grants or enforcement until their modules exist; traceability is documented in `docs/16-authorization-traceability.md`.
+
+## TSK-008 Completion Verification - 2026-08-03
+
+This section supersedes earlier TSK-008 blocked and no-test statements. DEC-038 approved the matrix and the owner authorized focused local automated verification.
+
+| Check | Command | Actual result |
+|---|---|---|
+| Syntax | `php -l app/Models/User.php app/Models/Branch.php app/Models/Store.php app/Models/CashDrawer.php app/Providers/AppServiceProvider.php app/Actions/Platform/SaveUserAuthorizationAction.php database/seeders/CanonicalAuthorizationSeeder.php routes/web.php` | Passed; no syntax errors |
+| Local seed | `php artisan optimize:clear; php artisan db:seed --force` | Passed; local demo data, nine roles, and 276 permission records seeded |
+| Authorization feature tests | `php artisan test tests/Feature/AuthorizationEnforcementTest.php` | Passed: 7 tests, 41 assertions |
+| Representative-role browser verification | `node scripts/ai/authorization-verify.mjs` | Passed: Super Admin, Branch Manager, Cashier, Reviewer, and No Access each received the expected 200/403 responses; Branch Manager did not see `Add Branch` |
+| Current-screen RTL/LTR visual verification | `node scripts/ai/visual-verify.mjs` | Passed: 23 screenshots; expected document direction, no horizontal overflow, no console/page errors |
+| Diff whitespace | `git diff --check` | Passed |
+| Frontend production build | `npm run build` | Passed; Vite completed in 6.62 seconds |
+
+- Automated coverage verifies authorized routes, direct URL denials, a forged Livewire management action denial, protected direct service calls, branch/store isolation, role assignment audit logging, final-system-administrator protection, Super Admin access, and no-permission access denial.
+- Browser evidence: `artifacts/authorization-verify/results.json` plus five role screenshots; `artifacts/visual-verify/results.json` plus 23 RTL/LTR screenshots. Representative `branch-manager-branches.png` was visually inspected and confirms the view-only page is coherent and write controls are hidden.
+- **TSK-008 status: Completed for current scope.** Future modules remain explicitly deferred in `docs/16-authorization-traceability.md`; no nonexistent module, Policy, workflow, or production grant was fabricated.
+
+## Foundation Architecture Refactor - 2026-08-03
+
+- docs/08-architecture.md was updated to the approved minimal architecture; DEC-041 is approved.
+- Platform routes, Platform PHP files, and Platform views moved in separate slices while retaining existing URLs, route names, middleware, Gates, and layouts.
+- Actual technical checks passed: PHP lint for changed routes/provider/actions/models/User/seeders; php artisan route:list for admin and system routes; and php artisan view:cache.
+- No automated tests were created or run. No browser verification was performed. This refactor does not close any task or milestone.
+
+## Documentation-Only Detailed Specification Integration - 2026-08-03
+
+- Created `AI_INDEX.md`; updated `AGENTS.md` to task-aware reading; validated and integrated docs/30 through docs/39 under DEC-040.
+- Static checks passed: 10 detailed specifications exist; 44 task IDs are unique and each has one router entry; 44 router screen IDs exist in `.ai/UI_SCREENS.md`; 51 task PRD IDs resolve in `docs/02-prd.md`; DEC-040 and BLK-001 through BLK-017 resolve; and 52 Markdown files have no unresolved local links.
+- `.ai/UI_SCREENS.md` was reviewed against docs/37; no already-approved Phase 1 screen or route clarification was missing, so no registry change was needed. `git diff --check` passed.
+- No application code changed. No automated tests were created or run. No browser verification or browser automation was performed.
+
+## Documentation-Only Policy Baseline Update - 2026-08-03
+
+- Confirmed the presence of `docs/17-approval-policy.md` through `docs/29-rental-asset-policy.md`.
+- Documentation checks passed: 13 approved policy documents exist; required policy references are present in 23 task sections; project Markdown-link review found no resolvable local links to validate; `git diff --check` passed.
+- Updated project-control documentation under DEC-039 to adopt the approved local-development policy baseline.
+- No application feature implementation was performed for this update.
+- No automated tests were created or run.
+- No browser verification was run.
+
+## Foundation Refactor Review Remediation - 2026-08-03
+
+This entry supersedes the preceding refactor-only verification statement for the explicitly requested review remediation. It is a narrow exception to the otherwise deferred automated-test directive.
+
+| Check | Command | Result |
+|---|---|---|
+| Focused seeder and Platform tests | `php artisan test --filter='(LocalDemoSeederSafetyTest|PlatformRefactorLivewireTest|AuthorizationEnforcementTest)'` | Passed: 14 tests, 73 assertions |
+| Full test suite | `php artisan test` | Passed: 14 tests, 73 assertions |
+| Moved Platform route registration | `php artisan route:list --path=admin` | Passed: seven moved Livewire routes registered |
+| Blade compilation | `php artisan view:cache` | Passed |
+| Local browser setup | `php artisan migrate --force; php artisan db:seed --force` | Passed; no pending migrations; local-only demo data seeded |
+| Platform visual verification | `node scripts/ai/visual-verify.mjs` | Passed: 23 screenshots, expected RTL/LTR direction, no horizontal overflow, no console/page errors |
+| Role browser verification | `node scripts/ai/authorization-verify.mjs` | Passed: expected 200/403 outcomes for five representative local users |
+| Diff whitespace | `git diff --check` | Passed |
+
+- `LocalDemoSeeder` now rejects every non-`local` environment. `DatabaseSeeder` calls it only in `local`; production still seeds canonical roles and permissions. `CanonicalAuthorizationSeeder` likewise keeps known demo users and local scopes out of non-local environments.
+- `LocalDemoSeederSafetyTest` verifies local execution, production rejection, and that `DatabaseSeeder` in production creates no `demo.admin@toyjoy.local` account while retaining the `system-administrator` role seed.
+- `PlatformRefactorLivewireTest` verifies authenticated HTTP rendering for Settings, Branches, Stores, Cash Drawers, Authorization Baseline, System Health, UI Showcase, and System App; hydration for all seven moved Livewire aliases; branch modal action/validation/rerender; and UI Showcase interaction/rerender. The updated authorization test retains coverage for the moved `platform::admin.branches` alias.
+- Browser automation was run. An independent manual browser workflow was not run for this review; automated screenshots do not replace hands-on mutation, print, or broader TSK-009 verification.
+
+## UI Foundation Refinement - 2026-08-03
+
+- Implemented the current Platform visual-foundation slice: semantic CSS tokens, compact Flux sidebar grouping, shared Blade composition patterns, UI Showcase refinement, and Authorization Baseline presentation refinement.
+- Passed: PHP lint for modified Blade files, `php artisan route:list --path=admin`, `npm run build`, and `git diff --check`.
+- Attempted: `php artisan view:cache`. It exceeded the environment execution limit and is not a passing result.
+- Not run: manual browser verification, browser automation, PHPUnit, Pest, Playwright, Cypress, or any automated application test.
+- Required manual follow-up: authenticated UI Showcase and Authorization Baseline rendering, modal open/save/validation behavior, denied direct URL, RTL and LTR at desktop and mobile, console, network, overflow, and keyboard checks.
+
+## TSK-009 Initial Audit Foundation - 2026-08-03
+
+| Check | Command | Actual result |
+|---|---|---|
+| PHP syntax | `php -l` for the new audit model, actions, policy, migration, and affected Platform actions | Passed; no syntax errors |
+| Migration preview | `php artisan migrate --force --pretend` | Passed; `audit_logs` schema and indexes were generated as expected |
+| Local migration | `php artisan migrate --force` | Passed; `2026_08_03_000013_create_audit_logs_table` ran in batch 3 |
+| Historical audit preservation | `php artisan tinker --execute="dump([...AuditLog::count(), ...SettingsAuditLog::count()])"` | Passed; 2 legacy settings audit rows and 2 backfilled unified audit rows are present |
+| Route registration | `php artisan route:list --path=admin/audit` | Passed; `admin.audit` Livewire route is registered |
+| Blade compilation | `php artisan view:cache` | Passed |
+| Production asset build | `npm run build` | Passed; Vite build completed with the existing small shared bundle |
+| Diff whitespace | `git diff --check` | Passed |
+
+- Browser-only manual verification was **not run** in this session. No browser automation, PHPUnit, Pest, Playwright, Cypress, or other automated application test was created or run.
+- Required manual audit scenarios remain: authenticated render; filters and pagination; detail redaction; denied direct route; scope-restricted visibility; a settings/branch/store/drawer/authorization mutation producing one audit event; Arabic RTL and English LTR on desktop/mobile; console and network review.
+
+## TSK-009 Audit Browser Verification Update - 2026-08-03
+
+- Interactive Chrome launch was attempted with `Start-Process` for `http://127.0.0.1:8092/admin/audit`; the execution policy rejected the command before it ran. Chrome therefore did not start from this session. The application itself was reachable: `curl.exe --max-redirs 0 http://127.0.0.1:8092/admin/audit` returned `302` to `/login`.
+- Local-only browser-control verification was then run under the owner authorization, without creating a permanent browser-test file. It is recorded separately and does not replace the required interactive manual review.
+- `demo-admin` signed in with the approved local password and received `200` at `/admin/audit`; the Audit Logs navigation link was visible. Two legacy backfilled records were displayed. Request-ID search reduced the visible rows from 2 to 1; the event filter retained the two matching records; and the detail modal rendered the recorded before/after values. No password or local demo password was present in the audit detail payload. The literal `token` occurs only in normal CSRF/Livewire page markup, not in the audit values.
+- `demo-reviewer` received `200`, saw the navigation link, and received the expected empty state because it has no branch/store scope. `demo-branch-manager`, `demo-cashier`, and `demo-no-access` had no Audit Logs link and direct `/admin/audit` requests returned the expected `403` denied page without audit content. The corresponding Console `403` resource messages are expected denial diagnostics, not application failures.
+- A permitted local Branch policy-notes edit produced exactly one `update_branch` audit record with `branch_id=1`. No Console errors or failed network responses occurred during the authorized admin, reviewer-empty, RTL, desktop, or mobile browser-control paths.
+- Arabic RTL and English LTR desktop captures were completed. The mobile capture found unusable table columns; the page was corrected to render compact per-event cards below `sm`, then rechecked at `390x844` with `documentWidth`, `bodyWidth`, and viewport width all `390` and with the View actions visible. The reviewer empty state was also corrected and rechecked.
+- Pending: interactive manual browser review; branch/store scoped-record visibility and direct cross-scope detail denial; store-scope case; nested sensitive-key redaction with a safe representative record; pagination/out-of-range behavior with more than one page; idempotent backfill rerun; all listed Platform mutation types; failed/unauthorized/rolled-back/duplicate mutation cases. A browser-driven attempt to add the reviewer branch scope through Authorization Baseline was rejected by the existing `At least one system administrator must remain assigned.` validation, so it did not alter data and cannot evidence scope isolation.
+- Browser-control artifacts: `artifacts/tsk-009-audit-browser-control/01-login.png`, `02-audit-desktop-en.png`, `03-filtered-request-id.png`, `04-detail-modal.png`, `05-audit-desktop-ar-rtl.png`, `07-audit-mobile-ar-rtl-fixed.png`, `08-demo-*-audit-access.png`, `09-reviewer-empty-state.png`, `10-branch-audit-event.png`, and accompanying JSON summaries.
+- No PHPUnit, Pest, or other automated application test suite was created or run. No commit or push was performed.
+## TSK-009 Audit Browser-Control Continuation - 2026-08-03
+
+- Owner-authorized local browser control verified the audit slice with `demo-admin` and `demo-reviewer`. Two local verification branches and two selling stores produced 60 scoped fixture events plus one global event; the Super Admin can view all records.
+- Reviewer scope was verified first for Branch #1 and then for Store #3. Visible filters exposed only the assigned scope; URL query manipulation did not broaden it. Global/null-scope events remained visible only to the Super Admin. Branch Manager remains denied because the canonical matrix does not grant `audit_logs.view` to that role.
+- A forged Reviewer `showAudit` call for an out-of-scope event returned HTTP 403. The denial response contained no fixture secret value. Console recorded only the expected 403 resource error.
+- Nested fixture values for password, confirmation, token, access/refresh token, secret, client secret, API key, authorization, cookie, and recovery codes were stored and rendered as `[redacted]`. No raw fixture value appeared in rendered HTML or captured Livewire response. Database inspection found zero raw password/API-key/authorization/cookie values across fixture rows.
+- Pagination verified 60 bounded fixture records across desktop pages 1-3 with stable non-overlapping ordering and retained event filter. The audit screen now has a page-local mobile Previous/Next control; mobile pages 1 and 2 render 20 cards each at `390x844` with no horizontal overflow.
+- The legacy command `platform:backfill-legacy-settings-audit` was run twice after migration `2026_08_03_000014`; both runs inserted 0 rows. Exactly two legacy source keys remain in `audit_logs` and `settings_audit_logs` remains historical compatibility data.
+- Not yet verified: full Platform mutation/failure matrix (company, payment/tax, store, mapping, drawer), rollback/no-orphan, and duplicate-submission behavior. Audit Foundation is therefore not complete.
+- Browser artifacts: `artifacts/tsk-009-audit-browser-control/12-26-*`. No PHPUnit, Pest, or backend automated suite ran; no commit or push occurred.
+## TSK-009 Audit Mutation and Failure Verification - 2026-08-03
+
+`Audit Foundation slice completed and browser-verified for the approved local Platform scope using owner-authorized browser control. Interactive Chrome process launch remains blocked by execution policy.`
+
+- Successful Super Admin mutations created exactly one `audit_logs` row each: `update_local_settings` #67 (Company #1), `create_payment_method` #68 (PaymentMethod #2), `create_tax_setting` #69 (TaxSetting #2), `update_store` #70 (Store #3, Branch #2/Store #3), `map_branch_selling_store` #71 (BranchSellingStore #2, Branch #2/Store #3), and `create_cash_drawer` #72 (CashDrawer #2, Branch #1/Store #1). Every row has actor #1 and a request ID. `settings_audit_logs` remained at 2 rows.
+- Browser-controlled existing form actions persisted the expected local records and evidence screenshots `27` through `32`. Before/after payloads are present in the corresponding audit rows; no sensitive fixture value was introduced.
+- Validation: an empty cash-drawer code rendered validation feedback (`33-validation-denial.png`), created no drawer and no audit row. Authorization: Branch Manager forged `openEditStoreModal(3)` returned HTTP 403 (`35-authorization-denial.*`) and created no extra `update_store` event.
+- Rollback: a cash drawer action began its existing transaction with Branch #1 and Store #3, then failed the branch/store consistency guard. `AUD-ROLLBACK` was not persisted and no matching audit row exists (`34-transaction-rollback.png`).
+- Duplicate: submitting the same Store #3 -> Branch #2 selling-store mapping twice retained one mapping and one `map_branch_selling_store` event; the documented action returned the current mapping without a second write.
+- No unexpected Console errors occurred during successful flows. Expected 403 responses were recorded only for forged denied actions. No PHPUnit, Pest, or backend automated suite ran; no commit or push occurred.
+
+## TSK-009 Immutability and Correction Foundation Local Verification - 2026-08-03
+
+- Temporary local action-level check exercised the source contract and guards: draft edit allowed; approved/immutable state accepted; unauthorized edit, stale version/hash, scope mismatch, unauthorized correction type, duplicate reference, and missing/invalid reference conditions denied; original source preservation accepted.
+- The correction transaction boundary was forced to fail before completion and confirmed no `correction.created` audit row remained. This verifies rollback behavior only; no real correction source or business effect was fabricated.
+- PHP syntax lint and `git diff --check` passed. No migration, route, view, asset, PHPUnit, Pest, or automated browser command was run for this slice.
+- Browser verification is deferred because no legitimate current immutable business document or correction UI exists. No Phase 1 gate or production readiness is claimed.
+
+## TSK-009 Final Closure Review - 2026-08-04
+
+- PHP syntax lint passed for all TSK-009 Platform actions, models, enums, data contracts, guards, policies, commands, config, and migrations.
+- `php artisan migrate:status --no-ansi`: migrations `000013` through `000016` are `Ran`.
+- Schema inspection passed for `audit_logs` (19 columns), `approval_records` (25 columns), and `attachments` (25 columns), including required indexes and foreign keys.
+- `php artisan route:list --path=admin/audit --no-ansi` found the guarded `GET|HEAD admin/audit` route. `php artisan view:cache` completed successfully after the initial environment timeout. No frontend files changed, so `npm run build` was not required.
+- `git diff --check` passed. Existing Audit browser-control evidence remains accepted; no browser scenarios were rerun because no TSK-009 UI code changed.
+- Fixed and rechecked two local consistency defects: authenticated expiry actions require explicit authorization, and approval/attachment/correction audit rows accept the persisted source request ID.
+- No PHPUnit, Pest, automated browser scripts, commit, or push occurred. No Phase 1 gate, UAT acceptance, or production readiness is claimed.
+
+## Automated Regression Suite — TSK-001 through TSK-010 — 2026-08-04
+
+Owner-authorized automated testing session. Full detail: `.ai/AUTOMATED_TEST_REPORT_TSK_001_010.md`.
+
+- **Framework:** existing PHPUnit 12.5 installation (Pest not installed and not added). Livewire component tests via `Livewire::test()`. Browser evidence via the existing Playwright dev dependency.
+- **Environment:** in-memory SQLite (`:memory:`), array cache/session/mail, sync queue, log broadcast, empty S3 credentials — all asserted at runtime by `tests/Feature/EnvironmentSafetyTest.php`. `.env.testing` does not exist; isolation comes from `phpunit.xml.dist`. `php artisan down` was deliberately not used. No production system, credential, or data was touched.
+- **Result:** `php artisan test` — **223 tests, 222 passed, 1 failed, 1112 assertions**. 209 tests are new. The single failure is the deliberate regression test for DEFECT-001 and is left failing so the defect stays visible.
+- **Arrival state:** the pre-existing suite was already red (14 tests, 13 passed, 1 failed) because `AuthorizationEnforcementTest` still asserted the retired `settings_audit_logs` writer. TSK-009 moved that write to `audit_logs` with no dual write; the stale assertion was corrected in the test file only.
+- **Coverage:** TSK-001 partially testable (15/15 pass); TSK-002 partially testable (18/18); TSK-003 partially testable (11/11); TSK-004 partially testable (11/11); TSK-005 partially testable (12/12); TSK-006 13/14 with one product defect; TSK-007 passed with an absent shift dependency (11/11); TSK-008 passed (18/18); TSK-009 partially testable (90/90 across recording, append-only, scope, redaction, backfill, screen, and approval foundation); TSK-010 **Not testable — implementation absent** (3 absence guards).
+- **Browser evidence:** `scripts/ai/tsk-001-010-browser-verify.mjs` produced 48 screenshots and `results.json` in `artifacts/tsk-001-010-browser/` across desktop LTR, desktop RTL, tablet RTL, and 390x844 mobile RTL. `lang`/`dir` correct on every screen; PWA manifest and service worker served and registered; `X-Request-ID` present; role denials confirmed in the browser.
+- **Console/Network:** 14 console errors and 10 failed requests. All failed requests and 10 console errors are the expected 403/404 denial checks. **4 are a genuine JavaScript syntax error on the UI Pattern Showcase (DEFECT-002).** One responsive failure: `/admin/system/health` overflows horizontally at 390x844 (DEFECT-003).
+- **Defects reported, not fixed:** DEFECT-001 unscoped selling-store query at `resources/views/platform/admin/branches.blade.php:476` discloses out-of-scope store codes/names to a branch-scoped user (High); DEFECT-002 stray apostrophe in `wire:click="$set('showDialog', true')"` at `resources/views/platform/system/ui-showcase.blade.php:142,230` (Medium); DEFECT-003 mobile horizontal overflow on System Health (Low); DEFECT-004 `verified` middleware inert because `App\Models\User` does not implement `MustVerifyEmail` while Fortify email verification is enabled (Low / owner decision).
+- **Concurrency caveat:** an implementation agent was modifying this repository during the session. The attachment slice (`2026_08_03_000016_create_attachments_table.php` and `*Attachment*` actions) appeared mid-run and is **excluded** from coverage in both directions. The development SQLite file changed from that concurrent work and from this session's browser logins writing database session/cache rows; the PHPUnit suite itself never opened it (`:memory:` assertions). Two absence guards (TSK-010 catalog, TSK-009 immutability/correction) are designed to fail when those slices land.
+- **Not replaced:** interactive manual visual RTL/LTR, responsive, Console, Network, and print verification by a human remains required and outstanding.
+- **No production code changed. No task status changed. No commit or push occurred.**
+
+## Defect Remediation - TSK-001 through TSK-010 Report Findings - 2026-08-04
+
+- **DEFECT-001 (High) fixed:** `resources/views/platform/admin/branches.blade.php` now builds selling-store options through `Store::visibleTo(auth()->user())` before applying selling-store/status filters. The mapping write authorization path was not weakened. `BranchStoreMappingTest` passed 14/14 (57 assertions), including the intentional cross-scope regression coverage. Browser-control Branch Manager access to `/admin/branches` returned HTTP 200 and rendered only the in-scope local store code (`DEMO-CAI`); no `OTHER-SELL` fixture appeared in HTML.
+- **DEFECT-002 (Medium) fixed:** all malformed UI Showcase dialog Livewire expressions now use valid `$set('showDialog', true|false)` syntax. Browser-control verification at `/admin/system/ui-showcase` confirmed Open, Cancel, and Confirm transitions. No JavaScript syntax error was observed; the only captured console error was the expected HTTP 403 response from the setup/denial navigation to `/dashboard`.
+- **DEFECT-003 (Low) fixed:** System Health now bounds its content, wraps long request IDs/timestamps, contains the table overflow, and clips shell-level mobile overflow in the shared app layout. Browser-control checks at `/admin/system/health` with 390x844 measured `scrollWidth=clientWidth=390` in both Arabic RTL and English LTR. Evidence: `artifacts/defect-003-health-ar-390x844.png` and `artifacts/defect-003-health-en-390x844.png`.
+- **DEFECT-004 remains an owner decision:** Fortify email verification remains enabled and `verified` middleware remains applied, while `App\\Models\\User` does not implement `MustVerifyEmail`, so verification is currently inert. No email-verification behavior was changed.
+- **Focused checks:** `BranchStoreMappingTest` 14/14 (57 assertions), `SharedUiFoundationTest` 11/11 (57 assertions), and `PlatformOperationalBaselineTest` 15/15 (53 assertions) passed. `php artisan view:cache`, `npm run build`, and `git diff --check` passed. No test assertion was weakened or removed, no task status was changed, and no commit or push occurred.
+
+## Phase 1 Closure Audit — TSK-001 through TSK-008 — 2026-08-03
+
+### Browser environment and accounts
+
+- Local server used: `http://127.0.0.1:8093` after clearing stale generated Blade/Livewire caches and restarting the isolated local server. A headed Chromium launch succeeded; screenshots were visually inspected with the local image viewer. No permanent browser test file was created.
+- Accounts/roles used: `demo-admin` / System Administrator; `demo-branch-manager` / Branch Manager; `demo-cashier` / Cashier; `demo-reviewer` / Accountant/Reviewer; and `demo-no-access` / No Access. Password was the local-only `LocalDemoOnly!2026`; it is not a production credential.
+- The canonical authorization seed was re-applied before role testing because the local database contained stale reviewer grants from earlier browser work. After reseeding, expected navigation and direct-route 200/403 results were observed for all five roles.
+
+### Actual browser scenarios
+
+- Auth/error baseline: `/login`, `/forgot-password`, invalid credentials with generic error, valid login, session-cookie regeneration, logout followed by protected-route denial, reset request for an unknown address, actual expired-token rejection, single-use-token rejection after a successful local reset, same-origin/foreign-origin CSRF behavior, `/forbidden` (403), and an unknown route (404). Login rate limiting returned `[200, 200, 429, 429, 429, 429, 429]` for a synthetic probe identity. Fortify reset expiry is configured at 60 minutes with a 60-second request throttle; the local expiry/single-use checks used a synthetic local token and did not claim production mail delivery.
+- Platform/UI/PWA: `/dashboard`, `/pos`, `/system/app`, `/admin/system/health`, `/admin/system/ui-showcase`, `/admin/audit`, and `/manifest.json`/`/sw.js`. Arabic RTL and English LTR were checked at desktop and mobile widths; online/offline indicator text changed correctly; the manifest returned 200 with standalone display; the service worker returned 200 and its source excludes private/authenticated response caching.
+- Settings: `/admin/settings` company update, payment method create, evidence-required field inspection, tax setting create, document sequence and printer/template panels, audit trail, duplicate validation, and local TBD warnings. Audit rows were visible after successful writes. No actual print preview route exists.
+- Branch/store/mapping: `/admin/branches` and `/admin/stores` create flows, duplicate branch validation (`The branch form.code has already been taken.`), mapping create/history, same-branch selling-store option filtering, branch/store dependency deactivation guards, and direct role denial. The cross-branch store was not selectable after the fix, and the action now rejects it server-side as well.
+- Drawers: `/admin/cash-drawers` create flow, blank-form validation, duplicate/code behavior, branch/store consistency and cross-branch dependent-select behavior, safe no-shift dependency state, deactivation/list states, audit, responsive mobile layout, and direct role denial. The drawer form was fixed to use server validation (`novalidate` plus a summary callout), then rechecked at 390x844 with visible required-field errors and no document overflow.
+- Authorization: `/admin/authorization-baseline` route/actions and current navigation/direct-route matrix were rechecked for System Administrator, Branch Manager, Cashier, Reviewer, and No Access. No future `P` or `R` grant was introduced; deferred permissions remain documented under DEC-038.
+
+### Console, network, and visual results
+
+- Current closure-audit browser runs produced no page errors and no unexpected 5xx responses. The only console errors were expected browser resource messages for intentionally requested 403/404 denial routes. No sensitive values appeared in inspected page text, screenshots, or the tested authenticated response boundary.
+- No document-level horizontal overflow was measured on the reviewed desktop/mobile pages. The 390px health page keeps its small metadata table inside a bounded inner scroll container; this remains a Low presentation note, not a Critical/High defect.
+- The audited Arabic auth/navigation surfaces now render translated labels after adding the missing local catalog entries; some broader platform copy still falls back to English and remains a non-blocking content-completeness follow-up, not a Critical/High functional defect.
+- Evidence is retained under `artifacts/closure-audit-browser/`, including authentication/settings/branch/store/drawer/POS/system screenshots, role results, `continuation-results.json`, `mutation-results.json`, and `43-drawer-validation.png`/`44-health-en-mobile.png`.
+
+### Static checks and closure findings
+
+- Passed: targeted PHP syntax lint for current Platform actions/routes/bootstrap; `php artisan migrate:status --no-ansi` (all 16 current local migrations `Ran`); `php artisan route:list --path=admin --no-ansi`; `php artisan view:cache --no-ansi -vvv`; `npm run build` (exit 0; only the optional `fontaine` optimization warning); and `git diff --check`.
+- No PHPUnit, Pest, Playwright suite, Cypress suite, or other automated application test suite was created or run in this closure audit. Existing historical automated-test entries above are not current closure-audit execution.
+- TSK-001 remains open for the actual local backup/restore capability/status, setup/run/recovery deployment/rollback runbooks, and custom bilingual 419/429 views (the framework fallback is safe but not the specified bilingual local implementation). Production restore evidence is not claimed.
+- TSK-005 remains open for tax effective-date fields/overlap validation and actual configuration print-preview flows. The future transactional number allocator is not claimed.
+- Fixed local defects: stale generated view cache that caused an intermittent missing compiled-view runtime failure; drawer server-validation visibility; and cross-branch selling-store mapping UI/action enforcement.
+- Final task decisions: TSK-002, TSK-003, TSK-004, TSK-006, and TSK-007 are `Completed for approved local scope`; TSK-008 remains `Completed`; TSK-001 and TSK-005 are `In Progress` with the exact gaps above; TSK-009 remains `In Progress` and was not advanced.
+- No Phase 1 gate, DM 1.1/DM 1.2 production exit, UAT acceptance, or production readiness is claimed. No commit or push occurred.
+
+## TSK-010 Local Browser and Static Verification — 2026-08-04
+
+### Browser accounts, routes, and evidence
+
+- Owner-authorized Chromium browser control used `demo-admin` (System Administrator), `demo-cashier` (Cashier), `demo-reviewer` (Accountant/Reviewer), `demo-branch-manager` (Branch Manager), and `demo-no-access` (No Access) against the stable local server `http://127.0.0.1:8094`.
+- Checked `/catalog/products`, `/catalog/categories`, and `/catalog/brands`; Catalog navigation was visible to the authorized System Administrator, Cashier, and Reviewer, and absent for Branch Manager and No Access.
+- English LTR desktop and Arabic RTL desktop/mobile-sized catalog screens had no page-level horizontal overflow. A final 390px browser pass also measured the category and brand routes with no overflow. Evidence is under `artifacts/tsk-010-browser/`, including `01-products-en-desktop.png`, `04-barcode-modal.png`, `05-products-ar-desktop.png`, `05-products-ar-mobile.png`, `06-categories-en-mobile.png`, `07-brands-en-mobile.png`, and `verification-results.md`.
+- Successful scenarios: category root/child creation and dependency checks; self-parent and descendant-cycle rejection; brand create/duplicate/dependency checks; product create/duplicate/edit; immutable item-code change denial; exact item-code search; Arabic-name search; exact barcode search; local barcode persistence and allocation-key replay; supplier duplicate rejection; and unauthorized direct-route HTTP 403.
+- A stable browser harness forged the root category's own ID and its child ID through the existing Livewire component. The server rejected both with the expected self-parent and descendant-cycle messages; database inspection confirmed the root remained root, the child remained under the root, and no self-parent row existed.
+- A stable browser harness added supplier barcode `990222333444`, rejected its duplicate replay with the existing reassignment-safe validation, then replayed one local allocation key for supplier code `1002`. The local result remained `1002000001` with one database row and the original allocation key.
+- Local barcode allocation persisted `1001000001` for supplier code `1001` and `1002000001` for supplier code `1002`, demonstrating the approved four-digit code plus six-digit serial without an invented check digit. Product creation and barcode allocation showed no stock, price, or label-queue mutation in the reviewed UI.
+- Successful catalog browser runs recorded no unexpected console errors or failed network requests. Expected HTTP 403 console entries occurred only during intentional direct-route/forged-action denial checks. The array-backed barcode modal rendering defect found during this continuation was fixed and rechecked.
+
+### Static checks
+
+- PHP syntax lint passed for all TSK-010 actions, models, exceptions, migration, routes, catalog Blade components, `CanonicalAuthorizationSeeder.php`, and `AppServiceProvider.php` (15 PHP files).
+- `php artisan migrate --force --no-ansi`: passed; no pending migrations.
+- `php artisan migrate:status --no-ansi`: passed; `2026_08_04_000017_create_catalog_identity_tables` is `Ran`.
+- Schema inspection passed for `categories`, `brands`, `products`, `barcodes`, and `barcode_sequences`, including unique item/code/barcode/allocation constraints, hierarchy/product foreign keys, and search/status indexes.
+- `php artisan route:list --path=catalog --no-ansi`: passed; three guarded catalog routes listed.
+- `php artisan view:cache --no-ansi`: passed.
+- `npm run build`: passed; only the optional `fontaine` optimization warning was emitted.
+- `git diff --check`: passed; Git emitted only the pre-existing CRLF normalization warning for `.ai/TEST_RESULTS.md`.
+- `lang/ar.json` parsed successfully after the catalog translation entries were added.
+- Authorization integrity: `demo-cashier` and `demo-reviewer` have `products_categories_brands.view`; `demo-cashier` has no create permission; `demo-branch-manager` and `demo-no-access` have no view permission. `Gate::forUser` returned cashier view `true` and create `false`.
+- Database integrity: supplier barcode `990222333444` count `1`; replayed local barcode `1002000001` count `1`; product `AUD-PR-107606` has exactly `1001000001`, `1002000001`, and `990222333444`; tested category root `AUD-CAT-C970702` has `parent_id = null`, child `AUD-CAT-D970702` has `parent_id = 5`, and self-parent row count is `0`.
+
+### TSK-010 Closure Continuation — 2026-08-04
+
+This continuation supersedes the earlier unverified-gap notes above. DEC-038-approved `View (A)` grants were seeded only for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities were not granted. Browser verification passed the three required closure gaps: non-Super authorization, supplier duplicate/replay protection, and category self-parent/descendant-cycle rejection. TSK-010 is **Completed for approved local scope**. No Phase 1/Phase 2 gate, UAT acceptance, or production readiness claim is made.
+
+The only existing TSK-010-related automated file was executed explicitly: `php artisan test tests/Feature/Catalog/CatalogImplementationAbsenceTest.php --no-coverage` returned 3/3 expected failures because it is a stale absence guard. No behavioral test suite was created or claimed.
+
+### Historical Status Boundary (superseded)
+
+The existing `CatalogImplementationAbsenceTest` was run once as the only TSK-010-related automated file: `php artisan test tests/Feature/Catalog/CatalogImplementationAbsenceTest.php --no-coverage`. It produced 3 expected failures because the absence guard asserts that the now-implemented tables, models, and routes do not exist. No relevant TSK-010 behavioral automated test exists. This stale guard is not a product regression. TSK-010 is **Completed for approved local scope**. Production catalog data, supplier records/codes, final attributes, UAT, Phase 1/Phase 2 gates, and production readiness remain open.

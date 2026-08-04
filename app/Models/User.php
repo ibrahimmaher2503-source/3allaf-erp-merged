@@ -14,6 +14,11 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Role;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\UserBranchScope;
+use App\Modules\Platform\Models\UserStoreScope;
 
 /**
  * @property int $id
@@ -71,6 +76,44 @@ class User extends Authenticatable implements PasskeyUser
     public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    public function hasPermission(string $code): bool
+    {
+        return $this->roles()
+            ->where('status', 'active')
+            ->whereHas('permissions', fn ($query) => $query->where('code', $code)->where('status', 'active'))
+            ->exists();
+    }
+
+    public function canAccessBranch(int $branchId): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+
+        return $this->branchScopes()
+            ->where('branch_id', $branchId)
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    public function canAccessStore(int $storeId): bool
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+
+        if ($this->storeScopes()
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->exists()) {
+            return true;
+        }
+
+        $branchId = Store::query()->whereKey($storeId)->value('branch_id');
+
+        return $branchId !== null && $this->canAccessBranch((int) $branchId);
     }
 
     public function branchScopes(): \Illuminate\Database\Eloquent\Relations\HasMany

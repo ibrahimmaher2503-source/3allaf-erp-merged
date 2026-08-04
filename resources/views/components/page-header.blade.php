@@ -41,7 +41,7 @@
 
         <div class="flex flex-wrap items-center gap-2.5 shrink-0">
             @if ($requestId)
-                <flux:badge size="sm" variant="outline" icon="fingerprint" class="font-mono text-xs" title="{{ __('Correlation ID') }}">
+                <flux:badge size="sm" variant="outline" icon="finger-print" class="font-mono text-xs" title="{{ __('Correlation ID') }}">
                     {{ $requestId }}
                 </flux:badge>
             @endif

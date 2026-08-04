@@ -4,13 +4,17 @@
 **Implementation status:** In Progress  
 **Documentation status:** Baseline prepared and implementation tracking updated
 
+## Current Active Slice — 2026-08-04
+
+TSK-010 is **Completed for approved local scope** under DEC-043. Catalog identity foundations, approved DEC-038 view grants, server-side authorization, supplier duplicate/replay protection, category hierarchy guards, browser regression evidence, and static/integrity checks are complete locally. Catalog `P`/`R` permissions, production catalog inputs, UAT, and milestone/phase gates remain open. TSK-009 remains In Progress; TSK-011+ remain not started. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
+
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
 |---|---|---:|---:|---|---|---|---|
-| Phase 1 | DM 1.1 Platform Foundation | In Progress | 10% | 2026-08-02 | - | TSK-001 to TSK-004 | TSK-001 and local TSK-002 slice active |
-| Phase 1 | DM 1.2 Organisation and Branch Setup | Not Started | 0% | - | - | TSK-005 to TSK-007 | Blocked by DM 1.1 and business inputs |
-| Phase 1 | DM 1.3 Users, Roles and Permissions | Not Started | 0% | - | - | TSK-008 | Role matrix awaits approval |
-| Phase 1 | DM 1.4 Core Controls | Not Started | 0% | - | - | TSK-009 | Approval, audit, and attachment controls |
-| Phase 2 | DM 2.1 Product and Supplier Masters | Not Started | 0% | - | - | TSK-010 to TSK-013 | Catalog baseline |
+| Phase 1 | DM 1.1 Platform Foundation | In Progress | Closure audited | 2026-08-02 | - | TSK-001 to TSK-004 | TSK-001 local runbook/backup gap remains; TSK-002 to TSK-004 closed for approved local scope |
+| Phase 1 | DM 1.2 Organisation and Branch Setup | In Progress | Closure audited | 2026-08-03 | - | TSK-005 to TSK-007 | TSK-005 effective-date/preview gaps remain; TSK-006 and TSK-007 closed for approved local scope |
+| Phase 1 | DM 1.3 Users, Roles and Permissions | Completed (current scope) | 100% | 2026-08-03 | 2026-08-03 | TSK-008 | DEC-038 matrix seeded and enforced on all existing surfaces; future-module enforcement deferred to its tasks |
+| Phase 1 | DM 1.4 Core Controls | Completed for approved local infrastructure scope | 100% local controls | 2026-08-03 | 2026-08-04 | TSK-009 | Four reusable foundations complete; source-module integration, UAT, production configuration, and Phase 1 gate remain open |
+| Phase 2 | DM 2.1 Product and Supplier Masters | In Progress (local TSK-010 exception) | TSK-010 approved local scope complete | 2026-08-04 | - | TSK-010 to TSK-013 | TSK-011 to TSK-013 remain not started; production catalog inputs and catalog `P`/`R` capability decisions remain open |
 | Phase 2 | DM 2.2 Purchase Cycle | Not Started | 0% | - | - | TSK-014 to TSK-016 | Purchasing and import |
 | Phase 2 | DM 2.3 Pricing and Barcode Labels | Not Started | 0% | - | - | TSK-017 to TSK-018 | Approval and label queues |
 | Phase 2 | DM 2.4 Inventory Operations | Not Started | 0% | - | - | TSK-019 to TSK-022 | Ledgers, transfers, adjustments, and counts |
@@ -62,7 +66,21 @@
 - Implemented TSK-007 local cash drawer baseline slice: SQLite migration (`cash_drawers`), `CashDrawer` Eloquent model, relationships (`Branch`, `Store`, `User`), `SaveCashDrawerAction` with DB transactions, correlation ID logging, append-only settings audit log under DEC-035, and full-page Livewire screen at `/admin/cash-drawers` (`admin.cash-drawers`) under `@can('manage-branches-stores')` gate.
 - Verified PHP syntax (`php -l`), migration execution (`php artisan migrate --force`), route discovery (`php artisan route:list`), view caching (`php artisan view:cache`), Vite production build (`npx vite build`), git diff check (`git diff --check`), and guest HTTP redirect protection for `/admin/cash-drawers`.
 
-No implementation task is complete yet.
+TSK-008 is complete for the current application scope; existing unrelated task status remains unchanged.
+
+## Detailed Specification Integration - 2026-08-03
+
+- DEC-040 adopts docs/30 through docs/39 as the detailed local implementation specification baseline; `AI_INDEX.md` now routes agents to the smallest sufficient task context.
+- `AGENTS.md` now uses task-aware required reading. The router preserves PRD, milestone, authorization, architecture, policy, UI, security, audit, concurrency, and acceptance authority.
+- TSK-009 remains Ready to Start / Not Started - Unblocked. No application feature was implemented, and this local readiness is not milestone acceptance, UAT acceptance, Phase 1 gate completion, or production readiness.
+- DM 1.1 and DM 1.2 production exit criteria remain open.
+
+## TSK-009 Initial Audit Foundation - 2026-08-03
+
+- TSK-009 moved from Ready to Start / Not Started - Unblocked to In Progress.
+- Implemented the first local shared-audit slice: `audit_logs`, protected append-only model/policy/action, historical settings-audit backfill, atomic writes from existing Platform mutation actions, and the scoped `/admin/audit` read screen.
+- No approval workflow, attachment flow, source correction, immutable transactional document, or document-number allocator was invented because no current Platform source requires one. These remain later TSK-009 slices.
+- Technical checks passed: PHP syntax, migration preview and execution, route discovery, Blade cache, Vite build, audit-row count inspection, and `git diff --check`. Manual browser verification is pending; no automated tests or browser automation ran.
 
 ## In Progress
 
@@ -81,3 +99,110 @@ No implementation task is complete yet.
 ## Next
 
 Perform full manual browser verification for TSK-002 through TSK-007 scenarios, resolve production infrastructure and policy inputs (BLK-001, BLK-002, BLK-005, BLK-006, BLK-007, BLK-008), and prepare for TSK-008.
+
+## Authenticated Verification Update - 2026-08-03
+
+- Seeded the local SQLite database with a deliberately labeled demo super-admin and Phase 1 master data using `LocalDemoSeeder`; no production policy, role, permission, grant, or scope was inferred.
+- Authenticated route rendering with Fortify username `demo-admin` returned HTTP 200 for Dashboard, POS, System App, System Health, UI Showcase, Settings, Branches, Stores, Cash Drawers, and Authorization Baseline.
+- Repaired verified rendering defects in Flux and Blade: unsupported button size, server-side `navigator` evaluation, invalid Flux icon name, and invalid combined badge inset value.
+- TSK-001 through TSK-007 remain open because their Definition of Done includes required owner inputs and verification not performed in this run.
+- Completed owner-authorized local Chrome visual verification under DEC-036: 23 screenshots cover authenticated desktop Arabic RTL, mobile Arabic RTL, and desktop English LTR views. The browser reported no console/page errors and no horizontal overflow; artifacts are retained under `artifacts/visual-verify/`.
+- Replaced hardcoded POS operational context with explicit unconfigured states after visual review. This preserves the separation between local UI verification and unapproved branch/store/drawer/shift policy.
+- DEC-037 authorizes reasonable local Phase 1 defaults except the canonical authorization matrix. Remaining open status for TSK-001 through TSK-007 reflects actual incomplete or unverified technical/operational work, not an unresolved owner decision.
+
+## TSK-008 Completion - 2026-08-03
+
+- Seeded nine canonical roles and 276 canonical permissions. `P`, `R`, and `N` matrix cells are not granted.
+- Implemented route middleware, Gate checks inside Livewire actions, UI visibility checks, branch/store scoped queries, and audited transactional role/scope assignment for every currently existing authorization-sensitive surface.
+- Focused PHPUnit verification passed: 7 tests, 41 assertions. Playwright browser verification passed for five representative users and all current administrator screens in RTL/LTR desktop/mobile layouts. Evidence is retained under `artifacts/authorization-verify/` and `artifacts/visual-verify/`.
+- TSK-009 is next. Future module permissions are seeded only; their policies and workflow enforcement are deferred as listed in `docs/16-authorization-traceability.md`.
+
+## Local Policy Baseline Adopted - 2026-08-03
+
+- DEC-039 adopts `docs/17-approval-policy.md` through `docs/29-rental-asset-policy.md` as the approved local-development baseline.
+- BLK-002, BLK-009, BLK-011, BLK-012, BLK-013, BLK-014, BLK-015, and BLK-016 moved from Open to Mitigated. Their recorded production decisions remain pending.
+- TSK-009 is Ready to Start / Not Started - Unblocked and locally implementable under `docs/17-approval-policy.md`, `docs/18-attachment-media-policy.md`, and `docs/19-audit-immutability-policy.md`.
+- This entry records documentation adoption only. No feature implementation, automated testing, or browser verification occurred.
+
+## Foundation Refactor Review Remediation - 2026-08-03
+
+- Fixed the production demo-account risk: `DatabaseSeeder` and `CanonicalAuthorizationSeeder` now create local demo identities only in `local`, and `LocalDemoSeeder` throws outside that environment. Canonical role/permission seeding remains available in production.
+- Added focused regression coverage for the seeder boundary and moved `platform::` Livewire pages. Focused and full `php artisan test` runs passed: 14 tests, 73 assertions.
+- Existing Playwright scripts passed for the migrated Platform routes: 23 RTL/LTR visual screenshots and five authorization-role scenarios with no console/page errors or horizontal overflow.
+- The review fixes do not advance TSK-009 or claim milestone, UAT, Phase 1 gate, or production readiness.
+
+## 2026-08-03 - Incremental Platform UI Foundation Refinement
+
+- Added semantic CSS tokens and a compact permission-driven Flux application sidebar without changing routes, permissions, authentication, actions, models, migrations, or business behavior.
+- Added immediately used shared Blade compositions for stat cards, section cards, data panels, filter bars, and form sections.
+- Updated the Platform UI Showcase and Authorization Baseline presentation. Authorization options now load through the Livewire render data only while the existing modal is open; server authorization and persistence behavior are unchanged.
+- Static checks passed: PHP lint, `php artisan route:list --path=admin`, `npm run build`, and `git diff --check`. `php artisan view:cache` was attempted but exceeded the environment execution limit.
+- No manual browser verification, browser automation, or automated tests were run. TSK-009 remains Ready to Start / Not Started - Unblocked.
+
+## TSK-009 Current Status - 2026-08-03
+
+- TSK-009 is **In Progress**. Its initial audit foundation is implemented: shared append-only audit records, legacy local-history backfill, atomic logging from current Platform mutations, a scope-aware policy, and `/admin/audit`.
+- Technical checks passed; manual browser-only verification remains pending. Approval, attachment, immutability/correction, and number-allocation work remains incomplete and source-workflow dependent. No production readiness or milestone completion is claimed.
+
+## TSK-009 Audit Browser-Control Update - 2026-08-03
+
+- TSK-009 remains **In Progress**. The current audit slice is partially verified through owner-authorized local browser control, not interactive manual review.
+- Verified: Super Admin audit access and navigation; Reviewer authorized empty result with no scope; denied direct routes and hidden navigation for Branch Manager, Cashier, and No Access; request-ID/event filters; detail rendering; one branch-scoped `update_branch` event; LTR/RTL desktop; and RTL mobile at `390x844` without document overflow.
+- Fixed during the visual review: the audit screen now renders compact mobile event cards instead of inaccessible truncated table columns, and its desktop empty state is explicit.
+- Unverified: manual interactive browser review, populated branch/store isolation, cross-scope detail denial, nested-sensitive redaction fixture, multi-page pagination, backfill rerun/idempotency, and the remaining Platform mutation/failure cases. The Reviewer branch-scope assignment attempt was rejected by an existing final-System-Administrator validation message and made no data change.
+- No automated application test suite, commit, or push occurred. Browser-control artifacts are under `artifacts/tsk-009-audit-browser-control/`.
+## TSK-009 Audit Browser-Control Continuation - 2026-08-03
+
+Completed additional local audit evidence: scoped fixtures for two branches/two stores, Super Admin/global visibility, Reviewer branch/store isolation, denied forged out-of-scope detail, nested sensitive-value redaction, desktop/mobile pagination, and idempotent legacy backfill. Fixed the Reviewer authorization-modal state regression and audit mobile pagination. The audit foundation remains incomplete pending the full Platform mutation/failure matrix; TSK-009 remains In Progress.
+
+## TSK-009 Audit Foundation Completed - 2026-08-03
+
+Completed the Company, payment, tax, store, mapping, and drawer browser mutation matrix with one matching audit event each, plus validation denial, protected-action denial, rollback/no-orphan, and duplicate mapping verification. Audit Foundation is complete for approved local Platform scope. TSK-009 remains In Progress for approval, protected attachments, and immutability/correction work.
+
+## TSK-009 Approval Foundation - 2026-08-03
+
+- Added the reusable Platform approval contract and `approval_records` storage with scoped/source/state/requester/approver indexes, unique idempotency keys, and a nullable unique pending-action key so terminal records never block a new request.
+- Added explicit `pending`, `approved`, `rejected`, `withdrawn`, `cancelled`, and `expired` request states and named transaction-bound actions. The policy enforces scope, requester withdrawal, approver permission, cancellation permission, and server-side detail access; Action-level separation blocks self-approval before the Super Admin Gate bypass can apply.
+- Successful requests and decisions write a single shared workflow event to `audit_logs`; failed, stale, unauthorized, duplicate-pending, or terminal transitions leave the transition transaction without a partial approval write.
+- No current Platform entity has an approved approval requirement. UI-SYS-006 and browser request/decision verification are deferred to the source-owning module rather than fabricating a generic approval workflow or demo inbox.
+- TSK-009 remains **In Progress** for protected attachments and immutability/correction. No Phase 1 gate or production readiness is claimed.
+
+## TSK-009 Protected Attachment Foundation - 2026-08-03
+
+- Added the private attachment schema, purpose-based local limits/allowlists, exact policy lifecycle states, generated storage names, source-reference contract, server validation, source-policy authorization callback, controlled delivery, link/revoke/expire actions, and shared audit events.
+- Local action verification passed: safe PNG storage on the private disk; generated filename; unsafe PHP/signature rejection; oversized rejection; traversal filename neutralization; duplicate hash left to source policy; revoke and direct-ID denial; one storage audit per successful store; validation rejection events without successful-upload rows; and no absolute storage path in audit metadata.
+- No source record, upload screen, route, navigation, cloud provider, or package was added. Real source authorization, branch/store isolation, replacement integration, and browser upload/download checks are deferred to the owning module task.
+- `docs/37-validation-and-error-contracts.md` and `docs/38-output-and-file-contracts.md` were requested but are absent; existing numbered UI/print specifications were used and the discrepancy is recorded. TSK-009 remains **In Progress** for Immutability/Correction Foundation.
+
+## TSK-009 Immutability and Correction Foundation - 2026-08-03
+
+- Added the source-owned `ImmutableSourceContract`, `CorrectionReferenceData`, documented `CorrectionType` enum, focused immutability/correction guards, `ExecuteCorrection` transaction/audit boundary, and `CorrectionNumberAllocator` interface.
+- Guard coverage exercised locally: draft edit allowed; approved/terminal edit denied; allowed/unauthorized correction types; stale version/hash; scope mismatch; duplicate idempotency reference; original preservation; and transaction failure with no orphan `correction.created` audit event.
+- No fabricated document table, Platform correction workflow, UI, route, or future module was added. Source integration, approval requirement, correction persistence, final numbering, and browser verification remain deferred.
+- Routing references were confirmed against canonical `docs/37-ui-screen-specifications.md` and `docs/38-print-export-specification.md`; no stale alias was retained in `AI_INDEX.md` or `TASKS.md`.
+- TSK-009 remains **In Progress**; all four foundations are implemented at infrastructure level, pending final closure review and later source/UI integration.
+
+## TSK-009 Final Closure Review - 2026-08-04
+
+## Automated Regression Defect Remediation - 2026-08-04
+
+- DEFECT-001 fixed by applying the existing `Store::visibleTo(auth()->user())` scope to Branches selling-store options. `BranchStoreMappingTest` passed 14/14, including the intentional regression assertion; no task status changed.
+- DEFECT-002 fixed by correcting all malformed UI Showcase dialog Livewire expressions. Browser-control evidence confirms Open/Cancel/Confirm behavior.
+- DEFECT-003 fixed with bounded Health content, safe correlation-ID wrapping, contained table overflow, and shell-level horizontal clipping. Browser-control evidence at 390x844 confirms no page overflow in Arabic RTL or English LTR.
+- DEFECT-004 remains an explicit owner decision. Fortify verification configuration was not changed; `MustVerifyEmail` is still absent from `User`, so the existing `verified` middleware is inert.
+- Focused tests and static checks passed; no test was weakened. Evidence is under `artifacts/defect-001-branches-manager-ar-390x844.png`, `artifacts/defect-002-showcase-ar-390x844.png`, `artifacts/defect-003-health-ar-390x844.png`, and `artifacts/defect-003-health-en-390x844.png`. No commit or push occurred.
+
+## TSK-009 Final Closure Review (continued) - 2026-08-04
+
+- TSK-009 is **Completed for approved local infrastructure scope**. Audit, Approval, Protected Attachment, and Immutability/Correction foundations are implemented and internally consistent.
+- Audit Foundation retains the accepted browser-control evidence for current Platform scope. Approval and Attachment source/UI flows remain deferred because no legitimate current business source exists. Immutability/Correction is contract/action verified without a fabricated document source or UI.
+- Fixed two closure defects: authenticated expiry actions now require explicit authorization (scheduler/system calls remain supported), and approval/attachment/correction audit events can persist the same request ID as their source record.
+- Static/action checks passed; no Critical or High local defect remains in TSK-009 infrastructure. No Phase 1 gate completion, UAT acceptance, or production readiness is claimed.
+
+## Phase 1 Closure Audit — TSK-001 through TSK-008 — 2026-08-03
+
+- TSK-001 remains `In Progress — specific local work remains`: no actual local backup/restore capability/status or setup/run/recovery deployment/rollback runbook exists, and custom bilingual 419/429 views are absent. Request IDs, safe 403/404/500/503 behavior, maintenance behavior, health authorization, runtime, and build baseline were verified.
+- TSK-002, TSK-003, TSK-004, TSK-006, and TSK-007 are `Completed for approved local scope`; TSK-008 remains `Completed` under DEC-038. Browser scenarios, authorization/direct denial, scope behavior, RTL/LTR, responsive layout, and local interaction evidence are recorded in `.ai/TEST_RESULTS.md`.
+- TSK-005 remains `In Progress — specific local work remains`: tax effective-date fields/overlap validation and actual configuration print-preview flows are absent. Company/payment/tax/numbering/printer mutations, duplicate validation, audit, and local TBD behavior were verified.
+- Fixed closure defects: cash-drawer forms now expose server validation errors instead of being blocked by native required validation; branch selling-store mapping now filters by selected branch and rejects cross-branch stores.
+- TSK-009 remains `In Progress`; no new TSK-009 implementation was performed during this audit. Production blockers remain open and Phase 1/DM production gates are not claimed.

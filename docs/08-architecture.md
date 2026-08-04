@@ -1,136 +1,141 @@
-# 08 — Application Architecture
+# 08 - Application Architecture Minimal
 
-## Architectural Style
+## 1. Authority and Purpose
 
-TOY & JOY is one Laravel modular monolith: one repository, runtime, application, database boundary, authentication system, deployment, and asset build. Business modules own their workflows and data access conventions while sharing explicitly defined platform capabilities. Modules are organizational boundaries, not independently deployed services.
+This is the authoritative technical architecture for TOY & JOY Phase 1. It implements the approved Laravel modular-monolith direction and supplements the PRD, Implementation Plan, canonical authorization matrix, approved decisions, and policies. It does not replace a higher-authority source.
 
-The design favors Laravel conventions, cohesive use-case actions, transactions, policies, and server-driven UI. It rejects microservices, headless architecture, GraphQL, a separate frontend, and a separate API for ordinary screens.
+The application remains one Laravel repository, deployment, database, authentication system, and asset build. Modules are ownership boundaries, not services. Do not introduce microservices, a separate frontend, a normal-screen API, GraphQL, or a full SPA.
 
-## Proposed Module Boundaries
+## 2. Architecture Rules
 
-1. **Platform:** company, localization, users, roles, permissions, branches, stores, drawers, payments, tax, numbering, printers, settings.
-2. **Catalog:** products, categories, brands, supplier links, barcodes, images, imports.
-3. **Pricing:** price lists/versions/lines, approvals, open-price policy, label queues/printing.
-4. **Purchasing:** suppliers, orders, invoices/receipts, supplier returns.
-5. **Inventory:** balances, immutable movements, transfers, entries/exits/adjustments, counts/reconciliation.
-6. **Retail:** POS, suspended carts, sales, payments/evidence, tax/discounts, Gift Receipts, returns/exchanges, Gift Cards.
-7. **Cash Control:** drawers, shifts, cash movements, blind close, variance review, closing reports.
-8. **Customers:** profile, children/consent, shared loyalty, Product Wallet, Party Wallet, customer history.
-9. **Parties:** bookings, working/final invoices, payments on account, operating orders, party consumables.
-10. **Assets:** rental asset master, calendar/reservations, checkout/return/inspection, damage/depreciation.
-11. **Quotations:** typed non-posting retail/party offers.
-12. **Reporting & Governance:** dashboard, alerts, reports, export, audit review, approvals.
-13. **Offline:** PWA assets, device eligibility, IndexedDB queue, sync batches/conflicts; restricted to approved POS use.
+- Module owns business rules.
+- Action owns one meaningful use case or mutation.
+- Policy or Gate authorizes the exact action and scope.
+- Query objects are used only for complex or reusable reads.
+- Model owns persistence, relationships, casts, and small local scopes.
+- Blade owns layout and print structure; Livewire owns interactive server state; Flux UI is the primary UI toolkit.
+- Controllers and Livewire actions validate, authorize, call an Action or Query, and render feedback. They do not own posting, pricing, stock, wallet, approval, numbering, or settlement rules.
 
-Cross-module access occurs through clear use-case interfaces/actions and source references, not generic repositories or duplicated business rules. Extract a service only for real shared logic; do not create layers speculatively.
+Do not add a generic repository layer, God services, speculative base classes, unused traits, empty module folders, or a module service provider without a demonstrated Laravel integration need.
 
-## Request and Use-Case Lifecycle
+## 3. Module Boundaries
 
-1. Laravel authenticates the session and resolves user, locale, branch/store/activity context.
-2. Route middleware performs broad entry checks; the Livewire component/controller calls a policy/gate for the exact model/action/scope.
-3. A Form Request or equivalent Livewire server-validation object validates shape, permissions, business context, and safe file inputs.
-4. A focused Action handles a meaningful transactional use case. Simple CRUD remains conventional and does not require an artificial action/service.
-5. Financial, stock, ledger, approval, numbering, and state changes run in one database transaction with row/advisory locks or optimistic version checks as appropriate.
-6. The action validates the current state, separation rule, idempotency key, and current server price/balance before posting.
-7. Source document, lines, ledgers/movements, approvals, attachments, and audit are committed atomically where integrity requires it.
-8. UI receives a typed success/error result, refreshes authorized state, preserves user input where safe, and shows clear feedback.
+`Platform` owns company/configuration, locale, branches, stores, drawers, users, roles, permissions, scopes, audit, approvals, attachments, document numbering, printers, and shared operational controls.
 
-## UI Architecture
+Future modules are created only when their approved task starts: Catalog, Pricing, Purchasing, Inventory, Retail, CashControl, Customers, Parties, Assets, Quotations, Reporting, and Offline. They are not created as placeholders.
 
-### Layouts Inside One Application
+Cross-module writes go through the owning module's Action. Retail and Party documents, stores, wallets, ledgers, settlement, and reporting remain separate as required by the PRD.
 
-- **Auth Layout:** sign-in, forgot/reset password, secure and minimal.
-- **Admin Layout:** company, settings, users, roles, branches, global configuration, and high-level governance.
-- **Operations Layout:** catalog, purchasing, inventory, customers, parties, assets, quotations, reports, and audit.
-- **POS Layout:** dedicated low-overhead checkout/shift shell optimized for scanners, keyboard, touch, large cart/totals, and connectivity awareness.
+## 4. Current Implemented Foundation Structure
 
-Blade owns structural layouts, document templates, and stable compositions. Full-page Livewire components own interactive page state and server-driven interactions. Flux UI provides controls and common patterns. Alpine.js or small TypeScript is restricted to scanner events, keyboard shortcuts, browser printing, connectivity, IndexedDB, service-worker messaging, and unavoidable local-device behavior.
+Only existing Foundation Platform files are organized under the module boundary:
 
-### Limited Shared Design Language
+```text
+app/
+  Actions/
+    Fortify/                         # Starter authentication; remains unchanged
+  Http/
+    Middleware/                      # Shared request/locale middleware
+  Models/
+    User.php                         # Laravel/Fortify identity; remains unchanged
+  Modules/
+    Platform/
+      Actions/                       # Existing Platform use cases
+      Models/                        # Existing Platform persistence models
+  Providers/                         # Laravel/Fortify/Gate registration
 
-- **Typography:** use an approved Arabic/Latin UI font pairing or one high-quality bilingual family; default body 14–16px equivalent, dense table text no smaller than accessible policy allows, clear 4-level heading scale.
-- **Spacing:** consistent 4px-based scale; forms and touch targets use comfortable spacing; avoid page-specific arbitrary spacing.
-- **Radius:** one small and one medium radius for controls/cards; no decorative inconsistency.
-- **Semantic colors:** neutral base plus Success, Warning, Error, Info/Pending, Approved, Cancelled, Draft, and Disabled tokens meeting readable contrast. Never rely on color alone.
-- **Reusable patterns:** application shell, sidebar, top navigation, page header, breadcrumbs, filter bar, standard server table, form section, summary card, status badge, confirmation dialog, empty/loading/error/success/denied state, detail view, document timeline, audit panel, printable layout.
-- **Forms:** single-column on narrow viewports; clear two-column sections only when related and space permits; bilingual fields grouped and labeled; sticky actions only where they do not hide content.
-- **Tables:** responsive priority columns with detail drawer/page rather than uncontrolled horizontal compression; server pagination/filter/sort/search; sticky header where useful.
-- **Modals/drawers:** short, contextual actions only; complex document editing uses a full page.
-- **Motion:** brief functional state transitions only; respect reduced motion; no ornamental heavy effects.
+routes/
+  web.php                            # Small application loader
+  platform.php                       # Existing Platform routes
+  settings.php                       # Starter account settings routes
 
-### Flux UI Reuse
+resources/views/
+  components/                        # Shared Blade components
+  layouts/                           # Shared auth/app/POS/print layouts
+  platform/                          # Existing Platform admin and system pages
+  pages/auth/                        # Starter Fortify views
+  pages/settings/                    # Starter account settings views
+  pages/pos/                         # Current restricted POS shell
+```
 
-Use Flux components for buttons, form controls, searchable selects/comboboxes, checks/radios/switches, menus/dropdowns, tables/pagination where available, dialogs/modals/drawers, tabs, dates/times/calendars, file inputs, toasts, badges, breadcrumbs, sidebars, headers, tooltips, cards, charts, loading/empty/error states, and confirmations. A custom component is allowed only after documenting the precise requirement Flux cannot satisfy and limiting the extension.
+The current Foundation contains Platform actions, Platform models, Platform pages, starter Fortify actions/views, shared layouts/components, and a restricted POS shell only. No unimplemented business module is represented by a folder.
 
-## Vite, Tailwind, and Localization
+## 5. Current Platform Responsibilities
 
-Vite owns CSS/JavaScript entry points and production hashing. Keep entry points small: common application assets plus POS/offline code only where separation materially improves performance. Tailwind consumes shared semantic tokens and logical-direction utilities; avoid scattered arbitrary values. The UI is Arabic-first and uses localized strings, logical start/end spacing, correct `dir`/`lang`, locale-aware numbers/dates, mirrored directional icons only where semantically appropriate, and English LTR verification.
+Platform Actions contain current settings, branch/store mapping, drawer, authorization assignment, and health-status use cases. They retain their existing transactions, validation, Gate authorization, append-only settings audit writes, and correlation IDs.
 
-## Authorization and Security Boundaries
+Platform Models retain existing relationships and simple scope methods. `User` remains in `App\\Models` because it is the Laravel/Fortify authenticated identity and is shared across all modules.
 
-- Laravel sessions with secure cookies, CSRF protection, login rate limiting, session regeneration, configurable expiry, and server-enforced revocation.
-- Policies/gates authorize module, action, branch, store, document type, activity, state, ownership, approval/override, and sensitive field. Queries start from authorized scope.
-- Cashier cannot see Party Wallet or expected blind-close amounts; Party Manager cannot see Product Wallet; Stock Counter cannot approve reconciliation.
-- Attachment access always goes through an authorized controller/action or temporary authorized URL; raw public storage is prohibited for evidence and sensitive files.
-- Exports repeat server authorization and exclude unauthorized fields even if the UI hid them.
+The current `SettingsAuditLog` is an append-only Foundation record. The shared `audit_logs` capability, approval workflow, attachment controls, and cross-module audit abstraction are TSK-009 scope and must not be extracted early.
 
-## State Machines and Approval Workflows
+`DocumentSequence` remains a Platform configuration/master model. It is not an allocator until an approved use case requires concurrency-safe allocation.
 
-Each document defines an enum and explicit transition map. A transition action validates current state, actor permission, required data, approvals, source references, and side effects. Invalid skipped/backward transitions fail safely. Submitted/approved/final/closed states lock relevant fields. Rejection/return-to-draft behavior is defined per document, not by a generic workflow builder. Approval events are append-only and capture actor, reason, limits, and context.
+## 6. Authorization and Scope
 
-## Immutable Transactions and Audit
+Authorization is server-side. Route middleware provides broad entry control; Gates and Policies provide exact permission, branch, store, ownership, state, approval, override, and field control. Hiding UI controls is never a security boundary.
 
-Approved sales, purchases, returns, transfers, adjustments, counts, shifts, payments, wallet/loyalty/gift-card movements, party finals, asset events, approvals, and stock movements are immutable. Correction creates a typed source-linked document/movement. Audit records user, timestamp, session/device where available, branch/store, source, event, reason, and protected before/after values. Audit logging must be inside or reliably coupled to the business transaction; failures cannot silently permit unaudited sensitive operations.
+Existing canonical Gate behavior, current permission names, scope queries, and user authorization assignment remain unchanged during structural refactors. New entity-specific Policies are added only when the relevant entity and exact authorization need exist.
 
-## Inventory Ledger and Weighted-Average Cost
+## 7. States, Audit, Transactions, and Concurrency
 
-`stock_movements` is the inventory source of truth; `stock_balances` is a locked/materialized current summary. Posting is idempotent and atomic. Approved purchase receipt calculates proposed new average cost as `(existing quantity × existing average cost + received quantity × received unit cost basis) / resulting quantity`, with owner-approved rounding and edge-case rules. It never automatically changes sale price. Transfers preserve accountable source/in-transit/destination quantities and cost context. Count reconciliation uses the reference balance plus subsequent movements and never makes uncounted items zero automatically.
+Controlled documents use explicit state maps and PHP Enums when their module introduces states. Approved, final, or closed records are immutable; corrections use referenced reversal, cancellation, return, or adjustment records.
 
-## Customer Value Ledgers
+Actions wrap financial, inventory, wallet, loyalty, gift-card, shift, approval, and finalization writes in transactions with the necessary locks or version checks. No refactor may move this logic into views, controllers, or generic services.
 
-- **Loyalty:** one shared append-only ledger with activity type, rule/version, source, expiry, and idempotency.
-- **Product Wallet:** retail-only append-only ledger and policies.
-- **Party Wallet:** party-only append-only ledger and policies.
-- **Gift Card:** unique card summary locked during use plus append-only issue/redeem/void/expiry ledger.
+## 8. Routes and Views
 
-Balances are derived or transactionally maintained from immutable entries. Corrections are referenced movements. There is no generic cross-wallet transfer service.
+Routes are split only when a real module has routes. `routes/web.php` is the loader; `routes/platform.php` owns current Platform routes without changing paths, route names, middleware, or permissions.
 
-## Files, PDF, Excel, Barcodes, and Printing
+Platform Blade and Livewire views live under `resources/views/platform`. Shared layouts and components remain shared. The current POS shell and starter authentication/settings screens remain in their existing boundaries until a real Retail or Auth change requires otherwise.
 
-- Uploads are size/type/signature validated, safely named, protected from public execution, optionally malware-scanned based on infrastructure, hashed, authorized by purpose, and retained by policy.
-- Excel import is staged, mapped, validated, previewed, approved, idempotent where possible, and produces safe downloadable rejected-row reports; it never writes invalid rows. Exports neutralize formula injection and obey row/field limits.
-- PDF/thermal/A4/label outputs use dedicated Blade print views or an approved mature renderer, snapshot source data, localize direction, and avoid changing documents.
-- Barcode generation uses an approved mature capability and always binds label output to selected location and approved price.
+Every user-facing change preserves Arabic RTL, English LTR, responsive layouts, loading, empty, error, denied, validation, confirmation, and safe disabled states where applicable.
 
-## Reporting Strategy
+## 9. Incremental Refactor Rules
 
-Start with indexed transactional queries and purpose-built read models/query objects where complexity is real. Every report exposes defined formula/source lineage and applies scope before aggregation. Paginate details; cap ranges and export size; queue expensive exports; authorize artifact downloads; expire files. Cache only non-sensitive, correctly keyed aggregates when invalidation and scope are explicit. Never cache one user's unrestricted result for another user.
+Refactor in small reversible slices:
 
-## Queue, Scheduler, and Cache
+1. Inventory actual files and references.
+2. Move one boundary at a time.
+3. Repair namespaces, imports, route registrations, view aliases, and component references.
+4. Run permitted syntax, route, view, and build checks after that slice.
+5. Perform required manual verification before declaring a task complete.
 
-Queues may support heavy import/export, PDF batches, label jobs, notifications, image processing, sync processing, backups, and monitoring where user feedback and idempotency are designed. Scheduler may run expiry, alert, reconciliation checks, cleanup, and backups. Exact drivers await Redis/runtime decisions. Synchronous integrity posting for an approved document must not depend on an unreliable later queue. Cache is an optimization after correctness and profiling, not an authority for stock, price, wallet, or loyalty settlement.
+Do not change business behavior, authentication behavior, authorization behavior, database schema, route URLs, route names, or permissions merely to improve folder structure. Do not proceed to a future module because its planned path appears in this document.
 
-## PWA and Offline POS
+## 10. Packages and Documentation Routing
 
-The service worker caches only the approved application shell and versioned static assets plus narrowly approved reference data. It must not cache arbitrary authenticated HTML or sensitive responses. IndexedDB stores the minimum encrypted-as-supported provisional data needed for eligible devices, with device/user/branch binding, schema version, expiration, and logout/session-revocation cleanup.
+Use Laravel and Flux facilities first. Select at most one mature primary package per approved capability after compatibility, maintenance, security, license, overlap, RTL impact, and exit-path review.
 
-Offline eligibility is evaluated before each action. Only cash and manually recorded electronic payments within owner-configured limits are allowed. Credit, wallets, loyalty redemption, special discounts, unpriced/stale/unsafe operations, and conflict-prone actions are blocked. Every local transaction has a non-guessable idempotency key and payload hash. On reconnect, the server reauthenticates, reauthorizes, validates schema/time/policy, recalculates price/stock, assigns final numbering, and either atomically posts, rejects, or creates a conflict. Server stock, price, wallet, and loyalty values prevail. Conflicts require an owner, reason, disposition, and reference documents; no silent overwrite.
+`AI_INDEX.md` is the task-aware documentation router. It limits reading to the active task's required context but never weakens PRD, security, authorization, audit, transaction, concurrency, or acceptance requirements.
 
-## Concurrency Controls
+## 11. Production Performance Baseline
 
-- Lock or atomically increment document sequences.
-- Lock/check version on stock balance, price activation, shift/drawer, Gift Card, loyalty/wallet redemption, transfer dispatch/receipt, asset reservation interval, purchase receipt, final party settlement, and sync idempotency.
-- Use database uniqueness for item code, barcode, customer phone, document number, Gift Card identifier, active price/location, and source idempotency.
-- Return a recoverable conflict message and current server state; never silently accept stale values.
+Performance is an architectural requirement. The application must scale beyond local demo data without introducing a second frontend stack, a generic repository layer, speculative caches, or unbounded browser state.
 
-## Backup, Restore, Deployment, and Monitoring
+Vite production builds must remain hashed, minified, cacheable, and free of unused global dependencies. The common JavaScript entry stays small. Heavy optional capabilities, including charts, specialized scanner integration, offline behavior, large exports, calendars, and editors, are loaded only by the pages that need them. Blade renders meaningful HTML before optional JavaScript is available. Tailwind and Flux remain the single shared CSS/component foundation; expensive blur, backdrop, icon-font, and duplicate component styling are not introduced.
 
-Deployment is one Laravel application with environment-specific secrets, production debug disabled, HTTPS, least-privilege database/storage, controlled migrations, worker/scheduler supervision, versioned assets, health checks, and rollback/recovery instructions. Backups must cover database and required attachments/configuration, be encrypted, retained off-host as approved, monitored, and restore-tested. RPO/RTO, destinations, provider/package, and ownership are blockers. Error monitoring must redact secrets/customer/payment evidence and route actionable alerts to approved owners.
+Operational lists are server-driven. They use authorized scoped queries, narrow selects, pagination appropriate to the ordering UX, indexed filters, and eager loading only for relationships rendered by the screen. `Model::all()` and unbounded `get()` are not used for operational tables. Complex reusable reads may use a module Query object, but simple CRUD stays Eloquent. Each Livewire render is treated as repeatable: avoid repeated aggregates, duplicate queries, lookup queries in Blade, polling without a documented need, and full-page updates for isolated interaction.
 
-## Package Candidates and Selection Gate
+Indexes and unique constraints follow documented invariants and measured query patterns, especially scope, foreign-key, status, ordering, identifier, source-reference, and report-time predicates. Do not add indexes to every column or cache transactional truth. Cache only safe, explicitly invalidated, correctly scope-keyed reference or reporting data after measurement. Stock, price, wallet, loyalty, gift-card, transfer, settlement, and other transactional values remain authoritative in the database.
 
-Mature package capability may be appropriate for roles/permissions, activity/audit logs, Excel import/export, PDF, media/attachments, barcode generation, backups, monitoring, charts, and PWA. No name/version is approved in this document. At implementation time, record framework/version compatibility, active maintenance, security history, license, adoption, footprint, queue/storage support, RTL impact, overlap with Laravel/Flux, migration/exit path, and why native capability is insufficient. Choose at most one primary package per capability.
+Images remain out of the common bundle, use dimensions or aspect ratios where practical, and use lazy loading only for non-critical media. Fonts use the minimum approved families and weights. The current request correlation ID remains available for diagnostics; logs and monitoring never include secrets or unnecessary sensitive data.
 
-## Future Extensions
+## 12. Production Runtime and Deployment Performance
 
-Module boundaries and source-document references must allow later web commerce, gateway integration for website customers, quotation conversion, accounting, HR, marketing, and AI without weakening Phase 1 history or separation. Future-ready means preserving extension points, not building unused abstractions now.
+The production deployment environment, not application code, owns PHP OPcache, HTTP compression, HTTP/2 or HTTP/3, PHP runtime worker configuration, TLS, static-asset caching, upload and timeout limits, reverse-proxy behavior, and any CDN decision. Before go-live, verify OPcache in the actual serving runtime, install Composer dependencies with the approved optimized production autoloader, build Laravel's version-appropriate configuration, route, view, and event caches after environment configuration is finalized, and build Vite production assets.
+
+Fingerprinted public assets may receive long-lived immutable caching. Authenticated HTML, authorized data, payment evidence, customer data, and sensitive attachments must not receive that public cache policy. Enable Brotli with gzip fallback where the selected web server or CDN supports it; do not configure Apache directives unless Apache is the approved production server.
+
+Redis, queues, cache drivers, object storage, CDN, worker counts, production database engine, scheduler process, monitoring provider, and host-specific settings remain deployment decisions until the owner approves the production environment. No local configuration implies production readiness.
+
+## 13. Queues, Scheduler, and Data Integrity
+
+Use queues for non-critical, potentially expensive work such as large imports, exports, PDF or label batches, image processing, notifications, backups, and scheduled reporting artifacts. Queued work must define idempotency, retries, failure handling, timeout, observability, duplicate-execution behavior, and required authorization context.
+
+Core integrity commits remain synchronous and transactional. Do not queue approved stock posting, payment settlement, wallet or loyalty movement, gift-card redemption, final price activation, or document state transitions when a delayed commit could report success before integrity is guaranteed. The scheduler handles recurring non-request-critical maintenance only and its production runner is documented during deployment planning.
+
+## 14. Performance Verification and Release Gate
+
+Do not call the application fast based on an empty local database. Before production readiness, use representative authorized data volumes to inspect first meaningful render, navigation, query and Livewire request counts, duplicate queries, response and DOM size, asset transfer size, layout shifts, page-specific code, slow server actions, and relevant database execution plans.
+
+The production release gate verifies: production environment and debug settings; Composer and OPcache optimization; Laravel and Vite caches; compression and asset headers; indexes and unique constraints against real query patterns; paginated lists; image and font behavior; queue and scheduler operations where enabled; request-ID diagnostics; backups and restore; monitoring; and the absence of obvious frontend, network, or query bottlenecks. This gate is implemented and evidenced through the approved release task, not assumed by local development.

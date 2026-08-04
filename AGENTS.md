@@ -1,6 +1,6 @@
 # TOY & JOY Mandatory Agent Instructions
 
-This file governs every AI coding agent working on TOY & JOY Phase 1. The repository contains the documentation baseline and a Laravel 13 application foundation. DM 1.1 is In Progress, TSK-001 is the only active task, and overall implementation progress is 1%.
+This file governs every AI coding agent working on TOY & JOY Phase 1. The repository contains the documentation baseline and a Laravel 13 application foundation. Project state is dynamic. Always read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, and the latest relevant `.ai/SESSION_SUMMARY.md` entry for the actual state.
 
 ## Current Implementation Baseline
 
@@ -11,37 +11,19 @@ This file governs every AI coding agent working on TOY & JOY Phase 1. The reposi
 - Responsive application and authentication shells with locale-aware Arabic RTL and English LTR direction
 - Automated tests remain Not Created and Not Run by explicit project-owner directive
 
-Inspect `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, and `.ai/TEST_RESULTS.md` for the exact current state before making any change.
+Inspect the current-state files identified by `AI_INDEX.md` before making any change.
 
-## Required Reading Order
+## Task-Aware Required Reading
 
-Before changing code or documentation, read these files completely and in order:
+Before changing code or documentation:
 
 1. `AGENTS.md`
-2. `README.md`
-3. `docs/01-project-brief.md`
-4. `docs/02-prd.md`
-5. `docs/03-scope.md`
-6. `docs/04-roles-permissions.md`
-7. `docs/05-user-stories.md`
-8. `docs/06-user-flows.md`
-9. `docs/07-database-schema.md`
-10. `docs/08-architecture.md`
-11. `docs/09-coding-standards.md`
-12. `docs/10-milestones.md`
-13. `docs/11-master-checklist.md`
-14. `docs/12-acceptance-criteria.md`
-15. `docs/13-definition-of-done.md`
-16. `docs/14-test-plan.md`
-17. `docs/15-security-checklist.md`
-18. `.ai/CURRENT_MILESTONE.md`
-19. `.ai/PROGRESS.md`
-20. `.ai/BLOCKERS.md`
-21. `.ai/DECISIONS.md`
-22. `.ai/UI_SCREENS.md`
-23. `.ai/HANDOFF.md`
-24. `.ai/TEST_RESULTS.md`
-25. `TASKS.md`
+2. `AI_INDEX.md`
+3. Resolve `.ai/CURRENT_TASK.md` and `.ai/CURRENT_MILESTONE.md`.
+4. Read only the current task section in `TASKS.md`.
+5. Follow that task's routing entry in `AI_INDEX.md`.
+6. Read only the referenced blockers, decisions, screen IDs, requirements, acceptance criteria, and documentation sections.
+7. Expand reading only when a real dependency or contradiction requires it.
 
 The PRD is authoritative for functional behavior. The Implementation Plan is authoritative for Development Milestone order, Delivery Criteria, and Phase Gates. Never resolve a conflict silently; record it in `.ai/DECISIONS.md` with status `Requires Owner Decision`.
 
@@ -69,6 +51,7 @@ Do not adopt Filament, Inertia.js, Vue, React, Angular, Next.js, Nuxt, a separat
 - Approved documents are immutable. Correct them through referenced reversal, return, cancellation, or adjustment documents. Use logical deletion only where permitted.
 - Keep retail products and party services/assets out of the same order or invoice. Keep Product Wallet and Party Wallet ledgers, visibility, settlement, and reporting separate.
 - Never claim implementation, verification, or testing that did not occur. Update `.ai/` status files after every task.
+- Every agent must append a factual entry to `.ai/SESSION_SUMMARY.md` at the end of each session that changes the repository or project state. Include the session date, task, work completed, verification actually run, remaining blockers or next action, and whether code, tests, browser checks, commits, or pushes occurred. Do not rewrite prior session entries except to correct a factual error.
 
 ## Reuse Before Custom Build
 
@@ -86,9 +69,9 @@ If a standard component cannot meet a documented requirement, record why, implem
 - POS is a dedicated, fast, barcode-first, keyboard- and touch-friendly Livewire interface. It must preserve cart content on errors and display branch, selling store, drawer, shift, totals, and connectivity status.
 - Alpine.js or small TypeScript may be used only for barcode events, shortcuts, print handling, IndexedDB, service worker, offline queue, connectivity detection, and local device integration.
 
-## Automated Testing Directive
+## Automated Testing and Browser-Control Directive
 
-Automated tests are currently deferred by explicit project-owner directive. No automated test code shall be created or executed unless a new explicit instruction changes this policy.
+The current task verification directive is determined by `.ai/CURRENT_TASK.md`, `.ai/DECISIONS.md`, and explicit owner instructions. Automated tests are deferred unless those current sources explicitly authorize a named scope.
 
 - Do not create PHPUnit, Pest, unit, feature, integration, browser, end-to-end, Playwright, or Cypress tests.
 - Do not run `php artisan test`, Pest, PHPUnit, Playwright, Cypress, or any automated suite.
@@ -96,6 +79,16 @@ Automated tests are currently deferred by explicit project-owner directive. No a
 - During future implementation, perform scenario-based manual browser verification, permission checks, data-integrity checks, print checks, responsive/RTL/LTR checks, backup/restore checks, and UAT as specified in `docs/14-test-plan.md`.
 - Record only actual results in `.ai/TEST_RESULTS.md`.
 
+### Historical Local Visual Verification Exception - 2026-08-03
+
+The project owner explicitly authorized browser-control tooling, screenshots, and authenticated local-only visual verification for the named Phase 1 work at that time. This historical exception does not apply to later tasks unless their current authorization explicitly says so. It does not apply to production and does not authorize final TSK-008 grants.
+
+### Historical TSK-008 Automated Verification Exception - 2026-08-03
+
+The project owner explicitly authorized focused local PHPUnit feature tests and Playwright checks for TSK-008 only. This named, dated exception is not generalized to other tasks, production changes, commits, pushes, or authorization behavior for modules that did not exist.
+
+Browser-control or automated testing is prohibited unless the active task has explicit current authorization.
+
 ## Required Task Closure
 
-For each implementation task: confirm linked requirements and acceptance criteria, complete all listed UI states, apply validation and server authorization, review audit and concurrency requirements, perform the prescribed manual verification, update documentation and `.ai/` files, and leave no unresolved critical blocker.
+For each implementation task: confirm linked requirements and acceptance criteria, complete all listed UI states, apply validation and server authorization, review audit and concurrency requirements, perform the prescribed manual verification, update documentation and `.ai/` files, append the required factual session summary, and leave no unresolved critical blocker.

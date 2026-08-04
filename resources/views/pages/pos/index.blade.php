@@ -36,7 +36,7 @@
                     </div>
                 </div>
 
-                <flux:button variant="primary" size="lg" class="w-full" disabled>
+                <flux:button variant="primary" class="w-full h-12" disabled>
                     {{ __('Checkout') }}
                 </flux:button>
             </div>

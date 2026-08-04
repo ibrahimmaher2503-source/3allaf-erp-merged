@@ -1,0 +1,161 @@
+# AI Documentation Index
+
+This is the mandatory task-aware documentation router for every AI coding agent. It preserves source authority while limiting context to what the active task needs.
+
+> Do not read every file in `docs/` by default.
+> Start from the active task and use this index to load only the required documentation.
+> Expand reading only when a referenced requirement, conflict, dependency, blocker, or missing implementation detail requires it.
+
+## Authority Order
+
+1. `docs/02-prd.md` - authoritative for functional behavior.
+2. Approved Implementation Plan (`docs/10-milestones.md`) - authoritative for Development Milestones, Delivery Criteria, and Phase Gates.
+3. `.ai/DECISIONS.md` - authoritative for approved project decisions and exceptions.
+4. `docs/04-roles-permissions.md` - authoritative authorization matrix.
+5. `docs/08-architecture.md` - authoritative technical architecture.
+6. `docs/17` through `docs/29` - approved implementation policies.
+7. `docs/30` through `docs/39` - detailed local implementation specifications.
+8. `TASKS.md` - executable task scope and traceability.
+9. `.ai/UI_SCREENS.md` - canonical screen registry.
+10. Existing implementation - authoritative only for what is actually implemented, never for missing business rules.
+
+No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
+
+## Current Routing Override — TSK-010
+
+TSK-010 is the current local closure slice under approved DEC-043. Read only its routed sources and current-state files before changing catalog code. TSK-009 remains In Progress at its actual closure-review status; do not start TSK-011 or later tasks. The canonical catalog permissions remain those in DEC-038: the approved local `View (A)` grants are seeded for the verified catalog roles, while undocumented or unapproved `P`/`R` capabilities remain ungranted.
+
+## Minimal Mandatory Reading
+
+For every coding or documentation task, read only:
+
+1. `AGENTS.md`
+2. `AI_INDEX.md`
+3. `.ai/CURRENT_TASK.md`
+4. `.ai/CURRENT_MILESTONE.md`
+5. The relevant task section in `TASKS.md`
+6. The task-referenced entries in `.ai/BLOCKERS.md`
+7. The task-referenced entries in `.ai/DECISIONS.md`
+8. The latest relevant section of `.ai/HANDOFF.md`
+9. The latest relevant session in `.ai/SESSION_SUMMARY.md`
+10. The task-specific sources in the routing matrix below
+
+Read latest relevant entries, not complete histories, when safe. Do not require full `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `.ai/UI_SCREENS.md`, or the complete decision register unless the task requires them.
+
+## Architecture Reading Rule
+
+For implementation work, read the applicable portions of `docs/08-architecture.md`: architecture overview, module boundary, request/use-case lifecycle, authorization/security, states, transactions/concurrency, and deployment as relevant. Read the complete file only for an architecture change, multi-module work, a conflict, a proposed package/shared abstraction, or when the correct module boundary cannot be established.
+
+| Topic | Required `docs/08-architecture.md` sections |
+|---|---|
+| Platform | 1 Architecture, 2 Platform, 6 Request Flow, 14 Deployment & Packages |
+| Authentication | 6 Request Flow, 8 Authorization & Data Scope |
+| PWA / offline | 10 Routes/Views/UI, 12 Queue/Cache/Offline, 13 Concurrency |
+| Catalog | 2 Catalog, 11 Files/Import/Print/Reporting |
+| Purchasing | 2 Purchasing, 7 States/Immutability, 9 Inventory & Value Ledgers, 13 Concurrency |
+| Inventory | 2 Inventory, 7 States/Immutability, 9 Inventory & Value Ledgers, 13 Concurrency |
+| POS | 2 Retail, 7 States/Immutability, 10 Routes/Views/UI, 12 Offline, 13 Concurrency |
+| Cash control | 2 CashControl, 7 States/Immutability, 13 Concurrency |
+| Customers / wallets | 2 Customers, 8 Authorization, 9 Customer Value |
+| Parties / assets | 2 Parties/Assets, 7 States/Immutability, 9 Ledgers, 13 Concurrency |
+| Reporting | 2 Reporting, 8 Authorization, 11 Files/Reporting |
+| Release | 12 Queue/Cache/Offline, 14 Deployment & Packages |
+
+## PRD and Milestone Rules
+
+Locate and read only the PRD requirement IDs listed for the active task in `TASKS.md`, plus directly related NFR definitions. Read the full PRD only for broad cross-module scope, a functional contradiction, unresolved IDs, scope/exclusion changes, or a Phase 1-wide rule. Read the active DM description, Delivery Criteria, required inputs, and relevant Phase Gate in `docs/10-milestones.md`, not the complete plan for a narrow task.
+
+## Task Routing Matrix
+
+Abbreviations: `A` = architecture topics above; `D` = `docs/36-module-data-contracts.md`; `U` = `docs/37-ui-screen-specifications.md` plus only listed IDs in `.ai/UI_SCREENS.md`; `P` = `docs/38-print-export-specification.md`; `G` = relevant `docs/12`, `docs/13`, and `docs/39` gate/acceptance sections. Every row also uses its `TASKS.md` PRD IDs and active DM/DC.
+
+| Task | Milestone | Mandatory policy/specification docs | A | Schema/data docs | UI docs | Print/export docs | Acceptance/release docs |
+|---|---|---|---|---|---|---|---|
+| 001 | DM 1.1 | 30, 21 | Platform | D where platform records change | UI-SYS-003,004,010 | 38 when backup/health output exists | 39 for backup/release evidence |
+| 002 | DM 1.1 | 30, 04 | Authentication | D only if identity/session entities change | UI-AUTH-001,002; UI-SYS-008,009 | N/A | G |
+| 003 | DM 1.1 | 20, 30 | PWA/offline | D if offline records change | UI-SYS-001,002; UI-OFF-001 | N/A | G |
+| 004 | DM 1.2 | 20, 37 | Platform | N/A | referenced UI-SYS IDs | N/A | G |
+| 005 | DM 1.2 | 30, 36, 38 | Platform | D | UI-ADM-002,006-009 | 38 | G |
+| 006 | DM 1.2 | 30, 35, 36 | Platform | D | UI-ADM-003,004 | N/A | G |
+| 007 | DM 1.2 | 30, 32, 35, 36 | Cash control | D | UI-ADM-005 | 38 | G |
+| 008 | DM 1.3 | 04, 16, 30 | Authentication | D for scope relations | UI-ADM-010-012; UI-SYS-009 | N/A | G |
+| 009 | DM 1.4 | 17, 18, 19, 30, 35, 36 | Platform | D | UI-SYS-005,006; UI-AUD-001 | 38 when output exists | G |
+| 010 | DM 2.1 | 23, 35, 36, 37, 38 | Catalog | D | UI-CAT-001-003,006,007 | 38 | G |
+| 011 | DM 2.1 | 18, 19, 23, 36, 37 | Catalog | D | UI-CAT-001-003 | 38 when media/export applies | G |
+| 012 | DM 2.1 | 19, 23, 35, 36, 37, 38 | Catalog | D | UI-CAT-004,005 | 38 | G |
+| 013 | DM 2.1 | 23, 36, 37 | Catalog/Purchasing | D | UI-CAT-008 | N/A | G |
+| 014 | DM 2.2 | 17, 19, 35, 36, 37, 38 | Purchasing | D | UI-PUR-001 | 38 | G |
+| 015 | DM 2.2 | 17, 18, 19, 35, 36, 37, 38 | Purchasing/Inventory | D | UI-PUR-002; UI-INV-002,003 | 38 | G |
+| 016 | DM 2.2 | 17, 19, 35, 36, 37, 38 | Purchasing/Inventory | D | UI-PUR-003 | 38 | G |
+| 017 | DM 2.3 | 24, 35, 36, 37, 38 | Catalog/POS | D | UI-PRC-001,002; UI-POS-001 | 38 | G |
+| 018 | DM 2.3 | 24, 35, 36, 37, 38 | Catalog | D | UI-PRC-003 | 38 | G |
+| 019 | DM 2.4 | 25, 35, 36, 37 | Inventory | D | UI-INV-001-003 | 38 when reports print | G |
+| 020 | DM 2.4 | 17, 19, 25, 35, 36, 37, 38 | Inventory | D | UI-INV-004-007 | 38 transfer outputs | G |
+| 021 | DM 2.4 | 17, 19, 25, 35, 36, 37 | Inventory | D | UI-INV-011 | 38 when document output exists | G |
+| 022 | DM 2.4 | 17, 19, 25, 35, 36, 37, 38 | Inventory | D | UI-INV-008-010 | 38 | G |
+| 023 | DM 3.1 | 24, 31, 32, 35, 36, 37, 38 | POS/Cash/PWA | D | UI-POS-001,002,006,007 | 38 | G |
+| 024 | DM 3.2 | 18, 19, 24, 26, 31, 32, 35-38 | POS/Cash | D | UI-POS-001,007; UI-SYS-005 | 38 | G |
+| 025 | DM 3.3 | 17, 19, 26, 32, 35-38 | Cash control | D | UI-POS-003-005 | 38 | G |
+| 026 | DM 3.4 | 30, 31, 32, 35-38 | POS/PWA | D | UI-OFF-001-003; UI-POS-001 | 38 when receipt/conflict output exists | G |
+| 027 | DM 4.1 | 27, 35-37 | Customers | D | UI-CUS-001-003 | 38 when output exists | G |
+| 028 | DM 4.2 | 19, 27, 35-37 | Customers/wallets | D | UI-CUS-002,004,005 | 38 when statement/export exists | G |
+| 029 | DM 4.3 | 26, 27, 31, 35-38 | POS/Customers | D | UI-POS-010,011 | 38 | G |
+| 030 | DM 4.4 | 26, 31, 35-38 | POS/Inventory | D | UI-POS-008-010 | 38 | G |
+| 031 | DM 5.1 | 28, 33, 35-38 | Parties | D | UI-PTY-001-003 | 38 | G |
+| 032 | DM 5.2 | 19, 27, 28, 33, 35-38 | Parties/Customers | D | UI-PTY-004; UI-CUS-005 | 38 | G |
+| 033 | DM 5.3 | 28, 33, 35-38 | Parties/Inventory | D | UI-PTY-005,006 | 38 | G |
+| 034 | DM 5.4 | 18, 19, 29, 33, 35-38 | Parties/assets | D | UI-PTY-007-012 | 38 | G |
+| 035 | DM 5.4 | 17, 18, 19, 29, 33, 35-38 | Parties/assets | D | UI-PTY-012-014 | 38 | G |
+| 036 | DM 5.5 | 17, 19, 27-29, 33, 35-38 | Parties/assets | D | UI-PTY-015 | 38 | G |
+| 037 | DM 6.1 | 17, 19, 35-38 | POS/Parties | D | UI-QTN-001 | 38 | G |
+| 038 | DM 6.1 | 34, 36-38 | Reporting | D/read models | UI-ADM-001; UI-RPT-001 | 38 | 39 |
+| 039 | DM 6.1 | 34, 36, 37 | Reporting | D if alert state persists | UI-ADM-001; UI-SYS-007; UI-RPT-001 | N/A | 39 |
+| 040 | DM 6.2 | 19, 34, 36-38 | Reporting | D | UI-RPT-002; UI-AUD-001; UI-OFF-003 | 38 | 39 |
+| 041 | DM 6.4 | 19, 23, 25, 36-39 | Platform/catalog/inventory | D | approved import/admin screen IDs | 38 | 39 |
+| 042 | DM 6.4 | 30, 31, 32, 34, 38, 39 | Release | D only for approved config records | relevant existing IDs | 38 | 39 |
+| 043 | DM 6.3 | 34, 38, 39 | Release | N/A | scenario-specific IDs only | 38 | 39 |
+| 044 | DM 6.4 | 30, 34, 38, 39 | Release | N/A | production-smoke IDs only | 38 | 39 |
+
+### TSK-009 Slice Routing and Canonical Filenames
+
+For the Immutability and Correction Foundation slice, read the TSK-009 row above plus `docs/17-approval-policy.md`, `docs/18-attachment-media-policy.md`, `docs/19-audit-immutability-policy.md`, `docs/30-platform-operations-specification.md`, `docs/35-document-state-machines.md`, `docs/36-module-data-contracts.md`, `docs/37-ui-screen-specifications.md`, and `docs/38-print-export-specification.md`. No current Platform master is a correction source, so source-module UI and browser verification remain deferred.
+
+The canonical numbered files are `docs/37-ui-screen-specifications.md` and `docs/38-print-export-specification.md`. Do not route tasks to alternate filenames; historical status notes may mention earlier missing names without making them active dependencies.
+
+### TSK-020 Exact Minimal Reading Set
+
+`AGENTS.md`; this index; `.ai/CURRENT_TASK.md`; `.ai/CURRENT_MILESTONE.md`; the TSK-020 section in `TASKS.md`; BLK-012; applicable decisions; PRD `INV-03`; the DM 2.4 section in `docs/10-milestones.md`; architecture sections 2 Inventory, 6, 7, 9, and 13; `docs/17-approval-policy.md`; `docs/19-audit-immutability-policy.md`; `docs/25-inventory-exception-policy.md`; `docs/35-document-state-machines.md`; `docs/36-module-data-contracts.md`; only TSK-020 IDs in `.ai/UI_SCREENS.md`; relevant `docs/37` behavior; transfer outputs in `docs/38`; `docs/09-coding-standards.md`; relevant `docs/15` controls; and the linked portions of `docs/12` and `docs/13`. It does not require customer, POS, loyalty, party, asset, reporting, UAT, or unrelated product documents unless a discovered dependency requires them.
+
+## Conditional Reading
+
+| Condition | Additional reading |
+|---|---|
+| Migration/model | 36 and relevant `docs/07` section |
+| State change | 35 and 17 |
+| Approval | 17, 19, 04 |
+| Attachment | 18, 19 |
+| User-facing screen | 37 and relevant UI registry IDs |
+| Thermal/A4/PDF/Excel/label | 38 |
+| Financial or stock posting | architecture transaction/concurrency sections, 19, 36 |
+| Report/dashboard/alert | 34 and 38 |
+| Offline behavior | 30, 31, architecture offline sections |
+| Milestone/phase closure | 39 and active DM/DC |
+| Package | 21 and architecture packages section |
+| Authorization | 04 and 16 |
+| Retail/party boundary | PRD separation rule, 27, 28, 33 |
+| Contradiction | PRD, relevant decision, blocker; then stop and report |
+
+## Inspection Strategy and Prohibitions
+
+1. Resolve active task and read its row.
+2. Read the minimal state files and task section.
+3. Read listed requirements, DM/DC, and policies/specifications.
+4. Search exact entity, class, route, table, screen ID, or permission names.
+5. Inspect only relevant routes, migrations, models, Livewire components, policies, and views.
+6. Expand only for a verified dependency or implementation/enforcement point.
+
+Do not recursively read the repository, all `docs/`, whole historical logs, unrelated task sections, or documents already safely inspected in the session. Do not scan `vendor/`, `node_modules/`, generated assets, caches, logs, or storage by default. Do not inspect every application file before an initial task plan. For absence checks, search exact names and relevant module directories first; never infer absence from one missing expected path.
+
+## Maintenance
+
+Update this index when a task is added/renumbered, a policy/specification is added, a dependency or authority changes, a screen ID is added, a document is renamed, or a milestone/phase gate changes. This index routes reading; it never replaces authoritative sources.

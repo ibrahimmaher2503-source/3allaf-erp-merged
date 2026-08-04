@@ -39,5 +39,12 @@
     "Permissions Catalog": "Permissions Catalog",
     "Branch & Store Scopes": "Branch & Store Scopes",
     "Approval Limits": "Approval Limits",
-    "Authorization Matrix": "Authorization Matrix"
+    "Authorization Matrix": "Authorization Matrix",
+    "Exact code and barcode matches are prioritized before name matches.": "Exact code and barcode matches are prioritized before name matches.",
+    "12 per page": "12 per page",
+    "This identity value cannot be changed after the product is created.": "This identity value cannot be changed after the product is created.",
+    "linked": "linked",
+    "Choose the source before entering or allocating the identity.": "Choose the source before entering or allocating the identity.",
+    "Browse root categories and their child relationships.": "Browse root categories and their child relationships.",
+    "Find a brand by its code or bilingual name.": "Find a brand by its code or bilingual name."
 }

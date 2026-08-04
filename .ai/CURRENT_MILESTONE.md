@@ -1,16 +1,20 @@
 # Current Milestone
 
-**Current phase:** Phase 1, Foundation, Access and Operational Controls  
-**Current milestone:** DM 1.1, Platform Foundation  
-**Status:** In Progress  
-**Progress:** 10%  
-**Started:** 2026-08-02
+**Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
+**Current milestone:** DM 2.1, Product and Supplier Masters — TSK-010 local slice
+**Status:** In Progress (TSK-010 approved local scope complete; DEC-043; production and milestone evidence remain open)
+**Progress:** TSK-010 catalog identity foundations and required local authorization/browser verification are complete for approved local scope. TSK-009 remains In Progress at its actual closure-review status. Phase 1 production evidence, UAT, and all production exit criteria remain open.
+**Started:** 2026-08-04
 
 ## Active Scope
 
-TSK-001 is In Progress. The Laravel application foundation, local environment, authentication starter, responsive shell, direction-aware layouts, SQLite development database, and asset pipeline are present. Production infrastructure, backup, monitoring, audit, PWA/offline decisions, and the complete DM 1.1 shell and security acceptance remain open.
+TSK-010 is the only active implementation scope under approved DEC-043. TSK-009 remains In Progress at its actual closure-review status and receives no new implementation. TSK-011 and later tasks must not begin. DEC-039 adopts `docs/17-approval-policy.md` through `docs/29-rental-asset-policy.md` as the approved local-development policy baseline. DEC-040 adopts docs/30 through docs/39 as detailed local specifications and introduces `AI_INDEX.md` as the mandatory task-aware documentation router. Source-module integration, UAT, production configuration, and Phase 1 exit criteria remain open.
 
-Do not begin DM 1.2 or later milestones.
+TSK-010 closure evidence: DEC-038-approved `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Browser verification passed supplier duplicate/replay protection, category self-parent/descendant-cycle rejection, authorized view-only access, and unauthorized direct-route/action denial on the stable local server at `http://127.0.0.1:8094`.
+
+DM 2.1 is active only for this local TSK-010 exception. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
+
+Do not begin future task scope outside TSK-010. TSK-010 is locally closed for its approved scope; do not start TSK-011 or later. This current-state section supersedes historical Phase 1 and Phase 2 task sequencing notes below.
 
 ## Related Requirements
 
@@ -53,15 +57,16 @@ SQLite is a local implementation choice only. It does not approve the production
 - Laravel package discovery
 - Application key generation
 - SQLite migration execution and status review
-- Blade template compilation
+- Blade template compilation after the closure fixes
 - Route discovery
 - Vite production build
+- Manual browser review of auth, layouts, PWA shell, shared UI, settings, branches, stores, drawers, authorization, direct denials, responsive widths, and RTL/LTR direction
 
-No automated tests were created or run. Manual browser verification has not started.
+No automated application test suite was created or run in this audit. Manual browser evidence is recorded in `.ai/TEST_RESULTS.md`.
 
 ## Exit Criteria
 
-- TSK-001 through TSK-004 are complete under `docs/13-definition-of-done.md`.
+- TSK-001 through TSK-008 have the exact closure statuses recorded in `TASKS.md`; TSK-001 and TSK-005 retain named local gaps.
 - Platform foundation is demonstrated on approved environments and devices.
 - Backup/restore and baseline security evidence is recorded.
 - Critical defects are closed and owner inputs or accepted exceptions are recorded.
@@ -69,4 +74,67 @@ No automated tests were created or run. Manual browser verification has not star
 
 ## Next Action
 
-Continue TSK-001 by resolving production infrastructure inputs and implementing only the approved platform services. TSK-007 local cash drawer baseline slice is implemented under DEC-035; BLK-006 remains open for production master data and DM 1.2 completion.
+Keep TSK-009 In Progress with new implementation paused until the closure-audit handoff is accepted. Then resume only its approved remaining scope. Keep production infrastructure, real master data, legal wording, hardware, and final numeric values configurable or pending as recorded in the blocker register.
+
+## Verification Update - 2026-08-03
+
+- The local SQLite database now has all 18 local migrations applied and explicitly labeled local demo data seeded.
+- Authenticated local route rendering is verified for Dashboard, POS, System App, System Health, UI Showcase, Settings, Branches, Stores, Cash Drawers, and Authorization Baseline.
+- Visual browser, Livewire interaction, responsive RTL/LTR, PWA/offline, print, security lifecycle, and backup/restore verification remain pending. These facts do not satisfy the milestone exit criteria or close TSK-001 through TSK-007.
+
+## Visual Verification Update - 2026-08-03
+
+Chrome visual verification under DEC-036 passed for the current local authenticated routes across desktop Arabic RTL, mobile Arabic RTL, and desktop English LTR viewports. Screenshots and results are retained under `artifacts/visual-verify/`. Print, device/PWA-offline, security lifecycle, backup/restore, production infrastructure, and owner-policy evidence remain open.
+
+## Owner Decision Update - 2026-08-03
+
+DEC-037 authorizes reasonable local defaults for Phase 1 owner inputs other than the canonical authorization matrix. TSK-001 through TSK-007 remain open only for actual unimplemented or unverified Definition of Done work, not because an owner decision is pending. TSK-008 remains blocked by BLK-007 and DM 1.3.
+
+## TSK-008 Completion Update - 2026-08-03
+
+DEC-038 supersedes the prior blocked statement: BLK-007 is closed and the owner approved `docs/04-roles-permissions.md` as canonical. TSK-008 is **Completed for the current application scope**. Nine roles and 276 permissions are seeded; current routes, Livewire actions, navigation, and branch/store queries are permission-aware and verified. The next task is TSK-009; permissions for modules that do not yet exist are catalog-only and explicitly deferred in `docs/16-authorization-traceability.md`.
+
+## TSK-009 Local Documentation Baseline - 2026-08-03
+
+- DEC-039 adopts `docs/17-approval-policy.md` through `docs/29-rental-asset-policy.md` as the approved local-development policy baseline.
+- The documentation dependencies for local TSK-009 implementation are mitigated by `docs/17-approval-policy.md`, `docs/18-attachment-media-policy.md`, and `docs/19-audit-immutability-policy.md`.
+- TSK-009 is Ready to Start / Not Started - Unblocked. This entry records documentation readiness only; no TSK-009 feature implementation or verification is claimed.
+- Unrelated production blockers remain open: BLK-001, BLK-003 through BLK-006, BLK-008, BLK-010, and BLK-017. Mitigated blockers still require their recorded production decisions before production readiness.
+
+## TSK-009 Controls Update - 2026-08-03
+
+- Audit Foundation is browser-verified for approved local Platform scope.
+- Approval Foundation infrastructure is implemented and static-checked: approval records, states, transitions, scope/separation policy, stale/terminal protections, idempotency, and atomic shared audit events. No current Platform entity legitimately requires approval, so no approval UI, fake source, or browser scenario was created or claimed.
+- TSK-009 remains **In Progress** for protected attachments and immutability/correction. DM 1.1 and DM 1.2 production exit criteria remain open; no Phase 1 gate completion or production readiness is claimed.
+
+## TSK-009 Attachment Foundation Update - 2026-08-03
+
+- Protected Attachment Foundation infrastructure is implemented and locally action-verified without a business-source UI. Audit remains browser-verified; Approval remains statically verified with source/UI integration deferred.
+- No public storage, attachment navigation, generic upload screen, current Platform source binding, or production storage provider was introduced. Source-specific authorization and browser upload/download evidence remain deferred.
+- TSK-009 remains **In Progress**. Immutability/Correction Foundation is the only remaining TSK-009 infrastructure slice; no Phase 1 gate or production readiness is claimed.
+
+## Foundation Refactor Review Remediation - 2026-08-03
+
+- The focused Foundation review fixes are complete: local demo seed data is blocked from non-local environments, while canonical production roles and permissions remain seedable.
+- The owner explicitly authorized the narrow automated and Playwright verification used for this review. Focused and full test suites passed (14 tests, 73 assertions); moved Platform routes and `platform::` components rendered, hydrated, validated, and rerendered successfully.
+- This review does not implement TSK-009 or change its status. DM 1.4 remains the active local-development milestone; DM 1.1 and DM 1.2 production exit criteria remain open, and no Phase 1 gate completion or production readiness is claimed.
+
+## TSK-009 Immutability and Correction Foundation - 2026-08-03
+
+- The Immutability and Correction Foundation is implemented under `app/Modules/Platform` as source contracts, correction reference data, explicit correction types, focused guards, a transaction/audit boundary, and a future numbering interface.
+- No current Platform master is a legitimate immutable business-document source. Correction persistence, source-specific authorization, approval binding, number allocation, and UI/browser verification are deferred to the first real document task.
+- Local action-level checks passed; this is not browser verification, milestone acceptance, a Phase 1 gate, or production readiness.
+- TSK-009 remains **In Progress** for final closure review. DM 1.1 and DM 1.2 production exit criteria remain open.
+
+## TSK-009 Final Closure Review - 2026-08-04
+
+- TSK-009 is **Completed for approved local infrastructure scope**. All four foundations are implemented with consistent source references, scope fields, request IDs, version/hash conventions, redaction, transaction boundaries, and idempotency controls.
+- Deferred integration register: Approval binds to the first legitimate approval-requiring business task; Attachments bind to product images, payment evidence, imports, returns, party evidence, or asset-condition media; Immutability/Correction binds to purchase, inventory, POS, cash, party, gift-card, quotation, rental, and other approved documents; numbering binds per numbered transactional task.
+- DM 1.4 local controls are complete. DM 1.1/1.2 production exit criteria remain open; no Phase 1 gate completion, UAT acceptance, or production readiness is claimed.
+
+## Closure Audit Superseding Update — 2026-08-03
+
+- TSK-009 is not closed by this audit: its current status is **In Progress**, and no new TSK-009 implementation occurred.
+- TSK-002, TSK-003, TSK-004, TSK-006, and TSK-007 are **Completed for approved local scope**. TSK-008 remains **Completed**.
+- TSK-001 is **In Progress** for missing actual local backup/restore capability/status, setup/run/recovery deployment/rollback runbooks, and custom bilingual 419/429 views. TSK-005 is **In Progress** for missing effective-date/overlap validation and configuration print-preview flows.
+- This is a task closure update only. DM 1.1/1.2 production exit criteria, UAT acceptance, the Phase 1 gate, and production readiness remain open.
