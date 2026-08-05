@@ -1,20 +1,20 @@
 # Current Milestone
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
-**Current milestone:** Shared Platform UI Guidance — TSK-004B
-**Status:** In Progress (TSK-004B active; TSK-012 remains closed for approved local scope; milestone and production gates open)
-**Progress:** TSK-004B initial framework is implemented. Browser evidence and final reconciliation remain open. TSK-009 remains In Progress at its actual recorded status. Phase 1 production evidence, UAT, and all production exit criteria remain open.
+**Current milestone:** DM 2.2 Purchase Cycle — TSK-015 feasibility/readiness continuation
+**Status:** In Progress (TSK-014 local slice closed; TSK-015 feasibility analyzed; receipt/inventory/production/UAT gates open)
+**Progress:** TSK-010 through TSK-014 approved local slices are closed/verified as recorded. TSK-015 feasibility/readiness analysis is complete. BLK-008/BLK-010/BLK-017, inventory foundations, receipt/invoice policies, production inputs, UAT, and phase gates remain open.
 **Started:** 2026-08-04
 
 ## Active Scope
 
-TSK-004B is the active shared Platform scope. TSK-012 is closed for approved local scope and must not be reopened absent regression or dependency defects. TSK-009 remains In Progress at its actual recorded status and receives no new implementation. Do not start or modify unrelated business tasks. Production configuration, UAT, and Phase 1 exit criteria remain open.
+TSK-015 feasibility/readiness analysis is now the active scope. TSK-014 local purchase-order slice remains closed for implementation/verification only. Do not create stock movements, balances, WAC updates, fake receipts, production invoices, tax/payment defaults, discount rules, or approval thresholds until the documented TSK-015 and inventory contracts and owner inputs are available. The formal Phase 1 gate, DM 2.2, Phase 2, UAT, and production readiness remain open.
 
-TSK-010 closure evidence: DEC-038-approved `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Browser verification passed supplier duplicate/replay protection, category self-parent/descendant-cycle rejection, authorized view-only access, and unauthorized direct-route/action denial on the stable local server at `http://127.0.0.1:8094`.
+TSK-010 closure evidence: DEC-038-approved `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Browser verification passed supplier duplicate/replay protection, category self-parent/descendant-cycle rejection, authorized view-only access, and unauthorized direct-route/action denial on the stable local server. TSK-010 is closed for approved local scope only.
 
-DM 2.1 remains open because later supplier/import work is not authorized and production exit evidence is incomplete. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
+DM 2.1 local supplier/product-supplier scope is closed for its approved local slice. DM 2.2 remains open: TSK-014 local purchase-order slice is implemented and verified, while TSK-015 receipt/invoice integration, production inputs, UAT, and production exit evidence are incomplete. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
 
-Do not begin future task scope outside TSK-012. TSK-010 and TSK-011 are locally closed for their approved scopes; TSK-013 and later tasks remain deferred. This current-state section supersedes historical Phase 1 and Phase 2 task sequencing notes below.
+TSK-010, TSK-011, TSK-012, TSK-013, and the TSK-014 local slice are closed for their approved scopes. TSK-015 is In Progress for feasibility/readiness analysis only; implementation remains gated by TSK-015/Inventory contracts and owner inputs. Later tasks remain deferred until their dependencies and owner inputs are available.
 
 TSK-011 handoff boundary: local product-card fields/types/attributes/media/detail behavior and safe oversized-upload messages are implemented. Composition lines remain deferred because the approved contract lacks sufficient component, quantity, cycle, and bundle-policy definitions. The local PHP upload limit remains an infrastructure dependency and is documented without changing the application policy.
 

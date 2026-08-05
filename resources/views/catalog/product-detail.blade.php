@@ -16,6 +16,7 @@ new #[Title('Product Details')] class extends Component {
             'brand',
             'barcodes' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('barcode'),
             'images.attachment',
+            'productSuppliers.supplier',
         ]);
     }
 
@@ -88,6 +89,34 @@ new #[Title('Product Details')] class extends Component {
                         <div class="catalog-detail-field"><dt class="catalog-detail-label">{{ __($label) }}</dt><dd class="mt-1 text-sm font-medium">{{ $value ?: __('Not provided') }}</dd></div>
                     @endforeach
                 </dl>
+            <flux:card class="space-y-5 p-5 sm:p-6" data-guide="product-detail-suppliers">
+                <div class="flex items-center justify-between gap-3">
+                    <flux:heading size="lg">{{ __('Suppliers & Preference') }}</flux:heading>
+                    <flux:badge size="sm" color="sky">{{ $product->productSuppliers->count() }} {{ __('Linked') }}</flux:badge>
+                </div>
+                <div class="space-y-3">
+                    @forelse ($product->productSuppliers as $ps)
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="catalog-code-chip">{{ $ps->supplier?->code }}</span>
+                                    <span class="font-medium text-sm">{{ app()->getLocale() === 'ar' ? $ps->supplier?->name_ar : $ps->supplier?->name_en }}</span>
+                                    @if ($ps->is_preferred)
+                                        <flux:badge size="sm" color="amber">{{ __('Preferred Supplier') }}</flux:badge>
+                                    @endif
+                                </div>
+                                @if ($ps->supplier_item_code)
+                                    <div class="mt-1 text-xs text-text-muted">{{ __('Supplier Item Code') }}: <span class="font-mono">{{ $ps->supplier_item_code }}</span></div>
+                                @endif
+                            </div>
+                            <div class="text-xs text-text-muted text-end">
+                                <div>{{ __('Last Price') }}: {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '— (TSK-015)' }}</div>
+                            </div>
+                        </div>
+                    @empty
+                        <x-state.empty :title="__('No supplier linked')" :message="__('Supplier preferences and product history can be managed from the Suppliers menu.')" icon="truck" />
+                    @endforelse
+                </div>
             </flux:card>
         </div>
 

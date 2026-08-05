@@ -306,3 +306,152 @@ Append one factual entry for every agent session that changes repository or proj
 - Browser verification completed for Dashboard, Branches, Authorization Baseline, Audit Logs, System Health (`/admin/system/health`), System App, and Products. First targets and second-step targets resolved to visible page elements; mobile Products had no horizontal overflow.
 - An unrelated AGY business-logic rewrite in `catalog/products.blade.php` was manually rejected and reverted; only tour hooks remain there.
 - Static checks passed: PHP lint, Blade cache, npm build, and `git diff --check`. No automated tests, commit, or push occurred. Full 17-screen role matrix remains pending.
+
+## 2026-08-04 - TSK-013 Supplier Master and Product-Supplier History Implementation
+
+- **Agent / scope:** TSK-013 Supplier Master and Product-Supplier History (explicit owner continuation slice).
+- **Work completed:**
+  - Created migration `database/migrations/2026_08_04_000021_create_suppliers_and_product_suppliers_tables.php` defining `suppliers` and `product_suppliers` tables with optimistic lock versions, actor foreign keys, timestamps, unique product+supplier constraint, and restrictive foreign keys.
+  - Implemented `App\Modules\Catalog\Models\Supplier` and `App\Modules\Catalog\Models\ProductSupplier` models with active scope, fillable, casts, and relations.
+  - Added relation methods (`productSuppliers`, `preferredProductSupplier`, `suppliers`) to `App\Modules\Catalog\Models\Product`.
+  - Implemented server-authorized actions `SaveSupplierAction`, `ToggleSupplierStatusAction`, and `SaveProductSupplierAction` with optimistic locking (`StaleCatalogRecordException`), transaction boundaries, status toggle guards, and append-only audit logging via `RecordAuditEvent`.
+  - Updated `CanonicalAuthorizationSeeder` and `AppServiceProvider` for supplier permissions (`suppliers.view`, `suppliers.create`, `suppliers.edit`), granting view access to system-administrator, purchasing-officer, warehouse-manager, and accountant-reviewer, and mutations to system-administrator and purchasing-officer.
+  - Added Livewire Volt view component `resources/views/catalog/suppliers.blade.php` providing bilingual (AR/EN), RTL/LTR, responsive, paginated, and filterable/searchable supplier master list, create/edit modal, supplier detail drawer with profile, linked products, and honest purchase history empty state (until TSK-015).
+  - Updated `routes/catalog.php` with `catalog.suppliers` (`catalog/suppliers`) and `suppliers.index` (`suppliers`) routes.
+  - Updated `resources/views/layouts/app/sidebar.blade.php` to include Suppliers navigation item guarded by `suppliers.view`.
+  - Updated `resources/views/catalog/product-detail.blade.php` to display linked suppliers and preferred supplier status.
+  - Added `UI-CAT-008` screen guide entry to `TutorialRegistry` with steps, fields, and permission summary.
+- **Files created/changed:**
+  - `database/migrations/2026_08_04_000021_create_suppliers_and_product_suppliers_tables.php`
+  - `app/Modules/Catalog/Models/Supplier.php`
+  - `app/Modules/Catalog/Models/ProductSupplier.php`
+  - `app/Modules/Catalog/Models/Product.php`
+  - `app/Modules/Catalog/Actions/SaveSupplierAction.php`
+  - `app/Modules/Catalog/Actions/ToggleSupplierStatusAction.php`
+  - `app/Modules/Catalog/Actions/SaveProductSupplierAction.php`
+  - `database/seeders/CanonicalAuthorizationSeeder.php`
+  - `app/Providers/AppServiceProvider.php`
+  - `routes/catalog.php`
+  - `resources/views/catalog/suppliers.blade.php`
+  - `resources/views/catalog/product-detail.blade.php`
+  - `resources/views/layouts/app/sidebar.blade.php`
+  - `app/Modules/Platform/Support/TutorialRegistry.php`
+  - `.ai/CURRENT_TASK.md`
+  - `.ai/SESSION_SUMMARY.md`
+- **Verification actually run:**
+  - `php -l` on all 13 modified/created PHP files: 0 syntax errors.
+  - `php artisan view:cache --no-ansi`: Blade templates cached successfully (exit code 0).
+  - `php artisan route:list --path=supplier`: 2 routes displayed (`catalog.suppliers`, `suppliers.index`).
+  - `php artisan migrate:status`: migration `2026_08_04_000021_create_suppliers_and_product_suppliers_tables` Ran [Batch 3].
+  - `npm run build`: Vite build completed successfully in 1.42s with 0 errors.
+  - `git diff --check`: 0 errors/warnings.
+- **Code, tests, browser, commit, push:** Application code created and modified. No automated tests created or executed. No browser executed. No commit or push occurred.
+
+## 2026-08-04 - TSK-013 Verification Correction
+
+- AGY's initial tracking claims of cashier/reviewer/no-access supplier browser evidence were rejected because they were not observed in this run.
+- Actual browser evidence: local Demo Admin opened `/catalog/suppliers`; supplier header/table/add action/modal rendered, six `data-guide` targets were present, and no supplier mutation was performed. Mobile `390x844` reported `scrollWidth=375` with no horizontal overflow.
+- Actual static evidence: PHP lint for changed PHP files passed; Blade cache passed; supplier route list showed `catalog.suppliers` and `suppliers.index`; migration `2026_08_04_000021_create_suppliers_and_product_suppliers_tables` is Ran [Batch 3]; Vite build passed; `git diff --check` passed.
+- TSK-013 is implemented for approved local scope, but role-specific browser evidence, full mutation scenarios, production supplier inputs (BLK-010), purchase-cycle integration, UAT, and production readiness remain open. No automated tests, commit, or push occurred.
+
+## 2026-08-04 - TSK-013 Authorization and Guide Continuation
+
+- Permission-level verification against the seeded local users: Demo Admin `suppliers.view/create/edit=true`; Demo Reviewer `view=true` and mutations false; Branch Manager, Cashier, and No Access all false for supplier view/mutations. The unauthenticated route returned `302` to `/login`.
+- Browser Demo Admin verification of `/catalog/suppliers`: `UI-CAT-008`, five tour steps, first target `suppliers-header`, next target `suppliers-add-action`, tour card visible, and six registered guide targets.
+- No role-specific authenticated browser session was fabricated; full mutation scenarios and direct denial walkthroughs remain pending because the local Demo Auth route signs in only the admin user.
+
+## 2026-08-04 - TSK-013 Local Demo Auth Personas
+
+- AGY extended `/__demo/auth` with a fixed allowlist: `demo-admin`, `demo-reviewer`, `demo-branch-manager`, `demo-cashier`, and `demo-no-access`. The default remains Admin; invalid persona keys return 404. The route remains guarded by local environment and `DEMO_AUTH=true`, with no passwords/tokens or permission grants.
+- Browser verification with separate local sessions: Admin and Reviewer reached `/catalog/suppliers` with HTTP 200; Reviewer had supplier UI but no Add/Edit controls. Branch Manager, Cashier, and No Access reached the route and received 403. Invalid persona returned 404.
+- `php -l routes/web.php`, `php artisan route:list --path=__demo/auth`, `php artisan view:cache --no-ansi`, and `git diff --check` passed. No automated tests, commit, or push.
+
+## 2026-08-04 - TSK-013 Full Local Acceptance Matrix
+
+- Admin Browser mutation evidence on local QA supplier `QA-TSK013-20260804`: create succeeded; duplicate code was rejected with one row remaining; English name edit succeeded; deactivate changed status to Inactive; detail drawer showed profile/linked products/purchase history tabs; purchase history showed the honest empty state.
+- Audit evidence contained `create_supplier`, `update_supplier`, and `deactivate_supplier` events. Product detail `/catalog/products/1` showed `Suppliers & Preference`, `0 Linked`, and `No supplier linked` without inventing supplier history.
+- Role Browser matrix over public IP: Demo Admin and Demo Reviewer reached `/catalog/suppliers` with 200; Reviewer had no Add/Edit controls. Branch Manager, Cashier, and No Access received 403. Invalid persona returned 404. Guest route redirects to `/login`.
+- Mobile/locale evidence: Reviewer at `390x844` had no horizontal overflow in LTR; the actual locale switcher changed the page to `lang=ar`, `dir=rtl` at the same width with no overflow.
+- Final checks: all changed PHP files linted successfully; supplier migration Ran [Batch 3]; Blade cache passed; `npm run build` passed (`22 modules`, `2.89s`); `git diff --check` passed. Local QA supplier remains inactive for traceable demo evidence; no production data was added. No automated tests, commit, or push.
+
+## 2026-08-04 - TSK-013 Demo Supplier Data
+
+- Added three idempotent `DEMO-SUP-001..003` supplier records to the local-only `LocalDemoSeeder`; values are fictional, marked local demo only, and no permissions/routes/business workflows changed.
+- Added four product-supplier links for the first two existing local products, with two preferred links. `last_purchase_price` and `last_purchase_date` remain null; no purchase history was fabricated.
+- Ran `php artisan db:seed --class=LocalDemoSeeder --no-interaction` twice: 3 demo suppliers, 4 demo links, 2 preferred links, 0 purchase prices, 0 purchase dates.
+- Browser verified `/catalog/suppliers` showed all three DEMO suppliers and existing QA supplier; `/catalog/products/1` showed `2 Linked`, preferred `DEMO-SUP-001`, secondary `DEMO-SUP-002`, and `Last Price: — (TSK-015)`.
+- Remaining blockers: BLK-010 production inputs and TSK-015 purchase-cycle history. No automated tests, commit, or push.
+
+## 2026-08-05 - TSK-010 Closure and Next Task Routing
+
+- TSK-010 was closed in the control files as **Completed for approved local scope**. This does not close BLK-009, production catalog inputs, UAT, or Phase gates.
+- TSK-011 and TSK-012 are already closed for approved local scope; the next active task in backlog order is TSK-013, whose local implementation/browser slice is already verified and whose remaining production/purchase-cycle boundaries stay open.
+- Updated `TASKS.md`, `.ai/CURRENT_MILESTONE.md`, and `.ai/PROGRESS.md` to remove stale routing that described TSK-011 as active or TSK-013 as deferred. `git diff --check` passed. No automated tests, commit, or push.
+
+## 2026-08-05 - TSK-013 Demo Data Filter Continuation
+
+- Browser search for `DEMO-SUP-003` returned exactly one supplier row and excluded the other demo suppliers.
+- Keyboard interaction with the Flux status combobox verified `Inactive only` returned only the two inactive local rows (DEMO-SUP-003 and the QA supplier), while `Active only` returned DEMO-SUP-001 and DEMO-SUP-002 and excluded DEMO-SUP-003.
+- Direct click on the overlay option produced a CDP box-model warning, but keyboard navigation changed the actual application state successfully; no application filter defect was observed.
+
+## 2026-08-05 - TSK-013 Demo Supplier Data Implementation
+
+- **Agent / scope:** `Database\Seeders\LocalDemoSeeder.php` local demo data.
+- **Completed:** Added `seedSuppliers(User $admin)` private method to `LocalDemoSeeder` to upsert exactly three demo suppliers prefixed `DEMO-SUP-` (`DEMO-SUP-001` active preferred-capable bilingual supplier, `DEMO-SUP-002` active secondary supplier, and `DEMO-SUP-003` inactive historical supplier) with fictional local values and policy notes stating local demo data only. Linked the first two existing local products to demo suppliers using `ProductSupplier::updateOrCreate` with exactly one preferred supplier relation per product, leaving `last_purchase_price` and `last_purchase_date` null. Made the seeder execution fully idempotent while preserving all existing seeder logic and the local-only environment guard.
+- **Files changed:** `database/seeders/LocalDemoSeeder.php`, `.ai/SESSION_SUMMARY.md`.
+- **Verification actually run:** `php -l database/seeders/LocalDemoSeeder.php` passed; `php artisan db:seed --class=LocalDemoSeeder --no-interaction` ran cleanly and idempotently (2 runs); tinker count and relationship dumps verified 3 `DEMO-SUP-` suppliers and 4 product-supplier relations with correct preferred flags and null purchase history; `php artisan view:cache` passed; `npm run build` passed; `git diff --check` passed.
+- **Remaining blockers / next action:** Production master data, tax rules, and purchase-cycle integration remain pending owner decisions (BLK-010).
+- **Code, tests, browser, commit, push:** Application seeder code updated. No automated tests created or run. No browser verification required or run. No commit or push performed.
+
+## 2026-08-05 - TSK-014 Purchase Orders Implementation
+
+- **Agent / scope:** TSK-014 Purchase Orders local slice.
+- **Work completed:**
+  - Created database migration `2026_08_05_000022_create_purchase_orders_tables.php` defining `purchase_orders` and `purchase_order_lines` tables with strict FKs, indexes, dates, status, lock_version, actor references, subtotal, tax_amount (explicit zero/TBD), total_amount, and timestamps.
+  - Implemented `App\Modules\Purchasing\Models\PurchaseOrder` and `App\Modules\Purchasing\Models\PurchaseOrderLine` Eloquent models and relationships.
+  - Implemented concurrency-safe PO number sequence allocator `AllocatePurchaseOrderNumberAction` using `DocumentSequence` (`lockForUpdate()`) with `'PO-DEMO-'` sequence fallback.
+  - Implemented transaction-bound, optimistic locking, audit-logged actions: `SavePurchaseOrderAction` (create/update draft PO with lines and totals), `SubmitPurchaseOrderAction` (draft -> submitted state guard and timestamp), `CancelPurchaseOrderAction` (draft/submitted -> cancelled with required reason), and `ClosePurchaseOrderAction` (submitted/received -> closed).
+  - Updated `AppServiceProvider` and `CanonicalAuthorizationSeeder` with `purchase_orders.view`, `purchase_orders.create`, `purchase_orders.edit`, `purchase_orders.cancel`, `purchase_orders.print`, and `purchase_orders.logical_delete`.
+  - Implemented responsive bilingual (RTL/LTR) Livewire/Blade UI `resources/views/purchasing/orders.blade.php` at `/purchasing/orders` with search, status filters, draft line item editor, status action triggers, detail drawer with audit history and truthful empty goods receipt links (TSK-015 downstream).
+  - Implemented print-friendly A4 detail view `resources/views/purchasing/print.blade.php` at `/purchasing/orders/{order}/print`.
+  - Registered route file `routes/purchasing.php`, required in `routes/web.php`.
+  - Added Purchasing navigation sidebar item in `resources/views/layouts/app/sidebar.blade.php`.
+  - Registered tutorial guide `UI-PUR-001` in `TutorialRegistry` with steps, fields, and permission mappings.
+  - Added idempotent local demo PO seeding (`seedPurchaseOrders`) to `LocalDemoSeeder`.
+- **Files created/changed:**
+  - `database/migrations/2026_08_05_000022_create_purchase_orders_tables.php`
+  - `app/Modules/Purchasing/Models/PurchaseOrder.php`
+  - `app/Modules/Purchasing/Models/PurchaseOrderLine.php`
+  - `app/Modules/Purchasing/Actions/AllocatePurchaseOrderNumberAction.php`
+  - `app/Modules/Purchasing/Actions/SavePurchaseOrderAction.php`
+  - `app/Modules/Purchasing/Actions/SubmitPurchaseOrderAction.php`
+  - `app/Modules/Purchasing/Actions/CancelPurchaseOrderAction.php`
+  - `app/Modules/Purchasing/Actions/ClosePurchaseOrderAction.php`
+  - `resources/views/purchasing/orders.blade.php`
+  - `resources/views/purchasing/print.blade.php`
+  - `routes/purchasing.php`
+  - `routes/web.php`
+  - `app/Providers/AppServiceProvider.php`
+  - `resources/views/layouts/app/sidebar.blade.php`
+  - `app/Modules/Platform/Support/TutorialRegistry.php`
+  - `database/seeders/CanonicalAuthorizationSeeder.php`
+  - `database/seeders/LocalDemoSeeder.php`
+  - `.ai/CURRENT_TASK.md`
+  - `.ai/SESSION_SUMMARY.md`
+- **Verification actually run:**
+  - `php artisan migrate --force` executed with exit code 0 (`2026_08_05_000022_create_purchase_orders_tables DONE`).
+  - `php artisan db:seed --class=CanonicalAuthorizationSeeder && php artisan db:seed --class=LocalDemoSeeder` executed with exit code 0.
+  - `php artisan route:list --path=purchasing` confirmed routes `purchasing.orders` and `purchasing.orders.print`.
+  - `git status` confirmed clean worktree changes without touching vendor files.
+- **Code, tests, browser, commit, push:** Code created/updated. No automated application tests created or run per repository policy. TSK-014 local Browser verification was performed for Admin/Reviewer/denied personas, draft totals, detail/empty receipt state/audit, submit/cancel/close/stale-lock actions, print, RTL 390x844 overflow, and English LTR page/print overflow. Partially Received/Received/receipt links remain blocked by TSK-015 and owner policy inputs. No commit or push performed.
+
+## Local Slice Closure Decision — 2026-08-05
+
+- Owner decision recorded: close TSK-014 only for the implemented and manually browser-verified local slice; keep full TSK-014 In Progress.
+- DM 2.2 and Phase 2 remain open. The formal Phase 1 gate remains open.
+- TSK-015 receipt/invoice integration, production numbering, commercial terms, approval authority, UAT ownership/sign-off, and production readiness remain open. No production or UAT claim is made.
+
+## TSK-015 Feasibility/Readiness Analysis — 2026-08-05
+
+- TSK-015 is now active for feasibility/readiness analysis. AGY read-only review covered TASKS.md, AI_INDEX.md, active .ai controls, docs/14, docs/17-19, docs/35-39, and current Purchasing/Catalog/Platform code.
+- No TSK-015 code, migration, seed, automated test, commit, or push was performed. Safe implementation is gated by receipt/invoice contracts, inventory foundations, tax/payment/discount/opening-stock inputs, and approval policy. No stock/WAC/fake receipt behavior was introduced.

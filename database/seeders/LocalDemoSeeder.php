@@ -3,6 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
@@ -145,8 +148,255 @@ class LocalDemoSeeder extends Seeder
             ],
         );
 
+        $this->seedSuppliers($admin);
+        $this->seedPurchaseOrders($admin);
+
         // Kept referenced so both store types are visible in the local demo.
         unset($warehouseStore);
+    }
+
+    private function seedSuppliers(User $admin): void
+    {
+        $primarySupplier = Supplier::query()->updateOrCreate(
+            ['code' => 'DEMO-SUP-001'],
+            [
+                'name_ar' => 'مورد الألعاب الرئيسي التجريبي',
+                'name_en' => 'Primary Demo Toy Supplier',
+                'contact_name' => 'ممثل المورد التجريبي الرئيسي',
+                'email' => 'demo.supplier.primary@toyjoy.local',
+                'phone' => '+200000000001',
+                'tax_number' => 'DEMO-TAX-SUP-001',
+                'payment_terms' => 'Local demo payment terms only; not approved production master data.',
+                'address' => 'Local Demo Address - Cairo, Egypt',
+                'status' => 'active',
+                'lock_version' => 1,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ],
+        );
+
+        $secondarySupplier = Supplier::query()->updateOrCreate(
+            ['code' => 'DEMO-SUP-002'],
+            [
+                'name_ar' => 'مورد الألعاب الثانوي التجريبي',
+                'name_en' => 'Secondary Demo Toy Supplier',
+                'contact_name' => 'مسؤول المبيعات التجريبي الثانوي',
+                'email' => 'demo.supplier.secondary@toyjoy.local',
+                'phone' => '+200000000002',
+                'tax_number' => 'DEMO-TAX-SUP-002',
+                'payment_terms' => 'Local demo payment terms only; not approved production master data.',
+                'address' => 'Local Demo Address - Giza, Egypt',
+                'status' => 'active',
+                'lock_version' => 1,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ],
+        );
+
+        $inactiveSupplier = Supplier::query()->updateOrCreate(
+            ['code' => 'DEMO-SUP-003'],
+            [
+                'name_ar' => 'مورد تجريبي قديم غير نشط',
+                'name_en' => 'Inactive Historical Demo Supplier',
+                'contact_name' => 'جهة اتصال سابقة تجريبية',
+                'email' => 'demo.supplier.inactive@toyjoy.local',
+                'phone' => '+200000000003',
+                'tax_number' => 'DEMO-TAX-SUP-003',
+                'payment_terms' => 'Local demo historical terms only; not approved production master data.',
+                'address' => 'Local Demo Address - Historical Archive, Egypt',
+                'status' => 'inactive',
+                'lock_version' => 1,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ],
+        );
+
+        unset($inactiveSupplier);
+
+        $products = Product::query()->orderBy('id')->take(2)->get();
+
+        if ($products->count() >= 2) {
+            $product1 = $products[0];
+            $product2 = $products[1];
+
+            ProductSupplier::query()->updateOrCreate(
+                ['product_id' => $product1->id, 'supplier_id' => $primarySupplier->id],
+                [
+                    'supplier_item_code' => 'DEMO-ITEM-P1-S1',
+                    'is_preferred' => true,
+                    'last_purchase_price' => null,
+                    'last_purchase_date' => null,
+                    'notes' => 'Local demo link only; not approved production master data.',
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+
+            ProductSupplier::query()->updateOrCreate(
+                ['product_id' => $product1->id, 'supplier_id' => $secondarySupplier->id],
+                [
+                    'supplier_item_code' => 'DEMO-ITEM-P1-S2',
+                    'is_preferred' => false,
+                    'last_purchase_price' => null,
+                    'last_purchase_date' => null,
+                    'notes' => 'Local demo link only; not approved production master data.',
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+
+            ProductSupplier::query()->updateOrCreate(
+                ['product_id' => $product2->id, 'supplier_id' => $secondarySupplier->id],
+                [
+                    'supplier_item_code' => 'DEMO-ITEM-P2-S2',
+                    'is_preferred' => true,
+                    'last_purchase_price' => null,
+                    'last_purchase_date' => null,
+                    'notes' => 'Local demo link only; not approved production master data.',
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+
+            ProductSupplier::query()->updateOrCreate(
+                ['product_id' => $product2->id, 'supplier_id' => $primarySupplier->id],
+                [
+                    'supplier_item_code' => 'DEMO-ITEM-P2-S1',
+                    'is_preferred' => false,
+                    'last_purchase_price' => null,
+                    'last_purchase_date' => null,
+                    'notes' => 'Local demo link only; not approved production master data.',
+                    'created_by' => $admin->id,
+                    'updated_by' => $admin->id,
+                ],
+            );
+        }
+    }
+
+    private function seedPurchaseOrders(User $admin): void
+    {
+        $supplier1 = Supplier::query()->where('code', 'DEMO-SUP-001')->first();
+        $supplier2 = Supplier::query()->where('code', 'DEMO-SUP-002')->first();
+        $store = Store::query()->where('code', 'DEMO-WH')->first();
+        $products = Product::query()->orderBy('id')->take(2)->get();
+
+        if (! $supplier1 || ! $store || $products->isEmpty()) {
+            return;
+        }
+
+        DocumentSequence::query()->firstOrCreate(
+            ['document_type' => 'purchase_order'],
+            [
+                'prefix' => 'PO-DEMO-',
+                'padding_length' => 6,
+                'next_value' => 4,
+                'reset_rule' => 'never',
+                'status' => 'active',
+                'lock_version' => 1,
+                'policy_notes' => 'Local demo sequence only; production numbering policy remains pending owner approval.',
+            ],
+        );
+
+        $prod1 = $products[0];
+        $prod2 = $products->count() > 1 ? $products[1] : $products[0];
+
+        // 1. Draft PO
+        $po1 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+            ['po_number' => 'PO-DEMO-000001'],
+            [
+                'supplier_id' => $supplier1->id,
+                'store_id' => $store->id,
+                'branch_id' => $store->branch_id,
+                'status' => 'draft',
+                'order_date' => now()->toDateString(),
+                'expected_delivery_date' => now()->addDays(7)->toDateString(),
+                'payment_terms' => 'Local demo payment terms.',
+                'notes' => 'Draft order for replenishment testing.',
+                'subtotal' => 150.0000,
+                'tax_amount' => 0.0000,
+                'total_amount' => 150.0000,
+                'lock_version' => 0,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ],
+        );
+        $po1->lines()->delete();
+        $po1->lines()->create([
+            'product_id' => $prod1->id,
+            'line_number' => 1,
+            'quantity_ordered' => 10.0000,
+            'quantity_received' => 0.0000,
+            'unit_cost' => 15.0000,
+            'subtotal' => 150.0000,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        // 2. Submitted PO
+        $po2 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+            ['po_number' => 'PO-DEMO-000002'],
+            [
+                'supplier_id' => $supplier2 ? $supplier2->id : $supplier1->id,
+                'store_id' => $store->id,
+                'branch_id' => $store->branch_id,
+                'status' => 'submitted',
+                'order_date' => now()->subDays(2)->toDateString(),
+                'expected_delivery_date' => now()->addDays(5)->toDateString(),
+                'payment_terms' => 'Local demo payment terms.',
+                'notes' => 'Submitted purchase order pending goods receipt.',
+                'subtotal' => 200.0000,
+                'tax_amount' => 0.0000,
+                'total_amount' => 200.0000,
+                'lock_version' => 1,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+                'submitted_at' => now()->subDays(1),
+                'submitted_by' => $admin->id,
+            ],
+        );
+        $po2->lines()->delete();
+        $po2->lines()->create([
+            'product_id' => $prod2->id,
+            'line_number' => 1,
+            'quantity_ordered' => 20.0000,
+            'quantity_received' => 0.0000,
+            'unit_cost' => 10.0000,
+            'subtotal' => 200.0000,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        // 3. Cancelled PO
+        $po3 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+            ['po_number' => 'PO-DEMO-000003'],
+            [
+                'supplier_id' => $supplier1->id,
+                'store_id' => $store->id,
+                'branch_id' => $store->branch_id,
+                'status' => 'cancelled',
+                'order_date' => now()->subDays(5)->toDateString(),
+                'cancel_reason' => 'Cancelled during local demo testing due to item discontinuation.',
+                'subtotal' => 75.0000,
+                'tax_amount' => 0.0000,
+                'total_amount' => 75.0000,
+                'lock_version' => 1,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+                'cancelled_at' => now()->subDays(4),
+                'cancelled_by' => $admin->id,
+            ],
+        );
+        $po3->lines()->delete();
+        $po3->lines()->create([
+            'product_id' => $prod1->id,
+            'line_number' => 1,
+            'quantity_ordered' => 5.0000,
+            'quantity_received' => 0.0000,
+            'unit_cost' => 15.0000,
+            'subtotal' => 75.0000,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
     }
 
     private function store(

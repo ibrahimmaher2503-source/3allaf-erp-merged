@@ -170,6 +170,26 @@ final class TutorialRegistry
                 self::fields('brands'),
                 'brands',
             ),
+            'UI-CAT-008' => self::guide(
+                ['ar' => 'الموردون', 'en' => 'Suppliers'],
+                ['ar' => 'إدارة بيانات الموردين والشروط التجارية وسجل التعاملات.', 'en' => 'Manage supplier contacts, commercial terms, and relation history.'],
+                ['suppliers.view', 'suppliers.create', 'suppliers.edit'],
+                'FLW-PUR-01',
+                ['catalog.suppliers'],
+                self::steps('suppliers'),
+                self::fields('suppliers'),
+                'suppliers',
+            ),
+            'UI-PUR-001' => self::guide(
+                ['ar' => 'أوامر الشراء', 'en' => 'Purchase Orders'],
+                ['ar' => 'إدارة وإنشاء وتتبع أوامر الشراء وحالات المتابعة وإلغاء الطلبات.', 'en' => 'Manage, create, and track purchase order lifecycle, status transitions, and cancellations.'],
+                ['purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit'],
+                'FLW-PUR-01',
+                ['purchasing.orders'],
+                self::steps('purchase-orders'),
+                self::fields('purchase-orders'),
+                'purchase-orders',
+            ),
             'UI-SYS-002' => self::guide(
                 ['ar' => 'تطبيق النظام', 'en' => 'System App Shell'],
                 ['ar' => 'تراجع حالة قابلية التثبيت والتحديث الآمن.', 'en' => 'Review installability and safe update status.'],
@@ -260,6 +280,26 @@ final class TutorialRegistry
                 'products_categories_brands.create' => ['ar' => 'إضافة علامة تجارية جديدة', 'en' => 'Create new brand'],
                 'products_categories_brands.edit' => ['ar' => 'تعديل بيانات العلامة التجارية', 'en' => 'Edit brand details'],
                 default => ['ar' => 'إجراء مسموح به للعلامات التجارية', 'en' => 'Permitted brand action'],
+            };
+        }
+
+        if ($key === 'suppliers' || $route === 'catalog.suppliers') {
+            return match ($permission) {
+                'suppliers.view' => ['ar' => 'عرض سجل وبيانات الموردين', 'en' => 'View supplier list and details'],
+                'suppliers.create' => ['ar' => 'إضافة سجل مورد جديد', 'en' => 'Create new supplier master record'],
+                'suppliers.edit' => ['ar' => 'تعديل بيانات المورد والشروط التجارية', 'en' => 'Edit supplier data and commercial terms'],
+                default => ['ar' => 'إجراء مسموح به للموردين', 'en' => 'Permitted supplier action'],
+            };
+        }
+
+        if ($key === 'purchase-orders' || str_starts_with($route ?? '', 'purchasing.orders')) {
+            return match ($permission) {
+                'purchase_orders.view' => ['ar' => 'عرض قائمة وتفاصيل أوامر الشراء', 'en' => 'View purchase order list and detail'],
+                'purchase_orders.create' => ['ar' => 'إنشاء مسودة أمر شراء جديد', 'en' => 'Create new draft purchase order'],
+                'purchase_orders.edit' => ['ar' => 'تعديل وتأكيد وإغلاق أمر الشراء', 'en' => 'Edit, submit, and close purchase order'],
+                'purchase_orders.cancel' => ['ar' => 'إلغاء أمر الشراء مع سبب الإلغاء', 'en' => 'Cancel purchase order with reason'],
+                'purchase_orders.print' => ['ar' => 'طباعة مستند أمر الشراء', 'en' => 'Print purchase order document'],
+                default => ['ar' => 'إجراء مسموح به لأوامر الشراء', 'en' => 'Permitted purchase order action'],
             };
         }
 
@@ -468,6 +508,20 @@ final class TutorialRegistry
                 ['title' => ['ar' => 'جدول سجل العلامات التجارية', 'en' => 'Brand Masters Directory Table'], 'body' => ['ar' => 'عرض كود العلامة، الأسماء ثنائية اللغة، عدد المنتجات المربوطة، والحالة.', 'en' => 'View brand codes, bilingual names, assigned products count, and status.'], 'selector' => '[data-guide="brands-table"], [data-guide="brands-empty"]'],
                 ['title' => ['ar' => 'تصفح قائمة العلامات التجارية', 'en' => 'Brand Directory Pagination'], 'body' => ['ar' => 'التنقل المريح بين صفحات سجلات العلامات التجارية المسجلة.', 'en' => 'Browse paginated brand records smoothly.'], 'selector' => '[data-guide="brands-pagination"], [data-guide="brands-filters"]'],
             ],
+            'suppliers' => [
+                ['title' => ['ar' => 'رأس سجل الموردين', 'en' => 'Supplier Masters Directory Header'], 'body' => ['ar' => 'إدارة الموردين الشركاء، التراخيص الضريبية والشروط التجارية.', 'en' => 'Maintain supplier partner contacts, tax registration, and commercial terms.'], 'selector' => '[data-guide="suppliers-header"]'],
+                ['title' => ['ar' => 'زر إضافة مورد جديد', 'en' => 'Add Supplier Action Button'], 'body' => ['ar' => 'فتح نموذج إنشاء سجل مورد جديد بكود فريد واسم ثنائي اللغة.', 'en' => 'Open modal to create a new supplier master record with unique code.'], 'selector' => '[data-guide="suppliers-add-action"]'],
+                ['title' => ['ar' => 'تصفية والبحث في الموردين', 'en' => 'Search & Status Supplier Filters'], 'body' => ['ar' => 'البحث بكود المورد أو اسمه أو رقم ضريبته والتصفية حسب الحالة.', 'en' => 'Search suppliers by code, name, contact or tax number and filter by status.'], 'selector' => '[data-guide="suppliers-filters"]'],
+                ['title' => ['ar' => 'جدول سجل الموردين', 'en' => 'Supplier Masters Directory Table'], 'body' => ['ar' => 'عرض كود المورد، الاسم ثنائي اللغة، معلومات الاتصال، الرقم الضريبي، وشروط الدفع.', 'en' => 'View supplier codes, bilingual names, contacts, tax numbers, and payment terms.'], 'selector' => '[data-guide="suppliers-table"], [data-guide="suppliers-empty"]'],
+                ['title' => ['ar' => 'تصفح قائمة الموردين', 'en' => 'Supplier Directory Pagination'], 'body' => ['ar' => 'التنقل المريح بين صفحات سجلات الموردين المسجلة.', 'en' => 'Browse paginated supplier master records smoothly.'], 'selector' => '[data-guide="suppliers-pagination"], [data-guide="suppliers-filters"]'],
+            ],
+            'purchase-orders' => [
+                ['title' => ['ar' => 'رأس قائمة أوامر الشراء', 'en' => 'Purchase Orders Header'], 'body' => ['ar' => 'إدارة دورة توريد المنتجات وأوامر الشراء للموردين.', 'en' => 'Manage supplier procurement and purchase order lifecycle.'], 'selector' => '[data-guide="po-header"]'],
+                ['title' => ['ar' => 'زر إنشاء أمر شراء', 'en' => 'New Purchase Order Action'], 'body' => ['ar' => 'إضافة مسودة أمر شراء وتحديد المورد والمتجر والمنتجات.', 'en' => 'Create a new draft purchase order selecting supplier, store, and items.'], 'selector' => '[data-guide="po-create-action"]'],
+                ['title' => ['ar' => 'تصفية والبحث في الأوامر', 'en' => 'PO Search & Filters'], 'body' => ['ar' => 'البحث برقم أمر الشراء وتصفية الأوامر حسب الحالة والمورد.', 'en' => 'Search by PO number and filter by status or supplier.'], 'selector' => '[data-guide="po-filters"]'],
+                ['title' => ['ar' => 'جدول أوامر الشراء', 'en' => 'Purchase Orders Directory Table'], 'body' => ['ar' => 'عرض رقم الأمر، المورد، المتجر، الحالة، الإجمالي، والإجراءات.', 'en' => 'View PO number, supplier, store, status, totals, and actions.'], 'selector' => '[data-guide="po-table"], [data-guide="po-empty"]'],
+                ['title' => ['ar' => 'تصفح قائمة أوامر الشراء', 'en' => 'PO Directory Pagination'], 'body' => ['ar' => 'التنقل المريح بين صفحات أوامر الشراء المسجلة.', 'en' => 'Browse paginated purchase order records smoothly.'], 'selector' => '[data-guide="po-pagination"], [data-guide="po-filters"]'],
+            ],
         };
 
         return array_map(fn (array $step, int $index): array => [
@@ -540,6 +594,14 @@ final class TutorialRegistry
             'brands' => [
                 ['title' => ['ar' => 'كود العلامة التجارية والاسم', 'en' => 'Brand Code & Name'], 'body' => ['ar' => 'الكود الفريد للعلامة التجارية والاسم ثنائي اللغة.', 'en' => 'Unique brand identifier code and bilingual brand name.']],
                 ['title' => ['ar' => 'حالة التفعيل', 'en' => 'Active Status'], 'body' => ['ar' => 'حالة تفعيل العلامة وإتاحيتها للاستخدام في المنتجات.', 'en' => 'Brand operational activation status for catalog assignment.']],
+            ],
+            'suppliers' => [
+                ['title' => ['ar' => 'كود المورد والاسم', 'en' => 'Supplier Code & Name'], 'body' => ['ar' => 'الكود الفريد للمورد والاسم ثنائي اللغة.', 'en' => 'Unique supplier identifier code and bilingual supplier name.']],
+                ['title' => ['ar' => 'الرقم الضريبي وشروط الدفع', 'en' => 'Tax Number & Payment Terms'], 'body' => ['ar' => 'رقم التسجيل الضريبي والشروط التجارية المعتمدة للدفع.', 'en' => 'Tax registration number and configured commercial payment terms.']],
+            ],
+            'purchase-orders' => [
+                ['title' => ['ar' => 'رقم أمر الشراء والمورد', 'en' => 'PO Number & Supplier'], 'body' => ['ar' => 'الرقم المرجعي الفريد لأمر الشراء والمورد المعتمد.', 'en' => 'Unique purchase order reference code and active assigned supplier.']],
+                ['title' => ['ar' => 'حالة الطلب والمتجر المستلم', 'en' => 'Order Status & Destination Store'], 'body' => ['ar' => 'الحالة التشغيلية الحالية (مسودة/مؤكد/ملغى/مغلق) والمتجر المستهدف.', 'en' => 'Current status (Draft/Submitted/Cancelled/Closed) and destination store.']],
             ],
             'dashboard', 'system-app' => [
                 ['title' => ['ar' => 'حقول النظرة العامة', 'en' => 'Overview Fields'], 'body' => ['ar' => 'تعرض ملخصات حالة النظام والمؤشرات المتاحة لنطاقك الحالي.', 'en' => 'Displays system status summaries and indicators available for your current scope.']],

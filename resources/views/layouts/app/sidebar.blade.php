@@ -76,8 +76,21 @@
                         <flux:sidebar.item icon="tag" :href="route('catalog.brands')" :current="request()->routeIs('catalog.brands')" wire:navigate>
                             {{ __('Brands') }}
                         </flux:sidebar.item>
+                    @endcan
+                @canany(['purchase_orders.view', 'suppliers.view'])
+                    <flux:sidebar.group :heading="__('Purchasing')" class="grid">
+                        @can('purchase_orders.view')
+                            <flux:sidebar.item icon="document-text" :href="route('purchasing.orders')" :current="request()->routeIs('purchasing.orders*')" wire:navigate>
+                                {{ __('Purchase Orders') }}
+                            </flux:sidebar.item>
+                        @endcan
+                        @can('suppliers.view')
+                            <flux:sidebar.item icon="truck" :href="route('catalog.suppliers')" :current="request()->routeIs('catalog.suppliers*') || request()->routeIs('suppliers.*')" wire:navigate>
+                                {{ __('Suppliers') }}
+                            </flux:sidebar.item>
+                        @endcan
                     </flux:sidebar.group>
-                @endcan
+                @endcanany
             </flux:sidebar.nav>
 
             <flux:spacer />

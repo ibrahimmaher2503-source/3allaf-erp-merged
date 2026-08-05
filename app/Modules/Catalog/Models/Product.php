@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends Model
 {
@@ -77,6 +79,31 @@ class Product extends Model
             ->where('status', 'active')
             ->orderByRaw("CASE WHEN role = 'main' THEN 0 ELSE 1 END")
             ->orderBy('sort_order');
+    }
+
+    public function productSuppliers(): HasMany
+    {
+        return $this->hasMany(ProductSupplier::class);
+    }
+
+    public function preferredProductSupplier(): HasOne
+    {
+        return $this->hasOne(ProductSupplier::class)->where('is_preferred', true);
+    }
+
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class, 'product_suppliers')
+            ->withPivot([
+                'supplier_item_code',
+                'is_preferred',
+                'last_purchase_price',
+                'last_purchase_date',
+                'notes',
+                'created_by',
+                'updated_by',
+            ])
+            ->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder

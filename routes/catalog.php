@@ -64,4 +64,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('catalog/brands', 'catalog::brands')
         ->middleware('can:products_categories_brands.view')
         ->name('catalog.brands');
+
+    $router->livewire('catalog/suppliers', 'catalog::suppliers')
+        ->middleware('can:suppliers.view')
+        ->name('catalog.suppliers');
+
+    $router->livewire('suppliers', 'catalog::suppliers')
+        ->middleware('can:suppliers.view')
+        ->name('suppliers.index');
 });

@@ -8,7 +8,7 @@ TSK-011 closure note (2026-08-04): local product-card fields, approved types, at
 
 ## Current Active Slice — 2026-08-04
 
-TSK-004B is **In Progress** as a shared Platform feature. Its initial registries, safe context, per-user preference persistence, shared controls, guide/flow routes, and bounded tour layer are implemented. Browser verification and final reconciliation remain open. TSK-012 remains completed for approved local scope; TSK-009 remains In Progress; no unrelated business task is changed or started.
+TSK-004B is **In Progress** as a shared Platform feature. Its initial registries, safe context, per-user preference persistence, shared controls, guide/flow routes, and bounded tour layer are implemented. Browser verification and final reconciliation remain open. TSK-012 and TSK-013 remain completed for their approved local scopes; TSK-014 local slice is implemented and verified; TSK-015 feasibility/readiness analysis is now active; TSK-009 remains In Progress. No unrelated business task is changed or started.
 
 
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
@@ -17,8 +17,8 @@ TSK-004B is **In Progress** as a shared Platform feature. Its initial registries
 | Phase 1 | DM 1.2 Organisation and Branch Setup | In Progress | Closure audited | 2026-08-03 | - | TSK-005 to TSK-007 | TSK-005 effective-date/preview gaps remain; TSK-006 and TSK-007 closed for approved local scope |
 | Phase 1 | DM 1.3 Users, Roles and Permissions | Completed (current scope) | 100% | 2026-08-03 | 2026-08-03 | TSK-008 | DEC-038 matrix seeded and enforced on all existing surfaces; future-module enforcement deferred to its tasks |
 | Phase 1 | DM 1.4 Core Controls | Completed for approved local infrastructure scope | 100% local controls | 2026-08-03 | 2026-08-04 | TSK-009 | Four reusable foundations complete; source-module integration, UAT, production configuration, and Phase 1 gate remain open |
-| Phase 2 | DM 2.1 Product and Supplier Masters | In Progress (TSK-011 approved local scope closed) | TSK-010 and TSK-011 local scope complete | 2026-08-04 | - | TSK-010 to TSK-013 | Composite composition, supplier history, production catalog inputs, and catalog `P`/`R` capability decisions remain open; later tasks are not started |
-| Phase 2 | DM 2.2 Purchase Cycle | Not Started | 0% | - | - | TSK-014 to TSK-016 | Purchasing and import |
+| Phase 2 | DM 2.1 Product and Supplier Masters | Completed for approved local scope | TSK-010 to TSK-013 local scopes closed; production/UAT gates remain open | 2026-08-04 | - | TSK-010 to TSK-013 | BLK-009/BLK-010 production inputs and UAT remain open |
+| Phase 2 | DM 2.2 Purchase Cycle | In Progress (TSK-015 feasibility/readiness) | TSK-014 local PO slice closed/verified; TSK-015 contract/dependency analysis complete; implementation pending inputs | 2026-08-05 | - | TSK-014 to TSK-016 | BLK-008/BLK-010/BLK-017, inventory foundations, receipt policies, production inputs, UAT, and Phase 2 gates remain open |
 | Phase 2 | DM 2.3 Pricing and Barcode Labels | Not Started | 0% | - | - | TSK-017 to TSK-018 | Approval and label queues |
 | Phase 2 | DM 2.4 Inventory Operations | Not Started | 0% | - | - | TSK-019 to TSK-022 | Ledgers, transfers, adjustments, and counts |
 | Phase 3 | DM 3.1 POS Checkout | Not Started | 0% | - | - | TSK-023 | Dedicated POS |

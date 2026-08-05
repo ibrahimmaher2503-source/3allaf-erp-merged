@@ -39,6 +39,18 @@ php artisan serve
 
 The current prepared environment already has its local `.env`, application key, SQLite database, migrations, Composer dependencies, npm dependencies, and production assets.
 
+### Local Demo Authentication Personas
+
+In `local` environment with `DEMO_AUTH=true`, role-specific browser verification is available via `/__demo/auth` with an allowlisted persona (`as` parameter):
+
+- Admin (Default): `/__demo/auth` or `/__demo/auth?as=demo-admin`
+- Branch Manager: `/__demo/auth?as=demo-branch-manager`
+- Cashier: `/__demo/auth?as=demo-cashier`
+- Reviewer: `/__demo/auth?as=demo-reviewer`
+- No Access: `/__demo/auth?as=demo-no-access`
+
+Optional redirect parameter: `/__demo/auth?as=demo-cashier&redirect=/pos`
+
 ## Application Foundation
 
 - Official Laravel Livewire starter foundation

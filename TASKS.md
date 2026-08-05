@@ -190,7 +190,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Manual Browser Verification:** Create/search exact code/barcode/name, duplicate/concurrent allocation, supplier change stability, attributes no variants, hierarchy cycle, unauthorized fields, RTL/LTR.
 - **Definition of Done:** DoD; stable identity and search demonstrable with no stock or price side effect.
 - **Current local implementation:** Categories, brands, products, barcodes, and local barcode sequences are migrated with unique/FK/index constraints. Category cycle/dependency guards, immutable normalized item codes, exact-priority bounded search, supplier/local barcode actions, server authorization, transaction-bound audit events, responsive Flux screens, and catalog-gated routes/navigation are implemented. Local System Administrator browser evidence covers the implemented screens and mutation paths. TSK-010 remains complete for its identity scope; product-card fields, types, protected media, and detail/full edit behavior are implemented only under the active TSK-011 scope.
-- **Local closure evidence:** DEC-038-approved catalog `View (A)` is seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Stable browser verification on `http://127.0.0.1:8094` passed cashier view-only/forged-create denial, reviewer view, branch-manager and no-access direct-route 403 denial, supplier duplicate rejection, allocation-key replay idempotency, category self-parent rejection, descendant-cycle rejection, and database integrity checks. TSK-010 is complete for approved local scope; TSK-011 is the active task and TSK-012/TSK-013 remain deferred.
+- **Local closure evidence:** DEC-038-approved catalog `View (A)` is seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Stable browser verification passed cashier view-only/forged-create denial, reviewer view, branch-manager and no-access direct-route 403 denial, supplier duplicate rejection, allocation-key replay idempotency, category self-parent rejection, descendant-cycle rejection, and database integrity checks. **TSK-010 is closed for approved local scope.** TSK-011 and TSK-012 are also closed for approved local scope; TSK-013 is the next active task and has an implemented local slice with production/UAT boundaries still open.
 
 ### TSK-011 — Complete Product Cards, Types, Attributes, and Media
 
@@ -223,21 +223,21 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-013 — Implement Supplier Master and Product-Supplier History
 
-- **Task ID / Phase / Milestone / Status:** TSK-013; Phase 2; DM 2.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-013; Phase 2; DM 2.1; **Implemented for approved local scope under explicit owner continuation; role/UAT acceptance and BLK-010 remain open.**
 - **Title / Purpose / Description:** Maintain supplier contacts/status/terms, product preference, actual/history views, returns and last-price links without rewriting historical supplier.
 - **Traceability:** PUR-01–PUR-02, NFR-01–NFR-02; US-009; FLW-PUR-01–03; UI UI-CAT-008; AC-PUR-01–02; SEC-006, SEC-011–012, SEC-017, SEC-027.
 - **Dependencies / Required Inputs:** TSK-010; `docs/23-product-barcode-policy.md` for product-supplier conventions; BLK-010 supplier data, identifiers, terms, and preference authority remain open.
 - **Database Entities:** `suppliers`, `product_suppliers`, future purchase sources, `audit_logs`.
-- **Backend / Livewire / Blade Deliverables:** supplier masters/relations/history scopes/preference version action; list/detail/form/history tabs.
-- **UI / Flux / Alpine / Vite:** Flux Table/Search/Filters/Pagination/Form/Tabs/Timeline/Badge/Dialog; Alpine none; common assets.
+- **Backend / Livewire / Blade Deliverables:** Supplier master/relation models and migration, transaction-bound save/status/preference actions with stale-version protection, audit events, and supplier list/detail/form/history UI. Purchase history remains an honest empty state until TSK-015.
+- **UI / Flux / Alpine / Vite:** Responsive bilingual Livewire/Flux supplier table, search/status filters, pagination, create/edit modal, detail drawer, linked products, and RTL/LTR shell integration.
 - **Suggested Packages:** None.
-- **Permissions / Validation / Audit / States / Print:** Purchasing manage, Warehouse/Reviewer view; unique/dependency/status/terms; preference before/after audit; active/inactive; supplier profile/history export/print.
-- **Manual Browser Verification:** Duplicate/deactivate/dependency/preference change, actual invoice history remains, last price scope, direct denial, responsive RTL/LTR.
-- **Definition of Done:** DoD; validated supplier data ready for purchase cycle.
+- **Permissions / Validation / Audit / States / Print:** `suppliers.view`, `suppliers.create`, `suppliers.edit`, and `suppliers.logical_delete` registered; view assigned to system administrator/purchasing/warehouse/reviewer, mutations to system administrator/purchasing. Unique code, status/terms validation, stale-version protection, preferred-supplier guard, and master-data audit events implemented. No print/export/approval workflow fabricated.
+- **Manual Browser Verification:** Demo Admin `/catalog/suppliers` rendered with supplier header/table/add action/modal and six guide targets; mobile `390x844` had no horizontal overflow. Role-specific view-only/scoped/no-access, mutation, duplicate/deactivate/preference, and full RTL/LTR acceptance remain pending.
+- **Definition of Done:** Local supplier data slice implemented and statically/browser smoke verified; full task remains open for role matrix, production supplier inputs, and purchase-cycle integration.
 
 ### TSK-014 — Implement Purchase Orders
 
-- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **In Progress — local slice implemented and manually browser-verified; TSK-015 receipt states and production/UAT gates remain open**.
 - **Title / Purpose / Description:** Deliver purchase-order line entry and Draft/Submitted/Partially Received/Received/Cancelled/Closed state machine with receipt links.
 - **Traceability:** PUR-03, NFR-01–NFR-03, NFR-06; US-010; FLW-PUR-01; UI UI-PUR-001; AC-PUR-03; SEC-011–012, SEC-015, SEC-017–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.1 complete; supplier/store/product and PO authorization/terms.
@@ -251,7 +251,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-015 — Implement Purchase Invoices, Import, Receipt, and Weighted-Average Cost
 
-- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **In Progress — feasibility/readiness analysis completed; implementation gated by receipt/inventory/commercial/approval inputs**.
 - **Title / Purpose / Description:** Manual/Excel purchase invoice, selected-store receipt, optional tax/discount, atomic approval, stock movement, weighted-average cost and pricing-review signal without sale-price change.
 - **Traceability:** PRC-03, PUR-04–PUR-05, NFR-01–NFR-02, NFR-06; US-011; FLW-PUR-02; UI UI-PUR-002, UI-INV-002–003; AC-PRC-03, AC-PUR-04–05; SEC-015, SEC-017–021, SEC-022–026.
 - **Dependencies / Required Inputs:** TSK-014; cost/rounding/tax/discount/import/receipt approvals and opening-stock approach.

@@ -1,22 +1,16 @@
-# Selected Task: TSK-011
+# Selected Task: TSK-015
 
 ## Current State
 
-TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is completed for approved local scope and remains closed unless a regression or dependency defect is discovered. This closure covers only the existing Product implementation for the full bilingual product card, approved product types, searchable/reportable attributes, protected product media, and product detail/full edit screens.
+TSK-015 is **In Progress — feasibility/readiness analysis completed; implementation is gated by documented receipt, inventory, commercial, and approval inputs**. TSK-014's approved local PO slice is complete and remains the dependency baseline.
 
-Do not start TSK-012 or TSK-013, pricing, inventory, labels, purchasing, or POS. Keep TSK-009 at its actual recorded status. No Phase 1 or Phase 2 gate, UAT acceptance, or production readiness claim is made.
+The safe next slice is to finalize the bounded invoice/receipt data contract and dependency map without creating stock effects, WAC updates, tax/payment defaults, approval thresholds, production data, or fake receipts. Existing Platform audit/approval/attachment foundations and TSK-014 PO linkage must be reused. Full invoice approval, receipt posting, stock movements/balances, WAC, and PO Partially Received/Received transitions require the documented TSK-015/Inventory contracts and owner-approved policies.
 
-Verified DEC-038 `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. No catalog `P` or `R` capability was granted. `demo-cashier` received HTTP 200 view access but a forged create action returned HTTP 403; `demo-reviewer` received view access; `demo-branch-manager` and `demo-no-access` received HTTP 403 direct-route denial and no Catalog navigation.
+## TSK-015 Verification Boundary
 
-The stable browser evidence also passed supplier duplicate rejection and allocation-key replay without duplicate rows, category self-parent rejection, descendant-cycle rejection, valid root/child persistence, and the requested regression/static checks. Evidence is under `artifacts/tsk-010-browser/`.
+AGY read-only feasibility analysis completed against TASKS.md, AI_INDEX.md, active .ai controls, docs/14, docs/17-19, docs/35-39, and current Purchasing/Catalog/Platform code. No code, migration, seed, automated test, commit, or push was performed in this analysis. Production/UAT/Phase gates remain open.
 
-DEC-043 authorized the prior local TSK-010 sequencing exception after the available TSK-009 foundations. TSK-011 closure is recorded under the task routing above. This does not complete the Phase 1 gate, DM 1.1/1.2 production exit, UAT, or production readiness. TSK-009 remains **In Progress** at its actual recorded status and receives no new implementation here.
 
-Current TSK-011 closure boundary: the local card, approved types, explicit attributes, protected media, detail/full edit, audit, authorization, stale-update slice, and safe oversized-upload messages are implemented and verified. Composite component lines remain explicitly deferred because the approved Phase 1 composition contract is insufficient. The local PHP upload limit is stricter than the application limit and is documented as an infrastructure boundary; no upload policy was weakened.
-
-## Previous TSK-009 Record
-
-## Authority and Scope
 
 TSK-009 - Implement Approval, Audit, Attachment, and Immutability Controls - remains **In Progress**. New TSK-009 implementation was paused during the TSK-001 through TSK-008 closure audit and no new TSK-009 implementation occurred in this session. `docs/17-approval-policy.md`, `docs/18-attachment-media-policy.md`, and `docs/19-audit-immutability-policy.md` are authoritative. DEC-039 records their adoption within the approved local policy baseline. DEC-040 adds `docs/30-platform-operations-specification.md`, `docs/35-document-state-machines.md`, `docs/36-module-data-contracts.md`, and task-relevant sections of docs/37-38 as detailed local specifications; `AI_INDEX.md` defines the minimal reading set.
 
