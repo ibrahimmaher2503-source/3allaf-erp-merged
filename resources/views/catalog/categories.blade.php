@@ -123,18 +123,18 @@ new #[Title('Category Masters')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header
-        :title="__('Category Masters')"
-        :description="__('Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.')"
-        data-guide="categories-header"
-    >
-        <x-slot:actions>
-            @can('products_categories_brands.create')
-                <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
-            @endcan
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Category Masters')"
+    :description="__('Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="categories-header"
+>
+    <x-slot:actions>
+        @can('products_categories_brands.create')
+            <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
+        @endcan
+    </x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="squares-2x2" title="{{ __('Hierarchy rules') }}">
         {{ __('Root and child categories are supported. Self-parenting, descendant cycles, inactive parents for active children, and deactivation with active product or child dependencies are blocked on the server.') }}
@@ -192,7 +192,7 @@ new #[Title('Category Masters')] class extends Component {
                                     <div class="min-w-0"><div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</div><div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $category->name_en : $category->name_ar }}</div></div>
                                 </div>
                             </flux:table.cell>
-                            <flux:table.cell class="text-xs">@if ($category->parent)<span class="text-text-muted">{{ __('Child of') }}</span> <span class="font-mono">{{ $category->parent->code }}</span>@else<flux:badge size="sm" color="sky">{{ __('Root') }}</flux:badge>@endif</flux:table.cell>
+                            <flux:table.cell class="text-xs">@if ($category->parent)<span class="text-text-muted">{{ __('Child of') }}</span> <span class="font-mono">{{ $category->parent->code }}</span>@else<flux:badge size="sm" color="zinc">{{ __('Root') }}</flux:badge>@endif</flux:table.cell>
                             <flux:table.cell><span class="font-mono text-xs text-text-muted">{{ $category->sort_order }}</span></flux:table.cell>
                             <flux:table.cell><flux:badge size="sm" :color="$category->status === 'active' ? 'emerald' : 'zinc'">{{ __($category->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></flux:table.cell>
                             <flux:table.cell class="whitespace-nowrap">@can('products_categories_brands.edit')<div class="catalog-actions"><flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditCategoryModal({{ $category->id }})" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}" /><flux:button size="xs" variant="subtle" :icon="$category->status === 'active' ? 'pause' : 'play'" wire:click="toggleCategoryStatus({{ $category->id }})" title="{{ $category->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $category->status === 'active' ? __('Deactivate') : __('Activate') }}" /></div>@else<span class="text-xs font-medium text-text-muted">{{ __('View only') }}</span>@endcan</flux:table.cell>
@@ -214,4 +214,4 @@ new #[Title('Category Masters')] class extends Component {
             <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end"><flux:button type="button" variant="subtle" wire:click="$set('showCategoryModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveCategory">{{ __('Save category') }}</flux:button></div>
         </form>
     </flux:modal>
-</section>
+</x-app.page>

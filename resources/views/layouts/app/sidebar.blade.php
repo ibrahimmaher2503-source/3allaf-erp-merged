@@ -7,14 +7,21 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen overflow-x-hidden">
-        <flux:sidebar sticky collapsible="mobile" class="app-sidebar border-e">
+    <body class="app-layout min-h-screen overflow-x-hidden">
+        <ui-sidebar
+            class="lg:col-start-1 z-1 flex flex-col gap-4 [:where(&)]:w-64 p-4 max-lg:data-flux-sidebar-cloak:hidden data-flux-sidebar-on-mobile:data-flux-sidebar-collapsed-mobile:-translate-x-full data-flux-sidebar-on-mobile:data-flux-sidebar-collapsed-mobile:rtl:translate-x-full z-20! data-flux-sidebar-on-mobile:start-0! data-flux-sidebar-on-mobile:fixed! data-flux-sidebar-on-mobile:top-0! data-flux-sidebar-on-mobile:min-h-dvh! data-flux-sidebar-on-mobile:max-h-dvh! max-h-dvh overflow-y-auto overscroll-contain app-sidebar border-e transition-[transform,width,padding,box-shadow] duration-200 ease-out"
+            collapsible="mobile"
+            sticky
+            x-data
+            data-flux-sidebar-cloak
+            data-flux-sidebar
+        >
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            <flux:sidebar.nav class="gap-5">
+            <nav class="flex flex-col overflow-visible min-h-auto gap-5" data-flux-sidebar-nav>
                 @can('dashboard_reports.view')
                     <flux:sidebar.group :heading="__('Dashboard')" class="grid">
                         <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
@@ -91,7 +98,7 @@
                         @endcan
                     </flux:sidebar.group>
                 @endcanany
-            </flux:sidebar.nav>
+            </nav>
 
             <flux:spacer />
 
@@ -106,8 +113,9 @@
             </div>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
-        </flux:sidebar>
+        </ui-sidebar>
 
+        <div class="app-layout__content min-w-0">
         <!-- Mobile User Menu -->
         <flux:header class="lg:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
@@ -190,13 +198,16 @@
 
         @include('components.platform.dashboard-tools', ['pageGuide' => \App\Modules\Platform\Data\PageGuideContext::fromRequest(auth()->user())])
 
-        {{ $slot }}
+        <flux:main>
+            {{ $slot }}
+        </flux:main>
 
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />
             </flux:toast.group>
         @endpersist
+        </div>
 
         @fluxScripts
     </body>

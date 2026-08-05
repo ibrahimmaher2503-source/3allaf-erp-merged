@@ -29,19 +29,19 @@ new #[Title('Product Details')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header
-        :title="app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en"
-        :description="__('Product detail summary with role-safe identity, attributes, barcodes, and protected media.')"
-        data-guide="product-detail-header"
-    >
-        <x-slot:actions>
-            <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
-            @if ($canEdit)
-                <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="primary" icon="pencil">{{ __('Edit product card') }}</flux:button>
-            @endif
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en"
+    :description="__('Product detail summary with role-safe identity, attributes, barcodes, and protected media.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="product-detail-header"
+>
+    <x-slot:actions>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+        @if ($canEdit)
+            <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="primary" icon="pencil">{{ __('Edit product card') }}</flux:button>
+        @endif
+    </x-slot:actions>
 
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,.7fr)]">
         <div class="space-y-5">
@@ -89,6 +89,8 @@ new #[Title('Product Details')] class extends Component {
                         <div class="catalog-detail-field"><dt class="catalog-detail-label">{{ __($label) }}</dt><dd class="mt-1 text-sm font-medium">{{ $value ?: __('Not provided') }}</dd></div>
                     @endforeach
                 </dl>
+            </flux:card>
+
             <flux:card class="space-y-5 p-5 sm:p-6" data-guide="product-detail-suppliers">
                 <div class="flex items-center justify-between gap-3">
                     <flux:heading size="lg">{{ __('Suppliers & Preference') }}</flux:heading>
@@ -152,4 +154,4 @@ new #[Title('Product Details')] class extends Component {
             <flux:callout variant="success" icon="shield-check" title="{{ __('Audit and scope protected') }}">{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</flux:callout>
         </aside>
     </div>
-</section>
+</x-app.page>

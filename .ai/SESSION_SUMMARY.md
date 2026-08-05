@@ -455,3 +455,130 @@ Append one factual entry for every agent session that changes repository or proj
 
 - TSK-015 is now active for feasibility/readiness analysis. AGY read-only review covered TASKS.md, AI_INDEX.md, active .ai controls, docs/14, docs/17-19, docs/35-39, and current Purchasing/Catalog/Platform code.
 - No TSK-015 code, migration, seed, automated test, commit, or push was performed. Safe implementation is gated by receipt/invoice contracts, inventory foundations, tax/payment/discount/opening-stock inputs, and approval policy. No stock/WAC/fake receipt behavior was introduced.
+
+## 2026-08-05 - Collapsed Sidebar Hover Expansion Repair
+
+- **Agent / scope:** Owner-requested sidebar interaction repair for the local authenticated demo shell.
+- **Completed:** Collapsed navigation now keeps visible icons in a 56px rail. Hover and keyboard focus expand the sidebar to 256px as an opaque overlay, reveal labels/groups, preserve the main column position, and avoid inline grid-column conflicts with the shared shell.
+- **Files changed:** `resources/css/app.css`, `resources/views/components/platform/dashboard-tools.blade.php`, `resources/views/layouts/app/sidebar.blade.php`, `.ai/TEST_RESULTS.md`, and this log.
+- **Verification actually run:** `npm run build`, `git diff --check`, authenticated browser geometry checks for collapsed and focus-expanded states, final visual screenshot, and final browser console check with zero messages/errors. Collapsed: sidebar 56px/main 1209px; focus-expanded: sidebar 256px/main 1209px.
+- **Remaining blockers / next action:** Mobile-device and full RTL interaction matrix remain pending; no UAT or production-readiness claim.
+- **Code, tests, browser, commit, push:** UI/CSS and preference-sync code changed. Real browser verification ran. No automated test suite created or run. No commit or push performed.
+
+## 2026-08-05 - Accent Color Token Alignment with AGY
+
+- **Agent / scope:** Owner-requested AGY diagnosis, implementation, moderation, and authenticated browser review of Appearance Customizer accent propagation.
+- **Completed:** Replaced general-purpose hard-coded teal utilities with semantic accent tokens across the dashboard/shared UI and guide surfaces; preserved semantic status colors. Added a scoped Flux override so the active sidebar background follows the selected accent instead of remaining white.
+- **Files changed by AGY:** `resources/views/dashboard.blade.php`, shared state/audit/logo components, settings/drawers/system/print views, and `resources/css/app.css`. Existing unrelated local shell/doc changes were preserved and not rewritten.
+- **Verification actually run:** AGY read-only diagnosis, serialized AGY writer, serialized AGY follow-up fix, real authenticated browser selection from Amber to Teal and back to persisted Amber, computed style checks, final visual screenshot, `npm run build`, and `git diff --check`. Final console had zero messages/errors.
+- **Remaining blockers / next action:** Mobile/all-role/complete RTL matrix remains pending. No UAT or production-readiness claim; no commit or push.
+
+## 2026-08-05 - Cross-Screen Accent Propagation Review with AGY
+
+- **Completed:** AGY diagnosed and refactored general-purpose accent bypasses across Purchase Orders, actual purchasing print view, System App, POS, Settings, and guide CSS. Semantic status colors remain unchanged.
+- **Moderated correction:** The purchasing print route was verified to render `resources/views/purchasing/print.blade.php` directly; the preference bootstrap was moved there and removed from the unused generic print layout. Flux POS badge text override was corrected with a scoped `.pos-mode-badge` token rule.
+- **Browser evidence:** Persisted Amber was verified on `/purchasing/orders`, `/purchasing/orders/1/print`, `/system/app`, `/pos`, and `/admin/settings`. PO links, primary buttons, print action, system tiles, POS badge, settings tabs/save button, and active navigation followed Amber. Final Settings screenshot was visually accepted and console had zero errors.
+- **Verification:** `php artisan view:clear`, `npm run build`, and `git diff --check` passed. No commit or push; mobile/RTL/all-role matrix remains pending.
+
+## 2026-08-05 - Wider Collapsed Sidebar Rail
+
+- **Completed:** Increased the desktop collapsed rail to `4.5rem` and icon targets to `3.5rem`, keeping labels hidden and icons centered. Added a scoped important grid override so Flux cannot leave the main content offset at its expanded column width.
+- **Browser evidence:** At the active large font scale, collapsed rail measured `76.5px`; main started at `76.5px` with width `1188.5px`. Keyboard focus expanded the rail to `272px`, labels became visible, and main width stayed unchanged. Visual screenshot confirmed balanced spacing and no label leakage.
+- **Verification:** `npm run build` and `git diff --check` passed. No commit or push.
+
+## 2026-08-05 - Visual Browser Repair of Shared Application Shell
+
+- **Agent / scope:** Owner-requested visual browser verification and repair of the local authenticated demo shell.
+- **Completed:** Fixed the shared application layout that rendered the main content below/inside the sidebar with near-zero width. Replaced the problematic outer Flux sidebar/nav wrappers with explicit `ui-sidebar`/`nav` boundaries, separated the content column, and added a scoped responsive desktop grid override with RTL-safe grid placement.
+- **Files changed:** `resources/views/layouts/app.blade.php`, `resources/views/layouts/app/sidebar.blade.php`, `resources/css/app.css`.
+- **Verification actually run:** `npm run build` passed; `php artisan view:clear` passed; authenticated browser screenshots and DOM geometry were checked for Dashboard, Catalog Products, Catalog Suppliers, and Purchasing Purchase Orders. Dashboard main content measured 1009px beside a 256px sidebar at the 1280px browser viewport. Browser console returned no messages or JS errors on the final Purchase Orders check. `git diff --check` passed.
+- **Remaining blockers / next action:** Full all-role, mobile-device, RTL interaction matrix and production/UAT acceptance remain open. Supplier table intentionally uses bounded horizontal overflow for its wide action columns; no production readiness claim is made.
+- **Code, tests, browser, commit, push:** Application layout/CSS changed. Real browser visual verification ran. No PHPUnit/Pest/automated browser suite was created or run. No commit or push performed.
+
+## 2026-08-05 - Shared UI Visual Polish Pass
+
+- **Agent / scope:** Owner-requested visual improvement of the existing UI system and shared components; no business behavior changed.
+- **Completed:** Refined shared app background, sidebar surface/navigation rhythm, typography fallback, page-header hierarchy, stat cards, section cards, and Dashboard status/next-step composition. Added accent-aware dashboard rail, hover treatment, and subtle depth without inventing data.
+- **Files changed:** `resources/css/app.css`, `resources/views/components/page-header.blade.php`, `resources/views/components/cards/stat-card.blade.php`, `resources/views/components/cards/section-card.blade.php`, `resources/views/dashboard.blade.php`, and evidence files.
+- **Verification actually run:** `php artisan view:clear`, `npm run build`, `git diff --check`; authenticated desktop English dashboard visual inspection; authenticated Arabic RTL dashboard visual inspection; browser checks confirmed Amber accent, `dir=rtl`/`lang=ar`, and no horizontal overflow at the available 1280px viewport.
+- **Remaining blockers / next action:** A true device-sized mobile screenshot was not available in the current browser viewport; responsive CSS remains to be validated with a real mobile viewport. No UAT or production-readiness claim.
+- **Code, tests, browser, commit, push:** UI/CSS and shared Blade components changed. No automated application test suite ran. Real browser verification ran. No commit or push.
+
+## 2026-08-05 - Remaining Cross-Screen Accent Fixes
+
+- **Agent / scope:** Refactored general-purpose accent color bypasses across specified UI target views per AGY audit instructions.
+- **Completed:** Refactored store type badges (selling, warehouse, party) in stores view to neutral zinc, page-header badge in authorization-baseline to default zinc, health assigned badge to neutral zinc, UI showcase page-header badge to default zinc, product type and local barcode source badges in catalog products, product form media quota badge, product detail product type, linked suppliers, and local barcode badges, category root badge, supplier linked products count badge, and settings payment evidence required & tax-inclusive badges to neutral zinc. Preserved all semantic status colors (active/emerald, warning/amber, danger/red/rose).
+- **Files changed:** `resources/views/platform/admin/stores.blade.php`, `resources/views/platform/admin/authorization-baseline.blade.php`, `resources/views/platform/system/health.blade.php`, `resources/views/platform/system/ui-showcase.blade.php`, `resources/views/catalog/products.blade.php`, `resources/views/catalog/product-form.blade.php`, `resources/views/catalog/product-detail.blade.php`, `resources/views/catalog/categories.blade.php`, `resources/views/catalog/suppliers.blade.php`, `resources/views/platform/admin/settings.blade.php`, and `.ai/SESSION_SUMMARY.md`.
+- **Verification actually run:** `php artisan view:clear` passed; `npm run build` passed cleanly; `git diff --check` passed with 0 output; `grep_search` confirmed 0 remaining general-purpose color palette occurrences across all `resources/views`.
+- **Remaining blockers / next action:** Full manual browser verification matrix remains open. No commit or push performed.
+- **Code, tests, browser, commit, push:** Only UI blade view files and session summary changed. Build and view clear ran. No automated tests ran. No commit or push performed.
+
+## 2026-08-05 - Dark Sidebar/Background Appearance Control with AGY
+
+- **Agent / scope:** Owner-requested AGY implementation and visual verification of a persistent dark sidebar/background option within the existing Appearance Customizer and account Appearance settings.
+- **Completed:** Added bilingual control, synchronous FOUC-safe bootstrap, client-side persistence under `toyjoy_ui_dark_sidebar`, reset clearing, and scoped dark slate sidebar/app background styling independent from global light/dark appearance.
+- **Files changed:** `resources/views/partials/head.blade.php`, `resources/views/components/platform/dashboard-tools.blade.php`, `resources/views/pages/settings/appearance.blade.php`, `resources/css/app.css`, `.ai/TEST_RESULTS.md`, and this log.
+- **Verification actually run:** AGY read-only audit, AGY implementation, AGY narrow visual correction, `php artisan view:clear`, `npm run build`, `git diff --check`, authenticated browser computed-style/DOM checks, desktop visual screenshots, Arabic RTL screenshot, and collapsed dark rail screenshot. Session state restored to English, expanded sidebar, dark sidebar off.
+- **Remaining blockers / next action:** A true device-sized mobile screenshot remains unavailable in the current browser viewport; dedicated real mobile viewport verification remains next. No UAT or production-readiness claim.
+- **Code, tests, browser, commit, push:** UI/CSS and Blade components changed. No automated application test suite ran. Real browser verification ran. No commit or push.
+
+## 2026-08-05 - Shared Design System Phase 1 Foundation with AGY
+
+- **Agent / scope:** Owner-requested implementation of the first reusable page-system layer: theme bootstrap, additive `x-app.page`, and document/print layout inheritance.
+- **Completed:** AGY read-only audit defined a four-file allowlist. Added `resources/views/partials/theme-bootstrap.blade.php`; replaced duplicate inline bootstrap in `resources/views/partials/head.blade.php`; added safe `resources/views/components/app/page.blade.php` with bounded max-width mapping and optional header/actions; updated `resources/views/layouts/print.blade.php` to inherit screen theme preview while forcing white/black/no-print media rules.
+- **Verification actually run:** AGY audit and implementation; view clear/cache; Artisan render checks for `x-app.page` and print layout; Vite build; `git diff --check`; authenticated browser theme dataset/console check; desktop Dashboard visual inspection with no regression.
+
+## 2026-08-05 - Shared Design System Phase 2 Representative Migration with AGY
+
+- **Agent / scope:** Owner-requested migration of Dashboard and Catalog Products to the Phase 1 `x-app.page` contract; no route, business, permission, or Livewire logic changes.
+- **Completed:** Dashboard now uses `x-app.page` for shared page framing/header/actions. Products now uses `x-app.page` as its single Livewire root, with the Add Product action forwarded through the shared header slot and all filters, tables, guides, pagination, and modals preserved. Added semantic `primary` support to `x-page-header` so the Dashboard progress badge follows the active accent instead of a fixed teal color.
+- **Files changed for this phase:** `resources/views/dashboard.blade.php`, `resources/views/catalog/products.blade.php`, and the focused shared badge correction in `resources/views/components/page-header.blade.php`.
+- **Verification actually run:** AGY read-only audit, AGY implementation, AGY final read-only review (**PASS**), `php artisan view:clear`, `php artisan view:cache`, `npm run build`, `git diff --check`; authenticated Dashboard and Products browser checks; Products Add Product modal open/close; LTR visual screenshots; accent switch check from teal to amber; Arabic RTL Products snapshot with direction/localized content; no horizontal overflow.
+- **Remaining blockers / next action:** Real device-sized mobile viewport verification remains pending. The new document layout still has render-level evidence but no production route was migrated to it. No automated application suite, UAT, commit, or push.
+
+## 2026-08-05 - Shared Design System Phase 3 Adoption Batch with AGY
+
+- **Agent / scope:** Owner-requested migration of Catalog Categories, Catalog Suppliers, and Purchase Orders to the Phase 1 `x-app.page` contract.
+- **Completed:** Replaced legacy outer wrappers/raw headers with shared page framing and action slots. Preserved all PHP/Livewire class blocks, permissions, wire bindings, filters, tables, pagination, semantic status/lifecycle badges, data-guide anchors, and category/supplier/purchase-order modals.
+- **Files changed for this batch:** `resources/views/catalog/categories.blade.php`, `resources/views/catalog/suppliers.blade.php`, and `resources/views/purchasing/orders.blade.php`.
+- **Verification actually run:** AGY read-only audit marked all three screens SAFE; AGY final read-only review returned PASS; `php artisan view:clear`, `php artisan view:cache`, `npm run build`, and `git diff --check` passed. Authenticated browser verification passed for Categories, Suppliers, and Purchase Orders visual layouts; Create Supplier and New Purchase Order modals opened successfully; semantic Purchase Order lifecycle colors remained visible; no page-level clipping observed. Supplier table kept its intentional bounded wide-table behavior.
+
+## 2026-08-05 - Shared Design System Phase 4 Catalog Detail Adoption with AGY
+
+- **Agent / scope:** Migrated Catalog Brands, Product Detail, and Product Form to the shared `x-app.page` contract.
+- **Completed:** Preserved Livewire/PHP logic, permissions, forms, protected media actions, data-guide anchors, semantic colors, and route behavior. Fixed the identified unclosed Product Detail attributes `flux:card` to restore valid DOM nesting.
+- **Verification actually run:** AGY audit SAFE and final review PASS; view clear/cache, Vite build, and diff check passed; browser visual verification passed for Brands, Product Detail, and Product Form. Detail/edit pages rendered correctly and no browser JavaScript errors were observed.
+
+## 2026-08-05 - Shared Design System Phase 5 Platform Admin Adoption with AGY
+
+- **Agent / scope:** Migrated Branches, Stores & Mapping, and Cash Drawers to `x-app.page`.
+- **Completed:** Preserved inline Livewire/Volt logic, query blocks, permissions, modal state, wire bindings, data-guide anchors, and semantic status tokens. Verified the actual Cash Drawers route is `/admin/cash-drawers`.
+- **Verification actually run:** AGY audit and final review PASS; view/cache/build/diff checks passed; browser verification passed for Branches, Stores, and Cash Drawers layouts, filters, actions, status badges, and sidebar consistency.
+
+## 2026-08-05 - Shared Design System Phase 6 Platform/System Adoption with AGY
+
+- **Agent / scope:** Migrated System Settings, System Health, System App, UI Pattern Showcase, and Authorization Baseline to the shared shell.
+- **Completed:** Preserved Livewire/Volt/static Alpine behavior, permissions, forms, modals, actions, ARIA/data-guide anchors, and semantic colors. System App remains nested inside `x-layouts::app` and uses `x-app.page` for its content shell.
+- **Verification actually run:** AGY final review PASS; valid route list verified; browser visual verification passed for all five. Health Refresh and UI Showcase feedback were exercised; System App connectivity/cache/installability/locale content remained visible; final browser console had no JS errors.
+- **Remaining:** Real device-sized mobile viewport, automated application suite, UAT, commit, and push remain pending.
+
+## 2026-08-05 - Shared Design System Phase 8 User Settings Adoption with AGY
+
+- **Agent / scope:** Migrated Profile, Appearance, and Security user settings screens to `x-app.page` while preserving `x-pages::settings.layout` navigation.
+- **Completed:** Preserved profile update/delete-user child component, appearance radio and dark-sidebar Alpine/localStorage behavior, password/2FA/passkey flows, security modal/events, middleware, translations, and sensitive behavior. Only the three allowlisted settings Blade views changed.
+- **Verification actually run:** AGY audit and final review PASS; view cache, Vite build, and diff check passed; browser Profile and Appearance visual checks passed. Appearance dark-sidebar was exercised and restored false. Security route correctly stopped at `/user/confirm-password` due `password.confirm`; no password was entered or bypassed. Final browser console had no JS errors.
+- **Remaining:** Security post-confirmation walkthrough needs an authorized test session; real device-sized mobile viewport, automated application suite, UAT, commit, and push remain pending.
+
+## 2026-08-05 - Full Automated Suite & Visual QA
+
+- **Execution:** Owner-approved `php artisan test` ran the full suite: 212 passed, 8 failed, 3 risky, 1,085 assertions, 51.34s.
+- **Failures:** Approval expiry authorization contract; three role-permission scope baseline expectations; three legacy CatalogImplementationAbsence expectations conflicting with implemented Catalog; one legacy no-print-route expectation conflicting with the implemented print route.
+- **Visual verification:** All 21 adopted application views were inspected on the supplied Demo Auth host. Shared shell, forms, filters, tables, actions, bilingual/RTL content, cards, upload/media panels, and system states rendered. Wide tables retained bounded overflow and no page-level clipping was visually observed. Final browser console had zero JS errors.
+- **Boundary gaps:** Security stopped correctly at `/user/confirm-password` without password entry; real device-sized mobile viewport remains unavailable. POS and A4 print were separately visually verified as excluded independent layouts.
+
+## 2026-08-05 - Shared Design System Phase 7 Import & Audit Adoption with AGY
+
+- **Agent / scope:** Migrated Product Import and Audit Logs to `x-app.page`; POS was audited and intentionally excluded because its dedicated full-screen layout is required.
+- **Completed:** Preserved Product Import file uploads, batch staging/review/approval/cancellation/error-download flows, permissions, and anchors. Preserved Audit Logs filters, pagination, scoped authorization, protected/redacted detail modal, and responsive table behavior. No POS/backend/routes/shared layout files changed.
+- **Verification actually run:** AGY audit SAFE and final review PASS; view clear/cache, Vite build, and diff check passed; browser verification passed for Product Import and Audit Logs. Audit Logs page-level `scrollWidth` equaled viewport width; final browser console had no JavaScript errors.
+- **Remaining:** POS intentionally excluded; real device-sized mobile viewport, automated application suite, UAT, commit, and push remain pending.

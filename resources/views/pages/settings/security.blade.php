@@ -166,11 +166,7 @@ new #[Title('Security settings')] class extends Component {
     }
 }; ?>
 
-<section class="w-full">
-    @include('partials.settings-heading')
-
-    <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
-
+<x-app.page :title="__('Settings')" :description="__('Manage your profile and account settings')" max-width="7xl">
     <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
@@ -338,4 +334,4 @@ new #[Title('Security settings')] class extends Component {
             </div>
         </div>
     </flux:modal>
-</section>
+</x-app.page>

@@ -221,20 +221,18 @@ new #[Title('Branch Management')] class extends Component {
     }
 }; ?>
 
-<section class="w-full space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="branches-header">
-        <div>
-            <flux:heading size="xl" level="1">{{ __('Branch Masters') }}</flux:heading>
-            <flux:subheading>{{ __('Manage commercial branch locations and their authorized POS selling store assignments.') }}</flux:subheading>
-        </div>
-
-        <div class="flex items-center gap-3">
-            @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
-            @endcan
-        </div>
-    </div>
+<x-app.page
+    :title="__('Branch Masters')"
+    :description="__('Manage commercial branch locations and their authorized POS selling store assignments.')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="branches-header"
+>
+    <x-slot:actions>
+        @can('branches_stores.create')
+            <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
+        @endcan
+    </x-slot:actions>
 
     <!-- TBD / BLK-006 Tracking Banner -->
     <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Development Baseline Only (BLK-006 Unresolved)') }}">
@@ -550,4 +548,4 @@ new #[Title('Branch Management')] class extends Component {
             <flux:button variant="subtle" wire:click="$set('showHistoryModal', false)">{{ __('Close') }}</flux:button>
         </div>
     </flux:modal>
-</section>
+</x-app.page>

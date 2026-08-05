@@ -238,25 +238,25 @@ new #[Title('Supplier Masters')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header
-        :title="__('Supplier Masters & Product-Supplier History')"
-        :description="__('Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.')"
-        data-guide="suppliers-header"
-    >
-        <x-slot:actions>
-            @if ($canCreate)
-                <flux:button
-                    icon="plus"
-                    variant="primary"
-                    wire:click="openCreateSupplierModal"
-                    data-guide="suppliers-add-action"
-                >
-                    {{ __('Add supplier') }}
-                </flux:button>
-            @endif
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Supplier Masters & Product-Supplier History')"
+    :description="__('Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="suppliers-header"
+>
+    <x-slot:actions>
+        @if ($canCreate)
+            <flux:button
+                icon="plus"
+                variant="primary"
+                wire:click="openCreateSupplierModal"
+                data-guide="suppliers-add-action"
+            >
+                {{ __('Add supplier') }}
+            </flux:button>
+        @endif
+    </x-slot:actions>
 
     <div class="space-y-5">
         <flux:card class="space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
@@ -330,7 +330,7 @@ new #[Title('Supplier Masters')] class extends Component {
                                     </flux:badge>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
-                                    <flux:badge size="sm" color="sky">{{ $supplier->product_suppliers_count }}</flux:badge>
+                                    <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
                                     <flux:button
@@ -670,4 +670,4 @@ new #[Title('Supplier Masters')] class extends Component {
             </form>
         </div>
     </flux:modal>
-</section>
+</x-app.page>

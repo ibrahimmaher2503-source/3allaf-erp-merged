@@ -35,23 +35,22 @@ new #[Title('System Health')] class extends Component {
     }
 }; ?>
 
-<section class="w-full max-w-full min-w-0 space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="health-header">
-        <div>
-            <flux:heading size="xl" level="1">{{ __('System Health & Monitoring') }}</flux:heading>
-            <flux:subheading>{{ __('Local platform baseline status, request context, and component indicators.') }}</flux:subheading>
-        </div>
+<x-app.page
+    :title="__('System Health & Monitoring')"
+    :description="__('Local platform baseline status, request context, and component indicators.')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="health-header"
+>
+    <x-slot:actions>
+        <flux:badge size="sm" variant="outline" icon="finger-print" class="max-w-full whitespace-normal break-all text-start font-mono">
+            {{ $status['request_id'] ?? 'REQ-LOCAL' }}
+        </flux:badge>
 
-        <div class="flex items-center gap-3">
-            <flux:badge size="sm" variant="outline" icon="finger-print" class="max-w-full whitespace-normal break-all text-start font-mono">
-                {{ $status['request_id'] ?? 'REQ-LOCAL' }}
-            </flux:badge>
-
-            <flux:button icon="arrow-path" size="sm" wire:click="refreshStatus" variant="subtle" data-guide="health-refresh-action">
-                {{ __('Refresh') }}
-            </flux:button>
-        </div>
-    </div>
+        <flux:button icon="arrow-path" size="sm" wire:click="refreshStatus" variant="subtle" data-guide="health-refresh-action">
+            {{ __('Refresh') }}
+        </flux:button>
+    </x-slot:actions>
 
     <div data-guide="health-banner">
         @if (($status['status'] ?? 'healthy') === 'healthy')
@@ -155,7 +154,7 @@ new #[Title('System Health')] class extends Component {
                     <flux:table.row>
                         <flux:table.cell class="font-medium">{{ __('Request Correlation ID') }}</flux:table.cell>
                         <flux:table.cell class="max-w-40 whitespace-normal break-all font-mono text-xs">{{ $status['request_id'] ?? '-' }}</flux:table.cell>
-                        <flux:table.cell><flux:badge size="sm" color="blue">{{ __('Assigned') }}</flux:badge></flux:table.cell>
+                        <flux:table.cell><flux:badge size="sm" color="zinc">{{ __('Assigned') }}</flux:badge></flux:table.cell>
                     </flux:table.row>
 
                     <flux:table.row>
@@ -167,4 +166,4 @@ new #[Title('System Health')] class extends Component {
             </flux:table>
         </div>
     </flux:card>
-</section>
+</x-app.page>

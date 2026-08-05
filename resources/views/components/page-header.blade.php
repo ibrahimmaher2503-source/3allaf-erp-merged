@@ -7,9 +7,9 @@
     'breadcrumbs' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'w-full space-y-3 mb-6 border-b border-zinc-200 pb-5 dark:border-zinc-800']) }}>
+<div {{ $attributes->merge(['class' => 'app-page-header mb-8 w-full space-y-4 border-b border-border pb-6']) }}>
     @if ($breadcrumbs || isset($breadcrumbs))
-        <div class="text-xs text-zinc-500 dark:text-zinc-400">
+        <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-text-muted">
             @if (isset($breadcrumbs))
                 {{ $breadcrumbs }}
             @else
@@ -21,19 +21,25 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="space-y-1">
             <div class="flex flex-wrap items-center gap-2.5">
-                <flux:heading size="xl" level="1" class="font-bold tracking-tight">
+                <flux:heading size="xl" level="1" class="font-bold tracking-[-0.03em] text-text-primary">
                     {{ $title }}
                 </flux:heading>
 
                 @if ($badge)
-                    <flux:badge size="sm" :color="$badgeColor">
-                        {{ $badge }}
-                    </flux:badge>
+                    @if ($badgeColor === 'primary')
+                        <span class="inline-flex items-center rounded-md bg-primary-soft px-2 py-1 text-xs font-medium text-primary ring-1 ring-primary/20">
+                            {{ $badge }}
+                        </span>
+                    @else
+                        <flux:badge size="sm" :color="$badgeColor">
+                            {{ $badge }}
+                        </flux:badge>
+                    @endif
                 @endif
             </div>
 
             @if ($description)
-                <flux:subheading class="text-sm text-zinc-500 dark:text-zinc-400">
+                <flux:subheading class="max-w-2xl text-sm leading-6 text-text-muted">
                     {{ $description }}
                 </flux:subheading>
             @endif

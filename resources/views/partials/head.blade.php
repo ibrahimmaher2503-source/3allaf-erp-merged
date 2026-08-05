@@ -1,27 +1,4 @@
-@php
-    use App\Modules\Platform\Models\UserUiPreference;
-@endphp
-
-@php($uiPreference = auth()->user()?->uiPreference)
-@php($uiPreferences = array_merge(UserUiPreference::defaults(), $uiPreference?->only(array_keys(UserUiPreference::defaults())) ?? []))
-
-<script>
-    window.__toyJoyUiPreferences = @js($uiPreferences);
-    (() => {
-        const prefs = window.__toyJoyUiPreferences;
-        const root = document.documentElement;
-        const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-        const appearance = prefs.appearance === 'system' ? (systemDark ? 'dark' : 'light') : prefs.appearance;
-        root.classList.toggle('dark', appearance === 'dark');
-        root.dataset.appearance = prefs.appearance;
-        root.dataset.accent = prefs.accent_color;
-        root.dataset.sidebarMode = prefs.sidebar_mode;
-        root.dataset.contentWidth = prefs.content_width;
-        root.dataset.fontScale = prefs.font_scale;
-        root.dataset.tableDensity = prefs.table_density;
-        root.dataset.reducedMotion = prefs.reduced_motion ? 'true' : 'false';
-    })();
-</script>
+@include('partials.theme-bootstrap')
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -88,12 +88,16 @@ new #[Title('Product Import')] class extends Component {
 };
 ?>
 
-<div class="space-y-6">
-    <x-page-header :title="__('Product Import')" :description="__('Stage, map, validate, review, and approve product spreadsheet rows without writing invalid data.')" data-guide="import-header">
-        <x-slot:actions>
-            <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Product Import')"
+    :description="__('Stage, map, validate, review, and approve product spreadsheet rows without writing invalid data.')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="import-header"
+>
+    <x-slot:actions>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+    </x-slot:actions>
 
     <flux:card class="space-y-5" data-guide="import-upload-section">
         <div>
@@ -201,4 +205,4 @@ new #[Title('Product Import')] class extends Component {
             @endif
         </flux:card>
     @endif
-</div>
+</x-app.page>

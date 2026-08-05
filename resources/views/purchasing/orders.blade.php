@@ -303,13 +303,14 @@ new #[Title('Purchase Orders')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-guide="po-header">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">{{ __('Purchase Orders') }}</h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{{ __('Manage procurement lifecycle, draft order lines, and order state actions.') }}</p>
-        </div>
+<x-app.page
+    :title="__('Purchase Orders')"
+    :description="__('Manage procurement lifecycle, draft order lines, and order state actions.')"
+    max-width="7xl"
+    class="purchasing-screen"
+    data-guide="po-header"
+>
+    <x-slot:actions>
         @if ($canCreate)
             <div>
                 <flux:button variant="primary" icon="plus" wire:click="openCreateModal" data-guide="po-create-action">
@@ -317,7 +318,7 @@ new #[Title('Purchase Orders')] class extends Component {
                 </flux:button>
             </div>
         @endif
-    </div>
+    </x-slot:actions>
 
     <!-- Filters Bar -->
     <flux:card class="space-y-4 p-5 sm:p-6" data-guide="po-filters">
@@ -361,7 +362,7 @@ new #[Title('Purchase Orders')] class extends Component {
                 <tbody class="divide-y divide-border">
                     @forelse ($orders as $order)
                         <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition">
-                            <td class="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            <td class="px-4 py-3 font-mono font-bold text-primary">
                                 {{ $order->po_number }}
                             </td>
                             <td class="px-4 py-3">
@@ -555,13 +556,13 @@ new #[Title('Purchase Orders')] class extends Component {
 
             <!-- Detail Tabs -->
             <div class="flex border-b border-border gap-4 text-sm font-medium">
-                <button wire:click="$set('detailTab', 'items')" class="pb-2 border-b-2 transition @if($detailTab === 'items') border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
+                <button wire:click="$set('detailTab', 'items')" class="pb-2 border-b-2 transition @if($detailTab === 'items') border-primary text-primary font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
                     {{ __('Items & Totals') }}
                 </button>
-                <button wire:click="$set('detailTab', 'receipts')" class="pb-2 border-b-2 transition @if($detailTab === 'receipts') border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
+                <button wire:click="$set('detailTab', 'receipts')" class="pb-2 border-b-2 transition @if($detailTab === 'receipts') border-primary text-primary font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
                     {{ __('Goods Receipts & Invoices') }}
                 </button>
-                <button wire:click="$set('detailTab', 'audit')" class="pb-2 border-b-2 transition @if($detailTab === 'audit') border-indigo-600 text-indigo-600 dark:text-indigo-400 font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
+                <button wire:click="$set('detailTab', 'audit')" class="pb-2 border-b-2 transition @if($detailTab === 'audit') border-primary text-primary font-bold @else border-transparent text-zinc-500 hover:text-zinc-700 @endif">
                     {{ __('Audit History') }}
                 </button>
             </div>
@@ -651,7 +652,7 @@ new #[Title('Purchase Orders')] class extends Component {
                     @forelse ($auditLogs as $log)
                         <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-border text-xs space-y-1">
                             <div class="flex items-center justify-between font-semibold">
-                                <span class="font-mono text-indigo-600 dark:text-indigo-400">{{ $log->event }}</span>
+                                <span class="font-mono text-primary">{{ $log->event }}</span>
                                 <span class="text-zinc-400 font-mono">{{ $log->created_at->format('Y-m-d H:i:s') }}</span>
                             </div>
                             <p class="text-zinc-600 dark:text-zinc-300">
@@ -694,4 +695,4 @@ new #[Title('Purchase Orders')] class extends Component {
             </div>
         </form>
     </flux:modal>
-</div>
+</x-app.page>

@@ -155,17 +155,18 @@ new #[Title('Cash Drawer Masters')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6" data-guide="drawers-header">
-    <x-page-header
-        :title="__('Cash Drawer Masters')"
-        :description="__('Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).')"
-    >
-        <x-slot:actions>
-            @can('drawers_payments_tax_numbering_printers.create')
-                <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
-            @endcan
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Cash Drawer Masters')"
+    :description="__('Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="drawers-header"
+>
+    <x-slot:actions>
+        @can('drawers_payments_tax_numbering_printers.create')
+            <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
+        @endcan
+    </x-slot:actions>
 
     <!-- BLK-006 & Local Development Notice Banner -->
     <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30 text-xs text-amber-800 dark:text-amber-300">
@@ -255,7 +256,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
                         @foreach($drawers as $drawer)
                             <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-700/30 transition-colors">
-                                <td class="px-4 py-3 font-mono text-xs font-bold text-teal-700 dark:text-teal-400">
+                                <td class="px-4 py-3 font-mono text-xs font-bold text-primary">
                                     {{ $drawer->code }}
                                 </td>
                                 <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
@@ -454,4 +455,4 @@ new #[Title('Cash Drawer Masters')] class extends Component {
             </div>
         </form>
     </flux:modal>
-</div>
+</x-app.page>

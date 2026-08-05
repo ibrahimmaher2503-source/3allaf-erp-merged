@@ -1,27 +1,27 @@
 <x-layouts::app :title="__('PWA Shell & Status')">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-4 sm:p-6">
-        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between" data-guide="system-app-header">
-            <div>
-                <flux:heading size="xl" level="1">{{ __('PWA Shell & Status') }}</flux:heading>
-                <flux:subheading>{{ __('Local application shell capabilities, network connectivity state, and non-sensitive static PWA cache policy.') }}</flux:subheading>
+    <x-app.page
+        :title="__('PWA Shell & Status')"
+        :description="__('Local application shell capabilities, network connectivity state, and non-sensitive static PWA cache policy.')"
+        max-width="7xl"
+        class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-4 sm:p-6"
+        data-guide="system-app-header"
+    >
+        <x-slot:actions>
+            <div x-data="{ online: navigator.onLine }"
+                 x-on:online.window="online = true"
+                 x-on:offline.window="online = false"
+                 class="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+                <span class="size-2 rounded-full" :class="online ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+                <span x-text="online ? '{{ __('Online') }}' : '{{ __('Offline') }}'" class="text-zinc-700 dark:text-zinc-300"></span>
             </div>
-            <div class="flex items-center gap-2">
-                <div x-data="{ online: navigator.onLine }"
-                     x-on:online.window="online = true"
-                     x-on:offline.window="online = false"
-                     class="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
-                    <span class="size-2 rounded-full" :class="online ? 'bg-emerald-500' : 'bg-amber-500'"></span>
-                    <span x-text="online ? '{{ __('Online') }}' : '{{ __('Offline') }}'" class="text-zinc-700 dark:text-zinc-300"></span>
-                </div>
-            </div>
-        </div>
+        </x-slot:actions>
 
         <flux:separator variant="subtle" />
 
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-connectivity">
                 <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
                         <flux:icon name="signal" class="size-5" />
                     </div>
                     <div>
@@ -41,7 +41,7 @@
 
             <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-cache">
                 <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
                         <flux:icon name="shield-check" class="size-5" />
                     </div>
                     <div>
@@ -58,7 +58,7 @@
 
             <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-700 dark:bg-zinc-900" data-guide="system-app-installable">
                 <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
                         <flux:icon name="device-phone-mobile" class="size-5" />
                     </div>
                     <div>
@@ -87,5 +87,5 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-app.page>
 </x-layouts::app>

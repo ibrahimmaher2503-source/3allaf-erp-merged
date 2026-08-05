@@ -143,13 +143,13 @@ new #[Title('Audit Logs')] class extends Component {
     }
 }; ?>
 
-<section class="page-frame space-y-5" data-guide="audit-header">
-    <x-page-header
-        :title="__('Audit logs')"
-        :description="__('Append-only, permission-scoped operational history with protected before and after values.')"
-        icon="clock"
-    />
-
+<x-app.page
+    :title="__('Audit logs')"
+    :description="__('Append-only, permission-scoped operational history with protected before and after values.')"
+    max-width="7xl"
+    class="space-y-5"
+    data-guide="audit-header"
+>
     <x-tables.data-panel :title="__('Audit events')" :description="__('Filter visible history by event, source, scope, actor, or request ID.')" data-guide="audit-table">
         <x-slot:toolbar>
             <x-tables.filter-bar data-guide="audit-filters">
@@ -282,4 +282,4 @@ new #[Title('Audit Logs')] class extends Component {
             </div>
         @endif
     </flux:modal>
-</section>
+</x-app.page>

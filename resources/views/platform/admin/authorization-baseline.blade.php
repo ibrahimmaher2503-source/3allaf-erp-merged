@@ -104,13 +104,14 @@ new #[Title('Authorization Baseline')] class extends Component {
     }
 }; ?>
 
-<section class="page-frame space-y-5" data-guide="auth-header">
-    <x-page-header
-        :title="__('Authorization Baseline')"
-        :description="__('Manage approved roles and branch or store scopes.')"
-        :badge="__('TSK-008')"
-        badgeColor="teal"
-    />
+<x-app.page
+    :title="__('Authorization Baseline')"
+    :description="__('Manage approved roles and branch or store scopes.')"
+    :badge="__('TSK-008')"
+    max-width="7xl"
+    class="space-y-5"
+    data-guide="auth-header"
+>
 
     <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-5 sm:px-6" aria-labelledby="authorization-overview-title" data-guide="auth-overview">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -217,4 +218,4 @@ new #[Title('Authorization Baseline')] class extends Component {
             </div>
         </form>
     </flux:modal>
-</section>
+</x-app.page>

@@ -33,22 +33,21 @@ new #[Title('UI Pattern Showcase')] class extends Component {
     }
 }; ?>
 
-<section class="page-frame space-y-5">
-    <x-page-header
-        :title="__('UI Pattern Showcase')"
-        :description="__('The shared visual contract for current Platform screens.')"
-        :badge="__('Platform')"
-        badgeColor="teal"
-    >
-        <x-slot:actions>
-            <flux:button icon="check-circle" size="sm" variant="primary" wire:click="triggerToast">
-                {{ __('Show feedback') }}
-            </flux:button>
-            <flux:button icon="arrow-path" size="sm" variant="subtle" wire:click="toggleLoading">
-                {{ $isSimulatingLoading ? __('Clear loading') : __('Show loading') }}
-            </flux:button>
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('UI Pattern Showcase')"
+    :description="__('The shared visual contract for current Platform screens.')"
+    :badge="__('Platform')"
+    max-width="7xl"
+    class="space-y-5"
+>
+    <x-slot:actions>
+        <flux:button icon="check-circle" size="sm" variant="primary" wire:click="triggerToast">
+            {{ __('Show feedback') }}
+        </flux:button>
+        <flux:button icon="arrow-path" size="sm" variant="subtle" wire:click="toggleLoading">
+            {{ $isSimulatingLoading ? __('Clear loading') : __('Show loading') }}
+        </flux:button>
+    </x-slot:actions>
 
     @if ($isSimulatingLoading)
         <x-state.loading :title="__('Refreshing the showcase')" :description="__('The page keeps its structure while an isolated interaction is in progress.')" />
@@ -230,4 +229,4 @@ new #[Title('UI Pattern Showcase')] class extends Component {
             <div class="flex justify-end gap-2"><flux:button variant="subtle" wire:click="$set('showDialog', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="$set('showDialog', false)">{{ __('Confirm') }}</flux:button></div>
         </div>
     </flux:modal>
-</section>
+</x-app.page>

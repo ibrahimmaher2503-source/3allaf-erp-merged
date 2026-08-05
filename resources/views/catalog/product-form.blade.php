@@ -249,16 +249,16 @@ new #[Title('Product Card')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header
-        :title="$isEditing ? __('Edit product card') : __('Create product card')"
-        :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
-        data-guide="product-form-header"
-    >
-        <x-slot:actions>
-            <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="$isEditing ? __('Edit product card') : __('Create product card')"
+    :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="product-form-header"
+>
+    <x-slot:actions>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+    </x-slot:actions>
 
     @if (session('status'))
         <flux:callout variant="success" icon="check-circle" title="{{ __('Saved') }}">{{ session('status') }}</flux:callout>
@@ -415,4 +415,4 @@ new #[Title('Product Card')] class extends Component {
             <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">{{ $isEditing ? __('Save product card') : __('Create product card') }}</flux:button>
         </div>
     </form>
-</section>
+</x-app.page>

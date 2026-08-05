@@ -382,17 +382,18 @@ new #[Title('System Settings')] class extends Component {
     }
 }; ?>
 
-<section class="w-full space-y-6" data-guide="settings-header">
-    <x-page-header
-        :title="__('System Settings Baseline (TSK-005)')"
-        :description="__('Local company identity, payment methods, tax rules, document sequence counters, printer profiles, and append-only settings audit trail.')"
-    >
-        <x-slot:actions>
-            <flux:badge size="sm" color="amber" icon="exclamation-triangle">
-                {{ __('Local TBD Policy Baseline') }}
-            </flux:badge>
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('System Settings Baseline (TSK-005)')"
+    :description="__('Local company identity, payment methods, tax rules, document sequence counters, printer profiles, and append-only settings audit trail.')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="settings-header"
+>
+    <x-slot:actions>
+        <flux:badge size="sm" color="amber" icon="exclamation-triangle">
+            {{ __('Local TBD Policy Baseline') }}
+        </flux:badge>
+    </x-slot:actions>
 
     <flux:callout variant="warning" icon="information-circle" title="{{ __('Unapproved Business Policy Guard') }}">
         {{ __('All unapproved tax rates, payment rules, numbering policies, currency settings, and printer templates carry explicit local TBD values. Production policy decisions remain blocked until owner sign-off.') }}
@@ -419,7 +420,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'company' ? 'true' : 'false' }}"
                 aria-controls="panel-company"
                 wire:click="$set('activeTab', 'company')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'company' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'company' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Company Identity') }}
             </button>
@@ -430,7 +431,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'payments' ? 'true' : 'false' }}"
                 aria-controls="panel-payments"
                 wire:click="$set('activeTab', 'payments')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'payments' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'payments' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Payment Methods') }}
             </button>
@@ -441,7 +442,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'tax' ? 'true' : 'false' }}"
                 aria-controls="panel-tax"
                 wire:click="$set('activeTab', 'tax')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'tax' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'tax' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Tax Settings') }}
             </button>
@@ -452,7 +453,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'sequences' ? 'true' : 'false' }}"
                 aria-controls="panel-sequences"
                 wire:click="$set('activeTab', 'sequences')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'sequences' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'sequences' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Document Sequences') }}
             </button>
@@ -463,7 +464,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'printers' ? 'true' : 'false' }}"
                 aria-controls="panel-printers"
                 wire:click="$set('activeTab', 'printers')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'printers' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'printers' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Printers & Templates') }}
             </button>
@@ -474,7 +475,7 @@ new #[Title('System Settings')] class extends Component {
                 aria-selected="{{ $activeTab === 'audit' ? 'true' : 'false' }}"
                 aria-controls="panel-audit"
                 wire:click="$set('activeTab', 'audit')"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'audit' ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
+                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'audit' ? 'border-primary text-primary font-semibold' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}"
             >
                 {{ __('Settings Audit Trail') }}
             </button>
@@ -683,7 +684,7 @@ new #[Title('System Settings')] class extends Component {
                                 <flux:table.cell><flux:badge size="sm" color="zinc">{{ strtoupper($method->type) }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
                                     @if ($method->requires_evidence)
-                                        <flux:badge size="sm" color="blue">{{ __('Yes') }}</flux:badge>
+                                        <flux:badge size="sm" color="zinc">{{ __('Yes') }}</flux:badge>
                                     @else
                                         <flux:badge size="sm" color="zinc">{{ __('No') }}</flux:badge>
                                     @endif
@@ -827,7 +828,7 @@ new #[Title('System Settings')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     @if ($tax->is_tax_inclusive)
-                                        <flux:badge size="sm" color="blue">{{ __('Inclusive') }}</flux:badge>
+                                        <flux:badge size="sm" color="zinc">{{ __('Inclusive') }}</flux:badge>
                                     @else
                                         <flux:badge size="sm" color="zinc">{{ __('Exclusive') }}</flux:badge>
                                     @endif
@@ -948,7 +949,7 @@ new #[Title('System Settings')] class extends Component {
                         @forelse (DocumentSequence::all() as $seq)
                             <flux:table.row key="seq-{{ $seq->id }}">
                                 <flux:table.cell class="font-mono font-bold">{{ $seq->document_type }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs text-teal-600 dark:text-teal-400">
+                                <flux:table.cell class="font-mono text-xs text-primary">
                                     {{ $seq->prefix }}{{ str_pad((string)$seq->next_value, $seq->padding_length, '0', STR_PAD_LEFT) }}{{ $seq->suffix }}
                                 </flux:table.cell>
                                 <flux:table.cell class="font-mono font-semibold">{{ $seq->next_value }}</flux:table.cell>
@@ -1158,9 +1159,9 @@ new #[Title('System Settings')] class extends Component {
                         @forelse ($settingAuditLogs as $log)
                             <flux:table.row key="log-{{ $log->id }}">
                                 <flux:table.cell class="font-mono text-xs">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs text-blue-600 dark:text-blue-400">{{ $log->request_id }}</flux:table.cell>
+                                <flux:table.cell class="font-mono text-xs text-zinc-600 dark:text-zinc-400">{{ $log->request_id }}</flux:table.cell>
                                 <flux:table.cell class="font-medium text-xs">{{ $log->actor_name ?? __('System') }}</flux:table.cell>
-                                <flux:table.cell><flux:badge size="sm" color="teal">{{ $log->event }}</flux:badge></flux:table.cell>
+                                <flux:table.cell><flux:badge size="sm" class="bg-primary-soft text-primary">{{ $log->event }}</flux:badge></flux:table.cell>
                                 <flux:table.cell class="font-mono text-xs">{{ class_basename((string) $log->source_type) }}</flux:table.cell>
                                 <flux:table.cell class="font-mono text-xs max-w-xs truncate" title="{{ json_encode($log->after_values) }}">
                                     {{ json_encode($log->after_values) }}
@@ -1182,4 +1183,4 @@ new #[Title('System Settings')] class extends Component {
             </flux:card>
         </div>
     @endif
-</section>
+</x-app.page>

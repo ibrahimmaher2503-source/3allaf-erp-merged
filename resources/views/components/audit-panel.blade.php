@@ -59,7 +59,7 @@
                     {{ $cid }}
                 </span>
                 @if ($version)
-                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
+                    <span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-primary-soft text-primary">
                         v{{ $version }}
                     </span>
                 @endif

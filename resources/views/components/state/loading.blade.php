@@ -12,7 +12,7 @@
     </div>
 @else
     <div {{ $attributes->merge(['class' => 'flex flex-col items-center justify-center p-12 text-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-4 space-y-3']) }} role="status">
-        <div class="flex items-center justify-center size-12 rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400">
+        <div class="flex items-center justify-center size-12 rounded-full bg-primary-soft text-primary">
             <flux:icon name="arrow-path" class="size-6 animate-spin shrink-0" />
         </div>
 

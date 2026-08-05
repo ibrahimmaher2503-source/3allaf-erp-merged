@@ -12,7 +12,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <x-app-logo href="{{ route('dashboard') }}" wire:navigate />
-                    <flux:badge color="teal" size="sm" class="font-bold">{{ __('POS') }}</flux:badge>
+                    <flux:badge size="sm" class="pos-mode-badge bg-primary-soft text-primary font-bold">{{ __('POS') }}</flux:badge>
                 </div>
 
                 <!-- Scope Context Indicators -->

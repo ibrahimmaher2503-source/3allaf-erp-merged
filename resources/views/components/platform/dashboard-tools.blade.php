@@ -79,6 +79,13 @@
             <label>{{ $isArabic ? 'كثافة الجداول' : 'Table density' }}<select x-model="preferences.table_density" x-on:change="applyPreferences(); savePreferences()"><option value="comfortable">{{ $isArabic ? 'مريح' : 'Comfortable' }}</option><option value="compact">{{ $isArabic ? 'مضغوط' : 'Compact' }}</option></select></label>
             <label>{{ $isArabic ? 'حجم الخط' : 'Font scale' }}<select x-model="preferences.font_scale" x-on:change="applyPreferences(); savePreferences()"><option value="small">{{ $isArabic ? 'صغير' : 'Small' }}</option><option value="normal">{{ $isArabic ? 'عادي' : 'Normal' }}</option><option value="large">{{ $isArabic ? 'كبير' : 'Large' }}</option></select></label>
             <label class="platform-assistant__check"><input type="checkbox" x-model="preferences.reduced_motion" x-on:change="applyPreferences(); savePreferences()"> {{ $isArabic ? 'تقليل الحركة' : 'Reduced motion' }}</label>
+            <label class="platform-assistant__check items-start">
+                <input type="checkbox" x-model="darkSidebar" x-on:change="updateDarkSidebar()" class="mt-0.5 shrink-0">
+                <span class="flex flex-col gap-0.5">
+                    <span class="text-sm font-semibold text-text-primary">{{ $isArabic ? 'شريط جانبي وخلفية داكنان' : 'Dark sidebar/background' }}</span>
+                    <span class="text-xs font-normal text-text-muted">{{ $isArabic ? 'يغير الشريط الجانبي وخلفية التطبيق بشكل مستقل عن المظهر الفاتح/الداكن.' : 'Changes the sidebar and app background independently of light/dark appearance.' }}</span>
+                </span>
+            </label>
             <button type="button" class="platform-assistant__secondary" x-on:click="resetPreferences()">{{ $isArabic ? 'إعادة الإعدادات الافتراضية' : 'Reset to defaults' }}</button>
             <p class="platform-assistant__save-status" x-show="saveStatus !== 'idle'" x-cloak role="status" aria-live="polite" :class="{ 'platform-assistant__save-status--error': saveStatus === 'error' }" x-text="saveStatusText()"></p>
         </div>
@@ -115,12 +122,20 @@
             context, locale, fallback,
             defaults: { appearance: 'system', accent_color: 'teal', sidebar_mode: 'expanded', navbar_mode: 'sticky', content_width: 'wide', table_density: 'comfortable', font_scale: 'normal', reduced_motion: false },
             preferences: {},
+            darkSidebar: false,
             guideOpen: false, customizerOpen: false, mobileMenuOpen: false,
             saveStatus: 'idle',
             launcherFocus: null,
             tour: { active: false, steps: [], step: null, visibleIndex: 0, lastFocus: null, currentElement: null, savedStyle: null, cardPosition: null },
             _tourScrollHandler: null,
             init() {
+                let initialDark = false;
+                try {
+                    initialDark = localStorage.getItem('toyjoy_ui_dark_sidebar') === 'true';
+                } catch (e) {
+                    initialDark = document.documentElement.dataset.darkSidebar === 'true';
+                }
+                this.darkSidebar = initialDark;
                 this.preferences = this.normalizePreferences(preferences);
                 this.applyPreferences();
             },
@@ -200,9 +215,10 @@
                 root.dataset.tableDensity = this.preferences.table_density;
                 root.dataset.fontScale = this.preferences.font_scale;
                 root.dataset.reducedMotion = this.preferences.reduced_motion ? 'true' : 'false';
+                root.dataset.darkSidebar = this.darkSidebar ? 'true' : 'false';
                 const syncSidebar = () => {
                     const body = document.body;
-                    if (body) body.style.gridTemplateColumns = this.preferences.sidebar_mode === 'collapsed' ? '3.5rem minmax(0, 1fr) 0px' : '';
+                    if (body) body.style.gridTemplateColumns = '';
                     const sidebar = document.querySelector('.app-sidebar');
                     if (!sidebar) return;
                     if (this.preferences.sidebar_mode === 'collapsed') sidebar.setAttribute('data-flux-sidebar-collapsed-desktop', '');
@@ -237,7 +253,20 @@
                     this.saveStatus = 'error';
                 }
             },
+            updateDarkSidebar() {
+                const isDark = Boolean(this.darkSidebar);
+                document.documentElement.dataset.darkSidebar = isDark ? 'true' : 'false';
+                try {
+                    if (isDark) {
+                        localStorage.setItem('toyjoy_ui_dark_sidebar', 'true');
+                    } else {
+                        localStorage.removeItem('toyjoy_ui_dark_sidebar');
+                    }
+                } catch (e) {}
+            },
             resetPreferences() {
+                this.darkSidebar = false;
+                this.updateDarkSidebar();
                 this.preferences = { ...this.defaults };
                 this.applyPreferences();
                 this.savePreferences();

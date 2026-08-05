@@ -1,8 +1,28 @@
+@php
+    use App\Modules\Platform\Models\UserUiPreference;
+
+    $uiPreference = auth()->user()?->uiPreference;
+    $uiPreferences = array_merge(UserUiPreference::defaults(), $uiPreference?->only(array_keys(UserUiPreference::defaults())) ?? []);
+@endphp
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<html
+    lang="{{ app()->getLocale() }}"
+    dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}"
+    data-appearance="{{ $uiPreferences['appearance'] }}"
+    data-accent="{{ $uiPreferences['accent_color'] }}"
+>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const appearance = root.dataset.appearance;
+            const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+            const effectiveAppearance = appearance === 'system' ? (systemDark ? 'dark' : 'light') : appearance;
+            root.classList.toggle('dark', effectiveAppearance === 'dark');
+        })();
+    </script>
     <title>{{ __('Purchase Order') }} - {{ $order->po_number }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -18,7 +38,7 @@
         <a href="{{ route('purchasing.orders') }}" class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1">
             &larr; {{ __('Back to Purchase Orders') }}
         </a>
-        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition shadow">
+        <button onclick="window.print()" class="px-4 py-2 bg-primary hover:bg-primary/90 text-accent-foreground rounded-lg text-sm font-medium transition shadow">
             🖨️ {{ __('Print Document') }} (A4)
         </button>
     </div>

@@ -3,7 +3,7 @@
     'description' => null,
 ])
 
-<flux:card {{ $attributes->class('space-y-4 p-4 shadow-card sm:p-5') }}>
+<flux:card {{ $attributes->class('space-y-5 rounded-2xl border-border/80 bg-surface/95 p-5 shadow-card sm:p-6') }}>
     @if ($title || $description || isset($actions))
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0 space-y-1">

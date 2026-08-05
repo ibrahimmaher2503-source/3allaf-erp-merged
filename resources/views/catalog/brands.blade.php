@@ -103,10 +103,14 @@ new #[Title('Brand Masters')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header :title="__('Brand Masters')" :description="__('Maintain bilingual brand identity with dependency-aware status changes.')" data-guide="brands-header">
-        <x-slot:actions>@can('products_categories_brands.create')<flux:button icon="plus" variant="primary" wire:click="openCreateBrandModal" data-guide="brands-add-action">{{ __('Add brand') }}</flux:button>@endcan</x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Brand Masters')"
+    :description="__('Maintain bilingual brand identity with dependency-aware status changes.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="brands-header"
+>
+    <x-slot:actions>@can('products_categories_brands.create')<flux:button icon="plus" variant="primary" wire:click="openCreateBrandModal" data-guide="brands-add-action">{{ __('Add brand') }}</flux:button>@endcan</x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="tag" title="{{ __('Brand foundation') }}">{{ __('Brand master records are global catalog identity. Full supplier, terms, product media, and product-type behavior remain outside TSK-010.') }}</flux:callout>
     @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Brand action could not be completed') }}"><ul class="list-disc space-y-1 ps-5 text-sm">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></flux:callout>@endif
@@ -122,4 +126,4 @@ new #[Title('Brand Masters')] class extends Component {
     @endif
 
     <flux:modal wire:model="showBrandModal" class="max-w-xl"><div class="catalog-modal-section space-y-1"><flux:heading size="lg">{{ $editingBrandId ? __('Edit brand') : __('Create brand') }}</flux:heading><flux:subheading>{{ __('Both Arabic and English names are required for catalog identity.') }}</flux:subheading></div><form wire:submit="saveBrand" novalidate class="space-y-4"><flux:input wire:model="brandForm.code" :label="__('Brand code')" required /><div class="grid gap-4 md:grid-cols-2"><flux:input wire:model="brandForm.name_ar" :label="__('Arabic name')" required /><flux:input wire:model="brandForm.name_en" :label="__('English name')" required /></div><flux:select wire:model="brandForm.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end"><flux:button type="button" variant="subtle" wire:click="$set('showBrandModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveBrand">{{ __('Save brand') }}</flux:button></div></form></flux:modal>
-</section>
+</x-app.page>

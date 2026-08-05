@@ -335,18 +335,18 @@ new #[Title('Product Masters')] class extends Component {
     }
 }; ?>
 
-<section class="catalog-screen w-full">
-    <x-page-header
-        :title="__('Product Masters')"
-        :description="__('Browse stable identity, full product-card types, reportable attributes, exact barcode search, and protected media.')"
-        data-guide="products-header"
-    >
-        <x-slot:actions>
-            @can('products_categories_brands.create')
-                <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
-            @endcan
-        </x-slot:actions>
-    </x-page-header>
+<x-app.page
+    :title="__('Product Masters')"
+    :description="__('Browse stable identity, full product-card types, reportable attributes, exact barcode search, and protected media.')"
+    max-width="7xl"
+    class="catalog-screen"
+    data-guide="products-header"
+>
+    <x-slot:actions>
+        @can('products_categories_brands.create')
+            <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
+        @endcan
+    </x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('TSK-011 product-card extension') }}">
         {{ __('Item codes remain immutable and independent from barcodes. Product types and attributes are catalog metadata only; protected images use the shared Attachment Foundation. No stock, price, label, import, or supplier-history effect is created here.') }}
@@ -441,7 +441,7 @@ new #[Title('Product Masters')] class extends Component {
                                 <div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</div>
                                 <div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $product->name_en : $product->name_ar }}</div>
                             </flux:table.cell>
-                            <flux:table.cell><flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
+                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
                             <flux:table.cell class="text-xs">
                                 <div>{{ $product->category?->code }} · {{ app()->getLocale() === 'ar' ? $product->category?->name_ar : $product->category?->name_en }}</div>
                                 @if ($product->brand)
@@ -543,7 +543,7 @@ new #[Title('Product Masters')] class extends Component {
                     <div class="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="catalog-code-chip">{{ $barcode['barcode'] }}</span>
-                            <flux:badge size="sm" color="{{ $barcode['source'] === 'local' ? 'sky' : 'zinc' }}">{{ __($barcode['source'] === 'local' ? 'Local' : 'Supplier') }}</flux:badge>
+                            <flux:badge size="sm" color="zinc">{{ __($barcode['source'] === 'local' ? 'Local' : 'Supplier') }}</flux:badge>
                             <flux:badge size="sm" color="{{ $barcode['status'] === 'active' ? 'emerald' : 'zinc' }}">{{ __($barcode['status'] === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
                         </div>
                         @if ($barcode['status'] === 'active')
@@ -576,4 +576,4 @@ new #[Title('Product Masters')] class extends Component {
             </div>
         </form>
     </flux:modal>
-</section>
+</x-app.page>

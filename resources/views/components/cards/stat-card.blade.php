@@ -15,7 +15,7 @@
     ];
 @endphp
 
-<flux:card {{ $attributes->class('min-w-0 p-4 shadow-card') }}>
+<flux:card {{ $attributes->class('min-w-0 rounded-2xl border-border/80 bg-surface/95 p-5 shadow-card transition-shadow hover:shadow-lg') }}>
     <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 space-y-1">
             <flux:subheading class="text-xs font-medium text-text-muted">{{ $label }}</flux:subheading>
@@ -23,7 +23,7 @@
         </div>
 
         @if ($icon)
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-md {{ $toneClasses[$tone] ?? $toneClasses['primary'] }}">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl {{ $toneClasses[$tone] ?? $toneClasses['primary'] }}">
                 <flux:icon :name="$icon" class="size-4" />
             </span>
         @endif

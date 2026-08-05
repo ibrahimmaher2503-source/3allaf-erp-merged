@@ -206,20 +206,18 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
     }
 }; ?>
 
-<section class="w-full space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-guide="stores-header">
-        <div>
-            <flux:heading size="xl" level="1">{{ __('Store Masters & Branch Mapping') }}</flux:heading>
-            <flux:subheading>{{ __('Manage physical/logical stores (selling, warehouse, party, damaged, transit) and POS branch assignments.') }}</flux:subheading>
-        </div>
-
-        <div class="flex items-center gap-3">
-            @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add Store') }}</flux:button>
-            @endcan
-        </div>
-    </div>
+<x-app.page
+    :title="__('Store Masters & Branch Mapping')"
+    :description="__('Manage physical/logical stores (selling, warehouse, party, damaged, transit) and POS branch assignments.')"
+    max-width="7xl"
+    class="space-y-6"
+    data-guide="stores-header"
+>
+    <x-slot:actions>
+        @can('branches_stores.create')
+            <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add Store') }}</flux:button>
+        @endcan
+    </x-slot:actions>
 
     <!-- TBD / BLK-006 / DEC-021 Banner -->
     <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Development Baseline Only (BLK-006 & DEC-021 Unresolved)') }}">
@@ -344,13 +342,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
                         <flux:table.cell>
                             @switch($st->type)
                                 @case('selling')
-                                    <flux:badge size="sm" variant="subtle" color="blue">{{ __('Selling Store') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Selling Store') }}</flux:badge>
                                     @break
                                 @case('warehouse')
-                                    <flux:badge size="sm" variant="subtle" color="indigo">{{ __('Warehouse') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Warehouse') }}</flux:badge>
                                     @break
                                 @case('party')
-                                    <flux:badge size="sm" variant="subtle" color="purple">{{ __('Party Store') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Party Store') }}</flux:badge>
                                     @break
                                 @case('damaged')
                                     <flux:badge size="sm" variant="subtle" color="rose">{{ __('Damaged') }}</flux:badge>
@@ -542,4 +540,4 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             </div>
         </form>
     </flux:modal>
-</section>
+</x-app.page>
