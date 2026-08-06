@@ -12,7 +12,7 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - `docs/43` numbering, receipt, cost, and production policy proposals remain owner-gated; the local allocator is not being changed or promoted to a production numbering decision.
 - `docs/38` A4 output requirements remain the production contract. The current PO print is a bilingual local/demo baseline; approver timestamp, reprint history, printer selection, and final print policy remain outside this local closure.
 - Created `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` as a customizable template-only artifact. It contains canonical `docs/42 §3` headers, a separate customization map, a fictitious example sheet, input validation, and no formulas/macros/production data. Import workflow and stock/financial posting remain unimplemented.
-
+- Started TSK-015 Slice B locally with `financial_setting_versions`, `FinancialSettingVersion`, and a read-only `/purchasing/invoices/settings` screen. The targeted migration ran successfully with zero rows; settings writes/default seeding/posting remain disabled. Full migration is blocked by pre-existing SQLite drift (`categories` already exists).
 ## A-01 line reference
 
 `purchase_order_lines.id` is the stable primary key and each PO line also has a unique `(purchase_order_id, line_number)` constraint. The first TSK-015 Slice A migration references `purchase_order_lines.id` from `purchase_invoice_lines.purchase_order_line_id` with a restrictive foreign key, preserving partial supply and one-PO-to-many-invoices. Group A ledger schema is authorized as a reversible local development slice; posting actions remain out of scope until policy and browser evidence are complete.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Gate;
 
@@ -10,6 +11,20 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:purchase_orders.view')
         ->name('purchasing.orders');
 
+    $router->get('purchasing/invoices/settings', function () {
+        Gate::authorize('company_settings.view');
+
+        $versions = FinancialSettingVersion::query()
+            ->orderBy('key')
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('key')
+            ->map(static fn ($items) => $items->first());
+
+        return view('purchasing.invoice-settings', [
+            'versions' => $versions,
+        ]);
+    })->middleware('can:company_settings.view')->name('purchasing.invoices.settings');
     $router->get('purchasing/invoices/readiness', function () {
         Gate::authorize('purchase_orders.view');
 

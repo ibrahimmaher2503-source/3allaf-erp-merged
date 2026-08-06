@@ -623,3 +623,11 @@ Append one factual entry for every agent session that changes repository or proj
 - **Verification actually run:** `git diff --check` passed with 0 errors.
 - **Remaining blockers / next action:** Definition-only `Partially Received` and `Received` states remain TSK-015; true 390x844 mobile evidence remains pending (CUA Firefox capture 0x0, Browser Use session has no viewport-resize capability); production, UAT, and Phase gates remain open.
 - **Code, tests, browser, commit, push:** Repository control/documentation files updated only. No application code or TSK-015 implementation edited. No PHPUnit/Pest or automated browser tests claimed. No commit or push.
+
+## 2026-08-06 - TSK-015 Slice B Financial Settings Foundation
+
+- **Agent / scope:** Worked only in `/home/ubuntu/projects/toy-joy-phase-1-documentation` on branch `chore/observability-and-repo-discipline`; started the next bounded local TSK-015 slice after the template artifact.
+- **Completed:** Added reversible `financial_setting_versions` migration, `FinancialSettingVersion` model, and read-only `/purchasing/invoices/settings` route/view gated by existing `company_settings.view`. The screen shows versioning contract and an empty state; settings writes, defaults, invoice posting, stock mutation, and WAC remain disabled.
+- **Verification actually run:** PHP lint for changed PHP files, route discovery, targeted migration, schema/column inspection, zero-row check, Blade cache, guest HTTP boundary (`302 → /login`), `git diff --check`, and template validation. Authenticated settings browser walkthrough remains pending because no safe authenticated credentials were available.
+- **Remaining blockers / next action:** Full `php artisan migrate` is blocked by pre-existing SQLite drift (`categories` already exists); targeted migration succeeded. Next safe slice is an owner-authorized settings write/version action only after exact policy values are recorded, or continue with draft-only invoice CRUD without posting.
+- **Code, tests, browser, commit, push:** Application code and migration changed; no PHPUnit/Pest or automated browser tests created/run; guest browser boundary only; commit pending final staged review; push not attempted.

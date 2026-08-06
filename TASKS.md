@@ -251,7 +251,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-015 — Implement Purchase Invoices, Import, Receipt, and Weighted-Average Cost
 
-- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **In Progress — Slice A schema, Performance Group A structural work, read-only readiness boundary, and a customizable template-only Excel artifact are implemented locally; invoice posting/import workflow, receipt mutation, WAC/cost rules, commercial defaults, and authenticated/browser acceptance remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **In Progress — Slice A schema, Performance Group A structural work, read-only readiness boundary, customizable template-only Excel artifact, and Slice B versioned-settings foundation/read-only screen are implemented locally; invoice posting/import workflow, settings writes, receipt mutation, WAC/cost rules, commercial defaults, and authenticated/browser acceptance remain gated**.
 - **Title / Purpose / Description:** Manual/Excel purchase invoice, selected-store receipt, optional tax/discount, atomic approval, stock movement, weighted-average cost and pricing-review signal without sale-price change.
 - **Traceability:** PRC-03, PUR-04–PUR-05, NFR-01–NFR-02, NFR-06; US-011; FLW-PUR-02; UI UI-PUR-002, UI-INV-002–003; AC-PRC-03, AC-PUR-04–05; SEC-015, SEC-017–021, SEC-022–026.
 - **Dependencies / Required Inputs:** TSK-014; cost/rounding/tax/discount/import/receipt approvals and opening-stock approach.

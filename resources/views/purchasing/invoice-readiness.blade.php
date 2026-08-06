@@ -11,6 +11,11 @@
     class="purchasing-screen"
 >
     <x-slot:actions>
+        @can('company_settings.view')
+            <flux:button href="{{ route('purchasing.invoices.settings') }}" variant="subtle" icon="adjustments-horizontal">
+                {{ $isArabic ? 'إعدادات الفواتير' : 'Invoice settings' }}
+            </flux:button>
+        @endcan
         <flux:button href="{{ route('purchasing.orders') }}" variant="subtle" icon="arrow-left">
             {{ $isArabic ? 'العودة إلى أوامر الشراء' : 'Back to purchase orders' }}
         </flux:button>

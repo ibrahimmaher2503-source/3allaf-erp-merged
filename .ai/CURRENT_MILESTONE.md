@@ -1,9 +1,9 @@
 # Current Milestone
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
-**Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Performance Group A
+**Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Slice B Foundation / Performance Group A
 **Status:** In Progress (TSK-014 local PO implementation and authenticated manual browser verification completed for approved local/demo scope; definition-only Partially Received/Received remain TSK-015; true 390x844 mobile evidence pending; production, UAT, and Phase gates remain open)
-**Progress:** TSK-010 through TSK-014 local slices are closed/verified for approved local scope. TSK-015 Slice A schema, Performance Group A (TSK-P01–P03), and read-only readiness boundary are implemented locally; invoice/inventory posting, WAC, production/UAT gates remain open. Later tasks remain deferred.
+**Progress:** TSK-010 through TSK-014 local slices are closed/verified for approved local scope. TSK-015 Slice A schema, Performance Group A (TSK-P01–P03), read-only readiness boundary, customizable Excel template, and Slice B versioned-settings foundation/read-only screen are implemented locally; invoice/inventory posting, WAC, settings writes, production/UAT gates remain open. Later tasks remain deferred.
 **Started:** 2026-08-04
 
 ## Active Scope
