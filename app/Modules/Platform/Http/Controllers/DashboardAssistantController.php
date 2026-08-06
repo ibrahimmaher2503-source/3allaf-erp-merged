@@ -32,13 +32,36 @@ final class DashboardAssistantController
         abort_unless($guide, 404);
         abort_unless(collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission)), 403);
 
+        $guide['permissions'] = array_values(array_filter(
+            $guide['permissions'],
+            fn (string $permission): bool => Gate::allows($permission),
+        ));
+
         $allowedActions = array_values(array_filter(
             $guide['approved_actions'],
             fn (array $action): bool => Gate::allows($action['required_permission']),
         ));
         $context = new PageGuideContext($screenId, $guide['route_names'][0], (string) app()->getLocale(), $guide, $allowedActions, 'full-guide');
+        $payload = $context->toArray();
+        $payload['related_flows'] = array_values(array_filter(array_map(
+            function (string $flowId): ?array {
+                $flow = UserFlowRegistry::find($flowId);
+
+                if (! $flow) {
+                    return null;
+                }
+
+                return [
+                    'flow_id' => $flow['flow_id'],
+                    'title' => $flow['title'],
+                    'actor' => $flow['actor'],
+                ];
+            },
+            $guide['flows'],
+        )));
+
         return response()
-            ->view('platform.help.screen', ['context' => $context->toArray()])
+            ->view('platform.help.screen', ['context' => $payload])
             ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache');
     }
@@ -63,6 +86,7 @@ final class DashboardAssistantController
     private function canViewScreen(string $screenId): bool
     {
         $guide = TutorialRegistry::find($screenId);
+
         return $guide !== null && collect($guide['permissions'])->contains(fn (string $permission): bool => Gate::allows($permission));
     }
 }

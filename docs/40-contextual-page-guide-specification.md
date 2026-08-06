@@ -59,6 +59,8 @@ Tutorial definitions are stored one screen per file under `app/Modules/Platform/
 
 Adding a screen therefore requires adding a definition file and stable view selectors; it does not require editing a large central switch or registry method. Existing screens keep their Screen IDs, named routes, localized content, and safe DTO boundary.
 
+The Full Guide is intentionally broader than the interactive tour. It renders an overview, role-aware approved actions, ordered steps, field explanations, operating notes, warnings, error recovery, FAQ, related workflows, a scope disclaimer, and print-friendly navigation. The controller passes only sanitized flow summaries and permission-filtered actions; permission keys, models, private paths, credentials, and exception payloads are never rendered.
+
 ## Deferred
 
 No claim is made for every future screen, official UAT, production readiness, phase completion, or AI-generated guidance. Future user-facing tasks must register or update their Screen ID and approved guide metadata as part of their Definition of Done.

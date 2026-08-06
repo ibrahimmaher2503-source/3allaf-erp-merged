@@ -58,6 +58,8 @@ final readonly class PageGuideContext
             'title' => $this->guide['title'],
             'purpose' => $this->guide['purpose'],
             'when_to_use' => $this->guide['when_to_use'],
+            'route_names' => $this->guide['route_names'],
+            'permissions' => $this->guide['permissions'],
             'approved_actions' => $this->allowedActions,
             'stories' => $this->guide['stories'],
             'flows' => $this->guide['flows'],
