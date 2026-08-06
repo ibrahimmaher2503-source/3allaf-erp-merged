@@ -37,12 +37,21 @@ Cross-page “select all N results” is a queued job boundary, not a synchronou
 | `admin.branches` | `branches` | Local baseline CRUD/status/mapping | Status only if existing audited action is reused | Logical delete bulk, mapping changes |
 | `admin.stores` | `stores` | Local baseline CRUD/status/mapping | Status only if existing audited action is reused | Delete, mapping, warehouse policy |
 | `admin.cash-drawers` | `cash_drawers` | Local baseline CRUD/status | None until drawer/shift policy is approved | Delete, opening/reconciliation changes |
+| `admin.settings` | `companies`, `payment_methods`, `tax_settings`, `document_sequences`, `printer_configurations` | Multiple unrelated config tables on one screen; transactional save actions exist | None as a generic row-bulk table | Cross-resource mass changes; tax/sequence/printer policy changes |
 | `admin.authorization-baseline` | users/roles/scope review | Authorization-sensitive review and assignment | None | Bulk roles/scopes/user changes |
 | `admin.audit` | `audit_logs` | Append-only read-only log | None; optional export is a separate future action | Delete/update/acknowledge mutations |
 | `system.health` | health checks | Read-only diagnostics | None | No mutation |
 | `system.ui-showcase` | demonstration rows | Read-only showcase | None | No mutation |
 | `purchasing.orders` | `purchase_orders` | PO lifecycle actions and print | None in this slice | Submit/approve/cancel/close bulk; all require workflow/owner review |
 | `purchasing.orders.print` | one PO document | Print-only | None | No mutation |
+
+## Existing bulk and infrastructure gaps
+
+- `catalog.product-import` is the existing true batch surface: staging is chunked and invalid-row export streams through a cursor. Approval is still synchronous and does not yet provide queued job progress/cancellation.
+- The repository currently has no reusable `ShouldQueue`/`Bus::batch`/`WithoutOverlapping` implementation. Cross-page selection and large exports must not be presented as completed until that infrastructure exists.
+- Most domain mutations use transactional action classes with audit writes, but there is no generic bulk-operation audit envelope yet. Future queued work must carry actor, request/correlation ID, selected scope, per-record result, reason, and idempotency data.
+- Most resources do not have model Policies; they currently rely on Gate strings in Volt components/actions. A future action registry must not treat UI visibility as authorization.
+- The PO print route and product-import error export need separate scope/audit review before they are used as templates for future bulk export.
 
 ## Required action contract for future resources
 
