@@ -13,6 +13,13 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Owner-authorized Local Demo policy register
+
+- **Agent / scope:** Owner explicitly authorized recording all current policy examples as local Demo data only.
+- **Completed:** Existing Demo payment/tax/numbering/printer rows were made explicitly Demo-labeled; four supplier-return financial policy versions were added idempotently as pending examples: `DEMO-RET-`, Demo print title, Demo print footer, and `1000.00` EGP approval-limit example.
+- **Verification actually run:** `DemoSeeder` completed on local SQLite; `/purchasing/returns/settings` showed all four as `Awaiting approval`; `financial_versions=4`, `approved_versions=0`, `supplier_return_reasons=0`; PHP lint, Pint, PHPStan, and browser console checks passed.
+- **Boundary:** No `ApprovalRecord` was created or approved. Demo values are not Production policy, UAT sign-off, Owner approval, or Production cutover approval. Supplier-return reason catalog remains empty.
+
 ## 2026-08-07 - Owner-authorized Local Demo company setup
 
 - **Agent / scope:** Owner explicitly authorized Demo data only. Public Production runtime was not mutated.

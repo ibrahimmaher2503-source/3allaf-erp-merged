@@ -68,3 +68,12 @@ Statuses: `Approved`, `Proposed`, `Assumed`, `Deferred`, `Rejected`, or `Require
 5. Approval permissions, separation of duties, mandatory reason, and audit are structural. Numeric limits are read from `financial_setting_versions` using DEC-043 defaults; no production values are invented.
 
 **Scope boundary:** DEC-052 authorizes the local/dev schema, guarded draft/source validation, and implementation continuation. It does not approve production master data, reason catalog contents, UAT, or release gates.
+
+## DEC-053 — Owner-authorized Local Demo policy register
+
+**Date:** 2026-08-07
+**Status:** Approved for local Demo recording only; production/UAT deferred.
+
+The owner explicitly authorized recording the current policy examples as Demo-only local data. The Demo register includes the active `DEMO-CASH` payment display row, inactive `DEMO-TAX-TBD` with no tax rate, inactive `demo-only` numbering with `DEMO-`, an inactive unconfigured Demo printer, and four pending supplier-return financial versions: `DEMO-RET-`, Demo print title, Demo print footer, and a `1000.00` EGP Demo approval-limit example.
+
+Every financial version is effective-dated but has no `ApprovalRecord`, so it remains `Awaiting approval` and cannot activate in the financial resolver. These values are explicitly Demo-only, do not represent Production policy, do not constitute UAT sign-off, and do not replace Owner approval or Production cutover approval. `supplier_return_reasons` remains empty because no reporting catalog content was supplied.

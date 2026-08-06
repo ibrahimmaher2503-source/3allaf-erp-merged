@@ -15,6 +15,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Database\Seeder;
@@ -115,7 +116,7 @@ class LocalDemoSeeder extends Seeder
                 'requires_evidence' => false,
                 'offline_eligible' => false,
                 'status' => 'active',
-                'policy_notes' => 'Local demo only. Payment policy is TBD.',
+                'policy_notes' => 'Local Demo policy only. Active for walkthrough display; not approved production payment policy.',
             ],
         );
 
@@ -127,7 +128,7 @@ class LocalDemoSeeder extends Seeder
                 'rate' => null,
                 'is_tax_inclusive' => false,
                 'status' => 'inactive',
-                'policy_notes' => 'No rate is implied. Owner tax policy is required.',
+                'policy_notes' => 'Local Demo policy only. No rate is implied and this inactive row is not a production tax policy.',
             ],
         );
 
@@ -140,7 +141,7 @@ class LocalDemoSeeder extends Seeder
                 'reset_rule' => 'never',
                 'status' => 'inactive',
                 'lock_version' => 1,
-                'policy_notes' => 'Local demo only. Not available for business documents.',
+                'policy_notes' => 'Local Demo policy only. Not available for business documents or Production/UAT.',
             ],
         );
 
@@ -153,15 +154,68 @@ class LocalDemoSeeder extends Seeder
                 'connection_type' => 'network',
                 'is_default' => false,
                 'status' => 'inactive',
-                'notes' => 'Local UI sample only. No printer or print format is approved.',
+                'notes' => 'Local Demo policy only. UI sample; no printer or print format is approved for Production/UAT.',
             ],
         );
 
+        $this->seedDemoFinancialPolicies($admin);
         $this->seedSuppliers($admin);
         $this->seedPurchaseOrders($admin);
 
         // Kept referenced so both store types are visible in the local demo.
         unset($warehouseStore);
+    }
+
+    /**
+     * Record the owner-authorized Demo policy examples as pending versions.
+     *
+     * These rows deliberately have no approval record, so the resolver cannot
+     * activate them as operational financial settings.
+     */
+    private function seedDemoFinancialPolicies(User $admin): void
+    {
+        /** @var array<int, array{key: string, value: string, value_type: string}> $policies */
+        $policies = [
+            [
+                'key' => 'purchasing.supplier_return.number_prefix',
+                'value' => 'DEMO-RET-',
+                'value_type' => 'string',
+            ],
+            [
+                'key' => 'purchasing.supplier_return.print_title',
+                'value' => 'TOY & JOY - DEMO SUPPLIER RETURN',
+                'value_type' => 'string',
+            ],
+            [
+                'key' => 'purchasing.supplier_return.print_footer',
+                'value' => 'DEMO ONLY - NOT FOR PRODUCTION OR UAT SIGN-OFF',
+                'value_type' => 'string',
+            ],
+            [
+                'key' => 'purchasing.supplier_return.approval_limit',
+                'value' => '1000.00',
+                'value_type' => 'decimal',
+            ],
+        ];
+
+        foreach ($policies as $policy) {
+            FinancialSettingVersion::query()->firstOrCreate(
+                [
+                    'key' => $policy['key'],
+                    'version' => 1,
+                ],
+                [
+                    'value' => $policy['value'],
+                    'value_type' => $policy['value_type'],
+                    'effective_from' => now()->subMinute(),
+                    'effective_to' => now()->addYear(),
+                    'created_by' => $admin->id,
+                    'approval_record_id' => null,
+                    'locked_at' => null,
+                    'notes' => 'DEMO-ONLY pending policy example. No ApprovalRecord exists; not active, not Production policy, and not UAT sign-off.',
+                ],
+            );
+        }
     }
 
     private function seedSuppliers(User $admin): void
