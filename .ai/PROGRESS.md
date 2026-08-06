@@ -221,3 +221,11 @@ Completed the Company, payment, tax, store, mapping, and drawer browser mutation
 - Added DEC-045-approved local Demo fixture path: `DemoSeeder` composes authorization, products/category/brand, suppliers, stores, and PO walkthrough data into ignored `database/demo.sqlite`; Demo Auth and A4 print were manually verified.
 - Fixed closure defects: cash-drawer forms now expose server validation errors instead of being blocked by native required validation; branch selling-store mapping now filters by selected branch and rejects cross-branch stores.
 - TSK-009 remains `In Progress`; no new TSK-009 implementation was performed during this audit. Production blockers remain open and Phase 1/DM production gates are not claimed.
+
+## TSK-004B Tutorial Content Refactor — 2026-08-06
+
+- Replaced the monolithic `TutorialRegistry` content switch with one validated definition file per screen under `app/Modules/Platform/Tutorials/`.
+- Preserved existing Screen IDs, named routes, permission filtering, safe `PageGuideContext`, localized content, and missing-guide fallback behavior.
+- Added shared bulk-operation guidance to Products, Categories, Brands, Suppliers, Branches, and Stores using the stable bulk-region selector.
+- Added `docs/57-tutorial-content-authoring.md` so future screens/steps can be added by creating or editing one data definition without changing registry lookup logic.
+- This is a local implementation/refactor slice; browser verification of the full tour matrix and mobile remains required before claiming TSK-004B complete.

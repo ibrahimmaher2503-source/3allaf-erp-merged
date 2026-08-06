@@ -53,6 +53,12 @@ FLW-UI-01 — Customize Interface; FLW-HELP-01 — Open Contextual Page Guide; F
 
 AC-UI-06 Persistent Dashboard Controls; AC-UI-07 Per-User Appearance Persistence; AC-UI-08 Contextual Screen Detection; AC-UI-09 Permission-Aware Guidance; AC-UI-10 Approved User-Flow Guidance; AC-UI-11 Accessible Guided Tour; AC-UI-12 No Sensitive Guide Leakage; AC-UI-13 RTL/LTR Responsive Behavior; AC-UI-14 Safe Missing-Guide Fallback; AC-UI-15 Appearance Has No Business Side Effects.
 
+## Content authoring
+
+Tutorial definitions are stored one screen per file under `app/Modules/Platform/Tutorials/*.php`. `TutorialRegistry` discovers and validates these definitions while keeping route lookup and permission filtering centralized. The authoring contract, example, stable-selector rules, bulk-operation guidance, and verification checklist are documented in `docs/57-tutorial-content-authoring.md`.
+
+Adding a screen therefore requires adding a definition file and stable view selectors; it does not require editing a large central switch or registry method. Existing screens keep their Screen IDs, named routes, localized content, and safe DTO boundary.
+
 ## Deferred
 
 No claim is made for every future screen, official UAT, production readiness, phase completion, or AI-generated guidance. Future user-facing tasks must register or update their Screen ID and approved guide metadata as part of their Definition of Done.
