@@ -75,7 +75,7 @@ These are separate from the functional task list. Most attach to an existing tas
 
 ### TSK-P06 — Lazy Loading and N+1 Guard
 
-- **Status:** Not Started
+- **Status:** Implemented in local configuration; screen-by-screen query evidence remains pending
 - **Attaches to:** All list and detail screens
 - **Authority:** `docs/56` §8
 - **Scope:** `Model::preventLazyLoading()` in local and staging; `#[Lazy]` with a shaped placeholder on heavy tables; deferred expensive columns; tab content loaded on activation; `with()` and `withCount()` for everything displayed.
@@ -116,7 +116,7 @@ These are separate from the functional task list. Most attach to an existing tas
 
 ### TSK-P10 — Observability and Volume Testing
 
-- **Status:** Not Started
+- **Status:** Local observability controls implemented; realistic-volume execution and per-screen baselines remain pending
 - **Attaches to:** TSK-042 (production readiness)
 - **Authority:** `docs/56` §12, §13
 - **Scope:** Structured JSON logging with correlation ID; slow query log enabled; `DB::listen` query-count budget failing the request in local and staging; a documented volume test at approximately 50,000 products and 1,000,000 movements; a recorded response-time baseline per screen.
@@ -149,7 +149,7 @@ These are separate from the functional task list. Most attach to an existing tas
 ## Sequencing
 
 ```
-TSK-014 complete
+TSK-014 local PO prerequisite / DEC-044 continuation
    ↓
 TSK-P01 ──→ TSK-P02, TSK-P03        (with TSK-015 Slice A)
    ↓

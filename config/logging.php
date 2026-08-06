@@ -58,6 +58,14 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        'slow_queries' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/slow-queries.log'),
+            'level' => env('SLOW_QUERY_LOG_LEVEL', 'warning'),
+            'days' => (int) env('SLOW_QUERY_LOG_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

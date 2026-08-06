@@ -41,6 +41,12 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - Authenticated manual browser verification is still pending because no authenticated browser session is available and no password will be entered.
 - Existing local `database/database.sqlite` was not reset; its migration attempt is blocked by an older pre-existing `categories` table collision at migration `2026_08_04_000017`.
 
-## Do not do
+## Current continuation — observability, identity, and delivery controls
+
+- Local/staging query budget, slow-query channel, dev Debugbar, and local non-production lazy-loading guard are being added under DEC-046.
+- `scripts/ai/run-gemini.sh` must prove `pwd` and `git rev-parse --show-toplevel`, inject `PROJECT_NAME`, and pass the verified root to AGY; repository identity is never inferred from a port.
+- A single tracked `.githooks/pre-commit` owns Pint, PHPStan, locale-key parity, and staged whitespace checks. Only one writer may modify `.ai/` at a time; the paused watcher stays paused during this interactive slice.
+- Realistic volume work uses only the disposable ignored performance database generator; it must never touch shared Demo data.
+
 
 Do not create invoice posting/import actions, stock mutation workflows, WAC calculations, receipt mutation, tax/payment/discount defaults, or production approval thresholds. The reversible Slice A schema and `inventory:rebuild-balances` diagnostic command are explicitly in scope; do not claim them as financial posting or production readiness. Do not commit or push until final review.

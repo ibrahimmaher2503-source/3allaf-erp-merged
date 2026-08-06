@@ -599,3 +599,11 @@ Append one factual entry for every agent session that changes repository or proj
 - **Manual boundary:** Authenticated PO transition/print, scope, RTL/LTR, and mobile viewport evidence remains pending because no safe authenticated browser session was used and no password was entered.
 - **Remaining blockers / next action:** Invoice posting/import, receipt mutation, WAC and pending CF-01–CF-06 cost rules, owner commercial settings, UAT, production database/ops, and production readiness remain open. `docs/58` is not present; AI_INDEX marks it reserved rather than inventing content.
 - **Commit state:** No commit or push has occurred yet; this entry records the current pre-commit milestone.
+
+## 2026-08-06 - Observability, Git Discipline, Repository Identity, and Locale Parity
+
+- **Agent / scope:** Worked only in `/home/ubuntu/projects/toy-joy-phase-1-documentation` on branch `chore/observability-and-repo-discipline`; watcher `toy-joy-milestone-watcher` remained paused and no concurrent `.ai/` writer was allowed.
+- **Completed:** Added local/staging query budget and slow-query logging, dev-only Debugbar, existing non-production lazy-loading guard, Composer-installed tracked pre-commit hook, PHPStan baseline for 189 pre-existing findings, AGY git-root/project identity enforcement, 974-key `ar.json`/`en.json` parity, and a disposable 50k-product/1m-movement fixture generator.
+- **Verification actually run:** PHP/bash lint, Composer validation, Pint PASS, PHPStan PASS with baseline, locale parity PASS, runtime config inspection, route/config diagnostics, and real disposable volume generation with exact counts `50000` / `1000000`; temporary DB removed.
+- **Remaining blockers / next action:** Authenticated/mobile PO browser evidence, remaining performance groups and per-screen baselines, owner-sensitive financial policy, and production readiness remain open. The pre-commit hook is configured locally through `core.hooksPath=.githooks` and will be verified on the final staged commit.
+- **Code, tests, browser, commit, push:** No automated tests were created or run; no authenticated browser verification was claimed; commit is pending final hook/diff review; push is not yet attempted.

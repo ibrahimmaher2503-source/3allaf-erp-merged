@@ -49,47 +49,47 @@ class RebuildInventoryBalances extends Command
             $this->info($apply ? 'Applying inventory balance rebuild.' : 'Dry run; no balances will be changed.');
 
             foreach ($movements as $movement) {
-            $product = (int) $movement->product_id;
-            $store = (int) $movement->store_id;
-            $key = $this->key($product, $store);
-            $expectedKeys[$key] = true;
+                $product = (int) $movement->product_id;
+                $store = (int) $movement->store_id;
+                $key = $this->key($product, $store);
+                $expectedKeys[$key] = true;
 
-            $onHand = (float) $movement->on_hand;
-            $totalValue = (float) $movement->total_value;
-            $averageCost = abs($onHand) < 0.000001 ? 0.0 : $totalValue / $onHand;
-            $current = $existing->get($key);
-            $diverged = $current === null
-                || ! $this->same($current->on_hand, $onHand)
-                || ! $this->same($current->total_value, $totalValue)
-                || ! $this->same($current->average_cost, $averageCost);
+                $onHand = (float) $movement->on_hand;
+                $totalValue = (float) $movement->total_value;
+                $averageCost = abs($onHand) < 0.000001 ? 0.0 : $totalValue / $onHand;
+                $current = $existing->get($key);
+                $diverged = $current === null
+                    || ! $this->same($current->on_hand, $onHand)
+                    || ! $this->same($current->total_value, $totalValue)
+                    || ! $this->same($current->average_cost, $averageCost);
 
-            if ($diverged) {
-                $divergences++;
-            }
+                if ($diverged) {
+                    $divergences++;
+                }
 
-            $this->line(sprintf(
-                '%s product=%d store=%d on_hand=%s value=%s average_cost=%s',
-                $diverged ? 'DIVERGED' : 'OK',
-                $product,
-                $store,
-                $this->number($onHand),
-                $this->number($totalValue),
-                $this->number($averageCost),
-            ));
+                $this->line(sprintf(
+                    '%s product=%d store=%d on_hand=%s value=%s average_cost=%s',
+                    $diverged ? 'DIVERGED' : 'OK',
+                    $product,
+                    $store,
+                    $this->number($onHand),
+                    $this->number($totalValue),
+                    $this->number($averageCost),
+                ));
 
-            if ($this->option('apply')) {
-                $now = now();
-                DB::table('stock_balances')->updateOrInsert(
-                    ['product_id' => $product, 'store_id' => $store],
-                    [
-                        'on_hand' => $onHand,
-                        'average_cost' => $averageCost,
-                        'total_value' => $totalValue,
-                        'updated_at' => $now,
-                        'created_at' => $current?->created_at ?? $now,
-                    ],
-                );
-            }
+                if ($this->option('apply')) {
+                    $now = now();
+                    DB::table('stock_balances')->updateOrInsert(
+                        ['product_id' => $product, 'store_id' => $store],
+                        [
+                            'on_hand' => $onHand,
+                            'average_cost' => $averageCost,
+                            'total_value' => $totalValue,
+                            'updated_at' => $now,
+                            'created_at' => $current === null ? $now : $current->created_at,
+                        ],
+                    );
+                }
             }
 
             if ($apply) {

@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'project_name' => env('PROJECT_NAME', 'toy-joy-phase-1-documentation'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

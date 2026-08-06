@@ -58,6 +58,40 @@ php artisan db:seed --class=DemoSeeder
 ```
 
 `DemoSeeder` is local-only and idempotent. It creates Demo identities, authorization scopes, master data, and PO walkthrough records; it never runs in production/staging and does not create real credentials or production data.
+
+## Delivery and Performance Guardrails
+
+The repository identity is the Git root, not a server port:
+
+```bash
+git rev-parse --show-toplevel
+```
+
+The expected project name is `toy-joy-phase-1-documentation`, configured as `PROJECT_NAME` in `.env`. AGY runs through `scripts/ai/run-gemini.sh`, which injects the verified root/project identity and passes `--add-dir` for that root.
+
+Composer install/update configures the tracked `.githooks/pre-commit` hook. It runs Pint on staged PHP files, PHPStan, locale-key parity, and staged whitespace checks. PHPStan uses `phpstan-baseline.neon` for 189 pre-existing findings; new findings fail the hook.
+
+Local/staging observability is enabled through `.env` controls:
+
+- `Model::preventLazyLoading()` outside production.
+- `QUERY_BUDGET_ENABLED=true` and `QUERY_BUDGET=100`; a request aborts above the budget.
+- `SLOW_QUERY_LOG_ENABLED=true` and `SLOW_QUERY_MS=100`; logs go to `storage/logs/slow-queries-*.log`.
+- `DEBUGBAR_ENABLED=true` for the dev-only Debugbar package.
+
+For realistic volume work, use a disposable ignored database only:
+
+```bash
+DB_DATABASE=/tmp/toy-joy-performance.sqlite APP_ENV=local QUERY_BUDGET_ENABLED=false \
+  php artisan migrate:fresh --force
+DB_DATABASE=/tmp/toy-joy-performance.sqlite APP_ENV=local \
+  php scripts/seed-performance-fixture.php --products=50000 --movements=1000000
+rm -f /tmp/toy-joy-performance.sqlite
+```
+
+The fixture refuses non-empty product/movement tables and must never be seeded into shared Demo data.
+
+The `toy-joy-milestone-watcher` remains paused while an interactive writer owns this repository. Resume it only after the worktree is clean and the interactive session has handed off ownership; it is read-only with respect to `.ai/`, and only one agent may modify `.ai/` at a time.
+
 ## Application Foundation
 
 - Official Laravel Livewire starter foundation

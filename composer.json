@@ -20,6 +20,7 @@
         "openspout/openspout": "4.32.0"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^4.4",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/pail": "^1.2.5",
@@ -78,7 +79,11 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
+        "post-install-cmd": [
+            "@php scripts/setup-git-hooks.php"
+        ],
         "post-update-cmd": [
+            "@php scripts/setup-git-hooks.php",
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [

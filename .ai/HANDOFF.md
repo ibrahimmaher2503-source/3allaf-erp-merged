@@ -6,6 +6,15 @@ TSK-014 remains **In Progress** with its five local slices implemented; authenti
 
 TSK-015 Slice A and Performance Group A (TSK-P01–P03) are implemented as reversible local development slices. The first ledger migration creates invoice/line, stock movement/balance, and period snapshot tables with composite indexes; `stock_movements.consumed_cost` is stored for future cost-consumption posting; `inventory:rebuild-balances` supports dry-run and transactional apply. No invoice posting, stock mutation action, WAC calculation, import workflow, owner policy approval, UAT, or production readiness is claimed.
 
+## Delivery controls — 2026-08-06
+
+- `preventLazyLoading()` is enabled outside production; the configurable local/staging query budget aborts above 100 queries by default.
+- Slow queries at or above 100ms go to the daily `slow_queries` channel; Debugbar is dev-only and enabled locally.
+- `.githooks/pre-commit` is installed via Composer and runs Pint, PHPStan, locale parity, and staged whitespace checks. PHPStan's 189-item baseline is explicit; new findings fail.
+- `ar.json` and `en.json` now contain the same 974 keys. The parity script fails on any missing key.
+- The AGY wrapper validates project/root identity with `git rev-parse --show-toplevel` and `--add-dir`; ports are not repository identity.
+- A disposable fixture generator was verified at 50,000 products and 1,000,000 movements outside the shared Demo database; the temporary database was removed.
+- `toy-joy-milestone-watcher` remains paused. Only one writer may modify `.ai/`; resume requires a clean worktree and explicit handoff.
 
 The following TSK-004B/TSK-011 paragraphs are historical handoff context from before the 2026-08-06 milestone and do not override the Current State above. TSK-004B browser reconciliation remains open; TSK-014 and TSK-015 Slice A are now the active delivery boundary.
 

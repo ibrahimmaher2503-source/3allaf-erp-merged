@@ -1,7 +1,7 @@
 # Test and Verification Status
 
 **Implementation status:** In Progress  
-**Current diagnostics:** Slice A migration, PHP lint, Blade cache, Vite build, route listing, schema PRAGMA, and rebuild-command dry-run/apply on temporary SQLite passed on 2026-08-06.
+**Current diagnostics:** Slice A migration, PHP lint, Blade cache, Vite build, route listing, schema PRAGMA, rebuild-command dry-run/apply, Debugbar runtime config, locale parity, Pint, PHPStan with explicit legacy baseline, and 50k/1m disposable volume fixture passed on 2026-08-06.
 **Automated tests:** Not created or run for this slice, per DEC-012.
 **Manual browser verification:** Partial — guest redirect for PO list/print verified; authenticated state transitions, print rendering, RTL/LTR, scope, and mobile viewport remain pending safe authenticated session.
 **User acceptance testing:** Not Started
