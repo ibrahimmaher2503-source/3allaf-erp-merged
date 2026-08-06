@@ -61,13 +61,14 @@ class CanonicalAuthorizationSeeder extends Seeder
                 'dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view',
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
                 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
+                'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_invoices_supplier_returns.reverse', 'purchase_invoices_supplier_returns.cancel', 'purchase_invoices_supplier_returns.override',
             ],
-            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view'],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],
-            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print'],
-            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view'],
+            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print'],
+            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve'],
             'pricing-officer' => ['products_categories_brands.view'],
-            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve'],
+            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export'],
         ];
 
         foreach ($roles as $code => $_) {

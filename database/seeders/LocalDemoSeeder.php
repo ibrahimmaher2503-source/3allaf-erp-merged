@@ -15,6 +15,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use LogicException;
@@ -69,6 +70,13 @@ class LocalDemoSeeder extends Seeder
                 'policy_notes' => 'Local demo branch only.',
             ],
         );
+
+        foreach (['demo-reviewer', 'demo-branch-manager'] as $username) {
+            User::query()->where('username', $username)->first()?->branchScopes()->updateOrCreate(
+                ['branch_id' => $branch->id],
+                ['status' => 'active'],
+            );
+        }
 
         $sellingStore = $this->store($company, $branch, 'DEMO-SELL', 'selling', 'متجر البيع التجريبي', 'Demo Selling Store');
         $warehouseStore = $this->store($company, $branch, 'DEMO-WH', 'warehouse', 'مخزن تجريبي', 'Demo Warehouse');
@@ -301,7 +309,7 @@ class LocalDemoSeeder extends Seeder
         $prod2 = $products->count() > 1 ? $products[1] : $products[0];
 
         // 1. Draft PO
-        $po1 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+        $po1 = PurchaseOrder::query()->updateOrCreate(
             ['po_number' => 'PO-DEMO-000001'],
             [
                 'supplier_id' => $supplier1->id,
@@ -333,7 +341,7 @@ class LocalDemoSeeder extends Seeder
         ]);
 
         // 2. Submitted PO
-        $po2 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+        $po2 = PurchaseOrder::query()->updateOrCreate(
             ['po_number' => 'PO-DEMO-000002'],
             [
                 'supplier_id' => $supplier2 ? $supplier2->id : $supplier1->id,
@@ -367,7 +375,7 @@ class LocalDemoSeeder extends Seeder
         ]);
 
         // 3. Cancelled PO
-        $po3 = \App\Modules\Purchasing\Models\PurchaseOrder::query()->updateOrCreate(
+        $po3 = PurchaseOrder::query()->updateOrCreate(
             ['po_number' => 'PO-DEMO-000003'],
             [
                 'supplier_id' => $supplier1->id,

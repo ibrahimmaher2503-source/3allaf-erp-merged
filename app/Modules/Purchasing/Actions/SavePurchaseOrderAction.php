@@ -7,7 +7,6 @@ use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
-use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,8 +17,8 @@ class SavePurchaseOrderAction
     /**
      * Create or update a draft Purchase Order with line items.
      *
-     * @param array<string, mixed> $data
-     * @param array<int, array<string, mixed>> $lines
+     * @param  array<string, mixed>  $data
+     * @param  array<int, array<string, mixed>>  $lines
      */
     public function execute(array $data, array $lines, ?int $id = null, ?int $expectedVersion = null): PurchaseOrder
     {

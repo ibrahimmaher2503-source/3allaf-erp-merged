@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
+use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Gate;
 
@@ -10,6 +13,38 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/orders', 'purchasing::orders')
         ->middleware('can:purchase_orders.view')
         ->name('purchasing.orders');
+
+    $router->livewire('purchasing/invoices', 'purchasing::invoices')
+        ->middleware('can:purchase_invoices_supplier_returns.view')
+        ->name('purchasing.invoices');
+
+    $router->livewire('purchasing/invoices/import', 'purchasing::invoice-import')
+        ->middleware('can:purchase_invoices_supplier_returns.view')
+        ->name('purchasing.invoices.import');
+
+    $router->get('purchasing/invoices/{invoice}/print', function (PurchaseInvoice $invoice) {
+        Gate::authorize('purchase_invoices_supplier_returns.print');
+        $invoice->load(['supplier', 'store', 'purchaseOrder', 'lines.product']);
+
+        return view('purchasing.invoice-print', compact('invoice'));
+    })->name('purchasing.invoices.print');
+
+    $router->get('purchasing/invoices/export', function () {
+        Gate::authorize('purchase_invoices_supplier_returns.export');
+        $invoices = PurchaseInvoice::query()->with(['supplier', 'store'])->latest('id')->limit(5000)->get();
+
+        return response()->streamDownload(function () use ($invoices): void {
+            $handle = fopen('php://output', 'wb');
+            if ($handle === false) {
+                abort(500, 'Unable to open the CSV output stream.');
+            }
+            fputcsv($handle, ['invoice_number', 'supplier_code', 'supplier_reference', 'store_code', 'status', 'invoice_date', 'subtotal', 'tax_amount', 'discount_amount', 'total_amount']);
+            foreach ($invoices as $invoice) {
+                fputcsv($handle, array_map(static fn (mixed $value): string => is_string($value) && preg_match('/^[=+\-@]/', ltrim($value)) === 1 ? "'".$value : (string) $value, [$invoice->invoice_number, $invoice->supplier?->code, $invoice->supplier_reference, $invoice->store?->code, $invoice->status, $invoice->invoice_date?->format('Y-m-d'), $invoice->subtotal, $invoice->tax_amount, $invoice->discount_amount, $invoice->total_amount]));
+            }
+            fclose($handle);
+        }, 'purchase-invoices.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    })->name('purchasing.invoices.export');
 
     $router->get('purchasing/invoices/settings', function () {
         Gate::authorize('company_settings.view');

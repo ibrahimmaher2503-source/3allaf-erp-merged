@@ -1,8 +1,8 @@
-# Selected Task: TSK-014 Purchase Orders
+# Selected Task: TSK-015 Purchase Invoices, Import, Receipt, and Weighted-Average Cost
 
 ## Current state
 
-TSK-014 local implementation and authenticated manual browser verification are **Completed for approved local/demo scope**. Definition-only `Partially Received` and `Received` states remain TSK-015. True 390x844 mobile evidence remains pending because CUA Firefox capture is 0x0 and the available Browser Use session has no viewport-resize capability. Production, UAT, and Phase gates remain open.
+TSK-015 local/dev implementation and verification are **Completed for the local/demo boundary**. Fresh local SQLite rebuild and `DemoSeeder` passed; invoice calculation, lifecycle, posting/WAC, staged invalid import, print, and guest permission boundaries have reproducible evidence. Production, UAT, Owner Inputs, and Phase gates remain open.
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 
@@ -54,18 +54,17 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - Definition-only `Partially Received` / `Received` states remain TSK-015; true 390x844 mobile evidence remains pending because CUA Firefox capture is 0x0 and Browser Use session has no viewport resize.
 - Existing local `database/database.sqlite` was not reset; its migration attempt is blocked by an older pre-existing `categories` table collision at migration `2026_08_04_000017`.
 
-## Current continuation — TSK-015 readiness boundary
+## Current continuation — TSK-015 full local/dev implementation
 
-**Allowed scope for this slice:** implement only a server-gated, read-only TSK-015 readiness screen. It may show open decision groups, blocker references, lifecycle/reference cards, disabled workflow controls, explicit `TBD`/`Owner Approval Required` badges, and an empty state. It must not persist invoice/line data or expose any financial/inventory mutation.
+**Implemented local/dev scope:** purchase invoice schema/lifecycle, manual draft CRUD, BCMath calculation (tax/discount/rounding inputs), staged private `.xlsx`/`.csv` import with row-level validation and formula-like cell rejection, duplicate/idempotency checks, submit/reject/cancel/approve/reverse actions, strict PO matching/no over-receipt, automatic receipt on approval under DEC-043 local default, stock movement/balance/WAC update, reversal idempotency, audit events, print, CSV export, settings foundation, and permission boundaries.
 
-**Forbidden scope:** invoice posting/import, receipt mutation, stock movements/balances, WAC/cost calculations, approval records, seeded invoice/business data, file upload/parser/storage, tax/discount/currency/numbering defaults, production role grants, or production readiness claims.
+**Local/dev defaults explicitly adopted for this engineering slice:** approval receives stock automatically; over-receipt is blocked; invoice numbering uses `PINV-` only when approved; reversal requires sufficient on-hand; import creates Draft invoices only and never approves them; no sale-price mutation.
 
-**Dependencies and owner inputs:** TSK-014 local/demo scope is completed; TSK-015 receipt/invoice/posting remains gated; `.ai/TSK-015_OWNER_INPUTS.md` remains Awaiting owner answers; BLK-006, BLK-008, BLK-010, and BLK-012 remain open or production-gated. Do not convert engineering defaults into owner approvals.
+**Production/UAT boundary:** `.ai/TSK-015_OWNER_INPUTS.md` remains the authority for production values and has unresolved inputs. The local defaults above are not owner approval, production configuration, UAT acceptance, or release readiness. Full migration remains affected by pre-existing SQLite drift (`categories` already exists); targeted migrations were applied without changing historical migrations.
 
-**Verification plan:** inspect the real route and gate, run PHP lint, route listing, Blade cache, Vite build, locale parity, `git diff --check`, guest redirect smoke with request ID, and manual browser review of the read-only boundary in Arabic RTL and English LTR when a safe local session is available. Authenticated evidence must remain separate from guest redirect evidence.
+**Verification plan:** PHP lint, Pint, PHPStan, Blade cache, route discovery, `git diff --check`, invalid-import smoke, number-sequence smoke, guest browser redirects, and authenticated browser verification when a safe local session is available. No PHPUnit/Pest or automated browser tests are claimed.
 
-**Non-claims:** this slice is readiness preparation only; it does not close TSK-015, DM 2.2, UAT, or any production/financial gate.
-
+**Non-claims:** this local implementation does not close TSK-015 production/UAT gates, does not convert blank Owner Inputs into approvals, and does not authorize real financial or stock data.
 ## Current continuation — observability, identity, and delivery controls
 
 - Local/staging query budget, slow-query channel, dev Debugbar, and local non-production lazy-loading guard are being added under DEC-046.
@@ -74,4 +73,4 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - Realistic volume work uses only the disposable ignored performance database generator; it must never touch shared Demo data.
 
 
-Do not create invoice posting/import actions, stock mutation workflows, WAC calculations, receipt mutation, tax/payment/discount defaults, or production approval thresholds. The reversible Slice A schema and `inventory:rebuild-balances` diagnostic command are explicitly in scope; do not claim them as financial posting or production readiness. Do not commit or push until final review.
+The TSK-015 local/dev actions, import, ledger/WAC, receiving/matching, and lifecycle boundaries are implemented in reversible local slices. Do not claim production financial posting, production master-data readiness, UAT, or owner approval until `.ai/TSK-015_OWNER_INPUTS.md` is resolved and release gates are explicitly recorded.

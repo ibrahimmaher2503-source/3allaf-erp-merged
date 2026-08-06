@@ -25,7 +25,7 @@ class AllocatePurchaseOrderNumberAction
             $currentVal = $seq->next_value;
             $prefix = $seq->prefix ?: 'PO-';
             $padding = $seq->padding_length ?: 6;
-            $number = $prefix . str_pad((string) $currentVal, $padding, '0', STR_PAD_LEFT);
+            $number = $prefix.str_pad((string) $currentVal, $padding, '0', STR_PAD_LEFT);
 
             $seq->update([
                 'next_value' => $currentVal + 1,
