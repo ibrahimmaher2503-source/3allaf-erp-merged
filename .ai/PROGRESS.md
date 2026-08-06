@@ -6,7 +6,7 @@
 
 ## Current Active Slice — 2026-08-06 Closure Review
 
-TSK-016 local/dev closure was reconciled against the implementation and manually verified on the refreshed Demo server. The current evidence covers the authenticated list/settings empty-state boundary and confirms no reason rows or approved financial versions are invented. `docs/47` production/owner inputs, real scopes, print/device acceptance, UAT, and release gates remain open; no production posting claim is made.
+TSK-016 local/dev closure was reconciled against the implementation and source documents, then manually verified on the refreshed Demo server. The current evidence covers the authenticated list/settings empty-state boundary and confirms no reason rows or approved financial versions are invented. The financial-setting resolver now requires an effective version linked to an `ApprovalRecord` in `approved` state; pending or merely locked rows do not affect returns. `docs/47` production/owner inputs, real scopes, print/device acceptance, UAT, and release gates remain open; no production posting claim is made.
 
 The earlier TSK-016 discovery boundary is historical context superseded by DEC-052 and the completed local/dev implementation. Its owner-pending production constraints remain in force; no return posting, stock/WAC mutation, or production reason catalog is authorized without the adopted safeguards and required inputs.
 

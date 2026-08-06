@@ -103,7 +103,7 @@ Proposed default cost source: last purchase cost for that product, editable by a
 
 A missing source reference is rejected in Phase 1. It is not a cost-selection problem. Legacy/unknown stock follows a separate `adjustment_out` path with explicit cost and approval; it is not a supplier return.
 
-Return reason is required from the `supplier_return_reasons` catalog. The table is intentionally created without seed rows until the owner supplies the reporting/evaluation catalog. Numeric approval limits remain read from `financial_setting_versions` using the DEC-043 defaults; no production values are invented here.
+Return reason is required from the `supplier_return_reasons` catalog. The table is intentionally created without seed rows until the owner supplies the reporting/evaluation catalog. Numeric approval limits are resolved only from an effective `financial_setting_versions` row whose linked `ApprovalRecord` is `approved`; a `locked_at` value alone never activates an unapproved setting. No production values are invented here.
 
 ### CF-06 — Count Reconciliation
 

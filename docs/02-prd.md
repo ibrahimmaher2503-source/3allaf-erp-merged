@@ -178,7 +178,7 @@ Approval of a purchase invoice shall increase inventory in the selected store an
 
 ### PUR-06
 
-Supplier returns shall reference the original purchase where available, reduce stock only through an approved return document, and maintain cost/history traceability.
+Supplier returns shall reference an approved purchase-invoice line for every Phase 1 return line, reduce stock only through an approved return document, and maintain original unit-cost/history traceability. A supplier return without an approved source line is rejected; legacy/unknown stock requires a separately approved explicit-cost `adjustment_out` document.
 
 ### Purchasing Workflow
 

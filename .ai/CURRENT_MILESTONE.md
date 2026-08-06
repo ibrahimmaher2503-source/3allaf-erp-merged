@@ -3,7 +3,7 @@
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Slice B Foundation / Performance Group A
 **Status:** In Progress — TSK-016 is complete for Local/Dev under DEC-052; Production/UAT and DM 2.2 exit gates remain open.
-**Progress:** TSK-015 dependency and TSK-016 local vertical slice are complete. Current closure evidence covers the authenticated Demo list/settings empty-state boundary, while production reason rows, financial versions, real scopes, printers, UAT, and release gates remain open.
+**Progress:** TSK-015 dependency and TSK-016 local vertical slice are complete. Current closure evidence covers the authenticated Demo list/settings empty-state boundary, the source-document reconciliation, and approved-only financial-setting resolution; production reason rows, financial versions, real scopes, printers, UAT, and release gates remain open.
 **Started:** 2026-08-04
 
 ## Active Scope

@@ -8,6 +8,8 @@
 
 **Closure-review browser evidence — 2026-08-06:** Refreshed the Demo server from the verified repository on `http://169.58.101.5:8000` with `APP_ENV=local`, `DEMO_AUTH=true`, and `APP_DEBUG=false`. One-click Demo Auth reached `/purchasing/returns` as `Local Demo Administrator`; the list rendered with an intentionally disabled Create action because the reason catalog is empty, all lifecycle status filters, and the empty table state. `/purchasing/returns/settings` rendered the empty reason catalog and no-approved-financial-version state. Browser console reported 0 messages and 0 JS errors. This is Demo evidence only, not Production/UAT evidence.
 
+**Closure-review diagnostics — 2026-08-06:** Reviewed TSK-016 source documents (`TASKS.md`, PRD PUR-06, US-012, FLW-PUR-03, UI-PUR-003, AC-PUR-06, docs/35/38/47) and aligned the stale "where available"/unreferenced-return wording with DEC-052. Fixed `SupplierReturnPolicy` so only an effective `financial_setting_versions` row linked to an `ApprovalRecord` in `approved` state resolves; a disposable transaction proved `pending_resolution=null` and `approved_resolution=approved-value`, with rollback cleanup. PHPStan/Pint/PHP lint/Blade cache/route diagnostics passed. Browser recheck of list/settings passed with 0 JS errors. This is Local/Dev evidence only.
+
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
 
 **TSK-016 boundary:** Local/Dev is complete. Reason catalog, approved financial-setting versions, real authorization assignments, branch/store scope, printer/PDF acceptance, UAT, and Production gates remain Owner/operations inputs. No fallback cost or no-reference return path is permitted.

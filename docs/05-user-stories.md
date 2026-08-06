@@ -129,11 +129,11 @@ All stories are `Not Started`. Alternate/failure paths are mandatory acceptance 
 
 ## US-012 — Return Stock to a Supplier
 
-- **Actor:** Purchasing Officer; **Goal/Title:** issue an approved supplier return linked to original purchase where available; **Business value:** accurate stock/cost/history correction.
-- **Preconditions:** eligible stock and reference; **Trigger:** supplier return is authorized.
-- **Main flow:** choose supplier/original purchase, select quantities/reasons/store, validate available stock, approve, reduce stock through reference movements, and print.
-- **Alternate flow:** proceed without original reference only when policy explicitly allows and reason is captured.
-- **Failure flow:** insufficient stock, wrong supplier/store, duplicate return, invalid state, or direct stock edit is blocked.
+- **Actor:** Purchasing Officer; **Goal/Title:** issue an approved supplier return linked to an approved purchase-invoice line; **Business value:** accurate stock/cost/history correction.
+- **Preconditions:** eligible stock and an approved purchase-invoice-line reference; **Trigger:** supplier return is authorized.
+- **Main flow:** choose supplier/original approved invoice, select eligible quantities/reasons/store, validate available stock, approve, reduce stock through referenced movements at the source line cost, and print.
+- **Alternate flow:** no unreferenced supplier-return path exists in Phase 1. Legacy/unknown stock must use a separately approved explicit-cost `adjustment_out` document.
+- **Failure flow:** insufficient stock, wrong supplier/store, duplicate return, invalid state, missing approved source line, or direct stock edit is blocked.
 - **Permissions:** create/approve/reverse/print within purchasing/warehouse scope.
 - **Audit:** reference, quantities, cost basis, reason, approver, movement IDs.
 - **Relationships:** PRD PUR-06; UI UI-PUR-003; flow FLW-PUR-03; task TSK-016; acceptance AC-PUR-06.

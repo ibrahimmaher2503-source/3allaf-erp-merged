@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Policies;
 
+use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 
 final class SupplierReturnPolicy
@@ -14,7 +15,7 @@ final class SupplierReturnPolicy
             ->where('key', $key)
             ->where('effective_from', '<=', now())
             ->where(static fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->where(static fn ($query) => $query->whereNotNull('approval_record_id')->orWhereNotNull('locked_at'))
+            ->whereHas('approvalRecord', static fn ($query) => $query->where('approval_state', ApprovalState::Approved))
             ->orderByDesc('version')
             ->first();
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Models\ApprovalRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,6 +30,14 @@ final class FinancialSettingVersion extends Model
         'locked_at' => 'immutable_datetime',
         'version' => 'integer',
     ];
+
+    /**
+     * @return BelongsTo<ApprovalRecord, $this>
+     */
+    public function approvalRecord(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRecord::class, 'approval_record_id');
+    }
 
     /**
      * @return BelongsTo<User, $this>

@@ -8,7 +8,7 @@ The completed slice includes supplier-return schema, source/cost relationships, 
 
 **DEC-052 adopted rules:** every Phase 1 supplier-return line must reference an approved purchase-invoice line; its cost is the original invoice-line `unit_cost`; no WAC substitution or cost fallback; no-reference cases are rejected and belong to an explicit-cost approved `adjustment_out` path instead. Reason rows and numeric approval limits remain configurable inputs.
 
-**Closure-review scope:** reconcile stale `.ai/` status claims, refresh the current Demo server from this repository on port 8000, and manually verify the authenticated list/settings empty-state boundary. No new business policy, production master data, reason rows, numeric limits, or production bypass is authorized.
+**Closure-review scope:** reconcile stale `.ai/` status claims and TSK-016 source documents, refresh the current Demo server from this repository on port 8000, enforce approved-only financial-setting resolution, and manually verify the authenticated list/settings empty-state boundary. No new business policy, production master data, reason rows, numeric limits, or production bypass is authorized.
 
 **Forbidden:** posting without an approved source/reason, fallback cost, production reason seeding, production master-data seeding, invented numeric approval values, or claiming Production/UAT readiness from Demo evidence.
 
