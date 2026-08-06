@@ -3,7 +3,9 @@
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Purchasing\Actions\ApprovePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseOrderAction;
 use App\Modules\Purchasing\Actions\ClosePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
@@ -191,6 +193,19 @@ new #[Title('Purchase Orders')] class extends Component {
         }
     }
 
+    public function approveOrder(int $id): void
+    {
+        Gate::authorize('purchase_orders.approve');
+
+        try {
+            $order = PurchaseOrder::findOrFail($id);
+            app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
+            Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
+        } catch (\Throwable $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+        }
+    }
+
     public function openCancelModal(int $id): void
     {
         Gate::authorize('purchase_orders.cancel');
@@ -243,7 +258,15 @@ new #[Title('Purchase Orders')] class extends Component {
 
     public function render(): \Illuminate\Contracts\View\View
     {
+        $user = auth()->user();
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'lines']);
+
+        if ($user && ! $user->is_super_admin) {
+            $query->where(function ($scope) use ($user) {
+                $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
+                    ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
+            });
+        }
 
         if (! empty($this->search)) {
             $search = '%' . trim($this->search) . '%';
@@ -268,10 +291,17 @@ new #[Title('Purchase Orders')] class extends Component {
 
         $orders = $query->latest('id')->paginate(15);
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
-        $stores = Store::query()->where('status', 'active')->orderBy('name_ar')->get();
+        $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
         $products = Product::query()->where('status', 'active')->orderBy('name_ar')->get();
 
-        $viewingOrder = $this->viewingOrderId ? PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'canceller', 'closer', 'lines.product'])->find($this->viewingOrderId) : null;
+        $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product']);
+        if ($user && ! $user->is_super_admin) {
+            $viewingOrderQuery->where(function ($scope) use ($user) {
+                $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
+                    ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
+            });
+        }
+        $viewingOrder = $this->viewingOrderId ? $viewingOrderQuery->find($this->viewingOrderId) : null;
 
         $auditLogs = $viewingOrder ? AuditLog::query()
             ->where('source_type', PurchaseOrder::class)
@@ -299,6 +329,7 @@ new #[Title('Purchase Orders')] class extends Component {
             'canEdit' => Gate::allows('purchase_orders.edit'),
             'canCancel' => Gate::allows('purchase_orders.cancel'),
             'canPrint' => Gate::allows('purchase_orders.print'),
+            'canApprove' => Gate::allows('purchase_orders.approve'),
         ]);
     }
 }; ?>
@@ -329,6 +360,7 @@ new #[Title('Purchase Orders')] class extends Component {
                 <option value="all">{{ __('All Statuses') }}</option>
                 <option value="draft">{{ __('Draft') }}</option>
                 <option value="submitted">{{ __('Submitted') }}</option>
+                <option value="approved">{{ __('Approved') }}</option>
                 <option value="partially_received">{{ __('Partially Received') }}</option>
                 <option value="received">{{ __('Received') }}</option>
                 <option value="cancelled">{{ __('Cancelled') }}</option>
@@ -378,6 +410,7 @@ new #[Title('Purchase Orders')] class extends Component {
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide
                                     @if($order->status === 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300
                                     @elseif($order->status === 'submitted') bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300
+                                    @elseif($order->status === 'approved') bg-violet-100 text-violet-800 dark:bg-violet-950/80 dark:text-violet-300
                                     @elseif($order->status === 'partially_received') bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300
                                     @elseif($order->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300
                                     @elseif($order->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300
@@ -398,6 +431,10 @@ new #[Title('Purchase Orders')] class extends Component {
                                     @if ($order->isDraft() && $canEdit)
                                         <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="openEditModal({{ $order->id }})" title="{{ __('Edit Draft') }}" />
                                         <flux:button size="xs" variant="subtle" icon="paper-airplane" wire:click="submitOrder({{ $order->id }})" title="{{ __('Submit Order') }}" />
+                                    @endif
+
+                                    @if ($order->status === 'submitted' && $canApprove && $order->submitted_by !== auth()->id())
+                                        <flux:button size="xs" variant="primary" icon="check-badge" wire:click="approveOrder({{ $order->id }})" title="{{ __('Approve Order') }}" />
                                     @endif
 
                                     @if ($order->isCancellable() && $canCancel)

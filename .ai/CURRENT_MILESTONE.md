@@ -1,20 +1,20 @@
 # Current Milestone
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
-**Current milestone:** DM 2.2 Purchase Cycle — TSK-015 feasibility/readiness continuation
-**Status:** In Progress (TSK-014 local slice closed; TSK-015 feasibility analyzed; receipt/inventory/production/UAT gates open)
-**Progress:** TSK-010 through TSK-014 approved local slices are closed/verified as recorded. TSK-015 feasibility/readiness analysis is complete. BLK-008/BLK-010/BLK-017, inventory foundations, receipt/invoice policies, production inputs, UAT, and phase gates remain open.
+**Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Performance Group A
+**Status:** In Progress (TSK-014 local PO slices remain pending authenticated/mobile manual verification; TSK-015 Slice A and TSK-P01–P03 structural slices are implemented locally; receipt/inventory posting, WAC, production/UAT gates remain open)
+**Progress:** TSK-010 through TSK-013 local slices are closed/verified. TSK-014 ordered PO slices are implemented with manual verification pending. TSK-015 now has reversible invoice/ledger/snapshot schema and balance rebuild command; no posting workflow or owner policy approval is claimed. Later tasks remain deferred.
 **Started:** 2026-08-04
 
 ## Active Scope
 
-TSK-015 feasibility/readiness analysis is now the active scope. TSK-014 local purchase-order slice remains closed for implementation/verification only. Do not create stock movements, balances, WAC updates, fake receipts, production invoices, tax/payment defaults, discount rules, or approval thresholds until the documented TSK-015 and inventory contracts and owner inputs are available. The formal Phase 1 gate, DM 2.2, Phase 2, UAT, and production readiness remain open.
+TSK-014 is the active PO scope under DEC-044, with its five local slices implemented and authenticated/mobile manual evidence still pending. TSK-015 Slice A and Performance Group A (TSK-P01–P03) are authorized as reversible local schema/diagnostic work under DEC-043. Demo-only master/PO fixtures remain local-only. Do not create posting actions, stock mutations, WAC calculations, fake receipts, production invoices, tax/payment defaults, discount rules, or approval thresholds until the relevant owner and acceptance gates are resolved.
 
 TSK-010 closure evidence: DEC-038-approved `View (A)` grants are seeded for System Administrator, Cashier (limited view), Purchasing Officer, Warehouse Manager, Pricing Officer, and Accountant/Reviewer. Catalog `P`/`R` capabilities remain ungranted. Browser verification passed supplier duplicate/replay protection, category self-parent/descendant-cycle rejection, authorized view-only access, and unauthorized direct-route/action denial on the stable local server. TSK-010 is closed for approved local scope only.
 
-DM 2.1 local supplier/product-supplier scope is closed for its approved local slice. DM 2.2 remains open: TSK-014 local purchase-order slice is implemented and verified, while TSK-015 receipt/invoice integration, production inputs, UAT, and production exit evidence are incomplete. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
+DM 2.1 local supplier/product-supplier scope is closed for its approved local slice. DM 2.2 remains open: TSK-014 ordered PO slices are active, while TSK-015 receipt/invoice integration, production inputs, UAT, and production exit evidence are incomplete. DM 1.1, DM 1.2, and the formal Phase 1 gate remain open; no Phase 2 milestone completion, UAT acceptance, or production readiness is claimed.
 
-TSK-010, TSK-011, TSK-012, TSK-013, and the TSK-014 local slice are closed for their approved scopes. TSK-015 is In Progress for feasibility/readiness analysis only; implementation remains gated by TSK-015/Inventory contracts and owner inputs. Later tasks remain deferred until their dependencies and owner inputs are available.
+TSK-010, TSK-011, TSK-012, and TSK-013 are closed for their approved local scopes. TSK-014 is In Progress under DEC-044 until its ordered slices and slice-5 manual verification are complete. TSK-015 Slice A and TSK-P01–P03 are implemented as reversible local schema/diagnostic slices; later tasks remain deferred.
 
 TSK-011 handoff boundary: local product-card fields/types/attributes/media/detail behavior and safe oversized-upload messages are implemented. Composition lines remain deferred because the approved contract lacks sufficient component, quantity, cycle, and bundle-policy definitions. The local PHP upload limit remains an infrastructure dependency and is documented without changing the application policy.
 

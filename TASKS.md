@@ -237,7 +237,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-014 — Implement Purchase Orders
 
-- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **In Progress — local slice implemented and manually browser-verified; TSK-015 receipt states and production/UAT gates remain open**.
+- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **In Progress — Submit/Approve, Cancel/Close, definition-only receipt states, PO print, and PO-line reference prerequisite are implemented; slice-5 authenticated/mobile manual verification remains pending; production/UAT gates remain open**.
 - **Title / Purpose / Description:** Deliver purchase-order line entry and Draft/Submitted/Partially Received/Received/Cancelled/Closed state machine with receipt links.
 - **Traceability:** PUR-03, NFR-01–NFR-03, NFR-06; US-010; FLW-PUR-01; UI UI-PUR-001; AC-PUR-03; SEC-011–012, SEC-015, SEC-017–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.1 complete; supplier/store/product and PO authorization/terms.
@@ -251,7 +251,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-015 — Implement Purchase Invoices, Import, Receipt, and Weighted-Average Cost
 
-- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **In Progress — feasibility/readiness analysis completed; implementation gated by receipt/inventory/commercial/approval inputs**.
+- **Task ID / Phase / Milestone / Status:** TSK-015; Phase 2; DM 2.2; **In Progress — Slice A schema and Performance Group A structural work implemented as a reversible local slice; invoice posting/import, receipt mutation, WAC/cost rules, commercial defaults, and authenticated/browser acceptance remain gated**.
 - **Title / Purpose / Description:** Manual/Excel purchase invoice, selected-store receipt, optional tax/discount, atomic approval, stock movement, weighted-average cost and pricing-review signal without sale-price change.
 - **Traceability:** PRC-03, PUR-04–PUR-05, NFR-01–NFR-02, NFR-06; US-011; FLW-PUR-02; UI UI-PUR-002, UI-INV-002–003; AC-PRC-03, AC-PUR-04–05; SEC-015, SEC-017–021, SEC-022–026.
 - **Dependencies / Required Inputs:** TSK-014; cost/rounding/tax/discount/import/receipt approvals and opening-stock approach.

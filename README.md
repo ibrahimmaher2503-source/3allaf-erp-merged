@@ -51,6 +51,13 @@ In `local` environment with `DEMO_AUTH=true`, role-specific browser verification
 
 Optional redirect parameter: `/__demo/auth?as=demo-cashier&redirect=/pos`
 
+To provision the local Demo walkthrough dataset, first set `DEMO_AUTH=true`, then run:
+
+```bash
+php artisan db:seed --class=DemoSeeder
+```
+
+`DemoSeeder` is local-only and idempotent. It creates Demo identities, authorization scopes, master data, and PO walkthrough records; it never runs in production/staging and does not create real credentials or production data.
 ## Application Foundation
 
 - Official Laravel Livewire starter foundation

@@ -31,6 +31,8 @@ class PurchaseOrder extends Model
         'updated_by',
         'submitted_at',
         'submitted_by',
+        'approved_at',
+        'approved_by',
         'cancelled_at',
         'cancelled_by',
         'closed_at',
@@ -45,6 +47,7 @@ class PurchaseOrder extends Model
         'total_amount' => 'decimal:4',
         'lock_version' => 'integer',
         'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'closed_at' => 'datetime',
     ];
@@ -84,6 +87,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function canceller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
@@ -104,6 +112,11 @@ class PurchaseOrder extends Model
         return $this->status === 'submitted';
     }
 
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
     public function isEditable(): bool
     {
         return $this->status === 'draft';
@@ -116,6 +129,6 @@ class PurchaseOrder extends Model
 
     public function isClosable(): bool
     {
-        return in_array($this->status, ['submitted', 'partially_received', 'received'], true);
+        return in_array($this->status, ['approved', 'partially_received', 'received'], true);
     }
 }

@@ -582,3 +582,20 @@ Append one factual entry for every agent session that changes repository or proj
 - **Completed:** Preserved Product Import file uploads, batch staging/review/approval/cancellation/error-download flows, permissions, and anchors. Preserved Audit Logs filters, pagination, scoped authorization, protected/redacted detail modal, and responsive table behavior. No POS/backend/routes/shared layout files changed.
 - **Verification actually run:** AGY audit SAFE and final review PASS; view clear/cache, Vite build, and diff check passed; browser verification passed for Product Import and Audit Logs. Audit Logs page-level `scrollWidth` equaled viewport width; final browser console had no JavaScript errors.
 - **Remaining:** POS intentionally excluded; real device-sized mobile viewport, automated application suite, UAT, commit, and push remain pending.
+
+## 2026-08-06 - Performance and UI Interaction Documentation Bundle
+
+- **Agent / scope:** Documentation-only ingestion of the owner-supplied performance and UI interaction specifications.
+- **Completed:** Added `docs/56-large-dataset-performance-specification.md`, `docs/57-ui-interaction-and-data-entry-standard.md`, and `.ai/PERFORMANCE_TASKS.md`; verified existing `docs/47-inventory-ledger-and-cost-flow-policy.md` was already present and not duplicated. Updated `AI_INDEX.md` authority order, canonical document index, task routing, and conditional reading rules for docs 56/57.
+- **Verification actually run:** AGY read-only inspection PASS; all docs 41–57 and performance control references resolved; AI_INDEX task IDs remained unique; `git diff --check` passed. The two performance patch files had identical SHA-256 values. No automated tests or browser verification ran.
+- **Remaining blockers / next action:** Docs 56/57 remain derived/team-adopted with owner approval outstanding; TSK-P11/P12 remain measurement-gated; no performance or UI implementation was started.
+- **Code, tests, browser, commit, push:** No application code changed. No automated tests, manual browser verification, commit, or push occurred.
+
+## 2026-08-06 - TSK-014 / TSK-015 Slice A and Performance Group A
+
+- **Agent / scope:** Continued the existing uncommitted `master` worktree; corrected DEC-042 provenance according to canonical DEC-043, expanded `AI_INDEX.md` authority routing through the reserved `docs/58` slot, and implemented the explicitly authorized local PO/ledger foundation slice.
+- **Completed:** Verified `purchase_order_lines.id` and added restrictive `purchase_invoice_lines.purchase_order_line_id`; added invoice/line, append-only stock movement with `consumed_cost`, per-store balances, period snapshots, and composite indexes in migration `2026_08_06_000024`; added transactional `inventory:rebuild-balances` dry-run/apply command; added shared `line-editor`, `data-table`, and `data/value` Blade primitives; enabled `Model::preventLazyLoading(! app()->isProduction())`.
+- **Verification actually run:** PHP lint, temporary SQLite `migrate:fresh`, migration status, schema PRAGMA/FK/index inspection, command dry-run/apply on empty ledger, Blade cache, Vite build, route list, HTTP guest redirect, and browser navigation for PO list/print. All passed; Vite emitted only the existing optional `fontaine` warning.
+- **Manual boundary:** Authenticated PO transition/print, scope, RTL/LTR, and mobile viewport evidence remains pending because no safe authenticated browser session was used and no password was entered.
+- **Remaining blockers / next action:** Invoice posting/import, receipt mutation, WAC and pending CF-01–CF-06 cost rules, owner commercial settings, UAT, production database/ops, and production readiness remain open. `docs/58` is not present; AI_INDEX marks it reserved rather than inventing content.
+- **Commit state:** No commit or push has occurred yet; this entry records the current pre-commit milestone.

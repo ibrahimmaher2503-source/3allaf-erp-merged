@@ -15,7 +15,7 @@ Implement TSK-014 only:
 - A print-friendly A4 PO detail view only if it can be implemented without adding a PDF package or production company/tax data; otherwise keep a safe print view with placeholders.
 - Route wiring, sidebar entry, and UI-PUR-001 tutorial registration.
 - Authorization must use only task-documented actions: create/edit draft, submit, cancel, close, print/view as supported by the existing canonical matrix. Do not add approve/export/reverse permissions or alter unrelated permission grants. If the existing permission catalog cannot represent submit/close without broad matrix changes, use the narrowest existing documented action and record the limitation rather than inventing permissions.
-- Local demo seed data only in LocalDemoSeeder: use existing DEMO suppliers/stores/products; no production supplier data, tax rules, payment defaults, stock, invoices, or prices. Seeder must be idempotent.
+- Local demo fixtures are explicitly allowed only through the dedicated `DemoSeeder` entrypoint when `APP_ENV=local` and `DEMO_AUTH=true`. It may compose `CanonicalAuthorizationSeeder` and `LocalDemoSeeder` to create deterministic Demo identities, master data, and PO walkthrough records. These fixtures are non-production, idempotent, and must never run outside local. No production supplier data, tax rules, payment defaults, stock, invoices, or real credentials.
 
 Forbidden:
 - No purchase invoices/imports, receipts, stock movement/balance, weighted-average cost, pricing, returns, approval workflow, or TSK-015/016 implementation.

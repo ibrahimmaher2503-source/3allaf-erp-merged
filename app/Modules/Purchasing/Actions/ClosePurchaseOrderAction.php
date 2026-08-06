@@ -26,8 +26,8 @@ class ClosePurchaseOrderAction
                 throw new InvalidArgumentException(__('This purchase order was modified in another session. Please reload before closing.'));
             }
 
-            if (! in_array($po->status, ['submitted', 'partially_received', 'received'], true)) {
-                throw new InvalidArgumentException(__('Only submitted, partially received, or received purchase orders can be closed.'));
+            if (! in_array($po->status, ['approved', 'partially_received', 'received'], true)) {
+                throw new InvalidArgumentException(__('Only approved, partially received, or received purchase orders can be closed.'));
             }
 
             $before = $po->only(['status', 'closed_at', 'closed_by', 'lock_version']);

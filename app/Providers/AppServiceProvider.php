@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
 use App\Modules\Platform\Policies\AuditLogPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -57,7 +58,7 @@ class AppServiceProvider extends ServiceProvider
             'products_categories_brands.export', 'products_categories_brands.reverse', 'products_categories_brands.cancel',
             'products_categories_brands.override',
             'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.logical_delete',
-            'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.print', 'purchase_orders.cancel',
+            'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.print', 'purchase_orders.cancel', 'purchase_orders.approve',
         ] as $ability) {
             Gate::define($ability, fn (?User $user): bool => $user?->hasPermission($ability) ?? false);
         }
@@ -76,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+        Model::preventLazyLoading(! app()->isProduction());
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),

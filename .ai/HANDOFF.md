@@ -1,16 +1,13 @@
 # AI Handoff
 
-## Current State
+## Current State — 2026-08-06
 
-### Current TSK-004B Routing — 2026-08-04
+TSK-014 remains **In Progress** with its five local slices implemented; authenticated/mobile manual verification is pending because no safe authenticated browser session is available. The PO schema was independently verified: `purchase_order_lines.id` is the stable primary key and `purchase_invoice_lines.purchase_order_line_id` now references it with `RESTRICT`.
 
-TSK-004B is **In Progress** as the active shared Platform feature. TSK-012 remains Completed for approved local scope. The implementation must not change unrelated business workflows, permission grants, commercial policy, or task statuses. Browser evidence and final reconciliation remain pending; no UAT or production-readiness claim is made.
+TSK-015 Slice A and Performance Group A (TSK-P01–P03) are implemented as reversible local development slices. The first ledger migration creates invoice/line, stock movement/balance, and period snapshot tables with composite indexes; `stock_movements.consumed_cost` is stored for future cost-consumption posting; `inventory:rebuild-balances` supports dry-run and transactional apply. No invoice posting, stock mutation action, WAC calculation, import workflow, owner policy approval, UAT, or production readiness is claimed.
 
-TSK-011 is **Completed for approved local scope** in DM 2.1. TSK-010 is complete for approved local scope and remains closed unless a regression or dependency defect is discovered. The completed local slice adds the full bilingual product card, approved standard/composite/service types, searchable/reportable attributes, protected product media, product detail/full edit screens, stale-update protection, audit, and source-authorized delivery.
 
-DEC-038 catalog `View (A)` grants remain the only granted catalog capability for the current verified roles. Catalog `P`/`R` capabilities and cost-field permission remain ungranted. TSK-009 remains at its actual recorded status, and TSK-012/TSK-013, pricing, inventory, labels, purchasing, and POS must not start. No Phase 1/Phase 2 gate, UAT, or production readiness claim is made.
-
-The following TSK-010 section is historical handoff context. TSK-011 is the current closure-reviewed task; no later task is active.
+The following TSK-004B/TSK-011 paragraphs are historical handoff context from before the 2026-08-06 milestone and do not override the Current State above. TSK-004B browser reconciliation remains open; TSK-014 and TSK-015 Slice A are now the active delivery boundary.
 
 ### Active TSK-010 Slice — 2026-08-04
 
@@ -228,3 +225,13 @@ No Phase 1 gate, DM 1.1/1.2 production exit, UAT acceptance, or production readi
 TSK-011 closure is **Completed for approved local scope**. The local implementation covers full bilingual card identity/description, approved product types, searchable/reportable attributes, protected product media, product detail/full edit screens, stale-update and immutable-code guards, audit, source-authorized delivery, and safe oversized-upload messages. Browser evidence and static results are recorded in `artifacts/tsk-011-browser/verification-results.md` and the TSK-011 section of `.ai/TEST_RESULTS.md`.
 
 The exact deferred boundary is documented: composition lines/assembly/bundle pricing remain deferred because the approved Phase 1 composition contract is insufficient. Files above the 8 MB application limit receive a localized client-side message; files rejected by the stricter local PHP upload limit receive a localized server-boundary message without persistence. Do not start TSK-012/TSK-013 or later modules. No Phase 1/Phase 2 gate, UAT, production readiness, commit, or push was claimed.
+
+### TSK-014 ordered continuation handoff — 2026-08-06
+
+- TSK-014 is In Progress under DEC-044; TSK-015 must not start.
+- A-01 is satisfied by stable `purchase_order_lines.id`; future invoice lines must use `purchase_order_line_id`.
+- PO numbering must use only `AllocatePurchaseOrderNumberAction`/`DocumentSequence`.
+- Submit + Approve, Cancel + Close, definition-only receipt states, and PO print are implemented or present locally; slice-5 authenticated manual verification remains pending.
+- Approval adds no stock, cost, invoice, or receipt posting. Approved records cannot be edited; requester self-approval is rejected.
+- Clean temporary migration verification passed through `2026_08_06_000023`; the existing local DB remains untouched because of the pre-existing catalog migration collision.
+- DEC-045 now authorizes `DemoSeeder`/`DemoProductSeeder` Demo fixtures only when `APP_ENV=local` and `DEMO_AUTH=true`. The ignored `database/demo.sqlite` was seeded and manually verified through Demo Auth and PO print; no production/staging seeding or secrets are allowed.

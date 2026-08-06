@@ -1,12 +1,12 @@
 # Test and Verification Status
 
 **Implementation status:** In Progress  
-**Automated tests:** Focused review-regression tests created under the explicit 2026-08-03 owner instruction
-**Automated test execution:** Passed (14 tests, 73 assertions)
-**Manual browser verification:** Partial — guest and 404 scenarios verified; authenticated health screen pending safe credentials
+**Current diagnostics:** Slice A migration, PHP lint, Blade cache, Vite build, route listing, schema PRAGMA, and rebuild-command dry-run/apply on temporary SQLite passed on 2026-08-06.
+**Automated tests:** Not created or run for this slice, per DEC-012.
+**Manual browser verification:** Partial — guest redirect for PO list/print verified; authenticated state transitions, print rendering, RTL/LTR, scope, and mobile viewport remain pending safe authenticated session.
 **User acceptance testing:** Not Started
 
-Automated tests remain deferred by explicit project-owner directive. No automated test code was created or executed during this implementation run.
+The results below include historical evidence from earlier authorized review runs. The current Slice A gate is diagnostic/manual only; no automated-test completion is claimed.
 
 ## TSK-009 Approval Foundation Static Verification - 2026-08-03
 
@@ -715,4 +715,29 @@ The existing `CatalogImplementationAbsenceTest` was run once as the only TSK-010
 - **Visual findings:** Shared shell/header/sidebar, forms, filters, tables, status badges, bilingual/RTL content, actions, cards, upload/media panels, and system states rendered. Wide Suppliers/Audit/Purchase tables use bounded table overflow; no page-level clipping was visually observed. Final browser console had zero JavaScript errors.
 - **Security boundary:** `/settings/security` correctly redirected to `/user/confirm-password`; no password was entered or bypassed, so post-confirmation Security content remains unverified.
 - **Responsive gap:** Real device-sized mobile viewport was not available; mobile visual acceptance remains pending.
+
+## TSK-014 ordered continuation verification — 2026-08-06
+
+- A-01 schema review passed: `purchase_order_lines.id` is the stable line key; there is no `purchase_invoice_lines` table because TSK-015 has not started.
+- Numbering review passed: `SavePurchaseOrderAction` calls only `AllocatePurchaseOrderNumberAction`, which locks `DocumentSequence`; no parallel allocator exists.
+- Added and linted `ApprovePurchaseOrderAction` plus approval fields migration `2026_08_06_000023`; approved records are non-editable, self-approval is rejected, and audit is recorded without stock/invoice/cost effects.
+- Close now accepts only `approved`, `partially_received`, or `received`; receipt states remain definitions only.
+- PO and A4 print routes are registered. Guest HTTP smoke returned `302 /login` with request IDs.
+- Clean temporary SQLite migration through `2026_08_06_000023`, route listing, Blade cache, Vite build, and `git diff --check` passed.
+- Existing project SQLite was not reset: migration `2026_08_04_000017` collides with its pre-existing `categories` table.
+- Authenticated manual verification of branch/store scope, self-approval, approved edit denial, RTL/LTR, and mobile remains pending because no authenticated browser session is available; no password was entered.
+- TSK-014 remains In Progress; TSK-015 remains not started.
+
+## Local Demo fixture verification — 2026-08-06
+
+- Added explicit `DemoSeeder` guarded by `APP_ENV=local` and `DEMO_AUTH=true`, composing `CanonicalAuthorizationSeeder`, `DemoProductSeeder`, and `LocalDemoSeeder`.
+- Created a separate ignored `database/demo.sqlite` and migrated all current migrations through `2026_08_06_000023`.
+- Demo seed succeeded and was rerun idempotently: 5 users, 1 category, 1 brand, 2 products, 3 suppliers, 3 purchase orders, and 3 PO lines.
+- Demo Auth URL succeeded: `/__demo/auth?as=demo-admin&redirect=/purchasing/orders`; authenticated Purchase Orders UI displayed all Demo PO actions.
+- Manual print verification succeeded for `PO-DEMO-000002`, including supplier/store/line/quantity/unit cost and local `TBD` tax wording.
+- Self-approval attempt on the submitted Demo PO did not mutate it; database remained `submitted`, `lock_version=1`.
+- Added branch/store scope filtering to PO list, detail lookup, and store selector. `demo.branch.manager` with branch scope and Demo view permission saw only scoped PO rows; `demo.no.access` was denied before the screen.
+- UI now hides Approve for the requester; the Demo Admin submitted PO showed no Approve action. Approved `PO-DEMO-000001` showed no Edit Draft action.
+- RTL and LTR language toggles were manually exercised on `/purchasing/orders`; headers, status badges, filters, and rows rendered in both directions. Mobile viewport verification remains pending because the current browser session exposes a fixed 1280px viewport and no real viewport resize control.
+- No passwords, tokens, or real credentials were created or exposed. Demo fixture authorization is recorded as DEC-045; TSK-015 remains not started.
 - **Excluded-surface visual checks:** Dedicated `/pos` full-screen shell and `/purchasing/orders/1/print` A4 document were also visually verified; both retained their independent layouts and rendered without clipping.

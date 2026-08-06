@@ -6,9 +6,9 @@
 
 TSK-011 closure note (2026-08-04): local product-card fields, approved types, attributes, protected media, detail/full edit, authorization, audit, stale-update behavior, and safe oversized-upload messages are implemented. Composite component lines remain deferred by the insufficient approved Phase 1 contract. The local PHP upload limit is documented as an infrastructure dependency without weakening the application policy. TSK-011 is Completed for approved local scope. No Phase 1/Phase 2 gate, UAT, or production-readiness claim is made.
 
-## Current Active Slice — 2026-08-04
+## Current Active Slice — 2026-08-06
 
-TSK-004B is **In Progress** as a shared Platform feature. Its initial registries, safe context, per-user preference persistence, shared controls, guide/flow routes, and bounded tour layer are implemented. Browser verification and final reconciliation remain open. TSK-012 and TSK-013 remain completed for their approved local scopes; TSK-014 local slice is implemented and verified; TSK-015 feasibility/readiness analysis is now active; TSK-009 remains In Progress. No unrelated business task is changed or started.
+TSK-014 remains **In Progress**: Submit/Approve, Cancel/Close, definition-only receipt states, PO print, and PO-line schema prerequisite are implemented; authenticated/mobile manual evidence remains pending. TSK-015 Slice A and TSK-P01–P03 are implemented as reversible local schema/diagnostic slices: invoice/ledger/snapshot tables, restrictive PO-line FK, consumed-cost column, composite indexes, and `inventory:rebuild-balances`. Invoice posting/import, receipt mutation, WAC/cost policy, owner commercial settings, UAT, and production readiness remain open.
 
 
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
@@ -207,5 +207,17 @@ Completed the Company, payment, tax, store, mapping, and drawer browser mutation
 - TSK-001 remains `In Progress — specific local work remains`: no actual local backup/restore capability/status or setup/run/recovery deployment/rollback runbook exists, and custom bilingual 419/429 views are absent. Request IDs, safe 403/404/500/503 behavior, maintenance behavior, health authorization, runtime, and build baseline were verified.
 - TSK-002, TSK-003, TSK-004, TSK-006, and TSK-007 are `Completed for approved local scope`; TSK-008 remains `Completed` under DEC-038. Browser scenarios, authorization/direct denial, scope behavior, RTL/LTR, responsive layout, and local interaction evidence are recorded in `.ai/TEST_RESULTS.md`.
 - TSK-005 remains `In Progress — specific local work remains`: tax effective-date fields/overlap validation and actual configuration print-preview flows are absent. Company/payment/tax/numbering/printer mutations, duplicate validation, audit, and local TBD behavior were verified.
+
+## TSK-014 ordered continuation — 2026-08-06
+
+- Reconciled the canonical remote PO implementation by fast-forwarding to `origin/master`; preserved the previous divergent local work in a reversible stash.
+- Confirmed A-01: `purchase_order_lines.id` is the stable line key, with unique `(purchase_order_id, line_number)`; no invoice-line migration was created.
+- Confirmed the only PO allocator is `App\\Modules\\Purchasing\\Actions\\AllocatePurchaseOrderNumberAction`, which locks `DocumentSequence`; no parallel allocator was added.
+- Added PO Submit + Approve transition support: approval fields/migration, self-approval rejection, `purchase_orders.approve` authorization, audit, and immutable-after-approval editing boundary. No stock/invoice/cost posting occurs.
+- Reconciled Close to require `approved`, `partially_received`, or `received`; receipt states remain definitions only.
+- PO print route/view already exists and remains reused at `resources/views/purchasing/print.blade.php`.
+- Updated DEC-044, `CURRENT_MILESTONE.md`, `CURRENT_TASK.md`, and `TASKS.md`; TSK-014 remains In Progress until slice-5 manual verification. TSK-015 remains not started.
+- Clean temporary SQLite migrations through `2026_08_06_000023`, PO routes, Blade cache, Vite build, and `git diff --check` passed. Existing local SQLite was not reset because an older `categories` table collides with migration `2026_08_04_000017`.
+- Added DEC-045-approved local Demo fixture path: `DemoSeeder` composes authorization, products/category/brand, suppliers, stores, and PO walkthrough data into ignored `database/demo.sqlite`; Demo Auth and A4 print were manually verified.
 - Fixed closure defects: cash-drawer forms now expose server validation errors instead of being blocked by native required validation; branch selling-store mapping now filters by selected branch and rejects cross-branch stores.
 - TSK-009 remains `In Progress`; no new TSK-009 implementation was performed during this audit. Production blockers remain open and Phase 1/DM production gates are not claimed.

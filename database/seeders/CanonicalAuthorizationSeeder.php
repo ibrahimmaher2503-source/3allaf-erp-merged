@@ -60,14 +60,14 @@ class CanonicalAuthorizationSeeder extends Seeder
                 'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
                 'dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view',
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
-                'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print',
+                'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
             ],
-            'branch-manager' => ['branches_stores.view', 'pos_sales.view'],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],
             'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print'],
             'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view'],
             'pricing-officer' => ['products_categories_brands.view'],
-            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view'],
+            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.approve'],
         ];
 
         foreach ($roles as $code => $_) {
@@ -90,7 +90,7 @@ class CanonicalAuthorizationSeeder extends Seeder
                     'name' => $name,
                     'email' => $email,
                     'email_verified_at' => now(),
-                    'password' => Hash::make('LocalDemoOnly!2026'),
+                    'password' => Hash::make(bin2hex(random_bytes(32))),
                     'is_super_admin' => $isSuperAdmin,
                 ]);
 
