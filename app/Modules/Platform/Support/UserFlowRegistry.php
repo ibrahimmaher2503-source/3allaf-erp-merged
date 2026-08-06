@@ -135,6 +135,20 @@ final class UserFlowRegistry
                 ],
                 null,
             ),
+            'FLW-ADM-06' => self::flow(
+                ['ar' => 'الإعداد الأولي والتجهيز للتشغيل', 'en' => 'Complete Initial Setup'],
+                ['ar' => 'مالك النظام أو مسؤول النظام المصرح له', 'en' => 'System owner or authorized administrator'],
+                ['UI-ADM-013', 'UI-ADM-002', 'UI-ADM-003', 'UI-ADM-004', 'UI-ADM-012', 'UI-ADM-005'],
+                ['company_settings.edit'],
+                [
+                    ['ar' => 'افتح لوحة الإعداد الأولي واقرأ نسبة الخطوات الإلزامية وحالة كل بطاقة.', 'en' => 'Open Initial Setup and read the required-step percentage and each card state.'],
+                    ['ar' => 'أدخل هوية الشركة ثم أنشئ الفروع والمتاجر الفعلية وفق بيانات المالك.', 'en' => 'Enter company identity, then create real branches and stores from owner-provided data.'],
+                    ['ar' => 'أضف أسباب إرجاع الموردين وإعدادات الترقيم والطباعة، واحفظ المالي منها كقيد الاعتماد فقط.', 'en' => 'Add supplier-return reasons and numbering/print settings; save financial values as pending only.'],
+                    ['ar' => 'راجع المستخدمين والأدوار والنطاقات، ثم انتظر اعتماد النسخ المالية قبل اعتبارها فعالة.', 'en' => 'Review users, roles, and scopes, then wait for financial approvals before treating them as active.'],
+                    ['ar' => 'راجع الطابعات كخطوة اختيارية، ثم افصل نتيجة الجولة عن UAT وProduction sign-off.', 'en' => 'Review printers as an optional step, keeping the tour result separate from UAT and Production sign-off.'],
+                ],
+                null,
+            ),
             'FLW-SYS-01' => self::flow(
                 ['ar' => 'مراجعة سجل التدقيق', 'en' => 'Review Audit Logs'],
                 ['ar' => 'المراجع المصرح له', 'en' => 'Authorized reviewer'],
@@ -205,6 +219,7 @@ final class UserFlowRegistry
             ],
             'steps' => array_map(function (array|string $body, int $index): array {
                 $bodyArray = is_array($body) ? $body : ['ar' => $body, 'en' => $body];
+
                 return [
                     'number' => $index + 1,
                     'body' => $bodyArray,

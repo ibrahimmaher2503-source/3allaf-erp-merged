@@ -147,7 +147,7 @@
             </div>
         </section>
 
-        <flux:callout variant="info" icon="shield-check" title="{{ __('Approval and safety boundary') }}">
+        <flux:callout variant="info" icon="shield-check" title="{{ __('Approval and safety boundary') }}" data-guide="initial-setup-safety">
             {{ __('Financial settings become active only after an approved version is recorded. This setup page never creates production defaults or bypasses approval.') }}
         </flux:callout>
     </x-app.page>
