@@ -1,8 +1,10 @@
-# Selected Task: TSK-015 Purchase Invoices, Import, Receipt, and Weighted-Average Cost
+# Selected Task: TSK-016 Supplier Returns
 
 ## Current state
 
-TSK-015 local/dev implementation and verification are **Completed for the local/demo boundary**. Fresh local SQLite rebuild and `DemoSeeder` passed; invoice calculation, lifecycle, posting/WAC, staged invalid import, print, and guest permission boundaries have reproducible evidence. The 83 documented Owner Inputs are now answered under DEC-050 for the local policy baseline. Production operational data, UAT, and Phase gates remain open.
+TSK-015 local/dev implementation is completed under DEC-050. TSK-016 is now **Started — discovery and bounded read-only contract only**. The full supplier-return mutation/posting path is not authorized yet because `docs/47` remains owner-pending for CF-05 supplier-return cost reversal and the unreferenced-return policy.
+
+**Allowed now:** requirement reconciliation, source/eligibility/read-only design, reversible schema/model review, permission/audit contract, and a disabled/empty UI boundary if needed. **Forbidden until the cost-flow decision is approved:** approved return posting, `purchase_return` stock movements, WAC/balance mutation, cost fallback defaults, production reason catalogs, or production master-data seeding.
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 

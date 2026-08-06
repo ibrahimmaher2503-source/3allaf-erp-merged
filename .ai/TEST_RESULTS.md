@@ -1,11 +1,9 @@
 # Test and Verification Status
 
-**Implementation status:** TSK-015 local/dev verification completed under DEC-050; production/UAT remains open.
-**Current diagnostics:** Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, fresh migration/seed pass, git diff check pass, and manual browser/database evidence pass on 2026-08-06. Owner-input matrix: 83/83 answered under DEC-050; production operational data remains separate.
+**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 discovery/read-only boundary started under DEC-051; production/UAT remains open.
+**Current diagnostics:** TSK-015 diagnostics remain green: Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, fresh migration/seed pass, git diff check pass, and manual browser/database evidence pass on 2026-08-06. TSK-016 has no code/mutation verification yet by design.
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
-**TSK-015 current evidence:** tax rate 14% is rejected by the approved Phase-1 zero-tax boundary; allocated sequence is `PINV-2026-00001`; approved smoke invoice is `PINV-2026-00002` with subtotal/total `33.7500`, tax `0.0000`, one stock movement, and WAC/on-hand reconciliation. Model A partial-receipt attempt rolled back with `0` movements and PO received quantity `0.0000`; invalid import is `1 total / 0 valid / 1 invalid`; browser Review showed the invalid row and formula-like-cell rejection; print rendered bilingual output with tax `0.0000`; reverse retry left movement count unchanged at `2`. AGY is installed as `1.1.10`; requested read-only audit was blocked by AGY quota and is explicitly not claimed.
-**Boundary:** Production branches/stores/users, printer/device assignment, opening cutover timestamp/approver, UAT, and release gates remain open. No PHPUnit/Pest or automated browser tests claimed.
-**User acceptance testing:** Not Started
+**TSK-016 blocker:** `docs/47` remains `Derived implementation policy — team-adopted defaults, owner approval outstanding`; CF-05 original purchase-line cost reversal and no-reference fallback must be approved before stock/WAC mutation. Eligible/non-reference return policy, reason catalog, and final approval limits are also pending.
 
 ## TSK-014 Local Implementation and Manual Verification Evidence — 2026-08-06
 

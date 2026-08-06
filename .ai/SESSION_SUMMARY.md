@@ -639,3 +639,11 @@ Append one factual entry for every agent session that changes repository or proj
 - **Verification actually run:** `migrate:fresh --force`, `DemoSeeder`, Blade cache, PHP lint, Pint, PHPStan 0 errors, git diff check; tax rejection; `PINV-2026-00001` allocation; approved `PINV-2026-00002` with zero tax and one movement; partial-receipt rollback with zero movement; invalid import `1/0/1`; authenticated browser Review with formula-like-cell error; bilingual print; reverse retry movement count unchanged. `agy --version` returned 1.1.10; requested AGY audit returned `Individual quota reached`, so no AGY audit result is claimed.
 - **Remaining blockers / next action:** Production branch/store/user master data, printer/device assignment, cutover timestamp and named approver, UAT, and release/Phase gates remain open.
 - **Code, tests, browser, commit, push:** Code and control files changed; no PHPUnit/Pest or automated browser tests created/run; manual browser verification performed; no new commit or push in this session yet.
+### 2026-08-06 - TSK-016 start boundary
+
+- **Agent / scope:** Started TSK-016 supplier-return discovery after TSK-015 local/dev closure.
+- **Completed:** Read TSK-016 task contract, PUR-06/US-012/FLW-PUR-03/AC-PUR-06, UI-PUR-003 register, state/data/print contracts, and `docs/47` cost-flow policy. Reconciled that full posting is blocked by pending CF-05 and unreferenced-return policy. Recorded DEC-051 and moved the task to In Progress for a bounded read-only/disabled contract.
+- **Files changed:** `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/DECISIONS.md`, `TASKS.md`.
+- **Verification actually run:** Repository root, clean pre-edit status, and protected stash verified; source-first requirement/dependency inspection completed. No code mutation, migration, posting, automated tests, or browser acceptance run in this start-boundary session.
+- **Remaining blockers / next action:** Owner approval is required for `docs/47` CF-05 original-line cost reversal, no-reference return cost fallback, eligible/non-reference policy, return reason catalog, and final approval limits before enabling stock/WAC mutation.
+- **Code, tests, browser, commit, push:** No application code changed; no tests/browser verification; no commit or push yet.

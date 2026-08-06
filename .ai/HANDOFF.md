@@ -10,7 +10,7 @@ The adopted local policy baseline is owner-approved under DEC-050: Model A autom
 
 Current verification: targeted PHPStan 0 errors, Pint/PHP lint pass, Blade cache pass, route discovery pass, fresh migration/seed pass, formula-invalid import staging and Review browser evidence pass, tax-zero rejection pass, year-format numbering pass, Model A partial-receipt transaction rollback pass, lifecycle/WAC evidence pass, reversal idempotency pass, guest browser redirect pass for `/purchasing/invoices/import`, print route pass, and `git diff --check` pass. No PHPUnit/Pest or automated browser tests claimed. AGY CLI identity/version check passed (`agy 1.1.10`), but the requested read-only audit was unavailable because AGY returned `Individual quota reached`; no AGY success claim is made.
 
-## Delivery controls — 2026-08-06
+**TSK-016 current boundary:** Discovery/read-only contract started under DEC-051. No supplier-return posting, `purchase_return` movement, WAC/balance mutation, cost fallback default, or production reason catalog is enabled. `docs/47` CF-05 and eligible/non-reference return policy remain owner-pending.
 
 - `preventLazyLoading()` is enabled outside production; the configurable local/staging query budget aborts above 100 queries by default.
 - Slow queries at or above 100ms go to the daily `slow_queries` channel; Debugbar is dev-only and enabled locally.

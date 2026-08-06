@@ -265,7 +265,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-016 — Implement Supplier Returns
 
-- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **In Progress — discovery/read-only boundary started; full return posting blocked by pending docs/47 cost-flow decision**.
 - **Title / Purpose / Description:** Create approved supplier return linked to original purchase where available with cost/history and exact stock reduction.
 - **Traceability:** PUR-06, NFR-01–NFR-02, NFR-06; US-012; FLW-PUR-03; UI UI-PUR-003; AC-PUR-06; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-015; eligible/non-reference policy, return reasons/approvals.

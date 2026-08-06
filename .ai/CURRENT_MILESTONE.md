@@ -2,8 +2,8 @@
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Slice B Foundation / Performance Group A
-**Status:** In Progress for the broader milestone; TSK-015 is completed for approved local/dev scope under DEC-050. Production master data, devices/printer, cutover assignments, UAT, and Phase gates remain open.
-**Progress:** TSK-015 policy answers and local implementation are reconciled; fresh SQLite/seed, invoice lifecycle, zero-tax calculation, staged import Review, Model A posting/WAC, reversal idempotency, print, and permission evidence are complete locally. Production/UAT/release gates remain open.
+**Status:** In Progress — TSK-016 discovery/read-only boundary started; full supplier-return posting remains blocked by `docs/47` CF-05 and return-policy inputs.
+**Progress:** TSK-015 dependency is complete for local/dev. TSK-016 requirements, source/cost/authorization boundaries, and UI contract are being reconciled before any return mutation is enabled.
 **Started:** 2026-08-04
 
 ## Active Scope
