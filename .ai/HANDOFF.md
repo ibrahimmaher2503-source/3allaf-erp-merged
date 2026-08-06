@@ -8,6 +8,8 @@ TSK-015 Slice A and Performance Group A (TSK-P01–P03) are implemented as rever
 
 A documented read-only readiness boundary is now available at `/purchasing/invoices/readiness`, gated by the existing `purchase_orders.view` permission. It shows eight open owner-decision groups, four blockers, lifecycle reference cards, disabled Create/Import controls, and an empty state without financial demo data. This is readiness preparation only; it does not implement or authorize any invoice, receipt, stock, cost, or approval mutation. Browser semantic snapshots passed in English and Arabic; pixel-level visual acceptance remains pending because the available CUA Firefox capture returned `0x0`.
 
+TSK-015 template artifact: `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` is available as a customizable template-only workbook. It has canonical docs/42 headers, a customization map, fictitious example data, input validation, and no formulas/macros/production data. Future import workflow and financial/stock posting remain deferred.
+
 ## Delivery controls — 2026-08-06
 
 - `preventLazyLoading()` is enabled outside production; the configurable local/staging query budget aborts above 100 queries by default.

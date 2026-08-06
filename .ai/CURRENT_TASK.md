@@ -11,6 +11,7 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - `docs/35 §4` now includes the implemented local `Approved` PO state and explicitly separates the DEC-044 local approval/close slice from downstream receipt-driven `Partially Received` / `Received` transitions.
 - `docs/43` numbering, receipt, cost, and production policy proposals remain owner-gated; the local allocator is not being changed or promoted to a production numbering decision.
 - `docs/38` A4 output requirements remain the production contract. The current PO print is a bilingual local/demo baseline; approver timestamp, reprint history, printer selection, and final print policy remain outside this local closure.
+- Created `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` as a customizable template-only artifact. It contains canonical `docs/42 §3` headers, a separate customization map, a fictitious example sheet, input validation, and no formulas/macros/production data. Import workflow and stock/financial posting remain unimplemented.
 
 ## A-01 line reference
 

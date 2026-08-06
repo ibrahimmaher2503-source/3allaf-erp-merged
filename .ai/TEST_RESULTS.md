@@ -1,7 +1,7 @@
 # Test and Verification Status
 
 **Implementation status:** In Progress (TSK-014 Completed for approved local scope)
-**Current diagnostics:** Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, Vite build pass (with optional fontaine warning), git diff check pass on 2026-08-06.
+**Current diagnostics:** Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, Vite build pass (with optional fontaine warning), git diff check pass on 2026-08-06. TSK-015 template workbook validated: 5 sheets, 14 canonical headers, 3 data validations, 0 formulas, 0 macros, no production data.
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
 **Manual browser verification:** TSK-014 authenticated manual browser verification completed for approved local/demo scope; true 390x844 mobile evidence remains pending.
 **User acceptance testing:** Not Started

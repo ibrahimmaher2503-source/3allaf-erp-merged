@@ -12,6 +12,8 @@ TSK-014 local implementation and authenticated manual browser verification are *
 
 Documentation synchronization completed: `docs/35 §4` now records the local `Approved` PO state and the DEC-044 local boundary; `.ai/TSK-015_IMPLEMENTATION_PLAN.md` no longer claims TSK-014 is unimplemented. Receipt-driven states, production print/numbering policy, owner inputs, UAT, and production readiness remain open.
 
+TSK-015 template artifact: `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` is created and validated as a customizable, template-only workbook with canonical docs/42 headers, customization map, example sheet, input validation, and no formulas/macros/production data. Import workflow and posting remain unimplemented.
+
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |
 |---|---|---:|---:|---|---|---|---|
 | Phase 1 | DM 1.1 Platform Foundation | In Progress | Closure audited | 2026-08-02 | - | TSK-001 to TSK-004 | TSK-001 local runbook/backup gap remains; TSK-002 to TSK-004 closed for approved local scope |
