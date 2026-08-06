@@ -242,8 +242,73 @@
         @apply overflow-x-auto rounded-xl border border-border bg-surface shadow-card;
     }
 
+    /* Shared table surface: every resource table gets an opaque, themed background. */
+    .app-table-frame,
+    .catalog-table-frame,
+    main [data-flux-table] {
+        @apply relative w-full overflow-x-auto rounded-xl border border-border bg-surface shadow-card;
+        isolation: isolate;
+    }
+
+    .app-table-frame > table,
+    .catalog-table-frame table,
+    main table,
+    main [data-flux-table] {
+        background-color: var(--color-surface);
+        color: var(--color-text-primary);
+    }
+
+    main [data-flux-columns],
+    main [data-flux-column] {
+        background-color: color-mix(in srgb, var(--color-surface-muted) 86%, var(--color-surface));
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .app-table-frame tbody,
+    .catalog-table-frame tbody,
+    main [data-flux-rows] {
+        background-color: var(--color-surface);
+    }
+
+    .app-table-frame tbody tr,
+    .catalog-table-frame tbody tr,
+    main [data-flux-row] {
+        border-bottom: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+        transition: background-color 150ms ease;
+    }
+
+    .app-table-frame tbody tr:hover,
+    .catalog-table-frame tbody tr:hover,
+    main [data-flux-row]:hover {
+        background-color: color-mix(in srgb, var(--color-surface-muted) 58%, var(--color-surface));
+    }
+
+    .app-table-frame :where(th, td),
+    .catalog-table-frame :where(th, td),
+    main [data-flux-column],
+    main [data-flux-cell] {
+        text-align: start;
+        vertical-align: middle;
+    }
+
+    .app-table-frame :where(a, button, input):focus-visible,
+    .catalog-table-frame :where(a, button, input):focus-visible,
+    main [data-flux-table] :where(a, button, input):focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+
     .catalog-table-frame [data-flux-table-cell] {
         @apply align-middle;
+    }
+
+    .catalog-resource-table {
+        min-width: 72rem;
+        table-layout: auto !important;
+    }
+
+    .catalog-resource-table [data-flux-cell] {
+        white-space: normal;
     }
 
     .catalog-code-chip {

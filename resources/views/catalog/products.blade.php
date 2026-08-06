@@ -471,18 +471,18 @@ new #[Title('Product Masters')] class extends Component
                     @endcan
                 </x-slot:actions>
             </x-tables.bulk-actions>
-            <flux:table aria-label="{{ __('Product masters') }}">
+            <flux:table class="catalog-resource-table" aria-label="{{ __('Product masters') }}">
                 <flux:table.columns>
                     <flux:table.column>
                         <span class="sr-only">{{ __('Select') }}</span>
                     </flux:table.column>
-                    <flux:table.column>{{ __('Item code') }}</flux:table.column>
-                    <flux:table.column>{{ __('Product name') }}</flux:table.column>
-                    <flux:table.column>{{ __('Type') }}</flux:table.column>
-                    <flux:table.column>{{ __('Category / brand') }}</flux:table.column>
-                    <flux:table.column>{{ __('Barcodes') }}</flux:table.column>
-                    <flux:table.column>{{ __('Status') }}</flux:table.column>
-                    <flux:table.column>{{ __('Actions') }}</flux:table.column>
+                    <flux:table.column class="min-w-32">{{ __('Item code') }}</flux:table.column>
+                    <flux:table.column class="min-w-52">{{ __('Product name') }}</flux:table.column>
+                    <flux:table.column class="min-w-28">{{ __('Type') }}</flux:table.column>
+                    <flux:table.column class="min-w-48">{{ __('Category / brand') }}</flux:table.column>
+                    <flux:table.column class="min-w-36">{{ __('Barcodes') }}</flux:table.column>
+                    <flux:table.column class="min-w-24">{{ __('Status') }}</flux:table.column>
+                    <flux:table.column class="min-w-40">{{ __('Actions') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($products as $product)

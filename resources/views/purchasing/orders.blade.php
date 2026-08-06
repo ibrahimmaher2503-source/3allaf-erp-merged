@@ -12,20 +12,26 @@ use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Flux\Flux;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Purchase Orders')] class extends Component {
+new #[Title('Purchase Orders')] class extends Component
+{
     use WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
+
     public string $supplierFilter = 'all';
 
     public bool $showFormModal = false;
+
     public ?int $editingOrderId = null;
+
     public array $orderForm = [
         'supplier_id' => '',
         'store_id' => '',
@@ -35,14 +41,19 @@ new #[Title('Purchase Orders')] class extends Component {
         'notes' => '',
         'lock_version' => 0,
     ];
+
     public array $lineItems = [];
 
     public bool $showDetailModal = false;
+
     public ?int $viewingOrderId = null;
+
     public string $detailTab = 'items';
 
     public bool $showCancelModal = false;
+
     public ?int $cancellingOrderId = null;
+
     public string $cancelReason = '';
 
     public function mount(): void
@@ -94,6 +105,7 @@ new #[Title('Purchase Orders')] class extends Component {
         $order = PurchaseOrder::query()->with('lines')->findOrFail($id);
         if ($order->status !== 'draft') {
             Flux::toast(__('Only draft purchase orders can be edited.'), variant: 'danger');
+
             return;
         }
 
@@ -175,7 +187,7 @@ new #[Title('Purchase Orders')] class extends Component {
 
             $this->showFormModal = false;
             Flux::toast($this->editingOrderId ? __('Purchase Order updated successfully.') : __('Purchase Order :number created as draft.', ['number' => $order->po_number]), variant: 'success');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }
@@ -188,7 +200,7 @@ new #[Title('Purchase Orders')] class extends Component {
             $order = PurchaseOrder::findOrFail($id);
             app(SubmitPurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number submitted successfully.', ['number' => $order->po_number]), variant: 'success');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }
@@ -201,7 +213,7 @@ new #[Title('Purchase Orders')] class extends Component {
             $order = PurchaseOrder::findOrFail($id);
             app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }
@@ -229,7 +241,7 @@ new #[Title('Purchase Orders')] class extends Component {
 
             $this->showCancelModal = false;
             Flux::toast(__('Purchase Order :number cancelled.', ['number' => $order->po_number]), variant: 'warning');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }
@@ -242,7 +254,7 @@ new #[Title('Purchase Orders')] class extends Component {
             $order = PurchaseOrder::findOrFail($id);
             app(ClosePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number closed.', ['number' => $order->po_number]), variant: 'success');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast($e->getMessage(), variant: 'danger');
         }
     }
@@ -256,7 +268,7 @@ new #[Title('Purchase Orders')] class extends Component {
         $this->showDetailModal = true;
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         $user = auth()->user();
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'lines']);
@@ -269,7 +281,7 @@ new #[Title('Purchase Orders')] class extends Component {
         }
 
         if (! empty($this->search)) {
-            $search = '%' . trim($this->search) . '%';
+            $search = '%'.trim($this->search).'%';
             $query->where(function ($q) use ($search) {
                 $q->where('po_number', 'like', $search)
                     ->orWhere('notes', 'like', $search)
@@ -378,7 +390,7 @@ new #[Title('Purchase Orders')] class extends Component {
 
     <!-- Orders Table -->
     <flux:card class="overflow-hidden p-0" data-guide="po-table">
-        <div class="overflow-x-auto">
+        <div class="app-table-frame">
             <table class="w-full text-start text-sm">
                 <thead class="bg-zinc-50 dark:bg-zinc-800/80 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-border">
                     <tr>

@@ -8,7 +8,7 @@
         <div class="border-y border-border py-3">{{ $toolbar }}</div>
     @endif
 
-    <div class="overflow-x-auto">
+    <div class="app-table-frame">
         {{ $slot }}
     </div>
 

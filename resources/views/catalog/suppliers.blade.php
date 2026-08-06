@@ -313,7 +313,7 @@ new #[Title('Supplier Masters')] class extends Component
                     </x-slot:actions>
                 </x-tables.bulk-actions>
             </div>
-            <div class="overflow-x-auto">
+            <div class="app-table-frame">
                 <table class="min-w-full divide-y divide-border">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
