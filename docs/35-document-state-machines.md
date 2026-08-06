@@ -80,7 +80,7 @@ Approval posts stock/cost atomically. Approved record immutable.
 - Cancelled before posting.
 - Reversed after posting.
 
-Approval reduces eligible stock and references an approved purchase-invoice line. Cost is copied from that source line and revalidated at approval; no WAC/fallback/no-reference path exists. Reason rows and approved effective financial-setting versions remain Owner-configurable inputs.
+Approval creates an ApprovalRecord in Pending state at submit; only a separate authorized approver transitions it to Approved and posts stock. Approval reduces eligible stock and references an approved purchase-invoice line. Cost is copied from that source line and revalidated at approval; no WAC/fallback/no-reference path exists. Reason rows and approved effective financial-setting versions remain Owner-configurable inputs.
 
 ## 7. Price Version
 

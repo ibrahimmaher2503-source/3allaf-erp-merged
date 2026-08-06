@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
@@ -13,6 +16,7 @@ use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\PurchaseReturnLine;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
+use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -43,11 +47,24 @@ final class ApprovePurchaseReturnAction
             }
             $this->assertStoreScope($return->store_id);
 
+            $approval = ApprovalRecord::query()
+                ->where('source_type', 'purchase_returns')
+                ->where('source_id', (string) $return->id)
+                ->where('requested_action', 'approve')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $configuredLimit = app(SupplierReturnPolicy::class)->approvalLimit();
+            if ($configuredLimit !== null && $this->compare($return->total_amount, $configuredLimit) > 0 && ! Gate::allows('purchase_returns.approve_over_limit')) {
+                throw new InvalidArgumentException(__('This supplier return exceeds the configured approval limit and requires elevated approval permission.'));
+            }
+
             $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($return->purchase_invoice_id);
             if ($invoice->status !== 'approved' || $invoice->supplier_id !== $return->supplier_id || $invoice->store_id !== $return->store_id) {
                 throw new InvalidArgumentException(__('The source purchase invoice is no longer eligible for this supplier return.'));
             }
 
+            $movementIds = [];
             foreach ($return->lines as $returnLine) {
                 $sourceLine = PurchaseInvoiceLine::query()->lockForUpdate()->find($returnLine->purchase_invoice_line_id);
                 if ($sourceLine === null || $sourceLine->purchase_invoice_id !== $invoice->id) {
@@ -87,7 +104,7 @@ final class ApprovePurchaseReturnAction
                 $newValue = bcsub($this->decimal($balance->total_value), $totalCost, 4);
                 $newAverage = $this->compare($newQuantity, '0') === 0 ? '0.0000' : bcdiv($newValue, $newQuantity, 4);
 
-                StockMovement::query()->create([
+                $movement = StockMovement::query()->create([
                     'product_id' => $returnLine->product_id,
                     'store_id' => $return->store_id,
                     'movement_type' => 'purchase_return',
@@ -102,6 +119,7 @@ final class ApprovePurchaseReturnAction
                     'posted_at' => now(),
                     'created_by' => Auth::id(),
                 ]);
+                $movementIds[] = $movement->id;
                 $balance->update([
                     'on_hand' => $newQuantity,
                     'average_cost' => $newAverage,
@@ -110,6 +128,7 @@ final class ApprovePurchaseReturnAction
                 ]);
             }
 
+            app(ApproveRequest::class)->execute($approval, (string) $return->lock_version, decisionNote: 'Supplier return stock/cost posting approved.');
             $before = $return->only(['return_number', 'status', 'total_amount', 'lock_version']);
             $return->update([
                 'return_number' => $return->return_number ?: app(AllocatePurchaseReturnNumberAction::class)->execute(),
@@ -129,6 +148,9 @@ final class ApprovePurchaseReturnAction
                 reasonCode: $return->reason->code,
                 metadata: [
                     'stock_posted' => true,
+                    'movement_ids' => $movementIds,
+                    'approval_record_id' => $approval->id,
+                    'approval_limit' => $configuredLimit,
                     'cost_source' => 'original_purchase_invoice_line_unit_cost',
                     'wac_recalculated' => true,
                 ],

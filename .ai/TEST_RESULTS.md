@@ -4,7 +4,7 @@
 
 **Current diagnostics:** Supplier-return migration/seeder passed; PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, `git diff --check` pass. Browser review passed `/purchasing/returns`, `/purchasing/returns/settings`, `/purchasing/returns/{id}`, and `/purchasing/returns/{id}/print` under local Demo Auth. Settings empty-state and required-field validation passed with 0 JS errors.
 
-**Lifecycle smoke:** Transactional Tinker smoke passed Draft → Edit → Submit → Approve → Reverse, Draft → Cancel, and Draft → Submit → Reject. Approval changed `2/20/10` to `0.5/5/10`; reversal restored `2/20/10`; movement count remained 2 for outbound/reversal; transaction rolled back.
+**Lifecycle smoke:** Transactional Tinker smoke passed Draft → Edit → Submit → ApprovalRecord(Pending) → Approve → Reverse, Draft → Cancel, and Draft → Submit → Reject. ApprovalRecord transitioned to Approved, stock posting produced one outbound movement, and `on_hand=2` became `1` at original cost `10`; transaction rolled back. Browser review also verified the expanded status filter and terminal-action UI surface with 0 JS errors.
 
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
 

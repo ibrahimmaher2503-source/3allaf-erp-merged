@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
@@ -46,6 +47,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             'return' => $return,
             'movements' => StockMovement::query()->where('source_type', PurchaseReturn::class)->where('source_id', $return->id)->latest('id')->get(),
             'audits' => AuditLog::query()->where('source_type', PurchaseReturn::class)->where('source_id', (string) $return->id)->latest('id')->limit(50)->get(),
+            'approvals' => ApprovalRecord::query()->where('source_type', 'purchase_returns')->where('source_id', (string) $return->id)->latest('id')->get(),
         ]);
     })->whereNumber('return')->middleware('can:purchase_returns.view')->name('purchasing.returns.show');
 

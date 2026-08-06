@@ -52,6 +52,8 @@ class CanonicalAuthorizationSeeder extends Seeder
             }
         }
 
+        Permission::query()->updateOrCreate(['code' => 'purchase_returns.approve_over_limit'], ['module' => 'purchase_returns', 'action' => 'approve_over_limit', 'sensitivity' => 'sensitive', 'status' => 'active']);
+
         $rolePermissions = [
             'system-administrator' => [
                 'company_settings.view', 'company_settings.create', 'company_settings.edit',
@@ -62,7 +64,7 @@ class CanonicalAuthorizationSeeder extends Seeder
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
                 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
                 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_invoices_supplier_returns.reverse', 'purchase_invoices_supplier_returns.cancel', 'purchase_invoices_supplier_returns.override',
-                'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reject', 'purchase_returns.reverse', 'purchase_returns.cancel',
+                'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.approve_over_limit', 'purchase_returns.reject', 'purchase_returns.reverse', 'purchase_returns.cancel',
             ],
             'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],

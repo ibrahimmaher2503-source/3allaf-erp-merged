@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\RequestApproval;
+use App\Modules\Platform\Data\ApprovalRequestData;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseReturn;
+use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +23,11 @@ final class SubmitPurchaseReturnAction
         Gate::authorize('purchase_returns.edit');
 
         return DB::transaction(function () use ($id, $expectedVersion): PurchaseReturn {
-            $return = PurchaseReturn::query()->with(['lines', 'reason'])->lockForUpdate()->findOrFail($id);
+            $return = PurchaseReturn::query()->with(['lines', 'reason', 'store'])->lockForUpdate()->findOrFail($id);
+            $user = Auth::user();
+            if ($user instanceof User && ! $user->is_super_admin && ($return->store === null || ! Store::query()->visibleTo($user)->whereKey($return->store_id)->exists())) {
+                throw new InvalidArgumentException(__('You are not authorized for this return store.'));
+            }
             if ($expectedVersion !== null && $return->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This supplier return was modified in another session.'));
             }
@@ -33,13 +42,30 @@ final class SubmitPurchaseReturnAction
             }
 
             $before = $return->only(['status', 'lock_version']);
+            $nextVersion = $return->lock_version + 1;
             $return->update([
                 'status' => 'submitted',
                 'submitted_at' => now(),
                 'submitted_by' => Auth::id(),
                 'updated_by' => Auth::id(),
-                'lock_version' => $return->lock_version + 1,
+                'lock_version' => $nextVersion,
             ]);
+            app(RequestApproval::class)->execute(new ApprovalRequestData(
+                sourceType: 'purchase_returns',
+                sourceId: (string) $return->id,
+                sourceVersion: (string) $nextVersion,
+                requestedAction: 'approve',
+                requestPermission: 'purchase_returns.edit',
+                branchId: $return->store?->branch_id,
+                storeId: $return->store_id,
+                reasonCode: $return->reason->code,
+                limitContext: [
+                    'amount' => (string) $return->total_amount,
+                    'configured_limit' => app(SupplierReturnPolicy::class)->approvalLimit(),
+                    'source' => 'financial_setting_versions',
+                ],
+                idempotencyKey: 'purchase-return-approval:'.$return->id.':'.$nextVersion,
+            ));
             app(RecordAuditEvent::class)->execute(
                 category: 'procurement',
                 event: 'submit_supplier_return',

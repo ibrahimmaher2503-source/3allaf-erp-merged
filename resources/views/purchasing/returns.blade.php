@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\ApprovePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseReturnAction;
 use App\Modules\Purchasing\Actions\CreatePurchaseReturnDraftAction;
@@ -9,9 +10,12 @@ use App\Modules\Purchasing\Actions\SubmitPurchaseReturnAction;
 use App\Modules\Purchasing\Actions\UpdatePurchaseReturnDraftAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseReturn;
+use App\Modules\Purchasing\Models\PurchaseReturnLine;
+use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\SupplierReturnReason;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -30,6 +34,14 @@ new #[Title('Supplier Returns')] class extends Component
     public ?int $selectedInvoiceId = null;
 
     public ?int $selectedReturnId = null;
+
+    public ?int $transitionReturnId = null;
+
+    public bool $showTransitionModal = false;
+
+    public string $transitionAction = '';
+
+    public string $transitionReason = '';
 
     public ?int $selectedReasonId = null;
 
@@ -88,14 +100,27 @@ new #[Title('Supplier Returns')] class extends Component
 
         $invoice = PurchaseInvoice::query()->with('lines.product')->where('status', 'approved')->findOrFail($invoiceId);
         $this->returnLines = $invoice->lines
-            ->filter(fn ($line): bool => bccomp((string) $line->quantity_received, '0', 6) > 0)
-            ->map(fn ($line): array => [
-                'purchase_invoice_line_id' => (string) $line->id,
-                'quantity' => '1',
-                'unit_cost' => (string) $line->unit_cost,
-                'available' => (string) $line->quantity_received,
-                'product' => $line->product?->name_en ?: $line->product?->name_ar ?: ('#'.$line->product_id),
-            ])->values()->all();
+            ->map(function ($line) use ($invoice): ?array {
+                $returned = PurchaseReturnLine::query()
+                    ->where('purchase_invoice_line_id', $line->id)
+                    ->when($this->selectedReturnId !== null, fn ($query) => $query->where('purchase_return_id', '!=', $this->selectedReturnId))
+                    ->whereHas('purchaseReturn', fn ($query) => $query->whereNotIn('status', ['cancelled', 'rejected', 'reversed']))
+                    ->sum('quantity');
+                $remaining = bcsub((string) $line->quantity_received, (string) $returned, 6);
+                $onHand = (string) (StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $line->product_id)->value('on_hand') ?? '0');
+                $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
+                if (bccomp($available, '0', 6) <= 0) {
+                    return null;
+                }
+
+                return [
+                    'purchase_invoice_line_id' => (string) $line->id,
+                    'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
+                    'unit_cost' => (string) $line->unit_cost,
+                    'available' => $available,
+                    'product' => $line->product?->name_en ?: $line->product?->name_ar ?: ('#'.$line->product_id),
+                ];
+            })->filter()->values()->all();
     }
 
     public function saveDraft(CreatePurchaseReturnDraftAction $create, UpdatePurchaseReturnDraftAction $update): void
@@ -145,34 +170,45 @@ new #[Title('Supplier Returns')] class extends Component
         }
     }
 
-    public function cancelReturn(int $id, string $reason, CancelPurchaseReturnAction $action): void
+    public function openTransitionModal(int $id, string $action): void
     {
-        try {
-            $return = PurchaseReturn::query()->findOrFail($id);
-            $action->execute($id, $reason, $return->lock_version);
-            Flux::toast(__('Supplier return cancelled.'), variant: 'success');
-        } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
-        }
+        Gate::authorize(match ($action) {
+            'cancel' => 'purchase_returns.cancel',
+            'reject' => 'purchase_returns.reject',
+            'reverse' => 'purchase_returns.reverse',
+            default => throw new InvalidArgumentException(__('Unknown supplier return transition.')),
+        });
+        $this->resetValidation();
+        $this->transitionReturnId = $id;
+        $this->transitionAction = $action;
+        $this->transitionReason = '';
+        $this->showTransitionModal = true;
     }
 
-    public function rejectReturn(int $id, string $reason, RejectPurchaseReturnAction $action): void
+    public function executeTransition(CancelPurchaseReturnAction $cancel, RejectPurchaseReturnAction $reject, ReversePurchaseReturnAction $reverse): void
     {
-        try {
-            $return = PurchaseReturn::query()->findOrFail($id);
-            $action->execute($id, $reason, $return->lock_version);
-            Flux::toast(__('Supplier return rejected.'), variant: 'success');
-        } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
-        }
-    }
+        $ability = match ($this->transitionAction) {
+            'cancel' => 'purchase_returns.cancel',
+            'reject' => 'purchase_returns.reject',
+            'reverse' => 'purchase_returns.reverse',
+            default => throw new InvalidArgumentException(__('Unknown supplier return transition.')),
+        };
+        Gate::authorize($ability);
+        $this->validate(['transitionReason' => 'required|string|min:3|max:500']);
 
-    public function reverseReturn(int $id, string $reason, ReversePurchaseReturnAction $action): void
-    {
         try {
-            $return = PurchaseReturn::query()->findOrFail($id);
-            $action->execute($id, $reason, $return->lock_version);
-            Flux::toast(__('Supplier return reversed.'), variant: 'success');
+            $return = PurchaseReturn::query()->findOrFail($this->transitionReturnId);
+            $action = match ($this->transitionAction) {
+                'cancel' => $cancel,
+                'reject' => $reject,
+                'reverse' => $reverse,
+            };
+            $action->execute($return->id, $this->transitionReason, $return->lock_version);
+            $this->transitionReturnId = null;
+            $this->transitionAction = '';
+            $this->transitionReason = '';
+            $this->showTransitionModal = false;
+            Flux::toast(__('Supplier return transition completed.'), variant: 'success');
         } catch (Throwable $exception) {
             Flux::toast($exception->getMessage(), variant: 'danger');
         }
@@ -180,8 +216,11 @@ new #[Title('Supplier Returns')] class extends Component
 
     public function render(): View
     {
+        $user = Auth::user();
+        $visibleStoreIds = $user?->is_super_admin ? null : Store::query()->visibleTo($user)->pluck('id');
         $returns = PurchaseReturn::query()
             ->with(['supplier', 'store', 'reason', 'purchaseInvoice'])
+            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
             ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                 $query->where('return_number', 'like', '%'.$this->search.'%')
                     ->orWhereHas('purchaseInvoice', fn ($invoice) => $invoice->where('invoice_number', 'like', '%'.$this->search.'%'));
@@ -190,9 +229,37 @@ new #[Title('Supplier Returns')] class extends Component
             ->latest()
             ->paginate(10);
 
+        $sourceInvoices = PurchaseInvoice::query()
+            ->where('status', 'approved')
+            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
+            ->with(['supplier', 'lines.product'])
+            ->latest()
+            ->limit(100)
+            ->get();
+        $lineIds = $sourceInvoices->flatMap(fn ($invoice) => $invoice->lines->pluck('id'))->values();
+        $returnedQuantities = PurchaseReturnLine::query()
+            ->whereIn('purchase_invoice_line_id', $lineIds)
+            ->whereHas('purchaseReturn', fn ($query) => $query->whereNotIn('status', ['cancelled', 'rejected', 'reversed']))
+            ->selectRaw('purchase_invoice_line_id, SUM(quantity) as quantity')
+            ->groupBy('purchase_invoice_line_id')
+            ->pluck('quantity', 'purchase_invoice_line_id');
+        $balances = StockBalance::query()
+            ->whereIn('product_id', $sourceInvoices->flatMap(fn ($invoice) => $invoice->lines->pluck('product_id'))->unique())
+            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
+            ->get()
+            ->keyBy(fn ($balance) => $balance->store_id.':'.$balance->product_id);
+        $sourceInvoices = $sourceInvoices->filter(fn ($invoice): bool => $invoice->lines->contains(function ($line) use ($invoice, $returnedQuantities, $balances): bool {
+            $remaining = bcsub((string) $line->quantity_received, (string) ($returnedQuantities[$line->id] ?? '0'), 6);
+            $onHand = (string) ($balances[$invoice->store_id.':'.$line->product_id]?->on_hand ?? '0');
+
+            $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
+
+            return bccomp($available, '0', 6) > 0;
+        }))->values();
+
         return view('purchasing.returns', [
             'returns' => $returns,
-            'sourceInvoices' => PurchaseInvoice::query()->where('status', 'approved')->with('supplier')->latest()->limit(100)->get(),
+            'sourceInvoices' => $sourceInvoices,
             'reasons' => SupplierReturnReason::query()->active()->orderBy('code')->get(),
             'hasReasonCatalog' => SupplierReturnReason::query()->active()->exists(),
         ]);
@@ -240,6 +307,9 @@ new #[Title('Supplier Returns')] class extends Component
                     <flux:select.option value="draft">{{ __('Draft') }}</flux:select.option>
                     <flux:select.option value="submitted">{{ __('Submitted') }}</flux:select.option>
                     <flux:select.option value="approved">{{ __('Approved') }}</flux:select.option>
+                    <flux:select.option value="rejected">{{ __('Rejected') }}</flux:select.option>
+                    <flux:select.option value="cancelled">{{ __('Cancelled') }}</flux:select.option>
+                    <flux:select.option value="reversed">{{ __('Reversed') }}</flux:select.option>
                 </flux:select>
             </div>
         </div>
@@ -271,12 +341,25 @@ new #[Title('Supplier Returns')] class extends Component
                                     <flux:button size="sm" variant="subtle" wire:click="editDraft({{ $return->id }})">{{ __('Edit') }}</flux:button>
                                     <flux:button size="sm" variant="subtle" wire:click="submitReturn({{ $return->id }})">{{ __('Submit') }}</flux:button>
                                 @endcan
+                                @can('purchase_returns.cancel')
+                                    <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'cancel')">{{ __('Cancel') }}</flux:button>
+                                @endcan
                             @elseif ($return->status === 'submitted')
                                 @can('purchase_returns.approve')
                                     <flux:button size="sm" variant="primary" wire:click="approveReturn({{ $return->id }})">{{ __('Approve & post') }}</flux:button>
                                 @endcan
+                                @can('purchase_returns.reject')
+                                    <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'reject')">{{ __('Reject') }}</flux:button>
+                                @endcan
+                                @can('purchase_returns.cancel')
+                                    <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'cancel')">{{ __('Cancel') }}</flux:button>
+                                @endcan
+                            @elseif ($return->status === 'approved')
+                                @can('purchase_returns.reverse')
+                                    <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'reverse')">{{ __('Reverse') }}</flux:button>
+                                @endcan
                             @else
-                                <flux:text>{{ __('Locked after posting') }}</flux:text>
+                                <flux:text>{{ __('No further actions') }}</flux:text>
                             @endif
                         </flux:table.cell>
                     </flux:table.row>
@@ -287,6 +370,20 @@ new #[Title('Supplier Returns')] class extends Component
         </flux:table>
         <div class="mt-4">{{ $returns->links() }}</div>
     </flux:card>
+
+    @if ($showTransitionModal)
+        <flux:modal wire:model.self="showTransitionModal" class="md:w-[min(96vw,600px)]">
+            <form wire:submit="executeTransition" class="space-y-5">
+                <flux:heading size="lg">{{ ucfirst($transitionAction) }} supplier return</flux:heading>
+                <flux:callout variant="warning">{{ __('This transition is audited and cannot be undone from this screen. A reason is required.') }}</flux:callout>
+                <flux:textarea wire:model="transitionReason" :label="__('Reason')" required rows="4" />
+                <div class="flex justify-end gap-2">
+                    <flux:button type="button" variant="subtle" wire:click="$set('showTransitionModal', false)">{{ __('Cancel') }}</flux:button>
+                    <flux:button type="submit" variant="primary">{{ __('Confirm transition') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    @endif
 
     @if ($showFormModal)
         <flux:modal wire:model.self="showFormModal" class="md:w-[min(96vw,900px)]">
