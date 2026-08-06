@@ -4,7 +4,9 @@
 
 The Initial Setup Dashboard local/dev slice is **Implemented and browser-verified**. `/dashboard` now derives readiness from authoritative data and shows a setup panel while required owner inputs are missing. `/initial-setup` provides the full permission-gated wizard and links to the existing data-entry screens.
 
-Current local state is intentionally incomplete: company identity is missing required values, `supplier_return_reasons=0`, and no approved/effective supplier-return financial versions exist. Branch/store structure and active role assignment are currently detected as ready from the local database. This is expected Demo/Local evidence, not Production/UAT sign-off.
+The current local state is intentionally incomplete: company identity is missing required values, `supplier_return_reasons=0`, and no approved/effective supplier-return financial versions exist. This is expected Demo/Local evidence, not Production/UAT sign-off.
+
+**UI completion:** The wizard now has an Arabic-first visual hierarchy, a clear next-step CTA, progress/legend summary, numbered status cards, explicit no-demo-data guidance, and a session-backed Arabic/English switch in the page header.
 
 **Safety rules:** no defaults, reason rows, approval limits, production users, or approvals are created automatically. Pending or locked-only financial versions do not count; only effective, non-expired versions linked to an approved `ApprovalRecord` count.
 

@@ -102,7 +102,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### Cross-cutting local slice — Initial Setup Dashboard / First Launch Configuration
 
-- **Status:** Implemented for Local/Dev scope on 2026-08-06; Production/UAT values and Owner approvals remain open.
+- **Status:** Implemented for Local/Dev scope on 2026-08-06; Arabic-first visual/translation polish verified on 2026-08-07; Production/UAT values and Owner approvals remain open.
 - **Purpose:** Present a permission-gated first-launch setup dashboard that derives readiness from authoritative data, provides the safe pending financial-setting input, and links the Owner to existing data-entry screens.
 - **Required steps:** Company identity; active branch/store structure; active supplier-return reason catalog; approved/effective supplier-return numbering and print financial settings; active role assignment for the opening team.
 - **Optional step:** Printer profile review. Production device acceptance remains a separate UAT gate.

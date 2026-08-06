@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Initial Setup Arabic UI and Visual Polish
+
+- **Agent / scope:** Owner-directed completion of the Local/Dev first-launch experience; no production values, approvals, or Demo Auth exposure.
+- **Completed:** Reworked the Initial Setup page into an Arabic-first operational workspace with a Hero, progress summary, next recommended step, numbered state cards, approval boundary, no-demo-data guidance, Arabic/English session toggle, and translated sidebar labels visible on the flow.
+- **Files changed:** `resources/views/platform/initial-setup.blade.php`, `resources/views/purchasing/return-settings.blade.php`, `lang/ar.json`, `lang/en.json`, `.ai/CURRENT_TASK.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `.ai/UI_SCREENS.md`, `TASKS.md`, and this log.
+- **Verification actually run:** Blade clear/cache, locale parity `1101/1101`, Pint, PHPStan 0 errors, `git diff --check`, Arabic RTL browser rendering, language toggle interaction, DOM overflow check, computed Hero contrast check, and 0 browser console errors.
+- **Remaining blockers / next action:** Company identity, owner reason catalog, approved/effective financial versions, production scopes, printer acceptance, UAT, and release gates remain open. True 390x844 mobile evidence remains pending because the available browser session cannot resize its viewport.
+- **Code, tests, browser, commit, push:** UI and documentation changes are ready for local commit; no PHPUnit/Pest created or run; no push.
+
 ## 2026-08-06 - Initial Setup Dashboard / First Launch Configuration
 
 - **Agent / scope:** Owner-directed cross-cutting Local/Dev setup experience; no Production/UAT values or approvals.

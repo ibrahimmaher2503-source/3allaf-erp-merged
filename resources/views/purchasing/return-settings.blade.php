@@ -165,7 +165,7 @@ new #[Title('Supplier Return Settings')] class extends Component
         <flux:text class="mt-2">{{ __('Numeric limits remain owner-configurable through the versioned financial settings contract.') }}</flux:text>
         <div class="mt-4 overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead><tr class="text-start"><th class="px-3 py-2 text-start">Key</th><th class="px-3 py-2 text-start">Value type</th><th class="px-3 py-2 text-start">Version</th><th class="px-3 py-2 text-start">Effective</th><th class="px-3 py-2 text-start">{{ __('Status') }}</th></tr></thead>
+                <thead><tr class="text-start"><th class="px-3 py-2 text-start">{{ __('Setting key') }}</th><th class="px-3 py-2 text-start">{{ __('Value type') }}</th><th class="px-3 py-2 text-start">{{ __('Version') }}</th><th class="px-3 py-2 text-start">{{ __('Effective from') }}</th><th class="px-3 py-2 text-start">{{ __('Status') }}</th></tr></thead>
                 <tbody>
                     @forelse($versions as $version)
                         @php($approvalState = $version->approvalRecord?->approval_state?->value ?? 'pending')
