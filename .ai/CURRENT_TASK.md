@@ -41,6 +41,18 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 - Authenticated manual browser verification is still pending because no authenticated browser session is available and no password will be entered.
 - Existing local `database/database.sqlite` was not reset; its migration attempt is blocked by an older pre-existing `categories` table collision at migration `2026_08_04_000017`.
 
+## Current continuation — TSK-015 readiness boundary
+
+**Allowed scope for this slice:** implement only a server-gated, read-only TSK-015 readiness screen. It may show open decision groups, blocker references, lifecycle/reference cards, disabled workflow controls, explicit `TBD`/`Owner Approval Required` badges, and an empty state. It must not persist invoice/line data or expose any financial/inventory mutation.
+
+**Forbidden scope:** invoice posting/import, receipt mutation, stock movements/balances, WAC/cost calculations, approval records, seeded invoice/business data, file upload/parser/storage, tax/discount/currency/numbering defaults, production role grants, or production readiness claims.
+
+**Dependencies and owner inputs:** TSK-014 remains In Progress; `.ai/TSK-015_OWNER_INPUTS.md` remains Awaiting owner answers; BLK-006, BLK-008, BLK-010, and BLK-012 remain open or production-gated. Do not convert engineering defaults into owner approvals.
+
+**Verification plan:** inspect the real route and gate, run PHP lint, route listing, Blade cache, Vite build, locale parity, `git diff --check`, guest redirect smoke with request ID, and manual browser review of the read-only boundary in Arabic RTL and English LTR when a safe local session is available. Authenticated evidence must remain separate from guest redirect evidence.
+
+**Non-claims:** this slice is readiness preparation only; it does not close TSK-015, TSK-014, DM 2.2, UAT, or any production/financial gate.
+
 ## Current continuation — observability, identity, and delivery controls
 
 - Local/staging query budget, slow-query channel, dev Debugbar, and local non-production lazy-loading guard are being added under DEC-046.

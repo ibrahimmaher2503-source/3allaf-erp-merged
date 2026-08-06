@@ -600,6 +600,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:** Invoice posting/import, receipt mutation, WAC and pending CF-01–CF-06 cost rules, owner commercial settings, UAT, production database/ops, and production readiness remain open. `docs/58` is not present; AI_INDEX marks it reserved rather than inventing content.
 - **Commit state:** No commit or push has occurred yet; this entry records the current pre-commit milestone.
 
+## 2026-08-06 - TSK-015 Read-only Readiness Boundary
+
+- **Agent / scope:** Implemented the first documented post-foundation slice only: a server-gated, read-only readiness route at `/purchasing/invoices/readiness`, protected by the existing `purchase_orders.view` gate.
+- **Completed:** Added eight owner-decision groups, four blocker cards, lifecycle reference cards, explicit owner-approval/TBD messaging, disabled Create/Import controls, an empty state with no financial demo data, and an Orders-page link. Added DEC-049 and synchronized `.ai/CURRENT_TASK.md` with allowed/forbidden scope.
+- **Verification actually run:** PHP lint, Pint, route list, Blade cache, Vite build, locale parity (974/974), guest HTTP redirect to `/login` with `X-Request-ID`, `git diff --check`, and Browser Use semantic snapshots in English and Arabic. Snapshot evidence confirmed all groups, blockers, empty state, and disabled controls. The 8092 server was stale and omitted Vite tags; a fresh server from this Git root on 8093 emitted the correct Vite assets. Firefox/CUA capture was unavailable (`0x0`), so pixel-level visual acceptance remains pending.
+- **Remaining blockers / next action:** Owner answers in `.ai/TSK-015_OWNER_INPUTS.md`, TSK-014 authenticated/mobile verification, BLK-006/008/010/012, and all financial/operational mutation gates remain open. Do not implement posting, import, receipt mutation, stock mutation, WAC, or approval records from this slice.
+- **Code, tests, browser, commit, push:** Read-only route/view code changed; no automated tests were created or run. Manual semantic browser review ran; authenticated pixel-level visual review remains pending. Commit is pending final review; no push.
+
 ## 2026-08-06 - Observability, Git Discipline, Repository Identity, and Locale Parity
 
 - **Agent / scope:** Worked only in `/home/ubuntu/projects/toy-joy-phase-1-documentation` on branch `chore/observability-and-repo-discipline`; watcher `toy-joy-milestone-watcher` remained paused and no concurrent `.ai/` writer was allowed.

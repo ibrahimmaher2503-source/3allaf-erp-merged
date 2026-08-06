@@ -8,6 +8,14 @@
 
 The results below include historical evidence from earlier authorized review runs. The current Slice A gate is diagnostic/manual only; no automated-test completion is claimed.
 
+## TSK-015 Read-only Readiness Boundary — 2026-08-06
+
+- Route: `GET /purchasing/invoices/readiness`, protected by `auth`, `verified`, and existing `purchase_orders.view` gate.
+- Read-only evidence: eight owner-decision groups, four blocker cards, lifecycle reference cards, disabled Create/Import controls, and an empty state with no financial demo records. No invoice/receipt/stock/cost mutation route or action was added.
+- Diagnostics passed: PHP lint, Pint, route list, Blade cache, Vite build, locale parity `974/974`, guest redirect to `/login` with `X-Request-ID`, and `git diff --check`.
+- Browser semantic snapshots: English and Arabic pages rendered with all groups, blockers, empty state, and disabled controls visible. A stale 8092 server omitted Vite tags; a fresh server from this Git root on 8093 emitted the correct Vite assets. Firefox/CUA pixel capture returned `0x0`, so pixel-level visual acceptance remains pending.
+- Status: readiness preparation only; owner inputs, TSK-014 verification, UAT, and production/financial gates remain open.
+
 ## TSK-009 Approval Foundation Static Verification - 2026-08-03
 
 - PHP syntax lint passed for the new approval enum, source contract, model, policy, six named actions, transition helper, migration, and policy registration.

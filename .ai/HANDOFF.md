@@ -6,6 +6,8 @@ TSK-014 remains **In Progress** with its five local slices implemented; authenti
 
 TSK-015 Slice A and Performance Group A (TSK-P01–P03) are implemented as reversible local development slices. The first ledger migration creates invoice/line, stock movement/balance, and period snapshot tables with composite indexes; `stock_movements.consumed_cost` is stored for future cost-consumption posting; `inventory:rebuild-balances` supports dry-run and transactional apply. No invoice posting, stock mutation action, WAC calculation, import workflow, owner policy approval, UAT, or production readiness is claimed.
 
+A documented read-only readiness boundary is now available at `/purchasing/invoices/readiness`, gated by the existing `purchase_orders.view` permission. It shows eight open owner-decision groups, four blockers, lifecycle reference cards, disabled Create/Import controls, and an empty state without financial demo data. This is readiness preparation only; it does not implement or authorize any invoice, receipt, stock, cost, or approval mutation. Browser semantic snapshots passed in English and Arabic; pixel-level visual acceptance remains pending because the available CUA Firefox capture returned `0x0`.
+
 ## Delivery controls — 2026-08-06
 
 - `preventLazyLoading()` is enabled outside production; the configurable local/staging query budget aborts above 100 queries by default.

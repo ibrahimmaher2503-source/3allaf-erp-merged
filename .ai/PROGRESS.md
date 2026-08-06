@@ -8,7 +8,7 @@ TSK-011 closure note (2026-08-04): local product-card fields, approved types, at
 
 ## Current Active Slice — 2026-08-06
 
-TSK-014 remains **In Progress**: Submit/Approve, Cancel/Close, definition-only receipt states, PO print, and PO-line schema prerequisite are implemented; authenticated/mobile manual evidence remains pending. TSK-015 Slice A and TSK-P01–P03 are implemented as reversible local schema/diagnostic slices: invoice/ledger/snapshot tables, restrictive PO-line FK, consumed-cost column, composite indexes, and `inventory:rebuild-balances`. Invoice posting/import, receipt mutation, WAC/cost policy, owner commercial settings, UAT, and production readiness remain open.
+TSK-014 remains **In Progress**: Submit/Approve, Cancel/Close, definition-only receipt states, PO print, and PO-line schema prerequisite are implemented; authenticated/mobile manual evidence remains pending. TSK-015 Slice A and TSK-P01–P03 are implemented as reversible local schema/diagnostic slices: invoice/ledger/snapshot tables, restrictive PO-line FK, consumed-cost column, composite indexes, and `inventory:rebuild-balances`. A server-gated read-only readiness boundary now documents eight owner-decision groups, four blockers, disabled invoice/import controls, and an empty state at `/purchasing/invoices/readiness`; invoice posting/import, receipt mutation, WAC/cost policy, owner commercial settings, UAT, and production readiness remain open.
 
 
 | Phase | Milestone | Status | Progress | Started At | Completed At | Related Task IDs | Notes |

@@ -354,6 +354,9 @@ new #[Title('Purchase Orders')] class extends Component
     data-guide="po-header"
 >
     <x-slot:actions>
+        <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="clipboard-document-list" data-guide="tsk-015-readiness-link">
+            {{ app()->getLocale() === 'ar' ? 'جاهزية الفواتير' : 'Invoice readiness' }}
+        </flux:button>
         @if ($canCreate)
             <div>
                 <flux:button variant="primary" icon="plus" wire:click="openCreateModal" data-guide="po-create-action">

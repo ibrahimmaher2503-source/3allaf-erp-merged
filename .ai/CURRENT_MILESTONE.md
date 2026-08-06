@@ -2,7 +2,7 @@
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Performance Group A
-**Status:** In Progress (TSK-014 local PO slices remain pending authenticated/mobile manual verification; TSK-015 Slice A and TSK-P01–P03 structural slices are implemented locally; receipt/inventory posting, WAC, production/UAT gates remain open)
+**Status:** In Progress (TSK-014 local PO slices remain pending authenticated/mobile manual verification; TSK-015 Slice A and TSK-P01–P03 structural slices plus a read-only readiness boundary are implemented locally; receipt/inventory posting, WAC, production/UAT gates remain open)
 **Progress:** TSK-010 through TSK-013 local slices are closed/verified. TSK-014 ordered PO slices are implemented with manual verification pending. TSK-015 now has reversible invoice/ledger/snapshot schema and balance rebuild command; no posting workflow or owner policy approval is claimed. Later tasks remain deferred.
 **Started:** 2026-08-04
 
