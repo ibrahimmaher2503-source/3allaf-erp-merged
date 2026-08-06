@@ -196,3 +196,13 @@ Expected values follow viewer permission.
 ## 16. Manual Verification
 
 Verify each output in Arabic/English, thermal/A4/label dimensions where available, page breaks, totals, historical snapshots, redaction, permission, reprint history, no duplicate effects, export safety, protected download, console/network.
+
+## 17. Supplier Return Output
+
+- Route: `/purchasing/returns/{id}/print`.
+- A4/browser-print output includes return number/status, supplier/store, source invoice, mandatory reason, line quantities, original source unit cost, total cost, creator/approver, and cost-flow disclaimer.
+- Title and footer may be overridden only by approved effective `financial_setting_versions` keys:
+  - `purchasing.supplier_return.print_title`
+  - `purchasing.supplier_return.print_footer`
+- Number sequence remains in `document_sequences`; the first local default is `PRET-{YYYY}-` and is not a production approval. An approved `purchasing.supplier_return.number_prefix` may supply the initial sequence prefix.
+- No printer, paper, copy count, or financial approval value is invented; those remain Owner/UAT inputs.

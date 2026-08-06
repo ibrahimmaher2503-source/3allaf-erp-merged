@@ -2,7 +2,9 @@
 
 ## Current state
 
-TSK-015 local/dev implementation is completed under DEC-050. TSK-016 is **In Progress** under DEC-052. The first implementation slice now includes the supplier-return schema, source/cost relationships, empty reason catalog structure, and separate permission namespace.
+TSK-015 local/dev implementation is completed under DEC-050. TSK-016 local/dev implementation is **Complete** under DEC-052; Production/UAT remains open for Owner inputs and release gates.
+
+The completed slice includes supplier-return schema, source/cost relationships, dynamic reason catalog administration, versioned print/number settings, Draft/Edit/Submit/Approve/Reject/Cancel/Reverse lifecycle, atomic stock posting/reversal, idempotency, audit timeline, detail, print, and permission/scope enforcement.
 
 **DEC-052 adopted rules:** every Phase 1 supplier-return line must reference an approved purchase-invoice line; its cost is the original invoice-line `unit_cost`; no WAC substitution or cost fallback; no-reference cases are rejected and belong to an explicit-cost approved `adjustment_out` path instead. Reason rows and numeric approval limits remain configurable inputs.
 

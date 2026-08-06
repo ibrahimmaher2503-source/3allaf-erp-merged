@@ -265,16 +265,16 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-016 — Implement Supplier Returns
 
-- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **In Progress — DEC-052 adopted; schema/model/permission foundation implemented; draft/source/posting/UI slices continue.**
+- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **Local/Dev Complete — DEC-052 implemented; Production/UAT and Owner master-data/financial approvals remain open.**
 - **Title / Purpose / Description:** Create approved supplier return linked to original purchase where available with cost/history and exact stock reduction.
 - **Traceability:** PUR-06, NFR-01–NFR-02, NFR-06; US-012; FLW-PUR-03; UI UI-PUR-003; AC-PUR-06; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-015; DEC-052 closes original-line cost, no fallback, and no-reference rejection. Reason catalog rows and numeric approval limits remain configurable/owner inputs but do not block the schema or guarded local implementation.
 - **Database Entities:** `purchase_returns`, `purchase_return_lines`, `purchase_invoices`, `stock_movements`, `stock_balances`, `approval_records`, `document_sequences`.
-- **Backend / Livewire / Blade Deliverables:** eligibility/source/cost/state/locked posting and reference correction; list/editor/detail.
+- **Backend / Livewire / Blade Deliverables:** eligibility/source/cost/state/locked posting and reference correction; list/editor/detail/timeline; cancel/reject/reverse; owner-configurable reason catalog and versioned print/number settings.
 - **UI / Flux / Alpine / Vite:** Flux Table/Filters/Search/Pagination/Form/Combobox/Line Editor/Summary/Timeline/Dialog; Alpine none; print assets.
 - **Suggested Packages:** Reuse document PDF capability if approved.
-- **Permissions / Validation / Audit / States / Print:** Create/Submit/Approve/Reverse/Print; original/supplier/store/available qty/cost/reason; all events/movements audited; supplier return A4/PDF.
-- **Manual Browser Verification:** Original/no-reference allowed path, excess/wrong supplier/store, concurrent stock, terminal edit, reversal/source history, permission and print.
+- **Permissions / Validation / Audit / States / Print:** Create/Submit/Approve/Reject/Cancel/Reverse/Print; original/supplier/store/available qty/cost/reason; all events/movements audited; supplier return A4/PDF.
+- **Manual Browser Verification:** Local Demo Auth verified empty-state/settings/detail/print pages with 0 JS errors; end-to-end lifecycle and balance/idempotency verified by transactional Tinker smoke. Production/UAT hardware, real reasons, financial limits, scopes, and printer approval remain pending.
 - **Definition of Done:** DoD; balance and cost history reconcile.
 
 ### TSK-017 — Implement Price Proposals, Version Approval, and Open-Price Policy

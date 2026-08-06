@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseReturn;
+use App\Modules\Purchasing\Models\StockMovement;
+use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 $router = app('router');
@@ -25,6 +31,34 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/returns', 'purchasing::returns')
         ->middleware('can:purchase_returns.view')
         ->name('purchasing.returns');
+
+    $router->livewire('purchasing/returns/settings', 'purchasing::return-settings')
+        ->middleware('can:company_settings.view')
+        ->name('purchasing.returns.settings');
+
+    $router->get('purchasing/returns/{return}', function (PurchaseReturn $return) {
+        Gate::authorize('purchase_returns.view');
+        $user = Auth::user();
+        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($return->store_id)->exists()), 403);
+        $return->load(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'submitter', 'approver', 'lines.product']);
+
+        return view('purchasing.return-detail', [
+            'return' => $return,
+            'movements' => StockMovement::query()->where('source_type', PurchaseReturn::class)->where('source_id', $return->id)->latest('id')->get(),
+            'audits' => AuditLog::query()->where('source_type', PurchaseReturn::class)->where('source_id', (string) $return->id)->latest('id')->limit(50)->get(),
+        ]);
+    })->whereNumber('return')->middleware('can:purchase_returns.view')->name('purchasing.returns.show');
+
+    $router->get('purchasing/returns/{return}/print', function (PurchaseReturn $return) {
+        Gate::authorize('purchase_returns.print');
+        $user = Auth::user();
+        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($return->store_id)->exists()), 403);
+
+        return view('purchasing.return-print', [
+            'return' => $return->load(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'approver', 'lines.product']),
+            'policy' => app(SupplierReturnPolicy::class),
+        ]);
+    })->whereNumber('return')->middleware('can:purchase_returns.print')->name('purchasing.returns.print');
 
     $router->get('purchasing/invoices/{invoice}/print', function (PurchaseInvoice $invoice) {
         Gate::authorize('purchase_invoices_supplier_returns.print');

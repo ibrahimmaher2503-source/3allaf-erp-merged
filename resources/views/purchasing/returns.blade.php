@@ -1,8 +1,12 @@
 <?php
 
 use App\Modules\Purchasing\Actions\ApprovePurchaseReturnAction;
+use App\Modules\Purchasing\Actions\CancelPurchaseReturnAction;
 use App\Modules\Purchasing\Actions\CreatePurchaseReturnDraftAction;
+use App\Modules\Purchasing\Actions\RejectPurchaseReturnAction;
+use App\Modules\Purchasing\Actions\ReversePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseReturnAction;
+use App\Modules\Purchasing\Actions\UpdatePurchaseReturnDraftAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\SupplierReturnReason;
@@ -24,6 +28,8 @@ new #[Title('Supplier Returns')] class extends Component
     public bool $showFormModal = false;
 
     public ?int $selectedInvoiceId = null;
+
+    public ?int $selectedReturnId = null;
 
     public ?int $selectedReasonId = null;
 
@@ -56,8 +62,20 @@ new #[Title('Supplier Returns')] class extends Component
 
         $this->resetValidation();
         $this->selectedInvoiceId = null;
+        $this->selectedReturnId = null;
         $this->selectedReasonId = null;
         $this->returnLines = [];
+        $this->showFormModal = true;
+    }
+
+    public function editDraft(int $id): void
+    {
+        Gate::authorize('purchase_returns.edit');
+        $return = PurchaseReturn::query()->with('lines')->where('status', 'draft')->findOrFail($id);
+        $this->selectedReturnId = $return->id;
+        $this->selectedInvoiceId = $return->purchase_invoice_id;
+        $this->selectedReasonId = $return->reason_id;
+        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => $line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id])->values()->all();
         $this->showFormModal = true;
     }
 
@@ -80,9 +98,9 @@ new #[Title('Supplier Returns')] class extends Component
             ])->values()->all();
     }
 
-    public function saveDraft(CreatePurchaseReturnDraftAction $action): void
+    public function saveDraft(CreatePurchaseReturnDraftAction $create, UpdatePurchaseReturnDraftAction $update): void
     {
-        Gate::authorize('purchase_returns.create');
+        Gate::authorize($this->selectedReturnId === null ? 'purchase_returns.create' : 'purchase_returns.edit');
         $this->validate([
             'selectedInvoiceId' => 'required|integer|exists:purchase_invoices,id',
             'selectedReasonId' => 'required|integer|exists:supplier_return_reasons,id',
@@ -92,7 +110,9 @@ new #[Title('Supplier Returns')] class extends Component
         ]);
 
         try {
-            $return = $action->execute($this->selectedInvoiceId, $this->selectedReasonId, $this->returnLines);
+            $return = $this->selectedReturnId === null
+                ? $create->execute($this->selectedInvoiceId, $this->selectedReasonId, $this->returnLines)
+                : $update->execute($this->selectedReturnId, $this->selectedReasonId, $this->returnLines, PurchaseReturn::query()->findOrFail($this->selectedReturnId)->lock_version);
             $this->showFormModal = false;
             Flux::toast(__('Supplier return saved as draft.'), variant: 'success');
             $this->dispatch('supplier-return-created', id: $return->id);
@@ -120,6 +140,39 @@ new #[Title('Supplier Returns')] class extends Component
             $return = PurchaseReturn::query()->findOrFail($id);
             $action->execute($return->id, $return->lock_version);
             Flux::toast(__('Supplier return approved and stock cost reversed.'), variant: 'success');
+        } catch (Throwable $exception) {
+            Flux::toast($exception->getMessage(), variant: 'danger');
+        }
+    }
+
+    public function cancelReturn(int $id, string $reason, CancelPurchaseReturnAction $action): void
+    {
+        try {
+            $return = PurchaseReturn::query()->findOrFail($id);
+            $action->execute($id, $reason, $return->lock_version);
+            Flux::toast(__('Supplier return cancelled.'), variant: 'success');
+        } catch (Throwable $exception) {
+            Flux::toast($exception->getMessage(), variant: 'danger');
+        }
+    }
+
+    public function rejectReturn(int $id, string $reason, RejectPurchaseReturnAction $action): void
+    {
+        try {
+            $return = PurchaseReturn::query()->findOrFail($id);
+            $action->execute($id, $reason, $return->lock_version);
+            Flux::toast(__('Supplier return rejected.'), variant: 'success');
+        } catch (Throwable $exception) {
+            Flux::toast($exception->getMessage(), variant: 'danger');
+        }
+    }
+
+    public function reverseReturn(int $id, string $reason, ReversePurchaseReturnAction $action): void
+    {
+        try {
+            $return = PurchaseReturn::query()->findOrFail($id);
+            $action->execute($id, $reason, $return->lock_version);
+            Flux::toast(__('Supplier return reversed.'), variant: 'success');
         } catch (Throwable $exception) {
             Flux::toast($exception->getMessage(), variant: 'danger');
         }
@@ -155,6 +208,9 @@ new #[Title('Supplier Returns')] class extends Component
 >
     <x-slot:actions>
         <flux:button href="{{ route('purchasing.invoices') }}" variant="subtle" icon="arrow-left">{{ __('Purchase invoices') }}</flux:button>
+        @can('company_settings.view')
+            <flux:button href="{{ route('purchasing.returns.settings') }}" variant="subtle" icon="adjustments-horizontal">{{ __('Return settings') }}</flux:button>
+        @endcan
         @can('purchase_returns.create')
             <flux:button wire:click="openCreateModal" variant="primary" icon="plus" :disabled="!$hasReasonCatalog">{{ __('New supplier return') }}</flux:button>
         @endcan
@@ -203,7 +259,7 @@ new #[Title('Supplier Returns')] class extends Component
             <flux:table.rows>
                 @forelse ($returns as $return)
                     <flux:table.row :key="$return->id">
-                        <flux:table.cell>{{ $return->return_number ?: '#'.$return->id }}</flux:table.cell>
+                        <flux:table.cell><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
                         <flux:table.cell>{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
                         <flux:table.cell>{{ $return->supplier?->name_en ?: $return->supplier?->name_ar }}</flux:table.cell>
                         <flux:table.cell>{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
@@ -212,6 +268,7 @@ new #[Title('Supplier Returns')] class extends Component
                         <flux:table.cell>
                             @if ($return->status === 'draft')
                                 @can('purchase_returns.edit')
+                                    <flux:button size="sm" variant="subtle" wire:click="editDraft({{ $return->id }})">{{ __('Edit') }}</flux:button>
                                     <flux:button size="sm" variant="subtle" wire:click="submitReturn({{ $return->id }})">{{ __('Submit') }}</flux:button>
                                 @endcan
                             @elseif ($return->status === 'submitted')

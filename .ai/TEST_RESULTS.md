@@ -1,9 +1,14 @@
 # Test and Verification Status
 
-**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 DEC-052 local foundation and guarded vertical slice implemented; production/UAT remains open.
-**Current diagnostics:** TSK-016 migration/schema smoke passed; PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, `git diff --check` pass. Browser review passed `/purchasing/returns` under local Demo Auth: empty reason catalog callout, disabled create button, list/table empty state, and 0 console errors.
+**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 local/dev implementation completed under DEC-052; production/UAT remains open.
+
+**Current diagnostics:** Supplier-return migration/seeder passed; PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, `git diff --check` pass. Browser review passed `/purchasing/returns`, `/purchasing/returns/settings`, `/purchasing/returns/{id}`, and `/purchasing/returns/{id}/print` under local Demo Auth. Settings empty-state and required-field validation passed with 0 JS errors.
+
+**Lifecycle smoke:** Transactional Tinker smoke passed Draft → Edit → Submit → Approve → Reverse, Draft → Cancel, and Draft → Submit → Reject. Approval changed `2/20/10` to `0.5/5/10`; reversal restored `2/20/10`; movement count remained 2 for outbound/reversal; transaction rolled back.
+
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
-**TSK-016 remaining:** reason catalog rows, print/reversal/detail completion, and production numeric/master-data/UAT gates remain open. No fallback cost or no-reference return path is permitted.
+
+**TSK-016 boundary:** Local/Dev is complete. Reason catalog, approved financial-setting versions, real authorization assignments, branch/store scope, printer/PDF acceptance, UAT, and Production gates remain Owner/operations inputs. No fallback cost or no-reference return path is permitted.
 
 ## TSK-014 Local Implementation and Manual Verification Evidence — 2026-08-06
 
