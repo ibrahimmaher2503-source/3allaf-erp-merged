@@ -6,6 +6,8 @@
 
 **Lifecycle smoke:** Transactional Tinker smoke passed Draft → Edit → Submit → ApprovalRecord(Pending) → Approve → Reverse, Draft → Cancel, and Draft → Submit → Reject. ApprovalRecord transitioned to Approved, stock posting produced one outbound movement, and `on_hand=2` became `1` at original cost `10`; transaction rolled back. Browser review also verified the expanded status filter and terminal-action UI surface with 0 JS errors.
 
+**Closure-review browser evidence — 2026-08-06:** Refreshed the Demo server from the verified repository on `http://169.58.101.5:8000` with `APP_ENV=local`, `DEMO_AUTH=true`, and `APP_DEBUG=false`. One-click Demo Auth reached `/purchasing/returns` as `Local Demo Administrator`; the list rendered with an intentionally disabled Create action because the reason catalog is empty, all lifecycle status filters, and the empty table state. `/purchasing/returns/settings` rendered the empty reason catalog and no-approved-financial-version state. Browser console reported 0 messages and 0 JS errors. This is Demo evidence only, not Production/UAT evidence.
+
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
 
 **TSK-016 boundary:** Local/Dev is complete. Reason catalog, approved financial-setting versions, real authorization assignments, branch/store scope, printer/PDF acceptance, UAT, and Production gates remain Owner/operations inputs. No fallback cost or no-reference return path is permitted.

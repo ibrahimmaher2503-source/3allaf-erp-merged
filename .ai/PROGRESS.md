@@ -1,14 +1,14 @@
 # Project Progress
 
 **Overall progress:** 1%  
-**Implementation status:** TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 is in progress under DEC-052; production/UAT remains open.
+**Implementation status:** TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 local/dev implementation is complete under DEC-052; production/UAT remains open.
 **Documentation status:** DEC-052 adopted original-line supplier-return cost, no fallback, and no-reference rejection. Reason catalog contents and production operational inputs remain separately gated.
 
-TSK-011 closure note (2026-08-04): local product-card fields, approved types, attributes, protected media, detail/full edit, authorization, audit, stale-update behavior, and safe oversized-upload messages are implemented. Composite component lines remain deferred by the insufficient approved Phase 1 contract. The local PHP upload limit is documented as an infrastructure dependency without weakening the application policy. TSK-011 is Completed for approved local scope. No Phase 1/Phase 2 gate, UAT, or production-readiness claim is made.
+## Current Active Slice — 2026-08-06 Closure Review
 
-## Current Active Slice — 2026-08-06
+TSK-016 local/dev closure was reconciled against the implementation and manually verified on the refreshed Demo server. The current evidence covers the authenticated list/settings empty-state boundary and confirms no reason rows or approved financial versions are invented. `docs/47` production/owner inputs, real scopes, print/device acceptance, UAT, and release gates remain open; no production posting claim is made.
 
-TSK-016 discovery is now started after TSK-015 local/dev closure. The bounded slice is requirement reconciliation and a server-gated read-only/disabled contract for supplier returns. `docs/47` remains owner-pending for CF-05, including original invoice-line cost reversal and the no-reference cost fallback; no return posting, stock/WAC mutation, or production reason catalog is authorized.
+The earlier TSK-016 discovery boundary is historical context superseded by DEC-052 and the completed local/dev implementation. Its owner-pending production constraints remain in force; no return posting, stock/WAC mutation, or production reason catalog is authorized without the adopted safeguards and required inputs.
 
 Local/dev policy baseline is now owner-approved under DEC-050: approval posts stock automatically under Model A, tax is zero in Phase 1, over-receipt and partial receipt are blocked, `PINV-{YYYY}-{00000}` numbering is allocated only on approval, reversal is idempotent and requires sufficient on-hand, import creates Draft invoices only, and sale-price mutation is not performed. Production master data/device/cutover inputs remain separate prerequisites.
 
