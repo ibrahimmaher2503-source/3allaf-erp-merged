@@ -1,10 +1,11 @@
 <?php
 
-use App\Modules\Platform\Actions\SaveStoreAction;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
+use App\Modules\Platform\Actions\SaveStoreAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Store;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -12,17 +13,23 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Store & Inventory Mapping Masters')] class extends Component {
-    use WithPagination;
+new #[Title('Store & Inventory Mapping Masters')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $branchFilter = 'all';
+
     public string $typeFilter = 'all';
+
     public string $statusFilter = 'all';
 
     // Store Modal State
     public bool $showStoreModal = false;
+
     public ?int $editingStoreId = null;
+
     public array $storeForm = [
         'branch_id' => '',
         'code' => '',
@@ -36,9 +43,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
 
     // Mapping Modal State
     public bool $showStoreMappingModal = false;
+
     public ?int $mappingStoreId = null;
+
     public ?string $mappingStoreName = null;
+
     public ?int $selectedBranchId = null;
+
     public string $mappingApprovalNotes = '';
 
     public function mount(): void
@@ -117,7 +128,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
                 Rule::unique('stores', 'code')->ignore($this->editingStoreId),
             ],
             'storeForm.branch_id' => ['nullable', 'exists:branches,id'],
-            'storeForm.type' => ['required', 'in:' . implode(',', SaveStoreAction::ALLOWED_TYPES)],
+            'storeForm.type' => ['required', 'in:'.implode(',', SaveStoreAction::ALLOWED_TYPES)],
             'storeForm.name_ar' => ['required', 'string', 'max:255'],
             'storeForm.name_en' => ['required', 'string', 'max:255'],
             'storeForm.status' => ['required', 'in:active,inactive'],
@@ -129,7 +140,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             $action->execute($validated, $this->editingStoreId);
             Flux::toast(variant: 'success', text: $this->editingStoreId ? __('Store updated successfully.') : __('Store created successfully.'));
             $this->showStoreModal = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -141,8 +152,23 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
         try {
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Store status updated successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
+        }
+    }
+
+    public function bulkToggleStoreStatus(SaveStoreAction $action): void
+    {
+        Gate::authorize('branches_stores.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $action->toggleStatus($id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Store status updated for :count records.', ['count' => $count]));
+        } catch (Exception $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
 
@@ -153,7 +179,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
         try {
             $action->delete($id);
             Flux::toast(variant: 'success', text: __('Store deleted successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -165,11 +191,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
         $store = Store::findOrFail($storeId);
         if ($store->type !== 'selling') {
             Flux::toast(variant: 'danger', text: __('Only stores of type Selling Store can be mapped to branches for POS operations.'));
+
             return;
         }
 
         if ($store->status !== 'active') {
             Flux::toast(variant: 'danger', text: __('Selling store must be active to map to a branch.'));
+
             return;
         }
 
@@ -200,7 +228,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             );
             Flux::toast(variant: 'success', text: __('Selling store mapped to branch successfully.'));
             $this->showStoreMappingModal = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -236,7 +264,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
 
             <?php
             $branchesList = Branch::visibleTo(auth()->user())->orderBy('code')->get();
-            ?>
+?>
 
             <flux:select wire:model.live="branchFilter" size="sm" :label="__('Branch Filter')">
                 <flux:select.option value="all">{{ __('All Branches') }}</flux:select.option>
@@ -269,32 +297,32 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
     <?php
     $query = Store::visibleTo(auth()->user())->with(['branch', 'sellingStoreMappings.branch']);
 
-    if (!empty($search)) {
-        $query->where(function ($q) use ($search) {
-            $q->where('code', 'like', '%' . $search . '%')
-              ->orWhere('name_ar', 'like', '%' . $search . '%')
-              ->orWhere('name_en', 'like', '%' . $search . '%');
-        });
-    }
+if (! empty($search)) {
+    $query->where(function ($q) use ($search) {
+        $q->where('code', 'like', '%'.$search.'%')
+            ->orWhere('name_ar', 'like', '%'.$search.'%')
+            ->orWhere('name_en', 'like', '%'.$search.'%');
+    });
+}
 
-    if ($branchFilter !== 'all') {
-        if ($branchFilter === 'unassigned') {
-            $query->whereNull('branch_id');
-        } else {
-            $query->where('branch_id', (int) $branchFilter);
-        }
+if ($branchFilter !== 'all') {
+    if ($branchFilter === 'unassigned') {
+        $query->whereNull('branch_id');
+    } else {
+        $query->where('branch_id', (int) $branchFilter);
     }
+}
 
-    if ($typeFilter !== 'all') {
-        $query->where('type', $typeFilter);
-    }
+if ($typeFilter !== 'all') {
+    $query->where('type', $typeFilter);
+}
 
-    if ($statusFilter !== 'all') {
-        $query->where('status', $statusFilter);
-    }
+if ($statusFilter !== 'all') {
+    $query->where('status', $statusFilter);
+}
 
-    $stores = $query->orderBy('code')->paginate(10);
-    ?>
+$stores = $query->orderBy('code')->paginate(10);
+?>
 
     @if ($stores->isEmpty())
         <flux:card class="p-8 text-center space-y-3" data-guide="stores-empty">
@@ -312,8 +340,16 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             </div>
         </flux:card>
     @else
+        <x-tables.bulk-actions :page-ids="$stores->pluck('id')->all()" :selected-ids="$selectedIds" :selected-count="count($selectedIds)" :page-count="$stores->count()">
+            <x-slot:actions>
+                @can('branches_stores.edit')
+                    <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleStoreStatus" wire:confirm="{{ __('Toggle status for the selected stores?') }}">{{ __('Toggle status') }}</flux:button>
+                @endcan
+            </x-slot:actions>
+        </x-tables.bulk-actions>
         <flux:table data-guide="stores-table">
             <flux:table.columns>
+                <flux:table.column><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                 <flux:table.column sortable>{{ __('Code') }}</flux:table.column>
                 <flux:table.column>{{ __('Store Name (AR / EN)') }}</flux:table.column>
                 <flux:table.column>{{ __('Type') }}</flux:table.column>
@@ -327,9 +363,10 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component {
             <flux:table.rows>
                 @foreach ($stores as $st)
                     <?php
-                    $activeBranchMapping = $st->sellingStoreMappings->firstWhere('status', 'active');
-                    ?>
+                $activeBranchMapping = $st->sellingStoreMappings->firstWhere('status', 'active');
+?>
                     <flux:table.row :key="$st->id">
+                        <flux:table.cell><input type="checkbox" value="{{ $st->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select store :code', ['code' => $st->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell>
                         <flux:table.cell class="font-mono font-medium">
                             {{ $st->code }}
                         </flux:table.cell>

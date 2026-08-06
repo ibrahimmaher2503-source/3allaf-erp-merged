@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Actions\SaveCategoryAction;
 use App\Modules\Catalog\Models\Category;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -9,13 +10,18 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Category Masters')] class extends Component {
-    use WithPagination;
+new #[Title('Category Masters')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
+
     public bool $showCategoryModal = false;
+
     public ?int $editingCategoryId = null;
+
     public array $categoryForm = [
         'code' => '',
         'name_ar' => '',
@@ -83,7 +89,7 @@ new #[Title('Category Masters')] class extends Component {
             $action->execute($validated, $this->editingCategoryId);
             Flux::toast(variant: 'success', text: $this->editingCategoryId ? __('Category updated successfully.') : __('Category created successfully.'));
             $this->showCategoryModal = false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('categoryForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -97,7 +103,23 @@ new #[Title('Category Masters')] class extends Component {
         try {
             $action->execute($category->only(['code', 'name_ar', 'name_en', 'parent_id', 'sort_order']) + ['status' => $category->status === 'active' ? 'inactive' : 'active'], $id);
             Flux::toast(variant: 'success', text: __('Category status updated successfully.'));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+        }
+    }
+
+    public function bulkToggleCategoryStatus(SaveCategoryAction $action): void
+    {
+        Gate::authorize('products_categories_brands.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $category = Category::query()->findOrFail($id);
+                $action->execute($category->only(['code', 'name_ar', 'name_en', 'parent_id', 'sort_order']) + ['status' => $category->status === 'active' ? 'inactive' : 'active'], $id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Category status updated for :count records.', ['count' => $count]));
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
@@ -173,8 +195,21 @@ new #[Title('Category Masters')] class extends Component {
         </flux:card>
     @else
         <div class="catalog-table-frame" data-guide="categories-table">
+            <x-tables.bulk-actions
+                :page-ids="$categories->pluck('id')->all()"
+                :selected-ids="$selectedIds"
+                :selected-count="count($selectedIds)"
+                :page-count="$categories->count()"
+            >
+                <x-slot:actions>
+                    @can('products_categories_brands.edit')
+                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleCategoryStatus" wire:confirm="{{ __('Toggle status for the selected categories?') }}">{{ __('Toggle status') }}</flux:button>
+                    @endcan
+                </x-slot:actions>
+            </x-tables.bulk-actions>
             <flux:table aria-label="{{ __('Category hierarchy') }}">
                 <flux:table.columns>
+                    <flux:table.column><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                     <flux:table.column>{{ __('Code') }}</flux:table.column>
                     <flux:table.column>{{ __('Category name') }}</flux:table.column>
                     <flux:table.column>{{ __('Parent / level') }}</flux:table.column>
@@ -185,6 +220,7 @@ new #[Title('Category Masters')] class extends Component {
                 <flux:table.rows>
                     @foreach ($categories as $category)
                         <flux:table.row :key="$category->id">
+                            <flux:table.cell><input type="checkbox" value="{{ $category->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select category :code', ['code' => $category->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell>
                             <flux:table.cell class="whitespace-nowrap"><span class="catalog-code-chip">{{ $category->code }}</span></flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-start gap-2 {{ $category->parent ? 'ps-4' : '' }}">

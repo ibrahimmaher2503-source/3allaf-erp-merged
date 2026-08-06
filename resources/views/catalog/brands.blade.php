@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Actions\SaveBrandAction;
 use App\Modules\Catalog\Models\Brand;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -9,13 +10,18 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Brand Masters')] class extends Component {
-    use WithPagination;
+new #[Title('Brand Masters')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
+
     public bool $showBrandModal = false;
+
     public ?int $editingBrandId = null;
+
     public array $brandForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active'];
 
     public function mount(): void
@@ -66,7 +72,7 @@ new #[Title('Brand Masters')] class extends Component {
             $action->execute($validated, $this->editingBrandId);
             Flux::toast(variant: 'success', text: $this->editingBrandId ? __('Brand updated successfully.') : __('Brand created successfully.'));
             $this->showBrandModal = false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('brandForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -80,7 +86,23 @@ new #[Title('Brand Masters')] class extends Component {
         try {
             $action->execute($brand->only(['code', 'name_ar', 'name_en']) + ['status' => $brand->status === 'active' ? 'inactive' : 'active'], $id);
             Flux::toast(variant: 'success', text: __('Brand status updated successfully.'));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+        }
+    }
+
+    public function bulkToggleBrandStatus(SaveBrandAction $action): void
+    {
+        Gate::authorize('products_categories_brands.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $brand = Brand::query()->findOrFail($id);
+                $action->execute($brand->only(['code', 'name_ar', 'name_en']) + ['status' => $brand->status === 'active' ? 'inactive' : 'active'], $id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Brand status updated for :count records.', ['count' => $count]));
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
@@ -121,7 +143,7 @@ new #[Title('Brand Masters')] class extends Component {
     @if ($brands->isEmpty())
         <flux:card class="space-y-3 p-10 text-center" data-guide="brands-empty"><flux:icon name="tag" class="mx-auto size-12 text-zinc-400" /><flux:heading size="lg">{{ __('No brands found') }}</flux:heading><flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('Create a brand before assigning it to a product.') }}</flux:text></flux:card>
     @else
-        <div class="catalog-table-frame" data-guide="brands-table"><flux:table aria-label="{{ __('Brand masters') }}"><flux:table.columns><flux:table.column>{{ __('Code') }}</flux:table.column><flux:table.column>{{ __('Brand name') }}</flux:table.column><flux:table.column>{{ __('Products') }}</flux:table.column><flux:table.column>{{ __('Status') }}</flux:table.column><flux:table.column>{{ __('Actions') }}</flux:table.column></flux:table.columns><flux:table.rows>@foreach ($brands as $brand)<flux:table.row :key="$brand->id"><flux:table.cell><span class="catalog-code-chip">{{ $brand->code }}</span></flux:table.cell><flux:table.cell><div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $brand->name_ar : $brand->name_en }}</div><div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $brand->name_en : $brand->name_ar }}</div></flux:table.cell><flux:table.cell><span class="font-mono text-xs text-text-muted">{{ number_format($brand->products_count) }}</span></flux:table.cell><flux:table.cell><flux:badge size="sm" :color="$brand->status === 'active' ? 'emerald' : 'zinc'">{{ __($brand->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></flux:table.cell><flux:table.cell class="whitespace-nowrap">@can('products_categories_brands.edit')<div class="catalog-actions"><flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditBrandModal({{ $brand->id }})" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}" /><flux:button size="xs" variant="subtle" :icon="$brand->status === 'active' ? 'pause' : 'play'" wire:click="toggleBrandStatus({{ $brand->id }})" title="{{ $brand->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $brand->status === 'active' ? __('Deactivate') : __('Activate') }}" /></div>@else<span class="text-xs font-medium text-text-muted">{{ __('View only') }}</span>@endcan</flux:table.cell></flux:table.row>@endforeach</flux:table.rows></flux:table></div>
+        <div class="catalog-table-frame" data-guide="brands-table"><x-tables.bulk-actions :page-ids="$brands->pluck('id')->all()" :selected-ids="$selectedIds" :selected-count="count($selectedIds)" :page-count="$brands->count()"><x-slot:actions>@can('products_categories_brands.edit')<flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleBrandStatus" wire:confirm="{{ __('Toggle status for the selected brands?') }}">{{ __('Toggle status') }}</flux:button>@endcan</x-slot:actions></x-tables.bulk-actions><flux:table aria-label="{{ __('Brand masters') }}"><flux:table.columns><flux:table.column><span class="sr-only">{{ __('Select') }}</span></flux:table.column><flux:table.column>{{ __('Code') }}</flux:table.column><flux:table.column>{{ __('Brand name') }}</flux:table.column><flux:table.column>{{ __('Products') }}</flux:table.column><flux:table.column>{{ __('Status') }}</flux:table.column><flux:table.column>{{ __('Actions') }}</flux:table.column></flux:table.columns><flux:table.rows>@foreach ($brands as $brand)<flux:table.row :key="$brand->id"><flux:table.cell><input type="checkbox" value="{{ $brand->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select brand :code', ['code' => $brand->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell><flux:table.cell><span class="catalog-code-chip">{{ $brand->code }}</span></flux:table.cell><flux:table.cell><div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $brand->name_ar : $brand->name_en }}</div><div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $brand->name_en : $brand->name_ar }}</div></flux:table.cell><flux:table.cell><span class="font-mono text-xs text-text-muted">{{ number_format($brand->products_count) }}</span></flux:table.cell><flux:table.cell><flux:badge size="sm" :color="$brand->status === 'active' ? 'emerald' : 'zinc'">{{ __($brand->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></flux:table.cell><flux:table.cell class="whitespace-nowrap">@can('products_categories_brands.edit')<div class="catalog-actions"><flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditBrandModal({{ $brand->id }})" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}" /><flux:button size="xs" variant="subtle" :icon="$brand->status === 'active' ? 'pause' : 'play'" wire:click="toggleBrandStatus({{ $brand->id }})" title="{{ $brand->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $brand->status === 'active' ? __('Deactivate') : __('Activate') }}" /></div>@else<span class="text-xs font-medium text-text-muted">{{ __('View only') }}</span>@endcan</flux:table.cell></flux:table.row>@endforeach</flux:table.rows></flux:table></div>
         <div data-guide="brands-pagination">{{ $brands->links() }}</div>
     @endif
 

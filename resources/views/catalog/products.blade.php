@@ -2,9 +2,11 @@
 
 use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -13,21 +15,32 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Product Masters')] class extends Component {
-    use WithPagination;
+new #[Title('Product Masters')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $categoryFilter = 'all';
+
     public string $brandFilter = 'all';
+
     public string $statusFilter = 'all';
+
     public string $productTypeFilter = 'all';
+
     public string $colourFilter = '';
+
     public string $ageFilter = '';
+
     public string $genderFilter = 'all';
+
     public string $characterFilter = '';
 
     public bool $showProductModal = false;
+
     public ?int $editingProductId = null;
+
     public array $productForm = [
         'item_code' => '',
         'name_ar' => '',
@@ -37,17 +50,23 @@ new #[Title('Product Masters')] class extends Component {
         'brand_id' => '',
         'status' => 'active',
     ];
+
     public ?int $productVersion = null;
 
     public bool $showBarcodeModal = false;
+
     public ?int $barcodeProductId = null;
+
     public string $barcodeProductLabel = '';
+
     public array $barcodeForm = [
         'source' => 'supplier',
         'barcode' => '',
         'supplier_code' => '',
     ];
+
     public string $allocationKey = '';
+
     public array $barcodeRecords = [];
 
     public function mount(): void
@@ -165,7 +184,7 @@ new #[Title('Product Masters')] class extends Component {
             $action->execute($validated, $this->editingProductId, $this->productVersion);
             Flux::toast(variant: 'success', text: $this->editingProductId ? __('Product identity updated successfully.') : __('Product created successfully.'));
             $this->showProductModal = false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('productForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -178,7 +197,22 @@ new #[Title('Product Masters')] class extends Component {
         try {
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Product status updated successfully.'));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+        }
+    }
+
+    public function bulkToggleProductStatus(SaveProductAction $action): void
+    {
+        Gate::authorize('products_categories_brands.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $action->toggleStatus($id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Product status updated for :count records.', ['count' => $count]));
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
@@ -227,7 +261,7 @@ new #[Title('Product Masters')] class extends Component {
             Flux::toast(variant: 'success', text: $message);
             $this->barcodeForm['barcode'] = '';
             $this->refreshBarcodeRecords();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('barcodeForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -241,7 +275,7 @@ new #[Title('Product Masters')] class extends Component {
             $action->deactivate($id);
             $this->refreshBarcodeRecords();
             Flux::toast(variant: 'success', text: __('Barcode deactivated without changing historical identity.'));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
@@ -258,7 +292,7 @@ new #[Title('Product Masters')] class extends Component {
             ->orderByDesc('is_primary')
             ->orderBy('barcode')
             ->get()
-            ->map(fn (\App\Modules\Catalog\Models\Barcode $barcode): array => [
+            ->map(fn (Barcode $barcode): array => [
                 'id' => $barcode->id,
                 'barcode' => $barcode->barcode,
                 'source' => $barcode->source,
@@ -423,8 +457,25 @@ new #[Title('Product Masters')] class extends Component {
         </flux:card>
     @else
         <div class="catalog-table-frame" data-guide="products-table">
+            <x-tables.bulk-actions
+                :page-ids="$products->pluck('id')->all()"
+                :selected-ids="$selectedIds"
+                :selected-count="count($selectedIds)"
+                :page-count="$products->count()"
+            >
+                <x-slot:actions>
+                    @can('products_categories_brands.edit')
+                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleProductStatus" wire:confirm="{{ __('Toggle status for the selected products?') }}">
+                            {{ __('Toggle status') }}
+                        </flux:button>
+                    @endcan
+                </x-slot:actions>
+            </x-tables.bulk-actions>
             <flux:table aria-label="{{ __('Product masters') }}">
                 <flux:table.columns>
+                    <flux:table.column>
+                        <span class="sr-only">{{ __('Select') }}</span>
+                    </flux:table.column>
                     <flux:table.column>{{ __('Item code') }}</flux:table.column>
                     <flux:table.column>{{ __('Product name') }}</flux:table.column>
                     <flux:table.column>{{ __('Type') }}</flux:table.column>
@@ -436,6 +487,9 @@ new #[Title('Product Masters')] class extends Component {
                 <flux:table.rows>
                     @foreach ($products as $product)
                         <flux:table.row :key="$product->id">
+                            <flux:table.cell>
+                                <input type="checkbox" value="{{ $product->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select product :code', ['code' => $product->item_code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" />
+                            </flux:table.cell>
                             <flux:table.cell class="whitespace-nowrap"><span class="catalog-code-chip">{{ $product->item_code }}</span></flux:table.cell>
                             <flux:table.cell>
                                 <div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</div>

@@ -5,6 +5,7 @@ use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Store;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
@@ -16,15 +17,19 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Branch Management')] class extends Component {
-    use WithPagination;
+new #[Title('Branch Management')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
 
     // Branch Modal State
     public bool $showBranchModal = false;
+
     public ?int $editingBranchId = null;
+
     public array $branchForm = [
         'code' => '',
         'name_ar' => '',
@@ -39,15 +44,22 @@ new #[Title('Branch Management')] class extends Component {
 
     // Mapping Modal State
     public bool $showMappingModal = false;
+
     public ?int $mappingBranchId = null;
+
     public ?string $mappingBranchName = null;
+
     public ?int $selectedStoreId = null;
+
     public string $mappingApprovalNotes = '';
 
     // History Modal State
     public bool $showHistoryModal = false;
+
     public ?int $historyBranchId = null;
+
     public ?string $historyBranchName = null;
+
     public array $historyRecords = [];
 
     public function mount(): void
@@ -131,7 +143,7 @@ new #[Title('Branch Management')] class extends Component {
             $action->execute($validated, $this->editingBranchId);
             Flux::toast(variant: 'success', text: $this->editingBranchId ? __('Branch updated successfully.') : __('Branch created successfully.'));
             $this->showBranchModal = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -143,8 +155,23 @@ new #[Title('Branch Management')] class extends Component {
         try {
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Branch status updated successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
+        }
+    }
+
+    public function bulkToggleBranchStatus(SaveBranchAction $action): void
+    {
+        Gate::authorize('branches_stores.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $action->toggleStatus($id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Branch status updated for :count records.', ['count' => $count]));
+        } catch (Exception $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
 
@@ -155,7 +182,7 @@ new #[Title('Branch Management')] class extends Component {
         try {
             $action->delete($id);
             Flux::toast(variant: 'success', text: __('Branch deleted successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -190,7 +217,7 @@ new #[Title('Branch Management')] class extends Component {
             );
             Flux::toast(variant: 'success', text: __('Branch selling store mapped successfully.'));
             $this->showMappingModal = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -261,20 +288,20 @@ new #[Title('Branch Management')] class extends Component {
     <?php
     $query = Branch::visibleTo(auth()->user())->with(['stores', 'activeSellingStoreMapping.store']);
 
-    if (!empty($search)) {
-        $query->where(function ($q) use ($search) {
-            $q->where('code', 'like', '%' . $search . '%')
-              ->orWhere('name_ar', 'like', '%' . $search . '%')
-              ->orWhere('name_en', 'like', '%' . $search . '%');
-        });
-    }
+if (! empty($search)) {
+    $query->where(function ($q) use ($search) {
+        $q->where('code', 'like', '%'.$search.'%')
+            ->orWhere('name_ar', 'like', '%'.$search.'%')
+            ->orWhere('name_en', 'like', '%'.$search.'%');
+    });
+}
 
-    if ($statusFilter !== 'all') {
-        $query->where('status', $statusFilter);
-    }
+if ($statusFilter !== 'all') {
+    $query->where('status', $statusFilter);
+}
 
-    $branches = $query->orderBy('code')->paginate(10);
-    ?>
+$branches = $query->orderBy('code')->paginate(10);
+?>
 
     @if ($branches->isEmpty())
         <flux:card class="p-8 text-center space-y-3" data-guide="branches-empty">
@@ -292,8 +319,16 @@ new #[Title('Branch Management')] class extends Component {
             </div>
         </flux:card>
     @else
+        <x-tables.bulk-actions :page-ids="$branches->pluck('id')->all()" :selected-ids="$selectedIds" :selected-count="count($selectedIds)" :page-count="$branches->count()">
+            <x-slot:actions>
+                @can('branches_stores.edit')
+                    <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleBranchStatus" wire:confirm="{{ __('Toggle status for the selected branches?') }}">{{ __('Toggle status') }}</flux:button>
+                @endcan
+            </x-slot:actions>
+        </x-tables.bulk-actions>
         <flux:table data-guide="branches-table">
             <flux:table.columns>
+                <flux:table.column><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                 <flux:table.column sortable>{{ __('Code') }}</flux:table.column>
                 <flux:table.column>{{ __('Branch Name (AR / EN)') }}</flux:table.column>
                 <flux:table.column>{{ __('Phone') }}</flux:table.column>
@@ -307,6 +342,7 @@ new #[Title('Branch Management')] class extends Component {
             <flux:table.rows>
                 @foreach ($branches as $branch)
                     <flux:table.row :key="$branch->id">
+                        <flux:table.cell><input type="checkbox" value="{{ $branch->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select branch :code', ['code' => $branch->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell>
                         <flux:table.cell class="font-mono font-medium">
                             {{ $branch->code }}
                         </flux:table.cell>
@@ -471,13 +507,13 @@ new #[Title('Branch Management')] class extends Component {
         </div>
 
         <?php
-        $availableSellingStores = Store::visibleTo(auth()->user())
-            ->where('type', 'selling')
-            ->where('status', 'active')
-            ->when($mappingBranchId, fn ($query, $branchId) => $query->where('branch_id', $branchId))
-            ->orderBy('code')
-            ->get();
-        ?>
+    $availableSellingStores = Store::visibleTo(auth()->user())
+        ->where('type', 'selling')
+        ->where('status', 'active')
+        ->when($mappingBranchId, fn ($query, $branchId) => $query->where('branch_id', $branchId))
+        ->orderBy('code')
+        ->get();
+?>
 
         <form wire:submit="saveSellingStoreMapping" class="space-y-4">
             <flux:select wire:model="selectedStoreId" :label="__('Selling Store')" required>

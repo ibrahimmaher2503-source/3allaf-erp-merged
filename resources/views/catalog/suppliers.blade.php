@@ -6,6 +6,7 @@ use App\Modules\Catalog\Actions\ToggleSupplierStatusAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
+use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -13,14 +14,18 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Supplier Masters')] class extends Component {
-    use WithPagination;
+new #[Title('Supplier Masters')] class extends Component
+{
+    use WithBulkSelection, WithPagination;
 
     public string $search = '';
+
     public string $statusFilter = 'all';
 
     public bool $showSupplierModal = false;
+
     public ?int $editingSupplierId = null;
+
     public array $supplierForm = [
         'code' => '',
         'name_ar' => '',
@@ -36,10 +41,13 @@ new #[Title('Supplier Masters')] class extends Component {
     ];
 
     public bool $showDetailModal = false;
+
     public ?int $viewingSupplierId = null;
+
     public string $detailTab = 'profile';
 
     public bool $showLinkProductModal = false;
+
     public array $productLinkForm = [
         'product_id' => '',
         'supplier_item_code' => '',
@@ -138,7 +146,7 @@ new #[Title('Supplier Masters')] class extends Component {
                 text: $this->editingSupplierId ? __('Supplier master updated successfully.') : __('Supplier master created successfully.')
             );
             $this->showSupplierModal = false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('supplierForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -151,7 +159,22 @@ new #[Title('Supplier Masters')] class extends Component {
         try {
             $action->execute($id);
             Flux::toast(variant: 'success', text: __('Supplier status updated successfully.'));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+        }
+    }
+
+    public function bulkToggleSupplierStatus(ToggleSupplierStatusAction $action): void
+    {
+        Gate::authorize('suppliers.edit');
+
+        try {
+            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
+                $action->execute($id);
+            });
+            $this->clearBulkSelection();
+            Flux::toast(variant: 'success', text: __('Supplier status updated for :count records.', ['count' => $count]));
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
@@ -194,7 +217,7 @@ new #[Title('Supplier Masters')] class extends Component {
             ]);
             Flux::toast(variant: 'success', text: __('Product linked to supplier successfully.'));
             $this->showLinkProductModal = false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->addError('productLinkForm', $exception->getMessage());
             Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
@@ -276,10 +299,25 @@ new #[Title('Supplier Masters')] class extends Component {
         </flux:card>
 
         <flux:card class="overflow-hidden p-0" data-guide="suppliers-table">
+            <div class="border-b border-border p-4">
+                <x-tables.bulk-actions
+                    :page-ids="$suppliers->pluck('id')->all()"
+                    :selected-ids="$selectedIds"
+                    :selected-count="count($selectedIds)"
+                    :page-count="$suppliers->count()"
+                >
+                    <x-slot:actions>
+                        @if ($canEdit)
+                            <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleSupplierStatus" wire:confirm="{{ __('Toggle status for the selected suppliers?') }}">{{ __('Toggle status') }}</flux:button>
+                        @endif
+                    </x-slot:actions>
+                </x-tables.bulk-actions>
+            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-border">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider"><span class="sr-only">{{ __('Select') }}</span></th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ __('Supplier code') }}</th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ __('Bilingual name') }}</th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ __('Contact info') }}</th>
@@ -293,6 +331,7 @@ new #[Title('Supplier Masters')] class extends Component {
                     <tbody class="divide-y divide-border bg-white dark:bg-zinc-900">
                         @forelse ($suppliers as $supplier)
                             <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
+                                <td class="px-4 py-3 text-sm"><input type="checkbox" value="{{ $supplier->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select supplier :code', ['code' => $supplier->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></td>
                                 <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">
                                     <span class="catalog-code-chip">{{ $supplier->code }}</span>
                                 </td>
