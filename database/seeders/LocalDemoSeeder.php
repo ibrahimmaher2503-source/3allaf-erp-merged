@@ -15,6 +15,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -50,8 +51,8 @@ class LocalDemoSeeder extends Seeder
             [
                 'name_ar' => 'توي آند جوي - بيانات تجريبية',
                 'name_en' => 'TOY & JOY - Local Demo',
-                'currency_code' => 'TBD',
-                'currency_symbol' => 'TBD',
+                'currency_code' => 'EGP',
+                'currency_symbol' => 'ج.م',
                 'timezone' => 'Africa/Cairo',
                 'locale_default' => 'ar',
                 'status' => 'active',
@@ -328,17 +329,7 @@ class LocalDemoSeeder extends Seeder
                 'updated_by' => $admin->id,
             ],
         );
-        $po1->lines()->delete();
-        $po1->lines()->create([
-            'product_id' => $prod1->id,
-            'line_number' => 1,
-            'quantity_ordered' => 10.0000,
-            'quantity_received' => 0.0000,
-            'unit_cost' => 15.0000,
-            'subtotal' => 150.0000,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
+        $this->ensurePurchaseOrderLine($po1, $prod1, 10.0000, 15.0000, 150.0000, $admin->id);
 
         // 2. Submitted PO
         $po2 = PurchaseOrder::query()->updateOrCreate(
@@ -362,17 +353,7 @@ class LocalDemoSeeder extends Seeder
                 'submitted_by' => $admin->id,
             ],
         );
-        $po2->lines()->delete();
-        $po2->lines()->create([
-            'product_id' => $prod2->id,
-            'line_number' => 1,
-            'quantity_ordered' => 20.0000,
-            'quantity_received' => 0.0000,
-            'unit_cost' => 10.0000,
-            'subtotal' => 200.0000,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
+        $this->ensurePurchaseOrderLine($po2, $prod2, 20.0000, 10.0000, 200.0000, $admin->id);
 
         // 3. Cancelled PO
         $po3 = PurchaseOrder::query()->updateOrCreate(
@@ -394,16 +375,33 @@ class LocalDemoSeeder extends Seeder
                 'cancelled_by' => $admin->id,
             ],
         );
-        $po3->lines()->delete();
-        $po3->lines()->create([
-            'product_id' => $prod1->id,
+        $this->ensurePurchaseOrderLine($po3, $prod1, 5.0000, 15.0000, 75.0000, $admin->id);
+    }
+
+    private function ensurePurchaseOrderLine(
+        PurchaseOrder $purchaseOrder,
+        Product $product,
+        float $quantity,
+        float $unitCost,
+        float $subtotal,
+        int $adminId,
+    ): void {
+        $lineIds = $purchaseOrder->lines()->pluck('id');
+
+        if ($lineIds->isNotEmpty() && PurchaseInvoiceLine::query()->whereIn('purchase_order_line_id', $lineIds)->exists()) {
+            return;
+        }
+
+        $purchaseOrder->lines()->delete();
+        $purchaseOrder->lines()->create([
+            'product_id' => $product->id,
             'line_number' => 1,
-            'quantity_ordered' => 5.0000,
+            'quantity_ordered' => $quantity,
             'quantity_received' => 0.0000,
-            'unit_cost' => 15.0000,
-            'subtotal' => 75.0000,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
+            'unit_cost' => $unitCost,
+            'subtotal' => $subtotal,
+            'created_by' => $adminId,
+            'updated_by' => $adminId,
         ]);
     }
 

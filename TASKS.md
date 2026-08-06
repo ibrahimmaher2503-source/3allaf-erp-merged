@@ -108,7 +108,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Optional step:** Printer profile review. Production device acceptance remains a separate UAT gate.
 - **Safety:** No defaults, reason catalog entries, approval limits, production users, or approvals are created automatically. Pending/locked-only financial versions do not count as ready; only an effective, non-expired version linked to an approved `ApprovalRecord` counts.
 - **Routes / permissions:** `/dashboard` shows the setup panel when required data is missing; `/initial-setup` is limited to `company_settings.edit`. Existing settings, branches, authorization baseline, and supplier-return settings screens remain the data-entry surfaces.
-- **Evidence:** Browser-verified with Local Demo Administrator at `/dashboard` and `/initial-setup`; non-administrative Local Demo Cashier received the existing Access Denied screen; console reported zero JavaScript errors.
+- **Evidence:** Browser-verified with Local Demo Administrator at `/dashboard` and `/initial-setup`; after explicit owner authorization, Demo company identity is populated as `TOY & JOY - Local Demo / EGP / ج.م`, readiness is `3/5 (60%)`, and the next required link targets `/purchasing/returns/settings`. Non-administrative Local Demo Cashier received the existing Access Denied screen; console reported zero JavaScript errors. `DemoSeeder` completed successfully on the local SQLite database after preserving invoice-referenced purchase-order lines.
 
 ### TSK-005 — Configure Company, Payment, Tax, Numbering, and Printer Settings
 

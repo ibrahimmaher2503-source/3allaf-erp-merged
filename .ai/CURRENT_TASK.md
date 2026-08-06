@@ -4,7 +4,7 @@
 
 The Initial Setup Dashboard local/dev slice is **Implemented and browser-verified**. `/dashboard` now derives readiness from authoritative data and shows a setup panel while required owner inputs are missing. `/initial-setup` provides the full permission-gated wizard and links to the existing data-entry screens.
 
-The current local state is intentionally incomplete: company identity is missing required values, `supplier_return_reasons=0`, and no approved/effective supplier-return financial versions exist. This is expected Demo/Local evidence, not Production/UAT sign-off.
+The current local state is intentionally incomplete: the authorized Local Demo company identity is now populated with `TOY & JOY - Local Demo`, `EGP`, and `ج.م`; `supplier_return_reasons=0`, and no approved/effective supplier-return financial versions exist. This is expected Demo/Local evidence, not Production/UAT sign-off.
 
 **UI completion:** The wizard now has an Arabic-first visual hierarchy, a clear next-step CTA, progress/legend summary, numbered status cards, explicit no-demo-data guidance, and a session-backed Arabic/English switch in the page header.
 

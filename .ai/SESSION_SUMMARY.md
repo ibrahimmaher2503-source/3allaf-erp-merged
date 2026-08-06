@@ -13,6 +13,13 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Owner-authorized Local Demo company setup
+
+- **Agent / scope:** Owner explicitly authorized Demo data only. Public Production runtime was not mutated.
+- **Completed:** Verified port `8000` separately as repository-local `APP_ENV=local`, `DEMO_AUTH=true`, `APP_DEBUG=false`, SQLite `database/database.sqlite`. Updated `LocalDemoSeeder` company identity to `TOY & JOY - Local Demo`, currency `EGP`, and symbol `ج.م`; corrected idempotent PO line handling so existing invoice-referenced lines are preserved instead of deleted.
+- **Verification actually run:** Local `DemoSeeder` completed successfully after the correction; PHP lint/Pint/PHPStan passed; snapshot returned `3/5` required steps (`60%`); browser showed the same `3 / 5` and linked the next required step to `/purchasing/returns/settings`.
+- **Boundary:** Supplier-return reasons remain `0`; approved/effective financial versions remain `0`; values are Demo-only and not Production/UAT approval. No secrets were displayed or stored.
+
 ## 2026-08-07 - Initial Setup Arabic UI and Visual Polish
 
 - **Agent / scope:** Owner-directed completion of the Local/Dev first-launch experience; no production values, approvals, or Demo Auth exposure.

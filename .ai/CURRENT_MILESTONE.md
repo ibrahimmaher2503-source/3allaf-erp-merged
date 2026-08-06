@@ -3,7 +3,7 @@
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** Initial Setup Dashboard / First Launch Configuration (cross-cutting local slice)
 **Status:** Implemented for Local/Dev; Production/UAT and DM 2.2 exit gates remain open.
-**Progress:** `/dashboard` now derives and displays setup readiness; `/initial-setup` presents six permission-gated steps linked to authoritative existing screens. Current Demo state is `2/5` required steps complete (`40%`); no owner values or approvals were invented.
+**Progress:** `/dashboard` now derives and displays setup readiness; `/initial-setup` presents six permission-gated steps linked to authoritative existing screens. Current Local Demo state is `3/5` required steps complete (`60%`): company identity is explicitly seeded as `TOY & JOY - Local Demo / EGP / ج.م` under owner authorization; supplier-return reasons and approved/effective financial versions remain empty. No production owner values or approvals were invented.
 **Started:** 2026-08-06
 
 ## Active Scope
