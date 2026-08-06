@@ -2,7 +2,7 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Derived implementation policy — **not yet owner-approved**
+**Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-01–PUR-06, AC-PUR-05
 **Blockers:** BLK-008 (numbering, print templates), BLK-010 (receipt semantics)
 **Depends on:** TSK-014 approved local Purchase Order slice
@@ -39,11 +39,11 @@ If the owner chooses B, this is a **PRD conflict** and must be recorded in `.ai/
 | Partial receipt allowed? | Only under Model B | OI-RCV-02 |
 | Invoice without a PO allowed? | Yes, with a distinct permission and reason | OI-RCV-03 |
 | Over-receipt allowed? | No by default | OI-RCV-04 |
-| Over-receipt tolerance if allowed | PENDING — percentage or absolute, per product or per line | OI-RCV-05 |
+| Over-receipt tolerance if allowed | DEC-050 approved baseline — percentage or absolute, per product or per line | OI-RCV-05 |
 | Who approves over-receipt | Approval permission, not a role default | OI-RCV-06 |
 | Invoice quantity ≠ PO quantity | Block at submission; require approval to proceed | OI-RCV-07 |
 | Invoice cost ≠ PO cost | Warn always; approval required above a tolerance | OI-RCV-08 |
-| Cost variance approval threshold | PENDING | OI-RCV-08 |
+| Cost variance approval threshold | DEC-050 approved baseline | OI-RCV-08 |
 | One invoice → many POs | Proposed: yes, lines carry their own PO line reference | OI-RCV-09 |
 | One PO → many invoices | Proposed: yes, required for partial supply | OI-RCV-10 |
 
@@ -74,7 +74,7 @@ Numbering uses the existing `document_sequences` table and `AllocatePurchaseOrde
 | Goods Receipt (Model B only) | `GRN-{YYYY}-{00000}` | OI-NUM-01 |
 | Supplier Return | `PRET-{YYYY}-{00000}` | OI-NUM-01 |
 
-Rules: numbers are allocated inside the approval transaction, never at draft creation; gaps are permitted and must never be back-filled; per-branch versus company-wide sequencing is **PENDING — OI-NUM-02**.
+Rules: numbers are allocated inside the approval transaction, never at draft creation; gaps are permitted and must never be back-filled; per-branch versus company-wide sequencing is **DEC-050 approved baseline — OI-NUM-02**.
 
 ---
 

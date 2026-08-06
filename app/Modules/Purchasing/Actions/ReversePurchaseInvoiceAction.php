@@ -29,6 +29,9 @@ final class ReversePurchaseInvoiceAction
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session.'));
             }
+            if ($invoice->status === 'reversed') {
+                return $invoice->fresh(['lines']);
+            }
             if ($invoice->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved invoices can be reversed.'));
             }

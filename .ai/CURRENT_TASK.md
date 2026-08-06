@@ -2,16 +2,16 @@
 
 ## Current state
 
-TSK-015 local/dev implementation and verification are **Completed for the local/demo boundary**. Fresh local SQLite rebuild and `DemoSeeder` passed; invoice calculation, lifecycle, posting/WAC, staged invalid import, print, and guest permission boundaries have reproducible evidence. Production, UAT, Owner Inputs, and Phase gates remain open.
+TSK-015 local/dev implementation and verification are **Completed for the local/demo boundary**. Fresh local SQLite rebuild and `DemoSeeder` passed; invoice calculation, lifecycle, posting/WAC, staged invalid import, print, and guest permission boundaries have reproducible evidence. The 83 documented Owner Inputs are now answered under DEC-050 for the local policy baseline. Production operational data, UAT, and Phase gates remain open.
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 
 ## Documentation synchronization — 2026-08-06
 
 - `docs/35 §4` now includes the implemented local `Approved` PO state and explicitly separates the DEC-044 local approval/close slice from downstream receipt-driven `Partially Received` / `Received` transitions.
-- `docs/43` numbering, receipt, cost, and production policy proposals remain owner-gated; the local allocator is not being changed or promoted to a production numbering decision.
+- `docs/41`–`docs/45` documented proposals are adopted as the DEC-050 local policy baseline; real production branches/stores/users/printers/cutover inputs remain separate prerequisites.
 - `docs/38` A4 output requirements remain the production contract. The current PO print is a bilingual local/demo baseline; approver timestamp, reprint history, printer selection, and final print policy remain outside this local closure.
-- Created `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` as a customizable template-only artifact. It contains canonical `docs/42 §3` headers, a separate customization map, a fictitious example sheet, input validation, and no formulas/macros/production data. Import workflow and stock/financial posting remain unimplemented.
+- Created `docs/templates/TSK-015-purchase-invoice-import-template.xlsx` as the approved local import artifact under DEC-050. It contains canonical headers, customization map, fictitious example, input validation, and no formulas/macros/production data.
 - Started TSK-015 Slice B locally with `financial_setting_versions`, `FinancialSettingVersion`, and a read-only `/purchasing/invoices/settings` screen. The targeted migration ran successfully with zero rows; settings writes/default seeding/posting remain disabled. Full migration is blocked by pre-existing SQLite drift (`categories` already exists).
 ## A-01 line reference
 
@@ -60,11 +60,11 @@ The canonical PO implementation is under `app/Modules/Purchasing` and uses the e
 
 **Local/dev defaults explicitly adopted for this engineering slice:** approval receives stock automatically; over-receipt is blocked; invoice numbering uses `PINV-` only when approved; reversal requires sufficient on-hand; import creates Draft invoices only and never approves them; no sale-price mutation.
 
-**Production/UAT boundary:** `.ai/TSK-015_OWNER_INPUTS.md` remains the authority for production values and has unresolved inputs. The local defaults above are not owner approval, production configuration, UAT acceptance, or release readiness. Full migration remains affected by pre-existing SQLite drift (`categories` already exists); targeted migrations were applied without changing historical migrations.
+**Production/UAT boundary:** DEC-050 answers the 83 documented policy keys for the local baseline. Real master data, named approvers, printer/device assignments, cutover timestamp, UAT, and release gates remain open. Full migration remains affected by pre-existing SQLite drift (`categories` already exists); targeted migrations were applied without changing historical migrations.
 
 **Verification plan:** PHP lint, Pint, PHPStan, Blade cache, route discovery, `git diff --check`, invalid-import smoke, number-sequence smoke, guest browser redirects, and authenticated browser verification when a safe local session is available. No PHPUnit/Pest or automated browser tests are claimed.
 
-**Non-claims:** this local implementation does not close TSK-015 production/UAT gates, does not convert blank Owner Inputs into approvals, and does not authorize real financial or stock data.
+**Non-claims:** this local implementation does not close production/UAT gates or authorize real financial/stock data; DemoSeeder remains local-only.
 ## Current continuation — observability, identity, and delivery controls
 
 - Local/staging query budget, slow-query channel, dev Debugbar, and local non-production lazy-loading guard are being added under DEC-046.

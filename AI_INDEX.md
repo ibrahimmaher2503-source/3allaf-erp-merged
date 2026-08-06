@@ -146,7 +146,7 @@ Abbreviations: `A` = architecture topics above; `D` = `docs/36-module-data-contr
 
 The following numbered documents are now present in the repository and must be read only when their topic is relevant:
 
-- `docs/41`–`docs/46` — TSK-015 purchase cost/tax/discount, invoice import, receiving/matching, opening stock, authorization, and financial configuration/cutover specifications; owner inputs remain pending.
+- `docs/41`–`docs/46` — TSK-015 purchase cost/tax/discount, invoice import, receiving/matching, opening stock, authorization, and financial configuration/cutover specifications; the documented local policy baseline is approved under DEC-050; production operational inputs remain pending.
 - `docs/47-inventory-ledger-and-cost-flow-policy.md` — inventory movement ledger, cost flow, valuation, and movement invariants.
 - `docs/48-pos-financial-calculation-policy.md` — POS arithmetic, tax/discount ordering, payments, receipts, gift receipts, and cashier-shift boundaries.
 - `docs/49-validation-and-error-contracts.md` — validation layers, error shape, state/concurrency, imports, and shared UI states.

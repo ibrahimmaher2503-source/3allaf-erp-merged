@@ -2,11 +2,11 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Derived implementation policy based on the approved PRD — **not yet owner-approved**
+**Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-04, PUR-05, MD-01, INV-01
 **Blockers:** BLK-008 (currency, tax, precision), BLK-010 (purchasing terms, discounts/tax)
 **Owner-configurable values:** Precision, rounding mode, tax applicability/rate, discount limits
-**Production decision pending:** Every value marked `PENDING` below. Answers are collected in `.ai/TSK-015_OWNER_INPUTS.md` and must be recorded in `.ai/DECISIONS.md` before TSK-015 code is written.
+**Production boundary:** DEC-050 approves the documented values for the local/dev baseline. Real production tax registration, currency configuration, and release/UAT evidence remain environment and owner-operational prerequisites.
 
 ---
 
@@ -26,12 +26,12 @@ This policy defines how a purchase invoice converts quantities, unit costs, disc
 | Approval posts an auditable stock movement atomically | PRD Requirement (PUR-05) |
 | Money is fixed decimal, never binary floating point | Approved standard (`docs/09`, `docs/07`) |
 | Cost fields are separately permissioned | Approved standard (`docs/22` §247) |
-| Exact decimal places for unit cost / line / document / WAC | **PENDING — OI-COST-01** |
-| Rounding mode | **PENDING — OI-COST-02** |
-| Tax inside or outside inventory cost | **PENDING — OI-COST-05** |
-| Discount reduces inventory cost or not | **PENDING — OI-COST-06** |
-| Duplicate product line handling | **PENDING — OI-COST-09** |
-| Currency and multi-currency support | **PENDING — OI-COST-10** |
+| Exact decimal places for unit cost / line / document / WAC | **DEC-050 approved baseline — OI-COST-01** |
+| Rounding mode | **DEC-050 approved baseline — OI-COST-02** |
+| Tax inside or outside inventory cost | **DEC-050 approved baseline — OI-COST-05** |
+| Discount reduces inventory cost or not | **DEC-050 approved baseline — OI-COST-06** |
+| Duplicate product line handling | **DEC-050 approved baseline — OI-COST-09** |
+| Currency and multi-currency support | **DEC-050 approved baseline — OI-COST-10** |
 
 ---
 
@@ -61,7 +61,7 @@ Rules that hold regardless of the owner's answer:
 
 ## 4. Calculation Order
 
-Proposed canonical order — **PENDING OI-COST-07**:
+Proposed canonical order — **DEC-050 approved baseline OI-COST-07**:
 
 ```
 1. quantity                    (validated, fractional only where permitted)
@@ -80,7 +80,7 @@ The implementation must expose this order as a single named calculation service 
 
 ## 5. Weighted-Average Cost
 
-Proposed formula — **PENDING OI-COST-03**:
+Proposed formula — **DEC-050 approved baseline OI-COST-03**:
 
 ```
 new_average = ((existing_on_hand x existing_average) + (received_quantity x received_unit_cost_basis))
@@ -126,7 +126,7 @@ If the answer to OI-TAX-01 is "no tax in Phase 1", the invoice must still store 
 | Discount type | Percentage and fixed amount both supported | OI-DISC-01 |
 | Level | Line and document, with document discount allocated to lines pro-rata by line value | OI-DISC-02 |
 | Before or after tax | Before tax | OI-DISC-03 |
-| Maximum discount | PENDING | OI-DISC-04 |
+| Maximum discount | DEC-050 approved baseline | OI-DISC-04 |
 | Who may exceed the limit | Approval permission, never a role default | OI-DISC-05 |
 | Zero discount | Allowed | OI-DISC-06 |
 | Negative discount | Always rejected | OI-DISC-06 |

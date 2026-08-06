@@ -119,7 +119,10 @@ final class ApprovePurchaseInvoiceAction
             }
             $newReceived = $this->add($poLine->quantity_received, $line->quantity, 6);
             if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
-                throw new InvalidArgumentException(__('Over-receipt is not allowed by the local default policy.'));
+                throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
+            }
+            if ($this->compare($newReceived, $poLine->quantity_ordered) < 0) {
+                throw new InvalidArgumentException(__('Partial receipt is not allowed under invoice-posts-stock Model A; invoice quantity must complete the PO line.'));
             }
             $poLine->update(['quantity_received' => $newReceived]);
         }

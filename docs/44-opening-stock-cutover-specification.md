@@ -2,7 +2,7 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Derived implementation specification — **not yet owner-approved**
+**Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** INV-01, INV-03, PUR-05
 **Blockers:** BLK-010 (opening-stock cutover), BLK-012 (opening inventory method)
 

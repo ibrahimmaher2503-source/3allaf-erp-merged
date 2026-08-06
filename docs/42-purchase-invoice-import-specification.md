@@ -2,10 +2,10 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Derived implementation specification — **not yet owner-approved**
+**Status:** Owner-approved local policy baseline — DEC-050 (2026-08-06)
 **Authority:** PUR-04, AC-PUR-04
 **Blockers:** BLK-010 (purchase templates), BLK-009 (product/barcode identity)
-**Production decision pending:** Official template, column names, limits, and duplicate policy — collected in `.ai/TSK-015_OWNER_INPUTS.md`
+**Production boundary:** DEC-050 approves the documented template, columns, limits, and duplicate policy for local/dev. Real supplier/product master data and UAT evidence remain required before production use.
 
 ---
 
@@ -22,14 +22,14 @@ Defines the staged Excel/CSV import path for purchase invoices. It reuses the ex
 | Import must be staged and validated before any stock effect | PRD Requirement (AC-PUR-04) |
 | Import errors are isolated and downloadable | Approved pattern (TSK-012) |
 | Unsafe file is blocked with no stock effect | PRD Requirement (AC-PUR-04) |
-| Official template and exact column names | **PENDING — OI-IMP-01/02** |
-| Mandatory vs optional fields | **PENDING — OI-IMP-03** |
-| Matching keys | **PENDING — OI-IMP-04** |
-| File size / row limits / accepted types | **PENDING — OI-IMP-05** |
-| Bad-row disposition | **PENDING — OI-IMP-07** |
-| Duplicate prevention key | **PENDING — OI-IMP-08** |
-| Retry semantics | **PENDING — OI-IMP-09** |
-| Import mode (create / update / both) | **PENDING — OI-IMP-10** |
+| Official template and exact column names | **DEC-050 approved baseline — OI-IMP-01/02** |
+| Mandatory vs optional fields | **DEC-050 approved baseline — OI-IMP-03** |
+| Matching keys | **DEC-050 approved baseline — OI-IMP-04** |
+| File size / row limits / accepted types | **DEC-050 approved baseline — OI-IMP-05** |
+| Bad-row disposition | **DEC-050 approved baseline — OI-IMP-07** |
+| Duplicate prevention key | **DEC-050 approved baseline — OI-IMP-08** |
+| Retry semantics | **DEC-050 approved baseline — OI-IMP-09** |
+| Import mode (create / update / both) | **DEC-050 approved baseline — OI-IMP-10** |
 
 ---
 

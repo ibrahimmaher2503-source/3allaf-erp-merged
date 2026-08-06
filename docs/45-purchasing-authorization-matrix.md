@@ -2,9 +2,9 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Extension proposal for `docs/04-roles-permissions.md` — **not yet owner-approved**
+**Status:** Owner-approved local policy baseline extending `docs/04-roles-permissions.md` — DEC-050 (2026-08-06)
 **Authority:** DEC-038 (canonical matrix), NFR-03
-**Blockers:** BLK-007 is Closed for the canonical matrix; the `R` cells for purchasing remain unresolved
+**Boundary:** DEC-050 adopts this extension for local/dev enforcement; real production role assignments, branch/store scopes, and UAT grant/deny evidence remain required.
 
 ---
 

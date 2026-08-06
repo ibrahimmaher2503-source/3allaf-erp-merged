@@ -2,7 +2,7 @@
 
 **Scope of review:** all 40 files in `docs/`, plus `.ai/` control files, `TASKS.md`, `AI_INDEX.md`, `AGENTS.md`, and the current Purchasing/Catalog/Platform implementation.
 **Question asked:** does the existing documentation already answer the TSK-015 owner-input requirements?
-**Answer:** No. The requirements are *named* across the existing docs, but no numeric value, formula, or rounding rule is defined anywhere in the repository.
+**Answer:** The documented proposal set is now adopted as the local/dev policy baseline under DEC-050. Production operational inputs (real branches/stores/users/devices/cutover) remain separate prerequisites and are not invented.
 
 ---
 
@@ -58,23 +58,22 @@ So the owner-input request is not extra scope. It is the exact set of answers BL
 | `docs/45-purchasing-authorization-matrix.md` | Section 8 |
 | `.ai/TSK-015_OWNER_INPUTS.md` | All 8 sections as keyed questions, including section 7 master-data templates |
 
-Every proposed value in docs 41–45 is marked `PENDING` and carries a decision key (`OI-*`) that maps to a row in the owner-inputs file. Nothing in these files is an approved decision.
+Every documented proposal in docs 41–45 is now marked as the DEC-050 approved local baseline and mapped to the 83 answered OI keys. Operational data rows remain explicitly identified as production prerequisites.
 
 ---
 
-## 5. Required follow-up before coding
+## 5. Reconciliation after explicit owner approval
 
-1. Owner answers `.ai/TSK-015_OWNER_INPUTS.md` — at minimum the seven keys listed in its final section.
-2. Answers are transcribed into `.ai/DECISIONS.md` (the authoritative source per `AI_INDEX.md`).
-3. `docs/41`–`docs/45` are updated from `PENDING` to the approved value, and their Status line changes to approved.
-4. `AI_INDEX.md` Authority Order §7 is extended to cover `docs/30` through `docs/45`.
-5. `.ai/BLOCKERS.md` BLK-008/010/012 rows are updated with the closed items.
-6. `TASKS.md` TSK-015 acceptance criteria reference the approved keys.
+1. DEC-050 is the authoritative approval conversion for the documented proposal set.
+2. `.ai/TSK-015_OWNER_INPUTS.md` contains answers for all 83 keys.
+3. `docs/41`–`docs/45` carry the DEC-050 approved-local-baseline status.
+4. AI_INDEX routing is reconciled to docs/41–45.
+5. BLK-006/008/010/012 remain open only for real operational data, devices, cutover, UAT, or production release—not for the adopted local policy baseline.
 
 Item 4 matters: `AI_INDEX.md` currently routes agents to `docs/30`–`docs/39` only. Without that edit, a future agent will not read docs 41–45.
 
 ---
 
-## 6. Open contradiction to resolve explicitly
+## 6. Resolved contradiction and remaining operational boundary
 
-`OI-RCV-01` is not merely a configuration choice. If the owner requires a separate goods-receipt document, that conflicts with `docs/02-prd.md` §177, which is the highest authority in the index. Per `AI_INDEX.md`, a real conflict must be recorded in `.ai/DECISIONS.md` and implementation must stop until it is resolved. It must not be settled inside a Livewire component.
+`OI-RCV-01` is resolved for the local policy baseline as Model A (invoice approval posts stock), matching `docs/02-prd.md` §177. A separate receipt document is not adopted. Production cutover still requires real store/user/device data and UAT evidence.

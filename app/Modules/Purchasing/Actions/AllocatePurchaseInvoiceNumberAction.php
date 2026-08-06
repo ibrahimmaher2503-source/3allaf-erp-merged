@@ -16,8 +16,8 @@ final class AllocatePurchaseInvoiceNumberAction
             if ($sequence === null) {
                 $sequence = DocumentSequence::query()->create([
                     'document_type' => 'purchase_invoice',
-                    'prefix' => 'PINV-',
-                    'padding_length' => 6,
+                    'prefix' => 'PINV-'.now()->format('Y').'-',
+                    'padding_length' => 5,
                     'next_value' => 1,
                     'reset_rule' => 'never',
                     'status' => 'active',
@@ -29,7 +29,14 @@ final class AllocatePurchaseInvoiceNumberAction
                 throw new \RuntimeException(__('Purchase invoice numbering is not active.'));
             }
 
-            $number = ($sequence->prefix ?: 'PINV-')
+            $sequence->update([
+                'prefix' => 'PINV-'.now()->format('Y').'-',
+                'padding_length' => 5,
+                'policy_notes' => 'DEC-050 approved local policy baseline; company-wide sequence; production cutover remains gated.',
+            ]);
+            $sequence->refresh();
+
+            $number = ($sequence->prefix ?: 'PINV-'.now()->format('Y').'-')
                 .str_pad((string) $sequence->next_value, $sequence->padding_length ?: 6, '0', STR_PAD_LEFT)
                 .($sequence->suffix ?: '');
             $sequence->update(['next_value' => $sequence->next_value + 1, 'lock_version' => $sequence->lock_version + 1]);

@@ -32,8 +32,8 @@ final class PurchaseInvoiceCalculator
         if (bccomp($discountValue, '0', 4) < 0) {
             throw new InvalidArgumentException(__('Discount cannot be negative.'));
         }
-        if (bccomp($taxRate, '0', 4) < 0 || bccomp($taxRate, '100', 4) > 0) {
-            throw new InvalidArgumentException(__('Tax rate must be between 0 and 100.'));
+        if (bccomp($taxRate, '0', 4) !== 0) {
+            throw new InvalidArgumentException(__('Purchase tax is disabled in Phase 1; tax rate must be zero.'));
         }
 
         $gross = bcmul($quantity, $unitCost, 8);
