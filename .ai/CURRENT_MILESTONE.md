@@ -2,8 +2,8 @@
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** DM 2.2 Purchase Cycle — TSK-014 + TSK-015 Slice A / Slice B Foundation / Performance Group A
-**Status:** In Progress — TSK-016 discovery/read-only boundary started; full supplier-return posting remains blocked by `docs/47` CF-05 and return-policy inputs.
-**Progress:** TSK-015 dependency is complete for local/dev. TSK-016 requirements, source/cost/authorization boundaries, and UI contract are being reconciled before any return mutation is enabled.
+**Status:** In Progress — TSK-016 DEC-052 foundation and guarded local vertical slice implemented; posting/source/cost/UI slices continue.
+**Progress:** TSK-015 dependency is complete for local/dev. TSK-016 now has supplier-return schema, empty reason catalog structure, separate permissions, guarded draft/source validation, submit/approve actions, original-line cost posting, and empty-state browser evidence.
 **Started:** 2026-08-04
 
 ## Active Scope

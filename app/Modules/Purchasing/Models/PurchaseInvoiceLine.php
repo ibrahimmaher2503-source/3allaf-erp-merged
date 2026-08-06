@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Models;
 use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class PurchaseInvoiceLine extends Model
 {
@@ -44,5 +45,11 @@ final class PurchaseInvoiceLine extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** @return HasMany<PurchaseReturnLine, $this> */
+    public function supplierReturnLines(): HasMany
+    {
+        return $this->hasMany(PurchaseReturnLine::class, 'purchase_invoice_line_id');
     }
 }

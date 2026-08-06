@@ -44,7 +44,7 @@ class CanonicalAuthorizationSeeder extends Seeder
         }
 
         $modules = [
-            'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts', 'pos_sales', 'suspended_sales', 'shifts_cash_movements', 'customers_children', 'loyalty', 'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments', 'party_bookings_invoices', 'party_operating_orders_consumables', 'rental_assets', 'quotations', 'dashboard_reports', 'audit_logs', 'offline_queue_conflicts',
+            'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns', 'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts', 'pos_sales', 'suspended_sales', 'shifts_cash_movements', 'customers_children', 'loyalty', 'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments', 'party_bookings_invoices', 'party_operating_orders_consumables', 'rental_assets', 'quotations', 'dashboard_reports', 'audit_logs', 'offline_queue_conflicts',
         ];
         foreach ($modules as $module) {
             foreach (['view', 'create', 'edit', 'logical_delete', 'print', 'approve', 'export', 'reverse', 'cancel', 'override'] as $action) {
@@ -62,11 +62,12 @@ class CanonicalAuthorizationSeeder extends Seeder
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
                 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
                 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_invoices_supplier_returns.reverse', 'purchase_invoices_supplier_returns.cancel', 'purchase_invoices_supplier_returns.override',
+                'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse', 'purchase_returns.cancel',
             ],
-            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view'],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],
-            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print'],
-            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve'],
+            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print'],
+            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve'],
             'pricing-officer' => ['products_categories_brands.view'],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export'],
         ];

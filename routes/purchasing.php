@@ -22,6 +22,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices.import');
 
+    $router->livewire('purchasing/returns', 'purchasing::returns')
+        ->middleware('can:purchase_returns.view')
+        ->name('purchasing.returns');
+
     $router->get('purchasing/invoices/{invoice}/print', function (PurchaseInvoice $invoice) {
         Gate::authorize('purchase_invoices_supplier_returns.print');
         $invoice->load(['supplier', 'store', 'purchaseOrder', 'lines.product']);

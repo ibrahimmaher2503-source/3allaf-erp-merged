@@ -2,9 +2,11 @@
 
 ## Current state
 
-TSK-015 local/dev implementation is completed under DEC-050. TSK-016 is now **Started — discovery and bounded read-only contract only**. The full supplier-return mutation/posting path is not authorized yet because `docs/47` remains owner-pending for CF-05 supplier-return cost reversal and the unreferenced-return policy.
+TSK-015 local/dev implementation is completed under DEC-050. TSK-016 is **In Progress** under DEC-052. The first implementation slice now includes the supplier-return schema, source/cost relationships, empty reason catalog structure, and separate permission namespace.
 
-**Allowed now:** requirement reconciliation, source/eligibility/read-only design, reversible schema/model review, permission/audit contract, and a disabled/empty UI boundary if needed. **Forbidden until the cost-flow decision is approved:** approved return posting, `purchase_return` stock movements, WAC/balance mutation, cost fallback defaults, production reason catalogs, or production master-data seeding.
+**DEC-052 adopted rules:** every Phase 1 supplier-return line must reference an approved purchase-invoice line; its cost is the original invoice-line `unit_cost`; no WAC substitution or cost fallback; no-reference cases are rejected and belong to an explicit-cost approved `adjustment_out` path instead. Reason rows and numeric approval limits remain configurable inputs.
+
+**Allowed now:** guarded draft/source validation, reason-required empty-state UI, approval/reversal structure, audit contract, and local verification. **Forbidden:** posting without an approved source/reason, fallback cost, production reason seeding, production master-data seeding, or invented numeric approval values.
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 

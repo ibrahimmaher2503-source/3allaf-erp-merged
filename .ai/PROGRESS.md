@@ -1,8 +1,8 @@
 # Project Progress
 
 **Overall progress:** 1%  
-**Implementation status:** TSK-015 local/dev policy and implementation slice is complete under DEC-050; production/UAT remains open.
-**Documentation status:** Owner-approved local policy baseline recorded; operational production inputs remain separately gated.
+**Implementation status:** TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 is in progress under DEC-052; production/UAT remains open.
+**Documentation status:** DEC-052 adopted original-line supplier-return cost, no fallback, and no-reference rejection. Reason catalog contents and production operational inputs remain separately gated.
 
 TSK-011 closure note (2026-08-04): local product-card fields, approved types, attributes, protected media, detail/full edit, authorization, audit, stale-update behavior, and safe oversized-upload messages are implemented. Composite component lines remain deferred by the insufficient approved Phase 1 contract. The local PHP upload limit is documented as an infrastructure dependency without weakening the application policy. TSK-011 is Completed for approved local scope. No Phase 1/Phase 2 gate, UAT, or production-readiness claim is made.
 

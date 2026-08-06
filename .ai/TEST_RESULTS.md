@@ -1,9 +1,9 @@
 # Test and Verification Status
 
-**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 discovery/read-only boundary started under DEC-051; production/UAT remains open.
-**Current diagnostics:** TSK-015 diagnostics remain green: Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, fresh migration/seed pass, git diff check pass, and manual browser/database evidence pass on 2026-08-06. TSK-016 has no code/mutation verification yet by design.
+**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 DEC-052 local foundation and guarded vertical slice implemented; production/UAT remains open.
+**Current diagnostics:** TSK-016 migration/schema smoke passed; PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, `git diff --check` pass. Browser review passed `/purchasing/returns` under local Demo Auth: empty reason catalog callout, disabled create button, list/table empty state, and 0 console errors.
 **Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
-**TSK-016 blocker:** `docs/47` remains `Derived implementation policy — team-adopted defaults, owner approval outstanding`; CF-05 original purchase-line cost reversal and no-reference fallback must be approved before stock/WAC mutation. Eligible/non-reference return policy, reason catalog, and final approval limits are also pending.
+**TSK-016 remaining:** reason catalog rows, print/reversal/detail completion, and production numeric/master-data/UAT gates remain open. No fallback cost or no-reference return path is permitted.
 
 ## TSK-014 Local Implementation and Manual Verification Evidence — 2026-08-06
 

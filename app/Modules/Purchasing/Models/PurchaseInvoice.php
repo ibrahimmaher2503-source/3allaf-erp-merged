@@ -58,6 +58,12 @@ final class PurchaseInvoice extends Model
         return $this->hasMany(PurchaseInvoiceLine::class);
     }
 
+    /** @return HasMany<PurchaseReturn, $this> */
+    public function supplierReturns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class, 'purchase_invoice_id');
+    }
+
     /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {

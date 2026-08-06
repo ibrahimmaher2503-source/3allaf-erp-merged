@@ -267,6 +267,9 @@ new #[Title('Purchase Invoices')] class extends Component
     <x-slot:actions>
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="shield-check">{{ __('Readiness') }}</flux:button>
         <flux:button href="{{ route('purchasing.invoices.import') }}" variant="subtle" icon="arrow-up-tray">{{ __('Import') }}</flux:button>
+        @can('purchase_returns.view')
+            <flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-uturn-left">{{ __('Supplier returns') }}</flux:button>
+        @endcan
         @can('purchase_invoices_supplier_returns.export')
             <flux:button href="{{ route('purchasing.invoices.export') }}" variant="subtle" icon="arrow-down-tray">{{ __('Export') }}</flux:button>
         @endcan

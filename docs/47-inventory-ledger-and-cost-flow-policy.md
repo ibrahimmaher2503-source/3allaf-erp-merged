@@ -2,9 +2,9 @@
 
 **Product:** TOY & JOY
 **Phase:** Phase 1
-**Status:** Derived implementation policy — team-adopted defaults, owner approval outstanding
+**Status:** DEC-052 engineering baseline adopted for TSK-016 Local/Dev structure and cost-flow enforcement; return-reason catalog content and numeric approval limits remain owner/configuration inputs.
 **Authority:** INV-01–INV-09, PUR-05, PUR-06, RET-02, RET-03, NFR-01, NFR-02
-**Blockers:** BLK-010, BLK-012
+**Blockers:** BLK-010 only for production supplier data; no blocker remains for the TSK-016 local schema/eligibility/cost foundation.
 **Companion to:** `docs/41` (inbound cost), `docs/25` (exception policy)
 
 ---
@@ -33,7 +33,7 @@ This is the highest-consequence gap in the remaining tasks. Every rule here is i
 | Cost applied to a return | **PENDING — CF-02** |
 | Cost carried by a transfer | **PENDING — CF-03** |
 | Cost of an adjustment | **PENDING — CF-04** |
-| Supplier return cost reversal | **PENDING — CF-05** |
+| Supplier return cost reversal | **ADOPTED — DEC-052 / CF-05** |
 | Count reconciliation cost | **PENDING — CF-06** |
 
 ---
@@ -99,9 +99,11 @@ Proposed default cost source: last purchase cost for that product, editable by a
 
 ### CF-05 — Supplier Return
 
-Proposed: reverses at the **original purchase invoice line cost** (PUR-06 requires cost/history traceability), and re-averages the balance.
+**Adopted by DEC-052:** a supplier return is eligible only when every return line references an approved purchase-invoice line. The `purchase_return` movement reverses at that original line's stored `unit_cost`, never at current WAC and never at an inferred or fallback cost. The balance is re-averaged after the signed outbound movement.
 
-Where the original purchase is unavailable, the return requires an explicit cost entry with approval, and must be flagged in supplier reporting as unreferenced.
+A missing source reference is rejected in Phase 1. It is not a cost-selection problem. Legacy/unknown stock follows a separate `adjustment_out` path with explicit cost and approval; it is not a supplier return.
+
+Return reason is required from the `supplier_return_reasons` catalog. The table is intentionally created without seed rows until the owner supplies the reporting/evaluation catalog. Numeric approval limits remain read from `financial_setting_versions` using the DEC-043 defaults; no production values are invented here.
 
 ### CF-06 — Count Reconciliation
 
