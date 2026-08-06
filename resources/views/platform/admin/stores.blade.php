@@ -232,6 +232,39 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
+
+    public function render()
+    {
+        $query = Store::visibleTo(auth()->user())->with(['branch', 'sellingStoreMappings.branch']);
+        $term = trim($this->search);
+
+        if ($term !== '') {
+            $like = '%'.$term.'%';
+            $query->where(fn ($scope) => $scope
+                ->where('code', 'like', $like)
+                ->orWhere('name_ar', 'like', $like)
+                ->orWhere('name_en', 'like', $like));
+        }
+
+        if ($this->branchFilter !== 'all') {
+            $this->branchFilter === 'unassigned'
+                ? $query->whereNull('branch_id')
+                : $query->where('branch_id', (int) $this->branchFilter);
+        }
+
+        if ($this->typeFilter !== 'all') {
+            $query->where('type', $this->typeFilter);
+        }
+
+        if ($this->statusFilter !== 'all') {
+            $query->where('status', $this->statusFilter);
+        }
+
+        return view('platform.admin.stores', [
+            'branchesList' => Branch::visibleTo(auth()->user())->orderBy('code')->get(),
+            'stores' => $query->orderBy('code')->paginate(10),
+        ]);
+    }
 }; ?>
 
 <x-app.page
@@ -262,10 +295,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 size="sm"
             />
 
-            <?php
-            $branchesList = Branch::visibleTo(auth()->user())->orderBy('code')->get();
-?>
-
             <flux:select wire:model.live="branchFilter" size="sm" :label="__('Branch Filter')">
                 <flux:select.option value="all">{{ __('All Branches') }}</flux:select.option>
                 <flux:select.option value="unassigned">{{ __('Unassigned Branch') }}</flux:select.option>
@@ -294,35 +323,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     </flux:card>
 
     <!-- Stores Table -->
-    <?php
-    $query = Store::visibleTo(auth()->user())->with(['branch', 'sellingStoreMappings.branch']);
-
-if (! empty($search)) {
-    $query->where(function ($q) use ($search) {
-        $q->where('code', 'like', '%'.$search.'%')
-            ->orWhere('name_ar', 'like', '%'.$search.'%')
-            ->orWhere('name_en', 'like', '%'.$search.'%');
-    });
-}
-
-if ($branchFilter !== 'all') {
-    if ($branchFilter === 'unassigned') {
-        $query->whereNull('branch_id');
-    } else {
-        $query->where('branch_id', (int) $branchFilter);
-    }
-}
-
-if ($typeFilter !== 'all') {
-    $query->where('type', $typeFilter);
-}
-
-if ($statusFilter !== 'all') {
-    $query->where('status', $statusFilter);
-}
-
-$stores = $query->orderBy('code')->paginate(10);
-?>
 
     @if ($stores->isEmpty())
         <flux:card class="p-8 text-center space-y-3" data-guide="stores-empty">

@@ -246,6 +246,27 @@ new #[Title('Branch Management')] class extends Component
 
         $this->showHistoryModal = true;
     }
+
+    public function render()
+    {
+        $query = Branch::visibleTo(auth()->user())->with(['stores', 'activeSellingStoreMapping.store']);
+
+        if (trim($this->search) !== '') {
+            $term = '%'.trim($this->search).'%';
+            $query->where(fn ($scope) => $scope
+                ->where('code', 'like', $term)
+                ->orWhere('name_ar', 'like', $term)
+                ->orWhere('name_en', 'like', $term));
+        }
+
+        if ($this->statusFilter !== 'all') {
+            $query->where('status', $this->statusFilter);
+        }
+
+        return view('platform.admin.branches', [
+            'branches' => $query->orderBy('code')->paginate(10),
+        ]);
+    }
 }; ?>
 
 <x-app.page
@@ -285,23 +306,6 @@ new #[Title('Branch Management')] class extends Component
     </flux:card>
 
     <!-- Data Table -->
-    <?php
-    $query = Branch::visibleTo(auth()->user())->with(['stores', 'activeSellingStoreMapping.store']);
-
-if (! empty($search)) {
-    $query->where(function ($q) use ($search) {
-        $q->where('code', 'like', '%'.$search.'%')
-            ->orWhere('name_ar', 'like', '%'.$search.'%')
-            ->orWhere('name_en', 'like', '%'.$search.'%');
-    });
-}
-
-if ($statusFilter !== 'all') {
-    $query->where('status', $statusFilter);
-}
-
-$branches = $query->orderBy('code')->paginate(10);
-?>
 
     @if ($branches->isEmpty())
         <flux:card class="p-8 text-center space-y-3" data-guide="branches-empty">
