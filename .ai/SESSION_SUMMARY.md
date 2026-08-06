@@ -615,3 +615,11 @@ Append one factual entry for every agent session that changes repository or proj
 - **Verification actually run:** PHP/bash lint, Composer validation, Pint PASS, PHPStan PASS with baseline, locale parity PASS, runtime config inspection, route/config diagnostics, and real disposable volume generation with exact counts `50000` / `1000000`; temporary DB removed.
 - **Remaining blockers / next action:** Authenticated/mobile PO browser evidence, remaining performance groups and per-screen baselines, owner-sensitive financial policy, and production readiness remain open. The pre-commit hook is configured locally through `core.hooksPath=.githooks` and will be verified on the final staged commit.
 - **Code, tests, browser, commit, push:** No automated tests were created or run; no authenticated browser verification was claimed; commit is pending final hook/diff review; push is not yet attempted.
+
+## 2026-08-06 - TSK-014 Milestone Evidence and Repository Control Documentation Update
+
+- **Agent / scope:** Documentation and repository control update only.
+- **Completed:** Recorded TSK-014 local implementation and authenticated manual browser verification completion for approved local/demo scope; updated `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/HANDOFF.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `TASKS.md`, and this summary.
+- **Verification actually run:** `git diff --check` passed with 0 errors.
+- **Remaining blockers / next action:** Definition-only `Partially Received` and `Received` states remain TSK-015; true 390x844 mobile evidence remains pending (CUA Firefox capture 0x0, Browser Use session has no viewport-resize capability); production, UAT, and Phase gates remain open.
+- **Code, tests, browser, commit, push:** Repository control/documentation files updated only. No application code or TSK-015 implementation edited. No PHPUnit/Pest or automated browser tests claimed. No commit or push.

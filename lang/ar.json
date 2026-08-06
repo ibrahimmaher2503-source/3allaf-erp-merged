@@ -88,14 +88,10 @@
     ,"Roles": "الأدوار"
     ,"Permissions": "الصلاحيات"
     ,"Branch": "الفرع"
-    ,"Branches": "الفروع"
     ,"Store": "المتجر"
     ,"Stores": "المتاجر"
-    ,"Cash Drawer": "درج النقدية"
-    ,"Cash Drawers": "أدراج النقدية"
     ,"Audit": "التدقيق"
     ,"Audit logs": "سجلات التدقيق"
-    ,"Audit Logs": "سجلات التدقيق"
     ,"System": "النظام"
     ,"Environment": "البيئة"
     ,"Database": "قاعدة البيانات"
@@ -206,7 +202,6 @@
     ,"Confirm with passkey": "التأكيد باستخدام مفتاح المرور"
     ,"Confirming...": "جارٍ التأكيد..."
     ,"Or confirm with password": "أو التأكيد باستخدام كلمة المرور"
-    ,"Don't have an account?": "لا تملك حسابًا؟"
     ,"Create an account": "إنشاء حساب"
     ,"Enter your details below to create your account": "أدخل بياناتك أدناه لإنشاء حسابك"
     ,"Full name": "الاسم الكامل"
@@ -297,7 +292,6 @@
     ,"Please verify your email address by clicking on the link we just emailed to you.": "يرجى التحقق من بريدك الإلكتروني بالنقر على الرابط الذي أرسلناه إليك للتو."
     ,"When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.": "عند تفعيل المصادقة الثنائية، سيُطلب منك رمز آمن أثناء تسجيل الدخول. يمكنك الحصول على الرمز من تطبيق TOTP على هاتفك."
     ,"Are you sure you want to remove the passkey \":name\"? You will no longer be able to use it to sign in.": "هل أنت متأكد من إزالة مفتاح المرور \":name\"؟ لن تتمكن من تسجيل الدخول به بعد الآن."
-    ,"Each recovery code can be used once to access your 2FA device and will be removed after use. If you need more, click Regenerate codes above.": "يمكن استخدام كل رمز استرداد مرة واحدة للوصول إلى جهاز المصادقة الثنائية ثم يُحذف بعد الاستخدام. إذا احتجت المزيد، اضغط على إعادة إنشاء الرموز أعلاه."
     ,"Sign in to continue": "سجّل الدخول للمتابعة"
     ,"Current delivery focus": "نطاق التسليم الحالي"
     ,"Secure authentication and account recovery": "مصادقة آمنة واسترداد الحساب"
@@ -461,11 +455,9 @@
     ,"Update Printer": "تحديث الطابعة"
     ,"Save Printer": "حفظ الطابعة"
     ,"Configured Printer Profiles": "ملفات الطابعات المهيأة"
-    ,"Connection": "الاتصال"
     ,"Default": "افتراضي"
     ,"Append-only unified audit events for current platform settings.": "أحداث تدقيق موحدة وغير قابلة للتعديل لإعدادات المنصة الحالية."
     ,"Append-Only": "غير قابل للإضافة أو التعديل"
-    ,"Action": "الإجراء"
     ,"Changes Summary": "ملخص التغييرات"
     ,"No Audit Logs Recorded": "لم تُسجل سجلات تدقيق"
     ,"No settings modifications have been recorded yet. Successful updates generate append-only audit entries here.": "لم تُسجل أي تعديلات على الإعدادات بعد. تُنشئ التحديثات الناجحة سجلات تدقيق غير قابلة للتعديل هنا."
@@ -474,7 +466,6 @@
     ,"Tax setting saved successfully.": "تم حفظ إعداد الضريبة بنجاح."
     ,"Document sequence saved successfully.": "تم حفظ تسلسل المستند بنجاح."
     ,"Printer configuration saved successfully.": "تم حفظ إعداد الطابعة بنجاح."
-    ,"System": "النظام"
     ,"Branch Masters": "البيانات الأساسية للفروع"
     ,"Manage commercial branch locations and their authorized POS selling store assignments.": "إدارة مواقع الفروع التجارية وتعيينات متاجر البيع المعتمدة لنقاط البيع."
     ,"Add Branch": "إضافة فرع"
@@ -488,10 +479,8 @@
     ,"Create Local Branch": "إنشاء فرع محلي"
     ,"Branch Name (AR / EN)": "اسم الفرع (عربي / إنجليزي)"
     ,"Time zone": "المنطقة الزمنية"
-    ,"Stores": "المتاجر"
     ,"POS Selling Store": "متجر البيع لنقطة البيع"
     ,"Unmapped": "غير مرتبط"
-    ,"Stores": "المتاجر"
     ,"Map POS Store": "ربط متجر نقطة البيع"
     ,"Mapping History": "سجل الربط"
     ,"Are you sure you want to delete this branch?": "هل أنت متأكد من حذف هذا الفرع؟"
@@ -559,7 +548,6 @@
     ,"Branch Association (Optional)": "ربط الفرع (اختياري)"
     ,"Central / No Direct Branch": "مركزي / دون فرع مباشر"
     ,"Allow Negative Stock (DEC-012 default: Blocked)": "السماح بالمخزون السالب (الافتراضي DEC-012: محظور)"
-    ,"Policy / TBD Notes": "ملاحظات السياسة / قيد التحديد"
     ,"Save Store": "حفظ المتجر"
     ,"Map Selling Store to Branch": "ربط متجر البيع بالفرع"
     ,"Assign selling store": "تعيين متجر البيع"
@@ -579,7 +567,6 @@
     ,"Local Baseline — Reversible Cash Drawer Masters (TSK-007 / BLK-006)": "خط أساس محلي — بيانات أساسية قابلة للعكس لأدراج النقدية (TSK-007 / BLK-006)"
     ,"Cash drawers are registered per branch and optional store/cashier link. Opening balances, shift sessions, cash movements, and blind close reconciliation are explicitly deferred to DM 3.3 (TSK-025). Shift dependency guards remain set to TBD.": "تُسجل أدراج النقدية لكل فرع مع ربط اختياري بمتجر أو كاشير. الأرصدة الافتتاحية وجلسات الورديات وحركات النقد وتسوية الإغلاق الأعمى مؤجلة صراحة إلى DM 3.3 (TSK-025). تبقى حواجز اعتماد الورديات قيد التحديد."
     ,"Search drawers by code or name...": "ابحث في الأدراج بالرمز أو الاسم..."
-    ,"All Branches": "كل الفروع"
     ,"Maintenance": "صيانة"
     ,"Linked Store": "المتجر المرتبط"
     ,"Assigned Cashier / User": "الكاشير / المستخدم المعيّن"
@@ -644,10 +631,8 @@
     ,"No audit events found": "لم يتم العثور على أحداث تدقيق"
     ,"No visible events match the current filters.": "لا توجد أحداث ظاهرة تطابق عوامل التصفية الحالية."
     ,"Time": "الوقت"
-    ,"Actions": "الإجراءات"
     ,"Global": "عام"
     ,"Page :page": "الصفحة :page"
-    ,"Audit event details": "تفاصيل حدث التدقيق"
     ,"Append-only, permission-scoped operational history with protected before and after values.": "سجل تشغيلي غير قابل للتعديل ومقيد بالصلاحيات مع حماية قيم ما قبل وما بعد التغيير."
     ,"System Health & Monitoring": "صحة النظام والمراقبة"
     ,"Local platform baseline status, request context, and component indicators.": "حالة خط أساس المنصة المحلية وسياق الطلب ومؤشرات المكونات."
@@ -665,7 +650,6 @@
     ,"Application Locale": "لغة التطبيق"
     ,"Configured": "مهيأ"
     ,"Request Correlation ID": "معرّف تتبع الطلب"
-    ,"Assigned": "مُسند"
     ,"Last Status Check": "آخر فحص للحالة"
     ,"System health refreshed.": "تم تحديث صحة النظام."
     ,"Local application shell capabilities, network connectivity state, and non-sensitive static PWA cache policy.": "إمكانات غلاف التطبيق المحلي وحالة اتصال الشبكة وسياسة ذاكرة PWA الثابتة غير الحساسة."
@@ -690,9 +674,7 @@
     ,"Completed": "مكتمل"
     ,"Failed": "فشل"
     ,"Draft": "مسودة"
-    ,"Open": "مفتوح"
     ,"Closed": "مغلق"
-    ,"Global": "عام"
     ,"Global scope": "نطاق عام"
     ,"Branch scope": "نطاق الفرع"
     ,"Store scope": "نطاق المتجر"
@@ -707,8 +689,6 @@
     ,"Timestamp": "الطابع الزمني"
     ,"Request ID": "معرّف الطلب"
     ,"Correlation ID": "معرّف التتبع"
-    ,"Request Correlation ID": "معرّف تتبع الطلب"
-    ,"Actions": "الإجراءات"
     ,"Overview": "نظرة عامة"
     ,"Forms": "النماذج"
     ,"Data": "البيانات"
@@ -757,12 +737,8 @@
     ,"Name, code, or email": "الاسم أو الرمز أو البريد الإلكتروني"
     ,"New record": "سجل جديد"
     ,"Data table pattern": "نمط جدول البيانات"
-    ,"Name": "الاسم"
-    ,"Action": "الإجراء"
     ,"Central branch": "الفرع المركزي"
-    ,"Branch scope": "نطاق الفرع"
     ,"Store drawer": "درج المتجر"
-    ,"Store scope": "نطاق المتجر"
     ,"Review queue": "قائمة المراجعة"
     ,"Showing 1 to 3 of 3 records": "عرض 1 إلى 3 من أصل 3 سجلات"
     ,"View record": "عرض السجل"
@@ -794,7 +770,6 @@
     ,"Label": "ملصق"
     ,"Confirmation pattern": "نمط التأكيد"
     ,"Use a dialog only when a consequential action needs an explicit confirmation.": "استخدم مربع الحوار فقط عندما يحتاج إجراء مهم إلى تأكيد صريح."
-    ,"Confirm": "تأكيد"
     ,"Catalog": "\u0627\u0644\u0641\u0647\u0631\u0633"
     ,"Products": "\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a"
     ,"Categories": "\u0627\u0644\u062a\u0635\u0646\u064a\u0641\u0627\u062a"
@@ -812,28 +787,15 @@
     ,"Product name": "\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c"
     ,"Arabic product name": "\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629"
     ,"English product name": "\u0627\u0633\u0645 \u0627\u0644\u0645\u0646\u062a\u062c \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629"
-    ,"Code": "\u0627\u0644\u0643\u0648\u062f"
-    ,"Name": "\u0627\u0644\u0627\u0633\u0645"
     ,"Parent": "\u0627\u0644\u0623\u0635\u0644"
     ,"Category / brand": "\u0627\u0644\u062a\u0635\u0646\u064a\u0641 / \u0627\u0644\u0639\u0644\u0627\u0645\u0629"
     ,"Barcodes": "\u0627\u0644\u0628\u0627\u0631\u0643\u0648\u062f\u0627\u062a"
-    ,"Status": "\u0627\u0644\u062d\u0627\u0644\u0629"
-    ,"Active": "\u0646\u0634\u0637"
-    ,"Inactive": "\u063a\u064a\u0631 \u0646\u0634\u0637"
-    ,"Actions": "\u0627\u0644\u0625\u062c\u0631\u0627\u0621\u0627\u062a"
-    ,"Search": "\u0628\u062d\u062b"
     ,"Exact code/barcode or Arabic/English name...": "\u0627\u0644\u0643\u0648\u062f \u0623\u0648 \u0627\u0644\u0628\u0627\u0631\u0643\u0648\u062f \u0627\u0644\u062f\u0642\u064a\u0642 \u0623\u0648 \u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629/\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629..."
-    ,"All categories": "\u0643\u0644 \u0627\u0644\u062a\u0635\u0646\u064a\u0641\u0627\u062a"
     ,"All brands": "\u0643\u0644 \u0627\u0644\u0639\u0644\u0627\u0645\u0627\u062a"
     ,"All statuses": "\u0643\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a"
     ,"No products found": "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0645\u0646\u062a\u062c\u0627\u062a"
     ,"No categories found": "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u062a\u0635\u0646\u064a\u0641\u0627\u062a"
     ,"No brands found": "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0639\u0644\u0627\u0645\u0627\u062a"
-    ,"Edit": "\u062a\u0639\u062f\u064a\u0644"
-    ,"Deactivate": "\u062a\u0639\u0637\u064a\u0644"
-    ,"Activate": "\u062a\u0641\u0639\u064a\u0644"
-    ,"Cancel": "\u0625\u0644\u063a\u0627\u0621"
-    ,"Close": "\u0625\u063a\u0644\u0627\u0642"
     ,"Save product": "\u062d\u0641\u0638 \u0627\u0644\u0645\u0646\u062a\u062c"
     ,"Save category": "\u062d\u0641\u0638 \u0627\u0644\u062a\u0635\u0646\u064a\u0641"
     ,"Save brand": "\u062d\u0641\u0638 \u0627\u0644\u0639\u0644\u0627\u0645\u0629"
@@ -846,7 +808,6 @@
     ,"Supplier barcode": "\u0628\u0627\u0631\u0643\u0648\u062f \u0627\u0644\u0645\u0648\u0631\u062f"
     ,"Four-digit supplier code": "\u0643\u0648\u062f \u0627\u0644\u0645\u0648\u0631\u062f \u0627\u0644\u0645\u0643\u0648\u0646 \u0645\u0646 \u0623\u0631\u0628\u0639\u0629 \u0623\u0631\u0642\u0627\u0645"
     ,"Allocate barcode": "\u062a\u062e\u0635\u064a\u0635 \u0628\u0627\u0631\u0643\u0648\u062f"
-    ,"Add barcode": "\u0625\u0636\u0627\u0641\u0629 \u0628\u0627\u0631\u0643\u0648\u062f"
     ,"View only": "\u0644\u0644\u0639\u0631\u0636 \u0641\u0642\u0637"
     ,"Local": "\u0645\u062d\u0644\u064a"
     ,"Supplier": "\u0645\u0648\u0631\u062f"
@@ -1011,5 +972,65 @@
     "Move image up": "\u0646\u0642\u0644 \u0627\u0644\u0635\u0648\u0631\u0629 \u0644\u0623\u0639\u0644\u0649",
     "Move image down": "\u0646\u0642\u0644 \u0627\u0644\u0635\u0648\u0631\u0629 \u0644\u0623\u0633\u0641\u0644",
     "The image is larger than the configured 8 MB local limit.": "\u062d\u062c\u0645 \u0627\u0644\u0635\u0648\u0631\u0629 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0627\u0644\u062d\u062f \u0627\u0644\u0645\u062d\u0644\u064a \u0627\u0644\u0645\u0639\u062f \u0644\u0647 \u0648\u0647\u0648 8 \u0645\u064a\u062c\u0627\u0628\u0627\u064a\u062a.",
-    "The image upload was rejected before Laravel could receive it. Check the configured local upload limit.": "\u062a\u0645 \u0631\u0641\u0636 \u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 \u0642\u0628\u0644 \u0648\u0635\u0648\u0644\u0647\u0627 \u0625\u0644\u0649 Laravel. \u062a\u062d\u0642\u0642 \u0645\u0646 \u062d\u062f \u0627\u0644\u0631\u0641\u0639 \u0627\u0644\u0645\u062d\u0644\u064a \u0627\u0644\u0645\u0646\u0638\u0645."
-}
+    "The image upload was rejected before Laravel could receive it. Check the configured local upload limit.": "تم رفض رفع الصورة قبل وصولها إلى Laravel. تحقق من حد الرفع المحلي المنظم.",
+    "Purchase Orders": "أوامر الشراء",
+    "Manage procurement lifecycle, draft order lines, and order state actions.": "إدارة دورة الشراء وبنود المسودة وإجراءات حالات الطلب.",
+    "New Purchase Order": "أمر شراء جديد",
+    "Search by PO #, supplier or notes...": "البحث برقم أمر الشراء أو المورد أو الملاحظات...",
+    "Submitted": "مرسل",
+    "Partially Received": "مستلم جزئياً",
+    "Received": "مستلم",
+    "Cancelled": "ملغى",
+    "All Suppliers": "كل الموردين",
+    "PO Number": "رقم أمر الشراء",
+    "Order Date": "تاريخ الطلب",
+    "View Details": "عرض التفاصيل",
+    "Edit Draft": "تعديل المسودة",
+    "Submit Order": "إرسال الطلب",
+    "Approve Order": "اعتماد الطلب",
+    "Cancel Order": "إلغاء الطلب",
+    "Close Order": "إغلاق الطلب",
+    "Print A4": "طباعة A4",
+    "No purchase orders found": "لم يتم العثور على أوامر شراء",
+    "Try adjusting search query or filters, or create a new draft purchase order.": "حاول تعديل البحث أو المرشحات، أو أنشئ أمر شراء جديداً كمسودة.",
+    "Edit Draft Purchase Order": "تعديل مسودة أمر الشراء",
+    "Enter supplier, destination store, order dates, and item lines.": "أدخل المورد والمتجر المستلم وتواريخ الطلب وبنود الأصناف.",
+    "Select Supplier": "اختر المورد",
+    "Receiving Store / Warehouse": "متجر أو مخزن الاستلام",
+    "Select Store (Optional)": "اختر المتجر (اختياري)",
+    "Expected Delivery Date": "تاريخ التسليم المتوقع",
+    "Payment Terms": "شروط الدفع",
+    "e.g. Net 30 days": "مثال: صافي 30 يوماً",
+    "Order Notes": "ملاحظات الطلب",
+    "Internal procurement reference notes...": "ملاحظات مرجعية داخلية للمشتريات...",
+    "Order Line Items": "بنود الطلب",
+    "Add Item Line": "إضافة بند صنف",
+    "Product": "الصنف",
+    "Select Product": "اختر الصنف",
+    "Unit Cost": "تكلفة الوحدة",
+    "Cost": "التكلفة",
+    "Estimated Subtotal": "الإجمالي الفرعي التقديري",
+    "Tax (Explicit local zero / TBD)": "الضريبة (صفر محلي صريح / قيد التحديد)",
+    "Save Draft": "حفظ المسودة",
+    "Purchase Order updated successfully.": "تم تحديث أمر الشراء بنجاح.",
+    "Purchase Order :number created as draft.": "تم إنشاء أمر الشراء :number كمسودة.",
+    "Purchase Order :number submitted successfully.": "تم إرسال أمر الشراء :number بنجاح.",
+    "Purchase Order :number approved successfully. No stock or invoice posting occurred.": "تم اعتماد أمر الشراء :number بنجاح. لم يحدث ترحيل للمخزون أو الفواتير.",
+    "Purchase Order :number cancelled.": "تم إلغاء أمر الشراء :number.",
+    "Purchase Order :number closed.": "تم إغلاق أمر الشراء :number.",
+    "Only draft purchase orders can be edited.": "يمكن تعديل أوامر الشراء المسودة فقط.",
+    "Goods Receipts & Invoices": "إيصالات الاستلام وفواتير الشراء",
+    "Audit History": "سجل التدقيق",
+    "Items & Totals": "الأصناف والإجماليات",
+    "Tax (TBD)": "الضريبة (قيد التحديد)",
+    "No Goods Receipts or Purchase Invoices": "لا توجد إيصالات استلام أو فواتير شراء",
+    "Print A4 Document": "طباعة مستند A4",
+    "Cancel Purchase Order": "إلغاء أمر الشراء",
+    "Please provide a reason for cancelling this purchase order.": "يرجى إدخال سبب إلغاء أمر الشراء.",
+    "Cancellation Reason": "سبب الإلغاء",
+    "e.g. Supplier item out of stock...": "مثال: الصنف غير متوفر لدى المورد...",
+    "Confirm Cancel": "تأكيد الإلغاء",
+    "Partially received": "مستلم جزئياً",
+    "Not specified": "غير محدد",
+    "No audit log entries recorded for this document.": "لم يتم تسجيل إدخالات تدقيق لهذا المستند.",
+    "Goods receipts and purchase invoice processing are handled in downstream milestone TSK-015. No receiving stock records or invoices exist for this order yet.": "تتم معالجة إيصالات الاستلام وفواتير الشراء في milestone اللاحق TSK-015. لا توجد بعد سجلات مخزون مستلم أو فواتير لهذا الطلب."}

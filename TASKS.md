@@ -237,7 +237,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-014 — Implement Purchase Orders
 
-- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **In Progress — Submit/Approve, Cancel/Close, definition-only receipt states, PO print, and PO-line reference prerequisite are implemented; slice-5 authenticated/mobile manual verification remains pending; production/UAT gates remain open**.
+- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **Completed for approved local scope (local implementation and authenticated manual browser verification completed for approved local/demo scope; definition-only Partially Received/Received remain TSK-015; true 390x844 mobile evidence pending; production/UAT gates open)**.
 - **Title / Purpose / Description:** Deliver purchase-order line entry and Draft/Submitted/Partially Received/Received/Cancelled/Closed state machine with receipt links.
 - **Traceability:** PUR-03, NFR-01–NFR-03, NFR-06; US-010; FLW-PUR-01; UI UI-PUR-001; AC-PUR-03; SEC-011–012, SEC-015, SEC-017–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.1 complete; supplier/store/product and PO authorization/terms.
@@ -246,8 +246,8 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **UI / Flux / Alpine / Vite:** Flux Table/Filters/Search/Pagination/Form/Combobox/Line Editor/Date/Badges/Timeline/Dialog; Alpine none; print assets.
 - **Suggested Packages:** PDF capability evaluated later with other document outputs; no package required for core flow.
 - **Permissions / Validation / Audit / States / Print:** Create/Edit Draft/Submit/Cancel/Close/Print; supplier/product/qty/state/over-receipt; every line/state/reason audited; PO A4/PDF.
-- **Manual Browser Verification:** All states/invalid transitions/partial links/terminal edit/duplicate number/concurrent submit/permissions/print RTL/LTR.
-- **Definition of Done:** DoD; PO has no stock/payment effect and source links are reliable.
+- **Manual Browser Verification:** Completed for approved local/demo scope (`DEMO_AUTH=true`): list/detail rendering, draft creation (3 x 12.50 = 37.50), submit transition, approve transition by separate reviewer, self-approval backend denial, approved edit denial, cancellation reason validation, cancellation audit logging, print A4 rendering, reviewer branch scope and print permission, no-access 403 direct denial, Arabic RTL / English LTR visual checks at 1280px viewport (no console errors/overlap, zero PO approval stock/invoice side effects). Definition-only `Partially Received` and `Received` states remain TSK-015. True 390x844 mobile evidence remains pending because CUA Firefox capture returned 0x0 and the available Browser Use session has no viewport-resize capability. Diagnostics passed: locale parity 1035/1035, PHPStan 0 errors, Pint/PHP lint pass, Blade cache pass, Vite build pass (optional fontaine warning), git diff check pass. No PHPUnit/Pest or automated browser tests claimed.
+- **Definition of Done:** Completed for approved local/demo scope; PO has zero stock/invoice/cost effect; definition-only Partially Received/Received remain TSK-015; production/UAT gates remain open.
 
 ### TSK-015 — Implement Purchase Invoices, Import, Receipt, and Weighted-Average Cost
 

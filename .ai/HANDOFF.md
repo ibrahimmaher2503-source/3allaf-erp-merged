@@ -1,8 +1,8 @@
 # AI Handoff
 
-## Current State — 2026-08-06
+### Current State — 2026-08-06
 
-TSK-014 remains **In Progress** with its five local slices implemented; authenticated/mobile manual verification is pending because no safe authenticated browser session is available. The PO schema was independently verified: `purchase_order_lines.id` is the stable primary key and `purchase_invoice_lines.purchase_order_line_id` now references it with `RESTRICT`.
+TSK-014 local implementation and authenticated manual browser verification are **Completed for approved local/demo scope**. Verified walkthrough on local/demo server (`DEMO_AUTH=true`): list/detail views, draft creation with 3 x 12.50 = 37.50, submit transition, approve transition by a separate reviewer, self-approval backend denial, approved edit denial, cancellation reason validation, cancellation audit logging, print A4 rendering, reviewer branch scope and print permission, no-access 403 direct denial, Arabic RTL and English LTR visual checks at the available 1280px viewport with no observed console errors or element overlap, and zero stock/invoice side effects on PO approval. Definition-only `Partially Received` and `Received` states remain TSK-015. True 390x844 mobile evidence remains pending because CUA Firefox capture is 0x0 and the available Browser Use session has no viewport-resize capability. Production, UAT, and Phase gates remain open. Diagnostics: locale parity 1035/1035, PHPStan 0 errors, Pint/PHP lint pass, Blade cache pass, Vite build pass (with optional fontaine warning), git diff check pass. No PHPUnit/Pest or automated browser tests claimed.
 
 TSK-015 Slice A and Performance Group A (TSK-P01–P03) are implemented as reversible local development slices. The first ledger migration creates invoice/line, stock movement/balance, and period snapshot tables with composite indexes; `stock_movements.consumed_cost` is stored for future cost-consumption posting; `inventory:rebuild-balances` supports dry-run and transactional apply. No invoice posting, stock mutation action, WAC calculation, import workflow, owner policy approval, UAT, or production readiness is claimed.
 

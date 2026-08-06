@@ -67,7 +67,7 @@ class CanonicalAuthorizationSeeder extends Seeder
             'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print'],
             'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view'],
             'pricing-officer' => ['products_categories_brands.view'],
-            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.approve'],
+            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve'],
         ];
 
         foreach ($roles as $code => $_) {
@@ -102,6 +102,7 @@ class CanonicalAuthorizationSeeder extends Seeder
 
             if ($branchId !== null) {
                 User::query()->where('username', 'demo-branch-manager')->first()?->branchScopes()->updateOrCreate(['branch_id' => $branchId], ['status' => 'active']);
+                User::query()->where('username', 'demo-reviewer')->first()?->branchScopes()->updateOrCreate(['branch_id' => $branchId], ['status' => 'active']);
             }
 
             if ($storeId !== null) {

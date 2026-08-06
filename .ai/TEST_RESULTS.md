@@ -1,12 +1,39 @@
 # Test and Verification Status
 
-**Implementation status:** In Progress  
-**Current diagnostics:** Slice A migration, PHP lint, Blade cache, Vite build, route listing, schema PRAGMA, rebuild-command dry-run/apply, Debugbar runtime config, locale parity, Pint, PHPStan with explicit legacy baseline, and 50k/1m disposable volume fixture passed on 2026-08-06.
-**Automated tests:** Not created or run for this slice, per DEC-012.
-**Manual browser verification:** Partial — guest redirect for PO list/print verified; authenticated state transitions, print rendering, RTL/LTR, scope, and mobile viewport remain pending safe authenticated session.
+**Implementation status:** In Progress (TSK-014 Completed for approved local scope)
+**Current diagnostics:** Locale parity 1035/1035, PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, Vite build pass (with optional fontaine warning), git diff check pass on 2026-08-06.
+**Automated tests:** Not created or run per owner directive (no PHPUnit/Pest or automated browser tests claimed).
+**Manual browser verification:** TSK-014 authenticated manual browser verification completed for approved local/demo scope; true 390x844 mobile evidence remains pending.
 **User acceptance testing:** Not Started
 
-The results below include historical evidence from earlier authorized review runs. The current Slice A gate is diagnostic/manual only; no automated-test completion is claimed.
+## TSK-014 Local Implementation and Manual Verification Evidence — 2026-08-06
+
+- **Status:** TSK-014 local implementation and authenticated manual browser verification are **Completed for approved local/demo scope**.
+- **Verified Walkthrough Scenarios (`DEMO_AUTH=true`):**
+  - **PO List & Detail:** Route `/purchasing/orders` rendered with PO demo rows and detailed item view.
+  - **Draft Creation:** Created draft PO with line item 3 x 12.50 = 37.50 subtotal/total.
+  - **Submit Transition:** Draft PO submitted successfully (`lock_version` 0 -> 1).
+  - **Approve Transition:** Submitted PO approved by a separate reviewer (`demo-reviewer`).
+  - **Self-Approval Backend Denial:** Backend authority rejected self-approval attempt by the original requester.
+  - **Approved Document Immutability:** Editing approved records rejected at the backend boundary.
+  - **Cancellation Validation & Reason:** Submitting cancellation required reason validation; empty reason rejected.
+  - **Cancellation Audit Logging:** Atomic audit event recorded upon cancellation with reason context.
+  - **Print A4 Rendering:** Route `/purchasing/orders/{id}/print` rendered bilingual A4 print view cleanly.
+  - **Reviewer Scope & Permissions:** `demo-reviewer` with branch scope saw scoped records and had print permission.
+  - **No-Access Direct Route Denial:** `demo-no-access` received HTTP 403 direct denial page.
+  - **Visual & Layout Integrity:** Arabic RTL and English LTR visual checks passed at the available 1280px viewport; zero console errors and zero element overlap observed.
+  - **Zero Side Effects:** Confirmed zero stock, invoice, or cost posting side effects on PO approval.
+- **TSK-015 Boundary:** Definition-only `Partially Received` and `Received` states remain TSK-015.
+- **Mobile Evidence Limitation:** True 390x844 mobile evidence remains pending because CUA Firefox capture returned 0x0 and the available Browser Use session has no viewport-resize capability.
+- **Gates:** Production, UAT, and Phase gates remain open.
+- **Diagnostics Passed:**
+  - Locale parity: 1035/1035 keys matched in `lang/ar.json` and `lang/en.json`.
+  - PHPStan: 0 errors detected.
+  - Pint & PHP lint: passed.
+  - Blade cache: `php artisan view:cache` passed cleanly.
+  - Vite build: passed with only the optional `fontaine` font optimization warning.
+  - Git whitespace check: `git diff --check` passed cleanly.
+- **No Claims:** No PHPUnit/Pest or automated browser tests claimed.
 
 ## TSK-015 Read-only Readiness Boundary — 2026-08-06
 
