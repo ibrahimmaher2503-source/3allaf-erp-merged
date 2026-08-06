@@ -6,6 +6,12 @@ TSK-014 local implementation and authenticated manual browser verification are *
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 
+## Documentation synchronization — 2026-08-06
+
+- `docs/35 §4` now includes the implemented local `Approved` PO state and explicitly separates the DEC-044 local approval/close slice from downstream receipt-driven `Partially Received` / `Received` transitions.
+- `docs/43` numbering, receipt, cost, and production policy proposals remain owner-gated; the local allocator is not being changed or promoted to a production numbering decision.
+- `docs/38` A4 output requirements remain the production contract. The current PO print is a bilingual local/demo baseline; approver timestamp, reprint history, printer selection, and final print policy remain outside this local closure.
+
 ## A-01 line reference
 
 `purchase_order_lines.id` is the stable primary key and each PO line also has a unique `(purchase_order_id, line_number)` constraint. The first TSK-015 Slice A migration references `purchase_order_lines.id` from `purchase_invoice_lines.purchase_order_line_id` with a restrictive foreign key, preserving partial supply and one-PO-to-many-invoices. Group A ledger schema is authorized as a reversible local development slice; posting actions remain out of scope until policy and browser evidence are complete.

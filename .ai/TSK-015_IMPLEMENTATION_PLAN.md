@@ -1,8 +1,8 @@
 # TSK-015 — Implementation Plan / خطة التنفيذ
 
-**Status:** Ready for implementation under DEC-043 defaults. **Not production ready.**
+**Status:** TSK-015 Slice A / Performance Group A and the read-only readiness boundary are implemented as reversible local development slices. **Not production ready.**
 **Authority:** DEC-043, `docs/41`–`docs/46`
-**Hard dependency:** TSK-014 PO persistence and state machine — currently **not implemented**
+**Hard dependency:** TSK-014 PO persistence and the local approved PO state-machine slice are complete for the approved local/demo scope. Receipt-driven `Partially Received` / `Received`, production numbering/policy, UAT, and production readiness remain outside this local prerequisite.
 
 ---
 
@@ -10,12 +10,12 @@
 
 | # | Action | Why |
 |---|---|---|
-| 1 | Correct DEC-042 provenance per DEC-043 §1 | `DECISIONS.md` currently attributes owner approval to a party that never gave it |
-| 2 | Commit the outstanding working tree to a branch | Code, docs, and `.ai/` changes are all uncommitted and accumulating across watcher runs |
-| 3 | Extend `AI_INDEX.md` Authority Order §7 to `docs/30`–`docs/46` | Agents currently route to `docs/30`–`39` only and will never read 41–46 |
-| 4 | Complete TSK-014 PO persistence and state machine | TSK-015 lines reference PO lines (A-01); the target tables do not exist yet |
+| 1 | Correct DEC-042 provenance per DEC-043 §1 | **Completed in DEC-042/DEC-043; owner approval remains outstanding** |
+| 2 | Commit the outstanding working tree to a branch | **Completed for the current local slice; keep future TSK-015 changes isolated and reviewable** |
+| 3 | Extend `AI_INDEX.md` Authority Order §7 to `docs/30`–`docs/46` | **Completed; `AI_INDEX.md` routes `docs/30`–`docs/58` and marks reserved slots explicitly** |
+| 4 | Complete TSK-014 PO persistence and state machine | **Completed for the approved local/demo prerequisite; do not treat this as receipt, stock, cost, or production approval** |
 
-Nothing below starts until 1–4 are done.
+Items 1–4 are now reconciled for the local development boundary. Nothing below authorizes invoice posting/import, receipt mutation, stock mutation, WAC/cost calculation, or production/UAT completion.
 
 ---
 

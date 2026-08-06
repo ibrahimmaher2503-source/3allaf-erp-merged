@@ -42,6 +42,7 @@ States:
 
 - Draft.
 - Submitted.
+- Approved.
 - Partially Received.
 - Received.
 - Cancelled.
@@ -50,11 +51,15 @@ States:
 Transitions:
 
 - Draft → Submitted.
-- Submitted → Partially Received/Received through receipts.
-- Partially Received → Received.
-- Submitted/Partially Received → Cancelled if eligible.
-- Received → Closed.
-- No stock effect from PO itself.
+- Submitted → Approved through a named, authorized approval action; requester self-approval is denied and this local PO approval has no stock, cost, invoice, or receipt effect.
+- Approved → Partially Received/Received through downstream receipts; these transitions remain TSK-015 and must be driven by posted receiving effects, not a manually assigned status.
+- Draft/Submitted → Cancelled in the approved local TSK-014 slice with a required reason and audit event.
+- Approved → Closed in the approved local TSK-014 slice as an administrative close with no stock, cost, invoice, or receipt effect.
+- Partially Received → Received through downstream receipts.
+- Received → Closed through the downstream receiving/closure policy.
+- No stock effect from the PO itself.
+
+**Local boundary note (DEC-044):** TSK-014 implements the Draft, Submitted, Approved, Cancelled, and local Approved → Closed slice only. `Partially Received` and `Received`, receipt links, short closure, and all stock/cost effects remain downstream TSK-015 behavior and are not implemented by the PO screen.
 
 ## 5. Purchase Invoice/Receipt
 
