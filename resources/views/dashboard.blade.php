@@ -8,6 +8,19 @@
         max-width="7xl"
         data-guide="dashboard-header"
     >
+        @if (($setup['needs_attention'] ?? false) === true)
+            <section class="flex flex-col gap-5 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6" data-guide="dashboard-initial-setup">
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">{{ __('First launch setup') }}</div>
+                    <flux:heading class="mt-2" size="lg">{{ __('Complete initial setup') }}</flux:heading>
+                    <flux:text class="mt-1">{{ $setup['completed_count'] }} / {{ $setup['required_count'] }} {{ __('required steps completed') }}. {{ __('Enter owner-provided data before opening operations.') }}</flux:text>
+                </div>
+                <flux:button :href="route('initial-setup')" variant="primary" wire:navigate data-guide="dashboard-initial-setup-action">
+                    {{ __('Open setup dashboard') }}
+                </flux:button>
+            </section>
+        @endif
+
         <section aria-labelledby="foundation-heading" class="dashboard-status-card overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-card" data-guide="dashboard-foundation">
             <div class="border-b border-border bg-surface-muted/35 px-5 py-5 sm:px-6">
                 <flux:heading id="foundation-heading" size="lg">{{ __('Foundation status') }}</flux:heading>

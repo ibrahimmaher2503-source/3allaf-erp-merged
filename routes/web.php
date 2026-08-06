@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Platform\Support\InitialSetupStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -39,7 +40,9 @@ if (app()->environment('local') && (bool) env('DEMO_AUTH', false)) {
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->middleware('can:dashboard_reports.view')->name('dashboard');
+    Route::get('dashboard', function (InitialSetupStatus $setupStatus) {
+        return view('dashboard', ['setup' => $setupStatus->snapshot()]);
+    })->middleware('can:dashboard_reports.view')->name('dashboard');
     Route::view('pos', 'pages.pos.index')->middleware('can:pos_sales.view')->name('pos');
 });
 

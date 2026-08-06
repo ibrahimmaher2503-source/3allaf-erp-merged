@@ -34,6 +34,11 @@
                             {{ __('System Settings') }}
                         </flux:sidebar.item>
                     @endcan
+                    @can('company_settings.edit')
+                        <flux:sidebar.item icon="clipboard-document-check" :href="route('initial-setup')" :current="request()->routeIs('initial-setup')" wire:navigate>
+                            {{ __('Initial setup') }}
+                        </flux:sidebar.item>
+                    @endcan
                     @can('pos_sales.view')
                         <flux:sidebar.item icon="shopping-cart" :href="route('pos')" :current="request()->routeIs('pos')" wire:navigate>{{ __('POS') }}</flux:sidebar.item>
                     @endcan

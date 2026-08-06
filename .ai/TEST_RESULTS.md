@@ -1,6 +1,8 @@
 # Test and Verification Status
 
-**Implementation status:** TSK-015 local/dev verification completed under DEC-050; TSK-016 local/dev implementation completed under DEC-052; production/UAT remains open.
+**Implementation status:** Initial Setup Dashboard local/dev verification completed; TSK-015 local/dev verification completed under DEC-050; TSK-016 local/dev implementation completed under DEC-052; production/UAT remains open.
+
+**Initial Setup Dashboard verification — 2026-08-06:** `/dashboard` rendered the first-launch setup panel with `2/5` required steps complete (`40%`) and a working link to `/initial-setup`. The wizard rendered all six cards and linked to company settings, branches, supplier-return settings, authorization baseline, and printer/settings review. Supplier-return settings also rendered the owner form for saving allowed financial keys as pending input, with no approval bypass. Local Demo Administrator passed; Local Demo Cashier received the existing Access Denied page. Browser console returned 0 messages and 0 JavaScript errors. The current `supplier_return_reasons=0` and no approved/effective supplier-return financial versions were preserved; no data was seeded.
 
 **Current diagnostics:** Supplier-return migration/seeder passed; PHPStan 0 errors, Pint / PHP lint pass, Blade cache pass, route discovery pass, `git diff --check` pass. Browser review passed `/purchasing/returns`, `/purchasing/returns/settings`, `/purchasing/returns/{id}`, and `/purchasing/returns/{id}/print` under local Demo Auth. Settings empty-state and required-field validation passed with 0 JS errors.
 

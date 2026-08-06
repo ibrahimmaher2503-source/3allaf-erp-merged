@@ -1,10 +1,13 @@
 # Project Progress
 
 **Overall progress:** 1%  
-**Implementation status:** TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 local/dev implementation is complete under DEC-052; production/UAT remains open.
-**Documentation status:** DEC-052 adopted original-line supplier-return cost, no fallback, and no-reference rejection. Reason catalog contents and production operational inputs remain separately gated.
+**Implementation status:** Initial Setup Dashboard local/dev slice is implemented and browser-verified; TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 local/dev implementation is complete under DEC-052; production/UAT remains open.
+**Documentation status:** The first-launch configuration slice is recorded in `TASKS.md` and `.ai/UI_SCREENS.md`. It preserves DEC-052 approved-only financial resolution and does not create owner or production values.
 
-## Current Active Slice — 2026-08-06 Closure Review
+## Current Active Slice — Initial Setup Dashboard — 2026-08-06
+
+`/dashboard` now shows a setup panel while required authoritative data is missing. `/initial-setup` renders six permission-gated cards: company identity, branches/stores, supplier-return reasons, approved financial settings, users/permissions, and optional printer review. Local Demo currently reports `2/5` required steps complete (`40%`); the reason catalog and approved/effective supplier-return financial versions remain empty by design. Browser verification passed for Local Demo Administrator and direct access was denied for Local Demo Cashier. Production/UAT, Owner inputs, printer acceptance, and release gates remain open.
+
 
 TSK-016 local/dev closure was reconciled against the implementation and source documents, then manually verified on the refreshed Demo server. The current evidence covers the authenticated list/settings empty-state boundary and confirms no reason rows or approved financial versions are invented. The financial-setting resolver now requires an effective version linked to an `ApprovalRecord` in `approved` state; pending or merely locked rows do not affect returns. `docs/47` production/owner inputs, real scopes, print/device acceptance, UAT, and release gates remain open; no production posting claim is made.
 

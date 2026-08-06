@@ -100,6 +100,16 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Definition of Done:** Shared controls, persisted preferences, registered guides/flows, permission/scope filtering, tour behavior, documentation, and real-browser evidence under `artifacts/platform-dashboard-assistant/`; no Critical/High defect; no UAT/production-readiness claim.
 - **Traceability:** US-046; FLW-UI-01, FLW-HELP-01, FLW-HELP-02; AC-UI-06–15; `docs/40-contextual-page-guide-specification.md`.
 
+### Cross-cutting local slice — Initial Setup Dashboard / First Launch Configuration
+
+- **Status:** Implemented for Local/Dev scope on 2026-08-06; Production/UAT values and Owner approvals remain open.
+- **Purpose:** Present a permission-gated first-launch setup dashboard that derives readiness from authoritative data, provides the safe pending financial-setting input, and links the Owner to existing data-entry screens.
+- **Required steps:** Company identity; active branch/store structure; active supplier-return reason catalog; approved/effective supplier-return numbering and print financial settings; active role assignment for the opening team.
+- **Optional step:** Printer profile review. Production device acceptance remains a separate UAT gate.
+- **Safety:** No defaults, reason catalog entries, approval limits, production users, or approvals are created automatically. Pending/locked-only financial versions do not count as ready; only an effective, non-expired version linked to an approved `ApprovalRecord` counts.
+- **Routes / permissions:** `/dashboard` shows the setup panel when required data is missing; `/initial-setup` is limited to `company_settings.edit`. Existing settings, branches, authorization baseline, and supplier-return settings screens remain the data-entry surfaces.
+- **Evidence:** Browser-verified with Local Demo Administrator at `/dashboard` and `/initial-setup`; non-administrative Local Demo Cashier received the existing Access Denied screen; console reported zero JavaScript errors.
+
 ### TSK-005 — Configure Company, Payment, Tax, Numbering, and Printer Settings
 
 - **Task ID / Phase / Milestone / Status:** TSK-005; Phase 1; DM 1.2; **In Progress — specific local work remains: effective-date fields/overlap validation and configuration print-preview flows are not implemented.**

@@ -5,6 +5,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\SupplierReturnReason;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,6 +19,16 @@ new #[Title('Supplier Return Settings')] class extends Component
     public string $labelEn = '';
 
     public bool $isActive = true;
+
+    public string $financialKey = 'purchasing.supplier_return.number_prefix';
+
+    public string $financialValue = '';
+
+    public string $effectiveFrom = '';
+
+    public string $effectiveTo = '';
+
+    public string $financialNotes = '';
 
     public function mount(): void
     {
@@ -35,6 +46,62 @@ new #[Title('Supplier Return Settings')] class extends Component
         $this->dispatch('supplier-return-settings-saved');
     }
 
+    public function saveFinancialSetting(): void
+    {
+        Gate::authorize('company_settings.edit');
+
+        $allowedKeys = [
+            'purchasing.supplier_return.number_prefix',
+            'purchasing.supplier_return.print_title',
+            'purchasing.supplier_return.print_footer',
+            'purchasing.supplier_return.approval_limit',
+        ];
+
+        $rules = [
+            'financialKey' => ['required', 'string', 'in:'.implode(',', $allowedKeys)],
+            'financialValue' => ['required', 'string', 'max:1000'],
+            'effectiveFrom' => ['required', 'date'],
+            'effectiveTo' => ['nullable', 'date', 'after:effectiveFrom'],
+            'financialNotes' => ['nullable', 'string', 'max:2000'],
+        ];
+
+        if ($this->financialKey === 'purchasing.supplier_return.approval_limit') {
+            $rules['financialValue'] = ['required', 'numeric', 'min:0', 'max:999999999999'];
+        }
+
+        $this->validate($rules);
+
+        DB::transaction(function () use ($allowedKeys): void {
+            $version = (int) FinancialSettingVersion::query()
+                ->where('key', $this->financialKey)
+                ->lockForUpdate()
+                ->max('version') + 1;
+
+            $setting = FinancialSettingVersion::query()->create([
+                'key' => $this->financialKey,
+                'value' => $this->financialValue,
+                'value_type' => $this->financialKey === 'purchasing.supplier_return.approval_limit' ? 'decimal' : 'string',
+                'effective_from' => $this->effectiveFrom,
+                'effective_to' => $this->effectiveTo !== '' ? $this->effectiveTo : null,
+                'created_by' => Auth::id(),
+                'version' => $version,
+                'notes' => $this->financialNotes !== '' ? $this->financialNotes : null,
+            ]);
+
+            app(RecordAuditEvent::class)->execute(
+                category: 'settings',
+                event: 'submit_supplier_return_financial_setting',
+                source: $setting,
+                after: $setting->only(['key', 'value_type', 'effective_from', 'effective_to', 'version', 'notes']),
+                reasonCode: 'OWNER_SETUP_INPUT',
+                metadata: ['allowed_keys' => $allowedKeys, 'approval_state' => 'pending'],
+            );
+        });
+
+        $this->reset(['financialValue', 'effectiveFrom', 'effectiveTo', 'financialNotes']);
+        $this->dispatch('supplier-return-settings-saved');
+    }
+
     public function toggle(int $id): void
     {
         Gate::authorize('company_settings.edit');
@@ -46,7 +113,7 @@ new #[Title('Supplier Return Settings')] class extends Component
 
     public function render()
     {
-        $versions = FinancialSettingVersion::query()->where(function ($q): void {
+        $versions = FinancialSettingVersion::query()->with('approvalRecord')->where(function ($q): void {
             $q->where('key', 'like', '%supplier_return%')->orWhere('key', 'like', '%purchase_return%');
         })->orderBy('key')->orderByDesc('version')->get()->groupBy('key')->map(static fn ($items) => $items->first());
 
@@ -69,6 +136,23 @@ new #[Title('Supplier Return Settings')] class extends Component
             <flux:checkbox wire:model="isActive" :label="__('Active')" />
             <flux:button wire:click="saveReason" variant="primary">{{ __('Save reason') }}</flux:button>
         </flux:card>
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">{{ __('Submit pending financial setting') }}</flux:heading>
+            <flux:text>{{ __('Owner input is saved as pending. It becomes active only after a separate approved financial version exists.') }}</flux:text>
+            <div class="grid gap-4 md:grid-cols-2">
+                <flux:select wire:model="financialKey" :label="__('Setting key')">
+                    <flux:select.option value="purchasing.supplier_return.number_prefix">{{ __('Number prefix') }}</flux:select.option>
+                    <flux:select.option value="purchasing.supplier_return.print_title">{{ __('Print title') }}</flux:select.option>
+                    <flux:select.option value="purchasing.supplier_return.print_footer">{{ __('Print footer') }}</flux:select.option>
+                    <flux:select.option value="purchasing.supplier_return.approval_limit">{{ __('Approval limit') }}</flux:select.option>
+                </flux:select>
+                <flux:input wire:model="financialValue" :label="__('Value')" />
+                <flux:input type="date" wire:model="effectiveFrom" :label="__('Effective from')" />
+                <flux:input type="date" wire:model="effectiveTo" :label="__('Effective to')" />
+            </div>
+            <flux:textarea wire:model="financialNotes" :label="__('Notes')" />
+            <flux:button wire:click="saveFinancialSetting" variant="primary">{{ __('Save pending setting') }}</flux:button>
+        </flux:card>
     @endcan
     <flux:card>
         <flux:heading size="lg">{{ __('Reason catalog') }}</flux:heading>
@@ -76,5 +160,27 @@ new #[Title('Supplier Return Settings')] class extends Component
             @forelse($reasons as $reason)<flux:table.row :key="$reason->id"><flux:table.cell>{{ $reason->code }}</flux:table.cell><flux:table.cell>{{ $reason->label_ar }}</flux:table.cell><flux:table.cell>{{ $reason->label_en }}</flux:table.cell><flux:table.cell>{{ $reason->is_active ? __('Active') : __('Inactive') }}</flux:table.cell><flux:table.cell>@can('company_settings.edit')<flux:button size="sm" variant="subtle" wire:click="toggle({{ $reason->id }})">{{ $reason->is_active ? __('Deactivate') : __('Activate') }}</flux:button>@endcan</flux:table.cell></flux:table.row>@empty<flux:table.row><flux:table.cell colspan="5">{{ __('No reasons configured yet.') }}</flux:table.cell></flux:table.row>@endforelse
         </flux:table.rows></flux:table>
     </flux:card>
-    <flux:card><flux:heading size="lg">{{ __('Return financial setting versions') }}</flux:heading><flux:text class="mt-2">{{ __('Numeric limits remain owner-configurable through the versioned financial settings contract.') }}</flux:text><div class="mt-4 overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="text-start"><th class="px-3 py-2 text-start">Key</th><th class="px-3 py-2 text-start">Value type</th><th class="px-3 py-2 text-start">Version</th><th class="px-3 py-2 text-start">Effective</th></tr></thead><tbody>@forelse($versions as $version)<tr class="border-t"><td class="px-3 py-2 font-mono">{{ $version->key }}</td><td class="px-3 py-2">{{ $version->value_type }}</td><td class="px-3 py-2">{{ $version->version }}</td><td class="px-3 py-2">{{ $version->effective_from?->toIso8601String() }}</td></tr>@empty<tr><td colspan="4" class="px-3 py-4">{{ __('No approved return-specific financial versions exist.') }}</td></tr>@endforelse</tbody></table></div></flux:card>
+    <flux:card>
+        <flux:heading size="lg">{{ __('Return financial setting versions') }}</flux:heading>
+        <flux:text class="mt-2">{{ __('Numeric limits remain owner-configurable through the versioned financial settings contract.') }}</flux:text>
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead><tr class="text-start"><th class="px-3 py-2 text-start">Key</th><th class="px-3 py-2 text-start">Value type</th><th class="px-3 py-2 text-start">Version</th><th class="px-3 py-2 text-start">Effective</th><th class="px-3 py-2 text-start">{{ __('Status') }}</th></tr></thead>
+                <tbody>
+                    @forelse($versions as $version)
+                        @php($approvalState = $version->approvalRecord?->approval_state?->value ?? 'pending')
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-mono">{{ $version->key }}</td>
+                            <td class="px-3 py-2">{{ $version->value_type }}</td>
+                            <td class="px-3 py-2">{{ $version->version }}</td>
+                            <td class="px-3 py-2">{{ $version->effective_from?->toIso8601String() }}</td>
+                            <td class="px-3 py-2">{{ $approvalState === 'approved' ? __('Approved') : __('Awaiting approval') }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-3 py-4">{{ __('No approved return-specific financial versions exist.') }}</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </flux:card>
 </x-app.page>

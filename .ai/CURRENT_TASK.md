@@ -1,16 +1,19 @@
-# Selected Task: TSK-016 Supplier Returns — Closure Review
+# Selected Task: Initial Setup Dashboard — First Launch Configuration
 
 ## Current state
 
-TSK-015 local/dev implementation is completed under DEC-050. TSK-016 local/dev implementation is **Complete** under DEC-052. This continuation reconciles the control files and verifies the current Demo server; Production/UAT remains open for Owner inputs and release gates.
+The Initial Setup Dashboard local/dev slice is **Implemented and browser-verified**. `/dashboard` now derives readiness from authoritative data and shows a setup panel while required owner inputs are missing. `/initial-setup` provides the full permission-gated wizard and links to the existing data-entry screens.
 
-The completed slice includes supplier-return schema, source/cost relationships, dynamic reason catalog administration, versioned print/number settings, Draft/Edit/Submit/Approve/Reject/Cancel/Reverse lifecycle, atomic stock posting/reversal, idempotency, audit timeline, detail, print, and permission/scope enforcement.
+Current local state is intentionally incomplete: company identity is missing required values, `supplier_return_reasons=0`, and no approved/effective supplier-return financial versions exist. Branch/store structure and active role assignment are currently detected as ready from the local database. This is expected Demo/Local evidence, not Production/UAT sign-off.
 
-**DEC-052 adopted rules:** every Phase 1 supplier-return line must reference an approved purchase-invoice line; its cost is the original invoice-line `unit_cost`; no WAC substitution or cost fallback; no-reference cases are rejected and belong to an explicit-cost approved `adjustment_out` path instead. Reason rows and numeric approval limits remain configurable inputs.
+**Safety rules:** no defaults, reason rows, approval limits, production users, or approvals are created automatically. Pending or locked-only financial versions do not count; only effective, non-expired versions linked to an approved `ApprovalRecord` count.
 
-**Closure-review scope:** reconcile stale `.ai/` status claims and TSK-016 source documents, refresh the current Demo server from this repository on port 8000, enforce approved-only financial-setting resolution, and manually verify the authenticated list/settings empty-state boundary. No new business policy, production master data, reason rows, numeric limits, or production bypass is authorized.
+**Access boundary:** `/initial-setup` requires `company_settings.edit`; a Local Demo Cashier received the existing Access Denied response. The dashboard remains usable and exposes the setup panel rather than applying a forced redirect loop.
 
-**Forbidden:** posting without an approved source/reason, fallback cost, production reason seeding, production master-data seeding, invented numeric approval values, or claiming Production/UAT readiness from Demo evidence.
+**Related completed scope:** TSK-016 Supplier Returns remains complete for Local/Dev under DEC-052; Production/UAT owner inputs and release gates remain open.
+
+**Forbidden:** claiming setup completion from demo data, treating optional printer review as production acceptance, bypassing financial approval, or publishing Demo Auth on the public HTTPS domain.
+
 
 The canonical PO implementation is under `app/Modules/Purchasing` and uses the existing `AllocatePurchaseOrderNumberAction` with `DocumentSequence`; no parallel numbering path exists.
 

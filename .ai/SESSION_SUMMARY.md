@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-06 - Initial Setup Dashboard / First Launch Configuration
+
+- **Agent / scope:** Owner-directed cross-cutting Local/Dev setup experience; no Production/UAT values or approvals.
+- **Completed:** Added `InitialSetupStatus` authoritative readiness service, `/initial-setup` permission-gated wizard, Dashboard first-launch panel, sidebar entry, bilingual UI strings, safe pending financial-setting input on supplier-return settings, and control-file/UI inventory documentation. Readiness distinguishes required/optional, missing, and approved/effective financial configuration without creating defaults.
+- **Files changed:** `app/Modules/Platform/Support/InitialSetupStatus.php`, `resources/views/platform/initial-setup.blade.php`, `resources/views/dashboard.blade.php`, `resources/views/layouts/app/sidebar.blade.php`, `resources/views/purchasing/return-settings.blade.php`, `routes/web.php`, `routes/platform.php`, `lang/ar.json`, `lang/en.json`, `TASKS.md`, `.ai/UI_SCREENS.md`, `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/HANDOFF.md`, `.ai/TEST_RESULTS.md`, and this log.
+- **Verification actually run:** PHP lint, Pint, PHPStan 0 errors, Blade cache, route discovery, locale parity `1079/1079`, service snapshot (`2/5`, `40%`), Local Demo Administrator browser verification, Local Demo Cashier Access Denied verification, Supplier Return Settings pending-form rendering, and browser console 0 messages / 0 JavaScript errors.
+- **Remaining blockers / next action:** Owner must enter company identity, supplier-return reasons, and approved/effective supplier-return financial versions; production users/scopes, printer acceptance, UAT, and release gates remain open.
+- **Code, tests, browser, commit, push:** Application code and docs changed; no PHPUnit/Pest created or run; manual browser evidence passed; local commit pending at time of entry; no push.
+
 ## 2026-08-03 - Policy Baseline and TSK-009 Preparation
 
 - **Agent / scope:** Documentation and project-control updates only.

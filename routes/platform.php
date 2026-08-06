@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
+use App\Modules\Platform\Support\TutorialRegistry;
+use App\Modules\Platform\Support\UserFlowRegistry;
 use Illuminate\Http\Request;
 
 $router = app('router');
@@ -17,9 +19,10 @@ $router->post('locale', function (Request $request) {
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->post('ui/preferences', [DashboardAssistantController::class, 'preferences'])->name('platform.ui-preferences');
-    $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', \App\Modules\Platform\Support\TutorialRegistry::screenIds())->name('platform.help.screen');
-    $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(\App\Modules\Platform\Support\UserFlowRegistry::all()))->name('platform.help.flow');
+    $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', TutorialRegistry::screenIds())->name('platform.help.screen');
+    $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
+    $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');
     $router->livewire('admin/stores', 'platform::admin.stores')->middleware('can:branches_stores.view')->name('admin.stores');
