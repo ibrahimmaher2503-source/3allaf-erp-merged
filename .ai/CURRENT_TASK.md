@@ -2,11 +2,11 @@
 
 ## Scope for this continuation — 2026-08-07
 
-- **Status:** Local/Dev readiness slice implemented and browser-verified after discovery; full TSK-018 remains open.
-- **Allowed:** Reconcile label queue/print contracts, maintain the reversible Local/Dev readiness boundary, and expose an empty/disabled label screen until stock and printer dependencies exist.
-- **Forbidden:** Production label quantities, stock-balance mutation, invented printer/template/paper defaults, hardware acceptance, actual print/reprint posting, POS integration, and UAT/release sign-off.
-- **Dependencies:** TSK-017 approved/effective price resolver is available; `stock_balances`, `printer_configurations`, and approved label/device values are not implemented/available in the current code tree.
-- **Policy boundary:** `docs/24-pricing-policy.md` and `docs/38-print-export-specification.md` remain derived/local references. No queue row may be generated from Demo data until a real stock balance and printer/template contract exist; unpriced products remain blocked.
+- **Status:** Local/Dev Dummy-data queue slice implemented and browser-verified; production queue/print remains open.
+- **Allowed:** Use explicitly authorized, clearly labeled Local Demo seeders to exercise stock-derived quantity, approved-price linkage, printer/template metadata, queue status, and append-only print-event display.
+- **Forbidden:** Production label quantities, Production printer/device defaults, hardware acceptance, actual print/reprint posting, POS integration, and UAT/release sign-off.
+- **Dependencies:** TSK-017 approved/effective price resolver and existing `stock_balances`/`printer_configurations` contracts are available for the Demo slice; final owner label/device/quantity values remain pending.
+- **Policy boundary:** `docs/24-pricing-policy.md` and `docs/38-print-export-specification.md` remain derived/local references. Demo rows are explicitly non-Production and unpriced products remain blocked.
 - **Verification:** Read-only contract/schema inspection, PHP lint/Pint/PHPStan, Blade cache, route checks, `git diff --check`, then authenticated Local Demo browser verification of the readiness/empty/disabled states. No PHPUnit/Pest or automated browser tests.
 
 ---

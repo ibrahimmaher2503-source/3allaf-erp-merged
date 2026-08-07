@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use LogicException;
-
 use Illuminate\Database\Seeder;
+use LogicException;
 
 /**
  * Explicit local Demo-only dataset entrypoint.
@@ -30,6 +29,8 @@ class DemoSeeder extends Seeder
             DemoProductSeeder::class,
             LocalDemoSeeder::class,
             DemoApprovedPurchaseOrderSeeder::class,
+            DemoPricingSeeder::class,
+            DemoLabelQueueSeeder::class,
         ]);
     }
 }

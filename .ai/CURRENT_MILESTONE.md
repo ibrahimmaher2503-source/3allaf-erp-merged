@@ -2,8 +2,8 @@
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
 **Current milestone:** DM 2.3 — Price Proposals, Version Approval, and Barcode Labels
-**Status:** TSK-017 Local/Dev slice complete; TSK-018 Local/Dev readiness slice complete; full queue/print, Production/UAT, and owner-configurable printer/label inputs remain open.
-**Progress:** Started 2026-08-07. TSK-017 is closed for its Local/Dev slice. TSK-018 now has a guarded `/pricing/labels` readiness/empty screen behind `pricing_labels.view`, with approved-price count only, explicit stock/printer/audit blockers, disabled generation, sidebar navigation, and Arabic RTL/English LTR browser evidence. No queue rows, print events, hardware defaults, or production label claims were invented.
+**Status:** TSK-017 Local/Dev slice complete; TSK-018 Local/Dev Dummy-data queue slice complete; actual queue/print, Production/UAT, and owner-configurable printer/label inputs remain open.
+**Progress:** Started 2026-08-07. TSK-018 now has `label_queues` and append-only `label_print_events` contracts, a Demo-only approved-price/stock/printer/partial-queue fixture, guarded `/pricing/labels` table, disabled print/reprint/generate actions, sidebar navigation, and Arabic RTL/English LTR browser evidence. The Demo fixture is not hardware acceptance, UAT, or Production authorization.
 
 ---
 

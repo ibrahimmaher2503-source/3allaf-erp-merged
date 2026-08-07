@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Pricing\Models\LabelQueue;
 use App\Modules\Pricing\Models\PriceVersion;
 use Illuminate\Support\HtmlString;
 
@@ -19,6 +22,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             'title' => __('Label Queue Readiness'),
             'slot' => new HtmlString(view('pricing.labels', [
                 'approvedPriceCount' => PriceVersion::query()->where('state', 'approved')->count(),
+                'stockBalanceCount' => StockBalance::query()->count(),
+                'printerCount' => PrinterConfiguration::query()->where('status', 'active')->count(),
+                'queues' => LabelQueue::query()->with(['product', 'store', 'version', 'printer', 'printEvents'])->latest('id')->get(),
             ])->render()),
         ]);
     })

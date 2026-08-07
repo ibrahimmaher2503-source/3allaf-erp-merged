@@ -101,4 +101,9 @@ The local slice now includes CSV import-as-Draft and history comparison in addit
 
 Start TSK-018 after the TSK-017 Local/Dev slice. Reconcile and implement only a truthful readiness/empty boundary until `stock_balances`, `printer_configurations`, approved label/template values, and downstream inventory contracts exist. No queue rows, print events, stock quantities, printer defaults, hardware integration, or production/UAT claims may be invented.
 
-A full queue implementation without stock/printer contracts would create fake quantities and un-auditable output. The first safe slice is server-gated readiness with disabled actions and explicit owner-pending states. This keeps TSK-018 moving without bypassing stock truth, printer ownership, label policy, or hardware acceptance. Related: TSK-018; PRC-06–07; BLK-003, BLK-008, BLK-011; docs/24, docs/36, docs/38. Owner/Operations inputs remain outstanding.
+## DEC-057 — Owner-authorized Local Demo label queue fixtures
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev Demo seeders only; Production/UAT deferred.
+
+The owner explicitly authorized Dummy data in seeders. `DemoPricingSeeder` and `DemoLabelQueueSeeder` may create clearly labeled local fixtures for an approved effective Demo price, existing stock-balance rows, a documentation-only Demo printer/template, a partial label queue, and append-only print-event evidence. The seeders must refuse non-local or `DEMO_AUTH=false` execution, remain idempotent, never connect to hardware, and never be treated as Production master data, UAT acceptance, or release approval. Related: TSK-018; PRC-06–07; BLK-003, BLK-008, BLK-011.

@@ -1,12 +1,13 @@
 # Test and Verification Status
 
-## TSK-018 Discovery/Local verification boundary — 2026-08-07
+## TSK-018 Local/Dev Dummy-data verification boundary — 2026-08-07
 
-- Discovery completed: TSK-017 provides the approved/effective price boundary, but the current repository has no `stock_balances`, `printer_configurations`, `label_queues`, or `label_print_events` implementation to support truthful queue generation.
-- Implemented and verified `/pricing/labels` as a read-only readiness/empty boundary behind `pricing_labels.view`; it shows approved-price count only, explicit dependency blockers, no queue rows, and disabled generation.
-- Browser evidence: Local Demo Administrator rendered the page; `demo-no-access` received Access Denied; Arabic `html[dir=rtl]`/computed RTL and English `html[dir=ltr]`/computed LTR passed; no horizontal overflow; zero browser console errors.
-- No label queue rows, print events, printer defaults, stock quantities, hardware values, or automated tests were created.
-- Production/UAT and hardware acceptance remain explicitly open.
+- Owner explicitly authorized Dummy data in seeders for Local Demo only. `DemoSeeder` now calls idempotent `DemoPricingSeeder` and `DemoLabelQueueSeeder`; both refuse non-local or `DEMO_AUTH=false` execution.
+- Existing `stock_balances` contract is reused; targeted migration created `label_queues` and append-only `label_print_events` with foreign keys, indexes, queue generation idempotency key, and event idempotency key.
+- Local SQLite migration and `DemoSeeder` succeeded twice. Evidence: `stock_balances=2`, `label_queues=1`, `label_print_events=1`; Demo queue `DEMO-PROD-001 / DEMO-SELL / required=5 / printed=2 / partial`, one `initial` event quantity 2, and no queue for the unpriced Demo product.
+- Browser evidence: Local Demo Administrator rendered the queue table in English and Arabic; `html/body` direction was `ltr` and `rtl` respectively; one queue row, Demo printer/template text, disabled print/reprint/generate actions, no horizontal overflow, and zero console errors were verified.
+- The earlier CLI Production runtime was not mutated; all migration/seeding evidence used explicit local SQLite overrides. Dummy printer IP is documentation-only and no hardware connection or Production/UAT approval exists.
+- Production/UAT, final label dimensions/templates, device scope, real quantities, and actual print/reprint execution remain explicitly open.
 
 ## TSK-017 Local/Dev verification boundary — 2026-08-07
 

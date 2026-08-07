@@ -2,7 +2,7 @@
 
 ## TSK-018 boundary update — 2026-08-07
 
-TSK-017 Local/Dev is closed. TSK-018 Local/Dev readiness is implemented, but `stock_balances`, `printer_configurations`, `label_queues`, and `label_print_events` are absent from the current implementation. Remaining-stock quantity, printer/device, label layout, branch exception, reprint, and hardware values remain owner/operations pending. Do not generate queue or print records until those contracts exist.
+TSK-017 Local/Dev is closed. TSK-018 Local/Dev Dummy-data queue display is implemented using the existing `stock_balances`/`printer_configurations` contracts plus new `label_queues` and append-only `label_print_events`. The owner-authorized fixture is local-only and does not close remaining-stock authority, printer/device, label layout, branch exception, reprint, hardware, Production, or UAT gates.
 
 ## TSK-017 boundary update — 2026-08-07
 

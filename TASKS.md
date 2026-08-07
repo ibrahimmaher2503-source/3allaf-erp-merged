@@ -303,12 +303,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-018 — Implement Location Barcode Label Queues and Printing
 
-- **Task ID / Phase / Milestone / Status:** TSK-018; Phase 2; DM 2.3; **In Progress — Local/Dev readiness slice implemented 2026-08-07; full queue/print delivery and Production/UAT pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-018; Phase 2; DM 2.3; **Local/Dev Dummy-data slice implemented and browser-verified 2026-08-07; actual queue/print delivery and Production/UAT pending**.
 - **Title / Purpose / Description:** Generate one pending label per remaining unit/location after approved price and deliver selected-printer initial/reprint tracking.
 - **Traceability:** PRC-06–PRC-07, NFR-01; US-007; FLW-CAT-05; UI UI-PRC-003; AC-PRC-06–07; SEC-011–012, SEC-015, SEC-020–024, SEC-038.
-- **Dependencies / Required Inputs:** TSK-017; `docs/24-pricing-policy.md`; final label/printer/paper, branch exception, quantity/reprint, and device values remain configurable or pending.
+- **Dependencies / Required Inputs:** TSK-017; existing stock balance/printer configuration contracts; `docs/24-pricing-policy.md`; final label/printer/paper, branch exception, quantity/reprint, and device values remain configurable or pending.
 - **Database Entities:** `label_queues`, `label_print_events`, `price_versions`, `price_lines`, `stock_balances`, `printer_configurations`.
-- **Backend / Livewire / Blade Deliverables:** Guarded `/pricing/labels` readiness/empty state, approved-price count, explicit dependency blockers, and disabled generation are implemented; idempotent queue calculation, print/reprint actions, audit events, and label template remain deferred until stock/printer contracts exist.
+- **Backend / Livewire / Blade Deliverables:** Demo-only idempotent queue/print-event schema and seeders, approved-price/stock/printer linkage, guarded `/pricing/labels` queue table, explicit Demo blockers, and disabled print/reprint/generation actions are implemented; real hardware execution and Production label contracts remain deferred.
 - **UI / Flux / Alpine / Vite:** Flux Table/Filters/Search/Pagination/Printer Select/Progress/Dialog/Badges/Toast; Alpine/browser print/local integration only if approved; print-specific Vite CSS.
 - **Suggested Packages:** Mature barcode renderer only after compatibility/output review; no custom generator.
 - **Permissions / Validation / Audit / States / Print:** View/Print/Reprint; location/approved price/quantity/printer/reason; Pending/Partial/Completed/Failed; every event audited; label output.
