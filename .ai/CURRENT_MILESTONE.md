@@ -1,9 +1,9 @@
-# Active Milestone — TSK-025 Shift/Cash Readiness Boundary
+# Active Milestone — TSK-026 Offline POS Readiness Boundary
 
 **Current phase:** Phase 3 local implementation exception (formal Phase 1/2 and Phase 3 gates remain open)
-**Current milestone:** DM 3.3 — Cash Drawer and Shift Cycle
-**Status:** TSK-023 is implemented and browser-verified; TSK-024 and TSK-025 have browser-verified read-only readiness boundaries only. Production/UAT, hardware, owner policy, and formal phase exit remain open.
-**Progress:** `/pos/financial-readiness` and `/pos/shift-readiness` are protected by `pos_sales.view`, read only bounded configuration/context counts, and preserve POSF-01..04, BLK-006, BLK-008, blind close, variance, and print policies as pending. No financial, shift, cash movement, payment, variance, approval, or close mutation is authorized.
+**Current milestone:** DM 3.4 — Operational Integrity / Restricted Offline Boundary
+**Status:** TSK-023 is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 have browser-verified read-only/readiness boundaries only. Production/UAT, hardware, device policy, owner inputs, and formal phase exit remain open.
+**Progress:** `/pos/financial-readiness`, `/pos/shift-readiness`, and `/pos/offline-readiness` are protected by `pos_sales.view`. The offline page records OFF-01..OFF-05 and NFR-04 as pending, displays the PRD permitted/blocked classes, and creates no queue/sync/replay/conflict or transaction surface. BLK-004 and DEC-018 remain open.
 
 ---
 

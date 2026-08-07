@@ -1,12 +1,12 @@
-# Active Progress — TSK-025 Shift/Cash Readiness Boundary — 2026-08-07
+# Active Progress — TSK-026 Offline POS Readiness Boundary — 2026-08-07
 
-**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024 financial readiness and TSK-025 shift/cash readiness are read-only boundaries only. No financial, shift, cash movement, payment, variance, or close mutation is enabled.
-**TSK-025 dependency evidence:** `docs/32`, `docs/31`, `docs/35`, `docs/36`, `docs/38`, and `docs/57` were read. Blind-close expected-value non-exposure is preserved; drawer allocation, opening float, cash movement, payment linkage, variance, approval, print, BLK-006, and BLK-008 inputs remain pending.
-**Next boundary:** Resolve owner/configuration inputs before mutation; otherwise preserve the readiness boundary and do not advance TSK-026.
+**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 have read-only/readiness boundaries only. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, or conflict mutation is enabled.
+**TSK-026 dependency evidence:** `docs/51`, `docs/31`, `docs/30`, `docs/35`, `docs/36`, and `docs/57` were read. PRD permitted/blocked offline classes are recorded, while OFF-01..OFF-05, BLK-004, DEC-018, device scope, limits, price age, expiry/retry, and conflict ownership remain pending.
+**Next boundary:** Resolve owner/configuration inputs before enabling offline behavior; otherwise preserve the disabled boundary and do not advance TSK-027.
 
 ---
 
-# Previous Active Progress — TSK-024 Discovery/Read-only POS Financial Boundary — 2026-08-07
+# Previous Active Progress — TSK-025 Shift/Cash Readiness Boundary — 2026-08-07
 
 **Implementation status:** TSK-023 Local/Dev online POS checkout slice is implemented and browser-verified. Production/UAT, hardware, formal Phase gates, and owner-configurable POS financial policy remain open.
 **TSK-023 evidence:** Demo-admin completed two approved sales plus suspend/retrieve; each approved sale has one `sale` movement linked by `source_type/source_id/source_line_id` and deterministic idempotency key. The stock invariant was rechecked in the correct `DEMO-SELL` store scope: product 1 `on_hand=1`, movement sum `1`, sale movements `-2` after opening/transfer/count history. `demo-no-access` was denied. English LTR and Arabic RTL rendered with no overflow or console errors observed.

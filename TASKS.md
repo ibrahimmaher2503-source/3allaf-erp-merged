@@ -420,7 +420,8 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-026 — Implement Restricted Offline POS, Synchronization, and Conflict Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-026; Phase 3; DM 3.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-026; Phase 3; DM 3.4; **Discovery/readiness boundary implemented and browser-verified; offline transaction/sync mutation remains pending**.
+- **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/offline-readiness` behind `pos_sales.view`. It records OFF-01..OFF-05 and NFR-04 as pending, shows PRD permitted/blocked operation classes, and enables no queue, sync, replay, conflict, or transactional offline behavior.
 - **Title / Purpose / Description:** Deliver owner-approved device-bound provisional POS queue, restricted offline eligibility, protected/expiring IndexedDB, service-worker messaging, idempotent server sync and explicit conflict disposition.
 - **Traceability:** POS-01–POS-05 offline boundary, NFR-01, NFR-03–NFR-06; US-032; FLW-OFF-01–03; UI UI-OFF-001–003, UI-POS-001; AC-NFR-01, AC-NFR-03–06; SEC-004–005, SEC-011–016, SEC-019–020, SEC-032–036.
 - **Dependencies / Required Inputs:** TSK-023–025; DEC-018/BLK-004; exact devices/limits/price age/evidence/expiry/review/disposition/security.

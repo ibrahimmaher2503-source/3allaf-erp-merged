@@ -1,4 +1,14 @@
-# Active Handoff — TSK-025 Shift/Cash Readiness Boundary — 2026-08-07
+# Active Handoff — TSK-026 Offline POS Readiness Boundary — 2026-08-07
+
+TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024, TSK-025, and TSK-026 now have truthful read-only/readiness boundaries at `/pos/financial-readiness`, `/pos/shift-readiness`, and `/pos/offline-readiness`, protected by `pos_sales.view`.
+
+TSK-026 records offline transaction status as disabled/pending, shows OFF-01..OFF-05 and NFR-04, and documents the PRD permitted/blocked classes without enabling any transaction. No IndexedDB, offline transaction, sync batch, replay, conflict action, sensitive cache, device enablement, numeric limit, price-age, expiry, retry, or conflict-disposition default exists. English LTR, Arabic RTL, authorized/no-access browser evidence, DOM safety probe, route protection, PHPStan, Blade, locale parity, and whitespace checks passed.
+
+TSK-026 remains In Progress: BLK-004 and DEC-018 owner inputs remain pending. Do not advance TSK-027 until the offline policy/configuration boundary is resolved or a narrower authorization is recorded.
+
+---
+
+# Previous Active Handoff — TSK-025 Shift/Cash Readiness Boundary — 2026-08-07
 
 TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 and TSK-025 now have truthful read-only readiness boundaries at `/pos/financial-readiness` and `/pos/shift-readiness`, protected by `pos_sales.view`.
 

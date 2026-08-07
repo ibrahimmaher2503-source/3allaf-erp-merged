@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-026 offline POS readiness boundary implementation
+
+- **Agent / scope:** Implemented the smallest authorized TSK-026 Local/Dev read-only/disabled boundary after reading docs/51, 31, 30, 35, 36, and 57; no offline transaction/sync/replay/conflict mutation, device/UAT/Production scope.
+- **Completed:** Added guarded `/pos/offline-readiness` using `pos_sales.view`; it records OFF-01..OFF-05/NFR-04 pending states and PRD permitted/blocked operation classes without enabling offline behavior. Added bilingual translations.
+- **Files changed:** `routes/retail.php`, `resources/views/pages/pos/offline-readiness.blade.php`, `lang/ar.json`, `lang/en.json`, `TASKS.md`, and active `.ai/` control records.
+- **Verification actually run:** PHP lint, Pint, targeted PHPStan 0 errors, Blade cache, route discovery, locale parity `1279/1279`, `git diff --check`, authorized English LTR and Arabic RTL browser rendering, DOM safety probe with no offline queue/sync/conflict controls or sensitive cache tokens, no-access denial, no overflow, and 0 authorized-page console errors.
+- **Remaining blockers / next action:** TSK-026 remains In Progress. DEC-018/BLK-004 enabled scope, duration/amount/queue limits, price age, expiry/retry, conflict ownership/disposition, secure storage, numbering, sync idempotency, UAT, device, and Production policy remain pending. Commit the coherent local slice; do not advance TSK-027.
+- **Code, tests, browser, commit, push:** Code and docs changed; no PHPUnit/Pest or automated browser tests; browser manual evidence passed; commit pending; no push.
+
 ## 2026-08-07 - TSK-025 shift/cash readiness boundary implementation
 
 - **Agent / scope:** Implemented the smallest authorized TSK-025 Local/Dev read-only boundary after reading docs/32, 31, 35, 36, 38, and 57; no shift/cash/payment/variance/print mutation, Production/UAT, or hardware scope.

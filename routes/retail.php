@@ -45,6 +45,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:pos_sales.view')->name('pos.shift-readiness');
 
+    Route::get('pos/offline-readiness', function (Request $request) {
+        abort_unless($request->user()?->can('pos_sales.view'), 403);
+
+        return view('pages.pos.offline-readiness');
+    })->middleware('can:pos_sales.view')->name('pos.offline-readiness');
+
     Route::get('pos/financial-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

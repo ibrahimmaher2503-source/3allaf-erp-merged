@@ -122,6 +122,13 @@ The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The
 
 TSK-019–TSK-022 inventory reads and mutations must enforce `Store::visibleTo()` scope, with an explicit super-admin bypass and fail-closed authentication. Transfer receipt is allowed only from `in_transit`, processes every transfer line, and moves shortages to terminal `difference_review`; repeated receipt attempts are rejected server-side. Difference types use a server-side allowlist, exceptions are reported internally while users receive generic translated errors, and cost/WAC remains permission-gated. This correction is recorded in commit `1b66b69`; it does not approve production stores, reason catalogs, thresholds, hardware, UAT, or release.
 
+## DEC-062 — TSK-026 Local/Dev offline readiness boundary
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev read-only/disabled boundary; offline transaction, sync, device enablement, and Production/UAT deferred.
+
+Under DEC-060, TSK-026 may expose a server-gated `/pos/offline-readiness` page that records the PRD permitted/blocked offline classes and OFF-01..OFF-05/NFR-04 as pending. It must not create IndexedDB/offline transaction records, sync batches, replay/conflict actions, device enablement, numeric limits, cache-age/expiry/retry defaults, sensitive local caches, provisional sale records, or offline payment/stock/numbering behavior. DEC-018 and BLK-004 remain authoritative.
+
 ## DEC-061 — TSK-025 Local/Dev shift and cash readiness boundary
 
 **Date:** 2026-08-07
