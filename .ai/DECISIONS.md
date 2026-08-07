@@ -121,3 +121,10 @@ The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The
 **Status:** Implemented and browser-verified for Local/Demo only; Production/UAT deferred.
 
 TSK-019–TSK-022 inventory reads and mutations must enforce `Store::visibleTo()` scope, with an explicit super-admin bypass and fail-closed authentication. Transfer receipt is allowed only from `in_transit`, processes every transfer line, and moves shortages to terminal `difference_review`; repeated receipt attempts are rejected server-side. Difference types use a server-side allowlist, exceptions are reported internally while users receive generic translated errors, and cost/WAC remains permission-gated. This correction is recorded in commit `1b66b69`; it does not approve production stores, reason catalogs, thresholds, hardware, UAT, or release.
+
+## DEC-060 — Owner-authorized Local/Dev slices for TSK-023–TSK-027
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev implementation only; Production/UAT/Phase Gates deferred.
+
+The owner explicitly authorized implementation of bounded Local/Dev slices for TSK-023 through TSK-027 while preserving every unresolved policy, hardware, device, financial, legal, owner-input, UAT, and release value as `PENDING`/configurable. These slices may use deterministic local Demo fixtures and browser evidence, but must not be represented as Production policy, Phase Gate approval, UAT acceptance, or release readiness. TSK-026 remains restricted to a truthful offline readiness/disabled boundary until DEC-018/BLK-004 inputs are supplied; it must not invent enabled devices, limits, expiry, or conflict dispositions.

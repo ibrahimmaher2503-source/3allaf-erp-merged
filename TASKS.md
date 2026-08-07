@@ -375,8 +375,9 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-023 — Implement Dedicated POS Checkout and Suspended Sales
 
-- **Task ID / Phase / Milestone / Status:** TSK-023; Phase 3; DM 3.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-023; Phase 3; DM 3.1; **Implemented and browser-verified for approved Local/Dev scope; formal Phase/Production/UAT gates remain open**.
 - **Title / Purpose / Description:** Build fast barcode/name/code POS with assigned-store cart, authorized quantity/customer, suspend/retrieve, atomic sale, stock movement and thermal/A4 output.
+- **Local/Dev boundary — 2026-08-07:** Implemented online assigned-store checkout, server-resolved price/stock/store/branch/drawer/shift context, idempotent sale approval, append-only sale movements, suspended/retrieved carts, bilingual POS/sales/detail/thermal-A4 baseline, and denied-role boundary. Tax, discounts, payments/evidence, open price, offline, customer, hardware acceptance, final print policy, formal Phase 3 gate, UAT, and Production readiness remain outside this slice and pending/configurable.
 - **Traceability:** PRC-07, INV-02, POS-01–POS-02, POS-04, NFR-05–NFR-06; US-017; FLW-POS-01–02; UI UI-POS-001–002, UI-POS-006–007; AC-PRC-07, AC-INV-02, AC-POS-01–02, AC-POS-04; SEC-006, SEC-011–013, SEC-017–021, SEC-038.
 - **Dependencies / Required Inputs:** Phase 2 gate; active product/price/stock/branch/store/drawer/shift foundations; approved POS/receipt/hardware workflow.
 - **Database Entities:** `sales`, `sale_lines`, `suspended_sales`, `suspended_sale_lines`, `stock_movements`, `stock_balances`, `customers`, `shifts`, `cash_drawers`, `document_sequences`.
@@ -389,7 +390,8 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-024 — Implement Discounts, Tax, Payments, Evidence, and Open Price
 
-- **Task ID / Phase / Milestone / Status:** TSK-024; Phase 3; DM 3.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-024; Phase 3; DM 3.2; **Discovery/read-only boundary implemented and browser-verified after TSK-023; financial mutation remains pending**.
+- **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/financial-readiness` behind `pos_sales.view`. It reads only active payment/tax row counts and presents explicit pending cards for discount replacement, tax, payments/evidence, rounding/split residual, open price, and exact print totals. No financial records, defaults, uploads, or mutation actions were added.
 - **Title / Purpose / Description:** Add one-discount replacement rule, optional invoice tax, cash/manual electronic settlement/evidence, open-price authorization and exact printed totals.
 - **Traceability:** PRC-08, POS-03–POS-06, NFR-01, NFR-04; US-008, US-018; FLW-POS-01, FLW-POS-03; UI UI-POS-001, UI-POS-007, UI-SYS-005; AC-PRC-08, AC-POS-03–06; SEC-006, SEC-015–016, SEC-019–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-023; `docs/26-discount-return-policy.md`; BLK-008 tax/payment/numbering and final discount, open-price, evidence, rounding, and financial limits remain configurable or pending.

@@ -43,7 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function (InitialSetupStatus $setupStatus) {
         return view('dashboard', ['setup' => $setupStatus->snapshot()]);
     })->middleware('can:dashboard_reports.view')->name('dashboard');
-    Route::view('pos', 'pages.pos.index')->middleware('can:pos_sales.view')->name('pos');
+    require __DIR__.'/retail.php';
 });
 
 require __DIR__.'/platform.php';

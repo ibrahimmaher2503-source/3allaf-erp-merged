@@ -1,4 +1,20 @@
-# Active Progress — TSK-019–TSK-022 — 2026-08-07
+# Active Progress — TSK-024 Discovery/Read-only POS Financial Boundary — 2026-08-07
+
+**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified. TSK-024 is currently discovery/read-only only; no financial mutation is enabled.
+**TSK-024 dependency evidence:** `docs/26`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, `docs/48`, and `docs/49` were read. POSF-01 rounding level, POSF-02 cash rounding, POSF-03 split-payment residual, POSF-04 discount replacement, and BLK-008 tax/payment/numbering/print values remain pending/configurable.
+**Next boundary:** Inspect existing TSK-023 seams and implement only a server-gated readiness/empty boundary if it can be truthful without creating tax, discount, payment, evidence, or open-price records. Do not advance TSK-025.
+
+---
+
+# Previous Active Progress — TSK-023 Local/Dev POS Checkout — 2026-08-07
+
+**Implementation status:** TSK-023 Local/Dev online POS checkout slice is implemented and browser-verified. Production/UAT, hardware, formal Phase gates, and owner-configurable POS financial policy remain open.
+**TSK-023 evidence:** Demo-admin completed two approved sales plus suspend/retrieve; each approved sale has one `sale` movement linked by `source_type/source_id/source_line_id` and deterministic idempotency key. The stock invariant was rechecked in the correct `DEMO-SELL` store scope: product 1 `on_hand=1`, movement sum `1`, sale movements `-2` after opening/transfer/count history. `demo-no-access` was denied. English LTR and Arabic RTL rendered with no overflow or console errors observed.
+**Next boundary:** TSK-024 is discovery/read-only only until POSF-01..04 and BLK-008 owner/configuration inputs are resolved; no discount/tax/payment/evidence/open-price mutation is authorized.
+
+---
+
+# Previous Active Progress — TSK-019–TSK-022 — 2026-08-07
 
 **Implementation status:** TSK-019–TSK-022 Local/Demo inventory slice is implemented, corrected after security/workflow review, and browser-verified. Production/UAT remains open.
 **Boundary:** Inventory scope enforcement, append-only movements, balances/WAC/availability, multi-line transfers, reasoned adjustments, and full/partial count reconciliation are implemented for Local/Demo only. Production opening data, final policies, hardware, UAT, and release gates remain open.
@@ -36,8 +52,8 @@ TSK-015 template artifact remains available at `docs/templates/TSK-015-purchase-
 | Phase 2 | DM 2.2 Purchase Cycle | In Progress (TSK-014 completed for approved local scope; TSK-015 Slice A / Performance Group A local) | TSK-014 local PO scope completed; TSK-015 ledger foundation and P01–P03 implemented; mobile evidence pending; receipt policies, production inputs, UAT, and production gates remain open | 2026-08-05 | - | TSK-014 to TSK-016; TSK-P01–P12 | BLK-008/BLK-010/BLK-017, mobile evidence, realistic-volume baselines, receipt policies, production inputs, UAT, and Phase 2 gates remain open |
 | Phase 2 | DM 2.3 Pricing and Barcode Labels | In Progress (TSK-017 Local/Dev slice) | Pricing proposal/version approval, CSV-as-Draft import, history comparison, resolver, permissions, unpriced visibility, and browser evidence implemented; production branch policy, labels, Production/UAT remain open | 2026-08-07 | - | TSK-017 to TSK-018 | BLK-011 and production/device/UAT gates remain open |
 | Phase 2 | DM 2.4 Inventory Operations | Local/Demo complete; Production/UAT pending | 100% local slice | TSK-019–TSK-022 | Ledger/balances, transfers/differences, adjustments, counts/reconciliation |
-| Phase 3 | DM 3.1 POS Checkout | Not Started | 0% | - | - | TSK-023 | Dedicated POS |
-| Phase 3 | DM 3.2 Discount and Payment Rules | Not Started | 0% | - | - | TSK-024 | Evidence and print totals |
+| Phase 3 | DM 3.1 POS Checkout | Implemented for approved Local/Dev online slice; Production/UAT/Phase gates pending | Assigned-store context, pricing/stock revalidation, idempotent sale/movement linkage, suspend/retrieve, bilingual browser evidence | 2026-08-07 | - | TSK-023 | BLK-003/BLK-006/BLK-008, hardware, formal Phase gates and production inputs remain open |
+| Phase 3 | DM 3.2 Discount and Payment Rules | Discovery/read-only boundary only | POSF-01..04 and BLK-008 remain pending; no financial mutation enabled | - | - | TSK-024 | Owner/configuration inputs required before implementation |
 | Phase 3 | DM 3.3 Cash Drawer and Shift Cycle | Not Started | 0% | - | - | TSK-025 | Blind close and variance |
 | Phase 3 | DM 3.4 Operational Integrity | Not Started | 0% | - | - | TSK-026 | Linkage and restricted offline baseline |
 | Phase 4 | DM 4.1 Customer Profile and Loyalty | Not Started | 0% | - | - | TSK-027 | Unique phone and shared loyalty |

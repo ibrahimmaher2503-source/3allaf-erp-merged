@@ -1,6 +1,20 @@
 # Test and Verification Status
 
-## TSK-019–TSK-022 Local/Demo verification boundary — 2026-08-07
+## TSK-023 Local/Dev POS verification boundary — 2026-08-07
+
+- Diagnostics passed for the slice: PHP lint, Pint, targeted PHPStan (0 errors), Blade view cache, route discovery, locale JSON parity, and `git diff --check`. No PHPUnit/Pest or automated browser tests were created or run per DEC-012.
+- Authenticated browser evidence on the verified local Demo server (`APP_ENV=local`, `DEMO_AUTH=true`): `demo-admin` reached `/pos`, added a priced product, completed checkout, viewed `/sales`, `/sales/{sale}`, and the thermal/A4 print baseline; Arabic `lang=ar` rendered RTL with translated POS labels; suspended cart was created, listed at `/pos/suspended`, and resumed. `demo-no-access` received Access Denied for `/pos`.
+- Database evidence: two approved sales were created (`SALE-2026-000001`, `SALE-2026-000002`); each sale line has one linked `StockMovement`; movements `id=10,11` are `movement_type=sale`, `quantity=-1.000000`, `source_type=App\\Modules\\Retail\\Models\\Sale`, and deterministic keys `SALE:1:LINE:1` / `SALE:2:LINE:2`. Correct `DEMO-SELL` scope (`store_id=1`) reconciles product 1 to `on_hand=1`, total movement sum `1`, and sale movement sum `-2`; the earlier `store_id=2` query was an incorrect scope probe, not an application defect.
+- Local boundary: product/store/branch/drawer/shift context, approved pricing, stock revalidation, sale idempotency, append-only movement linkage, suspend/retrieve, bilingual screens, and role denial are evidenced. Tax, discounts, payments/evidence, open price, offline, customer, production print/hardware, UAT, and formal Phase 3 exit remain pending.
+
+## TSK-024 Readiness boundary verification — 2026-08-07
+
+- Implemented guarded `GET /pos/financial-readiness` with existing `pos_sales.view` authorization. The route reads only active payment/tax configuration counts; it creates no rows, defaults, evidence files, payment records, discount/tax values, or open-price approvals.
+- Browser evidence on the verified Demo server: `demo-admin` rendered the readiness page in English LTR and Arabic RTL; all six pending cards, local-only warning, read-only configuration counts, and Back to POS link were visible. `demo-no-access` received the safe Access Denied page. Browser console returned 0 messages and 0 JavaScript errors for the authorized page.
+- Diagnostics passed: PHP lint for changed route/Retail files and migration, targeted PHPStan 0 errors, Blade cache, route discovery (`pos.financial-readiness`), locale parity `1228/1228`, and `git diff --check`. No PHPUnit/Pest or automated browser tests were created or run.
+- Boundary retained: POSF-01 rounding level, POSF-02 cash rounding, POSF-03 split-payment residual, POSF-04 discount replacement, tax/payment/numbering/print values under BLK-008, payment evidence, open-price limits, Production/UAT, hardware, and formal Phase 3 exit remain pending.
+
+## TSK-023 Local/Dev POS verification boundary — 2026-08-07
 
 - Canonical Local Demo GET surfaces now resolve: `/inventory`, `/inventory/products/{product}`, `/inventory/movements`, `/inventory/transfers`, `/inventory/transfers/{id}/dispatch`, `/inventory/transfers/{id}/receive`, `/inventory/transfers/{id}/differences`, `/inventory/adjustments`, `/inventory/counts`, `/inventory/counts/{id}/entry`, and `/inventory/counts/{id}/reconcile`. The stock-card route filters the ledger/balances by product.
 - Cost visibility is gated by `inventory_stock_card.cost_view`; Inventory `StockBalance` quantity casts are normalized to six decimals. Transfer difference review now has a separate `transfers.difference`-guarded resolver and does not permit re-receipt after entering review.

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+@props(['title' => 'POS', 'store' => null, 'shift' => null])
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
     dir="{{ in_array(app()->getLocale(), config('app.rtl_locales'), true) ? 'rtl' : 'ltr' }}"
@@ -7,6 +8,8 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-zinc-100 dark:bg-zinc-950 font-sans antialiased text-zinc-900 dark:text-zinc-100 flex flex-col">
+        @php($posStore = $store ?? null)
+        @php($posShift = $shift ?? null)
         <!-- Dedicated POS Application Top Bar -->
         <header class="border-b border-zinc-200 bg-white px-4 py-2.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sticky top-0 z-30">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -19,18 +22,18 @@
                 <div class="hidden md:flex items-center gap-2 text-xs">
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Branch Context') }}:</span>
-                        <span class="font-semibold">{{ __('Not configured') }}</span>
+                        <span class="font-semibold">{{ $posStore?->branch?->code ?? __('Not configured') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Selling Store') }}:</span>
-                        <span class="font-semibold">{{ __('Not configured') }}</span>
+                        <span class="font-semibold">{{ $posStore?->code ?? __('Not configured') }}</span>
                     </div>
                     <div class="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-zinc-500 dark:text-zinc-400">{{ __('Cash Drawer') }}:</span>
-                        <span class="font-semibold">{{ __('Not configured') }}</span>
+                        <span class="font-semibold">{{ $posShift?->cashDrawer?->code ?? __('Not configured') }}</span>
                     </div>
-                    <div class="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        <span class="font-semibold">{{ __('No active shift') }}</span>
+                    <div class="flex items-center gap-1.5 rounded-md border {{ $posShift ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300' }} px-2.5 py-1">
+                        <span class="font-semibold">{{ $posShift ? __('Open') : __('No active shift') }}</span>
                     </div>
                 </div>
 

@@ -1,9 +1,9 @@
-# Active Milestone — TSK-019–TSK-022 Local/Demo Inventory Operations
+# Active Milestone — TSK-024 Discovery/Read-only POS Financial Boundary
 
-**Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
-**Current milestone:** DM 2.4 — Inventory Operations
-**Status:** TSK-019–TSK-022 Local/Demo slices complete; Production/UAT and formal Phase 2 exit remain open.
-**Progress:** Implemented append-only movement posting with WAC/availability, visible-store-scoped reads and writes, stateful multi-line transfers through terminal difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Browser evidence covers English LTR, Arabic RTL, no overflow, no-access denial, safe re-receipt rejection, resolver contrast, and real workflow mutations against local SQLite. Demo values are not Production authorization.
+**Current phase:** Phase 3 local implementation exception (formal Phase 1/2 and Phase 3 gates remain open)
+**Current milestone:** DM 3.2 — Discounts, Tax, Payments, Evidence, and Open Price
+**Status:** TSK-023 is implemented and browser-verified for approved Local/Dev online scope; TSK-024 has a browser-verified read-only readiness boundary only. Production/UAT, hardware, owner policy, and formal phase exit remain open.
+**Progress:** TSK-023 has server-resolved POS context, approved-price/stock validation, exactly-once movement linkage, suspend/retrieve, bilingual screens, and browser evidence. TSK-024 `/pos/financial-readiness` is protected by `pos_sales.view`, reads only existing active payment/tax counts, and preserves POSF-01..04/BLK-008 as pending. No discount/tax/payment/evidence/open-price mutation or defaults are authorized.
 
 ---
 

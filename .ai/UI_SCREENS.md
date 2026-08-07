@@ -98,6 +98,11 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 | UI-CUS-004 Product Wallet | Customers; `/customers/{customer}/product-wallet`; Operations/POS; retail roles/Reviewer | Retail-only balance/ledger/settlement with sources. | Summary Card, Ledger Table, Filters, Dialog, Audit Panel. | movement/date/status; source; paging; retail policy/balance/lock/approval. | Party Manager denied; responsive RTL/LTR; retail statement. | CUS-02, CUS-04; US-022; FLW-CUS-04; TSK-028. |
 | UI-CUS-005 Party Wallet | Customers; `/customers/{customer}/party-wallet`; Operations; Party Manager/Reviewer | Party-only balance/ledger/settlement with sources. | Summary Card, Ledger Table, Filters, Dialog, Audit Panel. | movement/date/status; source; paging; party policy/balance/lock/approval. | Cashier denied; responsive RTL/LTR; party statement. | CUS-02, CUS-04, PTY-06; US-022,026; FLW-CUS-05; TSK-028,032,036. |
 
+## TSK-023/TSK-024 screen-status reconciliation — 2026-08-07
+
+- `UI-POS-001`, `UI-POS-002`, `UI-POS-006`, and `UI-POS-007` have an implemented/browser-verified Local/Dev online baseline through the real `/pos`, `/pos/suspended`, `/sales`, `/sales/{sale}`, and print routes.
+- The verified baseline covers assigned store/branch/drawer/shift context, approved pricing, stock revalidation, sale/movement linkage, suspend/retrieve, immutable detail baseline, and bilingual RTL/LTR rendering. Customer, discounts, tax, payments/evidence, open price, offline, final hardware print, and Production/UAT remain pending under TSK-024/026 and BLK-003/008.
+
 ## Party, Rental Assets, Quotations, Reports, Audit, and Offline
 
 | Screen ID / Name | Module; Route; Layout; Roles | Purpose / Data / Main Actions | Main Components and Flux Reuse | Filters, Search, Pagination, Validation, Statuses | State / Responsive / RTL-LTR / Print | Related IDs |

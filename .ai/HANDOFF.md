@@ -1,4 +1,24 @@
-# Active Handoff — TSK-019–TSK-022 — 2026-08-07
+# Active Handoff — TSK-024 Readiness Boundary — 2026-08-07
+
+TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 now has a truthful read-only readiness boundary at `/pos/financial-readiness`, protected by `pos_sales.view`.
+
+The readiness page only reads active payment/tax row counts and shows explicit pending states for discount replacement, invoice tax, cash/manual electronic payment and evidence, rounding/split residual, open price, and exact print totals. English LTR, Arabic RTL, authorized/no-access browser evidence, route protection, PHPStan, Blade, locale parity, and whitespace checks passed.
+
+TSK-024 remains In Progress: no discount/tax/payment/evidence/open-price mutation, defaults, uploads, or Production/UAT/hardware claim exists. POSF-01..04 and BLK-008 remain pending. Do not advance TSK-025 until the owner/configuration boundary is resolved or a new narrower authorization is recorded.
+
+---
+
+# Previous Active Handoff — TSK-024 Discovery Boundary after TSK-023 — 2026-08-07
+
+TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. Evidence includes assigned-store context, active drawer/shift prerequisite, server pricing/stock validation, two approved sales with exactly-once sale movements, suspended/retrieved sale, bilingual RTL/LTR POS and sales/detail/print baseline, and denied-role access.
+
+The stock check is reconciled in the correct `DEMO-SELL` scope (`store_id=1`): product 1 `on_hand=1`, total ledger sum `1`, and two sale movements totaling `-2`. The prior `store_id=2` probe was an incorrect warehouse-scope query and is not an implementation defect.
+
+TSK-024 now starts only as a discovery/read-only boundary. `docs/48` leaves POSF-01 rounding level, POSF-02 cash rounding, POSF-03 split-payment residual, and POSF-04 discount replacement pending; BLK-008 tax/payment/numbering/print values remain open. Do not add financial mutation, default tax/discount/payment methods, evidence uploads, or open-price approval until explicitly authorized/configured.
+
+---
+
+# Previous Active Handoff — TSK-019–TSK-022 — 2026-08-07
 
 TSK-017 and TSK-018 are closed for their approved Local/Dev slices. TSK-019–TSK-022 now have an owner-authorized Local Demo inventory slice, including append-only opening/workflow movements, materialized balances with availability/WAC, visible-store-scoped reads/mutations, multi-line transfer lifecycle and difference review, approved adjustments, and count reconciliation that preserves uncounted lines. The correction review is closed in commit `1b66b69`; Production master data, final policies/tolerances/dispositions, UAT, hardware/PDF acceptance, and release approval remain open.
 

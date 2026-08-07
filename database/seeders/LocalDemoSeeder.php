@@ -18,6 +18,7 @@ use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Retail\Models\PosShift;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use LogicException;
@@ -94,7 +95,7 @@ class LocalDemoSeeder extends Seeder
             ],
         );
 
-        CashDrawer::query()->updateOrCreate(
+        $cashDrawer = CashDrawer::query()->updateOrCreate(
             ['branch_id' => $branch->id, 'code' => 'DEMO-DR-01'],
             [
                 'company_id' => $company->id,
@@ -103,7 +104,17 @@ class LocalDemoSeeder extends Seeder
                 'name_ar' => 'درج الكاش التجريبي',
                 'name_en' => 'Demo Cash Drawer',
                 'status' => 'active',
-                'policy_notes' => 'Local demo only. No opening balance or shift policy is configured.',
+                'policy_notes' => 'Local demo only. Opening/closing and variance policy remains PENDING.',
+            ],
+        );
+
+        PosShift::query()->updateOrCreate(
+            ['store_id' => $sellingStore->id, 'cash_drawer_id' => $cashDrawer->id, 'cashier_id' => $admin->id, 'status' => 'open'],
+            [
+                'branch_id' => $branch->id,
+                'opening_cash' => '0.00',
+                'opened_at' => now()->startOfDay(),
+                'policy_notes' => 'LOCAL DEMO ONLY. Opening/closing and variance policy remains PENDING.',
             ],
         );
 

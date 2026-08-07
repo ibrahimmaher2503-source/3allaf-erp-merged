@@ -13,6 +13,24 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-024 readiness boundary implementation
+
+- **Agent / scope:** Implemented the smallest authorized TSK-024 Local/Dev read-only boundary after reading the task sources; no financial mutation, Production/UAT, or hardware scope.
+- **Completed:** Added guarded `/pos/financial-readiness` using `pos_sales.view`; it reads active payment/tax row counts and exposes explicit PENDING cards for discount replacement, tax, payment/evidence, rounding/split residual, open price, and print totals. Added bilingual translations and Arabic sidebar heading translations.
+- **Files changed:** `routes/retail.php`, `resources/views/pages/pos/financial-readiness.blade.php`, `lang/ar.json`, `lang/en.json`, `TASKS.md`, and active `.ai/` control records.
+- **Verification actually run:** PHP lint, targeted PHPStan 0 errors, Blade cache, route discovery, locale parity `1228/1228`, `git diff --check`, authorized English LTR and Arabic RTL browser rendering, no-access denial, and 0 authorized-page console errors.
+- **Remaining blockers / next action:** TSK-024 remains In Progress. POSF-01..04, BLK-008, payment evidence, open-price limits, final totals/print, UAT, hardware, and Production policy remain pending. Commit the coherent local slice; do not advance TSK-025.
+- **Code, tests, browser, commit, push:** Code and docs changed; no PHPUnit/Pest or automated browser tests; browser manual evidence passed; commit pending; no push.
+
+## 2026-08-07 - TSK-023 Local/Dev POS closure and TSK-024 boundary
+
+- **Agent / scope:** Closed the bounded TSK-023 Local/Dev online POS slice and started TSK-024 discovery/read-only planning; no Production/UAT/hardware scope.
+- **Completed:** Reconciled the stock invariant in the correct `DEMO-SELL` store (`store_id=1`), updated `TASKS.md` and active `.ai/` records, preserved POSF-01..04/BLK-008 as pending, and recorded DEC-060 as the authorization boundary.
+- **Files changed:** `TASKS.md`, `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `.ai/HANDOFF.md`, `.ai/BLOCKERS.md`, `.ai/UI_SCREENS.md`.
+- **Verification actually run:** Existing TSK-023 PHP lint/Pint/PHPStan/Blade/route/locale/diff diagnostics and authenticated English/Arabic/no-access browser evidence; direct SQLite/Tinker inspection proved two linked `sale` movements and `on_hand=1`, ledger sum `1`, sale sum `-2` for product 1 in `DEMO-SELL`. TSK-024 source docs 26, 31, 35, 36, 37, 38, 48, and 49 were read before planning.
+- **Remaining blockers / next action:** TSK-024 remains discovery/read-only until POSF-01..04 and BLK-008 inputs are resolved or a narrower explicit local authorization is recorded. Do not add financial mutation/defaults/evidence/open-price behavior.
+- **Code, tests, browser, commit, push:** TSK-023 code and browser evidence already exist in the worktree; no automated tests were created/run; documentation synchronization is uncommitted; no push.
+
 ## 2026-08-07 - Next five task dependency audit (TSK-023–TSK-027)
 
 - **Agent / scope:** Read the routed docs and prepared implementation plans for the next five backlog tasks before any code change; no Production/UAT/hardware scope.
