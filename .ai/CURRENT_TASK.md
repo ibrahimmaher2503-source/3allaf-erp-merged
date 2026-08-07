@@ -5,7 +5,7 @@
 - **Status:** TSK-019, TSK-020, TSK-021, and TSK-022 are implemented and browser-verified for Local/Demo; Production/UAT/Phase 2 exit remains open.
 - **Allowed:** Clearly labeled Local Demo inventory fixtures, append-only opening/movement evidence, transfer lifecycle actions, reasoned adjustments, and count reconciliation.
 - **Forbidden:** Production opening balances, real branch/store authority, hardware/PDF acceptance, production reason/tolerance/disposition catalogs, POS cutover, UAT, and release sign-off.
-- **Implementation:** `2026_08_07_000003_create_inventory_workflow_tables.php`, Inventory models/actions, `DemoInventorySeeder`, guarded `/inventory`, and custom local workflow permissions.
+- **Implementation:** `2026_08_07_000003_create_inventory_workflow_tables.php`, Inventory models/actions, `DemoInventorySeeder`, canonical guarded `/inventory*` overview/stock-card/movement/transfer/adjustment/count surfaces, separate transfer-difference resolver, and custom local workflow permissions.
 - **Policy boundary:** `docs/25-inventory-exception-policy.md` is the local engineering baseline only. Demo values do not represent Production master data or owner/UAT approval.
 - **Verification:** Explicit local SQLite migration/seed, idempotent seed twice, ledger/balance invariants, PHP lint/Pint/PHPStan, Blade cache, route checks, git whitespace, and authenticated English/Arabic browser workflow verification. No PHPUnit/Pest or automated browser tests.
 

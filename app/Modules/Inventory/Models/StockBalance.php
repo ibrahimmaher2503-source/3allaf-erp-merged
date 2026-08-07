@@ -21,9 +21,9 @@ class StockBalance extends Model
     ];
 
     protected $casts = [
-        'on_hand' => 'decimal:3',
-        'reserved' => 'decimal:3',
-        'in_transit' => 'decimal:3',
+        'on_hand' => 'decimal:6',
+        'reserved' => 'decimal:6',
+        'in_transit' => 'decimal:6',
         'average_cost' => 'decimal:4',
         'total_value' => 'decimal:4',
         'version' => 'integer',

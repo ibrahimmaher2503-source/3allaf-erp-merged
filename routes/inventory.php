@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
 use App\Modules\Inventory\Models\InventoryAdjustment;
@@ -17,18 +19,35 @@ use App\Modules\Inventory\Models\StockTransfer;
 use Illuminate\Support\Facades\Gate;
 
 $router = app('router');
+$renderInventory = static function (?int $productId = null, ?string $focus = null) {
+    Gate::authorize('inventory_stock_card.view');
+    $balancesQuery = StockBalance::query()->with(['product', 'store'])->orderBy('store_id')->orderBy('product_id');
+    $movementsQuery = StockMovement::query()->with(['product', 'store', 'creator'])->latest('posted_at');
+    if ($productId !== null) {
+        $balancesQuery->where('product_id', $productId);
+        $movementsQuery->where('product_id', $productId);
+    }
+    $balances = $balancesQuery->get();
+    $movements = $movementsQuery->limit(50)->get();
+    $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->latest('id')->limit(20)->get();
+    $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
+    $counts = StockCount::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
 
-$router->middleware(['auth', 'verified'])->group(function () use ($router): void {
-    $router->get('inventory', function () {
-        Gate::authorize('inventory_stock_card.view');
-        $balances = StockBalance::query()->with(['product', 'store'])->orderBy('store_id')->orderBy('product_id')->get();
-        $movements = StockMovement::query()->with(['product', 'store', 'creator'])->latest('posted_at')->limit(50)->get();
-        $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->latest('id')->limit(20)->get();
-        $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
-        $counts = StockCount::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'adjustments', 'counts', 'focus') + ['canViewCost' => Gate::allows('inventory_stock_card.cost_view')]);
+};
 
-        return view('inventory/index', compact('balances', 'movements', 'transfers', 'adjustments', 'counts'));
-    })->middleware('can:inventory_stock_card.view')->name('inventory.index');
+$router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {
+    $router->get('inventory', fn () => $renderInventory())->middleware('can:inventory_stock_card.view')->name('inventory.index');
+    $router->get('inventory/products/{product}', fn (Product $product) => $renderInventory($product->id, 'stock-card'))->middleware('can:inventory_stock_card.view')->name('inventory.stock-card');
+    $router->get('inventory/movements', fn () => $renderInventory(null, 'movements'))->middleware('can:inventory_stock_card.view')->name('inventory.movements');
+    $router->get('inventory/transfers', fn () => $renderInventory(null, 'transfers'))->middleware('can:transfers.view')->name('inventory.transfers');
+    $router->get('inventory/transfers/{transfer}/dispatch', fn () => $renderInventory(null, 'transfer-dispatch'))->middleware('can:transfers.view')->name('inventory.transfers.dispatch-page');
+    $router->get('inventory/transfers/{transfer}/receive', fn () => $renderInventory(null, 'transfer-receive'))->middleware('can:transfers.view')->name('inventory.transfers.receive-page');
+    $router->get('inventory/transfers/{transfer}/differences', fn () => $renderInventory(null, 'transfer-differences'))->middleware('can:transfers.difference')->name('inventory.transfers.differences');
+    $router->get('inventory/adjustments', fn () => $renderInventory(null, 'adjustments'))->middleware('can:inventory_stock_card.view')->name('inventory.adjustments');
+    $router->get('inventory/counts', fn () => $renderInventory(null, 'counts'))->middleware('can:inventory_stock_card.view')->name('inventory.counts');
+    $router->get('inventory/counts/{count}/entry', fn (StockCount $count) => $renderInventory(null, 'count-entry'))->middleware('can:stock_counts.view')->name('inventory.counts.entry');
+    $router->get('inventory/counts/{count}/reconcile', fn (StockCount $count) => $renderInventory(null, 'count-reconcile'))->middleware('can:stock_counts.reconcile')->name('inventory.counts.reconcile-page');
 
     $router->post('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer, ApproveStockTransferAction $action) {
         try {
@@ -60,6 +79,17 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             return back()->with('error', $exception->getMessage());
         }
     })->whereNumber('transfer')->middleware('can:transfers.receive')->name('inventory.transfers.receive');
+
+    $router->post('inventory/transfers/{transfer}/differences/resolve', function (StockTransfer $transfer, ResolveTransferDifferenceAction $action) {
+        try {
+            $validated = request()->validate(['difference_type' => ['required', 'in:shortage,damage,refusal'], 'difference_reason' => ['required', 'string', 'max:1000']]);
+            $action->execute($transfer->id, $validated['difference_type'], $validated['difference_reason']);
+
+            return back()->with('success', __('Transfer difference resolved in Local Demo.'));
+        } catch (Throwable $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+    })->whereNumber('transfer')->middleware('can:transfers.difference')->name('inventory.transfers.differences.resolve');
 
     $router->post('inventory/adjustments/{adjustment}/submit', function (InventoryAdjustment $adjustment, SubmitInventoryAdjustmentAction $action) {
         try {
