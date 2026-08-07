@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-033 Party Operating Orders and Consumables screen — 2026-08-07
+## TSK-034 Rental Assets and Calendar screen — 2026-08-07
+
+- `/party/assets-readiness` (`UI-PTY-007`) is a guarded Party-only read-only screen with stable targets: `party-assets-readiness-header`, `party-assets-readiness-boundary`, `party-assets-readiness-summary`, `party-assets-readiness-cards`, `party-assets-readiness-card-1`, `party-assets-readiness-card-6`, and `party-assets-readiness-empty`.
+- It shows pending asset identity/separation/states/reservation/concurrency/checkout/return/condition/approval/audit/print boundaries without asset records, calendar allocations, cost values, or evidence payloads.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow; rental assets remain separate from consumables and retail inventory.
+
+
 
 - `/party/operating-readiness` (`UI-PTY-005`) is a guarded Party-only read-only screen with stable targets: `party-operating-readiness-header`, `party-operating-readiness-boundary`, `party-operating-readiness-summary`, `party-operating-readiness-cards`, `party-operating-readiness-card-1`, `party-operating-readiness-card-6`, and `party-operating-readiness-empty`.
 - It shows pending operating-order, party-store, UOM, issue/actual, unused-return, reconciliation, approval, audit, and print boundaries without stock quantities or movement records.

@@ -276,6 +276,46 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Party operating print boundary',
                 'description' => 'Order, issue, return, privacy, and print format rules; no document is generated.',
             ],
+            'asset.identity' => [
+                'title' => 'Rental asset identity',
+                'description' => 'Unique code, name, category, location, status, condition, and history; no asset is created.',
+            ],
+            'asset.separation' => [
+                'title' => 'Asset and consumable separation',
+                'description' => 'Unique rental assets remain separate from consumables and retail products; no item is mixed.',
+            ],
+            'asset.availability' => [
+                'title' => 'Asset availability and states',
+                'description' => 'Available, reserved, checked out, inspection, damaged, maintenance, retired, and lost states remain pending.',
+            ],
+            'asset.reservation' => [
+                'title' => 'Asset reservation interval',
+                'description' => 'Party source, interval, timezone, buffer, overlap, cancellation, and reschedule rules; no reservation is created.',
+            ],
+            'asset.concurrency' => [
+                'title' => 'Asset reservation concurrency',
+                'description' => 'Overlap lock, retry, idempotency, and conflict behavior; no calendar allocation is enabled.',
+            ],
+            'asset.checkout' => [
+                'title' => 'Asset checkout and pre-condition',
+                'description' => 'Party, asset, responsible user, location, pre-condition, and evidence rules; no checkout is recorded.',
+            ],
+            'asset.return' => [
+                'title' => 'Asset return and post-condition',
+                'description' => 'Return location, time, post-condition, missing/damaged status, inspector, and evidence rules; no return is recorded.',
+            ],
+            'asset.condition' => [
+                'title' => 'Asset condition checklist',
+                'description' => 'Owner-configurable before/after checklist and evidence requirements; no condition is posted.',
+            ],
+            'asset.approval' => [
+                'title' => 'Asset approval and audit',
+                'description' => 'Reservation, checkout, return, override, and state-transition authorization; no action is enabled.',
+            ],
+            'asset.print' => [
+                'title' => 'Asset calendar and print boundary',
+                'description' => 'Calendar, reservation, checkout, return, privacy, and print formats; no document is generated.',
+            ],
         ];
     }
 }

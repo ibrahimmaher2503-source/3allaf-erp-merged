@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-033 Party Operating Orders and Consumable Movements readiness — 2026-08-07
+## TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return readiness — 2026-08-07
+
+- Reviewed `docs/29-rental-asset-policy.md`: unique identity, consumable separation, lifecycle states, non-overlap reservations, timezone/buffer/concurrency, checkout/return condition/evidence, and operational-only cost/depreciation boundaries.
+- Reviewed repository asset/calendar surface: no rental asset models, routes, views, or reservation domain exists; existing `/inventory` is product/retail stock and is not reused.
+- Added ten `asset.*` policy keys as `PENDING/TBD` and added `rental-asset-policies` to Initial Setup.
+- Added guarded `/party/assets-readiness` (`party.assets.readiness`) with `party_bookings_invoices.view`; added `UI-PTY-007`.
+- Screen is read-only and contains no asset, reservation, checkout, return, condition, maintenance, cost, calendar, stock, or print mutation/data.
+- Static: optimize clear, Blade cache, route list, locale parity `1505/1505`, Pint, PHPStan `[OK] No errors`, PHP lint, Vite build, and diff check passed.
+- Browser: authorized English/LTR and Arabic/RTL verified; stable `party-assets-readiness-*` targets, no overflow, no numeric/currency leak, no mutation controls, zero console errors; interactive tour finished; Initial Setup pending card visible; `demo-no-access` denied with HTTP 403.
+
+
 
 - Reviewed `docs/28-party-operations-policy.md`: operating order, party-store issue, actual consumption, referenced unused return, no direct balance edit, and controlled completion requirements.
 - Reviewed inventory models/UI: current stock is retail/product-based (`StockMovement`, `StockBalance`, `StockTransfer`, `InventoryAdjustment`) and `/inventory` exposes retail quantities and mutation flows; no party operating-order or consumable domain exists.

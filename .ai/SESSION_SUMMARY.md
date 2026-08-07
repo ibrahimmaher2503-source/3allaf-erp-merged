@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-033 Party Operating Orders and Consumable Movements readiness
+## 2026-08-07 - TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev rental asset/calendar readiness slice after inspecting rental policy, asset/calendar search results, and existing retail inventory/party boundaries.
+- **Implementation:** Added `asset.identity`, `asset.separation`, `asset.availability`, `asset.reservation`, `asset.concurrency`, `asset.checkout`, `asset.return`, `asset.condition`, `asset.approval`, and `asset.print` as pending policy values; added Initial Setup visibility; added `/party/assets-readiness` and `UI-PTY-007`.
+- **Boundary:** No asset master, reservation, checkout, return, condition, maintenance, cost, calendar, stock, or financial mutation.
+- **Evidence:** Static gates and bilingual browser verification passed; no-access received 403; tour finished; no overflow or numeric/currency leakage.
+- **Next:** TSK-035 — Implement Asset Damage, Loss, Maintenance, and Depreciation Review.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev Party operating-order/consumable readiness slice after inspecting party policy, retail inventory models/actions/UI, stock movement/transfer/reconciliation boundaries, and existing authorization patterns.
 - **Implementation:** Added `party.operating_order`, `party.operating_store`, `party.consumable_uom`, `party.issue_actuals`, `party.return_movement`, `party.stock_reconciliation`, `party.operating_approval`, `party.operating_idempotency`, and `party.operating_print` as pending policy values; added Initial Setup visibility; added `/party/operating-readiness` and `UI-PTY-005`.

@@ -119,6 +119,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'rental-asset-policies',
+                'label' => (string) __('Rental asset and calendar policies'),
+                'description' => (string) __('Review asset identity, separation, availability, reservation, checkout, return, condition, approval, audit, and print values; blanks remain PENDING and no asset mutation is enabled.'),
+                'route' => route('party.assets.readiness'),
+                'complete' => $this->rentalAssetPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -232,6 +240,26 @@ final class InitialSetupStatus
                 'party.operating_approval',
                 'party.operating_idempotency',
                 'party.operating_print',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function rentalAssetPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'asset.identity',
+                'asset.separation',
+                'asset.availability',
+                'asset.reservation',
+                'asset.concurrency',
+                'asset.checkout',
+                'asset.return',
+                'asset.condition',
+                'asset.approval',
+                'asset.print',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

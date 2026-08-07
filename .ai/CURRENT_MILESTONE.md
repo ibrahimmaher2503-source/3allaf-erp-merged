@@ -1,15 +1,15 @@
-# Active Milestone — TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return
+# Active Milestone — TSK-035 Asset Damage, Loss, Maintenance, and Depreciation Review
 
 **Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
 **Current milestone:** DM 5.4 — Rental Asset Lifecycle
-**Status:** TSK-033 Local/Dev Party operating-order/consumable readiness slice is completed and browser-verified. TSK-034 is now In Progress for source-safe rental asset/calendar discovery/readiness.
-**Progress:** TSK-033 added `/party/operating-readiness`, nine pending operating/consumable policy keys, Initial Setup visibility, retail/product inventory separation, and UI-PTY-005. TSK-034 must first inspect `docs/29-rental-asset-policy.md`, asset/register/calendar/reservation/checkout/return/condition/evidence/approval/audit/print contracts; no asset or reservation mutation is authorized.
+**Status:** TSK-034 Local/Dev rental asset/calendar readiness slice is completed and browser-verified. TSK-035 is now In Progress for source-safe damage/loss/maintenance/depreciation discovery/readiness.
+**Progress:** TSK-034 added `/party/assets-readiness`, ten pending asset/calendar policy keys, Initial Setup visibility, rental asset/consumable separation, and UI-PTY-007. TSK-035 must first inspect `docs/29-rental-asset-policy.md`, damage/loss/maintenance/depreciation/evidence/approval/audit/print contracts; no event, cost, state, or depreciation mutation is authorized.
 
 ---
-# Previous Milestone Record — TSK-033
+# Previous Milestone Record — TSK-034
 
-**Status:** Completed for verified Local/Dev Party operating-order/consumable readiness; order release, stock reservation/movement, issue/return, balance edit, completion, and print remain open.
-**Evidence:** Party policy and existing retail inventory/stock UI/models reviewed; guarded operating readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
+**Status:** Completed for verified Local/Dev rental asset/calendar readiness; asset creation, reservation, checkout, return, condition, maintenance, cost, stock, financial, and print mutations remain open.
+**Evidence:** Rental policy and repository asset/calendar absence reviewed; guarded assets readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
 
 ---
 

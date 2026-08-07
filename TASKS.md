@@ -539,7 +539,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-034 — Implement Rental Asset Master, Calendar, Reservation, Checkout, and Return
 
-- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **In Progress — Local/Dev rental asset/calendar source-safe discovery/readiness plan active; reservation, checkout, return, and asset mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **Completed — verified Local/Dev rental asset/calendar readiness slice; asset, reservation, checkout, return, and condition mutations remain deferred**.
 - **Title / Purpose / Description:** Maintain unique assets separately from consumables, show availability calendar, lock non-overlapping reservations, and capture checkout/return/pre-post condition/status/location.
 - **Traceability:** AST-01–AST-03, NFR-01–NFR-03; US-028; FLW-PTY-06–08; UI UI-PTY-007–012; AC-AST-01–03; SEC-006, SEC-011–013, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-033; BLK-016 mitigated by `docs/29-rental-asset-policy.md`; final asset register, categories, locations, interval buffers, checklists, state, maintenance, loss, and finance values remain configurable or pending.
@@ -553,7 +553,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-035 — Implement Asset Damage, Loss, Maintenance, and Depreciation Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **In Progress — Local/Dev damage/loss/maintenance/depreciation source-safe discovery/readiness plan active; event, cost, approval, and depreciation mutations remain gated**.
 - **Title / Purpose / Description:** Assess source-linked damage/loss/depreciation, responsibility, evidence, optional cost, approval and final asset state without implying general ledger.
 - **Traceability:** AST-04, NFR-01–NFR-03; US-029; FLW-PTY-09–10; UI UI-PTY-012–014; AC-AST-04; SEC-006, SEC-011–012, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-034; `docs/29-rental-asset-policy.md`; final damage/loss, maintenance, depreciation, method, cost, responsibility, approval limits, and finance values remain configurable or pending.

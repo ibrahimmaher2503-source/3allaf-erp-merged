@@ -1,12 +1,12 @@
-# Active Progress — TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return — 2026-08-07
+# Active Progress — TSK-035 Asset Damage, Loss, Maintenance, and Depreciation Review — 2026-08-07
 
-**Implementation status:** TSK-033 Party operating-order/consumable Local/Dev readiness slice is complete and ready for commit; TSK-034 is active for source-safe rental asset/calendar discovery/readiness.
+**Implementation status:** TSK-034 Rental Asset/Calendar Local/Dev readiness slice is complete and ready for commit; TSK-035 is active for source-safe damage/loss/maintenance/depreciation discovery/readiness.
 
-**Completed before this task:** TSK-033 reviewed party policy and retail inventory/stock models/UI; added pending operating/consumable policy values, `/party/operating-readiness`, UI-PTY-005, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
+**Completed before this task:** TSK-034 reviewed rental policy and repository asset/calendar absence; added pending asset/calendar policy values, `/party/assets-readiness`, UI-PTY-007, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
 
-**Next concrete step:** inspect `docs/29-rental-asset-policy.md`, asset/register/category/location, calendar/reservation/checkout/return, condition/evidence, approval, audit, idempotency, document sequence, print, and existing UI contracts before changing code.
+**Next concrete step:** inspect damage/loss/maintenance/depreciation, condition/evidence, responsibility, cost/privacy, approval, audit, idempotency, document sequence, print, and existing asset/inventory/UI contracts before changing code.
 
-**Boundary:** no asset master mutation, reservation, checkout, return, condition posting, maintenance, stock movement, or financial behavior is enabled.
+**Boundary:** no damage/loss/maintenance event, cost posting, approval, state transition, depreciation, correction, stock, or financial behavior is enabled.
 
 ---
 

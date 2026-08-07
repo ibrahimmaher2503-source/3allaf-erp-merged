@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('party/assets-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.assets-readiness', [
+            'title' => __('Rental Assets and Calendar Readiness'),
+            'description' => __('Review unique asset identity, consumable separation, availability states, reservations, checkout, return, condition, approval, audit, and print prerequisites without creating an asset or calendar allocation.'),
+            'items' => [
+                ['title' => __('Rental asset identity'), 'body' => __('Unique code, name, category, location, status, condition, and immutable history remain PENDING; no asset is created.')],
+                ['title' => __('Asset and consumable separation'), 'body' => __('Unique rental assets remain separate from consumables and retail products; no mixed resource is created.')],
+                ['title' => __('Availability and lifecycle states'), 'body' => __('Available, reserved, checked out, inspection, damaged, maintenance, retired, and lost states remain PENDING.')],
+                ['title' => __('Reservation interval and concurrency'), 'body' => __('Party source, timezone, buffer, overlap lock, retry, cancellation, reschedule, and conflict rules remain PENDING; no reservation is created.')],
+                ['title' => __('Checkout, return, and condition'), 'body' => __('Pre/post condition, location, inspector, responsible user, missing/damaged status, and evidence rules remain PENDING.')],
+                ['title' => __('Approval, audit, cost privacy, and print'), 'body' => __('State-transition authorization, immutable history, cost redaction, calendar, reservation, checkout, return, and print rules remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.assets.readiness');
+
     Route::get('party/operating-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

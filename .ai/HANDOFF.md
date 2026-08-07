@@ -1,8 +1,8 @@
-# Active Handoff — TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return — 2026-08-07
+# Active Handoff — TSK-035 Asset Damage, Loss, Maintenance, and Depreciation Review — 2026-08-07
 
-TSK-034 is now active. First inspect `docs/29-rental-asset-policy.md`, existing asset/register/calendar/reservation/checkout/return/condition/evidence/approval/audit/idempotency/document-sequence/print contracts, and current inventory/party UI. The authorized scope is Local/Dev discovery/readiness only: configurable `PENDING/TBD` asset, location, interval, buffer, reservation, checkout, return, condition, evidence, approval, and print values, guarded empty/readiness UI, and bilingual browser evidence. No asset master, reservation, checkout, return, condition, maintenance, stock, or financial mutation may be enabled.
+TSK-035 is now active. First inspect `docs/29-rental-asset-policy.md`, existing damage/loss/maintenance/depreciation/condition/evidence/responsibility/cost/approval/audit/idempotency/document-sequence/print contracts, and current asset/inventory/party UI. The authorized scope is Local/Dev discovery/readiness only: configurable `PENDING/TBD` damage, loss, maintenance, assessment, responsibility, evidence, cost privacy, approval, final state, depreciation, correction, and print values, guarded empty/readiness UI, and bilingual browser evidence. No event, cost, approval, state-transition, maintenance, depreciation, correction, stock, or financial mutation may be enabled.
 
-TSK-033 is complete for its bounded Local/Dev operating-order/consumable readiness slice; order release, reservation, issue/return, stock movement, balance edit, completion, and print remain blocked.
+TSK-034 is complete for its bounded Local/Dev rental asset/calendar readiness slice; asset creation, reservation, checkout, return, condition, maintenance, cost, stock, financial, and print mutations remain blocked.
 
 TSK-031 is complete for its verified Local/Dev Party-only readiness slice. `/party/readiness`, ten pending party policies, bilingual UI-PTY-001, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, and diagnostics are evidenced. Full party booking/calendar/customer-child/invoice operations remain deferred.
 
