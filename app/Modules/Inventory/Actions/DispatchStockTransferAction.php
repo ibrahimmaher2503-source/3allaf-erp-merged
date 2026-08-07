@@ -13,12 +13,15 @@ use InvalidArgumentException;
 
 final class DispatchStockTransferAction
 {
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
     public function execute(int $id): StockTransfer
     {
         Gate::authorize('transfers.dispatch');
 
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $this->scope->transfer($transfer, source: true, destination: false);
             if ($transfer->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved transfers can be dispatched.'));
             }

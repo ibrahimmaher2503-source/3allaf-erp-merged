@@ -15,12 +15,18 @@ use InvalidArgumentException;
 
 final class ReconcileStockCountAction
 {
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
     public function execute(int $id): StockCount
     {
         Gate::authorize('stock_counts.reconcile');
 
         return DB::transaction(function () use ($id): StockCount {
             $count = StockCount::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            if ($count->store_id === null) {
+                throw new InvalidArgumentException(__('This Local Demo count must target a store before reconciliation.'));
+            }
+            $this->scope->execute($count->store_id);
             if ($count->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted stock counts can be reconciled.'));
             }

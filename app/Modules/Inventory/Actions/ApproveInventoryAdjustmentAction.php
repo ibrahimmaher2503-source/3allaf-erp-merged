@@ -14,12 +14,15 @@ use InvalidArgumentException;
 
 final class ApproveInventoryAdjustmentAction
 {
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
     public function execute(int $id): InventoryAdjustment
     {
         Gate::authorize('inventory_stock_card.approve');
 
         return DB::transaction(function () use ($id): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $this->scope->execute($adjustment->store_id);
             if ($adjustment->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted adjustments can be approved.'));
             }

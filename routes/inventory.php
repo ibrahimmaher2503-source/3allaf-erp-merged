@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
@@ -16,22 +17,32 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Platform\Models\Store;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 $router = app('router');
 $renderInventory = static function (?int $productId = null, ?string $focus = null) {
     Gate::authorize('inventory_stock_card.view');
+    $user = Auth::user();
+    abort_unless($user instanceof User, 403);
+    $visibleStoreIds = Store::query()->visibleTo($user)->pluck('id');
     $balancesQuery = StockBalance::query()->with(['product', 'store'])->orderBy('store_id')->orderBy('product_id');
     $movementsQuery = StockMovement::query()->with(['product', 'store', 'creator'])->latest('posted_at');
+    $balancesQuery->whereIn('store_id', $visibleStoreIds);
+    $movementsQuery->whereIn('store_id', $visibleStoreIds);
     if ($productId !== null) {
         $balancesQuery->where('product_id', $productId);
         $movementsQuery->where('product_id', $productId);
     }
     $balances = $balancesQuery->get();
     $movements = $movementsQuery->limit(50)->get();
-    $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->latest('id')->limit(20)->get();
-    $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
-    $counts = StockCount::query()->with(['store', 'lines.product'])->latest('id')->limit(20)->get();
+    $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->where(function ($query) use ($visibleStoreIds): void {
+        $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
+    })->latest('id')->limit(20)->get();
+    $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
+    $counts = StockCount::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
 
     return view('inventory/index', compact('balances', 'movements', 'transfers', 'adjustments', 'counts', 'focus') + ['canViewCost' => Gate::allows('inventory_stock_card.cost_view')]);
 };
@@ -55,7 +66,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Transfer approved in Local Demo.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.approve')->name('inventory.transfers.approve');
 
@@ -65,18 +82,30 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Transfer dispatched and source stock posted.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.dispatch')->name('inventory.transfers.dispatch');
 
     $router->post('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer, ReceiveStockTransferAction $action) {
         try {
-            $validated = request()->validate(['received_quantity' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'string', 'max:40'], 'difference_reason' => ['nullable', 'string', 'max:1000']]);
-            $action->execute($transfer->id, (string) $validated['received_quantity'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
+            $validated = request()->validate(['received_quantities' => ['required', 'array', 'min:1'], 'received_quantities.*' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'in:shortage,damage,refusal'], 'difference_reason' => ['nullable', 'string', 'max:1000']]);
+            $action->execute($transfer->id, $validated['received_quantities'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
 
             return back()->with('success', __('Transfer receipt recorded in Local Demo.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.receive')->name('inventory.transfers.receive');
 
@@ -87,7 +116,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Transfer difference resolved in Local Demo.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.difference')->name('inventory.transfers.differences.resolve');
 
@@ -97,7 +132,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Adjustment submitted in Local Demo.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('adjustment')->middleware('can:inventory_stock_card.submit')->name('inventory.adjustments.submit');
 
@@ -107,7 +148,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Adjustment approved and movement posted.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('adjustment')->middleware('can:inventory_stock_card.approve')->name('inventory.adjustments.approve');
 
@@ -117,7 +164,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Stock count submitted with movement-window calculation.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('count')->middleware('can:stock_counts.submit')->name('inventory.counts.submit');
 
@@ -127,7 +180,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             return back()->with('success', __('Stock count reconciled; uncounted products were preserved.'));
         } catch (Throwable $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('count')->middleware('can:stock_counts.reconcile')->name('inventory.counts.reconcile');
 });

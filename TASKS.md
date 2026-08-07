@@ -322,7 +322,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Traceability:** INV-01–INV-02, NFR-01–NFR-03, NFR-05; US-013; FLW-INV-01; UI UI-INV-001–003; AC-INV-01–02, AC-NFR-05; SEC-011–012, SEC-016–021, SEC-027, SEC-037.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.3 complete; `docs/25-inventory-exception-policy.md`; opening inventory approach, balance/reservation/reorder formulas, and field visibility remain configurable or pending.
 - **Database Entities:** `stock_movements`, `stock_balances`, `products`, `stores`, `branch_selling_stores`.
-- **Backend / Livewire / Blade Deliverables:** append-only posting/reconciliation service, scoped indexed queries, local opening movements, WAC/availability calculation, and `/inventory` overview/ledger surface. Product stock-card and movement export/print acceptance remain production follow-up.
+- **Backend / Livewire / Blade Deliverables:** append-only posting/reconciliation service, visible-store-scoped indexed queries, local opening movements, WAC/availability calculation, and `/inventory` overview/ledger surface. Product stock-card and movement export/print acceptance remain production follow-up.
 - **UI / Flux / Alpine / Vite:** Flux Cards/Tables/Filters/Search/Pagination/Badges/Tabs/Timeline/Export; Alpine none; common assets.
 - **Suggested Packages:** None; no generic inventory engine or repository layer.
 - **Permissions / Validation / Audit / States / Print:** scoped View/Export/Cost; no direct edit; field and bounded-query validation; movement append audit; reports/export/stock card print.
@@ -336,7 +336,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **Traceability:** INV-03, NFR-01–NFR-02, NFR-06; US-014; FLW-INV-02; UI UI-INV-004–007; AC-INV-03; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019; BLK-012 mitigated by `docs/25-inventory-exception-policy.md`; final state/role separation, difference disposition, reason catalog, and limits remain configurable or pending.
 - **Database Entities:** `stock_transfers`, `transfer_lines`, `stock_movements`, `stock_balances`, `approval_records`, `document_sequences`, attachments if evidence.
-- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; local list/dispatch/receipt/difference-review surface with submitted → approved → in-transit → received/difference-review flow.
+- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; every transfer line is received/reconciled atomically; local list/dispatch/receipt/difference-review surface with submitted → approved → in-transit → received/difference-review flow.
 - **UI / Flux / Alpine / Vite:** Flux Table/Form/Line Editor/Scan Input/Filters/Timeline/Badges/Dialog/Upload; Alpine scanner only if needed; print styles.
 - **Suggested Packages:** Reuse approved barcode/upload/PDF capabilities only.
 - **Permissions / Validation / Audit / States / Print:** source/destination Create/Approve/Dispatch/Receive/Difference/Cancel; stock/location/qty/state/replay; every transition/quantity/reason; transfer/dispatch/receipt/difference prints.

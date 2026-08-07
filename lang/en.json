@@ -1162,5 +1162,6 @@
     "Label Queue Readiness": "Label Queue Readiness",
     "Inventory": "Inventory",
     "Inventory Control Center": "Inventory Control Center",
+    "Inventory operation failed. Please review the record and try again.": "Inventory operation failed. Please review the record and try again.",
     "Search list, item code, or product": "Search list, item code, or product"
 }

@@ -1162,5 +1162,6 @@
     "Label Queue Readiness": "جاهزية طابور الملصقات",
     "Inventory": "المخزون",
     "Inventory Control Center": "مركز تحكم المخزون",
+    "Inventory operation failed. Please review the record and try again.": "تعذر تنفيذ عملية المخزون. راجع السجل وحاول مرة أخرى.",
     "Search list, item code, or product": "ابحث بالقائمة أو كود الصنف أو المنتج"
 }

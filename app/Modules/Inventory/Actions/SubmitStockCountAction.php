@@ -13,12 +13,18 @@ use InvalidArgumentException;
 
 final class SubmitStockCountAction
 {
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
     public function execute(int $id): StockCount
     {
         Gate::authorize('stock_counts.submit');
 
         return DB::transaction(function () use ($id): StockCount {
             $count = StockCount::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            if ($count->store_id === null) {
+                throw new InvalidArgumentException(__('This Local Demo count must target a store before submission.'));
+            }
+            $this->scope->execute($count->store_id);
             if (! in_array($count->status, ['draft', 'in_progress'], true)) {
                 throw new InvalidArgumentException(__('Only an open stock count can be submitted.'));
             }

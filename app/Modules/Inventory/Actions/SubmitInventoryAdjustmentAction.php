@@ -13,12 +13,15 @@ use InvalidArgumentException;
 
 final class SubmitInventoryAdjustmentAction
 {
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
     public function execute(int $id): InventoryAdjustment
     {
         Gate::authorize('inventory_stock_card.submit');
 
         return DB::transaction(function () use ($id): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $this->scope->execute($adjustment->store_id);
             if ($adjustment->status !== 'draft') {
                 throw new InvalidArgumentException(__('Only draft adjustments can be submitted.'));
             }

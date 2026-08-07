@@ -3,7 +3,7 @@
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
 **Current milestone:** DM 2.4 — Inventory Operations
 **Status:** TSK-019–TSK-022 Local/Demo slices complete; Production/UAT and formal Phase 2 exit remain open.
-**Progress:** Implemented append-only movement posting with WAC/availability, stateful transfers through difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Browser evidence covers English LTR, Arabic RTL, no overflow, no-access denial, and real workflow mutations against local SQLite. Demo values are not Production authorization.
+**Progress:** Implemented append-only movement posting with WAC/availability, visible-store-scoped reads and writes, stateful multi-line transfers through terminal difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Browser evidence covers English LTR, Arabic RTL, no overflow, no-access denial, safe re-receipt rejection, resolver contrast, and real workflow mutations against local SQLite. Demo values are not Production authorization.
 
 ---
 

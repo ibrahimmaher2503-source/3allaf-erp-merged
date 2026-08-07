@@ -13,37 +13,52 @@ use InvalidArgumentException;
 
 final class ReceiveStockTransferAction
 {
-    public function execute(int $id, string $receivedQuantity, ?string $differenceType, ?string $differenceReason): StockTransfer
+    public function __construct(private readonly AssertInventoryStoreScope $scope) {}
+
+    /** @param array<int|string, string> $receivedQuantities */
+    public function execute(int $id, array $receivedQuantities, ?string $differenceType, ?string $differenceReason): StockTransfer
     {
         Gate::authorize('transfers.receive');
 
-        return DB::transaction(function () use ($id, $receivedQuantity, $differenceType, $differenceReason): StockTransfer {
+        return DB::transaction(function () use ($id, $receivedQuantities, $differenceType, $differenceReason): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
-            if (! in_array($transfer->status, ['in_transit', 'difference_review'], true)) {
+            $this->scope->transfer($transfer, source: false, destination: true);
+            if ($transfer->status !== 'in_transit') {
                 throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));
             }
-            $line = $transfer->lines->first();
-            if ($line === null) {
+            if ($transfer->lines->isEmpty()) {
                 throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
             }
-            $received = $this->decimal($receivedQuantity);
-            $dispatched = $this->decimal($line->quantity_dispatched);
-            if (bccomp($received, '0', 6) < 0 || bccomp($received, $dispatched, 6) > 0) {
-                throw new InvalidArgumentException(__('Received quantity must be between zero and the dispatched quantity.'));
+            if ($differenceType !== null && ! in_array($differenceType, ['shortage', 'damage', 'refusal'], true)) {
+                throw new InvalidArgumentException(__('A valid transfer difference type is required.'));
             }
-            $difference = bcsub($dispatched, $received, 6);
-            if (bccomp($difference, '0', 6) > 0 && (trim((string) $differenceType) === '' || trim((string) $differenceReason) === '')) {
+            $totalDifference = '0.000000';
+            $receivedByLine = [];
+            foreach ($transfer->lines as $line) {
+                $received = $this->decimal($receivedQuantities[$line->id] ?? $receivedQuantities[(string) $line->id] ?? '0');
+                $dispatched = $this->decimal($line->quantity_dispatched);
+                if (bccomp($received, '0', 6) < 0 || bccomp($received, $dispatched, 6) > 0) {
+                    throw new InvalidArgumentException(__('Received quantity must be between zero and the dispatched quantity.'));
+                }
+                $difference = bcsub($dispatched, $received, 6);
+                $receivedByLine[$line->id] = ['received' => $received, 'dispatched' => $dispatched, 'difference' => $difference];
+                $totalDifference = bcadd($totalDifference, $difference, 6);
+            }
+            if (bccomp($totalDifference, '0', 6) > 0 && (trim((string) $differenceType) === '' || trim((string) $differenceReason) === '')) {
                 throw new InvalidArgumentException(__('A shortage/damage/refusal reason is required for a transfer difference.'));
             }
-            if (bccomp($received, '0', 6) > 0) {
-                app(PostInventoryMovement::class)->execute($line->product_id, $transfer->destination_store_id, $received, 'transfer_receipt', (string) $line->unit_cost, 'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id.':'.$received, StockTransfer::class, $transfer->id, $line->id);
+            foreach ($transfer->lines as $line) {
+                $quantities = $receivedByLine[$line->id];
+                if (bccomp($quantities['received'], '0', 6) > 0) {
+                    app(PostInventoryMovement::class)->execute($line->product_id, $transfer->destination_store_id, $quantities['received'], 'transfer_receipt', (string) $line->unit_cost, 'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
+                }
+                app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $transfer->destination_store_id, '-'.$quantities['dispatched']);
+                $line->update(['quantity_received' => $quantities['received'], 'difference_quantity' => $quantities['difference'], 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
             }
-            app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $transfer->destination_store_id, '-'.$dispatched);
-            $line->update(['quantity_received' => $received, 'difference_quantity' => $difference, 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
-            $status = bccomp($difference, '0', 6) === 0 ? 'received' : 'difference_review';
+            $status = bccomp($totalDifference, '0', 6) === 0 ? 'received' : 'difference_review';
             $before = $transfer->only(['status', 'difference_status', 'lock_version']);
             $transfer->update(['status' => $status, 'difference_status' => $status === 'received' ? null : 'under_review', 'reason_code' => $differenceType, 'reason_notes' => $differenceReason, 'received_by' => Auth::id(), 'received_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
-            app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $transfer->destination_store_id, reasonCode: $differenceType, reasonText: $differenceReason, metadata: ['received_quantity' => $received, 'difference_quantity' => $difference]);
+            app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $transfer->destination_store_id, reasonCode: $differenceType, reasonText: $differenceReason, metadata: ['received_quantities' => $receivedByLine, 'difference_quantity' => $totalDifference]);
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
         });
