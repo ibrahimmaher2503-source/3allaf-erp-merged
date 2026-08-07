@@ -132,6 +132,38 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Gift Card format',
                 'description' => 'Identifier/reference and issue/use output convention; no card is issued.',
             ],
+            'return.reference.requirement' => [
+                'title' => 'Return source reference policy',
+                'description' => 'Invoice or Gift Receipt source requirement; no-reference returns remain disabled.',
+            ],
+            'return.window' => [
+                'title' => 'Return eligibility window',
+                'description' => 'Owner-configurable timing rule; no return eligibility is calculated in this slice.',
+            ],
+            'return.exception' => [
+                'title' => 'Return exception reasons',
+                'description' => 'No-reference, out-of-window, and manager-review reason catalog; no exception is enabled.',
+            ],
+            'return.condition' => [
+                'title' => 'Return condition and disposition',
+                'description' => 'Sellable, non-saleable, damaged, and review outcomes; no stock disposition is posted.',
+            ],
+            'return.approval' => [
+                'title' => 'Return approval and SoD',
+                'description' => 'Inspection, approval, and separation-of-duties convention; no approval action is enabled.',
+            ],
+            'return.refund' => [
+                'title' => 'Refund and settlement policy',
+                'description' => 'Cash, original method, and Gift Card settlement rules; no refund/payment mutation is enabled.',
+            ],
+            'return.exchange' => [
+                'title' => 'Exchange difference policy',
+                'description' => 'Same/different item and price-difference convention; no exchange is enabled.',
+            ],
+            'return.print' => [
+                'title' => 'Return and exchange print policy',
+                'description' => 'Reference, privacy, and output format; no return/exchange artifact is generated.',
+            ],
         ];
     }
 }

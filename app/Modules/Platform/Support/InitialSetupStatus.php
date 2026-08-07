@@ -87,6 +87,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'return-policies',
+                'label' => (string) __('Return and Exchange policies'),
+                'description' => (string) __('Review source, window, condition, approval, settlement, and print values; blanks remain PENDING and no return mutation is enabled.'),
+                'route' => route('returns.readiness'),
+                'complete' => $this->returnPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -144,6 +152,15 @@ final class InitialSetupStatus
     {
         return CustomerPolicySettingVersion::query()
             ->where('key', 'like', 'gift.%')
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function returnPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->where('key', 'like', 'return.%')
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->exists();

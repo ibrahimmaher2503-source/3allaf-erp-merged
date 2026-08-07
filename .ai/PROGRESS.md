@@ -1,8 +1,15 @@
-# Active Progress — TSK-030 Returns and Exchanges — 2026-08-07
+# Active Progress — TSK-031 Party Bookings and Working Invoices — 2026-08-07
 
-**Implementation status:** TSK-029 Gift Card/Gift Receipt Local/Dev foundation/readiness slice is complete and browser-verified. TSK-030 is In Progress for source-safe returns/exchanges discovery and readiness only.
+**Implementation status:** TSK-030 Returns/Exchanges Local/Dev source-safe readiness slice is complete and browser-verified. TSK-031 is In Progress for party-booking/working-invoice discovery and readiness only.
 
-**Next boundary:** Inspect existing returns/reversals/source-line/stock/audit/authorization contracts, then expose undocumented return reasons, eligibility windows, approvals, disposition, refund/exchange, numbering, and print values as `PENDING/TBD` without enabling mutations.
+**Next boundary:** Inspect party policy, customer/child/privacy, stores/schedules, invoice/numbering/print, authorization, and existing routes/views, then expose undocumented values as `PENDING/TBD` without enabling party/customer mutations.
+
+---
+
+# Previous Active Progress — TSK-030 Returns and Exchanges — 2026-08-07
+
+**Implementation status:** TSK-030 Local/Dev source-safe readiness slice is complete and browser-verified. `/pos/returns-readiness`, eight pending return policy keys, Initial Setup step, bilingual UI-POS-008 guide, HTTP 403 denial, and diagnostics passed.
+**Boundary:** Full return authorization, source/quantity/window/reason validation, condition approval, refund/exchange, stock/payment mutation, numbering, print, Phase 4, UAT, and Production remain open.
 
 ---
 

@@ -4,6 +4,12 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
+## TSK-030 Returns and Exchanges boundary — 2026-08-07
+
+The bounded Local/Dev TSK-030 slice is implemented and browser-verified. `/pos/returns-readiness` is protected by `returns_exchanges_gift_instruments.view`, reads no return/source/stock/payment/customer/wallet/Gift Card rows, and exposes source, eligibility window, condition/disposition, approval/settlement, and audit/print policies as pending configuration. `UI-POS-008` is bilingual with stable visible targets and Gift Receipt/source wording.
+
+Full return authorization, source-line/quantity/window/reason validation, condition approval, cash/original-method refund, exchange difference, Gift Card settlement, stock disposition, payment reversal, numbering, and print remain blocked by missing owner-approved policy/source contracts. Existing sales and supplier-return workflows remain separate. This slice is Local/Dev evidence only; no Production/UAT approval is implied.
+
 ## TSK-029 Gift Cards and Gift Receipts boundary — 2026-08-07
 
 The bounded Local/Dev TSK-029 slice is implemented and browser-verified. `/gift-receipts` and `/gift-cards` are protected by `returns_exchanges_gift_instruments.view`, show empty/readiness states with no prices, references, balances, holder data, payment, or print artifacts, and link to configurable pending policies. `UI-POS-010` and `UI-POS-011` have bilingual Gift-specific guides and stable visible targets.

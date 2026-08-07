@@ -1,8 +1,20 @@
-# Active Handoff — TSK-030 Returns and Exchanges — 2026-08-07
+# Active Handoff — TSK-031 Party Bookings and Working Invoices — 2026-08-07
 
-TSK-030 is now active. First inspect existing returns/reversals/source-line/stock/audit/authorization contracts and the routed POS/return screens. The authorized scope is Local/Dev discovery/readiness: configurable `PENDING/TBD` return-policy values, guarded empty/readiness UI, source/tenant/branch boundaries, and bilingual browser evidence. No return authorization, refund, exchange, restock, payment reversal, customer mutation, wallet/Gift Card mutation, or print artifact is authorized without source/policy verification.
+TSK-031 is now active. First inspect `docs/28-party-operations-policy.md`, existing customer/child/privacy/store/schedule/invoice/print/authorization contracts, and any routed party screens. The authorized scope is Local/Dev discovery/readiness: configurable `PENDING/TBD` party policy values, guarded empty/readiness UI, party-only/privacy/no-price boundaries, and bilingual browser evidence. No booking, customer/child, calendar, invoice, payment, or final-closure mutation is authorized without source/policy verification.
 
-TSK-029 is complete for its verified Local/Dev foundation/readiness slice. Guarded `/gift-receipts` and `/gift-cards`, pending Setup policies, no-price/privacy boundaries, Gift-specific bilingual guides, English/LTR and Arabic/RTL checks, HTTP 403 denial, and final diagnostics are evidenced. Full Gift Card/Gift Receipt operations remain deferred.
+TSK-030 is complete for its verified Local/Dev source-safe readiness slice. `/pos/returns-readiness`, pending return policies, bilingual UI-POS-008, English/LTR and Arabic/RTL checks, HTTP 403 denial, and diagnostics are evidenced. Full returns/exchanges remain deferred.
+
+---
+
+# Previous Active Handoff — TSK-030 Returns and Exchanges — 2026-08-07
+
+TSK-030 Local/Dev source-safe readiness is implemented and browser-verified. `/pos/returns-readiness` has pending return policy keys, source/condition/settlement/audit boundaries, bilingual UI-POS-008, English/LTR and Arabic/RTL evidence, no-access HTTP 403, and final diagnostics. Full return authorization, refund/exchange, stock/payment mutation, numbering, and print remain deferred.
+
+---
+
+# Previous Active Handoff — TSK-029 Gift Cards and Gift Receipts — 2026-08-07
+
+TSK-029 Local/Dev foundation/readiness is implemented and browser-verified. Guarded `/gift-receipts` and `/gift-cards`, pending Setup policies, no-price/privacy boundaries, Gift-specific bilingual guides, English/LTR and Arabic/RTL checks, HTTP 403 denial, and final diagnostics are evidenced. Full Gift Card/Gift Receipt operations remain deferred.
 
 ---
 

@@ -25,6 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
+## TSK-030 Returns and Exchanges screen — 2026-08-07
+
+- `/pos/returns-readiness` (`UI-POS-008`) is implemented as a guarded read-only readiness screen under `returns_exchanges_gift_instruments.view`, distinct from supplier returns at `/purchasing/returns`.
+- The screen shows pending source, window, condition/disposition, approval/settlement, and audit/print cards with no mutation controls and no price/refund values.
+- English/LTR and Arabic/RTL browser review passed with no overflow; the authorized Admin completed the four-step Returns and Exchanges guide; `demo-no-access` was denied with HTTP 403.
+- Existing `/sales` detail/print and supplier-return screens were reviewed before implementation; no existing customer-return controls were altered.
+
 ## TSK-029 Gift Cards and Gift Receipts screens — 2026-08-07
 
 - `/gift-receipts` (`UI-POS-010`) and `/gift-cards` (`UI-POS-011`) are implemented as separate guarded read-only readiness screens under `returns_exchanges_gift_instruments.view`.

@@ -481,7 +481,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-030 — Implement Returns and Exchanges
 
-- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **In Progress — Local/Dev returns/exchanges source-safe discovery/readiness boundary active; refund/exchange/restock mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **Completed — verified Local/Dev returns/exchanges source-safe readiness slice; refund/exchange/restock mutations remain deferred**.
 - **Title / Purpose / Description:** Validate original invoice/Gift Receipt, inspect condition/approval, then same/different exchange, cash refund, or Gift Card settlement with stock disposition and references.
 - **Traceability:** RET-01–RET-03, NFR-01–NFR-03, NFR-06; US-020; FLW-RET-01–02; UI UI-POS-008–010; AC-RET-01–03; SEC-006, SEC-011–012, SEC-015, SEC-017–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-029; BLK-013 mitigated by `docs/26-discount-return-policy.md`; final return window, exceptions, condition, refund, approval, non-saleable, and damage values remain configurable or pending.
@@ -497,7 +497,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-031 — Implement Party Bookings and Working Invoices
 
-- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **In Progress — Local/Dev party-booking/working-invoice source-safe discovery/readiness plan active; party mutations remain gated**.
 - **Title / Purpose / Description:** Deliver party-only booking/calendar, customer/child/schedule/location/contact/plans/responsibilities and editable working invoice frozen at final close.
 - **Traceability:** PTY-01–PTY-03, NFR-01–NFR-03; US-025; FLW-PTY-01–02; UI UI-PTY-001–003; AC-PTY-01–03; SEC-006, SEC-010–015, SEC-017, SEC-019–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 4 gate; BLK-015 mitigated by `docs/28-party-operations-policy.md`; final party stores, services/packages, schedule, cancellation, edit, responsibility, price, and real master data remain configurable or pending.

@@ -26,6 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
+## TSK-030 Returns and Exchanges readiness — 2026-08-07
+
+- Reviewed `docs/26-discount-return-policy.md`, `TASKS.md`, approval/SoD/audit contracts, existing `/sales` list/detail/print UI, and separate `/purchasing/returns` supplier-return UI before implementation. No retail customer return/exchange domain existed; supplier returns were kept separate.
+- Implemented a guarded Local/Dev readiness screen at `/pos/returns-readiness` under `returns_exchanges_gift_instruments.view`. Added eight `return.%` pending policy keys and an Initial Setup `return-policies` step; blank values remain PENDING and no return policy value is treated as approval.
+- The screen exposes source reference, eligibility window, condition/disposition, approval/settlement, and audit/print boundaries. It creates no return, refund, exchange, restock, payment reversal, customer, wallet, Gift Card, stock, or print record.
+- Added bilingual `UI-POS-008` with Gift Receipt/source wording and stable visible `returns-readiness-*` targets.
+- Browser evidence: `demo-admin` rendered English/LTR and Arabic/RTL; all five target groups were present, no overflow or price-like numeric output was observed, and no console errors were observed. English interactive tour completed all four steps at `Returns and Exchanges boundary`.
+- Authorization evidence: `demo-no-access` received HTTP `403` for `/pos/returns-readiness`.
+- Diagnostics passed: route discovery, Blade cache, locale parity `1429/1429`, targeted Pint, targeted PHPStan `[OK] No errors`, tutorial registry/UI-POS-008 resolution, PHP lint, and `git diff --check`. No PHPUnit/Pest or automated browser tests were claimed.
+- Boundary: return authorization, source-line/quantity validation, return window calculation, reason catalog enforcement, condition approval, refund/exchange settlement, stock disposition, payment reversal, numbering, and print remain deferred pending owner-approved policy/source contracts. Evidence is Local/Dev only.
+
 ## TSK-029 Gift Cards and Gift Receipts readiness — 2026-08-07
 
 - Reviewed the gift-card/gift-receipt policy, sales/payment/numbering/print contracts, authorization baseline, and active control files before implementation.

@@ -1,9 +1,16 @@
-# Active Milestone — TSK-030 Returns and Exchanges
+# Active Milestone — TSK-031 Party Bookings and Working Invoices
 
-**Current phase:** Phase 4 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 4.4 — Returns and Exchanges
-**Status:** TSK-029 Local/Dev Gift Card/Gift Receipt foundation/readiness slice is completed and browser-verified. TSK-030 is now In Progress for a source-safe returns/exchanges readiness boundary.
-**Progress:** TSK-029 added guarded `/gift-receipts` and `/gift-cards` screens, pending Setup policy values, no-price/privacy boundaries, and `UI-POS-010`/`UI-POS-011`. TSK-030 must first inspect sales/returns/stock/audit/authorization contracts and preserve pending return reasons, windows, approvals, disposition, refund, exchange, and customer-policy inputs.
+**Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
+**Current milestone:** DM 5.1 — Party Bookings and Working Invoices
+**Status:** TSK-030 Local/Dev returns/exchanges readiness slice is completed and browser-verified. TSK-031 is now In Progress for source-safe party discovery/readiness.
+**Progress:** TSK-030 added `/pos/returns-readiness`, eight pending return policy keys, Initial Setup readiness, source/condition/settlement boundaries, and UI-POS-008. TSK-031 must first inspect party policy, customer/child/privacy, store/schedule, invoice, authorization, and print contracts; no party booking or customer mutation is authorized without explicit source/policy support.
+
+---
+
+# Previous Milestone Record — TSK-030
+
+**Status:** Completed for the verified Local/Dev source-safe readiness slice; full returns/exchanges, Phase 4, UAT, and Production remain open.
+**Evidence:** Existing sales and supplier-return UI reviewed before implementation; guarded returns readiness route, pending policies, bilingual screen/guide, English/LTR and Arabic/RTL checks, HTTP 403 denial, and final diagnostics passed.
 
 ---
 

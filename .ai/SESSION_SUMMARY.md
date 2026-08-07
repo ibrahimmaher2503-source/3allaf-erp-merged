@@ -13,6 +13,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-030 Returns and Exchanges readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev source-safe readiness slice for TSK-030 after reviewing return policy, approval/SoD/audit, sales source, supplier-return separation, and UI contracts. No full return/exchange operation claim.
+- **Completed:** Added eight `return.%` pending policy keys, Initial Setup readiness, guarded `/pos/returns-readiness`, empty/source/privacy/settlement boundaries, and bilingual `UI-POS-008` with stable targets.
+- **Verification actually run:** existing `/sales` and `/purchasing/returns` UI review before implementation; route discovery, Blade cache, locale parity `1429/1429`, Pint, PHPStan `[OK] No errors`, tutorial registry resolution, PHP lint, diff check, English/LTR and Arabic/RTL geometry/no-overflow/no-price browser probes, four-step guide completion, and no-access HTTP 403.
+- **Remaining blockers / next action:** Full return authorization, source/quantity/window/reason validation, condition approval, refund/exchange, stock/payment mutation, numbering, and print require owner-approved contracts. Advance to TSK-031 with the same bounded Local/Dev discipline.
+- **Code, tests, browser, commit, push:** Manual browser evidence passed for the bounded slice; no PHPUnit/Pest or automated browser tests; local commit follows this documentation update; no push.
+
 ## 2026-08-07 - TSK-029 Gift Cards and Gift Receipts readiness
 
 - **Agent / scope:** Completed the authorized Local/Dev foundation/readiness slice for TSK-029 after reviewing gift policy, POS sales/payment/numbering/print, authorization, and UI contracts. No full Gift Card/Gift Receipt operation claim.

@@ -21,6 +21,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('pos/returns-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
+
+        return view('pages.returns.readiness', [
+            'title' => __('Returns and Exchanges Readiness'),
+            'description' => __('Review source, condition, approval, settlement, and print prerequisites without creating a return, refund, exchange, or stock movement.'),
+            'items' => [
+                ['title' => __('Source reference'), 'body' => __('Original invoice or price-free Gift Receipt requirement and no-reference exception policy remain PENDING.')],
+                ['title' => __('Eligibility window'), 'body' => __('Return window, quantity, duplicate/excess checks, and out-of-window exception rules remain PENDING.')],
+                ['title' => __('Condition and disposition'), 'body' => __('Sellable, non-saleable, damaged, and manager-review outcomes remain PENDING; no stock movement is posted.')],
+                ['title' => __('Approval and settlement'), 'body' => __('Approval/SoD, cash/original-method refund, Gift Card settlement, and exchange difference rules remain PENDING.')],
+                ['title' => __('Audit and print'), 'body' => __('Immutable source history, numbering, privacy, evidence, and return/exchange output format remain PENDING.')],
+            ],
+        ]);
+    })->name('returns.readiness');
+
     Route::get('gift-receipts', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
