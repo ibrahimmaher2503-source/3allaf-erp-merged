@@ -2,7 +2,7 @@
 
 ## Page Guide / Tour QA overlay
 
-- **Implemented Local/Demo:** `UI-SYS-001`, `UI-RET-001..007`, and `UI-CUS-001..002` use bilingual definitions with stable `data-guide` hooks. Desktop English/LTR and Arabic/RTL browser review covered drawer launch, interactive step progression, target existence, popover geometry, conditional empty-state handling, and page overflow. Full mobile viewport review is unavailable in the current browser session and remains pending.
+- **Implemented Local/Demo:** `UI-SYS-001`, `UI-RET-001..007`, `UI-CUS-001..005` use bilingual definitions with stable `data-guide` hooks. TSK-028 `UI-CUS-004` Product Wallet and `UI-CUS-005` Party Wallet have distinct route/permission boundaries and five-step tours. Desktop English/LTR and Arabic/RTL browser review covered drawer launch, full step progression, target existence, popover geometry, empty-state handling, and page overflow. Full mobile viewport review is unavailable in the current browser session and remains pending.
 
 ## Shared Screen Contract
 
@@ -17,6 +17,13 @@ Every screen row below explicitly inherits this contract unless its row states a
 - **Print:** `None` means the screen has no output; otherwise dedicated thermal/A4/PDF/label view uses authoritative snapshots, locale/direction, reprint audit, and no source mutation.
 
 Routes are proposals and must be reconciled with the actual future Laravel project. Implemented rows remain `In Progress` until code review and manual browser evidence; all other screens start `Not Started`.
+
+## TSK-028 Product and Party Wallet Local/Dev screens — 2026-08-07
+
+- `/wallets/product` (`UI-CUS-004`) and `/wallets/party` (`UI-CUS-005`) are implemented as separate guarded read-only screens using distinct `product_wallet.view` and `party_wallet.view` permissions.
+- The screens expose separate table names, append-only empty states, fixed no-transfer language, pending-settings link, and no create/edit/delete controls. Both routes are responsive fallback/RTL-LTR compatible; English Product Wallet and Arabic Party Wallet tours passed all five steps without overflow.
+- Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
+- Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
 ## TSK-027 customer/loyalty dynamic-settings reconciliation — 2026-08-07
 

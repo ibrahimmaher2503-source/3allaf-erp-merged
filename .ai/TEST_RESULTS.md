@@ -1,5 +1,18 @@
 # Test and Verification Status
 
+## TSK-028 separated Product/Party Wallet foundation — 2026-08-07
+
+- Read `TASKS.md`, `AI_INDEX.md`, `AGENTS.md`, `.ai/` control files, `docs/27-customer-loyalty-wallet-gift-policy.md`, and the mapped wallet/customer/security/UI contracts before implementation.
+- Implemented separate append-only `product_wallet_ledger` and `party_wallet_ledger` tables/models with UUID public IDs, signed decimal amount field, source/idempotency fields, actor/audit reference, indexes, unique idempotency keys, and model-level update/delete guards. No shared wallet table or generic transfer endpoint exists.
+- Added guarded read-only routes `/wallets/product` and `/wallets/party` with distinct `product_wallet.view` / `party_wallet.view` permissions, separate routes/table labels, empty states, no create/edit/delete controls, and no seeded wallet records.
+- Added ten wallet policy keys to the existing append-only Local/Dev Settings registry and exposed an optional `Wallet policy values` card in Initial Setup. All blank values remain `PENDING`; no setting is treated as approval or consumed by a wallet mutation.
+- Added bilingual Page Guides `UI-CUS-004` and `UI-CUS-005`, each with five stable interactive-tour steps. English Product Wallet tour completed 5/5 in LTR; Arabic Party Wallet tour completed 5/5 in RTL.
+- Browser geometry passed: all wallet selectors existed and were visible; Product Wallet and Party Wallet had no horizontal overflow; no authorized-page JavaScript errors were observed. `demo-no-access` received server-side HTTP `403` for `/wallets/product`.
+- Browser Settings/Setup evidence passed: Initial Setup showed `قيم سياسات المحافظ` as Optional/PENDING; Customer Policy Settings showed all ten Product/Party wallet keys as `معلّق`.
+- Integrity evidence passed: migration applied successfully; both ledger tables exist; `ProductWalletLedger::count()=0` and `PartyWalletLedger::count()=0`; tutorial registry returned UI-CUS-004/005 with five steps and distinct permissions.
+- Diagnostics passed: route discovery, PHP lint, targeted Pint, targeted PHPStan `[OK] No errors`, Blade cache, locale parity `1375/1375`, `git diff --check`, and `npm run build` PASS. Vite emitted only the existing optional `fontaine` warning. No PHPUnit/Pest or automated browser tests were created/run per repository policy.
+- Boundary: customer linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, source workflows, Phase 4, UAT, and Production remain deferred. This is Local/Demo evidence only.
+
 ## Page Guide / Interactive Tour closure — 2026-08-07
 
 - Fixed a Blade compilation failure in Customer Policy Settings caused by an `@if` embedded in a Flux button attribute. The save hook is now static and the page renders HTTP 200 in the authenticated Local Demo session.

@@ -71,6 +71,14 @@
                 <h2 class="text-lg font-semibold text-slate-950">{{ __('Deferred separate instruments') }}</h2>
                 <div class="mt-4 space-y-4 text-sm leading-6 text-slate-600">
                     <p><strong class="text-slate-900">{{ __('Product and Party Wallets') }}:</strong> {{ __('Deferred to TSK-028. The ledgers must remain separately named, scoped, append-only, and non-transferable.') }}</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        @can('product_wallet.view')
+                            <a href="{{ route('wallets.product') }}" class="inline-flex items-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800 hover:border-cyan-300">{{ __('Open Product Wallet') }}</a>
+                        @endcan
+                        @can('party_wallet.view')
+                            <a href="{{ route('wallets.party') }}" class="inline-flex items-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800 hover:border-cyan-300">{{ __('Open Party Wallet') }}</a>
+                        @endcan
+                    </div>
                     <p><strong class="text-slate-900">{{ __('Gift Cards and Gift Receipts') }}:</strong> {{ __('Deferred to TSK-029. No issue, balance, redemption, void, expiry, or print behavior is enabled.') }}</p>
                 </div>
             </div>

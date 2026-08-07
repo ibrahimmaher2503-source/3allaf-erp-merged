@@ -102,6 +102,8 @@ final class RetailTutorialFactory
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'TSK-026 Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-CUS-001' => self::readiness('customers.loyalty-readiness', 'جاهزية العملاء والولاء', 'Customer and Loyalty Readiness', 'customer', 'TSK-027', 'BLK-014'),
             'UI-CUS-002' => self::readiness('admin.settings.customer-loyalty', 'إعدادات سياسات العملاء', 'Customer Policy Settings', 'settings', 'TSK-027', 'Owner approval'),
+            'UI-CUS-004' => self::wallet('wallets.product', 'محفظة المنتجات', 'Product Wallet', 'product', 'product_wallet.view'),
+            'UI-CUS-005' => self::wallet('wallets.party', 'محفظة الأطراف', 'Party Wallet', 'party', 'party_wallet.view'),
         ];
 
         if (! isset($definitions[$screenId])) {
@@ -122,6 +124,41 @@ final class RetailTutorialFactory
         unset($definition['steps'], $definition['fields'], $definition['notes'], $definition['warnings'], $definition['errors'], $definition['next_step'], $definition['faq']);
 
         return ['screen_id' => $screenId] + $definition + ['version' => '1.0.0', 'updated_at' => '2026-08-07'];
+    }
+
+    /** @return array<string, mixed> */
+    private static function wallet(string $route, string $titleAr, string $titleEn, string $kind, string $permission): array
+    {
+        $prefix = $kind.'-wallet';
+        $other = $kind === 'product' ? 'Party Wallet' : 'Product Wallet';
+        $otherAr = $kind === 'product' ? 'محفظة الأطراف' : 'محفظة المنتجات';
+
+        return [
+            'route_names' => [$route],
+            'title' => ['ar' => $titleAr, 'en' => $titleEn],
+            'purpose' => ['ar' => "يوضح هذا الدليل حدود {$titleAr} المنفصلة ضمن TSK-028 دون إنشاء رصيد أو حركة.", 'en' => "Explains the separate {$titleEn} boundary within TSK-028 without creating a balance or entry."],
+            'when_to_use' => ['ar' => 'استخدمه لمراجعة السجل المحلي وحدود الصلاحيات والقيم المعلقة.', 'en' => 'Use it to review the local ledger, permission boundary, and pending values.'],
+            'permissions' => [$permission],
+            'approved_actions' => self::actions([
+                ['wallet.review', ['ar' => "مراجعة {$titleAr}", 'en' => "Review {$titleEn}"], $permission],
+            ]),
+            'stories' => ['TSK-028'],
+            'flows' => ['FLW-CUS-04', 'FLW-CUS-05'],
+            'acceptance_criteria' => ['AC-CUS-01', 'AC-CUS-02', 'AC-CUS-04'],
+            'steps' => [
+                self::step('header', "{$prefix}-header", ['ar' => "حدود {$titleAr}", 'en' => "{$titleEn} boundary"], ['ar' => 'هذه شاشة Local/Dev منفصلة؛ لا تعتمد سياسة مالية ولا تنشئ حركة.', 'en' => 'This is a separate Local/Dev screen; it approves no financial policy and creates no entry.']),
+                self::step('boundary', "{$prefix}-boundary", ['ar' => 'اقرأ حالة الاعتماد', 'en' => 'Read the approval state'], ['ar' => 'القيم غير المحسومة PENDING، ولا يوجد bypass لاعتماد المالك.', 'en' => 'Unresolved values are PENDING; there is no owner-approval bypass.']),
+                self::step('summary', "{$prefix}-summary", ['ar' => 'تحقق من فصل السجل', 'en' => 'Confirm ledger separation'], ['ar' => 'اسم الجدول والصلاحية يثبتان أن هذا السجل ليس محفظة عامة مشتركة.', 'en' => 'Table name and permission confirm that this is not a generic shared wallet.']),
+                self::step('ledger', "{$prefix}-ledger", ['ar' => 'راجع السجل دون تعديل', 'en' => 'Review the read-only ledger'], ['ar' => 'لا توجد أزرار إنشاء أو تعديل أو حذف؛ ستظهر الحركات فقط بعد مصدر موثق.', 'en' => 'There are no create, edit, or delete controls; entries appear only after a documented source.']),
+                self::step('isolation', "{$prefix}-isolation", ['ar' => 'تحقق من العزل', 'en' => 'Confirm isolation'], ['ar' => "للوصول إلى {$otherAr} صلاحية ومسار منفصلان؛ لا يوجد تحويل عام بينهما.", 'en' => "{$other} has a separate permission and route; no generic transfer exists between them."]),
+            ],
+            'fields' => [self::field('state', ['ar' => 'الحالة', 'en' => 'State'], ['ar' => 'PENDING تعني أن المصدر أو السياسة أو الاعتماد غير مكتمل.', 'en' => 'PENDING means source, policy, or approval is incomplete.'])],
+            'notes' => ['ar' => 'السجل append-only ولا توجد حركة أو رصيد تجريبي.', 'en' => 'The ledger is append-only and no demo entry or balance exists.'],
+            'warnings' => ['ar' => 'لا تحول إعداد Local/Dev إلى اعتماد Production.', 'en' => 'Do not convert Local/Dev configuration into Production approval.'],
+            'errors' => ['ar' => 'إذا غاب السجل، راجع الصلاحية والنطاق بدل تجاوز الحماية.', 'en' => 'If the ledger is unavailable, review permission and scope instead of bypassing protection.'],
+            'next_step' => ['ar' => 'راجع القيم المعلقة من Settings ثم عد إلى هذه الشاشة.', 'en' => 'Review pending values in Settings, then return to this screen.'],
+            'faq' => ['ar' => 'هل توجد حركة تحويل بين Product وParty Wallet؟ لا.', 'en' => 'Is there a transfer between Product and Party Wallet? No.'],
+        ];
     }
 
     /** @return array<string, mixed> */

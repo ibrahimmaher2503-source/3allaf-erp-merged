@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Platform\Support;
 
 use App\Models\User;
+use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
@@ -70,6 +71,14 @@ final class InitialSetupStatus
                 'required' => true,
             ],
             [
+                'key' => 'wallet-policies',
+                'label' => (string) __('Wallet policy values'),
+                'description' => (string) __('Review Product Wallet and Party Wallet limits and policies; blank values remain PENDING and no wallet mutation is enabled.'),
+                'route' => route('admin.settings.customer-loyalty'),
+                'complete' => $this->walletPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -112,6 +121,15 @@ final class InitialSetupStatus
     {
         return Branch::query()->where('status', 'active')->exists()
             && Store::query()->where('status', 'active')->exists();
+    }
+
+    private function walletPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->where('key', 'like', 'wallet.%')
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
     }
 
     private function financialSettingsReady(): bool

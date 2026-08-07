@@ -1,46 +1,35 @@
-# Current Task — TSK-027 Dynamic Customer/Loyalty Policy Settings
+# Current Task — TSK-029 Gift Cards and Gift Receipts
 
 **Date:** 2026-08-07
 **Repository:** `/home/ubuntu/projects/toy-joy-phase-1-documentation`
-**Status:** TSK-027 empty/readiness boundary is browser-verified; this owner-directed follow-up adds a Local/Dev dynamic settings slice. Customer/loyalty/wallet/Gift Card transaction workflows remain deferred. Page Guide desktop tour QA is implemented and verified; true mobile viewport remains unverified and commit is pending.
+**Status:** In Progress — Local/Dev foundation/readiness boundary
 
-## Owner direction
+## Source and dependency review
 
-The customer/loyalty decision cards must be dynamic and changeable from Settings. This authorizes a reversible Local/Dev settings slice, not Production/UAT policy approval or customer data mutation.
+- TSK-028 separate wallet foundation is complete as a bounded Local/Dev slice; no Gift Card operation may use Product Wallet.
+- Required source: `docs/27-customer-loyalty-wallet-gift-policy.md`, `TASKS.md`, `AI_INDEX.md`, PRD/acceptance/security/UI/print contracts mapped by TSK-029, plus `.ai/` controls and repository rules.
+- Existing `sales`, `sale_lines`, payments, document numbering, audit, protected media/print, and authorization contracts must be inspected before any write.
 
-## Required reading completed
+## Authorized implementation slice
 
-- `TASKS.md`, current `.ai/` control records, Git status/stash.
-- `docs/27-customer-loyalty-wallet-gift-policy.md`
-- `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, `docs/46`, and `docs/57`.
-- US-003/US-023, role/permission boundaries, existing `FinancialSettingVersion`, `SaveLocalSettingsAction`, `RecordAuditEvent`, and settings routes/views.
+1. Add Gift Receipt and Gift Card readiness/configuration surfaces to Initial Setup/Settings for missing eligibility, validity, holder, void, reprint, format, and privacy values; unknown values remain `PENDING/TBD`.
+2. Add separate named Gift Card/Gift Receipt read-only screens with empty states, source/privacy boundaries, and bilingual Page Guides for stable visible targets.
+3. Add schema only where it is source-safe and append-only; do not create balances, card references, receipt references, issue/redeem/void rows, payments, sales, or print artifacts without a documented source and approved policy.
+4. Preserve price-free Gift Receipt language and explicit Product Wallet isolation.
+5. Keep all issue/use/redeem/void/expiry/print buttons disabled or absent until prerequisites are configured and approved; no fake demo cards or monetary defaults.
 
-## Allowed scope
+## Before closing TSK-029
 
-- Add append-only `customer_policy_setting_versions` with stable decision keys, free-form owner/configuration value, version, actor, notes, and Local/Dev status.
-- Add a settings page and guarded save action under `company_settings.view/edit`.
-- Make `/customers/loyalty-readiness` resolve and display the latest value/version for every TSK-027 decision key, or `PENDING` when empty.
-- Audit every setting version through the existing append-only audit contract.
-- Preserve bilingual English/Arabic UI and RTL/LTR.
+- Review English/LTR and Arabic/RTL UI manually before and after changes.
+- Verify authorized/no-access/direct-route behavior, no price leakage, no card/reference leakage, no overflow, and no console errors.
+- Run migration/schema safety, lint, Pint, PHPStan, Blade cache, locale parity, registry/routes, build, and diff checks.
+- Update `TASKS.md`, `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `.ai/UI_SCREENS.md`, `.ai/SESSION_SUMMARY.md`, `.ai/HANDOFF.md`, and `.ai/BLOCKERS.md` after the task.
+- Create a local commit for TSK-029 only; never push.
 
-## Forbidden scope
+## Explicit boundary
 
-- No `approved` state or approval bypass; every configured value remains `Owner approval required`.
-- No financial_setting_versions reuse for customer/legal/loyalty values.
-- No customer/child/consent persistence, history, loyalty ledger, earn/redeem, wallet, Gift Card, balance, rate calculation, expiry enforcement, or transaction mutation.
-- No defaults, Demo customer data, legal wording, production values, or new permission grants.
-- No PHPUnit/Pest or automated browser tests per repository policy.
+This task cannot claim full Gift Card/Gift Receipt issue, balance, partial/full redeem, void, expiry, concurrency, privacy, source reconciliation, or print completion until the required source, approval, numbering, eligibility, validity, holder, and format policies are configured and verified. Local/Dev readiness is the deliverable until then.
 
-## Implementation plan
+## Next task after this
 
-1. Create reversible versioned settings migration/model/registry/action with key allowlist, text-only values, append-only versioning, authorization, and audit.
-2. Add `GET /admin/settings/customer-loyalty` and `POST /admin/settings/customer-loyalty` with company settings permissions and a form for Local/Dev values/notes; blank value means PENDING.
-3. Update `/customers/loyalty-readiness` to read the latest version per key and show dynamic configured values without treating them as approved policy.
-4. Add bilingual translations and links between readiness and Settings.
-5. Run migration status/targeted migration, PHP lint/Pint/PHPStan, Blade cache, route checks, locale parity, Vite build, and `git diff --check`.
-6. Browser verify authorized English/Arabic empty settings, save one non-sensitive Demo policy value, refresh readiness to prove dynamic reflection, no-access denial, no mutation outside settings, no console errors/overflow.
-7. Synchronize `TASKS.md`, `.ai/PROGRESS`, `CURRENT_MILESTONE`, `TEST_RESULTS`, `HANDOFF`, `BLOCKERS`, `DECISIONS`, `UI_SCREENS`, and `SESSION_SUMMARY`; commit locally only.
-
-## Non-claims
-
-This follow-up proves only dynamic Local/Dev policy display/configuration. It does not approve the values, implement customer/loyalty workflows, close BLK-014, close Phase 4, or claim UAT/Production readiness.
+TSK-030 — Implement Returns and Exchanges.

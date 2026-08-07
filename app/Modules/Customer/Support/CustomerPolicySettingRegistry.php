@@ -60,6 +60,46 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Loyalty ledger integrity policy',
                 'description' => 'Source/idempotency/concurrency convention; no ledger exists in this slice.',
             ],
+            'wallet.product.credit_limit' => [
+                'title' => 'Product Wallet credit limit',
+                'description' => 'Owner-configurable local placeholder; no credit entry or balance calculation is enabled.',
+            ],
+            'wallet.product.debt_limit' => [
+                'title' => 'Product Wallet debt limit',
+                'description' => 'Owner-configurable local placeholder; no debt entry or balance calculation is enabled.',
+            ],
+            'wallet.product.settlement_policy' => [
+                'title' => 'Product Wallet settlement policy',
+                'description' => 'Settlement convention reference; no settlement or payment action is enabled.',
+            ],
+            'wallet.product.adjustment_policy' => [
+                'title' => 'Product Wallet adjustment policy',
+                'description' => 'Correction and approval convention; no adjustment action is enabled.',
+            ],
+            'wallet.product.visibility_scope' => [
+                'title' => 'Product Wallet visibility scope',
+                'description' => 'Role and source visibility convention; no cross-scope exposure is enabled.',
+            ],
+            'wallet.party.credit_limit' => [
+                'title' => 'Party Wallet credit limit',
+                'description' => 'Owner-configurable local placeholder; no credit entry or balance calculation is enabled.',
+            ],
+            'wallet.party.debt_limit' => [
+                'title' => 'Party Wallet debt limit',
+                'description' => 'Owner-configurable local placeholder; no debt entry or balance calculation is enabled.',
+            ],
+            'wallet.party.settlement_policy' => [
+                'title' => 'Party Wallet settlement policy',
+                'description' => 'Settlement convention reference; no settlement or payment action is enabled.',
+            ],
+            'wallet.party.adjustment_policy' => [
+                'title' => 'Party Wallet adjustment policy',
+                'description' => 'Correction and approval convention; no adjustment action is enabled.',
+            ],
+            'wallet.party.visibility_scope' => [
+                'title' => 'Party Wallet visibility scope',
+                'description' => 'Role and source visibility convention; no cross-scope exposure is enabled.',
+            ],
         ];
     }
 }

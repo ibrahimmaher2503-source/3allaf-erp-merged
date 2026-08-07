@@ -1,10 +1,22 @@
-# Active Progress — TSK-027 Dynamic Customer/Loyalty Policy Settings — 2026-08-07
+# Active Progress — TSK-029 Gift Cards and Gift Receipts — 2026-08-07
 
-**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 retain read-only/readiness boundaries; TSK-027 now has an implemented/browser-verified dynamic Local/Dev settings/readiness slice. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, conflict, customer, loyalty, wallet, or gift mutation is enabled.
+**Implementation status:** TSK-029 Local/Dev foundation/readiness plan is In Progress. TSK-028 separate Product/Party Wallet foundation/readiness is complete and browser-verified; full wallet operations remain deferred.
 
-**TSK-027 dynamic settings evidence:** `customer_policy_setting_versions` is append-only and versioned; `/admin/settings/customer-loyalty` is guarded by company settings view/edit; `/customers/loyalty-readiness` resolves the latest values. One non-sensitive Local Demo value was saved as version 1 with actor/audit evidence and appeared in readiness while remaining owner-pending.
-**TSK-027 dependency evidence:** `docs/27`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, and `docs/57` were read. Customer identity/consent, shared loyalty, separate wallet, and Gift Card contracts are recorded, while BLK-014 legal/configuration values and Phase 4 remain pending.
-**Next boundary:** Keep `/customers/loyalty-readiness` empty/read-only until owner consent/rates/expiry/rounding/approval inputs and the Phase 4 gate are resolved; TSK-028/029 remain separate.
+**Next boundary:** Inspect existing sales/payment/numbering/audit/print contracts, then expose missing Gift Card/Gift Receipt policy values through Initial Setup as `PENDING/TBD` and add only source-safe guarded empty/readiness UI. No Gift Card/Gift Receipt issue/use/redeem/void/expiry/print mutation or fake references are authorized.
+
+---
+
+# Previous Active Progress — TSK-028 Separated Product and Party Wallets — 2026-08-07
+
+**Implementation status:** TSK-028 Local/Dev foundation/readiness slice is complete and browser-verified. Separate append-only ledger tables/models, distinct permissions/routes, optional Setup card, ten PENDING policy keys, bilingual screens/tours, HTTP 403 denial, zero wallet rows, and final diagnostics passed.
+**Boundary:** Customer/source linkage, balances, settlement, correction, reconciliation, payment, transfer, Phase 4, UAT, and Production remain open.
+
+---
+
+# Previous Active Progress — TSK-027 Dynamic Customer/Loyalty Policy Settings — 2026-08-07
+
+**Implementation status:** TSK-027 dynamic Local/Dev settings/readiness slice is implemented and browser-verified. `customer_policy_setting_versions` is append-only/versioned; the settings route is guarded by `company_settings.view/edit`; readiness resolves latest values per key. No customer, consent, loyalty, wallet, Gift Card, or transaction mutation is enabled.
+**Boundary:** Blank values remain `PENDING`; configured values remain owner-pending. BLK-014, Phase 4, UAT, and Production remain open.
 
 ---
 

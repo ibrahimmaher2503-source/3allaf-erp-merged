@@ -451,10 +451,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-028 — Implement Separated Product and Party Wallets
 
-- **Task ID / Phase / Milestone / Status:** TSK-028; Phase 4; DM 4.2; **Not Started**.
-- **Title / Purpose / Description:** Create independent append-only Product Wallet and Party Wallet data/actions/policies/screens/settlement/reporting with no generic transfer.
-- **Traceability:** MD-06, CUS-01–CUS-02, CUS-04, NFR-01–NFR-03; US-003, US-022; FLW-CUS-04–05; UI UI-CUS-002, UI-CUS-004–005; AC-MD-06, AC-CUS-01–02, AC-CUS-04; SEC-010–021, SEC-027.
-- **Dependencies / Required Inputs:** TSK-027; `docs/27-customer-loyalty-wallet-gift-policy.md`; final wallet credit/debt, settlement, adjustment, limits, visibility, and reporting values remain configurable or pending.
+- **Task ID / Phase / Milestone / Status:** TSK-028; Phase 4; DM 4.2; **Completed — verified Local/Dev foundation/readiness slice; full wallet operations remain deferred**.
+- **Local/Dev boundary — 2026-08-07:** Implement separate Product Wallet and Party Wallet ledger foundations, guarded empty/readiness screens, and Setup Dashboard `PENDING/TBD` policy values. Do not seed wallet rows or enable settlement, adjustment, transfer, payment, customer linkage, or production behavior.
+- **Dependencies / Required Inputs:** TSK-027 dynamic settings/readiness; `docs/27-customer-loyalty-wallet-gift-policy.md`; wallet limits, settlement, adjustment, visibility, reporting, source linkage, and owner/Production values remain configurable or pending.
+- **Acceptance boundary:** Close only the verified Local/Dev foundation/readiness slice; retain full TSK-028 requirements and Phase/UAT/Production gates as open.
+
+- **Traceability:** MD-06, CUS-01–CUS-02, CUS-04; NFR-01–NFR-03; US-003, US-022; FLW-CUS-04–05; UI UI-CUS-002, UI-CUS-004–005; AC-MD-06, AC-CUS-01–02, AC-CUS-04; SEC-010–021, SEC-027.
 - **Database Entities:** `product_wallet_ledger`, `party_wallet_ledger`, `customers`, source documents, `approval_records`, `audit_logs`.
 - **Backend / Livewire / Blade Deliverables:** separately named models/actions/policies/scopes/reconciliation; separate full-page ledger screens and redacted profile tabs.
 - **UI / Flux / Alpine / Vite:** Flux Summary Cards/Tables/Filters/Pagination/Dialog/Timeline/Audit Panel; Alpine none; common assets.
@@ -465,7 +467,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-029 — Implement Gift Cards and Gift Receipts
 
-- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **In Progress — Local/Dev gift-card/gift-receipt foundation/readiness plan active; full issue/redeem/print operations remain gated**.
 - **Title / Purpose / Description:** Deliver price-free Gift Receipt issue/reprint/use and unique Gift Card issue/balance/partial/full redeem/void/expiry ledger.
 - **Traceability:** POS-07, RET-02, RET-04, NFR-01–NFR-03, NFR-06; US-019, US-021; FLW-POS-04, FLW-RET-03; UI UI-POS-010–011; AC-POS-07, AC-RET-02, AC-RET-04; SEC-011–012, SEC-015–020, SEC-024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-028; `docs/27-customer-loyalty-wallet-gift-policy.md`; final Gift Card/Gift Receipt eligibility, validity, holder, void, reprint, and format values remain configurable or pending.

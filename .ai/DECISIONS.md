@@ -2,6 +2,15 @@
 
 Statuses: `Approved`, `Proposed`, `Assumed`, `Deferred`, `Rejected`, or `Requires Owner Decision`.
 
+## DEC-065 — Undocumented operational values belong in Initial Setup
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev implementation; Production/UAT deferred.
+
+When a required operational value or policy is absent from the governing documentation or remains undecided, expose it through the Initial Setup Dashboard as an explicitly configurable `PENDING/TBD` value rather than hard-coding it. Local configuration may support readiness and bounded development slices, but it does not approve the value for Production/UAT or activate downstream mutations. Safety invariants such as Product/Party wallet separation, server authorization, append-only history, audit, idempotency, and no cross-wallet transfer remain fixed and are not user-disableable settings.
+
+---
+
 ## DEC-064 — TSK-027 dynamic Local/Dev customer-policy settings
 
 **Date:** 2026-08-07

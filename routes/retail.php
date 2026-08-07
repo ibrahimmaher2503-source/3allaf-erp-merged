@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
+use App\Modules\Customer\Models\PartyWalletLedger;
+use App\Modules\Customer\Models\ProductWalletLedger;
 use App\Modules\Customer\Support\CustomerPolicySettingRegistry;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
@@ -19,6 +21,40 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('wallets/product', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('product_wallet.view'), 403);
+
+        return view('pages.wallets.ledger', [
+            'title' => app()->getLocale() === 'ar' ? 'محفظة المنتجات' : 'Product Wallet',
+            'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالمنتج، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for product-linked entries while source, policy, and authorization remain outside this slice.',
+            'ledgerTable' => 'product_wallet_ledger',
+            'entries' => ProductWalletLedger::query()->latestFirst()->paginate(20),
+            'otherRoute' => 'wallets.party',
+            'otherPermission' => 'party_wallet.view',
+            'otherLabel' => app()->getLocale() === 'ar' ? 'فتح Party Wallet' : 'Open Party Wallet',
+            'guidePrefix' => 'product-wallet',
+        ]);
+    })->middleware('can:product_wallet.view')->name('wallets.product');
+
+    Route::get('wallets/party', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_wallet.view'), 403);
+
+        return view('pages.wallets.ledger', [
+            'title' => app()->getLocale() === 'ar' ? 'محفظة الأطراف' : 'Party Wallet',
+            'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالطرف، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for party-linked entries while source, policy, and authorization remain outside this slice.',
+            'ledgerTable' => 'party_wallet_ledger',
+            'entries' => PartyWalletLedger::query()->latestFirst()->paginate(20),
+            'otherRoute' => 'wallets.product',
+            'otherPermission' => 'product_wallet.view',
+            'otherLabel' => app()->getLocale() === 'ar' ? 'فتح Product Wallet' : 'Open Product Wallet',
+            'guidePrefix' => 'party-wallet',
+        ]);
+    })->middleware('can:party_wallet.view')->name('wallets.party');
+
     Route::get('pos', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

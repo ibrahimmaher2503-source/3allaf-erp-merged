@@ -1,13 +1,18 @@
-# Active Milestone — TSK-027 Customer/Loyalty Readiness Boundary
+# Active Milestone — TSK-029 Gift Cards and Gift Receipts
 
 **Current phase:** Phase 4 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 4.1 — Customer Identity and Shared Loyalty Readiness
-**Status:** TSK-023 through TSK-026 have browser-verified Local/Dev/readiness boundaries; TSK-027 has an implemented/browser-verified dynamic settings/readiness slice. The full customer, consent, loyalty, wallet, Gift Card, Production/UAT, and owner policy scope remains open.
-**Progress:** `/admin/settings/customer-loyalty` stores append-only Local/Dev policy versions behind company settings permissions; `/customers/loyalty-readiness` resolves the latest value per stable key and displays configured values as owner-pending. No customer/child/consent/history/loyalty/wallet/Gift Card records or mutations exist. TSK-028/029 remain separate and BLK-014 remains open.
+**Current milestone:** DM 4.3 — Gift Cards and Gift Receipts
+**Status:** TSK-029 Local/Dev foundation/readiness plan is In Progress. Full issue/redeem/void/expiry/print and source reconciliation remain open.
+**Progress:** TSK-028 separate Product/Party Wallet foundation/readiness slice is complete and browser-verified. TSK-029 must expose undocumented eligibility, validity, holder, void, reprint, format, and privacy values through Initial Setup/Settings as `PENDING/TBD`; no Gift Card/Gift Receipt rows or financial mutations are authorized before source/policy verification.
 
 ---
 
-# Previous Milestone Record
+# Previous Milestone Record — TSK-028
+
+**Status:** Completed for the verified Local/Dev foundation/readiness slice; full wallet operations, Phase 4, UAT, and Production remain open.
+**Evidence:** Separate ledger tables/models, guarded routes, distinct permissions, optional Setup card, ten pending policy keys, bilingual Product/Party screens, 5/5 tours, HTTP 403 denial, zero wallet rows, and final diagnostics passed.
+
+---
 
 # Current Milestone
 

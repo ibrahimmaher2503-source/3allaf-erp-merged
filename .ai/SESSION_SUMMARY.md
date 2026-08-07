@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-028 separated Product/Party Wallet foundation
+
+- **Agent / scope:** Implemented the authorized Local/Dev foundation/readiness slice for TSK-028 after reviewing routed wallet/customer/security/UI docs; no Production/UAT or wallet mutation claim.
+- **Completed:** Added separate append-only Product Wallet and Party Wallet ledger tables/models, distinct view permissions/routes, empty/readiness screens, ten configurable `PENDING` wallet policy keys, optional Initial Setup card, and bilingual `UI-CUS-004`/`UI-CUS-005` five-step Page Guides.
+- **Files changed:** wallet migration/models, `routes/retail.php`, wallet Blade screen, Customer Policy registry, InitialSetupStatus, authorization seeder/provider, RetailTutorialFactory, UI-CUS tutorial files, locale files, TSK-028 `.ai/` evidence/control files.
+- **Verification actually run:** migration, schema/table/count inspection, route discovery, authorization seed, PHP lint, Pint, PHPStan `[OK] No errors`, Blade cache, locale parity `1375/1375`, Vite build, diff check, English Product Wallet 5/5 tour, Arabic Party Wallet 5/5 tour, RTL/LTR geometry/no-overflow, Initial Setup/Settings rendering, and `demo-no-access` HTTP 403.
+- **Remaining blockers / next action:** customer/source linkage, balances, settlement, correction, reconciliation, payment/transfer operations, owner policy, Phase 4, UAT, and Production remain deferred. Advance to TSK-029 with the same configurable Local/Dev boundary discipline.
+- **Code, tests, browser, commit, push:** Manual browser evidence passed; no PHPUnit/Pest or automated browser tests; commit follows this documentation update; no push.
+
 ## 2026-08-07 - Page Guide interactive tour QA closure
 
 - **Agent / scope:** Completed owner-directed tour visual/interaction QA for dashboard, retail/readiness, customer settings, and Inventory guides; Local/Demo only, no Production/UAT claim.
