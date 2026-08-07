@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-07
 **Repository:** `/home/ubuntu/projects/toy-joy-phase-1-documentation`
-**Status:** TSK-027 empty/readiness boundary is browser-verified; this owner-directed follow-up adds a Local/Dev dynamic settings slice. Customer/loyalty/wallet/Gift Card transaction workflows remain deferred.
+**Status:** TSK-027 empty/readiness boundary is browser-verified; this owner-directed follow-up adds a Local/Dev dynamic settings slice. Customer/loyalty/wallet/Gift Card transaction workflows remain deferred. Page Guide desktop tour QA is implemented and verified; true mobile viewport remains unverified and commit is pending.
 
 ## Owner direction
 

@@ -35,6 +35,7 @@
             :badge-color="$badgeColor"
             :breadcrumbs="$breadcrumbs ?? $eyebrow"
             :request-id="$requestId"
+            data-guide="page-header"
         >
             @if (isset($actions))
                 <x-slot:actions>

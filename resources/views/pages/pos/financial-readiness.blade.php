@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('POS Financial Readiness')">
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="financial-readiness-header">
             <div>
                 <flux:heading size="xl">{{ __('POS Financial Readiness') }}</flux:heading>
                 <flux:text class="mt-1 max-w-3xl">{{ __('Read-only readiness boundary for TSK-024. No discount, tax, payment, evidence, or open-price records are changed here.') }}</flux:text>
@@ -8,7 +8,7 @@
             <flux:button href="{{ route('pos') }}" variant="primary">{{ __('Back to POS') }}</flux:button>
         </div>
 
-        <flux:callout variant="warning" icon="information-circle">
+        <flux:callout variant="warning" icon="information-circle" data-guide="financial-readiness-boundary">
             <flux:callout.heading>{{ __('Owner/configuration approval required') }}</flux:callout.heading>
             <flux:callout.text>{{ __('POSF-01 through POSF-04 and BLK-008 remain PENDING. This page is Local/Dev evidence only and does not enable Production financial behavior.') }}</flux:callout.text>
         </flux:callout>
@@ -22,7 +22,7 @@
                 ['title' => __('Open price'), 'detail' => __('Reference price, min/max bounds, reason, audit, and online eligibility require an approved policy.'), 'status' => 'OWNER CONFIG / PENDING'],
                 ['title' => __('Exact print totals'), 'detail' => __('Thermal/A4 totals must share the approved calculator and immutable snapshots; final output policy is pending.'), 'status' => 'BLK-008 / PENDING'],
             ] as $item)
-                <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                <div @if ($loop->first) data-guide="financial-readiness-first-card" @endif class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <div class="flex items-start justify-between gap-3">
                         <flux:heading size="lg">{{ $item['title'] }}</flux:heading>
                         <flux:badge color="amber">{{ $item['status'] }}</flux:badge>
@@ -32,7 +32,7 @@
             @endforeach
         </div>
 
-        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950" data-guide="financial-readiness-summary">
             <flux:heading size="lg">{{ __('Observed local configuration, read-only') }}</flux:heading>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">

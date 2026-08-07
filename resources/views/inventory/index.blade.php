@@ -52,7 +52,7 @@
 
         <section class="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="balances-heading" data-guide="inventory-balances">
             <div class="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
-                <h2 id="balances-heading" class="text-xl font-bold text-zinc-950 dark:text-white">{{ $t('الرصيد والتوافر وإعادة الطلب', 'Balances, availability, and reorder') }}</h2>
+                <h2 id="balances-heading" class="text-xl font-bold text-zinc-950 dark:text-white" data-guide="inventory-balances-heading">{{ $t('الرصيد والتوافر وإعادة الطلب', 'Balances, availability, and reorder') }}</h2>
                 <p class="mt-1 text-sm text-zinc-500">{{ $t('المتاح = on-hand − reserved؛ in-transit منفصل ولا يرفع on-hand قبل الاستلام.', 'Available = on-hand − reserved; in-transit stays separate until receipt.') }}</p>
             </div>
             <div class="overflow-x-auto">

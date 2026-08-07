@@ -44,7 +44,7 @@ return [
         'steps' => [
             0 => [
                 'key' => 'step-1',
-                'selector' => '[data-guide="dashboard-header"]',
+                'selector' => '[data-guide="page-header"]',
                 'title' => [
                     'ar' => 'رأس لوحة التحكم التشغيلية',
                     'en' => 'Workspace Operations Header',
@@ -56,7 +56,7 @@ return [
             ],
             1 => [
                 'key' => 'step-2',
-                'selector' => '[data-guide="dashboard-foundation"]',
+                'selector' => '[data-guide="dashboard-foundation-heading"]',
                 'title' => [
                     'ar' => 'حالة الجاهزية الأساسية',
                     'en' => 'Foundation Readiness Status',
@@ -68,7 +68,7 @@ return [
             ],
             2 => [
                 'key' => 'step-3',
-                'selector' => '[data-guide="dashboard-foundation-list"]',
+                'selector' => '[data-guide="dashboard-foundation-first-row"]',
                 'title' => [
                     'ar' => 'قائمة المكونات النشطة',
                     'en' => 'Verified Core Building Blocks',
@@ -80,7 +80,7 @@ return [
             ],
             3 => [
                 'key' => 'step-4',
-                'selector' => '[data-guide="dashboard-setup-section"]',
+                'selector' => '[data-guide="dashboard-setup-heading"]',
                 'title' => [
                     'ar' => 'استكمال إعداد المنصة',
                     'en' => 'Continue Platform Setup',
@@ -140,7 +140,7 @@ return [
     'tour_steps' => [
         0 => [
             'key' => 'step-1',
-            'selector' => '[data-guide="dashboard-header"]',
+            'selector' => '[data-guide="page-header"]',
             'title' => [
                 'ar' => 'رأس لوحة التحكم التشغيلية',
                 'en' => 'Workspace Operations Header',
@@ -152,7 +152,7 @@ return [
         ],
         1 => [
             'key' => 'step-2',
-            'selector' => '[data-guide="dashboard-foundation"]',
+            'selector' => '[data-guide="dashboard-foundation-heading"]',
             'title' => [
                 'ar' => 'حالة الجاهزية الأساسية',
                 'en' => 'Foundation Readiness Status',
@@ -164,7 +164,7 @@ return [
         ],
         2 => [
             'key' => 'step-3',
-            'selector' => '[data-guide="dashboard-foundation-list"]',
+            'selector' => '[data-guide="dashboard-foundation-first-row"]',
             'title' => [
                 'ar' => 'قائمة المكونات النشطة',
                 'en' => 'Verified Core Building Blocks',
@@ -176,7 +176,7 @@ return [
         ],
         3 => [
             'key' => 'step-4',
-            'selector' => '[data-guide="dashboard-setup-section"]',
+            'selector' => '[data-guide="dashboard-setup-heading"]',
             'title' => [
                 'ar' => 'استكمال إعداد المنصة',
                 'en' => 'Continue Platform Setup',

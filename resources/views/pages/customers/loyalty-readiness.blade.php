@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('TSK-027 Customer Loyalty Readiness')">
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="customer-readiness-header">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">TSK-027 · DM 4.1</p>
                 <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ __('Customer and loyalty readiness') }}</h1>
@@ -14,7 +14,7 @@
             </div>
         </div>
 
-        <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm" data-guide="customer-readiness-boundary">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">{{ __('Local/Dev dynamic policy') }}</p>
@@ -36,10 +36,10 @@
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 @foreach ($decisionSettings as $key => $setting)
                     @php($record = $setting['record'])
-                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-4" data-policy-key="{{ $key }}">
+                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-4" data-policy-key="{{ $key }}" @if ($loop->first) data-guide="customer-readiness-first-card" @endif>
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <h3 class="font-semibold text-slate-900">{{ __($setting['title']) }}</h3>
+                                <h3 class="font-semibold text-slate-900" data-guide="customer-readiness-first-card-heading">{{ __($setting['title']) }}</h3>
                                 <p class="mt-1 font-mono text-[11px] text-slate-500">{{ $key }}</p>
                             </div>
                             <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $record?->value ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-200 text-slate-600' }}">{{ $record?->value ? __('Configured locally') : __('PENDING') }}</span>
@@ -67,7 +67,7 @@
                     <li><strong>{{ __('Balance protection') }}:</strong> {{ __('Insufficient, expired, duplicate, concurrent, and direct-edit paths remain blocked by absence.') }}</li>
                 </ul>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm" data-guide="customer-readiness-deferred">
                 <h2 class="text-lg font-semibold text-slate-950">{{ __('Deferred separate instruments') }}</h2>
                 <div class="mt-4 space-y-4 text-sm leading-6 text-slate-600">
                     <p><strong class="text-slate-900">{{ __('Product and Party Wallets') }}:</strong> {{ __('Deferred to TSK-028. The ledgers must remain separately named, scoped, append-only, and non-transferable.') }}</p>

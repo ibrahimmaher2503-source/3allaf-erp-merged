@@ -13,6 +13,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Page Guide interactive tour QA closure
+
+- **Agent / scope:** Completed owner-directed tour visual/interaction QA for dashboard, retail/readiness, customer settings, and Inventory guides; Local/Demo only, no Production/UAT claim.
+- **Completed:** Fixed Flux Blade attribute compilation, restored Arabic/English guide-title parity, removed a conditional Suspended Sales action step, reduced Customer Settings/Readiness card targets to headings, and reduced Inventory balances target from a full 409px region to a 28px heading.
+- **Files changed:** `RetailTutorialFactory`, `InventoryTutorialFactory`, `UI-SYS-001`, `UI-RET-001..007`, `UI-CUS-001..002`, shared Page Guide component, affected Blade targets, Inventory view, and active `.ai/` evidence files.
+- **Verification actually run:** Dashboard four-step geometry, Inventory four-step geometry, Customer Settings RTL geometry, route/selector smoke for POS/Suspended/Sales/Sale Details/Shift/Offline/Customer Readiness, English/LTR and Arabic/RTL checks, no missing selectors, no page overflow, and no observed authorized-page JavaScript errors. Final optimize clear/view cache/locale parity/Pint/PHPStan/Vite/diff checks passed.
+- **Remaining blockers / next action:** True 390px mobile viewport cannot be resized in the current browser and remains unverified. Conditional runtime states outside the reviewed Demo data remain limited. Commit reviewed local changes; do not push.
+- **Code, tests, browser, commit, push:** Code and manual browser evidence updated; no PHPUnit/Pest or automated browser tests; commit pending at entry creation; no push.
 ## 2026-08-07 - TSK-027 dynamic Local/Dev policy settings
 
 - **Agent / scope:** Owner-directed follow-up after TSK-027 readiness; implemented only dynamic Local/Dev settings/readiness, not customer/loyalty domain mutation.

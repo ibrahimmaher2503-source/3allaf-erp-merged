@@ -1,0 +1,262 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Platform\Support;
+
+use LogicException;
+
+final class RetailTutorialFactory
+{
+    /** @return array<string, mixed> */
+    public static function make(string $screenId): array
+    {
+        $definitions = [
+            'UI-RET-001' => self::definition(
+                ['pos'],
+                ['ar' => 'دليل نقطة البيع', 'en' => 'POS Checkout Guide'],
+                ['ar' => 'يوضح مسار البيع المحلي online مع إبقاء الضرائب والخصومات والمدفوعات الرسمية معلقة.', 'en' => 'Explains the local online checkout slice while tax, discount, and official payment policy remain pending.'],
+                ['ar' => 'استخدمه لمراجعة المنتج والسلة والسياق التشغيلي قبل checkout المحلي.', 'en' => 'Use it to review products, cart, and operational context before local checkout.'],
+                ['pos_sales.view'],
+                self::actions([
+                    ['pos.review', ['ar' => 'مراجعة المنتجات والسلة', 'en' => 'Review products and cart'], 'pos_sales.view'],
+                    ['pos.checkout', ['ar' => 'تنفيذ checkout محلي مصرح', 'en' => 'Run an authorized local checkout'], 'pos_sales.create'],
+                ]),
+                ['TSK-023'], ['FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+                [
+                    self::step('header', 'pos-header', ['ar' => 'حدود نقطة البيع', 'en' => 'POS boundary'], ['ar' => 'هذه شريحة Local/Dev online فقط؛ لا تعتبر اعتمادًا للسياسات المالية أو الأجهزة.', 'en' => 'This is a Local/Dev online slice; it does not approve financial or hardware policy.']),
+                    self::step('products', 'pos-products-heading', ['ar' => 'اختر منتجًا مسعرًا', 'en' => 'Choose a priced product'], ['ar' => 'أضف منتجًا نشطًا له سعر ظاهر. يعيد الخادم التحقق من السعر والمخزون.', 'en' => 'Add an active product with a visible price. The server rechecks price and stock.']),
+                    self::step('cart', 'pos-cart-heading', ['ar' => 'راجع السلة', 'en' => 'Review the cart'], ['ar' => 'تحقق من المنتج والكمية والسعر قبل أي إجراء؛ الإزالة والإفراغ تخضعان للخادم.', 'en' => 'Check product, quantity, and price before acting; removal and clearing remain server-controlled.']),
+                    self::step('context', 'pos-operational-context', ['ar' => 'تحقق من السياق', 'en' => 'Confirm operational context'], ['ar' => 'المتجر والدرج والوردية المعروضة تحدد ما إذا كان checkout المحلي متاحًا.', 'en' => 'Displayed store, drawer, and shift determine whether local checkout is available.']),
+                    self::step('summary', 'pos-summary-actions', ['ar' => 'افهم الإجراء النهائي', 'en' => 'Understand the final action'], ['ar' => 'الملخص يوضح ما هو معلّق؛ checkout cash sale هو الإجراء المحلي المسموح فقط عند اكتمال الشروط.', 'en' => 'The summary shows what remains pending; cash checkout is local-only and condition-gated.']),
+                ],
+                [self::field('scope', ['ar' => 'النطاق', 'en' => 'Scope'], ['ar' => 'Local/Dev online فقط.', 'en' => 'Local/Dev online only.'])],
+                ['ar' => 'لا تدخل بيانات عميل أو أسرارًا في هذه الشريحة.', 'en' => 'Do not enter customer data or secrets in this slice.'],
+                ['ar' => 'الضريبة والخصم والـgateway والإيصال الرسمي PENDING.', 'en' => 'Tax, discount, gateway, and official receipt remain PENDING.'],
+                ['ar' => 'إذا غاب زر الإجراء، راجع الصلاحية والمتجر والوردية.', 'en' => 'If an action is missing, review permission, store, and shift.'],
+                ['ar' => 'بعد checkout، افتح المبيعات وطابق حركة المخزون.', 'en' => 'After checkout, open Sales and reconcile the inventory movement.'],
+                ['ar' => 'هل POS هنا Production-ready؟ لا، هو Local/Dev evidence فقط.', 'en' => 'Is this POS Production-ready? No, it is Local/Dev evidence only.']
+            ),
+            'UI-RET-002' => self::definition(
+                ['pos.suspended'],
+                ['ar' => 'دليل المبيعات المعلقة', 'en' => 'Suspended Sales Guide'],
+                ['ar' => 'يعرض السلات المحلية المعلقة التي يمكن استئنافها من قبل الكاشير المصرح.', 'en' => 'Shows local suspended carts that an authorized cashier may resume.'],
+                ['ar' => 'استخدمه لاستعادة سلة معلقة ثم العودة إلى POS.', 'en' => 'Use it to resume a suspended cart and return to POS.'],
+                ['pos_sales.view'],
+                self::actions([['suspended.review', ['ar' => 'مراجعة السلات المعلقة', 'en' => 'Review suspended carts'], 'pos_sales.view'], ['suspended.resume', ['ar' => 'استئناف سلة', 'en' => 'Resume a cart'], 'pos_sales.create']]),
+                ['TSK-023'], ['FLW-POS-01'], ['AC-UI-08'],
+                [
+                    self::step('header', 'suspended-header', ['ar' => 'نطاق السلات المعلقة', 'en' => 'Suspended cart scope'], ['ar' => 'هذه السلات محلية وتنتظر الاستئناف؛ لا تعتبر مبيعات معتمدة بعد.', 'en' => 'These carts are local and awaiting resume; they are not approved sales yet.']),
+                    self::step('table', 'suspended-table-heading', ['ar' => 'اقرأ مرجع الاستئناف', 'en' => 'Read the resume reference'], ['ar' => 'استخدم الكود والوقت وعدد العناصر للتأكد من السلة الصحيحة.', 'en' => 'Use code, time, and item count to confirm the correct cart.']),
+                ],
+                [self::field('resume', ['ar' => 'كود الاستئناف', 'en' => 'Resume code'], ['ar' => 'معرف محلي للسلة.', 'en' => 'Local cart identifier.'])],
+                ['ar' => 'لا تعدل السلة المعلقة من HTML أو endpoint غير ظاهر.', 'en' => 'Do not alter a suspended cart through HTML or a hidden endpoint.'],
+                ['ar' => 'السلة المعلقة ليست إيصالًا أو حركة مخزون.', 'en' => 'A suspended cart is not a receipt or inventory movement.'],
+                ['ar' => 'راجع الكود قبل الاستئناف.', 'en' => 'Confirm the code before resuming.'],
+                ['ar' => 'بعد الاستئناف، راجع السلة ثم نفذ الإجراء المصرح.', 'en' => 'After resuming, review the cart and take the authorized action.'],
+                ['ar' => 'هل الاستئناف يبيع تلقائيًا؟ لا، يعيد السلة فقط.', 'en' => 'Does resume sell automatically? No, it only restores the cart.']
+            ),
+            'UI-RET-003' => self::definition(
+                ['sales.index'],
+                ['ar' => 'دليل سجل المبيعات', 'en' => 'Sales Register Guide'],
+                ['ar' => 'يعرض المبيعات المحلية المعتمدة مع المتجر والكاشير والتاريخ والإجمالي.', 'en' => 'Lists approved local sales with store, cashier, date, and total.'],
+                ['ar' => 'استخدمه بعد checkout لمراجعة المرجع وفتح التفاصيل.', 'en' => 'Use it after checkout to review the reference and open details.'],
+                ['pos_sales.view'],
+                self::actions([['sales.review', ['ar' => 'مراجعة المبيعات', 'en' => 'Review sales'], 'pos_sales.view'], ['sales.open-detail', ['ar' => 'فتح تفاصيل البيع', 'en' => 'Open sale detail'], 'pos_sales.view']]),
+                ['TSK-023'], ['FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+                [
+                    self::step('header', 'sales-header', ['ar' => 'حدود سجل المبيعات', 'en' => 'Sales register boundary'], ['ar' => 'هذه مبيعات Local/Dev المعتمدة فقط، وليست سجلًا ماليًا Production.', 'en' => 'This is an approved Local/Dev sales list, not a Production financial ledger.']),
+                    self::step('action', 'sales-open-pos', ['ar' => 'العودة إلى POS', 'en' => 'Return to POS'], ['ar' => 'استخدم الزر للعودة إلى شاشة البيع المحلية.', 'en' => 'Use the action to return to local checkout.']),
+                    self::step('table', 'sales-table-heading', ['ar' => 'افتح مرجع الفاتورة', 'en' => 'Open the invoice reference'], ['ar' => 'رابط رقم الفاتورة يفتح التفاصيل دون تعديل السجل.', 'en' => 'The invoice link opens detail without editing the record.']),
+                ],
+                [self::field('invoice', ['ar' => 'رقم المستند', 'en' => 'Document number'], ['ar' => 'مرجع البيع المحلي.', 'en' => 'Local sale reference.'])],
+                ['ar' => 'لا توجد إجراءات حذف أو تعديل من هذا السجل.', 'en' => 'There are no delete or edit actions in this register.'],
+                ['ar' => 'الطباعة الرسمية والتسويات المالية PENDING.', 'en' => 'Official printing and financial settlement remain PENDING.'],
+                ['ar' => 'إذا لم يظهر بيع، راجع النطاق والحالة.', 'en' => 'If a sale is missing, review scope and status.'],
+                ['ar' => 'افتح التفاصيل لمطابقة الخطوط والإجمالي وحركة المخزون.', 'en' => 'Open detail to reconcile lines, total, and inventory movement.'],
+                ['ar' => 'هل سجل المبيعات يسمح بالتعديل؟ لا، هو عرض للتفاصيل فقط.', 'en' => 'Does the register allow editing? No, it is a detail view.']
+            ),
+            'UI-RET-004' => self::definition(
+                ['sales.show'],
+                ['ar' => 'دليل تفاصيل البيع', 'en' => 'Sale Detail Guide'],
+                ['ar' => 'يربط تفاصيل البيع المحلي بالمتجر والكاشير والخطوط والإجمالي.', 'en' => 'Connects a local sale to store, cashier, lines, and total.'],
+                ['ar' => 'استخدمه للتحقق بعد فتح رقم مستند من سجل المبيعات.', 'en' => 'Use it to verify a sale after opening its document number.'],
+                ['pos_sales.view'],
+                self::actions([['sale.detail', ['ar' => 'مراجعة تفاصيل البيع', 'en' => 'Review sale detail'], 'pos_sales.view'], ['sale.print-baseline', ['ar' => 'فتح خط أساس الطباعة', 'en' => 'Open print baseline'], 'pos_sales.view']]),
+                ['TSK-023'], ['FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+                [
+                    self::step('header', 'sale-detail-header', ['ar' => 'مرجع البيع', 'en' => 'Sale reference'], ['ar' => 'تحقق من رقم المستند قبل مطابقة أي خط أو إجمالي.', 'en' => 'Confirm the document number before reconciling any line or total.']),
+                    self::step('meta', 'sale-detail-meta', ['ar' => 'تحقق من السياق', 'en' => 'Confirm context'], ['ar' => 'المتجر والكاشير والحالة توضح نطاق البيع المحلي.', 'en' => 'Store, cashier, and status establish the local sale context.']),
+                    self::step('lines', 'sale-detail-lines-heading', ['ar' => 'راجع الخطوط', 'en' => 'Review lines'], ['ar' => 'طابق المنتج والكمية والسعر والمبلغ قبل قراءة الإجمالي.', 'en' => 'Reconcile product, quantity, price, and amount before reading the total.']),
+                    self::step('print', 'sale-detail-print-action', ['ar' => 'افتح خط الطباعة', 'en' => 'Open print baseline'], ['ar' => 'الطباعة هنا baseline محلي وليست إيصال Production رسميًا.', 'en' => 'This print view is a local baseline, not an official Production receipt.']),
+                ],
+                [self::field('status', ['ar' => 'الحالة', 'en' => 'Status'], ['ar' => 'Approved ضمن Local/Dev.', 'en' => 'Approved within Local/Dev.'])],
+                ['ar' => 'لا تغير الخطوط أو الإجمالي من هذه الشاشة.', 'en' => 'Do not change lines or totals from this screen.'],
+                ['ar' => 'الضريبة والخصم والدفع والطباعة الرسمية PENDING.', 'en' => 'Tax, discount, payment, and official printing remain PENDING.'],
+                ['ar' => 'إذا اختلف الإجمالي، أوقف المراجعة وارجع للمصدر.', 'en' => 'If the total differs, stop and return to the source.'],
+                ['ar' => 'بعد المطابقة، استخدم Print baseline فقط لأغراض Local/Dev.', 'en' => 'After reconciliation, use Print baseline for Local/Dev evidence only.'],
+                ['ar' => 'هل زر Print اعتماد رسمي؟ لا.', 'en' => 'Is Print an official approval? No.']
+            ),
+            'UI-RET-005' => self::readiness('pos.financial-readiness', 'جاهزية الشؤون المالية لنقطة البيع', 'POS Financial Readiness', 'financial', 'TSK-024', 'POSF-01..04 and BLK-008'),
+            'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
+            'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'TSK-026 Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
+            'UI-CUS-001' => self::readiness('customers.loyalty-readiness', 'جاهزية العملاء والولاء', 'Customer and Loyalty Readiness', 'customer', 'TSK-027', 'BLK-014'),
+            'UI-CUS-002' => self::readiness('admin.settings.customer-loyalty', 'إعدادات سياسات العملاء', 'Customer Policy Settings', 'settings', 'TSK-027', 'Owner approval'),
+        ];
+
+        if (! isset($definitions[$screenId])) {
+            throw new LogicException("Unknown retail tutorial [{$screenId}].");
+        }
+
+        $definition = $definitions[$screenId];
+        $definition['sections'] = [
+            'steps' => $definition['steps'],
+            'fields' => $definition['fields'],
+            'notes' => $definition['notes'],
+            'warnings' => $definition['warnings'],
+            'errors' => $definition['errors'],
+            'next_step' => $definition['next_step'],
+            'faq' => $definition['faq'],
+        ];
+        $definition['tour_steps'] = array_slice($definition['steps'], 0, 5);
+        unset($definition['steps'], $definition['fields'], $definition['notes'], $definition['warnings'], $definition['errors'], $definition['next_step'], $definition['faq']);
+
+        return ['screen_id' => $screenId] + $definition + ['version' => '1.0.0', 'updated_at' => '2026-08-07'];
+    }
+
+    /** @return array<string, mixed> */
+    private static function readiness(string $route, string $routeTitleAr, string $routeTitleEn, string $kind, string $task, string $pending): array
+    {
+        $copy = match ($kind) {
+            'financial' => [
+                'header' => ['ar' => 'حدود الجاهزية المالية', 'en' => 'Financial readiness boundary'],
+                'headerBody' => ['ar' => 'هذه شاشة قراءة فقط؛ لا تنشئ خصمًا أو ضريبة أو دفعة أو دليلًا رسميًا.', 'en' => 'This is read-only; it creates no discount, tax, payment, or official evidence.'],
+                'warning' => ['ar' => 'اعتماد المالك مطلوب', 'en' => 'Owner approval required'],
+                'warningBody' => ['ar' => "قرارات {$pending} ما زالت PENDING.", 'en' => "Decisions {$pending} remain PENDING."],
+                'cards' => ['ar' => 'راجع بنود القرار', 'en' => 'Review decision items'],
+                'summary' => ['ar' => 'اقرأ الإعداد المرصود', 'en' => 'Read observed configuration'],
+            ],
+            'shift' => [
+                'header' => ['ar' => 'حدود الوردية والدرج', 'en' => 'Shift and drawer boundary'],
+                'headerBody' => ['ar' => 'هذه شاشة قراءة فقط؛ لا تفتح وردية ولا تسجل حركة نقدية ولا تعرض expected.', 'en' => 'This is read-only; it opens no shift, records no cash movement, and exposes no expected amount.'],
+                'warning' => ['ar' => 'الإغلاق الأعمى محفوظ', 'en' => 'Blind close is preserved'],
+                'warningBody' => ['ar' => 'لا تظهر القيم المتوقعة قبل اعتماد مسار actual submission.', 'en' => 'Expected values remain hidden before an approved actual-submission workflow.'],
+                'cards' => ['ar' => 'راجع نقاط السياسة', 'en' => 'Review policy points'],
+                'summary' => ['ar' => 'اقرأ العدادات فقط', 'en' => 'Read counts only'],
+            ],
+            'offline' => [
+                'header' => ['ar' => 'حدود التشغيل دون اتصال', 'en' => 'Offline boundary'],
+                'headerBody' => ['ar' => 'هذه شاشة readiness فقط؛ لا queue أو sync أو replay أو offline sale مفعّل.', 'en' => 'This is readiness only; no queue, sync, replay, or offline sale is enabled.'],
+                'warning' => ['ar' => 'Offline POS معطل افتراضيًا', 'en' => 'Transactional offline POS is disabled'],
+                'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
+                'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
+                'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'customer' => [
+                'header' => ['ar' => 'حدود customer والولاء', 'en' => 'Customer and loyalty boundary'],
+                'headerBody' => ['ar' => 'القيم المعروضة من Settings، لكنها لا تنفذ customer أو consent أو loyalty mutation.', 'en' => 'Values come from Settings but do not execute customer, consent, or loyalty mutations.'],
+                'warning' => ['ar' => 'القيم ليست سياسة معتمدة', 'en' => 'Values are not approved policy'],
+                'warningBody' => ['ar' => 'كل قيمة محلية تحتاج owner approval ولا تستهلكها معاملات domain.', 'en' => 'Each local value needs owner approval and is not consumed by domain transactions.'],
+                'cards' => ['ar' => 'راجع قيمة قرار واحدة', 'en' => 'Review one decision value'],
+                'summary' => ['ar' => 'راجع العقود المؤجلة', 'en' => 'Review deferred contracts'],
+            ],
+            default => [
+                'header' => ['ar' => 'حدود إعدادات القرار', 'en' => 'Decision settings boundary'],
+                'headerBody' => ['ar' => 'كل حفظ ينشئ version محلية وaudit؛ لا تتحول القيمة إلى سياسة معتمدة.', 'en' => 'Each save creates a local version and audit; the value does not become approved policy.'],
+                'warning' => ['ar' => 'إعداد Local/Dev فقط', 'en' => 'Local/Dev configuration only'],
+                'warningBody' => ['ar' => 'لا تدخل أسرارًا أو بيانات شخصية أو صياغة قانونية غير معتمدة.', 'en' => 'Do not enter secrets, personal data, or unapproved legal wording.'],
+                'cards' => ['ar' => 'راجع بطاقة قرار', 'en' => 'Review a decision card'],
+                'summary' => ['ar' => 'احفظ version محلية فقط', 'en' => 'Save a local version only'],
+            ],
+        };
+
+        $isSettings = $kind === 'settings';
+        $actions = $isSettings
+            ? self::actions([
+                ['settings.review', ['ar' => 'مراجعة مفاتيح القرار', 'en' => 'Review decision keys'], 'company_settings.view'],
+                ['settings.save-local', ['ar' => 'حفظ version محلية', 'en' => 'Save a local version'], 'company_settings.edit'],
+            ])
+            : self::actions([
+                ['readiness.review', ['ar' => 'مراجعة الجاهزية', 'en' => 'Review readiness'], 'pos_sales.view'],
+            ]);
+
+        $steps = [
+            self::step('header', $kind === 'settings' ? 'customer-settings-header' : ($kind === 'customer' ? 'customer-readiness-header' : "{$kind}-readiness-header"), $copy['header'], $copy['headerBody']),
+            self::step('warning', $kind === 'settings' ? 'customer-settings-boundary' : ($kind === 'customer' ? 'customer-readiness-boundary' : "{$kind}-readiness-boundary"), $copy['warning'], $copy['warningBody']),
+            self::step('card', $kind === 'settings' ? 'customer-settings-first-card-heading' : ($kind === 'customer' ? 'customer-readiness-first-card-heading' : "{$kind}-readiness-first-card"), $copy['cards'], ['ar' => 'ابدأ من العنصر المحدد ثم راجع بقية العناصر دون تنفيذ mutation غير معتمد.', 'en' => 'Start with the highlighted item, then review the remaining items without performing unapproved mutations.']),
+            self::step('summary', $kind === 'settings' ? 'customer-settings-save-action' : ($kind === 'customer' ? 'customer-readiness-deferred' : "{$kind}-readiness-summary"), $copy['summary'], ['ar' => 'اقرأ هذه المنطقة لتثبيت ما هو مرصود وما هو مؤجل.', 'en' => 'Use this area to distinguish observed local data from deferred policy.']),
+        ];
+
+        return [
+            'route_names' => [$route],
+            'title' => ['ar' => $routeTitleAr, 'en' => $routeTitleEn],
+            'purpose' => ['ar' => "دليل {$routeTitleAr} ضمن {$task}؛ {$pending} ما زالت معلقة.", 'en' => "Guide for {$routeTitleEn} within {$task}; {$pending} remain pending."],
+            'when_to_use' => ['ar' => 'استخدمه للقراءة والتحقق فقط قبل توفر اعتماد المالك.', 'en' => 'Use it for read-only review before owner approval is available.'],
+            'permissions' => $isSettings ? ['company_settings.view'] : ['pos_sales.view'],
+            'approved_actions' => $actions,
+            'stories' => [$task],
+            'flows' => ['FLW-READINESS-01'],
+            'acceptance_criteria' => ['AC-UI-08', 'AC-UI-12'],
+            'steps' => $steps,
+            'fields' => [self::field('status', ['ar' => 'الحالة', 'en' => 'Status'], ['ar' => 'PENDING تعني أن القيمة أو السياسة لم تعتمد.', 'en' => 'PENDING means the value or policy is not approved.'])],
+            'notes' => ['ar' => 'هذه الشاشة لا تمنح صلاحية domain ولا تنشئ سجلًا تشغيليًا.', 'en' => 'This screen grants no domain capability and creates no operational record.'],
+            'warnings' => ['ar' => 'لا تحول قيمة Local/Dev إلى قرار Production.', 'en' => 'Do not treat a Local/Dev value as a Production decision.'],
+            'errors' => ['ar' => 'إذا غاب عنصر، راجع الصلاحية والنطاق بدل تجاوز الواجهة.', 'en' => 'If an item is missing, review permission and scope instead of bypassing the UI.'],
+            'next_step' => ['ar' => 'عد إلى POS أو افتح الدليل المرتبط بعد مراجعة الحدود.', 'en' => 'Return to POS or open the related guide after reviewing the boundary.'],
+            'faq' => ['ar' => 'هل هذه الشاشة تنفذ mutation؟ لا.', 'en' => 'Does this screen execute a mutation? No.'],
+        ];
+    }
+
+    /**
+     * @param  list<array{0:string,1:array{ar:string,en:string},2:string}>  $actions
+     * @return list<array{key:string,label:array{ar:string,en:string},required_permission:string}>
+     */
+    private static function actions(array $actions): array
+    {
+        return array_map(static fn (array $action): array => ['key' => $action[0], 'label' => $action[1], 'required_permission' => $action[2]], $actions);
+    }
+
+    /**
+     * @param  array{ar:string,en:string}  $title
+     * @param  array{ar:string,en:string}  $body
+     * @return array{key:string,selector:string,title:array{ar:string,en:string},body:array{ar:string,en:string}}
+     */
+    private static function step(string $key, string $selector, array $title, array $body): array
+    {
+        return ['key' => $key, 'selector' => "[data-guide=\"{$selector}\"]", 'title' => $title, 'body' => $body];
+    }
+
+    /**
+     * @param  array{ar:string,en:string}  $title
+     * @param  array{ar:string,en:string}  $body
+     * @return array{key:string,title:array{ar:string,en:string},body:array{ar:string,en:string}}
+     */
+    private static function field(string $key, array $title, array $body): array
+    {
+        return compact('key', 'title', 'body');
+    }
+
+    /**
+     * @param  list<string>  $routeNames
+     * @param  array<string,mixed>  $title
+     * @param  array<string,mixed>  $purpose
+     * @param  array<string,mixed>  $whenToUse
+     * @param  list<string>  $permissions
+     * @param  list<array<string,mixed>>  $approvedActions
+     * @param  list<string>  $stories
+     * @param  list<string>  $flows
+     * @param  list<string>  $acceptanceCriteria
+     * @param  list<array<string,mixed>>  $steps
+     * @param  list<array<string,mixed>>  $fields
+     * @param  array<string,mixed>  $notes
+     * @param  array<string,mixed>  $warnings
+     * @param  array<string,mixed>  $errors
+     * @param  array<string,mixed>  $nextStep
+     * @param  array<string,mixed>  $faq
+     * @return array<string,mixed>
+     */
+    private static function definition(array $routeNames, array $title, array $purpose, array $whenToUse, array $permissions, array $approvedActions, array $stories, array $flows, array $acceptanceCriteria, array $steps, array $fields, array $notes, array $warnings, array $errors, array $nextStep, array $faq): array
+    {
+        return compact('routeNames', 'title', 'purpose', 'whenToUse', 'permissions', 'approvedActions', 'stories', 'flows', 'acceptanceCriteria', 'steps', 'fields', 'notes', 'warnings', 'errors', 'nextStep', 'faq') + ['route_names' => $routeNames, 'when_to_use' => $whenToUse, 'approved_actions' => $approvedActions, 'acceptance_criteria' => $acceptanceCriteria, 'next_step' => $nextStep, 'purpose' => $purpose, 'title' => $title];
+    }
+}

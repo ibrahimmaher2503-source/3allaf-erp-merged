@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('TSK-025 Shift Readiness')">
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="shift-readiness-header">
             <div>
                 <flux:heading size="xl">{{ __('TSK-025 Shift Readiness') }}</flux:heading>
                 <flux:text class="mt-1 max-w-3xl">{{ __('Read-only shift and cash-control boundary. No shift, cash movement, payment, expected total, or variance record is changed here.') }}</flux:text>
@@ -8,7 +8,7 @@
             <flux:button href="{{ route('pos') }}" variant="primary">{{ __('Back to POS') }}</flux:button>
         </div>
 
-        <flux:callout variant="warning" icon="information-circle">
+        <flux:callout variant="warning" icon="information-circle" data-guide="shift-readiness-boundary">
             <flux:callout.heading>{{ __('Blind close is preserved') }}</flux:callout.heading>
             <flux:callout.text>{{ __('Expected amounts are not rendered, preloaded, or exposed before an owner-approved actual submission workflow.') }}</flux:callout.text>
         </flux:callout>
@@ -22,7 +22,7 @@
                 ['title' => __('Closed shift immutability'), 'detail' => __('Close transition, correction references, post-close transaction denial, and audit events require the approved lifecycle.'), 'status' => 'CSH-03 / PENDING'],
                 ['title' => __('Thermal/A4 close output'), 'detail' => __('Close reports must respect viewer permissions and approved print/numbering/device configuration.'), 'status' => 'BLK-008 / PENDING'],
             ] as $item)
-                <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                <div @if ($loop->first) data-guide="shift-readiness-first-card" @endif class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <div class="flex items-start justify-between gap-3">
                         <flux:heading size="lg">{{ $item['title'] }}</flux:heading>
                         <flux:badge color="amber">{{ $item['status'] }}</flux:badge>
@@ -32,7 +32,7 @@
             @endforeach
         </div>
 
-        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950" data-guide="shift-readiness-summary">
             <flux:heading size="lg">{{ __('Observed scoped readiness, read-only') }}</flux:heading>
             <flux:text class="mt-1 text-sm text-zinc-500">{{ __('Counts only; no monetary fields or expected values are loaded into this page.') }}</flux:text>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">

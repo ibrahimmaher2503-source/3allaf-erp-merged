@@ -1,5 +1,18 @@
 # Test and Verification Status
 
+## Page Guide / Interactive Tour closure — 2026-08-07
+
+- Fixed a Blade compilation failure in Customer Policy Settings caused by an `@if` embedded in a Flux button attribute. The save hook is now static and the page renders HTTP 200 in the authenticated Local Demo session.
+- Fixed RTL guide-title parity: readiness/settings guide titles now provide independent Arabic and English values. Arabic Customer Policy Settings rendered `lang=ar`, `dir=rtl`, Arabic dialog title/body, and no page overflow.
+- Reduced oversized tour targets: Customer Settings and Customer Readiness now target the first card heading rather than the whole card. Customer Settings step 3 measured a 24px target with `overlap=false` and `overflow=false`.
+- Removed the conditional `suspended-action` tour step because Suspended Sales empty state has no Resume button. The guide now targets only stable header/table regions and explains the conditional action in content.
+- Inventory `UI-INV-001` initially exposed a 409px `inventory-balances` region that overlapped the popover. The target was reduced to `inventory-balances-heading`; repeat browser evidence measured a 28px target with `overlap=false`. Transfer step also passed with `overlap=false`.
+- Interactive tour geometry evidence passed for Dashboard `UI-SYS-001` steps 1–5: every selector existed, all steps had `overlap=false`, and page overflow was false. Inventory `UI-INV-001` steps 1–4 passed after the target correction.
+- Route/selector smoke passed for `/pos/suspended` (`UI-RET-002`, 2 stable steps), `/sales` (`UI-RET-003`, 3 steps), `/sales/1` (`UI-RET-004`, 4 steps), `/pos/shift-readiness` (`UI-RET-006`, 4 steps), `/pos/offline-readiness` (`UI-RET-007`, 4 steps), and `/customers/loyalty-readiness` (`UI-CUS-001`, 4 steps); no missing selectors and no page overflow were observed.
+- Existing POS and Financial Readiness tour evidence remains valid; Customer Policy Settings was rechecked in both English/LTR and Arabic/RTL after the Blade/title/target corrections. No JavaScript errors were observed in the reviewed authorized pages.
+- Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
+- Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
+
 ## TSK-027 dynamic customer-policy settings verification — 2026-08-07
 
 - Required docs and existing settings/action/audit contracts were read before implementation. Owner direction authorized a reversible Local/Dev settings slice only.

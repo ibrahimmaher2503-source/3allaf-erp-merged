@@ -1,5 +1,9 @@
 # UI Screen Inventory
 
+## Page Guide / Tour QA overlay
+
+- **Implemented Local/Demo:** `UI-SYS-001`, `UI-RET-001..007`, and `UI-CUS-001..002` use bilingual definitions with stable `data-guide` hooks. Desktop English/LTR and Arabic/RTL browser review covered drawer launch, interactive step progression, target existence, popover geometry, conditional empty-state handling, and page overflow. Full mobile viewport review is unavailable in the current browser session and remains pending.
+
 ## Shared Screen Contract
 
 Every screen row below explicitly inherits this contract unless its row states a stricter behavior:

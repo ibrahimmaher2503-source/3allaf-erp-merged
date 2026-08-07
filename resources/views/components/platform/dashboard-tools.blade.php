@@ -126,7 +126,7 @@
             guideOpen: false, customizerOpen: false, mobileMenuOpen: false,
             saveStatus: 'idle',
             launcherFocus: null,
-            tour: { active: false, steps: [], step: null, visibleIndex: 0, lastFocus: null, currentElement: null, savedStyle: null, cardPosition: null },
+            tour: { active: false, steps: [], step: null, visibleIndex: 0, lastFocus: null, currentElement: null, savedStyle: null, cardPosition: null, scrollAdjusting: false },
             _tourScrollHandler: null,
             init() {
                 let initialDark = false;
@@ -372,7 +372,25 @@
                 
                 const spaceBelow = viewportHeight - targetRect.bottom - gap - padding;
                 const spaceAbove = targetRect.top - gap - padding;
-                
+
+                // When the target and card can fit together but the current scroll
+                // position cannot, move the target upward so the card sits below it
+                // instead of clamping the card over the highlighted content.
+                const combinedHeight = targetRect.height + cardHeight + gap + (padding * 2);
+                if (spaceBelow < cardHeight && spaceAbove < cardHeight && combinedHeight <= viewportHeight && !this.tour.scrollAdjusting) {
+                    const desiredTop = Math.max(padding, Math.min(targetRect.top, viewportHeight - targetRect.height - cardHeight - gap - padding));
+                    const delta = targetRect.top - desiredTop;
+                    if (Math.abs(delta) > 4) {
+                        this.tour.scrollAdjusting = true;
+                        window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+                        window.requestAnimationFrame(() => {
+                            this.tour.scrollAdjusting = false;
+                            this.repositionTour();
+                        });
+                        return;
+                    }
+                }
+
                 let top;
                 if (spaceBelow >= cardHeight) {
                     top = targetRect.bottom + gap;
@@ -472,6 +490,7 @@
                 this.tour.steps = [];
                 this.tour.visibleIndex = 0;
                 this.tour.cardPosition = null;
+                this.tour.scrollAdjusting = false;
                 
                 if (this._tourScrollHandler) {
                     window.removeEventListener('scroll', this._tourScrollHandler, { capture: true });

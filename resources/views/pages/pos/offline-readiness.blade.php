@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('TSK-026 Offline Readiness')">
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="offline-readiness-header">
             <div class="max-w-3xl space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">{{ __('TSK-026') }}</p>
                 <h1 class="text-3xl font-semibold tracking-tight text-zinc-950">{{ __('TSK-026 Offline Readiness') }}</h1>
@@ -9,7 +9,7 @@
             <a href="{{ route('pos') }}" class="inline-flex items-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-teal-300 hover:text-teal-700">{{ __('Back to POS') }}</a>
         </div>
 
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm">
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm" data-guide="offline-readiness-boundary">
             <p class="text-sm font-semibold">{{ __('Transactional offline POS is disabled by default') }}</p>
             <p class="mt-1 text-sm leading-6 text-amber-900">{{ __('Branch/device enablement, limits, price age, expiry, retry, and conflict ownership require explicit owner configuration before any offline sale can be accepted.') }}</p>
         </div>
@@ -23,7 +23,7 @@
                 ['title' => __('Conflict review ownership'), 'code' => 'OFF-05 / PENDING', 'body' => __('Conflict disposition and review ownership are unresolved. Conflicts cannot be auto-resolved.')],
                 ['title' => __('Protected local data boundary'), 'code' => 'NFR-04 / PENDING', 'body' => __('No customer, payment, wallet, loyalty, audit, expected-cash, cost, or margin data is cached by this slice.')],
             ] as $card)
-                <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <article @if ($loop->first) data-guide="offline-readiness-first-card" @endif class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-3">
                         <h2 class="text-base font-semibold text-zinc-900">{{ $card['title'] }}</h2>
                         <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">{{ $card['code'] }}</span>
@@ -54,7 +54,7 @@
             </section>
         </div>
 
-        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-5" data-guide="offline-readiness-summary">
             <p class="text-sm font-semibold text-zinc-900">{{ __('Readiness status — no offline mutation surface') }}</p>
             <p class="mt-1 text-sm leading-6 text-zinc-600">{{ __('This page records the boundary only. Server truth, secure synchronization, conflict review, provisional numbering, and device security require approved policy and a later implementation slice.') }}</p>
         </div>

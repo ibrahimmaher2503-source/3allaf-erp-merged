@@ -11,7 +11,7 @@
     @endphp
 
     <div class="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="flex flex-wrap items-start justify-between gap-3" data-guide="pos-header">
             <div>
                 <flux:heading size="xl">{{ __('POS Checkout') }}</flux:heading>
                 <flux:text class="mt-1">{{ __('Local/Dev online checkout slice. Financial, tax, hardware, and offline policies remain PENDING.') }}</flux:text>
@@ -35,7 +35,7 @@
         <div class="grid gap-4 lg:grid-cols-[1.35fr_0.9fr]">
             <section class="flex min-h-0 flex-col gap-4">
                 <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2" data-guide="pos-products-heading">
                         <div>
                             <flux:heading size="lg">{{ __('Products') }}</flux:heading>
                             <flux:text class="text-xs">{{ __('Choose a priced active product. Barcode scanner input can use the same field later.') }}</flux:text>
@@ -71,7 +71,7 @@
                 </div>
 
                 <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center justify-between gap-2" data-guide="pos-cart-heading">
                         <div>
                             <flux:heading size="lg">{{ __('Cart') }}</flux:heading>
                             <flux:text class="text-xs">{{ __('Items are re-priced and stock-checked on the server before posting.') }}</flux:text>
@@ -111,7 +111,7 @@
             </section>
 
             <aside class="flex flex-col gap-4">
-                <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900" data-guide="pos-operational-context">
                     <flux:heading size="lg">{{ __('Operational context') }}</flux:heading>
                     <dl class="mt-4 space-y-3 text-sm">
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Selling Store') }}</dt><dd class="font-semibold">{{ $store ? (app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en) : __('Not configured') }}</dd></div>
@@ -131,7 +131,7 @@
                         <div class="flex justify-between"><span class="text-zinc-500">{{ __('Tax') }}</span><span>{{ __('PENDING') }}</span></div>
                         <div class="flex justify-between border-t border-zinc-100 pt-3 text-base font-bold dark:border-zinc-800"><span>{{ __('Total') }}</span><span>{{ number_format((float) $cartTotal, 2) }} {{ $store?->company?->currency_symbol ?? 'EGP' }}</span></div>
                     </div>
-                    <div class="mt-4 grid gap-2">
+                    <div class="mt-4 grid gap-2" data-guide="pos-summary-actions">
                         <form method="POST" action="{{ route('pos.checkout') }}">@csrf<flux:button type="submit" variant="primary" class="w-full" :disabled="$cart->isEmpty() || ! $shift" icon="check">{{ __('Checkout cash sale') }}</flux:button></form>
                         <form method="POST" action="{{ route('pos.suspend') }}">@csrf<flux:button type="submit" variant="subtle" class="w-full" :disabled="$cart->isEmpty() || ! $shift" icon="pause">{{ __('Suspend sale') }}</flux:button></form>
                     </div>
