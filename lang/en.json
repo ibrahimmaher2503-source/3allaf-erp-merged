@@ -116,7 +116,7 @@
     "Negative-stock override or any balance/price conflict operation": "Negative-stock override or any balance/price conflict operation",
     "Readiness status — no offline mutation surface": "Readiness status — no offline mutation surface",
     "This page records the boundary only. Server truth, secure synchronization, conflict review, provisional numbering, and device security require approved policy and a later implementation slice.": "This page records the boundary only. Server truth, secure synchronization, conflict review, provisional numbering, and device security require approved policy and a later implementation slice.",
-    "TSK-027 Customer Loyalty Readiness": "TSK-027 Customer Loyalty Readiness",
+    "TSK-027 Readiness": "TSK-027 Readiness",
     "Customer and loyalty readiness": "Customer and loyalty readiness",
     "This is a read-only Local/Dev boundary. No customer, consent, loyalty, wallet, or gift records are loaded or changed.": "This is a read-only Local/Dev boundary. No customer, consent, loyalty, wallet, or gift records are loaded or changed.",
     "Read-only boundary": "Read-only boundary",

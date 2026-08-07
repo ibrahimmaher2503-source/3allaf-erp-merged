@@ -41,6 +41,13 @@
                     @endcan
                     @can('pos_sales.view')
                         <flux:sidebar.item icon="shopping-cart" :href="route('pos')" :current="request()->routeIs('pos')" wire:navigate>{{ __('POS') }}</flux:sidebar.item>
+                        <flux:sidebar.item icon="calculator" :href="route('pos.financial-readiness')" :current="request()->routeIs('pos.financial-readiness')" wire:navigate>{{ __('POS Financial Readiness') }}</flux:sidebar.item>
+                        <flux:sidebar.item icon="lock-closed" :href="route('pos.shift-readiness')" :current="request()->routeIs('pos.shift-readiness')" wire:navigate>{{ __('TSK-025 Shift Readiness') }}</flux:sidebar.item>
+                        <flux:sidebar.item icon="signal-slash" :href="route('pos.offline-readiness')" :current="request()->routeIs('pos.offline-readiness')" wire:navigate>{{ __('TSK-026 Offline Readiness') }}</flux:sidebar.item>
+                        <flux:sidebar.item icon="user-group" :href="route('customers.loyalty-readiness')" :current="request()->routeIs('customers.loyalty-readiness')" wire:navigate>{{ __('TSK-027 Readiness') }}</flux:sidebar.item>
+                    @endcan
+                    @can('company_settings.view')
+                        <flux:sidebar.item icon="adjustments-horizontal" :href="route('admin.settings.customer-loyalty')" :current="request()->routeIs('admin.settings.customer-loyalty')" wire:navigate>{{ __('Customer Policy Settings') }}</flux:sidebar.item>
                     @endcan
                     @can('branches_stores.view')
                         <flux:sidebar.item icon="building-office-2" :href="route('admin.branches')" :current="request()->routeIs('admin.branches')" wire:navigate>

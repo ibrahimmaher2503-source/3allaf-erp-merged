@@ -116,7 +116,7 @@
     "Negative-stock override or any balance/price conflict operation": "تجاوز المخزون السالب أو أي عملية تعارض رصيد/سعر",
     "Readiness status — no offline mutation surface": "حالة الجاهزية — لا توجد واجهة تغيير دون اتصال",
     "This page records the boundary only. Server truth, secure synchronization, conflict review, provisional numbering, and device security require approved policy and a later implementation slice.": "تسجل هذه الصفحة الحد فقط. تتطلب حقيقة الخادم والمزامنة الآمنة ومراجعة التعارض والترقيم المؤقت وأمن الجهاز سياسة معتمدة وجزء تنفيذ لاحق.",
-    "TSK-027 Customer Loyalty Readiness": "جاهزية العملاء والولاء TSK-027",
+    "TSK-027 Readiness": "جاهزية TSK-027",
     "Customer and loyalty readiness": "جاهزية العملاء والولاء",
     "This is a read-only Local/Dev boundary. No customer, consent, loyalty, wallet, or gift records are loaded or changed.": "هذه حدود قراءة فقط في Local/Dev. لا يتم تحميل أو تعديل سجلات العملاء أو الموافقات أو الولاء أو المحافظ أو بطاقات الهدايا.",
     "Read-only boundary": "حدود قراءة فقط",
