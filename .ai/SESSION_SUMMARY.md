@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-031 Party Bookings and Working Invoices readiness
+## 2026-08-07 - TSK-032 Party Payments on Account and Party Balance readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev Party payment/balance readiness slice after inspecting party policy, PaymentMethod configuration, supplier invoice readiness, POS financial readiness, and Party Wallet read boundary.
+- **Implementation:** Added `party.payment_method`, `party.deposit`, `party.payment_evidence`, `party.payment_idempotency`, `party.overpayment`, `party.receipt`, `party.balance`, `party.wallet_settlement`, and `party.payment_approval` as pending policy values; added Initial Setup visibility; added `/party/payments-readiness` and `UI-PTY-004`.
+- **Boundary:** No payment posting, receipt creation, amount/balance calculation, overpayment, reversal, settlement, or wallet mutation.
+- **Evidence:** Static gates and bilingual browser verification passed; no-access received 403; tour completed; no overflow or amount/price leakage.
+- **Next:** TSK-033 — Implement Party Operating Orders and Consumable Movements.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev Party-only readiness slice for TSK-031 after reviewing party policy, customer/child/privacy, store/schedule, invoice/print, authorization, and current UI surfaces. No full party workflow claim.
 - **Completed:** Added ten `party.%` pending policy keys, Initial Setup readiness, guarded `/party/readiness`, party-only/privacy/no-price/final-close boundaries, and bilingual `UI-PTY-001` with stable targets.

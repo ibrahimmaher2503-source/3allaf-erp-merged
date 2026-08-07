@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('party/payments-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.payments-readiness', [
+            'title' => __('Party Payments and Balance Readiness'),
+            'description' => __('Review Party-only payment methods, deposits, evidence, idempotency, receipt wording, balance visibility, and Party Wallet boundaries without posting money or creating a receipt.'),
+            'items' => [
+                ['title' => __('Party payment methods'), 'body' => __('Allowed source, method, actor, and scope rules remain PENDING; no payment is posted.')],
+                ['title' => __('Deposit and payment on account'), 'body' => __('Multiple/partial payment, deposit, source invoice, and exact receipt-label rules remain PENDING.')],
+                ['title' => __('Evidence and privacy'), 'body' => __('Evidence, attachment, source reference, privacy, and retention rules remain PENDING; no file is uploaded.')],
+                ['title' => __('Idempotency and reversal'), 'body' => __('Duplicate, retry, concurrent, cancellation, reversal, and audit rules remain PENDING.')],
+                ['title' => __('Overpayment and balance'), 'body' => __('Underpayment, overpayment, residual, credit, and source-linked balance rules remain PENDING; no amount is calculated.')],
+                ['title' => __('Receipt and Party Wallet settlement'), 'body' => __('Numbering/reprint, approval/SoD, Party Wallet-only settlement, and Product Wallet exclusion remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.payments.readiness');
+
     Route::get('gift-receipts', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

@@ -511,7 +511,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-032 — Implement Party Payments on Account and Party Balance
 
-- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **In Progress — Local/Dev party-payments/Party Wallet source-safe discovery/readiness plan active; payment and balance mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **Completed — verified Local/Dev Party payment/balance readiness slice; payment, receipt, balance, reversal, and wallet mutations remain deferred**.
 - **Title / Purpose / Description:** Post multiple party payments, each with exact PRD receipt label, reconcile party balance and integrate only Party Wallet under approved policy.
 - **Traceability:** CUS-02, CUS-04, PTY-04, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-03, FLW-CUS-05; UI UI-PTY-004, UI-CUS-005; AC-CUS-02, AC-PTY-04; SEC-011–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031; `docs/28-party-operations-policy.md`; DEC-019 and final payment/deposit, receipt, evidence, overpayment, Party Wallet, and legal/financial values remain configurable or pending.
@@ -525,7 +525,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-033 — Implement Party Operating Orders and Consumable Movements
 
-- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **In Progress — Local/Dev party operating-order/consumable source-safe discovery/readiness plan active; stock and operating mutations remain gated**.
 - **Title / Purpose / Description:** Create/release/execute party order, assign resources, issue/consume party-store consumables, control additions/removals and reference eligible unused returns.
 - **Traceability:** PTY-05, AST-05, NFR-01–NFR-03; US-027; FLW-PTY-04–05; UI UI-PTY-005–006; AC-PTY-05, AC-AST-05; SEC-006, SEC-011–015, SEC-017, SEC-019–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-032; `docs/28-party-operations-policy.md`; final operating checklist, party-store mapping, consumables/UOM, availability, return/change, approval, and real master data remain configurable or pending.

@@ -1,9 +1,15 @@
-# Active Milestone — TSK-032 Party Payments on Account and Party Balance
+# Active Milestone — TSK-033 Party Operating Orders and Consumable Movements
 
 **Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 5.2 — Party Payments on Account and Party Balance
-**Status:** TSK-031 Local/Dev Party-only booking/working-invoice readiness slice is completed and browser-verified. TSK-032 is now In Progress for source-safe payment/Party Wallet discovery/readiness.
-**Progress:** TSK-031 added `/party/readiness`, ten pending party policy keys, Initial Setup readiness, Party-only/privacy/no-price boundaries, and UI-PTY-001. TSK-032 must first inspect payment, receipt, evidence, balance, Party Wallet, idempotency, authorization, and document-sequence contracts; no payment, balance, or wallet mutation is authorized.
+**Current milestone:** DM 5.3 — Party Operating Orders and Consumable Movements
+**Status:** TSK-032 Local/Dev Party payment/balance readiness slice is completed and browser-verified. TSK-033 is now In Progress for source-safe operating-order/consumable discovery/readiness.
+**Progress:** TSK-032 added `/party/payments-readiness`, nine pending payment/balance policy keys, Initial Setup visibility, Party Wallet/Product Wallet separation, and UI-PTY-004. TSK-033 must first inspect operating-order, party-store, consumable/UOM, stock, issue/return, approval, idempotency, audit, and print contracts; no stock or operating mutation is authorized.
+
+---
+# Previous Milestone Record — TSK-032
+
+**Status:** Completed for verified Local/Dev Party payment/balance readiness; payment posting, receipts, balances, reversals, settlement, and wallet entries remain open.
+**Evidence:** PaymentMethod and existing readiness/Party Wallet surfaces reviewed; guarded payment readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
 
 ---
 

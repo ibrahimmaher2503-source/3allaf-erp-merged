@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-031 Party Bookings and Working Invoices readiness — 2026-08-07
+## TSK-032 Party Payments on Account and Party Balance readiness — 2026-08-07
+
+- Reviewed `docs/28-party-operations-policy.md`: multiple payments on account, separate receipt per payment, source/evidence preservation, duplicate blocking, Party Wallet only at settlement, and final-close reconciliation.
+- Reviewed existing `PaymentMethod` model, supplier invoice readiness, POS financial readiness, and Party Wallet read-only UI; no safe party payment/receipt/balance mutation model exists.
+- Added nine `party.*` payment/balance policy keys as `PENDING/TBD` and added `party-payment-policies` to Initial Setup.
+- Added guarded `/party/payments-readiness` (`party.payments.readiness`) with `party_bookings_invoices.view`; added `UI-PTY-004`.
+- Screen is read-only and contains no payment, receipt, balance, reversal, overpayment, financial settlement, Product Wallet, or Party Wallet mutation.
+- Static: optimize clear, Blade cache, route list, locale parity `1467/1467`, Pint, PHPStan `[OK] No errors`, PHP lint, Vite build, and diff check passed.
+- Browser: authorized English/LTR and Arabic/RTL verified; stable `party-payments-readiness-*` targets, no overflow, no amount/price leak, no mutation controls, zero console errors; interactive tour completed; Initial Setup pending card visible; `demo-no-access` denied with HTTP 403.
+
+
 
 - Reviewed `docs/28-party-operations-policy.md`, customer/child/privacy, store/schedule, invoice/numbering/print, authorization, and existing `/initial-setup`, `/customers/loyalty-readiness`, `/sales`, `/purchasing/returns` surfaces before implementation. No party booking, party invoice, customer-child, calendar, or party view/domain existed.
 - Implemented guarded Local/Dev `/party/readiness` under `party_bookings_invoices.view`; added ten `party.%` pending policy keys and Initial Setup `party-policies` step.

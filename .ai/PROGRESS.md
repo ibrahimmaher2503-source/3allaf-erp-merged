@@ -1,8 +1,12 @@
-# Active Progress — TSK-032 Party Payments on Account and Party Balance — 2026-08-07
+# Active Progress — TSK-033 Party Operating Orders and Consumable Movements — 2026-08-07
 
-**Implementation status:** TSK-031 Party Booking/Working Invoice Local/Dev Party-only readiness slice is complete and browser-verified. TSK-032 is In Progress for party-payment/Party Wallet discovery and readiness only.
+**Implementation status:** TSK-032 Party payment/balance Local/Dev readiness slice is complete and committed as `LOCAL_COMMIT_PENDING`; TSK-033 is active for source-safe operating-order/consumable discovery/readiness.
 
-**Next boundary:** Inspect payment, receipt, evidence, balance, Party Wallet, idempotency, authorization, audit, and numbering contracts, then expose undocumented values as `PENDING/TBD` without enabling payment, balance, wallet, or financial mutations.
+**Completed before this task:** TSK-032 reviewed PaymentMethod, financial/invoice readiness, Party Wallet boundary; added pending policy values, `/party/payments-readiness`, UI-PTY-004, bilingual browser evidence, no-access 403, diagnostics, and local commit.
+
+**Next concrete step:** inspect party operating-order, consumable/UOM, inventory stock, issue/return, approval, audit, idempotency, document sequence, print, and existing UI contracts before changing code.
+
+**Boundary:** no party operating-order mutation, consumable issue/return, stock movement, direct balance edit, or completion is enabled.
 
 ---
 

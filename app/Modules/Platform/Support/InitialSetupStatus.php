@@ -103,6 +103,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'party-payment-policies',
+                'label' => (string) __('Party payment and balance policies'),
+                'description' => (string) __('Review Party-only payment, evidence, receipt, balance, idempotency, and Party Wallet values; blanks remain PENDING and no financial mutation is enabled.'),
+                'route' => route('party.payments.readiness'),
+                'complete' => $this->partyPaymentPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -178,6 +186,26 @@ final class InitialSetupStatus
     {
         return CustomerPolicySettingVersion::query()
             ->where('key', 'like', 'party.%')
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function partyPaymentPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->where('key', 'like', 'party.%')
+            ->whereIn('key', [
+                'party.payment_method',
+                'party.deposit',
+                'party.payment_evidence',
+                'party.payment_idempotency',
+                'party.overpayment',
+                'party.receipt',
+                'party.balance',
+                'party.wallet_settlement',
+                'party.payment_approval',
+            ])
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->exists();

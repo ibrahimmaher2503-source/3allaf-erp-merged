@@ -4,7 +4,13 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-031 Party Bookings and Working Invoices boundary — 2026-08-07
+## TSK-032 Party Payments on Account and Party Balance boundary — 2026-08-07
+
+TSK-032 bounded Local/Dev readiness is complete and committed. The implementation exposes pending payment/evidence/receipt/balance/Party Wallet policy values and a guarded read-only screen only. Payment posting, receipt generation, financial balance, overpayment, reversal, and wallet entries remain blocked pending approved source contracts and operational values.
+
+Next task: TSK-033 Party Operating Orders and Consumable Movements.
+
+
 
 The bounded Local/Dev TSK-031 slice is implemented and browser-verified. `/party/readiness` is protected by `party_bookings_invoices.view`, reads no party/customer/child/calendar/invoice/payment/wallet rows, and exposes party-only stores, services/packages, schedule/location, privacy, cancellation/responsibility, pricing, deposit, working-invoice, and final-close values as pending configuration. `UI-PTY-001` is bilingual with stable visible targets and Party-specific guide copy.
 

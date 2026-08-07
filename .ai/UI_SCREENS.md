@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-031 Party Bookings and Working Invoices screen — 2026-08-07
+## TSK-032 Party Payments and Balance screen — 2026-08-07
+
+- `/party/payments-readiness` (`UI-PTY-004`) is a guarded Party-only read-only screen with stable targets: `party-payments-readiness-header`, `party-payments-readiness-boundary`, `party-payments-readiness-summary`, `party-payments-readiness-cards`, `party-payments-readiness-card-1`, `party-payments-readiness-card-6`, and `party-payments-readiness-empty`.
+- It shows pending method/deposit/evidence/idempotency/overpayment/receipt/Party Wallet boundaries without payment amounts or financial records.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow; Product Wallet and retail payment flows remain explicitly separate.
+
+
 
 - `/party/readiness` (`UI-PTY-001`) is a guarded read-only Party-only readiness screen under `party_bookings_invoices.view`, separate from `/sales`, `/purchasing/returns`, Product Wallet, and retail customer flows.
 - It displays six pending cards for party stores, services/packages, schedule/location, customer/child/privacy, cancellation/responsibility, and working-invoice/final-close policy. No mutation controls or amounts are rendered.

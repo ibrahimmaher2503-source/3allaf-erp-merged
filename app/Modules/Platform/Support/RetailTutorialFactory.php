@@ -101,6 +101,7 @@ final class RetailTutorialFactory
             'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
+            'UI-PTY-004' => self::readiness('party.payments.readiness', 'جاهزية دفعات الحفلات ورصيد الطرف', 'Party Payments and Balance Readiness', 'party-payments', 'TSK-032', 'PTY-04 / CUS-05'),
             'UI-POS-008' => self::readiness('returns.readiness', 'جاهزية المرتجعات والاستبدال', 'Returns and Exchanges Readiness', 'returns', 'TSK-030', 'RET-01..03'),
             'UI-POS-010' => self::readiness('gift.receipts', 'إيصالات الهدايا', 'Gift Receipts', 'gift-receipts', 'TSK-029', 'POS-07 / RET-04'),
             'UI-POS-011' => self::readiness('gift.cards', 'بطاقات الهدايا', 'Gift Cards', 'gift-cards', 'TSK-029', 'validity, holder, redemption, and void'),
@@ -192,6 +193,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
                 'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
                 'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'party-payments' => [
+                'header' => ['ar' => 'حدود دفعات الحفلات ورصيد الطرف', 'en' => 'Party Payments and Balance boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للمراجعة فقط؛ لا يتم تسجيل دفعة أو إيصال أو رصيد أو قيد Party Wallet.', 'en' => 'This is review readiness only; no payment, receipt, balance, or Party Wallet entry is posted.'],
+                'warning' => ['ar' => 'الفصل المالي مطلوب', 'en' => 'Financial separation is required'],
+                'warningBody' => ['ar' => 'تبقى Product Wallet ودفعات التجزئة خارج نطاق تسوية الحفلات.', 'en' => 'Product Wallet and retail payments remain outside party settlement.'],
+                'cards' => ['ar' => 'راجع أدلة الدفع', 'en' => 'Review payment evidence'],
+                'summary' => ['ar' => 'تحقق من حدود الرصيد', 'en' => 'Confirm balance boundaries'],
             ],
             'party' => [
                 'header' => ['ar' => 'حدود الحفلات والفاتورة العاملة', 'en' => 'Party and Working Invoice boundary'],

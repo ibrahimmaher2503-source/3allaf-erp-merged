@@ -204,6 +204,42 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Party final-close checklist',
                 'description' => 'Readiness checks before immutable final invoice; no final close is enabled.',
             ],
+            'party.payment_method' => [
+                'title' => 'Party payment methods',
+                'description' => 'Allowed payment source and method policy; no payment is posted.',
+            ],
+            'party.deposit' => [
+                'title' => 'Party deposit and payment-on-account',
+                'description' => 'Deposit, partial payment, and payment-on-account rules; no receipt is created.',
+            ],
+            'party.payment_evidence' => [
+                'title' => 'Party payment evidence',
+                'description' => 'Evidence, source, attachment, and privacy requirements; no file is uploaded.',
+            ],
+            'party.payment_idempotency' => [
+                'title' => 'Party payment idempotency',
+                'description' => 'Duplicate, retry, concurrency, and reversal rules; no payment action is enabled.',
+            ],
+            'party.overpayment' => [
+                'title' => 'Party overpayment and residual',
+                'description' => 'Underpayment, overpayment, credit, and residual treatment; no balance is calculated.',
+            ],
+            'party.receipt' => [
+                'title' => 'Party receipt wording and numbering',
+                'description' => 'Required label, numbering, reprint, and privacy policy; no receipt is generated.',
+            ],
+            'party.balance' => [
+                'title' => 'Party balance visibility',
+                'description' => 'Source-linked balance visibility and reconciliation policy; no amount is rendered.',
+            ],
+            'party.wallet_settlement' => [
+                'title' => 'Party Wallet settlement',
+                'description' => 'Party Wallet-only settlement source policy; Product Wallet use remains blocked.',
+            ],
+            'party.payment_approval' => [
+                'title' => 'Party payment approval and SoD',
+                'description' => 'Create/approve/reverse separation and actor scope; no approval action is enabled.',
+            ],
         ];
     }
 }
