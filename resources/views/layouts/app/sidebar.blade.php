@@ -118,6 +118,13 @@
                         </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endcan
+                @can('inventory_stock_card.view')
+                    <flux:sidebar.group :heading="__('Inventory')" class="grid">
+                        <flux:sidebar.item icon="archive-box" :href="route('inventory.index')" :current="request()->routeIs('inventory.*')" wire:navigate>
+                            {{ __('Inventory Control Center') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </nav>
 
             <flux:spacer />

@@ -1,6 +1,6 @@
-# Active Handoff — TSK-018 — 2026-08-07
+# Active Handoff — TSK-019–TSK-022 — 2026-08-07
 
-TSK-017 is closed for its Local/Dev slice. TSK-018 now has an owner-authorized Local Demo queue slice. The implementation uses stock-derived Demo quantities, approved effective Demo price linkage, Demo printer/template metadata, idempotent queue generation keys, and append-only Demo print events. Actual hardware printing, final label/device values, Production data, UAT, and release approval remain open.
+TSK-017 and TSK-018 are closed for their approved Local/Dev slices. TSK-019–TSK-022 now have an owner-authorized Local Demo inventory slice: append-only opening and workflow movements, materialized balances with availability/WAC, transfer lifecycle and difference review, approved adjustments, and count reconciliation that preserves uncounted lines. Production master data, final policies/tolerances/dispositions, UAT, hardware/PDF acceptance, and release approval remain open.
 
 The guarded readiness/empty UI now exists at `/pricing/labels`, behind `pricing_labels.view`, with sidebar navigation, Demo queue table, approved-price/stock/printer linkage, explicit Demo-only blockers, and disabled generation/print/reprint. Browser evidence covers Administrator, Arabic RTL, English LTR, no overflow, and zero console errors. DemoSeeder rows are local-only and must not be treated as hardware/UAT/Production acceptance.
 

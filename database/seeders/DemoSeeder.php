@@ -31,6 +31,7 @@ class DemoSeeder extends Seeder
             DemoApprovedPurchaseOrderSeeder::class,
             DemoPricingSeeder::class,
             DemoLabelQueueSeeder::class,
+            DemoInventorySeeder::class,
         ]);
     }
 }

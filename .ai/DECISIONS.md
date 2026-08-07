@@ -107,3 +107,10 @@ Start TSK-018 after the TSK-017 Local/Dev slice. Reconcile and implement only a 
 **Status:** Approved for Local/Dev Demo seeders only; Production/UAT deferred.
 
 The owner explicitly authorized Dummy data in seeders. `DemoPricingSeeder` and `DemoLabelQueueSeeder` may create clearly labeled local fixtures for an approved effective Demo price, existing stock-balance rows, a documentation-only Demo printer/template, a partial label queue, and append-only print-event evidence. The seeders must refuse non-local or `DEMO_AUTH=false` execution, remain idempotent, never connect to hardware, and never be treated as Production master data, UAT acceptance, or release approval. Related: TSK-018; PRC-06–07; BLK-003, BLK-008, BLK-011.
+
+## DEC-058 — Owner-authorized Local Demo inventory operations
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev Demo implementation only; Production/UAT deferred.
+
+The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The implementation may use deterministic Demo opening movements and workflow fixtures to exercise append-only ledger/balance invariants, weighted-average cost and availability, transfer approval/dispatch/receipt/difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Negative stock remains blocked by default; production reason catalogs, numeric limits, disposition locations, real branch/store assignments, hardware, UAT, and release approval remain pending and must not be inferred from Demo evidence.

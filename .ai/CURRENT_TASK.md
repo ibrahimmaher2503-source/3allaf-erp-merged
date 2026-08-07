@@ -1,13 +1,13 @@
-# Active Task: TSK-018 — Location Barcode Label Queues and Printing
+# Active Tasks: TSK-019–TSK-022 — Local Demo Inventory Operations
 
 ## Scope for this continuation — 2026-08-07
 
-- **Status:** Local/Dev Dummy-data queue slice implemented and browser-verified; production queue/print remains open.
-- **Allowed:** Use explicitly authorized, clearly labeled Local Demo seeders to exercise stock-derived quantity, approved-price linkage, printer/template metadata, queue status, and append-only print-event display.
-- **Forbidden:** Production label quantities, Production printer/device defaults, hardware acceptance, actual print/reprint posting, POS integration, and UAT/release sign-off.
-- **Dependencies:** TSK-017 approved/effective price resolver and existing `stock_balances`/`printer_configurations` contracts are available for the Demo slice; final owner label/device/quantity values remain pending.
-- **Policy boundary:** `docs/24-pricing-policy.md` and `docs/38-print-export-specification.md` remain derived/local references. Demo rows are explicitly non-Production and unpriced products remain blocked.
-- **Verification:** Read-only contract/schema inspection, PHP lint/Pint/PHPStan, Blade cache, route checks, `git diff --check`, then authenticated Local Demo browser verification of the readiness/empty/disabled states. No PHPUnit/Pest or automated browser tests.
+- **Status:** TSK-019, TSK-020, TSK-021, and TSK-022 are implemented and browser-verified for Local/Demo; Production/UAT/Phase 2 exit remains open.
+- **Allowed:** Clearly labeled Local Demo inventory fixtures, append-only opening/movement evidence, transfer lifecycle actions, reasoned adjustments, and count reconciliation.
+- **Forbidden:** Production opening balances, real branch/store authority, hardware/PDF acceptance, production reason/tolerance/disposition catalogs, POS cutover, UAT, and release sign-off.
+- **Implementation:** `2026_08_07_000003_create_inventory_workflow_tables.php`, Inventory models/actions, `DemoInventorySeeder`, guarded `/inventory`, and custom local workflow permissions.
+- **Policy boundary:** `docs/25-inventory-exception-policy.md` is the local engineering baseline only. Demo values do not represent Production master data or owner/UAT approval.
+- **Verification:** Explicit local SQLite migration/seed, idempotent seed twice, ledger/balance invariants, PHP lint/Pint/PHPStan, Blade cache, route checks, git whitespace, and authenticated English/Arabic browser workflow verification. No PHPUnit/Pest or automated browser tests.
 
 ---
 

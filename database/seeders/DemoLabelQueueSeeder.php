@@ -39,8 +39,8 @@ final class DemoLabelQueueSeeder extends Seeder
             ->firstOrFail();
 
         DB::transaction(function () use ($admin, $store, $pricedProduct, $unpricedProduct, $priceLine): void {
-            $this->seedBalance($pricedProduct, $store, '5.000', '2.000', '125.00');
-            $this->seedBalance($unpricedProduct, $store, '4.000', '0.000', '90.00');
+            $this->seedBalance($pricedProduct, $store, '5.000', '2.000', '25.00');
+            $this->seedBalance($unpricedProduct, $store, '4.000', '0.000', '22.50');
 
             $printer = PrinterConfiguration::query()->updateOrCreate(
                 ['name' => 'Demo Label Printer - Local'],

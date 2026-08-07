@@ -317,12 +317,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-019 — Implement Inventory Ledger, Balances, Availability, and Stock Cards
 
-- **Task ID / Phase / Milestone / Status:** TSK-019; Phase 2; DM 2.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-019; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
 - **Title / Purpose / Description:** Establish append-only movements, locked/materialized balances and scoped on-hand/available/in-transit/reserved/reorder/history views.
 - **Traceability:** INV-01–INV-02, NFR-01–NFR-03, NFR-05; US-013; FLW-INV-01; UI UI-INV-001–003; AC-INV-01–02, AC-NFR-05; SEC-011–012, SEC-016–021, SEC-027, SEC-037.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.3 complete; `docs/25-inventory-exception-policy.md`; opening inventory approach, balance/reservation/reorder formulas, and field visibility remain configurable or pending.
 - **Database Entities:** `stock_movements`, `stock_balances`, `products`, `stores`, `branch_selling_stores`.
-- **Backend / Livewire / Blade Deliverables:** posting/reconciliation APIs internal to monolith, scoped indexed queries; overview/card/movement pages.
+- **Backend / Livewire / Blade Deliverables:** append-only posting/reconciliation service, scoped indexed queries, local opening movements, WAC/availability calculation, and `/inventory` overview/ledger surface. Product stock-card and movement export/print acceptance remain production follow-up.
 - **UI / Flux / Alpine / Vite:** Flux Cards/Tables/Filters/Search/Pagination/Badges/Tabs/Timeline/Export; Alpine none; common assets.
 - **Suggested Packages:** None; no generic inventory engine or repository layer.
 - **Permissions / Validation / Audit / States / Print:** scoped View/Export/Cost; no direct edit; field and bounded-query validation; movement append audit; reports/export/stock card print.
@@ -331,12 +331,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-020 — Implement Stateful Stock Transfers and Difference Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-020; Phase 2; DM 2.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-020; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
 - **Title / Purpose / Description:** Deliver transfer request/approval/dispatch/in-transit/partial/full receipt and shortage/damage/refusal review with exact movements.
 - **Traceability:** INV-03, NFR-01–NFR-02, NFR-06; US-014; FLW-INV-02; UI UI-INV-004–007; AC-INV-03; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019; BLK-012 mitigated by `docs/25-inventory-exception-policy.md`; final state/role separation, difference disposition, reason catalog, and limits remain configurable or pending.
 - **Database Entities:** `stock_transfers`, `transfer_lines`, `stock_movements`, `stock_balances`, `approval_records`, `document_sequences`, attachments if evidence.
-- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; list/editor/dispatch/receipt/review screens.
+- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; local list/dispatch/receipt/difference-review surface with submitted → approved → in-transit → received/difference-review flow.
 - **UI / Flux / Alpine / Vite:** Flux Table/Form/Line Editor/Scan Input/Filters/Timeline/Badges/Dialog/Upload; Alpine scanner only if needed; print styles.
 - **Suggested Packages:** Reuse approved barcode/upload/PDF capabilities only.
 - **Permissions / Validation / Audit / States / Print:** source/destination Create/Approve/Dispatch/Receive/Difference/Cancel; stock/location/qty/state/replay; every transition/quantity/reason; transfer/dispatch/receipt/difference prints.
@@ -345,12 +345,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-021 — Implement Entries, Exits, Adjustments, and Stock Policies
 
-- **Task ID / Phase / Milestone / Status:** TSK-021; Phase 2; DM 2.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-021; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
 - **Title / Purpose / Description:** Deliver reasoned approved inventory entry/exit/exchange/adjustment with fractional and default negative-stock controls/override.
 - **Traceability:** INV-04–INV-06, NFR-01–NFR-02; US-015; FLW-INV-03–05; UI UI-INV-011; AC-INV-04–06; SEC-006, SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019; BLK-012 mitigated by `docs/25-inventory-exception-policy.md`; final reasons, limits, negative/fractional, approval, and disposition values remain configurable or pending.
 - **Database Entities:** `inventory_adjustments`, `inventory_adjustment_lines`, `stock_movements`, `stock_balances`, `products`, `stores`, `approval_records`, `document_sequences`.
-- **Backend / Livewire / Blade Deliverables:** typed state actions/locks/movements/reversal; list/editor/detail/timeline.
+- **Backend / Livewire / Blade Deliverables:** typed draft/submit/approve actions, locks, append-only movements, default negative-stock block, optional authorized override field, and local list/detail state surface. Reversal/disposition production policy remains open.
 - **UI / Flux / Alpine / Vite:** Flux Table/Filters/Form/Line Editor/Combobox/Numeric/Summary/Timeline/Dialog/Badges; Alpine none; print assets.
 - **Suggested Packages:** None beyond shared document output.
 - **Permissions / Validation / Audit / States / Print:** Create/Submit/Approve/Reverse/Override; reason/store/qty/fraction/negative/source; full before-after/override audit; adjustment print.
@@ -359,12 +359,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-022 — Implement Full/Partial Stock Counts and Reconciliation
 
-- **Task ID / Phase / Milestone / Status:** TSK-022; Phase 2; DM 2.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-022; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
 - **Title / Purpose / Description:** Plan full/partial counts, capture reference, scan/manual/recount while selling continues, reconcile movements, review uncounted items and create approved adjustments.
 - **Traceability:** INV-07–INV-09, NFR-01–NFR-03; US-016; FLW-INV-06–07; UI UI-INV-008–010; AC-INV-07–09; SEC-011–012, SEC-015, SEC-017, SEC-019–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019, TSK-021; `docs/25-inventory-exception-policy.md`; final count scopes, recount, assignment, approval, and uncounted disposition values remain configurable or pending.
 - **Database Entities:** `stock_counts`, `count_lines`, `stock_movements`, `stock_balances`, `inventory_adjustments`, `approval_records`, `document_sequences`.
-- **Backend / Livewire / Blade Deliverables:** snapshot and movement-window calculation, state/separation/locked reconciliation; count list/entry/reconciliation.
+- **Backend / Livewire / Blade Deliverables:** reference snapshot and movement-window calculation, state/separation/locked reconciliation, uncounted preservation, approved count adjustment posting, and local count submit/reconcile surface.
 - **UI / Flux / Alpine / Vite:** Flux Table/Filters/Search/Pagination/Scan Input/Numeric/Progress/Diff/Timeline/Dialog/Badges; Alpine scanner/shortcuts only; print styles.
 - **Suggested Packages:** Reuse barcode capability; no generic count/workflow package.
 - **Permissions / Validation / Audit / States / Print:** Counter plan/input/submit; Manager reconcile/approve; scope/duplicate/qty/stale movement/uncounted; every edit/recount/approval; count/discrepancy/A4.

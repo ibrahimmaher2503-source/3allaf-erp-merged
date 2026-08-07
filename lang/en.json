@@ -1160,5 +1160,7 @@
     "Pricing pending": "Pricing pending",
     "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.": "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.",
     "Label Queue Readiness": "Label Queue Readiness",
+    "Inventory": "Inventory",
+    "Inventory Control Center": "Inventory Control Center",
     "Search list, item code, or product": "Search list, item code, or product"
 }

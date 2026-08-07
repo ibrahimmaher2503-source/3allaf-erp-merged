@@ -1,9 +1,9 @@
-# Active Milestone — TSK-018 Local/Dev Label Queue Discovery Boundary
+# Active Milestone — TSK-019–TSK-022 Local/Demo Inventory Operations
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
-**Current milestone:** DM 2.3 — Price Proposals, Version Approval, and Barcode Labels
-**Status:** TSK-017 Local/Dev slice complete; TSK-018 Local/Dev Dummy-data queue slice complete; actual queue/print, Production/UAT, and owner-configurable printer/label inputs remain open.
-**Progress:** Started 2026-08-07. TSK-018 now has `label_queues` and append-only `label_print_events` contracts, a Demo-only approved-price/stock/printer/partial-queue fixture, guarded `/pricing/labels` table, disabled print/reprint/generate actions, sidebar navigation, and Arabic RTL/English LTR browser evidence. The Demo fixture is not hardware acceptance, UAT, or Production authorization.
+**Current milestone:** DM 2.4 — Inventory Operations
+**Status:** TSK-019–TSK-022 Local/Demo slices complete; Production/UAT and formal Phase 2 exit remain open.
+**Progress:** Implemented append-only movement posting with WAC/availability, stateful transfers through difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Browser evidence covers English LTR, Arabic RTL, no overflow, no-access denial, and real workflow mutations against local SQLite. Demo values are not Production authorization.
 
 ---
 

@@ -53,6 +53,14 @@ class CanonicalAuthorizationSeeder extends Seeder
         }
 
         Permission::query()->updateOrCreate(['code' => 'purchase_returns.approve_over_limit'], ['module' => 'purchase_returns', 'action' => 'approve_over_limit', 'sensitivity' => 'sensitive', 'status' => 'active']);
+        foreach ([
+            ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
+            ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
+            ['code' => 'transfers.difference', 'module' => 'transfers', 'action' => 'difference'],
+            ['code' => 'stock_counts.reconcile', 'module' => 'stock_counts', 'action' => 'reconcile'],
+        ] as $permission) {
+            Permission::query()->updateOrCreate(['code' => $permission['code']], $permission + ['sensitivity' => 'sensitive', 'status' => 'active']);
+        }
 
         $rolePermissions = [
             'system-administrator' => [
@@ -69,8 +77,9 @@ class CanonicalAuthorizationSeeder extends Seeder
             'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],
             'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print'],
-            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve'],
+            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve', 'inventory_stock_card.view', 'inventory_stock_card.submit', 'inventory_stock_card.approve', 'inventory_stock_card.override', 'transfers.view', 'transfers.create', 'transfers.submit', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile'],
             'pricing-officer' => ['products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit'],
+            'stock-counter' => ['products_categories_brands.view', 'inventory_stock_card.view', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.submit'],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.approve', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
         ];
 

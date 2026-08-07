@@ -1,5 +1,16 @@
 # Test and Verification Status
 
+## TSK-019–TSK-022 Local/Demo verification boundary — 2026-08-07
+
+- Added `2026_08_07_000003_create_inventory_workflow_tables.php` for `stock_transfers`, `stock_transfer_lines`, `inventory_adjustments`, `inventory_adjustment_lines`, `stock_counts`, and `stock_count_lines`; models and transactional actions use locks, idempotency keys, append-only movements, and WAC/availability formulas.
+- `DemoInventorySeeder` is composed by `DemoSeeder`, is local/Demo-only, and is idempotent. It creates three opening movements, one submitted transfer, one draft exit adjustment, and one partial in-progress count with one deliberately uncounted line. Running `DemoSeeder` twice succeeded before browser mutations.
+- SQLite invariant evidence after browser workflows: `(product,store) (1,1) on_hand=4 movement_sum=4 available=2`; `(2,1) on_hand=3 movement_sum=3 available=3`; `(1,2) on_hand=1 movement_sum=1 available=1`. Transfer is `difference_review/under_review`, Demo adjustment and count adjustment are `approved`, and count is `reconciled`.
+- Browser workflow evidence: transfer submitted → approved → in transit → received `0.5/1` with required shortage reason and append-only receipt/dispatch movements; adjustment draft → submitted → approved with `inventory_exit`; count in-progress → submitted → reconciled with `count_reconciliation=-1.5`; the uncounted product remained uncounted rather than being zeroed.
+- Authorization evidence: `demo-no-access` received Access Denied for `/inventory`; `demo-admin` completed the authorized flow. English DOM was `ltr`, Arabic DOM/body was `rtl`; both had no horizontal overflow and no browser console errors observed.
+- Diagnostics passed: migration, DemoSeeder twice, PHP lint, Pint, PHPStan 0 errors for the changed inventory slice, Blade cache, inventory route discovery, migration status, and `git diff --check`. No PHPUnit/Pest or automated browser tests were created/run.
+- Boundary: production opening balances, final reason/tolerance/disposition catalogs, real store/branch authority, count hardware/scanners, exports/print acceptance, UAT, and Phase 2/release gates remain open. AGY was attempted with verified `agy 1.1.10` but returned `Individual quota reached`; no AGY review success is claimed.
+
+
 ## TSK-018 Local/Dev Dummy-data verification boundary — 2026-08-07
 
 - Owner explicitly authorized Dummy data in seeders for Local Demo only. `DemoSeeder` now calls idempotent `DemoPricingSeeder` and `DemoLabelQueueSeeder`; both refuse non-local or `DEMO_AUTH=false` execution.
