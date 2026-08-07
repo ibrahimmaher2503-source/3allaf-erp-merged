@@ -9,6 +9,7 @@ use App\Modules\Pricing\Actions\ImportPriceProposalsAction;
 use App\Modules\Pricing\Actions\RejectPriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
 use App\Modules\Pricing\Enums\PriceVersionState;
+use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceVersion;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -190,10 +191,25 @@ new #[Title('Pricing Workspace')] class extends Component
         $versions = $query->paginate(12);
         $products = Product::query()->active()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
+        $storeIds = $stores->pluck('id');
+        $pricedProductIds = $storeIds->isEmpty() ? collect() : PriceLine::query()
+            ->whereIn('store_id', $storeIds)
+            ->whereHas('version', function ($version): void {
+                $version->where('state', PriceVersionState::Approved->value)
+                    ->where(function ($dates): void {
+                        $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now());
+                    })
+                    ->where(function ($dates): void {
+                        $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now());
+                    });
+            })
+            ->pluck('product_id')
+            ->unique();
+        $unpricedProducts = Product::query()->active()->whereNotIn('id', $pricedProductIds)->orderBy('item_code')->limit(12)->get(['id', 'item_code', 'name_ar', 'name_en']);
         $diffVersion = $this->compareVersionId === null ? null : PriceVersion::query()->with(['priceList', 'lines.product', 'lines.store'])->find($this->compareVersionId);
         $diffPrevious = $diffVersion === null ? null : PriceVersion::query()->with(['lines.product', 'lines.store'])->where('price_list_id', $diffVersion->price_list_id)->where('version', '<', $diffVersion->version)->latest('version')->first();
 
-        return view('pricing.index', compact('versions', 'products', 'stores', 'diffVersion', 'diffPrevious'));
+        return view('pricing.index', compact('versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious'));
     }
 };
 ?>
@@ -234,6 +250,23 @@ new #[Title('Pricing Workspace')] class extends Component
         <flux:card><flux:text>{{ __('Pending approval') }}</flux:text><flux:heading size="lg">{{ $versions->where('state', 'submitted')->count() }}</flux:heading></flux:card>
         <flux:card><flux:text>{{ __('Owner-configurable') }}</flux:text><flux:heading size="lg">{{ __('Open') }}</flux:heading></flux:card>
     </div>
+
+    @if ($unpricedProducts->isNotEmpty())
+        <flux:card>
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <flux:heading size="lg">{{ __('Unpriced products') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.') }}</flux:text>
+                </div>
+                <flux:badge color="amber">{{ __('Pricing pending') }}</flux:badge>
+            </div>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($unpricedProducts as $unpricedProduct)
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900 dark:bg-amber-950/30"><span class="font-semibold">{{ $unpricedProduct->item_code }}</span><span class="text-zinc-600 dark:text-zinc-300"> · {{ app()->getLocale() === 'ar' ? $unpricedProduct->name_ar : $unpricedProduct->name_en }}</span></div>
+                @endforeach
+            </div>
+        </flux:card>
+    @endif
 
     <flux:card class="overflow-hidden p-0">
         <div class="overflow-x-auto">

@@ -1156,5 +1156,8 @@
     "Superseded": "Superseded",
     "Immediate": "Immediate",
     "Branch exception": "Branch exception",
+    "Unpriced products": "Unpriced products",
+    "Pricing pending": "Pricing pending",
+    "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.": "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.",
     "Search list, item code, or product": "Search list, item code, or product"
 }

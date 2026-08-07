@@ -289,7 +289,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-017 — Implement Price Proposals, Version Approval, and Open-Price Policy
 
-- **Task ID / Phase / Milestone / Status:** TSK-017; Phase 2; DM 2.3; **In Progress — authorized Local/Dev slice started 2026-08-07; Production/UAT not claimed**.
+- **Task ID / Phase / Milestone / Status:** TSK-017; Phase 2; DM 2.3; **Local/Dev slice complete — Production/UAT pending; no Production claim**.
 - **Title / Purpose / Description:** Deliver product/import/purchase-context proposals, immutable approval/version/effective price, one active location price, unpriced pending and configured open-price bounds.
 - **Traceability:** PRC-03–PRC-05, PRC-07–PRC-08, NFR-01–NFR-02; US-006–008; FLW-CAT-03–04, FLW-POS-01; UI UI-PRC-001–002, UI-POS-001; AC-PRC-03–05, AC-PRC-07–08; SEC-011–012, SEC-015–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.2 complete; BLK-011 mitigated by `docs/24-pricing-policy.md`; final authority, numeric limits, effective timing, branch exceptions, and production print values remain configurable or pending.
@@ -298,7 +298,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 - **UI / Flux / Alpine / Vite:** Flux Tables/Filters/Search/Pagination/Form/Upload/Diff/Timeline/Badges/Dialog; Alpine none; common/print assets.
 - **Suggested Packages:** Reuse Excel package if approved; no workflow engine.
 - **Permissions / Validation / Audit / States / Print:** Propose/Edit/Import/Submit/Approve/Reject/Branch Exception/Open Price; one active, amount/effective/range/reason/stale; full audit; approval summary print.
-- **Manual Browser Verification:** Local Demo verified list/create/import-as-Draft/history comparison, Draft → Submitted → Approved, superseding, no-access denial, explicit branch-exception option/permission boundary and missing-reason denial, Arabic RTL/English LTR, no page overflow, and zero browser console errors. Backend smoke verified effective resolution and open-price permission boundary. Production branch policy/limits, full bounds matrix, POS/unpriced integration, concurrent approval stress, cost-change isolation, mobile, production authority, UAT, and label/printer acceptance remain pending.
+- **Manual Browser Verification:** Local Demo verified list/create/import-as-Draft/history comparison, Draft → Submitted → Approved, superseding, no-access denial, explicit branch-exception option/permission boundary and missing-reason denial, unpriced-product visibility, Arabic RTL/English LTR, no page overflow, and zero browser console errors. Backend smoke verified effective resolution and open-price permission boundary. Production branch policy/limits, full bounds matrix, POS sale/unpriced enforcement integration, concurrent approval stress, cost-change isolation, mobile, production authority, UAT, and label/printer acceptance remain pending.
 - **Definition of Done:** DoD; price history and future lookup deterministic.
 
 ### TSK-018 — Implement Location Barcode Label Queues and Printing

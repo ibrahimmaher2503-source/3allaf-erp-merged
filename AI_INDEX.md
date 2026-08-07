@@ -48,7 +48,7 @@ Do not begin:
 - Purchasing.
 - POS.
 
-TSK-017 pricing is authorized only as the documented reversible Local/Dev slice under `DEC-054`; do not infer Production pricing authority, branch exceptions, POS posting, UAT, or release approval.
+TSK-017 pricing is authorized only as the documented reversible Local/Dev slice under `DEC-054`; do not infer Production pricing authority, Production branch exceptions, POS posting, UAT, or release approval.
 
 Keep TSK-009 at its actual recorded status. Do not claim Phase 1 or Phase 2 gate completion.
 
