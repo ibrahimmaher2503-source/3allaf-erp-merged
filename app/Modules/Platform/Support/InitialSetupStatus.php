@@ -127,6 +127,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'rental-asset-event-policies',
+                'label' => (string) __('Rental asset event and depreciation policies'),
+                'description' => (string) __('Review damage, loss, maintenance, assessment, responsibility, evidence, cost privacy, approval, depreciation, and correction values; blanks remain PENDING and no event mutation is enabled.'),
+                'route' => route('party.asset-events.readiness'),
+                'complete' => $this->rentalAssetEventPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -260,6 +268,18 @@ final class InitialSetupStatus
                 'asset.condition',
                 'asset.approval',
                 'asset.print',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function rentalAssetEventPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'asset.damage', 'asset.loss', 'asset.maintenance', 'asset.assessment', 'asset.responsibility',
+                'asset.evidence', 'asset.cost', 'asset.damage_approval', 'asset.depreciation', 'asset.correction',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

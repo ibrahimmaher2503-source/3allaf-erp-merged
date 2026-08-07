@@ -26,7 +26,19 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return readiness — 2026-08-07
+## TSK-035 Asset Damage, Loss, Maintenance, and Depreciation readiness — 2026-08-07
+
+- Reviewed `docs/29-rental-asset-policy.md`: event fields are asset, party/source, assessment, responsible user, optional cost impact, approval, final status, and evidence; depreciation is operational history only, immutable after approval, with referenced corrections.
+- Reviewed reusable attachment/approval/audit infrastructure; no asset-event models/routes/views exist.
+- Added ten `asset.*` damage/loss/maintenance/depreciation policy keys as `PENDING/TBD` and `rental-asset-event-policies` to Initial Setup.
+- Added guarded `/party/asset-events-readiness` (`party.asset-events.readiness`) with `party_bookings_invoices.view`; added `UI-PTY-012`.
+- Fixed UI-PTY-012 route-name mismatch (`party.asset.events.readiness` → `party.asset-events.readiness`) after live Page Guide fallback was observed. Re-verified feature-specific guide title and first interactive step target.
+- Screen is read-only: no event, cost, approval, state transition, maintenance, depreciation, correction, stock, financial, or evidence upload mutation/data.
+- Static: optimize clear, Blade cache, route list, locale parity `1523/1523`, Pint, PHPStan `[OK] No errors`, PHP lint, Vite build, and diff check passed.
+- Browser: authorized English/LTR and Arabic/RTL verified; stable `party-asset-events-readiness-*` targets, no overflow, no numeric/currency leak, no mutation controls, and no console/resource errors; `demo-no-access` denied with HTTP 403; Initial Setup pending card visible.
+- Coverage note: after the guide route fix, the interactive tour opened with the correct feature-specific title and first target, but the browser session reset while advancing and stable Finish evidence was not obtained. This is recorded as a guide-runtime follow-up, not claimed as passed.
+
+
 
 - Reviewed `docs/29-rental-asset-policy.md`: unique identity, consumable separation, lifecycle states, non-overlap reservations, timezone/buffer/concurrency, checkout/return condition/evidence, and operational-only cost/depreciation boundaries.
 - Reviewed repository asset/calendar surface: no rental asset models, routes, views, or reservation domain exists; existing `/inventory` is product/retail stock and is not reused.

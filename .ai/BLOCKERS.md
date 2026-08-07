@@ -4,7 +4,15 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return boundary — 2026-08-07
+## TSK-035 Asset Damage, Loss, Maintenance, and Depreciation boundary — 2026-08-07
+
+TSK-035 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending damage/loss/maintenance/assessment/responsibility/evidence/cost/approval/depreciation/correction policy values and a guarded read-only screen only. Event creation, cost posting, approval, state transitions, maintenance completion, depreciation, corrections, stock, and financial mutations remain blocked pending approved source contracts and operational values.
+
+Known follow-up: UI-PTY-012 guide route mismatch was fixed and feature-specific guide title/first target verified; full tour Finish replay reset the browser session and remains unverified.
+
+Next task: TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls.
+
+
 
 TSK-034 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending asset identity/separation/availability/reservation/checkout/return/condition/approval/audit/print policy values and a guarded read-only screen only. Asset creation, reservation, checkout, return, condition, maintenance, cost, stock, financial, and print mutations remain blocked pending approved source contracts and operational values.
 

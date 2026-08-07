@@ -553,7 +553,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-035 — Implement Asset Damage, Loss, Maintenance, and Depreciation Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **In Progress — Local/Dev damage/loss/maintenance/depreciation source-safe discovery/readiness plan active; event, cost, approval, and depreciation mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **Completed — verified Local/Dev damage/loss/maintenance/depreciation readiness slice; event, cost, approval, depreciation, and correction mutations remain deferred**.
 - **Title / Purpose / Description:** Assess source-linked damage/loss/depreciation, responsibility, evidence, optional cost, approval and final asset state without implying general ledger.
 - **Traceability:** AST-04, NFR-01–NFR-03; US-029; FLW-PTY-09–10; UI UI-PTY-012–014; AC-AST-04; SEC-006, SEC-011–012, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-034; `docs/29-rental-asset-policy.md`; final damage/loss, maintenance, depreciation, method, cost, responsibility, approval limits, and finance values remain configurable or pending.
@@ -567,7 +567,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-036 — Implement Party Final Closure and Settlement
 
-- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **In Progress — Local/Dev final party settlement/invoice/receipt/wallet/close source-safe discovery/readiness plan active; settlement, posting, receipt, wallet, and close mutations remain gated**.
 - **Title / Purpose / Description:** Validate readiness, finalize immutable party invoice, reconcile payments on account, Party Wallet, remaining amount/credit and final receipt atomically.
 - **Traceability:** CUS-02, PTY-06, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-11; UI UI-PTY-015; AC-CUS-02, AC-PTY-06; SEC-011–020, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031–035; `docs/28-party-operations-policy.md` and `docs/29-rental-asset-policy.md`; final-close, credit, overpayment, Party Wallet, approval, receipt, readiness, and financial values remain configurable or pending.

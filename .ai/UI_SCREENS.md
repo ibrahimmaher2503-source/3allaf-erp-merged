@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-034 Rental Assets and Calendar screen — 2026-08-07
+## TSK-035 Asset Damage, Loss, Maintenance, and Depreciation screen — 2026-08-07
+
+- `/party/asset-events-readiness` (`UI-PTY-012`) is a guarded Party-only read-only screen with stable targets: `party-asset-events-readiness-header`, `party-asset-events-readiness-boundary`, `party-asset-events-readiness-summary`, `party-asset-events-readiness-cards`, `party-asset-events-readiness-card-1`, `party-asset-events-readiness-card-6`, and `party-asset-events-readiness-empty`.
+- It shows pending damage/loss/maintenance/assessment/responsibility/evidence/cost/approval/depreciation/correction boundaries without event records, cost values, evidence payloads, or asset state changes.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow. Page Guide was corrected to resolve the canonical route and showed the feature-specific guide; full Finish replay remains unverified after a session reset.
+
+
 
 - `/party/assets-readiness` (`UI-PTY-007`) is a guarded Party-only read-only screen with stable targets: `party-assets-readiness-header`, `party-assets-readiness-boundary`, `party-assets-readiness-summary`, `party-assets-readiness-cards`, `party-assets-readiness-card-1`, `party-assets-readiness-card-6`, and `party-assets-readiness-empty`.
 - It shows pending asset identity/separation/states/reservation/concurrency/checkout/return/condition/approval/audit/print boundaries without asset records, calendar allocations, cost values, or evidence payloads.

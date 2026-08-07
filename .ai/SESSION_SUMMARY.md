@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return readiness
+## 2026-08-07 - TSK-035 Asset Damage, Loss, Maintenance, and Depreciation readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev damage/loss/maintenance/depreciation readiness slice after inspecting rental policy and existing attachment/approval/audit infrastructure.
+- **Implementation:** Added ten pending asset-event policy values, Initial Setup visibility, `/party/asset-events-readiness`, and `UI-PTY-012`; corrected its canonical route-name registration after live browser detection.
+- **Boundary:** No damage/loss/maintenance event, cost, approval, state transition, evidence upload, depreciation, correction, stock, or financial mutation.
+- **Evidence:** Static gates passed; English/LTR and Arabic/RTL, no-access 403, Initial Setup pending card, no overflow, no numeric/currency leak, no mutation controls, and guide-specific title/first-step verification passed. Tour Finish remained unverified after a session reset and is explicitly recorded as follow-up.
+- **Next:** TSK-036 — Implement Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev rental asset/calendar readiness slice after inspecting rental policy, asset/calendar search results, and existing retail inventory/party boundaries.
 - **Implementation:** Added `asset.identity`, `asset.separation`, `asset.availability`, `asset.reservation`, `asset.concurrency`, `asset.checkout`, `asset.return`, `asset.condition`, `asset.approval`, and `asset.print` as pending policy values; added Initial Setup visibility; added `/party/assets-readiness` and `UI-PTY-007`.

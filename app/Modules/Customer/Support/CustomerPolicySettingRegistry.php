@@ -316,6 +316,16 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Asset calendar and print boundary',
                 'description' => 'Calendar, reservation, checkout, return, privacy, and print formats; no document is generated.',
             ],
+            'asset.damage' => ['title' => 'Asset damage assessment', 'description' => 'Source-linked damage event and assessment rules; no event is created.'],
+            'asset.loss' => ['title' => 'Asset loss and final state', 'description' => 'Loss reason, responsibility, evidence, and final-state rules; no state is changed.'],
+            'asset.maintenance' => ['title' => 'Asset maintenance lifecycle', 'description' => 'Maintenance reason, status, owner, release, and evidence rules; no maintenance event is recorded.'],
+            'asset.assessment' => ['title' => 'Asset assessment method', 'description' => 'Owner-configurable assessment/checklist method; no assessment is submitted.'],
+            'asset.responsibility' => ['title' => 'Asset responsibility', 'description' => 'Party/source, responsible actor, reviewer, and scope rules; no actor is assigned.'],
+            'asset.evidence' => ['title' => 'Asset event evidence', 'description' => 'Attachment purpose, source reference, privacy, retention, and access rules; no file is uploaded.'],
+            'asset.cost' => ['title' => 'Asset cost privacy', 'description' => 'Optional cost impact visibility and finance separation; no amount is calculated or posted.'],
+            'asset.damage_approval' => ['title' => 'Asset event approval and SoD', 'description' => 'Assessment, cost, final status, and depreciation approval separation; no approval is requested.'],
+            'asset.depreciation' => ['title' => 'Operational depreciation history', 'description' => 'Method, amount, immutable record, and no-general-ledger boundary; no depreciation is posted.'],
+            'asset.correction' => ['title' => 'Referenced event correction', 'description' => 'Corrections reference original events and preserve history; no correction is created.'],
         ];
     }
 }

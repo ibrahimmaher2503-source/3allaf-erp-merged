@@ -1,15 +1,15 @@
-# Active Milestone — TSK-035 Asset Damage, Loss, Maintenance, and Depreciation Review
+# Active Milestone — TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls
 
 **Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 5.4 — Rental Asset Lifecycle
-**Status:** TSK-034 Local/Dev rental asset/calendar readiness slice is completed and browser-verified. TSK-035 is now In Progress for source-safe damage/loss/maintenance/depreciation discovery/readiness.
-**Progress:** TSK-034 added `/party/assets-readiness`, ten pending asset/calendar policy keys, Initial Setup visibility, rental asset/consumable separation, and UI-PTY-007. TSK-035 must first inspect `docs/29-rental-asset-policy.md`, damage/loss/maintenance/depreciation/evidence/approval/audit/print contracts; no event, cost, state, or depreciation mutation is authorized.
+**Current milestone:** DM 5.5 — Party Final Closure and Settlement
+**Status:** TSK-035 Local/Dev damage/loss/maintenance/depreciation readiness slice is completed and browser-verified with documented guide-runtime follow-up. TSK-036 is now In Progress for source-safe final settlement/close discovery/readiness.
+**Progress:** TSK-035 added `/party/asset-events-readiness`, ten pending asset-event policy keys, Initial Setup visibility, and UI-PTY-012 with canonical route registration. TSK-036 must first inspect party final-close, invoice, payment, receipt, Party Wallet, credit/overpayment, readiness, approval, audit, idempotency, numbering, and print contracts; no settlement or close mutation is authorized.
 
 ---
-# Previous Milestone Record — TSK-034
+# Previous Milestone Record — TSK-035
 
-**Status:** Completed for verified Local/Dev rental asset/calendar readiness; asset creation, reservation, checkout, return, condition, maintenance, cost, stock, financial, and print mutations remain open.
-**Evidence:** Rental policy and repository asset/calendar absence reviewed; guarded assets readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
+**Status:** Completed for verified Local/Dev damage/loss/maintenance/depreciation readiness; event creation, cost, approval, state transition, evidence, depreciation, correction, stock, and financial mutations remain open.
+**Evidence:** Rental policy and attachment/approval/audit infrastructure reviewed; guarded event-readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed. UI-PTY-012 route mismatch was corrected after live browser detection; full tour Finish remains unverified after session reset.
 
 ---
 

@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('party/asset-events-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.asset-events-readiness', [
+            'title' => __('Asset Damage, Loss, Maintenance and Depreciation Readiness'),
+            'description' => __('Review source-linked damage, loss, maintenance, assessment, responsibility, evidence, cost privacy, approval, depreciation, and correction prerequisites without creating an event or changing an asset state.'),
+            'items' => [
+                ['title' => __('Damage and loss event'), 'body' => __('Asset, party/source, reason, assessment, responsible user, final status, and evidence rules remain PENDING; no event is created.')],
+                ['title' => __('Maintenance lifecycle'), 'body' => __('Maintenance reason, owner, inspection, release, final state, and evidence rules remain PENDING; no maintenance event is recorded.')],
+                ['title' => __('Assessment and responsibility'), 'body' => __('Owner-configurable checklist, assessment method, party/source, actor, reviewer, and scope rules remain PENDING.')],
+                ['title' => __('Evidence and privacy'), 'body' => __('Attachment purpose, source reference, access, retention, privacy, and cost visibility rules remain PENDING; no file is uploaded.')],
+                ['title' => __('Approval and cost boundary'), 'body' => __('Optional cost impact, approval limits, SoD, and finance separation remain PENDING; no amount is calculated or posted.')],
+                ['title' => __('Depreciation and correction'), 'body' => __('Operational-only depreciation method/amount, immutable history, and referenced correction rules remain PENDING; no ledger posting occurs.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.asset-events.readiness');
+
     Route::get('party/assets-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

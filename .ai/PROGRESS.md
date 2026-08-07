@@ -1,12 +1,12 @@
-# Active Progress — TSK-035 Asset Damage, Loss, Maintenance, and Depreciation Review — 2026-08-07
+# Active Progress — TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls — 2026-08-07
 
-**Implementation status:** TSK-034 Rental Asset/Calendar Local/Dev readiness slice is complete and ready for commit; TSK-035 is active for source-safe damage/loss/maintenance/depreciation discovery/readiness.
+**Implementation status:** TSK-035 Asset event Local/Dev readiness slice is complete and ready for commit; TSK-036 is active for source-safe final settlement/close discovery/readiness.
 
-**Completed before this task:** TSK-034 reviewed rental policy and repository asset/calendar absence; added pending asset/calendar policy values, `/party/assets-readiness`, UI-PTY-007, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
+**Completed before this task:** TSK-035 reviewed rental damage/loss/maintenance/depreciation policy and attachment/approval/audit surfaces; added pending event policies, `/party/asset-events-readiness`, UI-PTY-012, corrected guide route registration, bilingual browser evidence, no-access 403, diagnostics, and state handoff. Tour Finish remains an explicit follow-up after session reset.
 
-**Next concrete step:** inspect damage/loss/maintenance/depreciation, condition/evidence, responsibility, cost/privacy, approval, audit, idempotency, document sequence, print, and existing asset/inventory/UI contracts before changing code.
+**Next concrete step:** inspect party final-close, invoice, payment, receipt, Party Wallet, credit/overpayment, readiness, approval, audit, idempotency, numbering, print, and current UI contracts before changing code.
 
-**Boundary:** no damage/loss/maintenance event, cost posting, approval, state transition, depreciation, correction, stock, or financial behavior is enabled.
+**Boundary:** no final invoice, receipt, settlement, Party Wallet entry, credit/overpayment calculation, close, posting, or financial behavior is enabled.
 
 ---
 

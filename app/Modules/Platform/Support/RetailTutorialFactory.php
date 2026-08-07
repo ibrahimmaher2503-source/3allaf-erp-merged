@@ -101,6 +101,7 @@ final class RetailTutorialFactory
             'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
+            'UI-PTY-012' => self::readiness('party.asset-events.readiness', 'جاهزية تلف وفقد وصيانة الأصول', 'Asset Damage, Loss, Maintenance and Depreciation Readiness', 'party-asset-events', 'TSK-035', 'AST-04'),
             'UI-PTY-007' => self::readiness('party.assets.readiness', 'جاهزية أصول التأجير والتقويم', 'Rental Assets and Calendar Readiness', 'party-assets', 'TSK-034', 'AST-01..03'),
             'UI-PTY-005' => self::readiness('party.operating.readiness', 'جاهزية أوامر التشغيل والمواد الاستهلاكية', 'Party Operating Orders and Consumables Readiness', 'party-operating', 'TSK-033', 'PTY-05 / AST-05'),
             'UI-PTY-004' => self::readiness('party.payments.readiness', 'جاهزية دفعات الحفلات ورصيد الطرف', 'Party Payments and Balance Readiness', 'party-payments', 'TSK-032', 'PTY-04 / CUS-05'),
@@ -195,6 +196,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
                 'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
                 'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'party-asset-events' => [
+                'header' => ['ar' => 'حدود تلف وفقد وصيانة الأصول', 'en' => 'Asset Damage, Loss, Maintenance boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للمراجعة فقط؛ لا يتم إنشاء حدث أو تسجيل تكلفة أو تغيير حالة.', 'en' => 'This is review readiness only; no event, cost, or state change is created.'],
+                'warning' => ['ar' => 'التكلفة تشغيلية فقط', 'en' => 'Operational cost only'],
+                'warningBody' => ['ar' => 'تبقى المعالجة التشغيلية منفصلة عن دفتر الأستاذ العام، ولا تعرض هذه الشاشة مبالغ أو أدلة.', 'en' => 'Operational handling remains separate from the general ledger; this screen renders no amounts or evidence.'],
+                'cards' => ['ar' => 'راجع الحدث والأدلة', 'en' => 'Review event and evidence'],
+                'summary' => ['ar' => 'افهم الاعتماد والتصحيح', 'en' => 'Understand approval and correction'],
             ],
             'party-assets' => [
                 'header' => ['ar' => 'حدود أصول التأجير والتقويم', 'en' => 'Rental Assets and Calendar boundary'],
