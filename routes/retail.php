@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('party/final-close-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.final-close-readiness', [
+            'title' => __('Party Final Close and Settlement Readiness'),
+            'description' => __('Review booking, operating, return, payment, Party Wallet, invoice freeze, credit, receipt, approval, numbering, and close prerequisites without creating a final invoice, receipt, wallet entry, or settlement.'),
+            'items' => [
+                ['title' => __('Final readiness checklist'), 'body' => __('Booking, operating order, consumables, rental return/inspection, payment, and outstanding-operation checks remain PENDING; no close is enabled.')],
+                ['title' => __('Working invoice and freeze'), 'body' => __('Editable-before-close, immutable-after-close, controlled corrections, and no mixed retail lines remain PENDING; no invoice is frozen.')],
+                ['title' => __('Payment reconciliation and residual'), 'body' => __('Multiple payments on account, evidence, duplicates, residual, underpayment, overpayment, and reconciliation rules remain PENDING; no amount is calculated.')],
+                ['title' => __('Party Wallet and credit separation'), 'body' => __('Party Wallet-only settlement, Product Wallet exclusion, credit enablement, and explicit source linkage remain PENDING; no wallet entry is created.')],
+                ['title' => __('Final invoice and receipt'), 'body' => __('Immutable final invoice, exact receipt wording, privacy, numbering, reprint, and correction references remain PENDING; no document is generated.')],
+                ['title' => __('Approval, idempotency, audit, and print'), 'body' => __('Close approval/SoD, double-close prevention, retry/concurrency, audit, document sequence, and print rules remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.final-close.readiness');
+
     Route::get('party/asset-events-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

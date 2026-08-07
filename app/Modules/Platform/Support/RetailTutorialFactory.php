@@ -101,6 +101,7 @@ final class RetailTutorialFactory
             'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
+            'UI-PTY-015' => self::readiness('party.final-close.readiness', 'جاهزية الإغلاق والتسوية النهائية للحفلات', 'Party Final Close and Settlement Readiness', 'party-final-close', 'TSK-036', 'PTY-06'),
             'UI-PTY-012' => self::readiness('party.asset-events.readiness', 'جاهزية تلف وفقد وصيانة الأصول', 'Asset Damage, Loss, Maintenance and Depreciation Readiness', 'party-asset-events', 'TSK-035', 'AST-04'),
             'UI-PTY-007' => self::readiness('party.assets.readiness', 'جاهزية أصول التأجير والتقويم', 'Rental Assets and Calendar Readiness', 'party-assets', 'TSK-034', 'AST-01..03'),
             'UI-PTY-005' => self::readiness('party.operating.readiness', 'جاهزية أوامر التشغيل والمواد الاستهلاكية', 'Party Operating Orders and Consumables Readiness', 'party-operating', 'TSK-033', 'PTY-05 / AST-05'),
@@ -196,6 +197,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
                 'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
                 'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'party-final-close' => [
+                'header' => ['ar' => 'حدود الإغلاق والتسوية النهائية للحفلات', 'en' => 'Party Final Close and Settlement boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للمراجعة فقط؛ لا يتم تجميد فاتورة أو إنشاء إيصال أو حركة محفظة.', 'en' => 'This is review readiness only; no invoice freeze, receipt, or wallet entry is created.'],
+                'warning' => ['ar' => 'محفظة الأطراف فقط عند الاعتماد', 'en' => 'Party Wallet only at settlement'],
+                'warningBody' => ['ar' => 'تبقى Product Wallet مستبعدة، وتبقى الأرصدة والإيصالات والتسوية معلقة.', 'en' => 'Product Wallet remains excluded; balances, receipts, and settlement remain pending.'],
+                'cards' => ['ar' => 'راجع قائمة الإغلاق', 'en' => 'Review close checklist'],
+                'summary' => ['ar' => 'افهم ما قبل التجميد', 'en' => 'Understand pre-freeze checks'],
             ],
             'party-asset-events' => [
                 'header' => ['ar' => 'حدود تلف وفقد وصيانة الأصول', 'en' => 'Asset Damage, Loss, Maintenance boundary'],

@@ -1,15 +1,15 @@
-# Active Milestone — TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls
+# Active Milestone — TSK-037 Standalone Retail and Party Quotations
 
-**Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 5.5 — Party Final Closure and Settlement
-**Status:** TSK-035 Local/Dev damage/loss/maintenance/depreciation readiness slice is completed and browser-verified with documented guide-runtime follow-up. TSK-036 is now In Progress for source-safe final settlement/close discovery/readiness.
-**Progress:** TSK-035 added `/party/asset-events-readiness`, ten pending asset-event policy keys, Initial Setup visibility, and UI-PTY-012 with canonical route registration. TSK-036 must first inspect party final-close, invoice, payment, receipt, Party Wallet, credit/overpayment, readiness, approval, audit, idempotency, numbering, and print contracts; no settlement or close mutation is authorized.
+**Current phase:** Phase 6 (formal Phase 4 gate remains open)
+**Current milestone:** DM 6.1 (Proposed mapping) — Quotations, Reporting, Acceptance, and Launch
+**Status:** TSK-036 Local/Dev final settlement/close readiness slice is completed and browser-verified. TSK-037 is now In Progress for source-safe quotation/proposal discovery/readiness.
+**Progress:** TSK-036 added `/party/final-close-readiness`, ten pending final-close policy keys, Initial Setup visibility, and UI-PTY-015. TSK-037 must first inspect quotation/proposal, customer/price, retail/party typing, expiry/terms, approval, numbering, print/share, audit, and conversion contracts; no quote or conversion mutation is authorized.
 
 ---
-# Previous Milestone Record — TSK-035
+# Previous Milestone Record — TSK-036
 
-**Status:** Completed for verified Local/Dev damage/loss/maintenance/depreciation readiness; event creation, cost, approval, state transition, evidence, depreciation, correction, stock, and financial mutations remain open.
-**Evidence:** Rental policy and attachment/approval/audit infrastructure reviewed; guarded event-readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed. UI-PTY-012 route mismatch was corrected after live browser detection; full tour Finish remains unverified after session reset.
+**Status:** Completed for verified Local/Dev final settlement/close readiness; final invoice, receipt, settlement, Party Wallet, credit/overpayment, close, posting, and financial mutations remain open.
+**Evidence:** Party policy/end-to-end specification and repository absence reviewed; guarded final-close readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed.
 
 ---
 

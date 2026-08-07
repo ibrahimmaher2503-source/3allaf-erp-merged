@@ -135,6 +135,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'party-final-close-policies',
+                'label' => (string) __('Party final-close and settlement policies'),
+                'description' => (string) __('Review final readiness, invoice freeze, payment reconciliation, credit, Party Wallet settlement, receipt, approval, idempotency, numbering, and print values; blanks remain PENDING and no close mutation is enabled.'),
+                'route' => route('party.final-close.readiness'),
+                'complete' => $this->partyFinalClosePolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -280,6 +288,19 @@ final class InitialSetupStatus
             ->whereIn('key', [
                 'asset.damage', 'asset.loss', 'asset.maintenance', 'asset.assessment', 'asset.responsibility',
                 'asset.evidence', 'asset.cost', 'asset.damage_approval', 'asset.depreciation', 'asset.correction',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function partyFinalClosePolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'party.final_readiness', 'party.invoice_freeze', 'party.payment_reconcile', 'party.credit',
+                'party.wallet_settlement', 'party.final_receipt', 'party.final_approval', 'party.final_idempotency',
+                'party.final_numbering', 'party.final_print',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

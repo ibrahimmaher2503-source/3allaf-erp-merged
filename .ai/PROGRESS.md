@@ -1,12 +1,12 @@
-# Active Progress — TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close Controls — 2026-08-07
+# Active Progress — TSK-037 Standalone Retail and Party Quotations — 2026-08-07
 
-**Implementation status:** TSK-035 Asset event Local/Dev readiness slice is complete and ready for commit; TSK-036 is active for source-safe final settlement/close discovery/readiness.
+**Implementation status:** TSK-036 final settlement/close Local/Dev readiness slice is complete and ready for commit; TSK-037 is active for source-safe quotation/proposal discovery/readiness.
 
-**Completed before this task:** TSK-035 reviewed rental damage/loss/maintenance/depreciation policy and attachment/approval/audit surfaces; added pending event policies, `/party/asset-events-readiness`, UI-PTY-012, corrected guide route registration, bilingual browser evidence, no-access 403, diagnostics, and state handoff. Tour Finish remains an explicit follow-up after session reset.
+**Completed before this task:** TSK-036 reviewed party final-close policy and repository absence; added pending final-close policy values, `/party/final-close-readiness`, UI-PTY-015, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
 
-**Next concrete step:** inspect party final-close, invoice, payment, receipt, Party Wallet, credit/overpayment, readiness, approval, audit, idempotency, numbering, print, and current UI contracts before changing code.
+**Next concrete step:** inspect quotation/proposal, customer/price, typed retail/party, expiry/terms, approval, numbering, print/share, audit, and conversion contracts before changing code.
 
-**Boundary:** no final invoice, receipt, settlement, Party Wallet entry, credit/overpayment calculation, close, posting, or financial behavior is enabled.
+**Boundary:** no quotation/proposal creation, approval, print/share, conversion, sale, party invoice, inventory, wallet, payment, or financial behavior is enabled.
 
 ---
 

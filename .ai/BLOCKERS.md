@@ -4,7 +4,13 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-035 Asset Damage, Loss, Maintenance, and Depreciation boundary — 2026-08-07
+## TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close boundary — 2026-08-07
+
+TSK-036 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending final-readiness, invoice-freeze, payment-reconciliation, credit, Party Wallet, receipt, approval, idempotency, numbering, and print policy values and a guarded read-only screen only. Final invoice, receipt, settlement, wallet entry, credit/overpayment calculation, close, posting, and financial mutations remain blocked pending approved source contracts and operational values.
+
+Next task: TSK-037 Quotations and Proposals.
+
+
 
 TSK-035 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending damage/loss/maintenance/assessment/responsibility/evidence/cost/approval/depreciation/correction policy values and a guarded read-only screen only. Event creation, cost posting, approval, state transitions, maintenance completion, depreciation, corrections, stock, and financial mutations remain blocked pending approved source contracts and operational values.
 

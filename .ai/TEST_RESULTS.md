@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-035 Asset Damage, Loss, Maintenance, and Depreciation readiness — 2026-08-07
+## TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close readiness — 2026-08-07
+
+- Reviewed `docs/28-party-operations-policy.md` and end-to-end party specification: final close requires booking/operation/return readiness, payment reconciliation, Party Wallet-only settlement, remaining/credit determination, immutable final invoice, final receipt, audit, and close; Product Wallet is excluded.
+- Reviewed repository: no PartyInvoice, final receipt, party payment, final-close, or settlement models/routes/views exist; generic `DocumentSequence` is configuration only.
+- Added ten `party.*` final-close policy keys as `PENDING/TBD` and `party-final-close-policies` to Initial Setup.
+- Added guarded `/party/final-close-readiness` (`party.final-close.readiness`) with `party_bookings_invoices.view`; added `UI-PTY-015` and feature-specific Page Guide/tour definition.
+- Screen is read-only: no final invoice, receipt, settlement, Party Wallet entry, Product Wallet access, credit, overpayment, close, posting, number allocation, or financial mutation/data.
+- Static: optimize clear, Blade cache, route list, locale parity `1542/1542`, Pint, PHPStan `[OK] No errors`, PHP lint, Vite build, and diff check passed. A duplicate policy-key collision found by PHPStan was removed and the gate passed on retry.
+- Browser: authorized English/LTR and Arabic/RTL verified; stable `party-final-close-readiness-*` targets, no overflow, no numeric/currency leak, and no mutation controls; feature-specific guide title and first tour step verified; `demo-no-access` denied with HTTP 403; Initial Setup pending card visible.
+
+
 
 - Reviewed `docs/29-rental-asset-policy.md`: event fields are asset, party/source, assessment, responsible user, optional cost impact, approval, final status, and evidence; depreciation is operational history only, immutable after approval, with referenced corrections.
 - Reviewed reusable attachment/approval/audit infrastructure; no asset-event models/routes/views exist.

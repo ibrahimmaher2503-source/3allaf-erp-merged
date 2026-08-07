@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-035 Asset Damage, Loss, Maintenance, and Depreciation readiness
+## 2026-08-07 - TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev final settlement/close readiness slice after inspecting party operations policy, end-to-end specification, wallet rules, roles, and repository source absence.
+- **Implementation:** Added ten pending final-close policy values, Initial Setup visibility, `/party/final-close-readiness`, and `UI-PTY-015` with canonical Page Guide route registration.
+- **Boundary:** No final invoice, receipt, settlement, Party Wallet entry, credit/overpayment calculation, close, posting, number allocation, or financial mutation.
+- **Evidence:** Static gates passed; English/LTR and Arabic/RTL, no-access 403, Initial Setup pending card, no overflow/no numeric or currency leak/no mutation controls, and feature-specific guide/first-tour-step verification passed.
+- **Next:** TSK-037 — Implement Quotations and Proposals.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev damage/loss/maintenance/depreciation readiness slice after inspecting rental policy and existing attachment/approval/audit infrastructure.
 - **Implementation:** Added ten pending asset-event policy values, Initial Setup visibility, `/party/asset-events-readiness`, and `UI-PTY-012`; corrected its canonical route-name registration after live browser detection.

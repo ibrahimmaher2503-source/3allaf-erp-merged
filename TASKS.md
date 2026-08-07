@@ -567,7 +567,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-036 — Implement Party Final Closure and Settlement
 
-- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **In Progress — Local/Dev final party settlement/invoice/receipt/wallet/close source-safe discovery/readiness plan active; settlement, posting, receipt, wallet, and close mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **Completed — verified Local/Dev final settlement/close readiness slice; final invoice, receipt, Party Wallet, credit, settlement, close, and posting mutations remain deferred**.
 - **Title / Purpose / Description:** Validate readiness, finalize immutable party invoice, reconcile payments on account, Party Wallet, remaining amount/credit and final receipt atomically.
 - **Traceability:** CUS-02, PTY-06, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-11; UI UI-PTY-015; AC-CUS-02, AC-PTY-06; SEC-011–020, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031–035; `docs/28-party-operations-policy.md` and `docs/29-rental-asset-policy.md`; final-close, credit, overpayment, Party Wallet, approval, receipt, readiness, and financial values remain configurable or pending.
@@ -583,7 +583,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-037 — Implement Standalone Retail and Party Quotations
 
-- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **In Progress — Local/Dev quotation/proposal source-safe discovery/readiness plan active; quote numbering, expiry, approval, conversion, price, customer, and party/retail boundaries remain gated**.
 - **Title / Purpose / Description:** Create typed retail/party quotation with customer/lines/prices/terms/notes/validity/status, print/share and future identity, with no posting or Phase 1 conversion.
 - **Traceability:** QTN-01–QTN-03, NFR-01–NFR-03, NFR-06; US-030; FLW-QTN-01; UI UI-QTN-001; AC-QTN-01–03; SEC-006, SEC-011–013, SEC-017–020, SEC-024, SEC-026–027.
 - **Dependencies / Required Inputs:** Phase 5 gate; DEC-025 owner confirmation; quotation statuses/terms/price authority/share/format.

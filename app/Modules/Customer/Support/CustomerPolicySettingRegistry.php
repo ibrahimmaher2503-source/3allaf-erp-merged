@@ -326,6 +326,15 @@ final class CustomerPolicySettingRegistry
             'asset.damage_approval' => ['title' => 'Asset event approval and SoD', 'description' => 'Assessment, cost, final status, and depreciation approval separation; no approval is requested.'],
             'asset.depreciation' => ['title' => 'Operational depreciation history', 'description' => 'Method, amount, immutable record, and no-general-ledger boundary; no depreciation is posted.'],
             'asset.correction' => ['title' => 'Referenced event correction', 'description' => 'Corrections reference original events and preserve history; no correction is created.'],
+            'party.final_readiness' => ['title' => 'Party final-close readiness', 'description' => 'Booking, operation, return, payment, wallet, and close checklist; no close is enabled.'],
+            'party.invoice_freeze' => ['title' => 'Final party invoice freeze', 'description' => 'Working invoice freeze, immutability, and referenced correction rules; no invoice is frozen.'],
+            'party.payment_reconcile' => ['title' => 'Party payment reconciliation', 'description' => 'Payments on account, evidence, duplicate, residual, and reconciliation rules; no amount is calculated.'],
+            'party.credit' => ['title' => 'Party remaining amount and credit', 'description' => 'Remaining, credit, overpayment, and owner credit policy; no balance is calculated.'],
+            'party.final_receipt' => ['title' => 'Final party receipt', 'description' => 'Exact wording, numbering, privacy, and reprint rules; no receipt is generated.'],
+            'party.final_approval' => ['title' => 'Party final-close approval and SoD', 'description' => 'Readiness review, close approval, and actor separation; no approval is requested.'],
+            'party.final_idempotency' => ['title' => 'Party final-close idempotency', 'description' => 'Double-close, retry, concurrency, and correction reference rules; no close is posted.'],
+            'party.final_numbering' => ['title' => 'Party final document numbering', 'description' => 'Final invoice/receipt sequence and concurrency rules; no number is allocated.'],
+            'party.final_print' => ['title' => 'Party final print boundary', 'description' => 'Final invoice/receipt privacy and print format; no document is rendered.'],
         ];
     }
 }
