@@ -114,3 +114,10 @@ The owner explicitly authorized Dummy data in seeders. `DemoPricingSeeder` and `
 **Status:** Approved for Local/Dev Demo implementation only; Production/UAT deferred.
 
 The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The implementation may use deterministic Demo opening movements and workflow fixtures to exercise append-only ledger/balance invariants, weighted-average cost and availability, transfer approval/dispatch/receipt/difference review, reasoned adjustment approval, and full/partial count reconciliation with uncounted preservation. Negative stock remains blocked by default; production reason catalogs, numeric limits, disposition locations, real branch/store assignments, hardware, UAT, and release approval remain pending and must not be inferred from Demo evidence.
+
+## DEC-059 — Inventory correction review closure
+
+**Date:** 2026-08-07
+**Status:** Implemented and browser-verified for Local/Demo only; Production/UAT deferred.
+
+TSK-019–TSK-022 inventory reads and mutations must enforce `Store::visibleTo()` scope, with an explicit super-admin bypass and fail-closed authentication. Transfer receipt is allowed only from `in_transit`, processes every transfer line, and moves shortages to terminal `difference_review`; repeated receipt attempts are rejected server-side. Difference types use a server-side allowlist, exceptions are reported internally while users receive generic translated errors, and cost/WAC remains permission-gated. This correction is recorded in commit `1b66b69`; it does not approve production stores, reason catalogs, thresholds, hardware, UAT, or release.

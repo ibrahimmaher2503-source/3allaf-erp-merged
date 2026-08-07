@@ -1,5 +1,9 @@
 # Blocker Register
 
+## TSK-019–TSK-022 correction boundary — 2026-08-07
+
+The Local/Demo inventory correction review is complete in commit `1b66b69`. Visible-store scope, fail-closed action authorization, multi-line transfer receipt/reconciliation, terminal `difference_review`, server-side difference allowlists, generic exception handling, cost permission gating, and resolver contrast are implemented and browser-verified. This mitigates the local implementation gap only; it does not close BLK-006, BLK-010, or BLK-012 for Production. Real branch/store assignments, opening-stock cutover, final reason catalogs, thresholds, dispositions, count tolerances, UAT, hardware, and release approval remain pending.
+
 ## TSK-018 boundary update — 2026-08-07
 
 TSK-017 Local/Dev is closed. TSK-018 Local/Dev Dummy-data queue display is implemented using the existing `stock_balances`/`printer_configurations` contracts plus new `label_queues` and append-only `label_print_events`. The owner-authorized fixture is local-only and does not close remaining-stock authority, printer/device, label layout, branch exception, reprint, hardware, Production, or UAT gates.

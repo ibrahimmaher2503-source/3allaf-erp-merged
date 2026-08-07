@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Inventory correction review and AI-control synchronization
+
+- **Agent / scope:** Synchronized active `.ai/` control files after the Local/Demo TSK-019–TSK-022 inventory correction review; no Production/UAT/hardware scope.
+- **Completed:** Recorded visible-store scope, fail-closed authentication, multi-line receipt/reconciliation, terminal `difference_review`, server-side difference allowlists, generic exception handling, cost gating, resolver contrast, and the corrected Demo opening-movement rule. Added decision `DEC-059` and synchronized progress, handoff, blockers, UI register, and Demo master-data boundaries.
+- **Files changed:** `.ai/PROGRESS.md`, `.ai/DECISIONS.md`, `.ai/HANDOFF.md`, `.ai/UI_SCREENS.md`, `.ai/BLOCKERS.md`, `.ai/DEMO_MASTER_DATA.md`, and this log.
+- **Verification actually run:** PHP lint, Pint, PHPStan 0 errors, Blade cache, locale parity `1164/1164`, `git diff --check`, authorized/no-access browser checks, English LTR and Arabic RTL checks, no overflow/console errors, resolver computed contrast, direct re-receipt rejection, and SQLite confirmation of exactly one receipt movement.
+- **Remaining blockers / next action:** Production branch/store assignments, opening-stock cutover, final inventory reason catalog/thresholds/dispositions/tolerances, hardware, UAT, and release approval remain open. Commit the `.ai/` synchronization locally; do not push.
+- **Code, tests, browser, commit, push:** Code correction commit `1b66b69` and the focused AI-control documentation commit exist locally; no push.
+
 ## 2026-08-07 - Owner-authorized Local Demo policy register
 
 - **Agent / scope:** Owner explicitly authorized recording all current policy examples as local Demo data only.

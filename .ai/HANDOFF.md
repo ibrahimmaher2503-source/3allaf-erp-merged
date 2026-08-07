@@ -1,6 +1,8 @@
 # Active Handoff — TSK-019–TSK-022 — 2026-08-07
 
-TSK-017 and TSK-018 are closed for their approved Local/Dev slices. TSK-019–TSK-022 now have an owner-authorized Local Demo inventory slice: append-only opening and workflow movements, materialized balances with availability/WAC, transfer lifecycle and difference review, approved adjustments, and count reconciliation that preserves uncounted lines. Production master data, final policies/tolerances/dispositions, UAT, hardware/PDF acceptance, and release approval remain open.
+TSK-017 and TSK-018 are closed for their approved Local/Dev slices. TSK-019–TSK-022 now have an owner-authorized Local Demo inventory slice, including append-only opening/workflow movements, materialized balances with availability/WAC, visible-store-scoped reads/mutations, multi-line transfer lifecycle and difference review, approved adjustments, and count reconciliation that preserves uncounted lines. The correction review is closed in commit `1b66b69`; Production master data, final policies/tolerances/dispositions, UAT, hardware/PDF acceptance, and release approval remain open.
+
+Correction evidence: `demo-admin` renders `/inventory`; `demo-no-access` is denied; direct re-receipt after `difference_review` is rejected without a second receipt movement; resolver contrast is readable; English LTR and Arabic RTL render without overflow or console errors. The current Demo transfer fixture is single-line, while the backend/action contract now processes every transfer line.
 
 The guarded readiness/empty UI now exists at `/pricing/labels`, behind `pricing_labels.view`, with sidebar navigation, Demo queue table, approved-price/stock/printer linkage, explicit Demo-only blockers, and disabled generation/print/reprint. Browser evidence covers Administrator, Arabic RTL, English LTR, no overflow, and zero console errors. DemoSeeder rows are local-only and must not be treated as hardware/UAT/Production acceptance.
 

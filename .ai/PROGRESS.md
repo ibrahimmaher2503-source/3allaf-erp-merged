@@ -1,15 +1,15 @@
-# Active Progress — TSK-018 — 2026-08-07
+# Active Progress — TSK-019–TSK-022 — 2026-08-07
 
-**Implementation status:** TSK-017 Local/Dev slice is complete; TSK-018 Local/Dev readiness slice is implemented and browser-verified; full queue/print remains open.
-**Boundary:** Label queue/print work is limited to contract reconciliation and a guarded readiness/empty state. Stock balances, printer devices/templates, label quantities, print/reprint events, POS blocking, UAT, and release gates remain open.
+**Implementation status:** TSK-019–TSK-022 Local/Demo inventory slice is implemented, corrected after security/workflow review, and browser-verified. Production/UAT remains open.
+**Boundary:** Inventory scope enforcement, append-only movements, balances/WAC/availability, multi-line transfers, reasoned adjustments, and full/partial count reconciliation are implemented for Local/Demo only. Production opening data, final policies, hardware, UAT, and release gates remain open.
 
-**TSK-018 evidence — 2026-08-07:** `TASKS.md`, `docs/24`, `docs/36`, `docs/38`, and the live repository were reconciled. `/pricing/labels` is now a server-gated Local/Dev readiness/empty screen: it shows the approved-price count from TSK-017, unavailable stock balance, unconfigured printer/template, pending audit contract, no label queue rows, and disabled generation. Browser evidence passed for Local Demo Administrator, 403 denial for `demo-no-access`, Arabic RTL and English LTR, no overflow, and zero console errors. No stock, printer, queue, print-event, hardware, or Production values were invented.
+**TSK-019–TSK-022 correction evidence — 2026-08-07:** Added visible-store scope to inventory reads/actions with explicit super-admin bypass and fail-closed authentication; made receipt terminal after `difference_review`; added per-line receipt/reconciliation and server-side difference allowlists; replaced raw exception output with logged generic translated errors; rebuilt assets so the resolver action has readable contrast. Browser regression confirmed authorized `/inventory` rendering, no-access denial, LTR/RTL/no-overflow/zero-console-error behavior, no receipt action after difference review, and safe direct retry with exactly one receipt movement. Commit: `1b66b69`.
 
 ---
 
 # Project Progress
 
-**Overall progress:** 1%  
+**Overall progress:** See the milestone table below; DM 2.4 Local/Demo inventory is complete while Phase 2 Production/UAT and release gates remain open.
 **Implementation status:** Initial Setup Dashboard local/dev slice is implemented and browser-verified; TSK-015 local/dev policy and implementation slice is complete under DEC-050; TSK-016 local/dev implementation is complete under DEC-052; production/UAT remains open.
 **Documentation status:** The first-launch configuration slice is recorded in `TASKS.md` and `.ai/UI_SCREENS.md`. It preserves DEC-052 approved-only financial resolution and does not create owner or production values.
 

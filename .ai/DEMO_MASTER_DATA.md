@@ -10,7 +10,7 @@
 
 1. Seeds only when `APP_ENV=local`. The seeder aborts otherwise.
 2. Every row carries a `DEMO-` code prefix and an `is_demo` flag.
-3. No opening stock is seeded. Balances arise from test purchase invoices so the weighted-average series is exercised from zero.
+3. No **production** opening stock is seeded. For Local/Demo workflow verification only, `DemoInventorySeeder` may create clearly labeled deterministic opening movements so balances, WAC, availability, transfers, adjustments, and counts can be exercised from a known baseline.
 4. Demo presence blocks the Cutover wizard (`docs/46` §8).
 5. This data closes no blocker and grants no production readiness.
 
