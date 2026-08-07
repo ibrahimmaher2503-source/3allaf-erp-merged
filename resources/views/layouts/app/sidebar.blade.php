@@ -103,6 +103,18 @@
                         @endcan
                     </flux:sidebar.group>
                 @endcanany
+                @can('pricing_labels.view')
+                    <flux:sidebar.group :heading="__('Pricing')" class="grid">
+                        <flux:sidebar.item icon="banknotes" :href="route('pricing.index')" :current="request()->routeIs('pricing.index')" wire:navigate>
+                            {{ __('Pricing Workspace') }}
+                        </flux:sidebar.item>
+                        @can('pricing_labels.approve')
+                            <flux:sidebar.item icon="check-badge" :href="route('pricing.approvals')" :current="request()->routeIs('pricing.approvals')" wire:navigate>
+                                {{ __('Price Approvals') }}
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcan
             </nav>
 
             <flux:spacer />

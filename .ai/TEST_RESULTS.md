@@ -1,6 +1,11 @@
 # Test and Verification Status
 
-**Implementation status:** Initial Setup Dashboard local/dev verification completed; TSK-015 local/dev verification completed under DEC-050; TSK-016 local/dev implementation completed under DEC-052; production/UAT remains open.
+## TSK-017 Local/Dev verification boundary — 2026-08-07
+
+- Implemented and verified locally: pricing schema, PriceList/PriceVersion/PriceLine, guarded proposal lifecycle, ApprovalRecord/audit transitions, effective resolver, OpenPricePolicy boundary, Local/Dev branch-exception proposals with permission/reason checks, CSV import as Draft, history comparison, permissions, `/pricing`, and `/pricing/approvals`.
+- Browser evidence: Draft → Submitted → Approved; previous active version became Superseded; `demo-no-access` was denied; CSV created `LOCAL-RETAIL v2` at `140.250`; history compared it with approved v1 at `135.750`; Arabic RTL and English LTR had no page overflow and zero console errors.
+- Diagnostics passed after the final changes: PHP lint, Pint, PHPStan, Blade cache, pricing route discovery, JSON translation lint, and `git diff --check`. No PHPUnit/Pest or automated browser tests were created/run.
+- Remaining/open: Production branch authority/limits, full open-price limits and permission matrix, POS/unpriced integration, cost-change isolation evidence, mobile viewport evidence, production master data/authority, UAT, label/printer acceptance, and release approval. Local Demo evidence is not Production or UAT sign-off.
 
 **Initial Setup Dashboard verification — 2026-08-06:** `/dashboard` rendered the first-launch setup panel with `2/5` required steps complete (`40%`) and a working link to `/initial-setup`. The wizard rendered all six cards and linked to company settings, branches, supplier-return settings, authorization baseline, and printer/settings review. Supplier-return settings also rendered the owner form for saving allowed financial keys as pending input, with no approval bypass. Local Demo Administrator passed; Local Demo Cashier received the existing Access Denied page. Browser console returned 0 messages and 0 JavaScript errors. The current `supplier_return_reasons=0` and no approved/effective supplier-return financial versions were preserved; no data was seeded.
 

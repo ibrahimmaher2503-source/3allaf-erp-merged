@@ -1,3 +1,14 @@
+# Active Milestone — TSK-017 Local/Dev Pricing Vertical Slice
+
+**Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
+**Current milestone:** DM 2.3 — Price Proposals, Version Approval, and Open-Price Policy
+**Status:** In Progress; production/UAT and owner-configurable pricing inputs remain open.
+**Progress:** Started 2026-08-07. Reversible price-list/version/line persistence, guarded proposal lifecycle, CSV-as-Draft import, history comparison, explicit Local/Dev branch-exception proposals requiring `pricing_labels.override` and a reason, effective lookup, one-active-location enforcement, approval/audit wiring, and Local Demo browser evidence are implemented. Remaining boundaries are production branch policy/limits, full open-price matrix coverage, POS integration, and mobile evidence; no Production/UAT claim is made.
+
+---
+
+# Previous Milestone Record
+
 # Current Milestone
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)

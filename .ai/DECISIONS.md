@@ -77,3 +77,19 @@ Statuses: `Approved`, `Proposed`, `Assumed`, `Deferred`, `Rejected`, or `Require
 The owner explicitly authorized recording the current policy examples as Demo-only local data. The Demo register includes the active `DEMO-CASH` payment display row, inactive `DEMO-TAX-TBD` with no tax rate, inactive `demo-only` numbering with `DEMO-`, an inactive unconfigured Demo printer, and four pending supplier-return financial versions: `DEMO-RET-`, Demo print title, Demo print footer, and a `1000.00` EGP Demo approval-limit example.
 
 Every financial version is effective-dated but has no `ApprovalRecord`, so it remains `Awaiting approval` and cannot activate in the financial resolver. These values are explicitly Demo-only, do not represent Production policy, do not constitute UAT sign-off, and do not replace Owner approval or Production cutover approval. `supplier_return_reasons` remains empty because no reporting catalog content was supplied.
+
+## DEC-054 — Start TSK-017 as a guarded Local/Dev pricing vertical slice
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev implementation; Production/UAT deferred.
+
+The owner authorized starting TSK-017. The implementation may add reversible pricing persistence, proposal/version workflows, approval/effective lookup, one-active-location enforcement, unpriced guards, and structural open-price validation using configurable/pending settings. It must not invent Production price authority, branch exceptions, open-price limits, rounding/effective-time policy, label hardware/layouts, POS posting, or UAT/release approval.
+
+The pricing policy remains a proposal/derived baseline. A pending or Demo price is not an approved effective Production price; historical sale values must remain immutable, and no cost change may mutate a sale price automatically.
+
+## DEC-055 — TSK-017 Local/Dev verification evidence
+
+**Date:** 2026-08-07
+**Status:** Recorded for Local/Dev only; Production/UAT deferred.
+
+The local slice now includes CSV import-as-Draft and history comparison in addition to the guarded proposal/approval workflow. Manual browser evidence confirmed Draft → Submitted → Approved, superseding, no-access denial, CSV import of `LOCAL-CSV-SMOKE-001` at `140.250`, comparison with approved v1 at `135.750`, and Arabic RTL/English LTR parity without page overflow or JavaScript errors. This evidence does not approve production prices, branch exceptions, open-price limits, labels, POS integration, UAT, or release cutover.

@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addNamespace('platform', viewPath: resource_path('views/platform'));
         Livewire::addNamespace('catalog', viewPath: resource_path('views/catalog'));
         Livewire::addNamespace('purchasing', viewPath: resource_path('views/purchasing'));
+        Livewire::addNamespace('pricing', viewPath: resource_path('views/pricing'));
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(ApprovalRecord::class, ApprovalRecordPolicy::class);
 
@@ -62,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
             'products_categories_brands.override',
             'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.logical_delete',
             'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.print', 'purchase_orders.cancel', 'purchase_orders.approve',
+            'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.approve', 'pricing_labels.reject', 'pricing_labels.export', 'pricing_labels.override',
         ] as $ability) {
             Gate::define($ability, fn (?User $user): bool => $user?->hasPermission($ability) ?? false);
         }

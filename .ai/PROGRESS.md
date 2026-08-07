@@ -1,3 +1,12 @@
+# Active Progress — TSK-017 — 2026-08-07
+
+**Implementation status:** TSK-017 Local/Dev pricing vertical slice is substantially implemented and manually browser-verified; production/UAT remains open.
+**Boundary:** Only reversible local pricing workflows are claimed. Production price authority, branch exceptions, open-price bounds, rounding/effective-time choices, labels, POS posting, UAT, and release gates remain open.
+
+**TSK-017 evidence — 2026-08-07:** Pricing migration/schema, proposal lifecycle, approval/audit flow, effective resolver, OpenPricePolicy, CSV import-as-Draft, history comparison, explicit Local/Dev branch-exception proposals requiring permission and reason, authorization gates, `/pricing`, and `/pricing/approvals` are implemented. Local Demo browser verification covered Draft → Submitted → Approved, superseding, no-access denial, CSV import creating `LOCAL-RETAIL v2` Draft at `140.250`, and history comparison against approved v1 at `135.750`. Arabic RTL/LTR parity passed with no page overflow and zero browser console errors. PHP lint, Pint, PHPStan, Blade cache, route discovery, and `git diff --check` passed after the final import/translation/branch-boundary changes.
+
+---
+
 # Project Progress
 
 **Overall progress:** 1%  
@@ -25,7 +34,7 @@ TSK-015 template artifact remains available at `docs/templates/TSK-015-purchase-
 | Phase 1 | DM 1.4 Core Controls | Completed for approved local infrastructure scope | 100% local controls | 2026-08-03 | 2026-08-04 | TSK-009 | Four reusable foundations complete; source-module integration, UAT, production configuration, and Phase 1 gate remain open |
 | Phase 2 | DM 2.1 Product and Supplier Masters | Completed for approved local scope | TSK-010 to TSK-013 local scopes closed; production/UAT gates remain open | 2026-08-04 | - | TSK-010 to TSK-013 | BLK-009/BLK-010 production inputs and UAT remain open |
 | Phase 2 | DM 2.2 Purchase Cycle | In Progress (TSK-014 completed for approved local scope; TSK-015 Slice A / Performance Group A local) | TSK-014 local PO scope completed; TSK-015 ledger foundation and P01–P03 implemented; mobile evidence pending; receipt policies, production inputs, UAT, and production gates remain open | 2026-08-05 | - | TSK-014 to TSK-016; TSK-P01–P12 | BLK-008/BLK-010/BLK-017, mobile evidence, realistic-volume baselines, receipt policies, production inputs, UAT, and Phase 2 gates remain open |
-| Phase 2 | DM 2.3 Pricing and Barcode Labels | Not Started | 0% | - | - | TSK-017 to TSK-018 | Approval and label queues |
+| Phase 2 | DM 2.3 Pricing and Barcode Labels | In Progress (TSK-017 Local/Dev slice) | Pricing proposal/version approval, CSV-as-Draft import, history comparison, resolver, permissions, and browser evidence implemented; branch exceptions, labels, Production/UAT remain open | 2026-08-07 | - | TSK-017 to TSK-018 | BLK-011 and production/device/UAT gates remain open |
 | Phase 2 | DM 2.4 Inventory Operations | Not Started | 0% | - | - | TSK-019 to TSK-022 | Ledgers, transfers, adjustments, and counts |
 | Phase 3 | DM 3.1 POS Checkout | Not Started | 0% | - | - | TSK-023 | Dedicated POS |
 | Phase 3 | DM 3.2 Discount and Payment Rules | Not Started | 0% | - | - | TSK-024 | Evidence and print totals |

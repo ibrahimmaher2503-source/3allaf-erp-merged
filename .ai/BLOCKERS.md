@@ -1,6 +1,8 @@
 # Blocker Register
 
-## DEC-040 Detailed Local Mitigation References
+## TSK-017 boundary update — 2026-08-07
+
+The Local/Dev pricing slice is implemented through proposal/version approval, CSV-as-Draft import, and history comparison. BLK-011 remains `Mitigated`, not Closed: final pricing authority, numeric limits, effective timing/rounding, branch exceptions, label quantities/layouts, printers, and production values still require Owner/Operations input. The implementation must not be treated as Production policy or UAT sign-off.
 
 ## TSK-010 Production and Authorization Boundary — 2026-08-04
 

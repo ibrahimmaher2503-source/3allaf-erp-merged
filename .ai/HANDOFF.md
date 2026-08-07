@@ -1,3 +1,11 @@
+# Active Handoff — TSK-017 — 2026-08-07
+
+TSK-017 has now reached a substantial Local/Dev slice: reversible price-list/version/line schema, guarded create/submit/approve/reject actions, ApprovalRecord and audit transitions, effective-price resolver, open-price policy boundary, explicit Local/Dev branch-exception proposals requiring permission and reason, canonical pricing permissions, CSV import-as-Draft, and history comparison are implemented. Browser evidence covered `/pricing`, `/pricing/approvals`, Draft → Submitted → Approved, superseding, no-access denial, CSV import, history diff, and Arabic RTL/LTR parity with zero console errors and no page overflow.
+
+The remaining handoff is deliberately not a completion claim: Production branch authority/limits, full open-price bounds/permission matrix, POS integration/unpriced blocking, cost-change isolation evidence, mobile viewport evidence, final owner inputs, UAT, production pricing authority, label hardware, and release approval remain open. Do not seed or approve Production prices. Keep Local Demo values labeled as Demo-only.
+
+---
+
 # AI Handoff
 
 ### Current State — 2026-08-06

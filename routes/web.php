@@ -49,4 +49,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/platform.php';
 require __DIR__.'/catalog.php';
 require __DIR__.'/purchasing.php';
+require __DIR__.'/pricing.php';
 require __DIR__.'/settings.php';
