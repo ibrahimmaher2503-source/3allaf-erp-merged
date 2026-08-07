@@ -122,6 +122,13 @@ The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The
 
 TSK-019–TSK-022 inventory reads and mutations must enforce `Store::visibleTo()` scope, with an explicit super-admin bypass and fail-closed authentication. Transfer receipt is allowed only from `in_transit`, processes every transfer line, and moves shortages to terminal `difference_review`; repeated receipt attempts are rejected server-side. Difference types use a server-side allowlist, exceptions are reported internally while users receive generic translated errors, and cost/WAC remains permission-gated. This correction is recorded in commit `1b66b69`; it does not approve production stores, reason catalogs, thresholds, hardware, UAT, or release.
 
+## DEC-063 — TSK-027 Local/Dev customer and loyalty readiness boundary
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev empty/read-only boundary; customer/loyalty/wallet/Gift Card mutation and Phase 4 remain deferred.
+
+The authorized TSK-027 slice is limited to `/customers/loyalty-readiness`, protected by the existing `pos_sales.view` gate solely because no customer-specific permission contract is active. The page must remain empty/read-only and must not fabricate customer data, consent wording, rates, expiry/rounding, balances, ledgers, wallet actions, Gift Card actions, or a new permission grant. Product/Party Wallets remain TSK-028 and Gift Cards/Gift Receipts remain TSK-029. BLK-014 and owner/legal/configuration inputs remain open.
+
 ## DEC-062 — TSK-026 Local/Dev offline readiness boundary
 
 **Date:** 2026-08-07

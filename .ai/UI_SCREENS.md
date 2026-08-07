@@ -14,8 +14,13 @@ Every screen row below explicitly inherits this contract unless its row states a
 
 Routes are proposals and must be reconciled with the actual future Laravel project. Implemented rows remain `In Progress` until code review and manual browser evidence; all other screens start `Not Started`.
 
-## TSK-026 offline-readiness reconciliation — 2026-08-07
+## TSK-027 customer/loyalty readiness reconciliation — 2026-08-07
 
+- The implemented local boundary is `/customers/loyalty-readiness`; it is an empty/read-only contract page, not the UI-CUS-001..003 implementation.
+- No customer profile, consent/child data, unified history, loyalty ledger/balance, rate/expiry/rounding, wallet, Gift Card, sensitive tab, export, or mutation control is exposed.
+- Existing `pos_sales.view` is reused only as a temporary server gate for the empty page; it does not grant customer/loyalty/wallet/Gift Card permissions. TSK-028 and TSK-029 remain separate.
+
+## TSK-026 offline-readiness reconciliation — 2026-08-07
 - `UI-OFF-001` through `UI-OFF-003` remain full offline/PWA requirements, not complete screens. The implemented local boundary is `/pos/offline-readiness`, with disabled/pending state, OFF-01..OFF-05/NFR-04 cards, and PRD permitted/blocked classes only.
 - The page is server-gated by `pos_sales.view`, verified for Demo Admin English LTR and Arabic RTL, denied for `demo-no-access`, and verified not to expose queue/sync/conflict controls, sensitive cache tokens, numeric limits, or device enablement values. Full offline screen statuses remain In Progress pending DEC-018/BLK-004.
 

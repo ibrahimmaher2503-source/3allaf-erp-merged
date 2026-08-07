@@ -13,6 +13,12 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-027 customer/loyalty readiness boundary implementation
+
+- **Agent / scope:** Read TSK-027 sources and implemented only the authorized Local/Dev empty/read-only boundary at `/customers/loyalty-readiness`.
+- **Implemented:** server gate reuse, bilingual customer identity/consent and shared-loyalty contract cards, explicit TSK-028 wallet and TSK-029 Gift Card deferrals, no customer/loyalty/wallet/Gift Card data or mutation.
+- **Verified:** English LTR, Arabic RTL, no-access denial, DOM safety, route protection, PHP/Pint/PHPStan/Blade/Vite/locale/diff checks. BLK-014 and Phase 4 remain open.
+
 ## 2026-08-07 - TSK-026 offline POS readiness boundary implementation
 
 - **Agent / scope:** Implemented the smallest authorized TSK-026 Local/Dev read-only/disabled boundary after reading docs/51, 31, 30, 35, 36, and 57; no offline transaction/sync/replay/conflict mutation, device/UAT/Production scope.

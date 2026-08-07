@@ -437,7 +437,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-027 — Implement Customer Profiles and Shared Loyalty
 
-- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **Discovery/readiness boundary implemented and browser-verified; customer/loyalty mutation remains pending**.
 - **Title / Purpose / Description:** Deliver unique-phone customer/consent/contact/children, authorized unified history and shared activity-rule loyalty earn/redeem/expiry.
 - **Traceability:** MD-06, CUS-01, CUS-03–CUS-04, NFR-01–NFR-03; US-003, US-023; FLW-CUS-01–03; UI UI-CUS-001–003; AC-MD-06, AC-CUS-01, AC-CUS-03–04; SEC-006, SEC-010–012, SEC-015–021, SEC-027.
 - **Dependencies / Required Inputs:** Phase 3 gate; BLK-014 mitigated by `docs/27-customer-loyalty-wallet-gift-policy.md`; final consent wording, legal retention, loyalty rates, rounding, expiry, and approval values remain configurable or pending.

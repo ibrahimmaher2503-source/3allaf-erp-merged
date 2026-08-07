@@ -1,8 +1,8 @@
-# Active Progress — TSK-026 Offline POS Readiness Boundary — 2026-08-07
+# Active Progress — TSK-027 Customer/Loyalty Readiness Boundary — 2026-08-07
 
-**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 have read-only/readiness boundaries only. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, or conflict mutation is enabled.
-**TSK-026 dependency evidence:** `docs/51`, `docs/31`, `docs/30`, `docs/35`, `docs/36`, and `docs/57` were read. PRD permitted/blocked offline classes are recorded, while OFF-01..OFF-05, BLK-004, DEC-018, device scope, limits, price age, expiry/retry, and conflict ownership remain pending.
-**Next boundary:** Resolve owner/configuration inputs before enabling offline behavior; otherwise preserve the disabled boundary and do not advance TSK-027.
+**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, TSK-026, and TSK-027 have read-only/readiness boundaries only. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, conflict, customer, loyalty, wallet, or gift mutation is enabled.
+**TSK-027 dependency evidence:** `docs/27`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, and `docs/57` were read. Customer identity/consent, shared loyalty, separate wallet, and Gift Card contracts are recorded, while BLK-014 legal/configuration values and Phase 4 remain pending.
+**Next boundary:** Keep `/customers/loyalty-readiness` empty/read-only until owner consent/rates/expiry/rounding/approval inputs and the Phase 4 gate are resolved; TSK-028/029 remain separate.
 
 ---
 

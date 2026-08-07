@@ -51,6 +51,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.pos.offline-readiness');
     })->middleware('can:pos_sales.view')->name('pos.offline-readiness');
 
+    Route::get('customers/loyalty-readiness', function (Request $request) {
+        abort_unless($request->user()?->can('pos_sales.view'), 403);
+
+        return view('pages.customers.loyalty-readiness');
+    })->middleware('can:pos_sales.view')->name('customers.loyalty-readiness');
+
     Route::get('pos/financial-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

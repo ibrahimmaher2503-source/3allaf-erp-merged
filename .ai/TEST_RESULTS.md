@@ -1,5 +1,15 @@
 # Test and Verification Status
 
+## TSK-027 customer/loyalty readiness boundary verification — 2026-08-07
+
+- Required sources were read before implementation: `docs/27`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, `docs/57`, US-003/US-023, and role/permission boundaries. No customer/loyalty/wallet/Gift Card implementation existed in the repository.
+- Implemented guarded `GET /customers/loyalty-readiness` with the existing `pos_sales.view` gate solely to protect an empty/read-only page. No model, migration, query, fixture, ledger, balance, rate, consent, wallet, or Gift Card mutation was added.
+- Browser evidence on the Demo server: `demo-admin` rendered English LTR and Arabic RTL; the page showed the customer/consent and shared-loyalty contract plus deferred TSK-028/029 cards. `demo-no-access` received Access Denied.
+- DOM safety probe passed: `main` contained 0 forms and 0 buttons, no customer/loyalty/wallet/Gift Card ledger identifiers or record data, no overflow, and no sensitive values. Browser console returned 0 messages and 0 JavaScript errors.
+- Diagnostics passed: PHP lint, Pint, targeted PHPStan 0 errors, Blade cache, customer route discovery, Vite build, locale parity `1308/1308`, and `git diff --check`. Existing duplicate locale keys (`Open`, `Action`, `Approved`, `Value`, `Back`) were confirmed pre-existing and not introduced by this slice. No PHPUnit/Pest or automated browser tests were created or run.
+- Boundary retained: customer creation/merge/consent/history, loyalty earn/redeem/expiry/adjustment/approval, separate wallets, Gift Cards/Receipts, Phase 4, BLK-014, UAT, Production, and formal milestone exit remain pending.
+
+
 ## TSK-023 Local/Dev POS verification boundary — 2026-08-07
 
 - Diagnostics passed for the slice: PHP lint, Pint, targeted PHPStan (0 errors), Blade view cache, route discovery, locale JSON parity, and `git diff --check`. No PHPUnit/Pest or automated browser tests were created or run per DEC-012.

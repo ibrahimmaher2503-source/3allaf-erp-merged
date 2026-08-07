@@ -1,9 +1,9 @@
-# Active Milestone — TSK-026 Offline POS Readiness Boundary
+# Active Milestone — TSK-027 Customer/Loyalty Readiness Boundary
 
-**Current phase:** Phase 3 local implementation exception (formal Phase 1/2 and Phase 3 gates remain open)
-**Current milestone:** DM 3.4 — Operational Integrity / Restricted Offline Boundary
-**Status:** TSK-023 is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 have browser-verified read-only/readiness boundaries only. Production/UAT, hardware, device policy, owner inputs, and formal phase exit remain open.
-**Progress:** `/pos/financial-readiness`, `/pos/shift-readiness`, and `/pos/offline-readiness` are protected by `pos_sales.view`. The offline page records OFF-01..OFF-05 and NFR-04 as pending, displays the PRD permitted/blocked classes, and creates no queue/sync/replay/conflict or transaction surface. BLK-004 and DEC-018 remain open.
+**Current phase:** Phase 4 local implementation exception (formal Phase 4 gate remains open)
+**Current milestone:** DM 4.1 — Customer Identity and Shared Loyalty Readiness
+**Status:** TSK-023 through TSK-026 have browser-verified Local/Dev/readiness boundaries; TSK-027 now has a browser-verified empty/read-only boundary. Customer, consent, loyalty, wallet, Gift Card, Production/UAT, and owner policy inputs remain open.
+**Progress:** `/customers/loyalty-readiness` is protected by the existing `pos_sales.view` gate only to protect an empty page. It creates/loads no customer, child, consent, history, loyalty, wallet, or Gift Card records; it records the contract and keeps TSK-028/029 separate. BLK-014 remains open.
 
 ---
 
