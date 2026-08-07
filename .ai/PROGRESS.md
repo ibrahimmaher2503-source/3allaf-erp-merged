@@ -1,9 +1,9 @@
-# Active Progress — TSK-017 — 2026-08-07
+# Active Progress — TSK-018 — 2026-08-07
 
-**Implementation status:** TSK-017 Local/Dev pricing vertical slice is complete and manually browser-verified; production/UAT remains open.
-**Boundary:** Only reversible local pricing workflows are claimed. Production price authority/branch policy, open-price bounds, rounding/effective-time choices, labels, POS posting, UAT, and release gates remain open.
+**Implementation status:** TSK-017 Local/Dev slice is complete; TSK-018 Local/Dev readiness slice is implemented and browser-verified; full queue/print remains open.
+**Boundary:** Label queue/print work is limited to contract reconciliation and a guarded readiness/empty state. Stock balances, printer devices/templates, label quantities, print/reprint events, POS blocking, UAT, and release gates remain open.
 
-**TSK-017 evidence — 2026-08-07:** Pricing migration/schema, proposal lifecycle, approval/audit flow, effective resolver, OpenPricePolicy, CSV import-as-Draft, history comparison, explicit Local/Dev branch-exception proposals requiring permission and reason, authorization gates, `/pricing`, and `/pricing/approvals` are implemented. Local Demo browser verification covered Draft → Submitted → Approved, superseding, no-access denial, CSV import creating `LOCAL-RETAIL v2` Draft at `140.250`, and history comparison against approved v1 at `135.750`. Arabic RTL/LTR parity passed with no page overflow and zero browser console errors. PHP lint, Pint, PHPStan, Blade cache, route discovery, and `git diff --check` passed after the final import/translation/branch-boundary changes.
+**TSK-018 evidence — 2026-08-07:** `TASKS.md`, `docs/24`, `docs/36`, `docs/38`, and the live repository were reconciled. `/pricing/labels` is now a server-gated Local/Dev readiness/empty screen: it shows the approved-price count from TSK-017, unavailable stock balance, unconfigured printer/template, pending audit contract, no label queue rows, and disabled generation. Browser evidence passed for Local Demo Administrator, 403 denial for `demo-no-access`, Arabic RTL and English LTR, no overflow, and zero console errors. No stock, printer, queue, print-event, hardware, or Production values were invented.
 
 ---
 

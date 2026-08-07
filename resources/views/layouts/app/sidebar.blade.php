@@ -113,6 +113,9 @@
                                 {{ __('Price Approvals') }}
                             </flux:sidebar.item>
                         @endcan
+                        <flux:sidebar.item icon="printer" :href="route('pricing.labels')" :current="request()->routeIs('pricing.labels')" wire:navigate>
+                            {{ __('Label Queue Readiness') }}
+                        </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endcan
             </nav>

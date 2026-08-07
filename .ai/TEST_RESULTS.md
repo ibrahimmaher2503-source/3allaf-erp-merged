@@ -1,5 +1,13 @@
 # Test and Verification Status
 
+## TSK-018 Discovery/Local verification boundary — 2026-08-07
+
+- Discovery completed: TSK-017 provides the approved/effective price boundary, but the current repository has no `stock_balances`, `printer_configurations`, `label_queues`, or `label_print_events` implementation to support truthful queue generation.
+- Implemented and verified `/pricing/labels` as a read-only readiness/empty boundary behind `pricing_labels.view`; it shows approved-price count only, explicit dependency blockers, no queue rows, and disabled generation.
+- Browser evidence: Local Demo Administrator rendered the page; `demo-no-access` received Access Denied; Arabic `html[dir=rtl]`/computed RTL and English `html[dir=ltr]`/computed LTR passed; no horizontal overflow; zero browser console errors.
+- No label queue rows, print events, printer defaults, stock quantities, hardware values, or automated tests were created.
+- Production/UAT and hardware acceptance remain explicitly open.
+
 ## TSK-017 Local/Dev verification boundary — 2026-08-07
 
 - Implemented and verified locally: pricing schema, PriceList/PriceVersion/PriceLine, guarded proposal lifecycle, ApprovalRecord/audit transitions, effective resolver, OpenPricePolicy boundary, Local/Dev branch-exception proposals with permission/reason checks, unpriced-product visibility, CSV import as Draft, history comparison, permissions, `/pricing`, and `/pricing/approvals`.

@@ -1,5 +1,9 @@
 # Blocker Register
 
+## TSK-018 boundary update — 2026-08-07
+
+TSK-017 Local/Dev is closed. TSK-018 Local/Dev readiness is implemented, but `stock_balances`, `printer_configurations`, `label_queues`, and `label_print_events` are absent from the current implementation. Remaining-stock quantity, printer/device, label layout, branch exception, reprint, and hardware values remain owner/operations pending. Do not generate queue or print records until those contracts exist.
+
 ## TSK-017 boundary update — 2026-08-07
 
 The Local/Dev pricing slice is implemented through proposal/version approval, CSV-as-Draft import, and history comparison. BLK-011 remains `Mitigated`, not Closed: final pricing authority, numeric limits, effective timing/rounding, branch exceptions, label quantities/layouts, printers, and production values still require Owner/Operations input. The implementation must not be treated as Production policy or UAT sign-off.

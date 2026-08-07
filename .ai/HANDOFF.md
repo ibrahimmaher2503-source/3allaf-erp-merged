@@ -1,8 +1,8 @@
-# Active Handoff — TSK-017 — 2026-08-07
+# Active Handoff — TSK-018 — 2026-08-07
 
-TSK-017 has now reached a substantial Local/Dev slice: reversible price-list/version/line schema, guarded create/submit/approve/reject actions, ApprovalRecord and audit transitions, effective-price resolver, open-price policy boundary, explicit Local/Dev branch-exception proposals requiring permission and reason, unpriced-product visibility, canonical pricing permissions, CSV import-as-Draft, and history comparison are implemented. Browser evidence covered `/pricing`, `/pricing/approvals`, Draft → Submitted → Approved, superseding, no-access denial, CSV import, history diff, and Arabic RTL/LTR parity with zero console errors and no page overflow.
+TSK-017 is closed for its Local/Dev slice. TSK-018 has started as a discovery/local boundary. The contract requires stock-derived remaining quantities, approved effective prices, printer/template selection, queue idempotency, and append-only print/reprint events. The current code tree has no stock balance, printer configuration, label queue, or print event implementation.
 
-The remaining handoff is deliberately not a Production completion claim: Production branch authority/limits, full open-price bounds/permission matrix, POS integration and sale blocking, cost-change isolation evidence, mobile viewport evidence, final owner inputs, UAT, production pricing authority, label hardware, and release approval remain open. Do not seed or approve Production prices. Keep Local Demo values labeled as Demo-only.
+The guarded readiness/empty UI now exists at `/pricing/labels`, behind `pricing_labels.view`, with sidebar navigation, approved-price count only, explicit stock/printer/audit blockers, and disabled generation. Browser evidence covers Administrator, no-access denial, Arabic RTL, English LTR, no overflow, and zero console errors. Do not create queue rows or print events, invent stock/printer/label values, or claim hardware/UAT/Production acceptance. Keep Local Demo values labeled as Demo-only.
 
 ---
 

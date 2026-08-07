@@ -1,9 +1,9 @@
-# Active Milestone — TSK-017 Local/Dev Pricing Vertical Slice
+# Active Milestone — TSK-018 Local/Dev Label Queue Discovery Boundary
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 and DM 2.2 gates remain open)
-**Current milestone:** DM 2.3 — Price Proposals, Version Approval, and Open-Price Policy
-**Status:** Local/Dev slice complete; production/UAT and owner-configurable pricing inputs remain open.
-**Progress:** Started 2026-08-07. Reversible price-list/version/line persistence, guarded proposal lifecycle, CSV-as-Draft import, history comparison, explicit Local/Dev branch-exception proposals requiring `pricing_labels.override` and a reason, effective lookup, one-active-location enforcement, unpriced visibility, approval/audit wiring, and Local Demo browser evidence are implemented. Remaining boundaries are production branch policy/limits, full open-price matrix coverage, POS integration, and mobile evidence; no Production/UAT claim is made.
+**Current milestone:** DM 2.3 — Price Proposals, Version Approval, and Barcode Labels
+**Status:** TSK-017 Local/Dev slice complete; TSK-018 Local/Dev readiness slice complete; full queue/print, Production/UAT, and owner-configurable printer/label inputs remain open.
+**Progress:** Started 2026-08-07. TSK-017 is closed for its Local/Dev slice. TSK-018 now has a guarded `/pricing/labels` readiness/empty screen behind `pricing_labels.view`, with approved-price count only, explicit stock/printer/audit blockers, disabled generation, sidebar navigation, and Arabic RTL/English LTR browser evidence. No queue rows, print events, hardware defaults, or production label claims were invented.
 
 ---
 

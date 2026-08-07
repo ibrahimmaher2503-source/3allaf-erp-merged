@@ -1,11 +1,13 @@
-# Active Task: TSK-017 — Price Proposals, Version Approval, and Open-Price Policy
+# Active Task: TSK-018 — Location Barcode Label Queues and Printing
 
 ## Scope for this continuation — 2026-08-07
 
-- **Allowed:** Local/Dev pricing vertical slice: price lists and lines, draft proposals from product/import/purchase context, immutable submitted/approved versions, CSV import as Draft, history comparison, effective-price lookup, one-active-location invariant, audit/approval wiring, unpriced guard, and server-side open-price validation with configurable/pending bounds.
-- **Forbidden:** Production price authority, real price values, production branch exceptions, production open-price limits, label hardware/layout approval, POS posting, and UAT/release sign-off.
-- **Policy boundary:** `docs/24-pricing-policy.md` remains Derived; owner-configurable authority, rounding, effective timing, branch exceptions, and production print values remain pending. Local examples must be clearly Demo-only and must not activate without an approved effective version.
-- **Verification:** PHP lint, Pint, PHPStan, migrations/schema inspection, route/view diagnostics, `git diff --check`, then authenticated Local Demo browser walkthrough. Verified create/import/compare/list/approval/denial and Arabic RTL/English LTR at the available desktop viewport; true 390px mobile evidence remains unavailable. No PHPUnit/Pest or automated browser tests.
+- **Status:** Local/Dev readiness slice implemented and browser-verified after discovery; full TSK-018 remains open.
+- **Allowed:** Reconcile label queue/print contracts, maintain the reversible Local/Dev readiness boundary, and expose an empty/disabled label screen until stock and printer dependencies exist.
+- **Forbidden:** Production label quantities, stock-balance mutation, invented printer/template/paper defaults, hardware acceptance, actual print/reprint posting, POS integration, and UAT/release sign-off.
+- **Dependencies:** TSK-017 approved/effective price resolver is available; `stock_balances`, `printer_configurations`, and approved label/device values are not implemented/available in the current code tree.
+- **Policy boundary:** `docs/24-pricing-policy.md` and `docs/38-print-export-specification.md` remain derived/local references. No queue row may be generated from Demo data until a real stock balance and printer/template contract exist; unpriced products remain blocked.
+- **Verification:** Read-only contract/schema inspection, PHP lint/Pint/PHPStan, Blade cache, route checks, `git diff --check`, then authenticated Local Demo browser verification of the readiness/empty/disabled states. No PHPUnit/Pest or automated browser tests.
 
 ---
 

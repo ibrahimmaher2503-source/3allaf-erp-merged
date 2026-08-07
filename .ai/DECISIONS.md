@@ -93,3 +93,12 @@ The pricing policy remains a proposal/derived baseline. A pending or Demo price 
 **Status:** Recorded for Local/Dev only; Production/UAT deferred.
 
 The local slice now includes CSV import-as-Draft and history comparison in addition to the guarded proposal/approval workflow. Manual browser evidence confirmed Draft → Submitted → Approved, superseding, no-access denial, CSV import of `LOCAL-CSV-SMOKE-001` at `140.250`, comparison with approved v1 at `135.750`, and Arabic RTL/English LTR parity without page overflow or JavaScript errors. This evidence does not approve production prices, branch exceptions, open-price limits, labels, POS integration, UAT, or release cutover.
+
+## DEC-056 — Start TSK-018 as a guarded label-queue discovery/local boundary
+
+**Date:** 2026-08-07
+**Status:** Approved for discovery/Local implementation; Production/UAT deferred.
+
+Start TSK-018 after the TSK-017 Local/Dev slice. Reconcile and implement only a truthful readiness/empty boundary until `stock_balances`, `printer_configurations`, approved label/template values, and downstream inventory contracts exist. No queue rows, print events, stock quantities, printer defaults, hardware integration, or production/UAT claims may be invented.
+
+A full queue implementation without stock/printer contracts would create fake quantities and un-auditable output. The first safe slice is server-gated readiness with disabled actions and explicit owner-pending states. This keeps TSK-018 moving without bypassing stock truth, printer ownership, label policy, or hardware acceptance. Related: TSK-018; PRC-06–07; BLK-003, BLK-008, BLK-011; docs/24, docs/36, docs/38. Owner/Operations inputs remain outstanding.

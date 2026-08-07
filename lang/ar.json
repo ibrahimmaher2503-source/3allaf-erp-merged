@@ -1159,5 +1159,6 @@
     "Unpriced products": "منتجات بلا سعر",
     "Pricing pending": "التسعير معلق",
     "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.": "هذه المنتجات النشطة لا تملك سعرًا معتمدًا وساريًا في المتاجر الظاهرة. يمكن متابعة الاستلام، لكن البيع عبر نقطة البيع وإنشاء الملصقات يظلان محظورين حتى اعتماد التسعير.",
+    "Label Queue Readiness": "جاهزية طوابير الملصقات",
     "Search list, item code, or product": "ابحث في القائمة أو رمز الصنف أو المنتج"
 }
