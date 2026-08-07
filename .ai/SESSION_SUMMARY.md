@@ -22,6 +22,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:** Production branch/store assignments, opening-stock cutover, final inventory reason catalog/thresholds/dispositions/tolerances, hardware, UAT, and release approval remain open. Commit the `.ai/` synchronization locally; do not push.
 - **Code, tests, browser, commit, push:** Code correction commit `1b66b69` and the focused AI-control documentation commit exist locally; no push.
 
+## 2026-08-07 - Inventory Tutorial Guide and Arabic coverage
+
+- **Agent / scope:** Added the data-driven Local/Demo Tutorial Guide for all Inventory pages UI-INV-001–UI-INV-011; no Production/UAT/hardware scope.
+- **Completed:** Added bilingual Full Guides and interactive tours, shared semantic guide hooks, seven Inventory user flows, and `docs/58-inventory-tutorial-guide.md`. Arabic copy covers overview, stock card, movements, transfers, dispatch, receipt, difference review, adjustments, counts, count entry, and reconciliation.
+- **Verification actually run:** All 11 screen routes and all 11 Full Guide routes returned HTTP 200 under Arabic Demo Auth with `lang=ar`, `dir=rtl`, visible Arabic content, no overflow, and no browser console errors observed. Locale parity `1164/1164`, registry smoke `11 guides/7 flows`, PHPStan 0 errors, targeted Pint, Blade cache, and `git diff --check` passed.
+- **Remaining blockers / next action:** Production/UAT/hardware/PDF acceptance and true 390x844 mobile evidence remain open. Commit locally only; do not push.
+- **Code, tests, browser, commit, push:** Manual browser verification passed; no PHPUnit/Pest created or run; local commit pending; no push.
+
 ## 2026-08-07 - Owner-authorized Local Demo policy register
 
 - **Agent / scope:** Owner explicitly authorized recording all current policy examples as local Demo data only.

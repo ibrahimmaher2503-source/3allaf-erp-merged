@@ -14,6 +14,13 @@
 - Boundary: production opening balances, final reason/tolerance/disposition catalogs, real store/branch authority, count hardware/scanners, exports/print acceptance, UAT, and Phase 2/release gates remain open. AGY was attempted with verified `agy 1.1.10` but returned `Individual quota reached`; no AGY review success is claimed.
 
 
+## Inventory Tutorial Guide Arabic verification — 2026-08-07
+
+- All 11 Inventory screen routes and all 11 Full Guide routes rendered HTTP 200 in an authenticated Arabic Local Demo session: `lang=ar`, `dir=rtl`, and visible Arabic content were present on every response.
+- Verified routes: `/inventory`, `/inventory/products/1`, `/inventory/movements`, `/inventory/transfers`, `/inventory/transfers/1/dispatch`, `/inventory/transfers/1/receive`, `/inventory/transfers/1/differences`, `/inventory/adjustments`, `/inventory/counts`, `/inventory/counts/1/entry`, and `/inventory/counts/1/reconcile`.
+- Verified guide IDs: `UI-INV-001` through `UI-INV-011`; each has bilingual Full Guide content and bilingual interactive tour steps. Arabic `UI-INV-011` browser evidence returned `body direction=rtl`, 2367 Arabic characters, no page overflow, and zero console errors.
+- Locale parity remains `ar=1164`, `en=1164`, with no missing keys. PHPStan, targeted Pint, Blade cache, registry/flow smoke, and `git diff --check` passed.
+
 ## TSK-018 Local/Dev Dummy-data verification boundary — 2026-08-07
 
 - Owner explicitly authorized Dummy data in seeders for Local Demo only. `DemoSeeder` now calls idempotent `DemoPricingSeeder` and `DemoLabelQueueSeeder`; both refuse non-local or `DEMO_AUTH=false` execution.

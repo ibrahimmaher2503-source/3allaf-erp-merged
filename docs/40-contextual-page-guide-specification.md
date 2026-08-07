@@ -61,6 +61,12 @@ Adding a screen therefore requires adding a definition file and stable view sele
 
 The Full Guide is intentionally broader than the interactive tour. It renders an overview, role-aware approved actions, ordered steps, field explanations, operating notes, warnings, error recovery, FAQ, related workflows, a scope disclaimer, and print-friendly navigation. The controller passes only sanitized flow summaries and permission-filtered actions; permission keys, models, private paths, credentials, and exception payloads are never rendered.
 
+## Inventory tutorial registration — TSK-019–TSK-022
+
+The Local/Demo Inventory slice registers the following real named routes and Screen IDs: `UI-INV-001` (`inventory.index`), `UI-INV-002` (`inventory.stock-card`), `UI-INV-003` (`inventory.movements`), `UI-INV-004` (`inventory.transfers`), `UI-INV-005` (`inventory.transfers.dispatch-page`), `UI-INV-006` (`inventory.transfers.receive-page`), `UI-INV-007` (`inventory.transfers.differences`), `UI-INV-008` (`inventory.counts`), `UI-INV-009` (`inventory.counts.entry`), `UI-INV-010` (`inventory.counts.reconcile-page`), and `UI-INV-011` (`inventory.adjustments`).
+
+Each definition includes bilingual purpose, permission-filtered actions, ordered steps, field explanations, warnings, safe error guidance, FAQ, related `FLW-INV-01` through `FLW-INV-07`, and stable `data-guide` targets in the actual Inventory view. The full operating reference is `docs/58-inventory-tutorial-guide.md`. Inventory guidance remains Local/Demo-only and must not imply Production, UAT, hardware, printing, financial, or Owner approval.
+
 ## Deferred
 
 No claim is made for every future screen, official UAT, production readiness, phase completion, or AI-generated guidance. Future user-facing tasks must register or update their Screen ID and approved guide metadata as part of their Definition of Done.
