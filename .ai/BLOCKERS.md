@@ -1,5 +1,17 @@
 # Blocker Register
 
+## Next five task dependency audit — 2026-08-07
+
+The requested next sequence is `TSK-023` through `TSK-027`. Each task was read against its routed PRD, milestone, architecture, policy, data-contract, UI, print, and interaction sources before any implementation attempt.
+
+- **TSK-023 — POS Checkout:** blocked for formal completion by the Phase 2 gate, approved POS/receipt/hardware workflow, and the required active drawer/shift foundation. The repository currently has only the restricted `/pos` shell; no `sales`, `sale_lines`, `suspended_sales`, or shift contract exists. A plan was prepared for a Local/Dev online vertical slice, but no code was added because inventing a sale without server-resolved drawer/shift context would violate `docs/31`, `docs/32`, `docs/35`, `docs/36`, and `docs/10`.
+- **TSK-024 — Discounts/Payments:** depends on TSK-023 and remains constrained by BLK-008 plus pending POS calculation decisions `POSF-01` through `POSF-04` (rounding, cash rounding, split-payment residual, and discount replacement). No calculator/payment/evidence code was added.
+- **TSK-025 — Shifts/Cash Control:** depends on TSK-023–TSK-024 and requires the drawer allocation, cash-movement, variance, and closing procedure. `docs/32` explicitly forbids exposing expected values before blind submission. No shift schema/action/UI was added without the preceding sale/payment contract.
+- **TSK-026 — Offline POS:** explicitly blocked by `DEC-018 Requires Owner Decision` and open `BLK-004`: enabled devices/branches, limits, price age, expiry/retry, security, review ownership, and conflict disposition are missing. No IndexedDB queue or sync path was added.
+- **TSK-027 — Customers/Loyalty:** depends on the Phase 3 gate and retains BLK-014 owner/legal inputs for consent/retention wording, loyalty rates, expiry, rounding, and approval values. No customer or loyalty ledger was fabricated.
+
+**Prepared plans:** each task must start with the documented dependencies above, use Local/Dev-only configurable values if explicitly authorized, preserve all pending owner inputs, and close only after its own server/UI/manual-browser/integrity evidence plus the applicable phase gate. Next action requires owner/phase-gate inputs or an explicit authorization for bounded Local/Dev slices; production/UAT completion is not claimed.
+
 ## TSK-019–TSK-022 correction boundary — 2026-08-07
 
 The Local/Demo inventory correction review is complete in commit `1b66b69`. Visible-store scope, fail-closed action authorization, multi-line transfer receipt/reconciliation, terminal `difference_review`, server-side difference allowlists, generic exception handling, cost permission gating, and resolver contrast are implemented and browser-verified. This mitigates the local implementation gap only; it does not close BLK-006, BLK-010, or BLK-012 for Production. Real branch/store assignments, opening-stock cutover, final reason catalogs, thresholds, dispositions, count tolerances, UAT, hardware, and release approval remain pending.

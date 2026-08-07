@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - Next five task dependency audit (TSK-023–TSK-027)
+
+- **Agent / scope:** Read the routed docs and prepared implementation plans for the next five backlog tasks before any code change; no Production/UAT/hardware scope.
+- **Completed:** Audited TSK-023 POS Checkout, TSK-024 Discounts/Payments, TSK-025 Shifts/Cash Control, TSK-026 Offline POS, and TSK-027 Customers/Loyalty against `TASKS.md`, `AI_INDEX.md`, PRD, DM/phase criteria, architecture, policies, data contracts, UI/print specifications, roles, and interaction standards. Confirmed `/pos` is currently only a shell and the sales/shift/offline/customer contracts are absent.
+- **Verification actually run:** Read-only repository inspection, exact task/source routing checks, existing implementation searches, and dependency/blocker review. No PHP, migration, browser, or automated test command was run because no implementation was authorized safely after the dependency audit.
+- **Remaining blockers / next action:** TSK-023 requires the Phase 2 gate, approved POS/receipt/hardware workflow, and active drawer/shift foundation. TSK-024 requires TSK-023 plus BLK-008/POSF pending calculations. TSK-025 requires TSK-023–024 and closing policy. TSK-026 is blocked by DEC-018/BLK-004. TSK-027 requires the Phase 3 gate and BLK-014 owner/legal inputs. Keep all five at their existing `Not Started` status; do not claim local or production completion until an authorized bounded slice and its evidence exist.
+- **Code, tests, browser, commit, push:** No application code changed; no tests or browser checks ran; no commit or push.
+
+
 ## 2026-08-07 - Inventory correction review and AI-control synchronization
 
 - **Agent / scope:** Synchronized active `.ai/` control files after the Local/Demo TSK-019–TSK-022 inventory correction review; no Production/UAT/hardware scope.
