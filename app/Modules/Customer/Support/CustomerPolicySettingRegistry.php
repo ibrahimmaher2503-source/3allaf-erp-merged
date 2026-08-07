@@ -164,6 +164,46 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Return and exchange print policy',
                 'description' => 'Reference, privacy, and output format; no return/exchange artifact is generated.',
             ],
+            'party.store_scope' => [
+                'title' => 'Party store scope',
+                'description' => 'Party-only store and operational context; no retail/party mixing is enabled.',
+            ],
+            'party.service_catalog' => [
+                'title' => 'Party service and package catalog',
+                'description' => 'Owner-configurable service/package master data; no booking line is created.',
+            ],
+            'party.schedule_timezone' => [
+                'title' => 'Party schedule and timezone',
+                'description' => 'Schedule, location, timezone, conflict, and reschedule convention; no calendar booking is enabled.',
+            ],
+            'party.customer_child' => [
+                'title' => 'Party customer and child data',
+                'description' => 'Required contact/child/privacy fields; no customer or child record is created in this slice.',
+            ],
+            'party.cancellation' => [
+                'title' => 'Party cancellation policy',
+                'description' => 'Cancellation and reschedule terms; no cancellation action is enabled.',
+            ],
+            'party.responsibility' => [
+                'title' => 'Party responsibility assignment',
+                'description' => 'Assigned staff/responsibility convention; no assignment is persisted.',
+            ],
+            'party.working_invoice' => [
+                'title' => 'Working invoice policy',
+                'description' => 'Editable-before-close and immutable-after-close convention; no invoice is created.',
+            ],
+            'party.price_policy' => [
+                'title' => 'Party price policy',
+                'description' => 'Owner-configurable service/package pricing; no amount or financial default is enabled.',
+            ],
+            'party.deposit_policy' => [
+                'title' => 'Party deposit policy',
+                'description' => 'Deposit/payment-on-account convention; no payment, receipt, or Party Wallet mutation is enabled.',
+            ],
+            'party.final_close' => [
+                'title' => 'Party final-close checklist',
+                'description' => 'Readiness checks before immutable final invoice; no final close is enabled.',
+            ],
         ];
     }
 }

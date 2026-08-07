@@ -13,6 +13,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-031 Party Bookings and Working Invoices readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev Party-only readiness slice for TSK-031 after reviewing party policy, customer/child/privacy, store/schedule, invoice/print, authorization, and current UI surfaces. No full party workflow claim.
+- **Completed:** Added ten `party.%` pending policy keys, Initial Setup readiness, guarded `/party/readiness`, party-only/privacy/no-price/final-close boundaries, and bilingual `UI-PTY-001` with stable targets.
+- **Verification actually run:** pre-implementation review of `/initial-setup`, `/customers/loyalty-readiness`, `/sales`, and `/purchasing/returns`; route discovery, Blade cache, locale parity `1448/1448`, Pint, PHPStan `[OK] No errors`, UI-PTY-001 PHP lint, Vite build, tutorial registry resolution, diff check, English/LTR and Arabic/RTL target/overflow/no-price probes, four-step guide completion, Initial Setup Arabic pending-card probe, and no-access HTTP 403.
+- **Remaining blockers / next action:** Booking/calendar/customer-child/invoice/payment/final-close mutations require owner-approved party policy/source contracts. Advance to TSK-032 with the same bounded Local/Dev discipline.
+- **Code, tests, browser, commit, push:** Manual browser evidence passed for the bounded slice; no PHPUnit/Pest or automated browser tests; local commit follows this documentation update; no push.
+
 ## 2026-08-07 - TSK-030 Returns and Exchanges readiness
 
 - **Agent / scope:** Completed the authorized Local/Dev source-safe readiness slice for TSK-030 after reviewing return policy, approval/SoD/audit, sales source, supplier-return separation, and UI contracts. No full return/exchange operation claim.

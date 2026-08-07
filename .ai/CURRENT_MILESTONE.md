@@ -1,9 +1,16 @@
-# Active Milestone — TSK-031 Party Bookings and Working Invoices
+# Active Milestone — TSK-032 Party Payments on Account and Party Balance
 
 **Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 5.1 — Party Bookings and Working Invoices
-**Status:** TSK-030 Local/Dev returns/exchanges readiness slice is completed and browser-verified. TSK-031 is now In Progress for source-safe party discovery/readiness.
-**Progress:** TSK-030 added `/pos/returns-readiness`, eight pending return policy keys, Initial Setup readiness, source/condition/settlement boundaries, and UI-POS-008. TSK-031 must first inspect party policy, customer/child/privacy, store/schedule, invoice, authorization, and print contracts; no party booking or customer mutation is authorized without explicit source/policy support.
+**Current milestone:** DM 5.2 — Party Payments on Account and Party Balance
+**Status:** TSK-031 Local/Dev Party-only booking/working-invoice readiness slice is completed and browser-verified. TSK-032 is now In Progress for source-safe payment/Party Wallet discovery/readiness.
+**Progress:** TSK-031 added `/party/readiness`, ten pending party policy keys, Initial Setup readiness, Party-only/privacy/no-price boundaries, and UI-PTY-001. TSK-032 must first inspect payment, receipt, evidence, balance, Party Wallet, idempotency, authorization, and document-sequence contracts; no payment, balance, or wallet mutation is authorized.
+
+---
+
+# Previous Milestone Record — TSK-031
+
+**Status:** Completed for the verified Local/Dev Party-only readiness slice; full party booking, calendar, customer/child, invoice, payment, Phase 5, UAT, and Production remain open.
+**Evidence:** Existing UI surfaces reviewed before implementation; guarded Party readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, and final diagnostics passed.
 
 ---
 

@@ -40,6 +40,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->name('returns.readiness');
 
+    Route::get('party/readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.readiness', [
+            'title' => __('Party Booking and Working Invoice Readiness'),
+            'description' => __('Review party-only stores, services, schedule, privacy, cancellation, pricing, and final-close prerequisites without creating a booking, customer, child, invoice, payment, or final receipt.'),
+            'items' => [
+                ['title' => __('Party store scope'), 'body' => __('Party stores and operational context remain separate from retail products and supplier returns.')],
+                ['title' => __('Services and packages'), 'body' => __('Service/package catalog, rental assets, consumables, and planned lines remain owner-configurable.')],
+                ['title' => __('Schedule and location'), 'body' => __('Date/time/location, timezone, conflict, reschedule, and contact rules remain PENDING.')],
+                ['title' => __('Customer, child, and privacy'), 'body' => __('Required contact, child, consent, privacy, and notes fields remain PENDING; no record is created.')],
+                ['title' => __('Cancellation and responsibility'), 'body' => __('Cancellation, reschedule, assigned responsibility, and operational ownership rules remain PENDING.')],
+                ['title' => __('Working invoice and final close'), 'body' => __('Editable-before-close, immutable-after-close, pricing, deposit, payment-on-account, and checklist rules remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
+
     Route::get('gift-receipts', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

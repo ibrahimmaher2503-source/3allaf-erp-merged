@@ -1,8 +1,8 @@
-# Active Handoff — TSK-031 Party Bookings and Working Invoices — 2026-08-07
+# Active Handoff — TSK-032 Party Payments on Account and Party Balance — 2026-08-07
 
-TSK-031 is now active. First inspect `docs/28-party-operations-policy.md`, existing customer/child/privacy/store/schedule/invoice/print/authorization contracts, and any routed party screens. The authorized scope is Local/Dev discovery/readiness: configurable `PENDING/TBD` party policy values, guarded empty/readiness UI, party-only/privacy/no-price boundaries, and bilingual browser evidence. No booking, customer/child, calendar, invoice, payment, or final-closure mutation is authorized without source/policy verification.
+TSK-032 is now active. First inspect `docs/28-party-operations-policy.md`, DEC-019, existing payment/receipt/evidence/document-sequence/wallet/authorization/audit contracts, retail payment screens, and Party-only boundaries. The authorized scope is Local/Dev discovery/readiness: configurable `PENDING/TBD` party payment/deposit/evidence/idempotency/overpayment/receipt/balance/Party Wallet values, guarded empty/readiness UI, and bilingual browser evidence. No payment posting, receipt creation, balance calculation, Party Wallet mutation, reversal, or financial settlement is authorized without source/policy verification.
 
-TSK-030 is complete for its verified Local/Dev source-safe readiness slice. `/pos/returns-readiness`, pending return policies, bilingual UI-POS-008, English/LTR and Arabic/RTL checks, HTTP 403 denial, and diagnostics are evidenced. Full returns/exchanges remain deferred.
+TSK-031 is complete for its verified Local/Dev Party-only readiness slice. `/party/readiness`, ten pending party policies, bilingual UI-PTY-001, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, and diagnostics are evidenced. Full party booking/calendar/customer-child/invoice operations remain deferred.
 
 ---
 

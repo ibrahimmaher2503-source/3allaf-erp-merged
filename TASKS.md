@@ -497,7 +497,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-031 — Implement Party Bookings and Working Invoices
 
-- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **In Progress — Local/Dev party-booking/working-invoice source-safe discovery/readiness plan active; party mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **Completed — verified Local/Dev Party-only booking/working-invoice readiness slice; booking/customer/invoice mutations remain deferred**.
 - **Title / Purpose / Description:** Deliver party-only booking/calendar, customer/child/schedule/location/contact/plans/responsibilities and editable working invoice frozen at final close.
 - **Traceability:** PTY-01–PTY-03, NFR-01–NFR-03; US-025; FLW-PTY-01–02; UI UI-PTY-001–003; AC-PTY-01–03; SEC-006, SEC-010–015, SEC-017, SEC-019–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 4 gate; BLK-015 mitigated by `docs/28-party-operations-policy.md`; final party stores, services/packages, schedule, cancellation, edit, responsibility, price, and real master data remain configurable or pending.
@@ -511,7 +511,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-032 — Implement Party Payments on Account and Party Balance
 
-- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **In Progress — Local/Dev party-payments/Party Wallet source-safe discovery/readiness plan active; payment and balance mutations remain gated**.
 - **Title / Purpose / Description:** Post multiple party payments, each with exact PRD receipt label, reconcile party balance and integrate only Party Wallet under approved policy.
 - **Traceability:** CUS-02, CUS-04, PTY-04, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-03, FLW-CUS-05; UI UI-PTY-004, UI-CUS-005; AC-CUS-02, AC-PTY-04; SEC-011–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031; `docs/28-party-operations-policy.md`; DEC-019 and final payment/deposit, receipt, evidence, overpayment, Party Wallet, and legal/financial values remain configurable or pending.

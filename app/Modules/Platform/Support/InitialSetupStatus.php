@@ -95,6 +95,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'party-policies',
+                'label' => (string) __('Party booking and working invoice policies'),
+                'description' => (string) __('Review party-only stores, services, schedule, privacy, cancellation, pricing, and final-close values; blanks remain PENDING and no party mutation is enabled.'),
+                'route' => route('party.readiness'),
+                'complete' => $this->partyPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -161,6 +169,15 @@ final class InitialSetupStatus
     {
         return CustomerPolicySettingVersion::query()
             ->where('key', 'like', 'return.%')
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function partyPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->where('key', 'like', 'party.%')
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->exists();

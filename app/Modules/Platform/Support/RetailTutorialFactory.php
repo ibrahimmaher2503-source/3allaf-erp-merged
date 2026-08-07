@@ -100,6 +100,7 @@ final class RetailTutorialFactory
             'UI-RET-005' => self::readiness('pos.financial-readiness', 'جاهزية الشؤون المالية لنقطة البيع', 'POS Financial Readiness', 'financial', 'TSK-024', 'POSF-01..04 and BLK-008'),
             'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
+            'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-POS-008' => self::readiness('returns.readiness', 'جاهزية المرتجعات والاستبدال', 'Returns and Exchanges Readiness', 'returns', 'TSK-030', 'RET-01..03'),
             'UI-POS-010' => self::readiness('gift.receipts', 'إيصالات الهدايا', 'Gift Receipts', 'gift-receipts', 'TSK-029', 'POS-07 / RET-04'),
             'UI-POS-011' => self::readiness('gift.cards', 'بطاقات الهدايا', 'Gift Cards', 'gift-cards', 'TSK-029', 'validity, holder, redemption, and void'),
@@ -191,6 +192,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
                 'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
                 'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'party' => [
+                'header' => ['ar' => 'حدود الحفلات والفاتورة العاملة', 'en' => 'Party and Working Invoice boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للمراجعة فقط؛ لا يتم إنشاء حجز أو عميل أو طفل أو فاتورة عاملة.', 'en' => 'This is review readiness only; no booking, customer, child, or working invoice is created.'],
+                'warning' => ['ar' => 'الفصل والخصوصية مطلوبان', 'en' => 'Separation and privacy are required'],
+                'warningBody' => ['ar' => 'تبقى متاجر الحفلات والخدمات والجدولة وبيانات الطفل وسياسة الإغلاق معلقة.', 'en' => 'Party stores, services, scheduling, child data, and final-close policy remain pending.'],
+                'cards' => ['ar' => 'راجع حدود الحجز', 'en' => 'Review booking boundaries'],
+                'summary' => ['ar' => 'تحقق من جاهزية الفاتورة', 'en' => 'Confirm invoice readiness'],
             ],
             'returns' => [
                 'header' => ['ar' => 'حدود المرتجعات والاستبدال', 'en' => 'Returns and Exchanges boundary'],

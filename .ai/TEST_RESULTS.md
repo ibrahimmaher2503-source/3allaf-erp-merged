@@ -26,6 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
+## TSK-031 Party Bookings and Working Invoices readiness — 2026-08-07
+
+- Reviewed `docs/28-party-operations-policy.md`, customer/child/privacy, store/schedule, invoice/numbering/print, authorization, and existing `/initial-setup`, `/customers/loyalty-readiness`, `/sales`, `/purchasing/returns` surfaces before implementation. No party booking, party invoice, customer-child, calendar, or party view/domain existed.
+- Implemented guarded Local/Dev `/party/readiness` under `party_bookings_invoices.view`; added ten `party.%` pending policy keys and Initial Setup `party-policies` step.
+- Screen is party-only and read-only: store scope, service/package catalog, schedule/location, customer/child/privacy, cancellation/responsibility, and working-invoice/final-close boundaries. No booking, customer, child, calendar, invoice, payment, Party Wallet, retail-product, supplier-return, or final-receipt mutation is enabled.
+- Added bilingual `UI-PTY-001` with Party-specific interactive guide and stable `party-readiness-*` targets.
+- Browser evidence: English/LTR and Arabic/RTL Admin screens rendered with all target groups, no overflow, no price-like output, no mutation controls, and no console errors observed. The four-step Party guide completed. Initial Setup Arabic showed the Party policy card with pending state and no overflow.
+- Authorization evidence: `demo-no-access` received Access Denied and HTTP `403` for `/party/readiness`.
+- Diagnostics passed: route discovery, Blade cache, locale parity `1448/1448`, targeted Pint, targeted PHPStan `[OK] No errors`, UI-PTY-001 PHP lint, Vite build, tutorial registry resolution, and `git diff --check`. No PHPUnit/Pest or automated browser tests were claimed.
+- Boundary: booking create/edit/reschedule/cancel, customer/child creation, calendar conflicts, service/package master data, responsibility, working-invoice changes/freeze, pricing, deposits, payment-on-account, operating orders, consumables, assets, final close, numbering, print, Phase 5, UAT, and Production remain deferred pending owner-approved policy/source contracts. Evidence is Local/Dev only.
+
 ## TSK-030 Returns and Exchanges readiness — 2026-08-07
 
 - Reviewed `docs/26-discount-return-policy.md`, `TASKS.md`, approval/SoD/audit contracts, existing `/sales` list/detail/print UI, and separate `/purchasing/returns` supplier-return UI before implementation. No retail customer return/exchange domain existed; supplier returns were kept separate.

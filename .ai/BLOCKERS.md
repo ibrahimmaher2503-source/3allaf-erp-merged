@@ -4,6 +4,12 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
+## TSK-031 Party Bookings and Working Invoices boundary — 2026-08-07
+
+The bounded Local/Dev TSK-031 slice is implemented and browser-verified. `/party/readiness` is protected by `party_bookings_invoices.view`, reads no party/customer/child/calendar/invoice/payment/wallet rows, and exposes party-only stores, services/packages, schedule/location, privacy, cancellation/responsibility, pricing, deposit, working-invoice, and final-close values as pending configuration. `UI-PTY-001` is bilingual with stable visible targets and Party-specific guide copy.
+
+Full booking/calendar/customer-child/invoice/payment/operating-order/final-close/print operations remain blocked by missing owner-approved party source and policy contracts. Retail products, supplier returns, Product Wallet, and retail customer mutations remain separate. This slice is Local/Dev evidence only; no Production/UAT approval is implied.
+
 ## TSK-030 Returns and Exchanges boundary — 2026-08-07
 
 The bounded Local/Dev TSK-030 slice is implemented and browser-verified. `/pos/returns-readiness` is protected by `returns_exchanges_gift_instruments.view`, reads no return/source/stock/payment/customer/wallet/Gift Card rows, and exposes source, eligibility window, condition/disposition, approval/settlement, and audit/print policies as pending configuration. `UI-POS-008` is bilingual with stable visible targets and Gift Receipt/source wording.
