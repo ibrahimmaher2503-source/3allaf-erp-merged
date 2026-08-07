@@ -2,6 +2,13 @@
 
 Statuses: `Approved`, `Proposed`, `Assumed`, `Deferred`, `Rejected`, or `Requires Owner Decision`.
 
+## DEC-064 — TSK-027 dynamic Local/Dev customer-policy settings
+
+**Date:** 2026-08-07
+**Status:** Approved for reversible Local/Dev settings/readiness slice; owner approval, customer/loyalty mutation, Phase 4, UAT, and Production deferred.
+
+The owner directed that TSK-027 decision values change dynamically from Settings. Implement `customer_policy_setting_versions` as an append-only text-value/versioned store, guarded by `company_settings.view/edit`, with existing audit events. The registry contains stable decision keys for phone/duplicate review, consent/purpose/retention, children scope, history visibility, retail/party loyalty rules, expiry, rounding, approval, and ledger integrity. Blank values remain `PENDING`; configured values are explicitly `Local value — owner approval required`. No `approved` state, approval bypass, customer/consent/loyalty/wallet/Gift Card records, calculation, ledger, or transaction consumes these values. Do not reuse `financial_setting_versions` for this non-financial policy domain.
+
 | ID | Date | Title | Status | Context and Decision | Alternatives / Reason | Impact | Related Requirements / Milestones | Owner |
 |---|---|---|---|---|---|---|---|---|
 | DEC-001 | 2026-08-02 | Laravel modular monolith | Approved | Use one Laravel modular-monolith repository, application, data model, and deployment with internal module boundaries. | Rejected microservices/headless split; Phase 1 benefits from simpler transactions, authorization, delivery, and operations. | Governs all implementation. | NFR-07; DM 1.1–6.4 | Project owner directive |

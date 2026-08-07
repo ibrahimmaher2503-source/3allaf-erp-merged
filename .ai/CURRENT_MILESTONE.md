@@ -2,8 +2,8 @@
 
 **Current phase:** Phase 4 local implementation exception (formal Phase 4 gate remains open)
 **Current milestone:** DM 4.1 — Customer Identity and Shared Loyalty Readiness
-**Status:** TSK-023 through TSK-026 have browser-verified Local/Dev/readiness boundaries; TSK-027 now has a browser-verified empty/read-only boundary. Customer, consent, loyalty, wallet, Gift Card, Production/UAT, and owner policy inputs remain open.
-**Progress:** `/customers/loyalty-readiness` is protected by the existing `pos_sales.view` gate only to protect an empty page. It creates/loads no customer, child, consent, history, loyalty, wallet, or Gift Card records; it records the contract and keeps TSK-028/029 separate. BLK-014 remains open.
+**Status:** TSK-023 through TSK-026 have browser-verified Local/Dev/readiness boundaries; TSK-027 has an implemented/browser-verified dynamic settings/readiness slice. The full customer, consent, loyalty, wallet, Gift Card, Production/UAT, and owner policy scope remains open.
+**Progress:** `/admin/settings/customer-loyalty` stores append-only Local/Dev policy versions behind company settings permissions; `/customers/loyalty-readiness` resolves the latest value per stable key and displays configured values as owner-pending. No customer/child/consent/history/loyalty/wallet/Gift Card records or mutations exist. TSK-028/029 remain separate and BLK-014 remains open.
 
 ---
 

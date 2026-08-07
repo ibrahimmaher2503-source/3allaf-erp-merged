@@ -437,12 +437,12 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-027 — Implement Customer Profiles and Shared Loyalty
 
-- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **Discovery/readiness boundary implemented and browser-verified; customer/loyalty mutation remains pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **Dynamic Local/Dev settings/readiness slice implemented and browser-verified; customer/loyalty mutation remains pending**.
 - **Title / Purpose / Description:** Deliver unique-phone customer/consent/contact/children, authorized unified history and shared activity-rule loyalty earn/redeem/expiry.
 - **Traceability:** MD-06, CUS-01, CUS-03–CUS-04, NFR-01–NFR-03; US-003, US-023; FLW-CUS-01–03; UI UI-CUS-001–003; AC-MD-06, AC-CUS-01, AC-CUS-03–04; SEC-006, SEC-010–012, SEC-015–021, SEC-027.
 - **Dependencies / Required Inputs:** Phase 3 gate; BLK-014 mitigated by `docs/27-customer-loyalty-wallet-gift-policy.md`; final consent wording, legal retention, loyalty rates, rounding, expiry, and approval values remain configurable or pending.
 - **Database Entities:** `customers`, `customer_children`, `loyalty_ledger`, sales/party source links, rule/version structures, `audit_logs`.
-- **Backend / Livewire / Blade Deliverables:** unique profile/duplicate review, purpose scopes, append-only locked loyalty actions; customer list/profile/loyalty screens.
+- **Backend / Livewire / Blade Deliverables:** Local/Dev append-only `customer_policy_setting_versions`, guarded customer-policy Settings screen, dynamic readiness values, and audit events are implemented; unique profile/duplicate review, purpose scopes, append-only locked loyalty actions, and customer list/profile/loyalty screens remain pending.
 - **UI / Flux / Alpine / Vite:** Flux Search/Table/Filters/Pagination/Form/Tabs/Cards/Timeline/Badges/Dialog; Alpine none; common assets.
 - **Suggested Packages:** None for loyalty engine; explicit rules. Customer phone library only if mature/necessary after locale review.
 - **Permissions / Validation / Audit / States / Print:** Customer Sensitive/Merge/Export; Loyalty View/Earn/Redeem/Adjust/Approve; phone/consent/source/rule/balance/expiry/idempotency; all access/movements; profile/loyalty statement.

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
+use App\Modules\Customer\Models\CustomerPolicySettingVersion;
+use App\Modules\Customer\Support\CustomerPolicySettingRegistry;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
@@ -54,8 +57,58 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('customers/loyalty-readiness', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.view'), 403);
 
-        return view('pages.customers.loyalty-readiness');
+        $definitions = CustomerPolicySettingRegistry::all();
+        $latest = CustomerPolicySettingVersion::query()
+            ->whereIn('key', array_keys($definitions))
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('key')
+            ->map(static fn ($versions) => $versions->first());
+
+        $decisionSettings = collect($definitions)->mapWithKeys(static fn (array $definition, string $key): array => [
+            $key => [
+                ...$definition,
+                'record' => $latest->get($key),
+            ],
+        ]);
+
+        return view('pages.customers.loyalty-readiness', compact('decisionSettings'));
     })->middleware('can:pos_sales.view')->name('customers.loyalty-readiness');
+
+    Route::get('admin/settings/customer-loyalty', function (Request $request) {
+        abort_unless($request->user()?->can('company_settings.view'), 403);
+
+        $definitions = CustomerPolicySettingRegistry::all();
+        $latest = CustomerPolicySettingVersion::query()
+            ->whereIn('key', array_keys($definitions))
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('key')
+            ->map(static fn ($versions) => $versions->first());
+
+        $settings = collect($definitions)->mapWithKeys(static fn (array $definition, string $key): array => [
+            $key => [
+                ...$definition,
+                'record' => $latest->get($key),
+            ],
+        ]);
+
+        return view('pages.admin.customer-loyalty-settings', compact('settings'));
+    })->middleware('can:company_settings.view')->name('admin.settings.customer-loyalty');
+
+    Route::post('admin/settings/customer-loyalty', function (Request $request, SaveCustomerPolicySettingAction $action) {
+        abort_unless($request->user()?->can('company_settings.edit'), 403);
+
+        $data = $request->validate([
+            'key' => ['required', 'string', 'max:120'],
+            'value' => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $action->execute($data['key'], $data['value'] ?? null, $data['notes'] ?? null);
+
+        return to_route('admin.settings.customer-loyalty')->with('status', 'Customer policy setting version saved locally; owner approval is still required.');
+    })->middleware('can:company_settings.edit')->name('admin.settings.customer-loyalty.save');
 
     Route::get('pos/financial-readiness', function (Request $request) {
         /** @var User $user */

@@ -1,6 +1,8 @@
-# Active Progress — TSK-027 Customer/Loyalty Readiness Boundary — 2026-08-07
+# Active Progress — TSK-027 Dynamic Customer/Loyalty Policy Settings — 2026-08-07
 
-**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, TSK-026, and TSK-027 have read-only/readiness boundaries only. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, conflict, customer, loyalty, wallet, or gift mutation is enabled.
+**Implementation status:** TSK-023 Local/Dev online POS slice is implemented and browser-verified; TSK-024, TSK-025, and TSK-026 retain read-only/readiness boundaries; TSK-027 now has an implemented/browser-verified dynamic Local/Dev settings/readiness slice. No financial, shift, cash movement, payment, variance, offline transaction, queue, sync, replay, conflict, customer, loyalty, wallet, or gift mutation is enabled.
+
+**TSK-027 dynamic settings evidence:** `customer_policy_setting_versions` is append-only and versioned; `/admin/settings/customer-loyalty` is guarded by company settings view/edit; `/customers/loyalty-readiness` resolves the latest values. One non-sensitive Local Demo value was saved as version 1 with actor/audit evidence and appeared in readiness while remaining owner-pending.
 **TSK-027 dependency evidence:** `docs/27`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, and `docs/57` were read. Customer identity/consent, shared loyalty, separate wallet, and Gift Card contracts are recorded, while BLK-014 legal/configuration values and Phase 4 remain pending.
 **Next boundary:** Keep `/customers/loyalty-readiness` empty/read-only until owner consent/rates/expiry/rounding/approval inputs and the Phase 4 gate are resolved; TSK-028/029 remain separate.
 
@@ -56,9 +58,9 @@ TSK-015 template artifact remains available at `docs/templates/TSK-015-purchase-
 | Phase 3 | DM 3.2 Discount and Payment Rules | Discovery/read-only boundary only | POSF-01..04 and BLK-008 remain pending; no financial mutation enabled | - | - | TSK-024 | Owner/configuration inputs required before implementation |
 | Phase 3 | DM 3.3 Cash Drawer and Shift Cycle | Not Started | 0% | - | - | TSK-025 | Blind close and variance |
 | Phase 3 | DM 3.4 Operational Integrity | Not Started | 0% | - | - | TSK-026 | Linkage and restricted offline baseline |
-| Phase 4 | DM 4.1 Customer Profile and Loyalty | Not Started | 0% | - | - | TSK-027 | Unique phone and shared loyalty |
+| Phase 4 | DM 4.1 Customer Profile and Loyalty | In Progress (dynamic Local/Dev settings/readiness slice) | Full customer/loyalty mutation, owner inputs, Phase 4/UAT/Production pending | 2026-08-07 | - | TSK-027 | Dynamic policy settings are browser-verified; BLK-014 and domain workflows remain open |
 | Phase 4 | DM 4.2 Separated Wallets | Not Started | 0% | - | - | TSK-028 | Product and Party separation |
-| Phase 4 | DM 4.3 Gift Cards and Gift Receipts | Not Started | 0% | - | - | TSK-029 | Gift instruments |
+
 | Phase 4 | DM 4.4 Returns and Exchanges | Not Started | 0% | - | - | TSK-030 | Inspection and settlement |
 | Phase 5 | DM 5.1 Booking and Preliminary Party Invoice | Not Started | 0% | - | - | TSK-031 | Booking and working invoice |
 | Phase 5 | DM 5.2 Deposits and Party Wallet | Not Started | 0% | - | - | TSK-032 | Receipt terminology needs owner decision |

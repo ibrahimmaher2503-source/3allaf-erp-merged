@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-027 dynamic Local/Dev policy settings
+
+- **Agent / scope:** Owner-directed follow-up after TSK-027 readiness; implemented only dynamic Local/Dev settings/readiness, not customer/loyalty domain mutation.
+- **Completed:** Added append-only/versioned `customer_policy_setting_versions`, stable decision-key registry, guarded `/admin/settings/customer-loyalty` GET/POST, existing audit event, and dynamic `/customers/loyalty-readiness` resolution.
+- **Files changed:** Customer migration/model/action/registry, retail routes, customer settings/readiness Blade views, bilingual locale files, `TASKS.md`, and active `.ai/` control records.
+- **Verification actually run:** Migration/status, PHP lint, targeted Pint, PHPStan 0 errors, Blade cache, route discovery, locale parity `1356/1356`, `git diff --check`, DB/audit invariant, authorized English LTR save/readiness, Arabic RTL readiness, no-access denial, no overflow, and no console errors observed.
+- **Remaining blockers / next action:** Configured values remain owner-pending; no approval bypass or downstream customer/loyalty/wallet/Gift Card behavior. BLK-014, Phase 4, TSK-028/029, UAT, and Production remain open.
+- **Code, tests, browser, commit, push:** Manual browser evidence passed; no PHPUnit/Pest or automated browser tests; commit pending; no push.
+
 ## 2026-08-07 - TSK-027 customer/loyalty readiness boundary implementation
 
 - **Agent / scope:** Read TSK-027 sources and implemented only the authorized Local/Dev empty/read-only boundary at `/customers/loyalty-readiness`.

@@ -14,11 +14,11 @@ Every screen row below explicitly inherits this contract unless its row states a
 
 Routes are proposals and must be reconciled with the actual future Laravel project. Implemented rows remain `In Progress` until code review and manual browser evidence; all other screens start `Not Started`.
 
-## TSK-027 customer/loyalty readiness reconciliation — 2026-08-07
+## TSK-027 customer/loyalty dynamic-settings reconciliation — 2026-08-07
 
-- The implemented local boundary is `/customers/loyalty-readiness`; it is an empty/read-only contract page, not the UI-CUS-001..003 implementation.
-- No customer profile, consent/child data, unified history, loyalty ledger/balance, rate/expiry/rounding, wallet, Gift Card, sensitive tab, export, or mutation control is exposed.
-- Existing `pos_sales.view` is reused only as a temporary server gate for the empty page; it does not grant customer/loyalty/wallet/Gift Card permissions. TSK-028 and TSK-029 remain separate.
+- `/admin/settings/customer-loyalty` is an implemented Local/Dev settings screen with 12 stable decision keys, append-only version saves, company settings view/edit gates, and no approval control. `/customers/loyalty-readiness` resolves the latest values and displays blank values as PENDING.
+- One non-sensitive Local Demo value was browser-saved and reflected in readiness as `Configured locally` plus `Owner approval required`; all other keys remained PENDING. English LTR, Arabic RTL, no overflow, no console errors, and denied-role evidence passed.
+- No customer profile, consent/child data, unified history, loyalty ledger/balance/calculation, wallet, Gift Card, sensitive tab, export, or transaction mutation is exposed. Existing `pos_sales.view` remains only the temporary read gate; company settings permissions do not grant customer/loyalty capabilities. TSK-028/029 remain separate.
 
 ## TSK-026 offline-readiness reconciliation — 2026-08-07
 - `UI-OFF-001` through `UI-OFF-003` remain full offline/PWA requirements, not complete screens. The implemented local boundary is `/pos/offline-readiness`, with disabled/pending state, OFF-01..OFF-05/NFR-04 cards, and PRD permitted/blocked classes only.

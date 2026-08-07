@@ -1,10 +1,12 @@
-# Active Handoff — TSK-027 Customer/Loyalty Readiness Boundary — 2026-08-07
+# Active Handoff — TSK-027 Dynamic Customer/Loyalty Policy Settings — 2026-08-07
 
-TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 through TSK-027 now have truthful read-only/readiness boundaries at `/pos/financial-readiness`, `/pos/shift-readiness`, `/pos/offline-readiness`, and `/customers/loyalty-readiness`, protected by the existing `pos_sales.view` gate.
+TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 through TSK-026 retain truthful read-only/readiness boundaries. TSK-027 now has a dynamic Local/Dev settings/readiness slice at `/admin/settings/customer-loyalty` and `/customers/loyalty-readiness`.
 
-TSK-027 records customer identity/consent, unified-history, shared-loyalty, and separate-instrument contracts without loading or mutating any customer/loyalty/wallet/Gift Card data. No customer model, migration, ledger, balance, rate, expiry, consent wording, sensitive tab, export, wallet action, Gift Card action, or new customer permission was invented. English LTR, Arabic RTL, authorized/no-access browser evidence, DOM safety probe, route protection, PHPStan, Blade, Vite, locale parity, and whitespace checks passed.
+`customer_policy_setting_versions` is append-only/versioned with actor and existing audit event. Settings are guarded by `company_settings.view/edit`; readiness uses `pos_sales.view` only for the existing read boundary. The authenticated browser saved one non-sensitive Demo value as version 1, readiness displayed it, Arabic RTL/English LTR rendered without overflow, and `demo-no-access` was denied. Blank values remain PENDING and configured values remain owner-pending; no approval state or bypass exists.
 
-TSK-027 remains a Local/Dev readiness boundary only: BLK-014, owner/legal/configuration inputs, Phase 4, TSK-028/029, UAT, and Production remain open. Preserve the empty boundary until an explicit authorization permits the next slice.
+No customer model/records, consent/child persistence, unified history, loyalty ledger/balance/rates/calculation, wallet, Gift Card, or transaction mutation was added. TSK-027 full domain scope, BLK-014, Phase 4, TSK-028/029, UAT, and Production remain open.
+
+TSK-027 remains a Local/Dev settings/readiness boundary only: BLK-014, owner/legal/configuration inputs, customer/loyalty domain mutation, Phase 4, TSK-028/029, UAT, and Production remain open. Preserve the dynamic settings display without enabling downstream customer or loyalty workflows.
 
 ---
 

@@ -1,5 +1,9 @@
 # Blocker Register
 
+## TSK-027 dynamic settings boundary — 2026-08-07
+
+The owner authorized dynamic Local/Dev customer-policy values. The reversible settings/readiness slice is implemented, but BLK-014 is not closed: configured values are not owner/legal approval and are not consumed by domain workflows. Consent/retention wording, children privacy, loyalty rates/tiers/earn rules, expiry/reversal, rounding, approval/SoD, ledger/idempotency, wallet, Gift Card, Phase 4, UAT, and Production inputs remain required.
+
 ## Next five task dependency audit — 2026-08-07
 
 The requested next sequence is `TSK-023` through `TSK-027`. Each task was read against its routed PRD, milestone, architecture, policy, data-contract, UI, print, and interaction sources before any implementation attempt.

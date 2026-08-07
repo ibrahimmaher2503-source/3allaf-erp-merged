@@ -1,5 +1,14 @@
 # Test and Verification Status
 
+## TSK-027 dynamic customer-policy settings verification — 2026-08-07
+
+- Required docs and existing settings/action/audit contracts were read before implementation. Owner direction authorized a reversible Local/Dev settings slice only.
+- Migration `2026_08_07_000005_create_customer_policy_setting_versions_table.php` applied successfully to local SQLite. The table is append-only/versioned with stable key/version uniqueness, actor, notes, and indexes.
+- Diagnostics passed: PHP lint, targeted Pint, PHPStan 0 errors for `app/Modules/Customer` and `routes/retail.php`, Blade cache, route discovery for GET/POST `/admin/settings/customer-loyalty` and GET `/customers/loyalty-readiness`, locale JSON/parity `1356/1356`, and `git diff --check`.
+- Database invariant passed after browser save: `setting_versions=1`, `version=1`, `created_by=1`, `audit_rows=1`, `customers_table=false`. The saved value was non-sensitive Local Demo verification text and remains owner-pending.
+- Browser evidence: `demo-admin` rendered Settings in English LTR, showed 12 PENDING forms, saved one value/version, and readiness reflected the value. Arabic readiness rendered RTL with the value and 11 remaining PENDING keys. `demo-no-access` received Access Denied for Settings. Visual checks showed usable cards/forms, no clipping/overflow, and no JavaScript errors observed.
+- Boundary: no approval state/bypass, customer/consent/child/history/loyalty ledger/balance/rate calculation, wallet, Gift Card, or transaction mutation. BLK-014, Phase 4, TSK-028/029, UAT, and Production remain open.
+
 ## TSK-027 customer/loyalty readiness boundary verification — 2026-08-07
 
 - Required sources were read before implementation: `docs/27`, `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, `docs/57`, US-003/US-023, and role/permission boundaries. No customer/loyalty/wallet/Gift Card implementation existed in the repository.

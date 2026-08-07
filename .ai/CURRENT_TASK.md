@@ -1,55 +1,46 @@
-# Current Task — TSK-027 Customer/Loyalty Readiness Boundary
+# Current Task — TSK-027 Dynamic Customer/Loyalty Policy Settings
 
 **Date:** 2026-08-07
 **Repository:** `/home/ubuntu/projects/toy-joy-phase-1-documentation`
-**Status:** TSK-023 through TSK-026 have browser-verified Local/Dev/readiness boundaries; TSK-027 is now a discovery/read-only boundary only. No customer, loyalty, wallet, or gift ledger exists in the repository.
+**Status:** TSK-027 empty/readiness boundary is browser-verified; this owner-directed follow-up adds a Local/Dev dynamic settings slice. Customer/loyalty/wallet/Gift Card transaction workflows remain deferred.
+
+## Owner direction
+
+The customer/loyalty decision cards must be dynamic and changeable from Settings. This authorizes a reversible Local/Dev settings slice, not Production/UAT policy approval or customer data mutation.
 
 ## Required reading completed
 
-- `TASKS.md`, `AI_INDEX.md`, current `.ai/` control records, Git status/stash, and TSK-027 dependencies.
+- `TASKS.md`, current `.ai/` control records, Git status/stash.
 - `docs/27-customer-loyalty-wallet-gift-policy.md`
-- `docs/31-pos-sales-specification.md`
-- `docs/35-document-state-machines.md`
-- `docs/36-module-data-contracts.md`
-- `docs/37-ui-screen-specifications.md`
-- `docs/38-print-export-specification.md`
-- `docs/57-ui-interaction-and-data-entry-standard.md`
-- `docs/05-user-stories.md` US-003/US-023 and `docs/04-roles-permissions.md` wallet/customer boundaries.
-- `DEC-014`, `DEC-015`, `DEC-060`, `BLK-014`, and TSK-023–TSK-026 evidence.
+- `docs/31`, `docs/35`, `docs/36`, `docs/37`, `docs/38`, `docs/46`, and `docs/57`.
+- US-003/US-023, role/permission boundaries, existing `FinancialSettingVersion`, `SaveLocalSettingsAction`, `RecordAuditEvent`, and settings routes/views.
 
-## Repository findings
+## Allowed scope
 
-- No customer, customer-child, loyalty, wallet, Gift Card model/migration/route exists.
-- No customer-specific permission contract is active; `pos_sales.view` is the existing verified read-only gate and will be reused only for this empty readiness page.
-- No customer records, loyalty rates, expiry/rounding rules, consent wording/retention, wallet values, or Gift Card data will be fabricated.
+- Add append-only `customer_policy_setting_versions` with stable decision keys, free-form owner/configuration value, version, actor, notes, and Local/Dev status.
+- Add a settings page and guarded save action under `company_settings.view/edit`.
+- Make `/customers/loyalty-readiness` resolve and display the latest value/version for every TSK-027 decision key, or `PENDING` when empty.
+- Audit every setting version through the existing append-only audit contract.
+- Preserve bilingual English/Arabic UI and RTL/LTR.
 
-## TSK-027 allowed scope
+## Forbidden scope
 
-- Add a server-gated empty/readiness page for customer identity, consent/children privacy, unified history, and shared loyalty contracts.
-- Show explicit PENDING cards for unique phone/duplicate review, legal consent/retention, purpose scopes, activity-specific loyalty rules, ledger/idempotency/expiry/rounding, insufficient-balance protection, and TSK-028/029 dependencies.
-- State that no customer/loyalty/wallet/gift records are loaded or mutated and that the gate reuse is not a customer capability grant.
-
-## Forbidden until explicit policy/configuration authorization
-
-- No customer/child/consent persistence, merge, export, sensitive history, or source linkage.
-- No loyalty rates, expiry/rounding, earn/redeem/adjustment, balance, approval, or ledger mutation.
-- No Product/Party Wallet records or cross-wallet behavior; TSK-028 remains separate.
-- No Gift Card/Gift Receipt records or issue/use/void/reprint behavior; TSK-029 remains separate.
-- No new permission grant, Demo customer data, legal wording, financial default, UAT/Production claim.
-- No PHPUnit/Pest or automated browser tests per DEC-012.
+- No `approved` state or approval bypass; every configured value remains `Owner approval required`.
+- No financial_setting_versions reuse for customer/legal/loyalty values.
+- No customer/child/consent persistence, history, loyalty ledger, earn/redeem, wallet, Gift Card, balance, rate calculation, expiry enforcement, or transaction mutation.
+- No defaults, Demo customer data, legal wording, production values, or new permission grants.
+- No PHPUnit/Pest or automated browser tests per repository policy.
 
 ## Implementation plan
 
-1. Add `GET /customers/loyalty-readiness` under `auth`, `verified`, and the existing `pos_sales.view` read-only gate; pass no customer/financial dataset.
-2. Render bilingual LTR/RTL empty/readiness cards with explicit PENDING states and disabled/no-action semantics.
-3. Verify source/route and inspect DOM/response for absence of customer records, balances, rates, ledger actions, wallet/gift actions, and sensitive values.
-4. Run PHP lint/Pint/PHPStan/Blade diagnostics, locale parity, `git diff --check`, and real browser authorized English/Arabic/no-access scenarios with console evidence.
-5. Synchronize `TASKS.md`, `CURRENT_MILESTONE`, `CURRENT_TASK`, `PROGRESS`, `TEST_RESULTS`, `HANDOFF`, `BLOCKERS`, `UI_SCREENS`, `DECISIONS`, and `SESSION_SUMMARY`; commit locally only.
+1. Create reversible versioned settings migration/model/registry/action with key allowlist, text-only values, append-only versioning, authorization, and audit.
+2. Add `GET /admin/settings/customer-loyalty` and `POST /admin/settings/customer-loyalty` with company settings permissions and a form for Local/Dev values/notes; blank value means PENDING.
+3. Update `/customers/loyalty-readiness` to read the latest version per key and show dynamic configured values without treating them as approved policy.
+4. Add bilingual translations and links between readiness and Settings.
+5. Run migration status/targeted migration, PHP lint/Pint/PHPStan, Blade cache, route checks, locale parity, Vite build, and `git diff --check`.
+6. Browser verify authorized English/Arabic empty settings, save one non-sensitive Demo policy value, refresh readiness to prove dynamic reflection, no-access denial, no mutation outside settings, no console errors/overflow.
+7. Synchronize `TASKS.md`, `.ai/PROGRESS`, `CURRENT_MILESTONE`, `TEST_RESULTS`, `HANDOFF`, `BLOCKERS`, `DECISIONS`, `UI_SCREENS`, and `SESSION_SUMMARY`; commit locally only.
 
-## Production non-claims
+## Non-claims
 
-This boundary does not complete TSK-027, DM 4.1, Phase 4, customer/loyalty policy, TSK-028/TSK-029, UAT, or Production readiness. BLK-014 and owner-configurable consent/rates/expiry/rounding/approval values remain open.
-
-## Next action
-
-Implement only the planned `/customers/loyalty-readiness` empty/read-only boundary, then verify and synchronize records. Keep TSK-025/TSK-026 policy boundaries open and do not create customer, loyalty, wallet, or gift data.
+This follow-up proves only dynamic Local/Dev policy display/configuration. It does not approve the values, implement customer/loyalty workflows, close BLK-014, close Phase 4, or claim UAT/Production readiness.
