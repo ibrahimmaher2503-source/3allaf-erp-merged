@@ -1,8 +1,15 @@
-# Active Progress — TSK-029 Gift Cards and Gift Receipts — 2026-08-07
+# Active Progress — TSK-030 Returns and Exchanges — 2026-08-07
 
-**Implementation status:** TSK-029 Local/Dev foundation/readiness plan is In Progress. TSK-028 separate Product/Party Wallet foundation/readiness is complete and browser-verified; full wallet operations remain deferred.
+**Implementation status:** TSK-029 Gift Card/Gift Receipt Local/Dev foundation/readiness slice is complete and browser-verified. TSK-030 is In Progress for source-safe returns/exchanges discovery and readiness only.
 
-**Next boundary:** Inspect existing sales/payment/numbering/audit/print contracts, then expose missing Gift Card/Gift Receipt policy values through Initial Setup as `PENDING/TBD` and add only source-safe guarded empty/readiness UI. No Gift Card/Gift Receipt issue/use/redeem/void/expiry/print mutation or fake references are authorized.
+**Next boundary:** Inspect existing returns/reversals/source-line/stock/audit/authorization contracts, then expose undocumented return reasons, eligibility windows, approvals, disposition, refund/exchange, numbering, and print values as `PENDING/TBD` without enabling mutations.
+
+---
+
+# Previous Active Progress — TSK-029 Gift Cards and Gift Receipts — 2026-08-07
+
+**Implementation status:** TSK-029 Local/Dev foundation/readiness slice is complete and browser-verified. Guarded `/gift-receipts` and `/gift-cards`, pending Setup values, no-price/privacy boundaries, bilingual guides, HTTP 403 denial, and final diagnostics passed.
+**Boundary:** Full issue/reference/balance/redeem/void/expiry/privacy/numbering/source reconciliation/print behavior, Phase 4, UAT, and Production remain open.
 
 ---
 

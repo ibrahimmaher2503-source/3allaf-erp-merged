@@ -21,6 +21,48 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('gift-receipts', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
+
+        return view('pages.gift-instruments.readiness', [
+            'kind' => 'gift-receipts',
+            'title' => __('Gift Receipts'),
+            'description' => __('Price-free source-reference readiness; issue, validate, reprint, and use remain disabled.'),
+            'boundary' => __('Gift Receipt policy values are configurable from Settings, but no source sale lines or receipt references are loaded until eligibility, privacy, numbering, and format are approved.'),
+            'items' => [
+                ['title' => __('Source eligibility'), 'detail' => __('Eligible approved-sale lines, return context, and source linkage remain PENDING.')],
+                ['title' => __('Price-free output'), 'detail' => __('A Gift Receipt must exclude unit price, discount, tax, total, and any price-inference field.')],
+                ['title' => __('Reprint and privacy'), 'detail' => __('Reprint reason, authorization, privacy scope, and immutable history remain PENDING.')],
+                ['title' => __('Format and numbering'), 'detail' => __('Reference format, numbering, and print template remain PENDING; no artifact is generated.')],
+            ],
+            'emptyTitle' => __('No Gift Receipt references yet'),
+            'emptyBody' => __('The empty state is intentional. Add owner-approved policy values first; do not create a Gift Receipt from this screen.'),
+        ]);
+    })->middleware('can:returns_exchanges_gift_instruments.view')->name('gift.receipts');
+
+    Route::get('gift-cards', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
+
+        return view('pages.gift-instruments.readiness', [
+            'kind' => 'gift-cards',
+            'title' => __('Gift Cards'),
+            'description' => __('Gift Card ledger readiness; issue, balance, redeem, void, and expiry remain disabled.'),
+            'boundary' => __('Gift Card policy values are configurable from Settings, but no identifier, balance, holder, payment, ledger entry, or redemption is loaded until source and validity policies are approved.'),
+            'items' => [
+                ['title' => __('Unique identifier'), 'detail' => __('Identifier format, uniqueness, concurrency, and source reference remain PENDING.')],
+                ['title' => __('Validity and expiry'), 'detail' => __('Validity period and expired-use blocking remain PENDING; no card is active.')],
+                ['title' => __('Holder and privacy'), 'detail' => __('Holder/reference purpose and role-safe visibility remain PENDING; no holder data is loaded.')],
+                ['title' => __('Redemption and void'), 'detail' => __('Partial/full use, overuse, void reason, approval, and immutable ledger rules remain PENDING.')],
+            ],
+            'emptyTitle' => __('No Gift Cards yet'),
+            'emptyBody' => __('The empty state is intentional. Add owner-approved policy values first; do not issue or redeem a Gift Card from this screen.'),
+        ]);
+    })->middleware('can:returns_exchanges_gift_instruments.view')->name('gift.cards');
+
     Route::get('wallets/product', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

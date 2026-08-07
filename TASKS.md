@@ -467,7 +467,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-029 — Implement Gift Cards and Gift Receipts
 
-- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **In Progress — Local/Dev gift-card/gift-receipt foundation/readiness plan active; full issue/redeem/print operations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **Completed — verified Local/Dev Gift Card/Gift Receipt foundation/readiness slice; full issue/redeem/void/expiry/print remains deferred**.
 - **Title / Purpose / Description:** Deliver price-free Gift Receipt issue/reprint/use and unique Gift Card issue/balance/partial/full redeem/void/expiry ledger.
 - **Traceability:** POS-07, RET-02, RET-04, NFR-01–NFR-03, NFR-06; US-019, US-021; FLW-POS-04, FLW-RET-03; UI UI-POS-010–011; AC-POS-07, AC-RET-02, AC-RET-04; SEC-011–012, SEC-015–020, SEC-024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-028; `docs/27-customer-loyalty-wallet-gift-policy.md`; final Gift Card/Gift Receipt eligibility, validity, holder, void, reprint, and format values remain configurable or pending.
@@ -481,7 +481,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-030 — Implement Returns and Exchanges
 
-- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **In Progress — Local/Dev returns/exchanges source-safe discovery/readiness boundary active; refund/exchange/restock mutations remain gated**.
 - **Title / Purpose / Description:** Validate original invoice/Gift Receipt, inspect condition/approval, then same/different exchange, cash refund, or Gift Card settlement with stock disposition and references.
 - **Traceability:** RET-01–RET-03, NFR-01–NFR-03, NFR-06; US-020; FLW-RET-01–02; UI UI-POS-008–010; AC-RET-01–03; SEC-006, SEC-011–012, SEC-015, SEC-017–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-029; BLK-013 mitigated by `docs/26-discount-return-policy.md`; final return window, exceptions, condition, refund, approval, non-saleable, and damage values remain configurable or pending.

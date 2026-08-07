@@ -79,6 +79,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'gift-instruments',
+                'label' => (string) __('Gift Card and Gift Receipt policies'),
+                'description' => (string) __('Review eligibility, validity, holder, void, reprint, and format values; blanks remain PENDING and no instrument mutation is enabled.'),
+                'route' => route('gift.receipts'),
+                'complete' => $this->giftPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -127,6 +135,15 @@ final class InitialSetupStatus
     {
         return CustomerPolicySettingVersion::query()
             ->where('key', 'like', 'wallet.%')
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function giftPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->where('key', 'like', 'gift.%')
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->exists();

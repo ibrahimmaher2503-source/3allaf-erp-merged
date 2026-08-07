@@ -1,9 +1,16 @@
-# Active Milestone — TSK-029 Gift Cards and Gift Receipts
+# Active Milestone — TSK-030 Returns and Exchanges
 
 **Current phase:** Phase 4 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 4.3 — Gift Cards and Gift Receipts
-**Status:** TSK-029 Local/Dev foundation/readiness plan is In Progress. Full issue/redeem/void/expiry/print and source reconciliation remain open.
-**Progress:** TSK-028 separate Product/Party Wallet foundation/readiness slice is complete and browser-verified. TSK-029 must expose undocumented eligibility, validity, holder, void, reprint, format, and privacy values through Initial Setup/Settings as `PENDING/TBD`; no Gift Card/Gift Receipt rows or financial mutations are authorized before source/policy verification.
+**Current milestone:** DM 4.4 — Returns and Exchanges
+**Status:** TSK-029 Local/Dev Gift Card/Gift Receipt foundation/readiness slice is completed and browser-verified. TSK-030 is now In Progress for a source-safe returns/exchanges readiness boundary.
+**Progress:** TSK-029 added guarded `/gift-receipts` and `/gift-cards` screens, pending Setup policy values, no-price/privacy boundaries, and `UI-POS-010`/`UI-POS-011`. TSK-030 must first inspect sales/returns/stock/audit/authorization contracts and preserve pending return reasons, windows, approvals, disposition, refund, exchange, and customer-policy inputs.
+
+---
+
+# Previous Milestone Record — TSK-029
+
+**Status:** Completed for the verified Local/Dev foundation/readiness slice; full Gift Card/Gift Receipt operations, source reconciliation, Phase 4, UAT, and Production remain open.
+**Evidence:** Guarded gift routes, pending Setup values, empty/readiness UI, no-price/privacy boundaries, bilingual Gift-specific guides, English/LTR and Arabic/RTL browser checks, HTTP 403 denial, registry/routes/PHPStan/Pint/Blade/locale/build diagnostics passed.
 
 ---
 

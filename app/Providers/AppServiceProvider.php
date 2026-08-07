@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
             'drawers_payments_tax_numbering_printers.view', 'drawers_payments_tax_numbering_printers.create',
             'drawers_payments_tax_numbering_printers.edit', 'drawers_payments_tax_numbering_printers.logical_delete',
             'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
-            'dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
+            'dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
             'products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit',
             'products_categories_brands.logical_delete', 'products_categories_brands.print', 'products_categories_brands.approve',
             'products_categories_brands.export', 'products_categories_brands.reverse', 'products_categories_brands.cancel',

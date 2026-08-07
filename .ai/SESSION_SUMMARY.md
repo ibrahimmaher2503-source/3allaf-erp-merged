@@ -13,6 +13,14 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-029 Gift Cards and Gift Receipts readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev foundation/readiness slice for TSK-029 after reviewing gift policy, POS sales/payment/numbering/print, authorization, and UI contracts. No full Gift Card/Gift Receipt operation claim.
+- **Completed:** Added configurable pending policy keys, Initial Setup readiness, guarded `/gift-receipts` and `/gift-cards` screens, empty/privacy/no-price boundaries, and bilingual `UI-POS-010`/`UI-POS-011` guides with Gift-specific copy.
+- **Verification actually run:** route discovery, Blade cache, locale parity `1408/1408`, Pint, PHPStan `[OK] No errors`, Vite build, diff check, English/LTR and Arabic/RTL geometry/no-overflow/no-price browser probes, Gift Receipt four-step tour, Gift Card tour start, Initial Setup pending-state rendering, and no-access HTTP 403.
+- **Remaining blockers / next action:** Full issue/reference/balance/redeem/void/expiry/numbering/privacy/print behavior requires owner-approved policy and source contracts. Advance to TSK-030 with the same bounded Local/Dev discipline.
+- **Code, tests, browser, commit, push:** Manual browser evidence passed for the bounded slice; no PHPUnit/Pest or automated browser tests; local commit follows this documentation update; no push.
+
 ## 2026-08-07 - TSK-028 separated Product/Party Wallet foundation
 
 - **Agent / scope:** Implemented the authorized Local/Dev foundation/readiness slice for TSK-028 after reviewing routed wallet/customer/security/UI docs; no Production/UAT or wallet mutation claim.

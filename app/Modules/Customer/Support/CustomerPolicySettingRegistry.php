@@ -100,6 +100,38 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Party Wallet visibility scope',
                 'description' => 'Role and source visibility convention; no cross-scope exposure is enabled.',
             ],
+            'gift.receipt.eligibility' => [
+                'title' => 'Gift Receipt eligibility policy',
+                'description' => 'Eligible sale lines/source conditions; no Gift Receipt issue or use is enabled.',
+            ],
+            'gift.receipt.reprint' => [
+                'title' => 'Gift Receipt reprint policy',
+                'description' => 'Reprint reason, privacy, and authorization convention; no print artifact is created.',
+            ],
+            'gift.receipt.format' => [
+                'title' => 'Gift Receipt format',
+                'description' => 'Owner-configurable format and reference fields; prices remain prohibited.',
+            ],
+            'gift.card.validity' => [
+                'title' => 'Gift Card validity policy',
+                'description' => 'Validity/expiry convention; no Gift Card balance or expiry action is enabled.',
+            ],
+            'gift.card.holder' => [
+                'title' => 'Gift Card holder policy',
+                'description' => 'Holder/reference and privacy convention; no card reference is created.',
+            ],
+            'gift.card.redemption' => [
+                'title' => 'Gift Card redemption policy',
+                'description' => 'Partial/full redemption and concurrency convention; no redemption is enabled.',
+            ],
+            'gift.card.void' => [
+                'title' => 'Gift Card void policy',
+                'description' => 'Void reason and approval convention; no void action is enabled.',
+            ],
+            'gift.card.format' => [
+                'title' => 'Gift Card format',
+                'description' => 'Identifier/reference and issue/use output convention; no card is issued.',
+            ],
         ];
     }
 }

@@ -26,7 +26,19 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-027 dynamic customer-policy settings verification — 2026-08-07
+## TSK-029 Gift Cards and Gift Receipts readiness — 2026-08-07
+
+- Reviewed the gift-card/gift-receipt policy, sales/payment/numbering/print contracts, authorization baseline, and active control files before implementation.
+- Implemented guarded Local/Dev readiness screens at `/gift-receipts` and `/gift-cards` using `returns_exchanges_gift_instruments.view`. No references, balances, prices, holder data, payments, ledger entries, issue/redeem/void/expiry actions, or print artifacts are loaded.
+- Added the Gift Card/Gift Receipt policy registry and an Initial Setup `gift-instruments` step. Missing eligibility, validity, holder, void, reprint, format, privacy, identifier, and redemption values remain blank/PENDING; local configuration is not approval.
+- Added bilingual `UI-POS-010` and `UI-POS-011` definitions with distinct Gift-specific Page Guide copy and stable visible `data-guide` targets.
+- Browser evidence: `demo-admin` rendered both screens in English/LTR and Arabic/RTL; all five targets per screen existed and were visible, no horizontal overflow was observed, no price-like numeric output was present, and no console errors were observed. Gift Card interactive tour opened and began at `Gift Card boundary`; Gift Receipt tour progressed through all four steps.
+- Authorization evidence: `demo-no-access` received HTTP `403` for `/gift-cards`; direct access did not expose gift data.
+- Initial Setup evidence: Arabic `/initial-setup` showed the Gift Card/Gift Receipt policy step as pending with no overflow.
+- Diagnostics passed: route discovery (`gift-cards`, `gift-receipts`), Blade cache, locale parity `1408/1408`, targeted Pint, targeted PHPStan `[OK] No errors`, registry returned UI-POS-010/011, Vite build, and `git diff --check`. No PHPUnit/Pest or automated browser tests were claimed.
+- Boundary: full issue, balance, partial/full redeem, void, expiry, source reconciliation, privacy enforcement, numbering, and print workflows remain deferred pending owner-approved policies and source contracts. Evidence is Local/Dev only.
+
+## TSK-027 dynamic customer/loyalty settings reconciliation — 2026-08-07
 
 - Required docs and existing settings/action/audit contracts were read before implementation. Owner direction authorized a reversible Local/Dev settings slice only.
 - Migration `2026_08_07_000005_create_customer_policy_setting_versions_table.php` applied successfully to local SQLite. The table is append-only/versioned with stable key/version uniqueness, actor, notes, and indexes.

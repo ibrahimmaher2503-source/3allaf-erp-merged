@@ -25,6 +25,14 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
+## TSK-029 Gift Cards and Gift Receipts screens — 2026-08-07
+
+- `/gift-receipts` (`UI-POS-010`) and `/gift-cards` (`UI-POS-011`) are implemented as separate guarded read-only readiness screens under `returns_exchanges_gift_instruments.view`.
+- Gift Receipt UI explicitly states price-free output, source eligibility, privacy/reprint, numbering/format, and no-reference empty state. Gift Card UI explicitly states identifier, validity/expiry, holder/privacy, redemption/void, and no-card empty state.
+- Both screens expose stable header/boundary/summary/first-card/empty targets, links to the companion screen and pending policy settings, no mutation controls, no price-like values, and no seeded instrument data.
+- English/LTR and Arabic/RTL browser review passed with no page overflow; authorized Admin saw both screens and the Gift Card tour began at the Gift-specific `Gift Card boundary`. `demo-no-access` was denied with HTTP 403.
+- Full issue/use/redeem/void/expiry/print UI remains intentionally absent until policy/source approval.
+
 ## TSK-027 customer/loyalty dynamic-settings reconciliation — 2026-08-07
 
 - `/admin/settings/customer-loyalty` is an implemented Local/Dev settings screen with 12 stable decision keys, append-only version saves, company settings view/edit gates, and no approval control. `/customers/loyalty-readiness` resolves the latest values and displays blank values as PENDING.

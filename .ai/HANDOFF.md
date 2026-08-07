@@ -1,8 +1,8 @@
-# Active Handoff — TSK-029 Gift Cards and Gift Receipts — 2026-08-07
+# Active Handoff — TSK-030 Returns and Exchanges — 2026-08-07
 
-TSK-029 is now active. First inspect the existing sales/payment/document-sequence/audit/protected-print contracts and the routed Gift Card/Gift Receipt policies. The authorized scope is Local/Dev foundation/readiness: configurable `PENDING/TBD` policy values, guarded empty/read-only screens, privacy/no-price boundaries, and bilingual UI evidence. No Gift Card/Gift Receipt issue, balance, partial/full redeem, void, expiry, payment, reference, or print mutation is authorized without source and policy verification.
+TSK-030 is now active. First inspect existing returns/reversals/source-line/stock/audit/authorization contracts and the routed POS/return screens. The authorized scope is Local/Dev discovery/readiness: configurable `PENDING/TBD` return-policy values, guarded empty/readiness UI, source/tenant/branch boundaries, and bilingual browser evidence. No return authorization, refund, exchange, restock, payment reversal, customer mutation, wallet/Gift Card mutation, or print artifact is authorized without source/policy verification.
 
-TSK-028 is complete for its verified Local/Dev foundation/readiness slice. Separate wallet tables/models, permissions/routes, Setup values, UI tours, denial, zero-row integrity, and diagnostics are evidenced. Full wallet linkage, balances, settlement, correction, reconciliation, Phase 4, UAT, and Production remain open.
+TSK-029 is complete for its verified Local/Dev foundation/readiness slice. Guarded `/gift-receipts` and `/gift-cards`, pending Setup policies, no-price/privacy boundaries, Gift-specific bilingual guides, English/LTR and Arabic/RTL checks, HTTP 403 denial, and final diagnostics are evidenced. Full Gift Card/Gift Receipt operations remain deferred.
 
 ---
 

@@ -4,6 +4,12 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
+## TSK-029 Gift Cards and Gift Receipts boundary — 2026-08-07
+
+The bounded Local/Dev TSK-029 slice is implemented and browser-verified. `/gift-receipts` and `/gift-cards` are protected by `returns_exchanges_gift_instruments.view`, show empty/readiness states with no prices, references, balances, holder data, payment, or print artifacts, and link to configurable pending policies. `UI-POS-010` and `UI-POS-011` have bilingual Gift-specific guides and stable visible targets.
+
+Full issue, reference generation, balance, redemption, partial/full use, void, expiry, privacy enforcement, numbering, source reconciliation, and print workflows remain blocked by missing owner-approved eligibility/validity/holder/void/reprint/format/privacy/source values. This slice is Local/Dev evidence only; no Production/UAT approval is implied.
+
 ## TSK-027 dynamic settings boundary — 2026-08-07
 
 The owner authorized dynamic Local/Dev customer-policy values. The reversible settings/readiness slice is implemented, but BLK-014 is not closed: configured values are not owner/legal approval and are not consumed by domain workflows. Consent/retention wording, children privacy, loyalty rates/tiers/earn rules, expiry/reversal, rounding, approval/SoD, ledger/idempotency, wallet, Gift Card, Phase 4, UAT, and Production inputs remain required.
