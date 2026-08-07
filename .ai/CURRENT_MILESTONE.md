@@ -1,15 +1,15 @@
-# Active Milestone — TSK-033 Party Operating Orders and Consumable Movements
+# Active Milestone — TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return
 
 **Current phase:** Phase 5 local implementation exception (formal Phase 4 gate remains open)
-**Current milestone:** DM 5.3 — Party Operating Orders and Consumable Movements
-**Status:** TSK-032 Local/Dev Party payment/balance readiness slice is completed and browser-verified. TSK-033 is now In Progress for source-safe operating-order/consumable discovery/readiness.
-**Progress:** TSK-032 added `/party/payments-readiness`, nine pending payment/balance policy keys, Initial Setup visibility, Party Wallet/Product Wallet separation, and UI-PTY-004. TSK-033 must first inspect operating-order, party-store, consumable/UOM, stock, issue/return, approval, idempotency, audit, and print contracts; no stock or operating mutation is authorized.
+**Current milestone:** DM 5.4 — Rental Asset Lifecycle
+**Status:** TSK-033 Local/Dev Party operating-order/consumable readiness slice is completed and browser-verified. TSK-034 is now In Progress for source-safe rental asset/calendar discovery/readiness.
+**Progress:** TSK-033 added `/party/operating-readiness`, nine pending operating/consumable policy keys, Initial Setup visibility, retail/product inventory separation, and UI-PTY-005. TSK-034 must first inspect `docs/29-rental-asset-policy.md`, asset/register/calendar/reservation/checkout/return/condition/evidence/approval/audit/print contracts; no asset or reservation mutation is authorized.
 
 ---
-# Previous Milestone Record — TSK-032
+# Previous Milestone Record — TSK-033
 
-**Status:** Completed for verified Local/Dev Party payment/balance readiness; payment posting, receipts, balances, reversals, settlement, and wallet entries remain open.
-**Evidence:** PaymentMethod and existing readiness/Party Wallet surfaces reviewed; guarded payment readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
+**Status:** Completed for verified Local/Dev Party operating-order/consumable readiness; order release, stock reservation/movement, issue/return, balance edit, completion, and print remain open.
+**Evidence:** Party policy and existing retail inventory/stock UI/models reviewed; guarded operating readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, tour, and final diagnostics passed.
 
 ---
 

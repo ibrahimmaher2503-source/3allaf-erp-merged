@@ -111,6 +111,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'party-operating-policies',
+                'label' => (string) __('Party operating-order and consumable policies'),
+                'description' => (string) __('Review Party-only operating order, consumable, issue, return, reconciliation, approval, audit, and print values; blanks remain PENDING and no stock mutation is enabled.'),
+                'route' => route('party.operating.readiness'),
+                'complete' => $this->partyOperatingPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -205,6 +213,25 @@ final class InitialSetupStatus
                 'party.balance',
                 'party.wallet_settlement',
                 'party.payment_approval',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function partyOperatingPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'party.operating_order',
+                'party.operating_store',
+                'party.consumable_uom',
+                'party.issue_actuals',
+                'party.return_movement',
+                'party.stock_reconciliation',
+                'party.operating_approval',
+                'party.operating_idempotency',
+                'party.operating_print',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

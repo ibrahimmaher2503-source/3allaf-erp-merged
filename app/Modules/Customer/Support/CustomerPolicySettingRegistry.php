@@ -240,6 +240,42 @@ final class CustomerPolicySettingRegistry
                 'title' => 'Party payment approval and SoD',
                 'description' => 'Create/approve/reverse separation and actor scope; no approval action is enabled.',
             ],
+            'party.operating_order' => [
+                'title' => 'Party operating-order lifecycle',
+                'description' => 'Draft, release, execute, complete, and immutable history rules; no order is created.',
+            ],
+            'party.operating_store' => [
+                'title' => 'Party store and resource scope',
+                'description' => 'Party-only store, service, rental, responsibility, and source scope; no stock is reserved.',
+            ],
+            'party.consumable_uom' => [
+                'title' => 'Party consumables and UOM',
+                'description' => 'Consumable catalog, units, fractions, availability, and source mapping; no quantity is rendered.',
+            ],
+            'party.issue_actuals' => [
+                'title' => 'Party issue and actual consumption',
+                'description' => 'Issue, actual, controlled additions/removals, and operator evidence; no issue is posted.',
+            ],
+            'party.return_movement' => [
+                'title' => 'Party unused return movement',
+                'description' => 'Eligible unused return, referenced movement, condition, and approval rules; no return is posted.',
+            ],
+            'party.stock_reconciliation' => [
+                'title' => 'Party stock reconciliation',
+                'description' => 'Source, balance, concurrency, and no-direct-edit rules; no stock balance is changed.',
+            ],
+            'party.operating_approval' => [
+                'title' => 'Party operating approval and SoD',
+                'description' => 'Release, issue, return, override, and completion separation; no approval action is enabled.',
+            ],
+            'party.operating_idempotency' => [
+                'title' => 'Party operating idempotency and audit',
+                'description' => 'Duplicate, retry, lock, audit, and immutable history rules; no movement is created.',
+            ],
+            'party.operating_print' => [
+                'title' => 'Party operating print boundary',
+                'description' => 'Order, issue, return, privacy, and print format rules; no document is generated.',
+            ],
         ];
     }
 }

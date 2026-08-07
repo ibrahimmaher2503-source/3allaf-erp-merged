@@ -1,12 +1,12 @@
-# Active Progress — TSK-033 Party Operating Orders and Consumable Movements — 2026-08-07
+# Active Progress — TSK-034 Rental Asset Master, Calendar, Reservation, Checkout, and Return — 2026-08-07
 
-**Implementation status:** TSK-032 Party payment/balance Local/Dev readiness slice is complete and committed as `LOCAL_COMMIT_PENDING`; TSK-033 is active for source-safe operating-order/consumable discovery/readiness.
+**Implementation status:** TSK-033 Party operating-order/consumable Local/Dev readiness slice is complete and ready for commit; TSK-034 is active for source-safe rental asset/calendar discovery/readiness.
 
-**Completed before this task:** TSK-032 reviewed PaymentMethod, financial/invoice readiness, Party Wallet boundary; added pending policy values, `/party/payments-readiness`, UI-PTY-004, bilingual browser evidence, no-access 403, diagnostics, and local commit.
+**Completed before this task:** TSK-033 reviewed party policy and retail inventory/stock models/UI; added pending operating/consumable policy values, `/party/operating-readiness`, UI-PTY-005, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
 
-**Next concrete step:** inspect party operating-order, consumable/UOM, inventory stock, issue/return, approval, audit, idempotency, document sequence, print, and existing UI contracts before changing code.
+**Next concrete step:** inspect `docs/29-rental-asset-policy.md`, asset/register/category/location, calendar/reservation/checkout/return, condition/evidence, approval, audit, idempotency, document sequence, print, and existing UI contracts before changing code.
 
-**Boundary:** no party operating-order mutation, consumable issue/return, stock movement, direct balance edit, or completion is enabled.
+**Boundary:** no asset master mutation, reservation, checkout, return, condition posting, maintenance, stock movement, or financial behavior is enabled.
 
 ---
 
@@ -93,7 +93,7 @@ TSK-015 template artifact remains available at `docs/templates/TSK-015-purchase-
 
 | Phase 4 | DM 4.4 Returns and Exchanges | Not Started | 0% | - | - | TSK-030 | Inspection and settlement |
 | Phase 5 | DM 5.1 Booking and Preliminary Party Invoice | Not Started | 0% | - | - | TSK-031 | Booking and working invoice |
-| Phase 5 | DM 5.2 Deposits and Party Wallet | Not Started | 0% | - | - | TSK-032 | Receipt terminology needs owner decision |
+| Phase 5 | DM 5.2 Deposits and Party Wallet | Completed — Local/Dev readiness | 100% | `57c62f8` | `2026-08-07` | TSK-032 | Receipt terminology needs owner decision |
 | Phase 5 | DM 5.3 Party Execution | Not Started | 0% | - | - | TSK-033 | Operating orders and consumables |
 | Phase 5 | DM 5.4 Rental Asset Lifecycle | Not Started | 0% | - | - | TSK-034 to TSK-035 | Reservation through damage and depreciation |
 | Phase 5 | DM 5.5 Final Closure | Not Started | 0% | - | - | TSK-036 | Final party settlement |

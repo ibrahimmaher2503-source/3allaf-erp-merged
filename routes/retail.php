@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('party/operating-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_bookings_invoices.view'), 403);
+
+        return view('pages.party.operating-readiness', [
+            'title' => __('Party Operating Orders and Consumables Readiness'),
+            'description' => __('Review Party-only operating-order, party-store, consumable, issue, return, reconciliation, approval, audit, and print prerequisites without creating stock or operating movements.'),
+            'items' => [
+                ['title' => __('Operating-order lifecycle'), 'body' => __('Draft, release, execute, complete, immutable history, and source-link rules remain PENDING; no order is created.')],
+                ['title' => __('Party store and resource scope'), 'body' => __('Party-only store, services, rental resources, responsibilities, and source scope remain PENDING; no stock is reserved.')],
+                ['title' => __('Consumables and UOM'), 'body' => __('Catalog, unit, fraction, availability, and party-store mapping rules remain PENDING; no quantity is rendered.')],
+                ['title' => __('Issue and actual consumption'), 'body' => __('Issue, actual, controlled additions/removals, operator evidence, and completion rules remain PENDING; no issue is posted.')],
+                ['title' => __('Unused return movement'), 'body' => __('Eligible unused return, referenced movement, condition, approval, and excess handling remain PENDING; no return is posted.')],
+                ['title' => __('Reconciliation, approval, audit, and print'), 'body' => __('Source/balance reconciliation, concurrency, SoD, idempotency, immutable history, privacy, and print rules remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:party_bookings_invoices.view')->name('party.operating.readiness');
+
     Route::get('party/payments-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

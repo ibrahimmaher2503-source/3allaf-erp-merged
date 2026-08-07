@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-032 Party Payments and Balance screen — 2026-08-07
+## TSK-033 Party Operating Orders and Consumables screen — 2026-08-07
+
+- `/party/operating-readiness` (`UI-PTY-005`) is a guarded Party-only read-only screen with stable targets: `party-operating-readiness-header`, `party-operating-readiness-boundary`, `party-operating-readiness-summary`, `party-operating-readiness-cards`, `party-operating-readiness-card-1`, `party-operating-readiness-card-6`, and `party-operating-readiness-empty`.
+- It shows pending operating-order, party-store, UOM, issue/actual, unused-return, reconciliation, approval, audit, and print boundaries without stock quantities or movement records.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow; the existing retail `/inventory` surface was not reused for party mutations.
+
+
 
 - `/party/payments-readiness` (`UI-PTY-004`) is a guarded Party-only read-only screen with stable targets: `party-payments-readiness-header`, `party-payments-readiness-boundary`, `party-payments-readiness-summary`, `party-payments-readiness-cards`, `party-payments-readiness-card-1`, `party-payments-readiness-card-6`, and `party-payments-readiness-empty`.
 - It shows pending method/deposit/evidence/idempotency/overpayment/receipt/Party Wallet boundaries without payment amounts or financial records.

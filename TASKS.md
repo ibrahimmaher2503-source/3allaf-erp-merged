@@ -525,7 +525,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-033 — Implement Party Operating Orders and Consumable Movements
 
-- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **In Progress — Local/Dev party operating-order/consumable source-safe discovery/readiness plan active; stock and operating mutations remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **Completed — verified Local/Dev Party operating-order/consumable readiness slice; operating and stock mutations remain deferred**.
 - **Title / Purpose / Description:** Create/release/execute party order, assign resources, issue/consume party-store consumables, control additions/removals and reference eligible unused returns.
 - **Traceability:** PTY-05, AST-05, NFR-01–NFR-03; US-027; FLW-PTY-04–05; UI UI-PTY-005–006; AC-PTY-05, AC-AST-05; SEC-006, SEC-011–015, SEC-017, SEC-019–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-032; `docs/28-party-operations-policy.md`; final operating checklist, party-store mapping, consumables/UOM, availability, return/change, approval, and real master data remain configurable or pending.
@@ -539,7 +539,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-034 — Implement Rental Asset Master, Calendar, Reservation, Checkout, and Return
 
-- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **In Progress — Local/Dev rental asset/calendar source-safe discovery/readiness plan active; reservation, checkout, return, and asset mutations remain gated**.
 - **Title / Purpose / Description:** Maintain unique assets separately from consumables, show availability calendar, lock non-overlapping reservations, and capture checkout/return/pre-post condition/status/location.
 - **Traceability:** AST-01–AST-03, NFR-01–NFR-03; US-028; FLW-PTY-06–08; UI UI-PTY-007–012; AC-AST-01–03; SEC-006, SEC-011–013, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-033; BLK-016 mitigated by `docs/29-rental-asset-policy.md`; final asset register, categories, locations, interval buffers, checklists, state, maintenance, loss, and finance values remain configurable or pending.

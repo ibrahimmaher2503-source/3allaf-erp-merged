@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-032 Party Payments on Account and Party Balance readiness
+## 2026-08-07 - TSK-033 Party Operating Orders and Consumable Movements readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev Party operating-order/consumable readiness slice after inspecting party policy, retail inventory models/actions/UI, stock movement/transfer/reconciliation boundaries, and existing authorization patterns.
+- **Implementation:** Added `party.operating_order`, `party.operating_store`, `party.consumable_uom`, `party.issue_actuals`, `party.return_movement`, `party.stock_reconciliation`, `party.operating_approval`, `party.operating_idempotency`, and `party.operating_print` as pending policy values; added Initial Setup visibility; added `/party/operating-readiness` and `UI-PTY-005`.
+- **Boundary:** No operating-order release, reservation, issue, actual, return, stock movement, balance edit, completion, or print mutation.
+- **Evidence:** Static gates and bilingual browser verification passed; no-access received 403; tour finished; no overflow or numeric quantity/price leakage.
+- **Next:** TSK-034 — Implement Rental Asset Master, Calendar, Reservation, Checkout, and Return.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev Party payment/balance readiness slice after inspecting party policy, PaymentMethod configuration, supplier invoice readiness, POS financial readiness, and Party Wallet read boundary.
 - **Implementation:** Added `party.payment_method`, `party.deposit`, `party.payment_evidence`, `party.payment_idempotency`, `party.overpayment`, `party.receipt`, `party.balance`, `party.wallet_settlement`, and `party.payment_approval` as pending policy values; added Initial Setup visibility; added `/party/payments-readiness` and `UI-PTY-004`.
