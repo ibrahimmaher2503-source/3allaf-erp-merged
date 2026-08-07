@@ -14,6 +14,11 @@ Every screen row below explicitly inherits this contract unless its row states a
 
 Routes are proposals and must be reconciled with the actual future Laravel project. Implemented rows remain `In Progress` until code review and manual browser evidence; all other screens start `Not Started`.
 
+## TSK-025 readiness-screen reconciliation — 2026-08-07
+
+- `UI-POS-003` through `UI-POS-005` remain full shift/cash-control requirements, not complete screens. The implemented local boundary is `/pos/shift-readiness`, with scoped safe counts only and explicit pending cards for opening, movements, blind close, variance, closure, and print.
+- The page is server-gated by `pos_sales.view`, verified for Demo Admin English LTR and Arabic RTL, denied for `demo-no-access`, and verified not to expose monetary field names or expected/actual/variance numeric values. Full screen statuses remain In Progress pending the documented shift/payment policy and manual scenarios.
+
 ## Authentication, Platform, and Administration
 
 | Screen ID / Name | Module; Route; Layout; Roles | Purpose / Data / Main Actions | Main Components and Flux Reuse | Filters, Search, Pagination, Validation, Statuses | State / Responsive / RTL-LTR / Print | Related IDs |

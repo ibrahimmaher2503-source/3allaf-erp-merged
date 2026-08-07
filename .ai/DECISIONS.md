@@ -122,6 +122,13 @@ The owner explicitly authorized completing TSK-019–TSK-022 for Local Demo. The
 
 TSK-019–TSK-022 inventory reads and mutations must enforce `Store::visibleTo()` scope, with an explicit super-admin bypass and fail-closed authentication. Transfer receipt is allowed only from `in_transit`, processes every transfer line, and moves shortages to terminal `difference_review`; repeated receipt attempts are rejected server-side. Difference types use a server-side allowlist, exceptions are reported internally while users receive generic translated errors, and cost/WAC remains permission-gated. This correction is recorded in commit `1b66b69`; it does not approve production stores, reason catalogs, thresholds, hardware, UAT, or release.
 
+## DEC-061 — TSK-025 Local/Dev shift and cash readiness boundary
+
+**Date:** 2026-08-07
+**Status:** Approved for Local/Dev read-only boundary; shift/cash mutation and Production/UAT deferred.
+
+Under DEC-060, TSK-025 may expose a server-gated `/pos/shift-readiness` page using existing scoped drawer/shift records. It may show only safe counts/status and explicit pending policy cards. It must not expose opening/closing/expected/actual/variance amounts or hidden fields, and must not create or mutate shifts, payments, cash movements, approvals, numbering, or print records. The blind-close rule in `docs/32` remains authoritative.
+
 ## DEC-060 — Owner-authorized Local/Dev slices for TSK-023–TSK-027
 
 **Date:** 2026-08-07

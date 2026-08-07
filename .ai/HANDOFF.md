@@ -1,4 +1,14 @@
-# Active Handoff — TSK-024 Readiness Boundary — 2026-08-07
+# Active Handoff — TSK-025 Shift/Cash Readiness Boundary — 2026-08-07
+
+TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 and TSK-025 now have truthful read-only readiness boundaries at `/pos/financial-readiness` and `/pos/shift-readiness`, protected by `pos_sales.view`.
+
+TSK-025 reads only scoped active-drawer and current-user open-shift counts. It does not pass monetary fields to the view and preserves the blind-close invariant: no expected/actual/variance values are rendered or preloaded before an owner-approved actual-submission workflow. English LTR, Arabic RTL, authorized/no-access browser evidence, DOM safety probe, route protection, PHPStan, Blade, locale parity, and whitespace checks passed.
+
+TSK-025 remains In Progress: no shift opening/closing, cash movement, payment linkage, expected derivation, actual submission, variance/recount/approval, immutable closure, numbering, or print mutation exists. BLK-006/BLK-008 and cash-control policies remain pending. Do not advance TSK-026 until the owner/configuration boundary is resolved or a narrower authorization is recorded.
+
+---
+
+# Previous Active Handoff — TSK-024 Readiness Boundary — 2026-08-07
 
 TSK-023 is implemented and browser-verified for the approved Local/Dev online POS slice. TSK-024 now has a truthful read-only readiness boundary at `/pos/financial-readiness`, protected by `pos_sales.view`.
 

@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-07 - TSK-025 shift/cash readiness boundary implementation
+
+- **Agent / scope:** Implemented the smallest authorized TSK-025 Local/Dev read-only boundary after reading docs/32, 31, 35, 36, 38, and 57; no shift/cash/payment/variance/print mutation, Production/UAT, or hardware scope.
+- **Completed:** Added guarded `/pos/shift-readiness` using `pos_sales.view`; it reads scoped active-drawer/current-user open-shift counts and exposes explicit PENDING cards for opening, cash movements, actual submission, variance review, closure, and thermal/A4 output. Added bilingual translations.
+- **Files changed:** `routes/retail.php`, `resources/views/pages/pos/shift-readiness.blade.php`, `lang/ar.json`, `lang/en.json`, `TASKS.md`, and active `.ai/` control records.
+- **Verification actually run:** PHP lint, Pint, targeted PHPStan 0 errors, Blade cache, route discovery, locale parity `1250/1250`, `git diff --check`, authorized English LTR and Arabic RTL browser rendering, DOM safety probe with no monetary fields/expected values, no-access denial, no overflow, and 0 authorized-page console errors.
+- **Remaining blockers / next action:** TSK-025 remains In Progress. Drawer allocation, opening float, cash movement/payment linkage, blind actual submission, variance/recount/approval, immutable closure, numbering/print, BLK-006/BLK-008, UAT, hardware, and Production policy remain pending. Commit the coherent local slice; do not advance TSK-026.
+- **Code, tests, browser, commit, push:** Code and docs changed; no PHPUnit/Pest or automated browser tests; browser manual evidence passed; commit pending; no push.
+
 ## 2026-08-07 - TSK-024 readiness boundary implementation
 
 - **Agent / scope:** Implemented the smallest authorized TSK-024 Local/Dev read-only boundary after reading the task sources; no financial mutation, Production/UAT, or hardware scope.

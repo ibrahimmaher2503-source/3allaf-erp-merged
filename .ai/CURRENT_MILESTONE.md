@@ -1,9 +1,9 @@
-# Active Milestone — TSK-024 Discovery/Read-only POS Financial Boundary
+# Active Milestone — TSK-025 Shift/Cash Readiness Boundary
 
 **Current phase:** Phase 3 local implementation exception (formal Phase 1/2 and Phase 3 gates remain open)
-**Current milestone:** DM 3.2 — Discounts, Tax, Payments, Evidence, and Open Price
-**Status:** TSK-023 is implemented and browser-verified for approved Local/Dev online scope; TSK-024 has a browser-verified read-only readiness boundary only. Production/UAT, hardware, owner policy, and formal phase exit remain open.
-**Progress:** TSK-023 has server-resolved POS context, approved-price/stock validation, exactly-once movement linkage, suspend/retrieve, bilingual screens, and browser evidence. TSK-024 `/pos/financial-readiness` is protected by `pos_sales.view`, reads only existing active payment/tax counts, and preserves POSF-01..04/BLK-008 as pending. No discount/tax/payment/evidence/open-price mutation or defaults are authorized.
+**Current milestone:** DM 3.3 — Cash Drawer and Shift Cycle
+**Status:** TSK-023 is implemented and browser-verified; TSK-024 and TSK-025 have browser-verified read-only readiness boundaries only. Production/UAT, hardware, owner policy, and formal phase exit remain open.
+**Progress:** `/pos/financial-readiness` and `/pos/shift-readiness` are protected by `pos_sales.view`, read only bounded configuration/context counts, and preserve POSF-01..04, BLK-006, BLK-008, blind close, variance, and print policies as pending. No financial, shift, cash movement, payment, variance, approval, or close mutation is authorized.
 
 ---
 

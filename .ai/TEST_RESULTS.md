@@ -7,6 +7,14 @@
 - Database evidence: two approved sales were created (`SALE-2026-000001`, `SALE-2026-000002`); each sale line has one linked `StockMovement`; movements `id=10,11` are `movement_type=sale`, `quantity=-1.000000`, `source_type=App\\Modules\\Retail\\Models\\Sale`, and deterministic keys `SALE:1:LINE:1` / `SALE:2:LINE:2`. Correct `DEMO-SELL` scope (`store_id=1`) reconciles product 1 to `on_hand=1`, total movement sum `1`, and sale movement sum `-2`; the earlier `store_id=2` query was an incorrect scope probe, not an application defect.
 - Local boundary: product/store/branch/drawer/shift context, approved pricing, stock revalidation, sale idempotency, append-only movement linkage, suspend/retrieve, bilingual screens, and role denial are evidenced. Tax, discounts, payments/evidence, open price, offline, customer, production print/hardware, UAT, and formal Phase 3 exit remain pending.
 
+## TSK-025 Shift/Cash readiness boundary verification — 2026-08-07
+
+- Implemented guarded `GET /pos/shift-readiness` with existing `pos_sales.view` authorization. It reads only the scoped active-drawer count and current-user open-shift count; no monetary fields are passed to the view.
+- Browser evidence on the verified Demo server: `demo-admin` rendered the page in English LTR and Arabic RTL; six pending cards, blind-close warning, scoped counts, and Back to POS were visible. `demo-no-access` received the safe Access Denied page. Authorized browser console returned 0 messages and 0 JavaScript errors.
+- DOM/response safety probe passed: no `opening_cash`, `closing_cash`, `expected_total`, `actual_total`, or `variance_amount` field names; no numeric expected/actual monetary text; no horizontal overflow.
+- Diagnostics passed: PHP lint, Pint, targeted PHPStan 0 errors, Blade cache, route discovery (`pos.shift-readiness`), locale parity `1250/1250`, and `git diff --check`. Existing duplicate locale keys were confirmed pre-existing in `HEAD`, not introduced by this slice. No PHPUnit/Pest or automated browser tests were created or run.
+- Boundary retained: shift opening/closing, cash movements, payment linkage, expected derivation, blind actual submission, variance/recount/approval, immutable closure, numbering, thermal/A4 outputs, BLK-006/BLK-008, Production/UAT, hardware, and formal DM 3.3 exit remain pending.
+
 ## TSK-024 Readiness boundary verification — 2026-08-07
 
 - Implemented guarded `GET /pos/financial-readiness` with existing `pos_sales.view` authorization. The route reads only active payment/tax configuration counts; it creates no rows, defaults, evidence files, payment records, discount/tax values, or open-price approvals.

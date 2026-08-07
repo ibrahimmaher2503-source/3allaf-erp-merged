@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
@@ -32,6 +33,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return view('pages.pos.index', compact('store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount'));
     })->middleware('can:pos_sales.view')->name('pos');
+
+    Route::get('pos/shift-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.view'), 403);
+
+        return view('pages.pos.shift-readiness', [
+            'activeDrawerCount' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->count(),
+            'openShiftCount' => PosShift::query()->where('cashier_id', $user->id)->where('status', 'open')->count(),
+        ]);
+    })->middleware('can:pos_sales.view')->name('pos.shift-readiness');
 
     Route::get('pos/financial-readiness', function (Request $request) {
         /** @var User $user */

@@ -405,7 +405,8 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-025 — Implement Shift Opening, Cash Movements, Blind Closing, and Variance Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-025; Phase 3; DM 3.3; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-025; Phase 3; DM 3.3; **Discovery/read-only boundary implemented and browser-verified; shift/cash mutation remains pending**.
+- **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/shift-readiness` behind `pos_sales.view`. It reads only scoped active-drawer and current-user open-shift counts; it passes no monetary fields and exposes no shift/cash/payment/variance mutation.
 - **Title / Purpose / Description:** Deliver exclusive drawer shift, opening float, linked payments/cash movements, blind actual submission, expected/variance manager review and thermal/A4 close.
 - **Traceability:** CSH-01–CSH-04, NFR-01–NFR-03; US-024; FLW-CSH-01–03; UI UI-POS-003–005; AC-CSH-01–04; SEC-011–012, SEC-015–020, SEC-027, SEC-037–038.
 - **Dependencies / Required Inputs:** TSK-023–024; drawer allocation, cash-movement/shift/variance/closing/print policy.
