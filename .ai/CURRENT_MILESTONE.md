@@ -1,18 +1,17 @@
-# Active Milestone — TSK-040 Export Center and Audit Views
+# Active Milestone — TSK-041 Approved Master Data Import and Reconciliation
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.2 — Export, Audit, and Acceptance
-**Status:** TSK-039 Local/Dev operational-alert and exception-queue readiness is completed and browser-verified. TSK-040 is now In Progress for source-safe export/audit and acceptance-readiness discovery.
-**Progress:** TSK-039 added `/alerts-readiness`, nine pending alert policy values, Initial Setup visibility, and UI-SYS-007. TSK-040 must inspect export formats/limits/retention/storage/redaction/audit access and existing source contracts; no export artifact, audit mutation, UAT sign-off, or release approval is authorized.
+**Current milestone:** DM 6.4 — Controlled Data Import and Cutover
+**Status:** TSK-040 Local/Dev export/audit readiness is completed and browser-verified. TSK-041 is now In Progress for source-safe approved-master-data import/cutover and reconciliation discovery.
+**Progress:** TSK-040 added `/exports-audit-readiness`, eight pending export/audit policies, Initial Setup visibility, and UI-RPT-002. TSK-041 must inspect approved data/template, validation, dry-run, reconciliation, opening-stock, cutover, maker/checker, backup, and error contracts; no upload, parsing, persistence, destructive update, stock posting, production cutover, or UAT approval is authorized.
 
 ---
-# Previous Milestone Record — TSK-039
+# Previous Milestone Record — TSK-040
 
-**Status:** Completed for verified Local/Dev alert and exception readiness; trigger evaluation, alert creation, delivery, acknowledgement, resolution, dismissal, escalation, source links, and production notifications remain open.
-**Evidence:** Docs 34, 36–39 and existing source absence reviewed; guarded `/alerts-readiness`, pending alert policies, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no mutation controls, and 4/4 interactive tour selectors passed.
+**Status:** Completed for verified Local/Dev export-center and audit-view readiness; PDF/Excel/CSV generation, protected download, artifacts, redaction execution, audit export, UAT, and release approval remain open.
+**Evidence:** Docs 19, 34, 38, 39, 53 and source absence reviewed; guarded `/exports-audit-readiness`, pending export/audit policies, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no mutation controls, and 4/4 interactive tour selectors passed after selector correction.
 
 ---
-
 # Previous Milestone Record — TSK-031
 
 **Status:** Completed for the verified Local/Dev Party-only readiness slice; full party booking, calendar, customer/child, invoice, payment, Phase 5, UAT, and Production remain open.

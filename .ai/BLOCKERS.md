@@ -4,7 +4,14 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-039 Operational Alerts and Exception Queue boundary — 2026-08-08
+## TSK-040 Export Center and Audit Views boundary — 2026-08-08
+
+TSK-040 bounded Local/Dev readiness is complete and browser-verified. The implementation exposes pending format/limit/retention/storage/redaction/formula-safety/reauthorization/audit-filter policies and a guarded read-only screen only. PDF/Excel/CSV generation, protected downloads, artifact storage, sensitive export auditing, and audit mutation remain blocked pending approved contracts.
+
+Next task: TSK-041 Import and Reconcile Approved Production Master Data readiness.
+
+
+
 
 TSK-039 bounded Local/Dev readiness is complete and browser-verified. The implementation exposes pending trigger/source/severity/owner/scope/lifecycle/source-link/deduplication/notification/navigation policies and a guarded read-only screen only. Alert evaluation, creation, delivery, acknowledgement, resolution, dismissal, escalation, and production exception handling remain blocked pending approved contracts.
 

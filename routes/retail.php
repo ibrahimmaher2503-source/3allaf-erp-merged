@@ -95,6 +95,24 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:dashboard_reports.view')->name('alerts.readiness');
 
+    Route::get('exports-audit-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('dashboard_reports.view'), 403);
+
+        return view('pages.exports.audit-readiness', [
+            'title' => __('Export Center and Audit Views Readiness'),
+            'cards' => [
+                ['title' => __('Formats and templates'), 'body' => __('PDF, Excel, CSV eligibility, localized headers, templates, page breaks, and output dimensions remain PENDING; no artifact is generated.')],
+                ['title' => __('Limits and queueing'), 'body' => __('Row, file-size, timeout, pagination, queue, retry, and failed-job limits remain PENDING; no export job is queued.')],
+                ['title' => __('Retention and protected storage'), 'body' => __('Expiry, deletion, private storage, short-lived links, and artifact ownership remain PENDING; no file is stored or offered.')],
+                ['title' => __('Redaction and formula safety'), 'body' => __('Sensitive fields, costs, margins, payments, customer data, and spreadsheet formula injection rules remain PENDING.')],
+                ['title' => __('Reauthorization and audit export'), 'body' => __('Generation/download permissions, scope, actor, filters, outcome, correlation ID, and export audit events remain PENDING.')],
+                ['title' => __('Audit filters and immutable history'), 'body' => __('Date, actor, category, source, branch/store, action, result, reason, pagination, redaction, and append-only history remain PENDING.')],
+            ],
+        ]);
+    })->middleware('can:dashboard_reports.view')->name('exports.audit.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

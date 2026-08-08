@@ -102,6 +102,7 @@ final class RetailTutorialFactory
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-RPT-001' => self::readiness('reports.readiness', 'جاهزية لوحات المعلومات وتقارير المطابقة', 'Dashboards and Reconciled Reports Readiness', 'reports', 'TSK-038', 'RPT-01..03'),
+            'UI-RPT-002' => self::readiness('exports.audit.readiness', 'جاهزية مركز التصدير والتدقيق', 'Export Center and Audit Views Readiness', 'export-audit', 'TSK-040', 'RPT-03'),
             'UI-SYS-007' => self::readiness('alerts.readiness', 'جاهزية التنبيهات التشغيلية وطابور الاستثناءات', 'Operational Alerts and Exception Queue Readiness', 'alerts', 'TSK-039', 'RPT-02'),
             'UI-QTN-001' => self::readiness('quotations.readiness', 'جاهزية عروض الأسعار والمقترحات', 'Quotations and Proposals Readiness', 'quotations', 'TSK-037', 'QTN-01..03'),
             'UI-PTY-015' => self::readiness('party.final-close.readiness', 'جاهزية الإغلاق والتسوية النهائية للحفلات', 'Party Final Close and Settlement Readiness', 'party-final-close', 'TSK-036', 'PTY-06'),
@@ -208,6 +209,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'تبقى الصيغ والمصادر والنطاقات والعملة والدقة والحداثة معلقة؛ لا توجد أرقام معتمدة.', 'en' => 'Formulas, sources, scopes, currency, precision, and freshness remain pending; no certified figures exist.'],
                 'cards' => ['ar' => 'راجع كتالوج التقارير', 'en' => 'Review report catalog'],
                 'summary' => ['ar' => 'افهم سلالة المصدر', 'en' => 'Understand source lineage'],
+            ],
+            'export-audit' => [
+                'header' => ['ar' => 'حدود مركز التصدير وواجهات التدقيق', 'en' => 'Export Center and Audit Views boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للقراءة فقط؛ لا يتم إنشاء ملف أو تنزيله أو تعديل سجل تدقيق.', 'en' => 'This is read-only readiness; no artifact is generated/downloaded and no audit record is changed.'],
+                'warning' => ['ar' => 'التنقيح والنطاق قبل الملف', 'en' => 'Redaction and scope before artifacts'],
+                'warningBody' => ['ar' => 'تبقى الصيغ والحدود والاحتفاظ والتنقيح والصلاحيات والتدقيق PENDING.', 'en' => 'Formats, limits, retention, redaction, permissions, and audit remain PENDING.'],
+                'cards' => ['ar' => 'راجع عقد التصدير', 'en' => 'Review export contract'],
+                'summary' => ['ar' => 'افهم سجل التدقيق', 'en' => 'Understand audit history'],
             ],
             'alerts' => [
                 'header' => ['ar' => 'حدود التنبيهات التشغيلية وطابور الاستثناءات', 'en' => 'Operational alerts and exception queue boundary'],

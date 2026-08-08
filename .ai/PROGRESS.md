@@ -1,12 +1,12 @@
-# Active Progress — TSK-040 Export Center and Audit Views — 2026-08-08
+# Active Progress — TSK-041 Approved Master Data Import and Reconciliation — 2026-08-08
 
-**Implementation status:** TSK-039 operational-alert/exception Local/Dev readiness is complete and browser-verified; TSK-040 is active for source-safe export/audit and acceptance-readiness discovery.
+**Implementation status:** TSK-040 export/audit Local/Dev readiness is complete and browser-verified; TSK-041 is active for source-safe approved-master-data import/cutover and reconciliation discovery.
 
-**Completed before this task:** TSK-039 reviewed docs 34, 36–39 and source absence; added nine pending alert policy values, `/alerts-readiness`, UI-SYS-007, Initial Setup pending visibility, bilingual browser evidence, no-access 403, 4/4 tour selector evidence, diagnostics, and state handoff.
+**Completed before this task:** TSK-040 reviewed docs 19, 34, 38, 39, 53 and source absence; added eight pending export/audit policy values, `/exports-audit-readiness`, UI-RPT-002, bilingual browser evidence, no-access 403, Initial Setup pending visibility, 4/4 tour selector evidence, diagnostics, and state handoff.
 
-**Next concrete step:** inspect audit log, export, artifact, attachment, package, redaction, retention, source, and permission contracts before changing code.
+**Next concrete step:** inspect approved data/template, validation, dry-run, reconciliation, opening-stock, cutover, maker/checker, backup, and import error contracts before changing code.
 
-**Boundary:** no export artifact, PDF/Excel generation, download, audit mutation, UAT sign-off, release approval, or production claim is enabled.
+**Boundary:** no upload, parsing, batch persistence, destructive update, stock posting, production cutover, UAT sign-off, or production claim is enabled.
 
 ---
 

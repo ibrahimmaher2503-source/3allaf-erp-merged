@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-039 Operational Alerts and Exception Queue readiness — 2026-08-08
+## TSK-040 Export Center and Audit Views readiness — 2026-08-08
+
+- Reviewed canonical export/audit/UAT/backup contracts: docs 19, 34, 38, 39, and 53; existing `admin.audit` exists, but no independent safe Export Center contract/artifact workflow exists.
+- Added eight pending export/audit policy keys, `export-audit-policies` Initial Setup card, guarded `/exports-audit-readiness`, and UI-RPT-002.
+- Read-only boundary covers formats/templates, limits/queueing, retention/private storage, redaction/formula safety, reauthorization/audit export, and bounded immutable audit filters; no artifact or download is generated.
+- Diagnostics PASS: PHP lint, Blade/cache, route discovery, locale parity `1619/1619`, Pint, PHPStan `[OK] No errors`, Vite build, and diff check.
+- Browser PASS: English/LTR and Arabic/RTL, Initial Setup pending card, zero overflow, no export/download mutation controls, no-access 403, and Page Guide 4/4 valid selectors after correcting the `export-audit` selector prefix.
+- Remains Local/Dev evidence only; no PDF/Excel/CSV artifact, UAT sign-off, release approval, or production claim.
+
+
+
 
 - Reviewed docs 34, 36–39 plus repository routes/views/models for alert, exception, notification, acknowledgement, resolution, and source-link surfaces; no independent alert engine or exception queue source exists.
 - Added nine pending `alert.*` policy keys, `alert-policies` Initial Setup card, guarded `/alerts-readiness`, and UI-SYS-007.

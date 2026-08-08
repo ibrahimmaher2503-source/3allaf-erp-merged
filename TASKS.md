@@ -625,7 +625,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-040 — Implement PDF/Excel Export Center and Audit Views
 
-- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **In Progress — Local/Dev acceptance/UAT and release-readiness source-safe discovery/readiness plan active; evidence, sign-off, export, audit, backup, and production gates remain pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **Completed — verified Local/Dev export-center and audit-view readiness slice; PDF/Excel/CSV generation, artifact storage/download, audit export, redaction, and production/UAT release gates remain deferred**.
 - **Title / Purpose / Description:** Provide safe permissioned PDF/Excel generation/download/expiry and append-only audit filters/detail/before-after/export.
 - **Traceability:** RPT-03, NFR-01–NFR-05; US-031–032; FLW-RPT-02–03; UI UI-RPT-002, UI-AUD-001, UI-OFF-003; AC-RPT-03, AC-NFR-01–05; SEC-011–012, SEC-016, SEC-022–029, SEC-037.
 - **Dependencies / Required Inputs:** TSK-038–039; export formats/limits/retention/storage/redaction/audit access.
@@ -639,7 +639,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-041 — Import and Reconcile Approved Production Master Data
 
-- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **In Progress — Local/Dev approved-master-data import and reconciliation source-safe discovery/readiness plan active; production data, cutover, destructive import, and sign-off remain pending**.
 - **Title / Purpose / Description:** Execute controlled validated import/cutover for approved company/branches/stores/drawers/users/products/suppliers/customers/opening stock and supporting masters.
 - **Traceability:** MD-01–MD-06, PRC-01, PUR-01, INV-01, NFR-01–NFR-07; applicable stories/flows; UI import/admin/error screens; applicable ACs; SEC-006, SEC-009–012, SEC-017–021, SEC-022–027, SEC-039.
 - **Dependencies / Required Inputs:** DM 6.3 passed; final signed data/templates/cutoff/opening valuation and maker/checker owners.

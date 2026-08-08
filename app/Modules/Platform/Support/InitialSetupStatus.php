@@ -167,6 +167,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'export-audit-policies',
+                'label' => (string) __('Export and audit policies'),
+                'description' => (string) __('Review formats, limits, retention, redaction, formula safety, reauthorization, audit export, and bounded audit filters; blanks remain PENDING and no artifact is generated.'),
+                'route' => route('exports.audit.readiness'),
+                'complete' => $this->exportAuditPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -365,6 +373,18 @@ final class InitialSetupStatus
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->exists();
+    }
+
+    private function exportAuditPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'export.format', 'export.limits', 'export.retention', 'export.redaction',
+                'export.formula_safety', 'export.permission', 'export.audit', 'audit.filters',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->count() === 8;
     }
 
     private function financialSettingsReady(): bool
