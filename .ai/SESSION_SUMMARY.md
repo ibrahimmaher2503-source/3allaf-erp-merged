@@ -607,3 +607,12 @@ Append one factual entry for every agent session that changes repository or proj
 - **TSK-015:** BLOCKED. No invoice/receipt foundation exists; owner-approved cost/tax/discount/rounding, approval/duty separation, supplier-reference/attachment, stock movement/balance, WAC, opening-stock, and production inputs are missing. No financial or inventory behavior was fabricated.
 - **TSK-016:** BLOCKED / Not Started. It depends on TSK-015 and missing return eligibility, non-reference, reason, approval, stock disposition/reversal, and cost-history policies. No return tables/actions/UI or fake source records were fabricated.
 - **Documentation:** Updated `TASKS.md`, `.ai/CURRENT_TASK.md`, and `.ai/TEST_RESULTS.md`; DM 2.2, UAT, production readiness, and owner-input gates remain open.
+
+## 2026-08-08 - User-Requested GitHub Push
+
+- **Agent / scope:** Published the existing local working-tree changes to the configured GitHub repository; no new application scope was implemented.
+- **Completed:** Committed the 16-file local change set as `9bcc705` (`feat: complete shared application UI refinements`) and pushed `master` to `origin/master`. GitHub CLI authentication was available; the remote was switched from SSH to HTTPS because the configured SSH key was rejected.
+- **Files changed:** The committed set includes `.ai/AGY_TASK_LOOP.md`, current `.ai` control/evidence files, `TASKS.md`, `config/app.php`, shared CSS, supplier/authorization/drawer/help/purchasing views, and `routes/web.php`.
+- **Verification actually run:** `git diff --check`, staged diff check, `npm run build`, final `git status`, and local/remote SHA comparison all passed. `npm run build` emitted only the existing optional `fontaine` package warning.
+- **Remaining blockers / next action:** Existing TSK-015/TSK-016 owner-input, UAT, production-readiness, and formal phase-gate blockers remain unchanged.
+- **Code, tests, browser, commit, push:** No automated application suite or browser verification ran in this publishing session. Commit and push completed successfully.
