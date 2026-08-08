@@ -30,16 +30,12 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - `/exports-audit-readiness` (`UI-RPT-002`) is a guarded read-only boundary with stable targets: `export-audit-readiness-header`, `export-audit-readiness-boundary`, `export-audit-readiness-summary`, `export-audit-readiness-cards`, `export-audit-readiness-first-card`, `export-audit-readiness-card-6`, and `export-audit-readiness-empty`.
 - It shows pending format/limit/retention/redaction/reauthorization/audit-filter contracts without artifacts, download links, generated files, audit export rows, or mutations.
 - English/LTR and Arabic/RTL rendering, no overflow, no-access denial, Initial Setup pending card, feature-specific guide, and all 4 tour selectors were verified.
-
-
-
+## TSK-039 Operational Alerts and Exception Queue screen — 2026-08-08
 
 - `/alerts-readiness` (`UI-SYS-007`) is a guarded read-only alert/exception boundary with stable targets: `alerts-readiness-header`, `alerts-readiness-boundary`, `alerts-readiness-summary`, `alerts-readiness-cards`, `alerts-readiness-card-1`, `alerts-readiness-card-6`, and `alerts-readiness-empty`.
 - It shows pending trigger/source, severity/owner, scope/navigation, acknowledgement/resolution, suppression/deduplication, and notification/queue contracts without alert rows, source links, notifications, or state actions.
 - English/LTR and Arabic/RTL rendering, no overflow, no-access denial, feature-specific guide, and all 4 tour selectors were verified.
-
-
-
+## TSK-038 Dashboards and Reconciled Report Catalog screen — 2026-08-08
 
 - `/reports-readiness` (`UI-RPT-001`) is a guarded read-only dashboard/report boundary with stable targets: `reports-readiness-header`, `reports-readiness-boundary`, `reports-readiness-summary`, `reports-readiness-cards`, `reports-readiness-card-1`, `reports-readiness-card-6`, and `reports-readiness-empty`.
 - It shows pending source lineage/scope, filters/KPI formulas, reconciliation/freshness, alerts, pagination/drilldown, and export boundaries without report rows, KPI values, alerts, artifacts, or financial numbers.

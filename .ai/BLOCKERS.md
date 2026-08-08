@@ -9,16 +9,12 @@ The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-veri
 TSK-040 bounded Local/Dev readiness is complete and browser-verified. The implementation exposes pending format/limit/retention/storage/redaction/formula-safety/reauthorization/audit-filter policies and a guarded read-only screen only. PDF/Excel/CSV generation, protected downloads, artifact storage, sensitive export auditing, and audit mutation remain blocked pending approved contracts.
 
 Next task: TSK-041 Import and Reconcile Approved Production Master Data readiness.
-
-
-
+## TSK-039 Operational Alerts and Exception Queue boundary — 2026-08-08
 
 TSK-039 bounded Local/Dev readiness is complete and browser-verified. The implementation exposes pending trigger/source/severity/owner/scope/lifecycle/source-link/deduplication/notification/navigation policies and a guarded read-only screen only. Alert evaluation, creation, delivery, acknowledgement, resolution, dismissal, escalation, and production exception handling remain blocked pending approved contracts.
 
 Next task: TSK-040 Export Center and Audit Views readiness.
-
-
-
+## TSK-038 Dashboards and Reconciled Report Catalog boundary — 2026-08-08
 
 TSK-038 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending report source lineage/scope/filters/KPI/reconciliation/alerts/pagination/export/precision/freshness policies and a guarded read-only screen only. KPI calculation, report rows, financial values, cross-scope access, alerts, drilldown, export, cache, and reconciliation claims remain blocked pending approved source contracts and data.
 
