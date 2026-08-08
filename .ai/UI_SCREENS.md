@@ -1,5 +1,11 @@
 # UI Screen Inventory
 
+## TSK-041 Master Data Import and Cutover screen — 2026-08-08
+
+- `/master-data-migration-readiness` (`UI-SYS-008`) is a guarded read-only boundary using `company_settings.view`, with stable targets: `master-data-migration-readiness-header`, `master-data-migration-readiness-boundary`, `master-data-migration-readiness-summary`, `master-data-migration-readiness-cards`, `master-data-migration-readiness-first-card`, `master-data-migration-readiness-card-6`, and `master-data-migration-readiness-empty`.
+- It shows pending approved-source, dependency-order, create-only, file-safety, duplicate/error, staging/preview, reconciliation, maker/checker/audit, backup/cutover, and rollback contracts without uploads, batch rows, production data, opening-stock postings, or cutover actions.
+- English/LTR and Arabic/RTL rendering, no overflow, no-access denial, Initial Setup pending card, clean console probe, feature-specific guide, and all four tour selectors were verified.
+
 ## Page Guide / Tour QA overlay
 
 - **Implemented Local/Demo:** `UI-SYS-001`, `UI-RET-001..007`, `UI-CUS-001..005` use bilingual definitions with stable `data-guide` hooks. TSK-028 `UI-CUS-004` Product Wallet and `UI-CUS-005` Party Wallet have distinct route/permission boundaries and five-step tours. Desktop English/LTR and Arabic/RTL browser review covered drawer launch, full step progression, target existence, popover geometry, empty-state handling, and page overflow. Full mobile viewport review is unavailable in the current browser session and remains pending.

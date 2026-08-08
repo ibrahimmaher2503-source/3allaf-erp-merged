@@ -1,5 +1,14 @@
 # Test and Verification Status
 
+## TSK-041 Master Data Import and Cutover readiness — 2026-08-08
+
+- Reviewed canonical documents `docs/23-product-barcode-policy.md` (mapping for missing requested docs/23), `docs/42-purchase-invoice-import-specification.md`, `docs/44-opening-stock-cutover-specification.md`, and `docs/54-production-data-migration-and-reconciliation.md`; documented filename mismatch in the active task records.
+- Added nine pending `migration.*` policy keys, `master-data-migration` Initial Setup card, guarded `/master-data-migration-readiness` using existing `company_settings.view`, and UI-SYS-008.
+- Readiness-only boundary covers approved sources, dependency load order, create-only staging, file safety, duplicate/error disposition, validation/preview, reconciliation gates, maker/checker/audit, and backup/cutover/rollback; no upload, parsing, batch persistence, destructive replacement, opening-stock posting, or cutover is enabled.
+- Diagnostics PASS: PHP lint, optimize clear, Blade cache, route discovery, locale parity `1644/1644`, Pint, PHPStan `[OK] No errors`, Vite build, and diff check. Vite emitted only the existing optional `fontaine` warning.
+- Browser PASS: authorized English/LTR and Arabic/RTL, Arabic text and `dir=rtl`, no page overflow, no operational upload/download/approval/cutover controls, Initial Setup pending card, no-access denial, clean console probe, and Page Guide interactive tour `4/4` valid selectors.
+- Boundary: Local/Dev evidence only; production source data, import batches, opening stock, cutover, UAT, and Production remain deferred. No automated tests were created or run per repository policy.
+
 ## TSK-028 separated Product/Party Wallet foundation — 2026-08-07
 
 - Read `TASKS.md`, `AI_INDEX.md`, `AGENTS.md`, `.ai/` control files, `docs/27-customer-loyalty-wallet-gift-policy.md`, and the mapped wallet/customer/security/UI contracts before implementation.

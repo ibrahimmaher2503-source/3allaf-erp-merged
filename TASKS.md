@@ -639,7 +639,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-041 — Import and Reconcile Approved Production Master Data
 
-- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **In Progress — Local/Dev approved-master-data import and reconciliation source-safe discovery/readiness plan active; production data, cutover, destructive import, and sign-off remain pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **Completed — verified Local/Dev master-data import/cutover readiness boundary; approved production source files, batch import, destructive replacement, opening-stock posting, cutover, and production sign-off remain deferred**.
 - **Title / Purpose / Description:** Execute controlled validated import/cutover for approved company/branches/stores/drawers/users/products/suppliers/customers/opening stock and supporting masters.
 - **Traceability:** MD-01–MD-06, PRC-01, PUR-01, INV-01, NFR-01–NFR-07; applicable stories/flows; UI import/admin/error screens; applicable ACs; SEC-006, SEC-009–012, SEC-017–021, SEC-022–027, SEC-039.
 - **Dependencies / Required Inputs:** DM 6.3 passed; final signed data/templates/cutoff/opening valuation and maker/checker owners.
@@ -653,7 +653,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-042 — Complete Production Readiness, Devices, Backup, and Training
 
-- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **In Progress — Local/Dev production-readiness/device/backup/training discovery boundary active; production infrastructure, devices, restore sign-off, and training evidence remain pending**.
 - **Title / Purpose / Description:** Verify production configuration/secrets/workers/scheduler/storage/monitoring, target branches/scanners/printers, baseline backup/restore, training and operational runbooks.
 - **Traceability:** all requirements, especially NFR-04–NFR-07 and print/device requirements; US-032; all operational flows/screens; AC-NFR-04–07, AC-UI-02–05; SEC-028–040.
 - **Dependencies / Required Inputs:** TSK-041; approved hosting/domain/devices/printers/support/backup/training attendees/runbooks.

@@ -1,5 +1,11 @@
 # Blocker Register
 
+## TSK-041 Master Data Import and Cutover boundary — 2026-08-08
+
+TSK-041 bounded Local/Dev readiness is complete and browser-verified. Approved source files, production batch import, destructive replacement, opening-stock posting, cutover timestamp, backup/restore sign-off, and production reconciliation remain blocked pending owner data, operational inputs, and UAT/Production gates.
+
+Next task: TSK-042 Production Readiness, Devices, Backup, and Training.
+
 ## TSK-028 wallet boundary — 2026-08-07
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.

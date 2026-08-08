@@ -113,6 +113,27 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:dashboard_reports.view')->name('exports.audit.readiness');
 
+    Route::get('master-data-migration-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('company_settings.view'), 403);
+
+        return view('pages.master-data.migration-readiness', [
+            'title' => __('Master Data Import and Cutover Readiness'),
+            'cards' => [
+                ['title' => __('Approved source artifacts'), 'body' => __('Signed owner-approved lists or files are required for company, branches, stores, users, catalog, suppliers, prices, and opening stock; no production source is inferred.')],
+                ['title' => __('Dependency load order'), 'body' => __('Company, branches, stores, selling mappings, drawers, users/scopes, categories, brands, products, barcodes, suppliers, prices, and opening stock must follow the documented dependency order.')],
+                ['title' => __('Create-only staging'), 'body' => __('Migration imports remain create-only. Update mode, destructive replacement, and automatic merge are disabled until a deliberate correction policy exists.')],
+                ['title' => __('File safety and private storage'), 'body' => __('Private storage, MIME and extension checks, formula/macro rejection, filename safety, and approved size/type limits remain pending.')],
+                ['title' => __('Duplicate and error disposition'), 'body' => __('Duplicate codes, barcodes, phones, and source references require an approved disposition; invalid rows must remain isolated and visible.')],
+                ['title' => __('Stage validation and preview'), 'body' => __('Upload, parse, row validation, referential checks, preview, and error-file behavior remain readiness-only; no batch is persisted here.')],
+                ['title' => __('Reconciliation gates'), 'body' => __('Completeness, referential integrity, uniqueness, and sampled field-by-field checks must pass before any next stage or opening-stock action.')],
+                ['title' => __('Maker/checker and audit'), 'body' => __('Importer and approver separation, scoped approval, immutable evidence, and audit records remain pending.')],
+                ['title' => __('Backup, cutover, and rollback'), 'body' => __('Freeze timestamp, backup/restore proof, opening-stock approval, backdating block, rollback, and post-cutover correction rules remain pending.')],
+            ],
+        ]);
+    })->middleware('can:company_settings.view')->name('master-data.migration.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

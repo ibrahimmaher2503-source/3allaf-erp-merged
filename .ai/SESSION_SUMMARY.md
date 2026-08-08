@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-08 - TSK-041 Master Data Import and Cutover readiness
+
+- **Agent / scope:** Implemented the authorized Local/Dev source-safe readiness boundary after mapping missing requested filenames to canonical docs 23, 42, 44, and 54.
+- **Completed:** Added nine pending `migration.*` policies, Initial Setup card, guarded `/master-data-migration-readiness`, UI-SYS-008, bilingual stable-selector screen, and no-upload/no-persistence/no-cutover boundary.
+- **Files changed:** `TASKS.md`, active `.ai/` control/evidence files, policy registry, Initial Setup, tutorial factory/wrapper, route, Blade view, `lang/en.json`, `lang/ar.json`.
+- **Verification actually run:** PHP lint, optimize clear, Blade cache, route discovery, locale parity `1644/1644`, Pint, PHPStan `[OK] No errors`, Vite build, diff check; authorized English/LTR and Arabic/RTL, no overflow, no operational controls, Initial Setup pending, no-access denial, clean console probe, Page Guide `4/4`.
+- **Remaining blockers / next action:** Approved production source files, import batches, opening stock, cutover, UAT, and Production remain deferred. TSK-042 is active for production-readiness/device/backup/training discovery.
+- **Code, tests, browser, commit, push:** Code changed; no automated tests created/run; browser verified; local commit pending in this continuation; no push.
+
 ## 2026-08-08 - TSK-040 Export Center and Audit Views readiness
 
 - **Agent / scope:** Completed the authorized Local/Dev export/audit readiness slice after reviewing docs 19, 34, 38, 39, 53 and existing audit/export/attachment routes.

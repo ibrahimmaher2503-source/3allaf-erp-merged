@@ -1,9 +1,9 @@
-# Active Milestone — TSK-041 Approved Master Data Import and Reconciliation
+# Active Milestone — TSK-042 Production Readiness, Devices, Backup, and Training
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.4 — Controlled Data Import and Cutover
-**Status:** TSK-040 Local/Dev export/audit readiness is completed and browser-verified. TSK-041 is now In Progress for source-safe approved-master-data import/cutover and reconciliation discovery.
-**Progress:** TSK-040 added `/exports-audit-readiness`, eight pending export/audit policies, Initial Setup visibility, and UI-RPT-002. TSK-041 must inspect approved data/template, validation, dry-run, reconciliation, opening-stock, cutover, maker/checker, backup, and error contracts; no upload, parsing, persistence, destructive update, stock posting, production cutover, or UAT approval is authorized.
+**Current milestone:** DM 6.4 — Production Readiness and Operational Handoff
+**Status:** TSK-041 Local/Dev master-data import/cutover readiness is complete and browser-verified; TSK-042 is active for source-safe production-readiness/device/backup/training discovery.
+**Evidence:** TSK-041 reviewed canonical docs 23, 42, 44, 54 and source absence; guarded `/master-data-migration-readiness`, pending migration policies, bilingual UI/SYS-008, English/LTR and Arabic/RTL checks, Initial Setup pending card, no-access denial, no overflow/no operational controls, and 4/4 Page Guide selectors passed. Production data, import, cutover, infrastructure, devices, UAT, and Production remain open.
 
 ---
 # Previous Milestone Record — TSK-040

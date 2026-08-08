@@ -103,6 +103,7 @@ final class RetailTutorialFactory
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-RPT-001' => self::readiness('reports.readiness', 'جاهزية لوحات المعلومات وتقارير المطابقة', 'Dashboards and Reconciled Reports Readiness', 'reports', 'TSK-038', 'RPT-01..03'),
             'UI-RPT-002' => self::readiness('exports.audit.readiness', 'جاهزية مركز التصدير والتدقيق', 'Export Center and Audit Views Readiness', 'export-audit', 'TSK-040', 'RPT-03'),
+            'UI-SYS-008' => self::readiness('master-data.migration.readiness', 'جاهزية استيراد البيانات الأساسية والقطع', 'Master Data Import and Cutover Readiness', 'master-data-migration', 'TSK-041', 'MD-01..06'),
             'UI-SYS-007' => self::readiness('alerts.readiness', 'جاهزية التنبيهات التشغيلية وطابور الاستثناءات', 'Operational Alerts and Exception Queue Readiness', 'alerts', 'TSK-039', 'RPT-02'),
             'UI-QTN-001' => self::readiness('quotations.readiness', 'جاهزية عروض الأسعار والمقترحات', 'Quotations and Proposals Readiness', 'quotations', 'TSK-037', 'QTN-01..03'),
             'UI-PTY-015' => self::readiness('party.final-close.readiness', 'جاهزية الإغلاق والتسوية النهائية للحفلات', 'Party Final Close and Settlement Readiness', 'party-final-close', 'TSK-036', 'PTY-06'),
@@ -209,6 +210,20 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'تبقى الصيغ والمصادر والنطاقات والعملة والدقة والحداثة معلقة؛ لا توجد أرقام معتمدة.', 'en' => 'Formulas, sources, scopes, currency, precision, and freshness remain pending; no certified figures exist.'],
                 'cards' => ['ar' => 'راجع كتالوج التقارير', 'en' => 'Review report catalog'],
                 'summary' => ['ar' => 'افهم سلالة المصدر', 'en' => 'Understand source lineage'],
+            ],
+            'master-data-migration' => [
+                'header' => ['ar' => 'حدود استيراد البيانات الأساسية والقطع', 'en' => 'Master Data Import and Cutover boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للقراءة فقط؛ لا يتم رفع ملف أو تحليله أو حفظ دفعة أو تنفيذ قطع الإنتاج.', 'en' => 'This is read-only readiness; no file is uploaded, parsed, persisted, or cutover is executed.'],
+                'warning' => ['ar' => 'لا يوجد استيراد فعلي', 'en' => 'No operational import'],
+                'warningBody' => ['ar' => 'تظل الملفات والمصادر والدفعات وبيانات الإنتاج معلقة حتى اعتمادها.', 'en' => 'Files, sources, batches, and production data remain pending until approved.'],
+                'cards' => ['ar' => 'راجع ترتيب التحميل', 'en' => 'Review load order'],
+                'summary' => ['ar' => 'راجع مسار البيانات المعتمد', 'en' => 'Review the approved data path'],
+                'steps' => [
+                    ['title' => ['ar' => 'المصدر المعتمد', 'en' => 'Approved source'], 'body' => ['ar' => 'القوائم والملفات الموقعة مطلوبة قبل أي استيراد فعلي.', 'en' => 'Signed owner-approved lists or files are required before any operational import.'], 'selector' => '[data-guide="master-data-migration-readiness-boundary"]'],
+                    ['title' => ['ar' => 'ترتيب التحميل', 'en' => 'Load order'], 'body' => ['ar' => 'الشركة والفروع والمتاجر تسبق المستخدمين والمنتجات والأسعار والمخزون الافتتاحي.', 'en' => 'Company, branches, and stores precede users, products, prices, and opening stock.'], 'selector' => '[data-guide="master-data-migration-readiness-first-card"]'],
+                    ['title' => ['ar' => 'المطابقة قبل القطع', 'en' => 'Reconcile before cutover'], 'body' => ['ar' => 'تطابق العدد والمراجع والتفرد والعينات شرط قبل التقدم.', 'en' => 'Count, reference, uniqueness, and sample checks must pass before progression.'], 'selector' => '[data-guide="master-data-migration-readiness-card-6"]'],
+                    ['title' => ['ar' => 'لا يوجد استيراد الآن', 'en' => 'No import is enabled'], 'body' => ['ar' => 'لا يوجد رفع أو حفظ دفعات أو تغيير تدميري في هذه المرحلة.', 'en' => 'No upload, batch persistence, or destructive update is enabled in this slice.'], 'selector' => '[data-guide="master-data-migration-readiness-empty"]'],
+                ],
             ],
             'export-audit' => [
                 'header' => ['ar' => 'حدود مركز التصدير وواجهات التدقيق', 'en' => 'Export Center and Audit Views boundary'],

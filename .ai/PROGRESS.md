@@ -1,12 +1,12 @@
-# Active Progress — TSK-041 Approved Master Data Import and Reconciliation — 2026-08-08
+# Active Progress — TSK-042 Production Readiness, Devices, Backup, and Training — 2026-08-08
 
-**Implementation status:** TSK-040 export/audit Local/Dev readiness is complete and browser-verified; TSK-041 is active for source-safe approved-master-data import/cutover and reconciliation discovery.
+**Implementation status:** TSK-041 master-data import/cutover Local/Dev readiness is complete and browser-verified; TSK-042 is active for source-safe production-readiness/device/backup/training discovery.
 
-**Completed before this task:** TSK-040 reviewed docs 19, 34, 38, 39, 53 and source absence; added eight pending export/audit policy values, `/exports-audit-readiness`, UI-RPT-002, bilingual browser evidence, no-access 403, Initial Setup pending visibility, 4/4 tour selector evidence, diagnostics, and state handoff.
+**Completed in TSK-041:** canonical docs 23, 42, 44, 54 reviewed; added nine pending `migration.*` policies, `master-data-migration` Initial Setup card, guarded `/master-data-migration-readiness`, UI-SYS-008, bilingual screen/guide, English/LTR and Arabic/RTL browser evidence, Initial Setup pending visibility, no-access denial, no overflow/no operational controls, route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics, and local evidence.
 
-**Next concrete step:** inspect approved data/template, validation, dry-run, reconciliation, opening-stock, cutover, maker/checker, backup, and import error contracts before changing code.
+**Next concrete step:** inspect production config/secrets handling, worker/scheduler/storage/monitoring health, target device/printer/scanner records, backup/restore commands, support ownership, training/runbooks, and their current permission boundaries.
 
-**Boundary:** no upload, parsing, batch persistence, destructive update, stock posting, production cutover, UAT sign-off, or production claim is enabled.
+**Boundary:** no production deployment, secret creation, device enrollment, backup deletion, restore claim, UAT sign-off, release approval, or production claim is enabled.
 
 ---
 

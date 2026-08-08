@@ -175,6 +175,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'master-data-migration',
+                'label' => (string) __('Master-data import and cutover'),
+                'description' => (string) __('Review approved source, load order, create-only staging, reconciliation, maker/checker, backup, and cutover values; blanks remain PENDING and no import is enabled.'),
+                'route' => route('master-data.migration.readiness'),
+                'complete' => $this->masterDataMigrationPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -385,6 +393,19 @@ final class InitialSetupStatus
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->count() === 8;
+    }
+
+    private function masterDataMigrationPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'migration.source', 'migration.load_order', 'migration.create_only', 'migration.file_safety',
+                'migration.duplicate', 'migration.stage_validation', 'migration.reconciliation',
+                'migration.approval', 'migration.cutover',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->count() === 9;
     }
 
     private function financialSettingsReady(): bool
