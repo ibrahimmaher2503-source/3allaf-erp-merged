@@ -77,6 +77,24 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:dashboard_reports.view')->name('reports.readiness');
 
+    Route::get('alerts-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('dashboard_reports.view'), 403);
+
+        return view('pages.alerts.readiness', [
+            'title' => __('Operational Alerts and Exception Queue Readiness'),
+            'cards' => [
+                ['title' => __('Alert triggers and source eligibility'), 'body' => __('Low/zero stock, unpriced, price approval, transfer, count, invoice, shift, party, balance, asset, and job triggers require approved source contracts; no alert is evaluated.')],
+                ['title' => __('Severity and owner role'), 'body' => __('Severity, escalation, due time, and responsible owner role remain PENDING; no priority or assignment is applied.')],
+                ['title' => __('Scope and safe navigation'), 'body' => __('Branch, store, role, user, source link, and detail authorization remain PENDING; no cross-scope navigation is exposed.')],
+                ['title' => __('Acknowledgement and resolution'), 'body' => __('Acknowledged, resolved, dismissed, reopened, and immutable history states remain PENDING; no state mutation is enabled.')],
+                ['title' => __('Suppression and deduplication'), 'body' => __('Duplicate, stale, suppression, retry, and source-missing behavior remain PENDING; no duplicate alert is created.')],
+                ['title' => __('Notification and exception queue'), 'body' => __('In-app/email delivery, pagination, filters, empty/error states, and role-safe queue navigation remain PENDING; no notification is sent.')],
+            ],
+        ]);
+    })->middleware('can:dashboard_reports.view')->name('alerts.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

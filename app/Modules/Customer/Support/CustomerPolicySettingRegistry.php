@@ -355,6 +355,15 @@ final class CustomerPolicySettingRegistry
             'report.export' => ['title' => 'Report export boundary', 'description' => 'Permissioned bounded PDF/Excel/export rules; no artifact is generated.'],
             'report.precision' => ['title' => 'Report precision and currency', 'description' => 'Explicit precision, currency, snapshot, and no-general-ledger boundary; no amount is shown.'],
             'report.freshness' => ['title' => 'Report freshness and cache', 'description' => 'Freshness, cache scope, and historical snapshot rules; no unrestricted cache is enabled.'],
+            'alert.trigger' => ['title' => 'Alert trigger catalog', 'description' => 'Trigger conditions and source eligibility remain pending; no alert is evaluated or created.'],
+            'alert.severity' => ['title' => 'Alert severity policy', 'description' => 'Severity and escalation meaning remain pending; no priority is assigned.'],
+            'alert.owner' => ['title' => 'Alert owner role', 'description' => 'Owner role and operational responsibility remain pending; no alert is assigned.'],
+            'alert.scope' => ['title' => 'Alert scope and authorization', 'description' => 'Branch, store, role, and user scope remain pending; no cross-scope alert is exposed.'],
+            'alert.lifecycle' => ['title' => 'Alert acknowledgement and resolution', 'description' => 'Acknowledgement, resolution, dismissal, and reopen states remain pending; no state changes are enabled.'],
+            'alert.source_link' => ['title' => 'Alert source link', 'description' => 'Source record, safe navigation, and missing-source behavior remain pending; no link is rendered.'],
+            'alert.deduplication' => ['title' => 'Alert suppression and deduplication', 'description' => 'Duplicate, stale, suppression, and retry rules remain pending; no duplicate alert is created.'],
+            'alert.notification' => ['title' => 'Alert notification delivery', 'description' => 'In-app, email, and other delivery channels remain pending; no notification is sent.'],
+            'alert.navigation' => ['title' => 'Exception queue navigation', 'description' => 'Role-safe list, filters, pagination, and detail navigation remain pending; no queue rows are loaded.'],
         ];
     }
 }

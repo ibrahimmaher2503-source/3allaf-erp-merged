@@ -1,15 +1,15 @@
-# Active Milestone — TSK-039 Operational Alerts and Exception Queue
+# Active Milestone — TSK-040 Export Center and Audit Views
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.1 — Quotations, Reporting, Acceptance, and Launch
-**Status:** TSK-038 Local/Dev dashboard/report catalog readiness is completed and browser-verified. TSK-039 is now In Progress for source-safe alert/exception discovery/readiness.
-**Progress:** TSK-038 added `/reports-readiness`, ten pending report policies, Initial Setup visibility, and UI-RPT-001. TSK-039 must inspect alert sources, triggers, severity, scope, ownership, deduplication, acknowledge/resolve, notification, and navigation; no alert mutation or production notification is authorized.
+**Current milestone:** DM 6.2 — Export, Audit, and Acceptance
+**Status:** TSK-039 Local/Dev operational-alert and exception-queue readiness is completed and browser-verified. TSK-040 is now In Progress for source-safe export/audit and acceptance-readiness discovery.
+**Progress:** TSK-039 added `/alerts-readiness`, nine pending alert policy values, Initial Setup visibility, and UI-SYS-007. TSK-040 must inspect export formats/limits/retention/storage/redaction/audit access and existing source contracts; no export artifact, audit mutation, UAT sign-off, or release approval is authorized.
 
 ---
-# Previous Milestone Record — TSK-038
+# Previous Milestone Record — TSK-039
 
-**Status:** Completed for verified Local/Dev dashboard/report catalog readiness; KPI calculation, report truth, financial figures, cross-scope access, alerts, drilldown, exports, and reconciliation claims remain open.
-**Evidence:** Docs 34, 36–39 and source absence reviewed; guarded report readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and 4/4 interactive tour selectors passed.
+**Status:** Completed for verified Local/Dev alert and exception readiness; trigger evaluation, alert creation, delivery, acknowledgement, resolution, dismissal, escalation, source links, and production notifications remain open.
+**Evidence:** Docs 34, 36–39 and existing source absence reviewed; guarded `/alerts-readiness`, pending alert policies, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no mutation controls, and 4/4 interactive tour selectors passed.
 
 ---
 

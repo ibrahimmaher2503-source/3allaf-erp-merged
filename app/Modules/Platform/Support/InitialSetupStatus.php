@@ -159,6 +159,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'alert-policies',
+                'label' => (string) __('Operational alert and exception policies'),
+                'description' => (string) __('Review alert triggers, severity, ownership, scope, lifecycle, source links, deduplication, notification, and queue navigation; blanks remain PENDING and no alert is created.'),
+                'route' => route('alerts.readiness'),
+                'complete' => $this->alertPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -341,6 +349,18 @@ final class InitialSetupStatus
                 'party.final_readiness', 'party.invoice_freeze', 'party.payment_reconcile', 'party.credit',
                 'party.wallet_settlement', 'party.final_receipt', 'party.final_approval', 'party.final_idempotency',
                 'party.final_numbering', 'party.final_print',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function alertPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'alert.trigger', 'alert.severity', 'alert.owner', 'alert.scope', 'alert.lifecycle',
+                'alert.source_link', 'alert.deduplication', 'alert.notification', 'alert.navigation',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

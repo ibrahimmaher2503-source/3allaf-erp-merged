@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-038 Dashboards and Reconciled Report Catalog readiness — 2026-08-08
+## TSK-039 Operational Alerts and Exception Queue readiness — 2026-08-08
+
+- Reviewed docs 34, 36–39 plus repository routes/views/models for alert, exception, notification, acknowledgement, resolution, and source-link surfaces; no independent alert engine or exception queue source exists.
+- Added nine pending `alert.*` policy keys, `alert-policies` Initial Setup card, guarded `/alerts-readiness`, and UI-SYS-007.
+- Read-only boundary covers trigger/source eligibility, severity/owner, scope/navigation, lifecycle, deduplication, notification, pagination, and empty/error behavior; no alert row or notification is generated.
+- Diagnostics PASS: PHP lint, Blade/cache, route discovery, locale parity `1600/1600`, Pint, PHPStan `[OK] No errors`, Vite build, and diff check.
+- Browser PASS: English/LTR and Arabic/RTL, Initial Setup pending card, zero overflow, no mutation controls, no-access 403, and Page Guide interactive tour 4/4 valid selectors.
+- Remains Local/Dev evidence only; no production alert, notification, UAT, or release claim.
+
+
+
 
 - Reviewed docs 34, 36–39 and existing dashboard/report routes/models/UI; no reconciled report catalog or approved source-read-model/report data surface exists.
 - Added ten `report.*` pending policy keys and `reporting-policies` Initial Setup card.

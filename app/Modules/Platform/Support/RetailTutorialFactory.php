@@ -102,6 +102,7 @@ final class RetailTutorialFactory
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-RPT-001' => self::readiness('reports.readiness', 'جاهزية لوحات المعلومات وتقارير المطابقة', 'Dashboards and Reconciled Reports Readiness', 'reports', 'TSK-038', 'RPT-01..03'),
+            'UI-SYS-007' => self::readiness('alerts.readiness', 'جاهزية التنبيهات التشغيلية وطابور الاستثناءات', 'Operational Alerts and Exception Queue Readiness', 'alerts', 'TSK-039', 'RPT-02'),
             'UI-QTN-001' => self::readiness('quotations.readiness', 'جاهزية عروض الأسعار والمقترحات', 'Quotations and Proposals Readiness', 'quotations', 'TSK-037', 'QTN-01..03'),
             'UI-PTY-015' => self::readiness('party.final-close.readiness', 'جاهزية الإغلاق والتسوية النهائية للحفلات', 'Party Final Close and Settlement Readiness', 'party-final-close', 'TSK-036', 'PTY-06'),
             'UI-PTY-012' => self::readiness('party.asset-events.readiness', 'جاهزية تلف وفقد وصيانة الأصول', 'Asset Damage, Loss, Maintenance and Depreciation Readiness', 'party-asset-events', 'TSK-035', 'AST-04'),
@@ -207,6 +208,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'تبقى الصيغ والمصادر والنطاقات والعملة والدقة والحداثة معلقة؛ لا توجد أرقام معتمدة.', 'en' => 'Formulas, sources, scopes, currency, precision, and freshness remain pending; no certified figures exist.'],
                 'cards' => ['ar' => 'راجع كتالوج التقارير', 'en' => 'Review report catalog'],
                 'summary' => ['ar' => 'افهم سلالة المصدر', 'en' => 'Understand source lineage'],
+            ],
+            'alerts' => [
+                'header' => ['ar' => 'حدود التنبيهات التشغيلية وطابور الاستثناءات', 'en' => 'Operational alerts and exception queue boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للقراءة فقط؛ لا يتم تقييم أو إنشاء أو إرسال أو تغيير أي تنبيه.', 'en' => 'This is read-only readiness; no alert is evaluated, created, delivered, or changed.'],
+                'warning' => ['ar' => 'المشغل والمصدر والمالك قبل التنبيه', 'en' => 'Trigger, source, and owner before alerts'],
+                'warningBody' => ['ar' => 'لا توجد صفوف تنبيهات أو استثناءات أو إشعارات في هذه الشريحة.', 'en' => 'No alert, exception, or notification rows exist in this slice.'],
+                'cards' => ['ar' => 'راجع عقد التنبيهات', 'en' => 'Review alert contract'],
+                'summary' => ['ar' => 'افهم حدود الاستثناءات', 'en' => 'Understand exception boundaries'],
             ],
             'quotations' => [
                 'header' => ['ar' => 'حدود عروض الأسعار والمقترحات', 'en' => 'Quotations and Proposals boundary'],

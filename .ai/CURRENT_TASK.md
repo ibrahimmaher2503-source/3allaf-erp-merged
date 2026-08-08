@@ -1,34 +1,24 @@
-# Current Task — TSK-039 Operational Alerts and Exception Queue
+# Current Task — TSK-040 Export Center and Audit Views Readiness
 
 **Date:** 2026-08-08
 **Repository:** `/home/ubuntu/projects/toy-joy-phase-1-documentation`
-**Status:** In Progress — Local/Dev alert/exception readiness boundary
+**Status:** In Progress — Local/Dev export/audit and acceptance-readiness discovery boundary
 
-## Source and dependency review
+## Required review
 
-- TSK-038 dashboard/report readiness is complete; it provides no metric rows, report source data, or alert records.
-- Required review: `docs/34-reporting-dashboard-alerts-specification.md`, `docs/36-module-data-contracts.md`, `docs/37-ui-screen-specifications.md`, `docs/38-print-export-specification.md`, `docs/39-uat-and-release-gates.md`, roles/permissions, source models, current notification/navigation UI, and alert/exception policies.
-- Alerts require trigger, severity, owner role, scope, created/due time, acknowledged/resolved state, source link, suppression/deduplication, and safe navigation.
+- `docs/19-audit-logging-and-approval-records.md`, `docs/34-reporting-dashboard-alerts-specification.md`, `docs/36-module-data-contracts.md`, `docs/37-ui-screen-specifications.md`, `docs/38-print-export-specification.md`, `docs/39-uat-and-release-gates.md`, `docs/50-reporting-formula-catalog.md`, `docs/53-deployment-backup-and-rollback-runbook.md`, and existing audit/export/attachment/permission routes and screens.
+- Reconcile TSK-040 against existing audit logs, source reports, permissioned downloads, PDF/Excel packages, artifact retention, redaction, and current UAT/release evidence.
 
 ## Authorized implementation slice
 
-1. Review existing alert, notification, exception, source, permission, and navigation contracts.
-2. Add only source-safe Local/Dev alert/exception readiness or empty-state UI.
-3. Keep thresholds, creation, acknowledgement, resolution, escalation, notification delivery, and source links pending when undocumented or absent.
-4. Add bilingual Page Guide coverage with stable targets if a new screen is introduced.
+1. Inspect existing source-safe audit and export contracts; do not assume packages or artifact persistence exist.
+2. Add only a guarded Local/Dev readiness or empty-state UI for export center/audit views.
+3. Keep format, row/size limits, retention, storage, redaction, formula safety, download expiry, and audit access `PENDING/TBD` when undocumented.
+4. No export artifact, PDF/Excel generation, download, audit mutation, production/UAT sign-off, or release approval.
 
-## Before closing TSK-039
+## Verification before closure
 
-- Verify English/LTR and Arabic/RTL, authorized/no-access/direct-route, no overflow, no unsupported alert rows, no mutation controls, and zero console errors.
-- Verify canonical Page Guide title and all interactive tour selectors.
-- Run cache/routes/locale/Pint/PHPStan/lint/build/diff gates.
-- Update all `.ai` evidence/state files and `TASKS.md`.
-- Commit one reviewed local slice; never push.
-
-## Explicit boundary
-
-No alert is created, delivered, acknowledged, resolved, dismissed, escalated, or treated as a production exception until trigger/source/scope/owner policy is approved.
-
-## Next task after this
-
-TSK-040 — Implement Acceptance/UAT and Release Readiness.
+- Manual browser: authorized/no-access/direct route, English/LTR, Arabic/RTL, no overflow, empty/error/disabled states, no sensitive values or mutation controls, zero console errors.
+- Verify Page Guide title and every interactive selector if a new screen is introduced.
+- Run allowed route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics.
+- Update `TASKS.md` and all active `.ai` evidence/state files, commit one coherent local slice, never push.

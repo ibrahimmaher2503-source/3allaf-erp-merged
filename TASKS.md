@@ -611,7 +611,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-039 — Implement Operational Alerts and Notifications
 
-- **Task ID / Phase / Milestone / Status:** TSK-039; Phase 6; DM 6.1; **In Progress — Local/Dev operational-alert and exception-queue source-safe discovery/readiness plan active; triggers, severity, scope, ownership, deduplication, acknowledge/resolve, notification, and navigation remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-039; Phase 6; DM 6.1; **Completed — verified Local/Dev operational-alert and exception-queue readiness slice; trigger evaluation, alert creation, delivery, acknowledgement, resolution, dismissal, escalation, and source navigation remain deferred**.
 - **Title / Purpose / Description:** Surface all PRD low/zero/unpriced/price/transfer/count/invoice/shift/party/balance/asset alerts and role-safe notification navigation.
 - **Traceability:** RPT-02, NFR-03, NFR-05; US-031; FLW-RPT-01; UI UI-ADM-001, UI-SYS-007, UI-RPT-001; AC-RPT-02, AC-NFR-03, AC-NFR-05; SEC-011–012, SEC-016, SEC-037.
 - **Dependencies / Required Inputs:** TSK-038; alert thresholds/timing/ownership/dismissal/escalation policy.
@@ -625,7 +625,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-040 — Implement PDF/Excel Export Center and Audit Views
 
-- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **In Progress — Local/Dev acceptance/UAT and release-readiness source-safe discovery/readiness plan active; evidence, sign-off, export, audit, backup, and production gates remain pending**.
 - **Title / Purpose / Description:** Provide safe permissioned PDF/Excel generation/download/expiry and append-only audit filters/detail/before-after/export.
 - **Traceability:** RPT-03, NFR-01–NFR-05; US-031–032; FLW-RPT-02–03; UI UI-RPT-002, UI-AUD-001, UI-OFF-003; AC-RPT-03, AC-NFR-01–05; SEC-011–012, SEC-016, SEC-022–029, SEC-037.
 - **Dependencies / Required Inputs:** TSK-038–039; export formats/limits/retention/storage/redaction/audit access.

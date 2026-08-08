@@ -1,12 +1,12 @@
-# Active Progress — TSK-039 Operational Alerts and Exception Queue — 2026-08-08
+# Active Progress — TSK-040 Export Center and Audit Views — 2026-08-08
 
-**Implementation status:** TSK-038 dashboard/report Local/Dev readiness is complete and ready for commit; TSK-039 is active for source-safe alert/exception discovery/readiness.
+**Implementation status:** TSK-039 operational-alert/exception Local/Dev readiness is complete and browser-verified; TSK-040 is active for source-safe export/audit and acceptance-readiness discovery.
 
-**Completed before this task:** TSK-038 reviewed docs 34, 36–39 and source absence; added ten pending report policy values, `/reports-readiness`, UI-RPT-001, bilingual browser evidence, no-access 403, 4/4 tour selector evidence, diagnostics, and state handoff.
+**Completed before this task:** TSK-039 reviewed docs 34, 36–39 and source absence; added nine pending alert policy values, `/alerts-readiness`, UI-SYS-007, Initial Setup pending visibility, bilingual browser evidence, no-access 403, 4/4 tour selector evidence, diagnostics, and state handoff.
 
-**Next concrete step:** inspect alert/exception source models, trigger/severity/owner/scope policies, deduplication, acknowledgement/resolution, notification, and navigation before changing code.
+**Next concrete step:** inspect audit log, export, artifact, attachment, package, redaction, retention, source, and permission contracts before changing code.
 
-**Boundary:** no alert creation, delivery, acknowledgement, resolution, dismissal, escalation, or production exception claim is enabled.
+**Boundary:** no export artifact, PDF/Excel generation, download, audit mutation, UAT sign-off, release approval, or production claim is enabled.
 
 ---
 
