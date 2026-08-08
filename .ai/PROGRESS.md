@@ -1,12 +1,12 @@
-# Active Progress — TSK-037 Standalone Retail and Party Quotations — 2026-08-07
+# Active Progress — TSK-038 Dashboards and Reconciled Report Catalog — 2026-08-08
 
-**Implementation status:** TSK-036 final settlement/close Local/Dev readiness slice is complete and ready for commit; TSK-037 is active for source-safe quotation/proposal discovery/readiness.
+**Implementation status:** TSK-037 quotation/proposal Local/Dev readiness slice is complete and ready for commit; TSK-038 is active for source-safe dashboard/report discovery/readiness.
 
-**Completed before this task:** TSK-036 reviewed party final-close policy and repository absence; added pending final-close policy values, `/party/final-close-readiness`, UI-PTY-015, bilingual browser evidence, no-access 403, diagnostics, and state handoff.
+**Completed before this task:** TSK-037 reviewed docs 35–38 and approval/roles/scope; added pending quotation policy values, `/quotations-readiness`, UI-QTN-001, bilingual browser evidence, no-access 403, diagnostics, and state handoff. Existing `dashboard_reports.view` is recorded as a temporary read-only guard because no canonical quotation permission exists.
 
-**Next concrete step:** inspect quotation/proposal, customer/price, typed retail/party, expiry/terms, approval, numbering, print/share, audit, and conversion contracts before changing code.
+**Next concrete step:** inspect dashboard/report source models, formulas, scope/lineage, alerts, pagination, export, and current UI before changing code.
 
-**Boundary:** no quotation/proposal creation, approval, print/share, conversion, sale, party invoice, inventory, wallet, payment, or financial behavior is enabled.
+**Boundary:** no production KPI/report truth, cross-scope data, export artifact, alert mutation, or unsupported financial value is enabled.
 
 ---
 

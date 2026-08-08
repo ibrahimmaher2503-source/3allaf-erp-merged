@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close readiness — 2026-08-07
+## TSK-037 Standalone Retail and Party Quotations readiness — 2026-08-08
+
+- Reviewed docs 35–38, roles/permissions, approval policy, scope, and repository; quotation source models/routes/views are absent.
+- Added ten `quotation.*` pending policy keys and `quotation-policies` Initial Setup card.
+- Added guarded `/quotations-readiness` (`quotations.readiness`) using existing `dashboard_reports.view` as a temporary Local/Dev read-only guard because no canonical quotation permission exists; no new operational grant was invented.
+- Added `UI-QTN-001`, bilingual feature-specific Page Guide/tour, and stable `quotations-readiness-*` targets.
+- Screen is read-only: no quote creation, approval, pricing, numbering, print/share, conversion, sale, party invoice, inventory, wallet, payment, or financial effect.
+- Static: Blade/cache, route list, locale parity `1561/1561`, Pint, PHPStan `[OK] No errors`, PHP lint, Vite build, and diff check passed.
+- Browser: English/LTR and Arabic/RTL verified; no overflow, no numeric/currency leak, no mutation controls; feature-specific guide title and first tour step verified; demo-no-access denied with HTTP 403; Initial Setup quotation card visible as pending.
+
+
 
 - Reviewed `docs/28-party-operations-policy.md` and end-to-end party specification: final close requires booking/operation/return readiness, payment reconciliation, Party Wallet-only settlement, remaining/credit determination, immutable final invoice, final receipt, audit, and close; Product Wallet is excluded.
 - Reviewed repository: no PartyInvoice, final receipt, party payment, final-close, or settlement models/routes/views exist; generic `DocumentSequence` is configuration only.

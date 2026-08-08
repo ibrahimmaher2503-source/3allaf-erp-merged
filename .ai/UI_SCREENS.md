@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close screen — 2026-08-07
+## TSK-037 Standalone Retail and Party Quotations screen — 2026-08-08
+
+- `/quotations-readiness` (`UI-QTN-001`) is a guarded read-only quotation boundary with stable targets: `quotations-readiness-header`, `quotations-readiness-boundary`, `quotations-readiness-summary`, `quotations-readiness-cards`, `quotations-readiness-card-1`, `quotations-readiness-card-6`, and `quotations-readiness-empty`.
+- It shows pending typed activity/customer, validity/status, prices/terms, approval/audit/numbering, print/share, and future conversion boundaries without quotation records or financial values.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow; Page Guide resolves the canonical route and opens the feature-specific quotation guide/tour.
+
+
 
 - `/party/final-close-readiness` (`UI-PTY-015`) is a guarded Party-only read-only screen with stable targets: `party-final-close-readiness-header`, `party-final-close-readiness-boundary`, `party-final-close-readiness-summary`, `party-final-close-readiness-cards`, `party-final-close-readiness-card-1`, `party-final-close-readiness-card-6`, and `party-final-close-readiness-empty`.
 - It shows pending final readiness, working-invoice freeze, reconciliation/residual, Party Wallet/credit separation, final invoice/receipt, approval/idempotency/audit/numbering/print boundaries without financial values, document records, or mutation controls.

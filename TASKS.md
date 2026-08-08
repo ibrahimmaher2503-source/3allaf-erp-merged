@@ -583,7 +583,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-037 — Implement Standalone Retail and Party Quotations
 
-- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **In Progress — Local/Dev quotation/proposal source-safe discovery/readiness plan active; quote numbering, expiry, approval, conversion, price, customer, and party/retail boundaries remain gated**.
+- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **Completed — verified Local/Dev quotation/proposal readiness slice; quote creation, approval, output, conversion, and financial effects remain deferred**.
 - **Title / Purpose / Description:** Create typed retail/party quotation with customer/lines/prices/terms/notes/validity/status, print/share and future identity, with no posting or Phase 1 conversion.
 - **Traceability:** QTN-01–QTN-03, NFR-01–NFR-03, NFR-06; US-030; FLW-QTN-01; UI UI-QTN-001; AC-QTN-01–03; SEC-006, SEC-011–013, SEC-017–020, SEC-024, SEC-026–027.
 - **Dependencies / Required Inputs:** Phase 5 gate; DEC-025 owner confirmation; quotation statuses/terms/price authority/share/format.
@@ -597,7 +597,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-038 — Implement Dashboards and Reconciled Report Catalog
 
-- **Task ID / Phase / Milestone / Status:** TSK-038; Phase 6; DM 6.1; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-038; Phase 6; DM 6.1; **In Progress — Local/Dev dashboards and reconciled report catalog source-safe discovery/readiness plan active; KPI, alert, scope, export, financial, and source-read-model behavior remain gated**.
 - **Title / Purpose / Description:** Deliver role/date/branch/store scoped KPI dashboard and required report groups with formula/source lineage, pagination and drilldown.
 - **Traceability:** RPT-01, RPT-03, NFR-03, NFR-05; US-031; FLW-RPT-01; UI UI-ADM-001, UI-RPT-001; AC-RPT-01, AC-RPT-03, AC-NFR-05; SEC-011–012, SEC-016, SEC-026, SEC-037.
 - **Dependencies / Required Inputs:** Phase 5 gate; BLK-017; formula catalog/access/ranges/layouts and complete source data.

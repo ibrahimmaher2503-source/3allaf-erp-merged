@@ -59,6 +59,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('quotations-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('dashboard_reports.view'), 403);
+
+        return view('pages.quotations.readiness', [
+            'title' => __('Quotations and Proposals Readiness'),
+            'description' => __('Review typed retail/party quotation fields, customer, validity, status, prices, terms, approval, numbering, print/share, and future conversion boundaries without creating a quotation or operational/financial effect.'),
+            'items' => [
+                ['title' => __('Typed activity and customer'), 'body' => __('Retail and party activity types remain separate; customer/source linkage and mixed-line blocking remain PENDING.')],
+                ['title' => __('Validity, expiry, and status'), 'body' => __('Draft, issued, expired, cancelled, superseded, validity, and closure rules remain PENDING; no status changes are enabled.')],
+                ['title' => __('Prices and terms'), 'body' => __('Price source/snapshot, terms, notes, conditions, and owner-configurable wording remain PENDING; no price is approved or rendered.')],
+                ['title' => __('Approval, audit, and numbering'), 'body' => __('Approval separation, reasons, idempotency, audit, unique identity, and document sequence rules remain PENDING; no number is allocated.')],
+                ['title' => __('Print and share boundary'), 'body' => __('Privacy, print, and share output rules remain PENDING; no output or attachment is generated.')],
+                ['title' => __('Future conversion exclusion'), 'body' => __('A quotation may retain a future source reference only; Phase 1 conversion to sale, party invoice, inventory, wallet, payment, or financial effect is blocked.')],
+            ],
+        ]);
+    })->middleware('can:dashboard_reports.view')->name('quotations.readiness');
+
     Route::get('party/final-close-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

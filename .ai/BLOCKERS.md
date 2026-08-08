@@ -4,7 +4,15 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close boundary — 2026-08-07
+## TSK-037 Standalone Retail and Party Quotations boundary — 2026-08-08
+
+TSK-037 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending quotation type/customer/validity/status/prices/terms/approval/numbering/print-share/conversion policies and a guarded read-only screen only. Quote creation, approval, pricing, numbering, output, conversion, sale, party invoice, inventory, wallet, payment, and financial mutations remain blocked pending approved source contracts.
+
+Permission note: no canonical quotation permission exists in the current authorization baseline, so the read-only readiness route uses existing `dashboard_reports.view`; no new operational permission was invented. A dedicated owner-approved quotation permission remains a future decision.
+
+Next task: TSK-038 Dashboards and Reconciled Report Catalog.
+
+
 
 TSK-036 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending final-readiness, invoice-freeze, payment-reconciliation, credit, Party Wallet, receipt, approval, idempotency, numbering, and print policy values and a guarded read-only screen only. Final invoice, receipt, settlement, wallet entry, credit/overpayment calculation, close, posting, and financial mutations remain blocked pending approved source contracts and operational values.
 

@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-07 - TSK-036 Final Party Settlement, Invoice, Receipt, Wallet, and Close readiness
+## 2026-08-08 - TSK-037 Standalone Retail and Party Quotations readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev quotation/proposal readiness slice after reviewing docs 35–38, approval/roles, scope, and source absence.
+- **Implementation:** Added ten pending quotation policy values, Initial Setup visibility, `/quotations-readiness`, and UI-QTN-001 with feature-specific Page Guide.
+- **Boundary:** No quotation, approval, price, number, print/share, conversion, sale, party invoice, inventory, wallet, payment, or financial mutation.
+- **Evidence:** Static gates passed; English/LTR and Arabic/RTL, no-access 403, Initial Setup pending card, no overflow/no numeric or currency leak/no mutation controls, and quotation-specific guide/first-tour-step verification passed. Existing `dashboard_reports.view` is a temporary read-only guard because no canonical quotation permission exists; this remains a Local/Dev boundary.
+- **Next:** TSK-038 — Implement Dashboards and Reconciled Report Catalog.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev final settlement/close readiness slice after inspecting party operations policy, end-to-end specification, wallet rules, roles, and repository source absence.
 - **Implementation:** Added ten pending final-close policy values, Initial Setup visibility, `/party/final-close-readiness`, and `UI-PTY-015` with canonical Page Guide route registration.

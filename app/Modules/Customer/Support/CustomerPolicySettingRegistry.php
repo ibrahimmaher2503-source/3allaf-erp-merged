@@ -335,6 +335,16 @@ final class CustomerPolicySettingRegistry
             'party.final_idempotency' => ['title' => 'Party final-close idempotency', 'description' => 'Double-close, retry, concurrency, and correction reference rules; no close is posted.'],
             'party.final_numbering' => ['title' => 'Party final document numbering', 'description' => 'Final invoice/receipt sequence and concurrency rules; no number is allocated.'],
             'party.final_print' => ['title' => 'Party final print boundary', 'description' => 'Final invoice/receipt privacy and print format; no document is rendered.'],
+            'quotation.type' => ['title' => 'Quotation activity type', 'description' => 'Typed retail or party activity; mixed lines are blocked and no quote is created.'],
+            'quotation.customer' => ['title' => 'Quotation customer linkage', 'description' => 'Customer/source linkage and purpose scope; no customer or quote is created.'],
+            'quotation.validity' => ['title' => 'Quotation validity and expiry', 'description' => 'Validity dates, expiry, cancellation, and supersession rules; no expiry is applied.'],
+            'quotation.status' => ['title' => 'Quotation status machine', 'description' => 'Draft, issued, expired, cancelled, and superseded transitions; no status changes are enabled.'],
+            'quotation.prices' => ['title' => 'Quotation price authority', 'description' => 'Price source, snapshot, approval, and visibility rules; no price is rendered or approved.'],
+            'quotation.terms' => ['title' => 'Quotation terms and notes', 'description' => 'Terms, notes, conditions, and owner wording; no proposal is issued.'],
+            'quotation.approval' => ['title' => 'Quotation approval and audit', 'description' => 'Approval, separation, reason, idempotency, and audit rules; no approval is requested.'],
+            'quotation.numbering' => ['title' => 'Quotation numbering', 'description' => 'Unique sequence and document identity rules; no number is allocated.'],
+            'quotation.print_share' => ['title' => 'Quotation print and share', 'description' => 'Read-only print/share boundary and privacy; no output is generated.'],
+            'quotation.conversion' => ['title' => 'Quotation future conversion', 'description' => 'Future source reference only; Phase 1 conversion to sale or party invoice is blocked.'],
         ];
     }
 }

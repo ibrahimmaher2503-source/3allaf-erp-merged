@@ -1,15 +1,15 @@
-# Active Milestone — TSK-037 Standalone Retail and Party Quotations
+# Active Milestone — TSK-038 Dashboards and Reconciled Report Catalog
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.1 (Proposed mapping) — Quotations, Reporting, Acceptance, and Launch
-**Status:** TSK-036 Local/Dev final settlement/close readiness slice is completed and browser-verified. TSK-037 is now In Progress for source-safe quotation/proposal discovery/readiness.
-**Progress:** TSK-036 added `/party/final-close-readiness`, ten pending final-close policy keys, Initial Setup visibility, and UI-PTY-015. TSK-037 must first inspect quotation/proposal, customer/price, retail/party typing, expiry/terms, approval, numbering, print/share, audit, and conversion contracts; no quote or conversion mutation is authorized.
+**Current milestone:** DM 6.1 — Quotations, Reporting, Acceptance, and Launch
+**Status:** TSK-037 Local/Dev quotation/proposal readiness slice is completed and browser-verified. TSK-038 is now In Progress for source-safe dashboard/report discovery/readiness.
+**Progress:** TSK-037 added `/quotations-readiness`, ten pending quotation policy keys, Initial Setup visibility, and UI-QTN-001. TSK-038 must first inspect dashboard/report sources, formulas, scope/lineage, alerts, pagination, export, and current UI; no KPI/report/export/alert mutation or unsupported financial claim is authorized.
 
 ---
-# Previous Milestone Record — TSK-036
+# Previous Milestone Record — TSK-037
 
-**Status:** Completed for verified Local/Dev final settlement/close readiness; final invoice, receipt, settlement, Party Wallet, credit/overpayment, close, posting, and financial mutations remain open.
-**Evidence:** Party policy/end-to-end specification and repository absence reviewed; guarded final-close readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed.
+**Status:** Completed for verified Local/Dev quotation/proposal readiness; quote creation, approval, price/number allocation, print/share, conversion, sale, party invoice, inventory, wallet, payment, and financial mutations remain open.
+**Evidence:** Docs 35–38, approval/roles, scope, and repository absence reviewed; guarded quotation readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed.
 
 ---
 

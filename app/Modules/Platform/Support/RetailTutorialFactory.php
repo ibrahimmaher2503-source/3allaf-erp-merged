@@ -101,6 +101,7 @@ final class RetailTutorialFactory
             'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
+            'UI-QTN-001' => self::readiness('quotations.readiness', 'جاهزية عروض الأسعار والمقترحات', 'Quotations and Proposals Readiness', 'quotations', 'TSK-037', 'QTN-01..03'),
             'UI-PTY-015' => self::readiness('party.final-close.readiness', 'جاهزية الإغلاق والتسوية النهائية للحفلات', 'Party Final Close and Settlement Readiness', 'party-final-close', 'TSK-036', 'PTY-06'),
             'UI-PTY-012' => self::readiness('party.asset-events.readiness', 'جاهزية تلف وفقد وصيانة الأصول', 'Asset Damage, Loss, Maintenance and Depreciation Readiness', 'party-asset-events', 'TSK-035', 'AST-04'),
             'UI-PTY-007' => self::readiness('party.assets.readiness', 'جاهزية أصول التأجير والتقويم', 'Rental Assets and Calendar Readiness', 'party-assets', 'TSK-034', 'AST-01..03'),
@@ -197,6 +198,14 @@ final class RetailTutorialFactory
                 'warningBody' => ['ar' => 'لا توجد defaults أو حدود تشغيلية مخترعة.', 'en' => 'No invented operational defaults or limits are applied.'],
                 'cards' => ['ar' => 'راجع بند OFF-01', 'en' => 'Review OFF-01'],
                 'summary' => ['ar' => 'افهم المسموح والمحظور', 'en' => 'Understand permitted and blocked classes'],
+            ],
+            'quotations' => [
+                'header' => ['ar' => 'حدود عروض الأسعار والمقترحات', 'en' => 'Quotations and Proposals boundary'],
+                'headerBody' => ['ar' => 'هذه جاهزية للقراءة فقط؛ لا يتم إنشاء عرض أو اعتماد أو طباعة أو مشاركة أو تحويل.', 'en' => 'This is read-only readiness; no quote, approval, print, share, or conversion is created.'],
+                'warning' => ['ar' => 'لا أثر تشغيلي أو مالي', 'en' => 'No operational or financial effect'],
+                'warningBody' => ['ar' => 'تبقى عروض التجزئة والحفلات typed ومنفصلة، ولا تنشئ بيعًا أو فاتورة أو مخزونًا أو محفظة.', 'en' => 'Retail and party quotations remain typed and separate; they create no sale, invoice, inventory, or wallet effect.'],
+                'cards' => ['ar' => 'راجع بنود العرض', 'en' => 'Review quotation points'],
+                'summary' => ['ar' => 'افهم الحدود المستقبلية', 'en' => 'Understand future boundaries'],
             ],
             'party-final-close' => [
                 'header' => ['ar' => 'حدود الإغلاق والتسوية النهائية للحفلات', 'en' => 'Party Final Close and Settlement boundary'],

@@ -143,6 +143,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'quotation-policies',
+                'label' => (string) __('Quotation and proposal policies'),
+                'description' => (string) __('Review typed activity, customer, validity, status, price, terms, approval, numbering, print/share, and future conversion values; blanks remain PENDING and no quote action is enabled.'),
+                'route' => route('quotations.readiness'),
+                'complete' => $this->quotationPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -288,6 +296,18 @@ final class InitialSetupStatus
             ->whereIn('key', [
                 'asset.damage', 'asset.loss', 'asset.maintenance', 'asset.assessment', 'asset.responsibility',
                 'asset.evidence', 'asset.cost', 'asset.damage_approval', 'asset.depreciation', 'asset.correction',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function quotationPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'quotation.type', 'quotation.customer', 'quotation.validity', 'quotation.status', 'quotation.prices',
+                'quotation.terms', 'quotation.approval', 'quotation.numbering', 'quotation.print_share', 'quotation.conversion',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')
