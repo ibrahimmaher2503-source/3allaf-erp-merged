@@ -1,9 +1,15 @@
-# Active Milestone — TSK-043 Scenario-Based Manual UAT and Defect Retesting
+# Active Milestone — TSK-044 Controlled Go-Live and Operational Handover Readiness
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.3 — Manual UAT and Evidence
-**Status:** TSK-042 Local/Dev production-operations/device/backup/training readiness is complete and browser-verified; TSK-043 is active for source-safe manual-UAT scenario/evidence readiness.
-**Evidence:** TSK-042 reviewed docs 30, 39, 53 and actual health/device/backup/training surfaces; guarded `/operations-readiness`, pending operations policies, bilingual UI-SYS-009, English/LTR and Arabic/RTL checks, Initial Setup pending card, no-access denial, no overflow/no operational controls, and 4/4 Page Guide selectors passed. Production infrastructure, restore evidence, device acceptance, training, UAT, and go-live remain open.
+**Current milestone:** DM 6.4 — Production Readiness and Controlled Handover
+**Status:** TSK-043 and TSK-044 Local/Dev readiness slices are complete and browser-verified; actual manual UAT, production cutover, client approval, and go-live remain blocked.
+**Evidence:** Guarded `/uat-readiness` (UI-SYS-010) and `/release-readiness` (UI-SYS-011), seven pending cards per screen, bilingual English/LTR and Arabic/RTL checks, no-access `403`, no overflow, pending Initial Setup cards, Page Guide `4/4` for UAT, and route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics passed for changed scope.
+
+---
+# Previous Milestone Record — TSK-043
+
+**Status:** Completed for Local/Dev scenario/evidence readiness only; UAT execution, defect closure, UAT sign-off, device acceptance, and production approval remain open.
+**Evidence:** Reviewed docs 12, 13, 14, 39 and actual artifacts; no approved UAT scenario owners/data/devices/evidence repository/defect register existed; added guarded `/uat-readiness`, UI-SYS-010, bilingual pending screen, and browser evidence.
 
 ---
 # Previous Milestone Record — TSK-042

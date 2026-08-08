@@ -154,6 +154,44 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:audit_logs.view')->name('operations.readiness');
 
+    Route::get('uat-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('audit_logs.view'), 403);
+
+        $isArabic = app()->getLocale() === 'ar';
+        $cards = [
+            ['title' => $isArabic ? 'حزمة السيناريوهات والتغطية' : 'Scenario pack and coverage', 'body' => $isArabic ? 'معرّفات السيناريوهات والمتطلبات والشروط والنتائج المتوقعة تحتاج اعتمادًا.' : 'Scenario IDs, requirements, prerequisites, and expected results need approval.'],
+            ['title' => $isArabic ? 'المالكون والأدوار' : 'Owners and roles', 'body' => $isArabic ? 'مالكو الأعمال والتقنية والعيوب والقبول والتوقيع النهائي غير محددين.' : 'Business, technical, defect, acceptance, and final sign-off owners are not named.'],
+            ['title' => $isArabic ? 'البيانات والأجهزة' : 'Data and devices', 'body' => $isArabic ? 'بيانات الاختبار والطابعات والماسحات والأجهزة والبيئة المعتمدة غير متاحة.' : 'Approved test data, printers, scanners, devices, and environments are unavailable.'],
+            ['title' => $isArabic ? 'قاعدة الأدلة' : 'Evidence repository', 'body' => $isArabic ? 'المكان المحمي وسجلات Run ID واللقطات والمخرجات والمراجع غير معتمد.' : 'Protected location, Run IDs, screenshots, outputs, and source references are not approved.'],
+            ['title' => $isArabic ? 'العيوب وإعادة الاختبار' : 'Defects and retesting', 'body' => $isArabic ? 'التصنيف والمالك وإثبات الإصلاح وإعادة اختبار الانحدار غير مسجلة.' : 'Severity, owner, fix evidence, and regression retest are not recorded.'],
+            ['title' => $isArabic ? 'المطابقة' : 'Reconciliation', 'body' => $isArabic ? 'مطابقة المخزون والمدفوعات والمحافظ والتقارير والتدقيق غير منفذة.' : 'Stock, payments, wallets, reports, and audit reconciliation is not executed.'],
+            ['title' => $isArabic ? 'القبول الكتابي' : 'Written acceptance', 'body' => $isArabic ? 'لا يوجد إغلاق للعيوب الحرجة أو توقيع UAT أو تفويض قبول.' : 'No critical-defect closure, UAT sign-off, or acceptance authorization exists.'],
+        ];
+
+        return view('pages.uat.readiness', ['title' => $isArabic ? 'جاهزية الاختبار اليدوي وقاعدة الأدلة' : 'Manual UAT and Evidence Readiness', 'cards' => $cards]);
+    })->name('uat.readiness');
+
+    Route::get('release-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('audit_logs.view'), 403);
+
+        $isArabic = app()->getLocale() === 'ar';
+        $cards = [
+            ['title' => $isArabic ? 'نسخة الإصدار والتجميد' : 'Release version and freeze', 'body' => $isArabic ? 'رقم الإصدار ونقطة التجميد وخطة التراجع غير معتمدة.' : 'Release ID, freeze point, and rollback plan are not approved.'],
+            ['title' => $isArabic ? 'بيانات القطع' : 'Cutover data', 'body' => $isArabic ? 'البيانات النهائية والمطابقة ومالك القطع غير محددة.' : 'Final data, reconciliation, and cutover owner are not defined.'],
+            ['title' => $isArabic ? 'النسخ الاحتياطي والاستعادة' : 'Backup and restore', 'body' => $isArabic ? 'سجل النسخ والاستعادة المعزولة وRPO/RTO غير متاح.' : 'Backup record, isolated restore, and RPO/RTO evidence are unavailable.'],
+            ['title' => $isArabic ? 'المراقبة والتنبيه' : 'Monitoring and alerts', 'body' => $isArabic ? 'المراقبة وقنوات التصعيد وملكية الدعم غير مفعلة.' : 'Monitoring, escalation channels, and support ownership are not activated.'],
+            ['title' => $isArabic ? 'الأجهزة والمستخدمون' : 'Devices and users', 'body' => $isArabic ? 'المستخدمون والأجهزة والطابعات والإعدادات النهائية غير معتمدة.' : 'Final users, devices, printers, and settings are not approved.'],
+            ['title' => $isArabic ? 'التدريب والدعم' : 'Training and support', 'body' => $isArabic ? 'الحضور والـrunbook ومسار الحوادث والإحالة غير موثقة.' : 'Attendance, runbook, incident path, and handover are not documented.'],
+            ['title' => $isArabic ? 'الموافقة على الإطلاق' : 'Go-live approval', 'body' => $isArabic ? 'لا توجد موافقة عميل أو تفويض إطلاق أو قبول إنتاجي.' : 'No client approval, launch authorization, or production acceptance exists.'],
+        ];
+
+        return view('pages.release.readiness', ['title' => $isArabic ? 'جاهزية القطع والإطلاق والإحالة' : 'Controlled Go-Live and Handover Readiness', 'cards' => $cards]);
+    })->name('release.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

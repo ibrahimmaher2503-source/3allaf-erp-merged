@@ -1664,5 +1664,19 @@
     "Training and release gate": "التدريب وبوابة الإصدار",
     "Training attendees, role-specific scenarios, completion evidence, UAT, security review, rollback, and go-live sign-off remain pending.": "يبقى حضور التدريب والسيناريوهات الخاصة بالأدوار وأدلة الإكمال وUAT والمراجعة الأمنية والتراجع واعتماد الإطلاق معلقًا.",
     "Production operations and handover": "التشغيل والإحالة للإنتاج",
-    "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.": "راجع قيم التشغيل والأسرار والعمال والتخزين والمراقبة والنسخ/الاستعادة والأجهزة والدعم والتدريب؛ تبقى القيم الفارغة PENDING ولا يتم تفعيل أي ادعاء إنتاج."
+    "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.": "راجع قيم التشغيل والأسرار والعمال والتخزين والمراقبة والنسخ/الاستعادة والأجهزة والدعم والتدريب؛ تبقى القيم الفارغة PENDING ولا يتم تفعيل أي ادعاء إنتاج.",
+    "Manual UAT and evidence readiness": "جاهزية الاختبار اليدوي وقاعدة الأدلة",
+    "Review scenarios, owners, data/devices, evidence, defects, reconciliation, and acceptance values; blanks remain PENDING and no UAT sign-off is created.": "راجع السيناريوهات والمالكين والبيانات/الأجهزة والأدلة والعيوب والمطابقة وقيم القبول؛ تبقى القيم الفارغة PENDING ولا يتم إنشاء اعتماد UAT.",
+    "Controlled go-live and handover readiness": "جاهزية القطع والإطلاق والإحالة",
+    "Review cutover, rollback, monitoring, support, and approval values; blanks remain PENDING and no production deployment is performed.": "راجع قيم القطع والتراجع والمراقبة والدعم والموافقة؛ تبقى القيم الفارغة PENDING ولا يتم تنفيذ نشر إنتاجي.",
+    "TSK-043 · Local/Dev readiness": "TSK-043 · جاهزية Local/Dev",
+    "Review the manual UAT scenario pack, owners, data/devices, evidence, defects, reconciliation, and acceptance prerequisites without recording a UAT result.": "راجع حزمة سيناريوهات UAT اليدوي والمالكين والبيانات/الأجهزة والأدلة والعيوب والمطابقة ومتطلبات القبول دون تسجيل نتيجة UAT.",
+    "No scenario is marked Pass, no defect is closed, no evidence is accepted, and no UAT sign-off is created in this readiness boundary.": "لا يتم وضع Pass لأي سيناريو، ولا إغلاق عيب، ولا قبول دليل، ولا إنشاء اعتماد UAT في حدود الجاهزية هذه.",
+    "PENDING — owner and evidence approval required": "PENDING — اعتماد المالك والدليل مطلوب",
+    "No UAT run IDs, Pass/Fail/Blocked results, defect closures, retests, or written acceptance are available in this Local/Dev readiness boundary.": "لا توجد Run IDs أو نتائج Pass/Fail/Blocked أو إغلاقات عيوب أو إعادة اختبارات أو موافقة كتابية ضمن حدود Local/Dev هذه.",
+    "TSK-044 · Local/Dev readiness": "TSK-044 · جاهزية Local/Dev",
+    "Review controlled cutover, rollback, monitoring, support, training, and approval prerequisites without deploying or changing production.": "راجع متطلبات القطع المنضبط والتراجع والمراقبة والدعم والتدريب والموافقة دون نشر أو تغيير الإنتاج.",
+    "No deployment, migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval is executed in this readiness boundary.": "لا يتم تنفيذ نشر أو ترحيل أو قطع أو تراجع أو استعادة نسخة إنتاج أو تفعيل مراقبة أو اعتماد إطلاق ضمن حدود الجاهزية هذه.",
+    "PENDING — owner and approval required": "PENDING — اعتماد المالك والموافقة مطلوبان",
+    "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary.": "لا يوجد رقم إصدار إنتاجي أو موافقة قطع أو سجل استعادة أو تمرين تراجع أو تفعيل مراقبة أو اعتماد عميل ضمن حدود Local/Dev هذه."
 }

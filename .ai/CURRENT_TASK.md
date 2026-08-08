@@ -1,23 +1,20 @@
-# Current Task — TSK-043 Scenario-Based Manual UAT and Defect Retesting Readiness
+# Current Task — TSK-044 Controlled Go-Live and Operational Handover Readiness
 
 **Date:** 2026-08-08
 **Repository:** `/home/ubuntu/projects/toy-joy-phase-1-documentation`
-**Status:** In Progress — Local/Dev manual-UAT evidence and scenario-pack readiness
+**Status:** Completed for Local/Dev readiness — actual production cutover, deployment, client sign-off, and go-live remain blocked.
 
-## Required review
+## Completed local slices
 
-- `docs/12-acceptance-criteria.md`, `docs/13-definition-of-done.md`, `docs/14-test-plan.md`, `docs/39-uat-and-release-gates.md`, plus actual scenario, browser-verification, defect, device, print, integrity, offline, and evidence-repository references.
+- TSK-043: guarded `/uat-readiness`, UI-SYS-010, scenario/evidence readiness cards, bilingual UI, pending boundary, and browser verification.
+- TSK-044: guarded `/release-readiness`, UI-SYS-011, cutover/rollback/monitoring/support/training/approval readiness cards, bilingual UI, pending boundary, and browser verification.
 
-## Authorized implementation slice
+## Permanent boundaries
 
-1. Reconcile the manual UAT scenario pack and evidence requirements against actual routes/screens and repository capabilities.
-2. Add only a guarded Local/Dev scenario/evidence readiness surface if no source-safe UAT workspace exists.
-3. Preserve `PENDING/TBD` for named owners, approved data/devices, sign-off, defect disposition, and production acceptance.
-4. No UAT sign-off, production approval, automated-test claim, financial/stock posting, or device acceptance is authorized.
+- No UAT result, defect closure, UAT sign-off, production deployment, data migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval was executed.
+- Named owners, approved data/devices/printers, evidence repository, defect register, reconciliation, release approval, and client sign-off remain `PENDING/TBD`.
 
-## Verification before closure
+## Verification evidence
 
-- Manual browser: authorized/no-access/direct route, English/LTR, Arabic/RTL, no overflow, empty/disabled states, no mutation controls, zero console errors.
-- Verify Page Guide title and every interactive selector if a new screen is introduced.
-- Run route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics.
-- Update `TASKS.md` and all active `.ai` evidence/state files, commit one coherent local slice, never push.
+- Authorized `demo-admin`, unauthorized `demo-no-access` with `403`, English/LTR, Arabic/RTL, 7 cards per screen, no overflow, Page Guide selectors valid, Initial Setup cards `PENDING`.
+- Route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics passed for the changed scope.

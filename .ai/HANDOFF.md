@@ -1,12 +1,14 @@
-# Active Handoff — TSK-043 Scenario-Based Manual UAT and Defect Retesting — 2026-08-08
+# Active Handoff — TSK-044 Controlled Go-Live and Operational Handover Readiness — 2026-08-08
 
-TSK-043 is now active. Review `docs/12-acceptance-criteria.md`, `docs/13-definition-of-done.md`, `docs/14-test-plan.md`, `docs/39-uat-and-release-gates.md`, then inspect actual route/screen/browser verification, scenario, device, print, integrity, offline, defect, and evidence-repository references. Authorized scope is Local/Dev manual-UAT scenario/evidence readiness only. No UAT sign-off, production approval, automated-test claim, financial/stock posting, device acceptance, or release claim.
+TSK-043 and TSK-044 Local/Dev readiness slices are complete. Guarded `/uat-readiness` (UI-SYS-010) and `/release-readiness` (UI-SYS-011) are bilingual, pending, read-only, and browser-verified. No UAT result, defect closure, UAT sign-off, deployment, migration, cutover, rollback, production restore, monitoring activation, client approval, or go-live was executed.
 
-TSK-042 completed its bounded Local/Dev operations/device/backup/training readiness slice. `/operations-readiness` is guarded by `audit_logs.view`, bilingual, pending, no-secret/no-device-payload/no-deploy, and browser-verified with UI-SYS-009 and 4/4 selectors. Production infrastructure, restore evidence, device acceptance, training, UAT, and go-live remain blocked.
+Review blockers before any real gate: named UAT owners, approved scenarios/data/devices/printers, protected evidence repository, defect register/retests, stock/payment/wallet/party/report reconciliation, release ID, final data/config/users, backup/restore evidence, rollback rehearsal, monitoring/support/training handover, and written client approval. These remain `PENDING/TBD`.
+
+The repository remains under manual browser verification policy; automated tests were not created or run. The full Pint command still reports five pre-existing style issues outside the changed scope; modified-file Pint passed. No push was performed.
 
 ---
 
-# Previous Active Handoff — TSK-041 Approved Master Data Import and Reconciliation — 2026-08-08
+# Previous Active Handoff — TSK-042 Production Readiness, Devices, Backup, and Training — 2026-08-08
 
 TSK-041 Local/Dev master-data import/cutover readiness is complete and browser-verified. `/master-data-migration-readiness` is guarded by `company_settings.view`, bilingual, pending, no-upload/no-persistence/no-cutover, and browser-verified with UI-SYS-008 and 4/4 selectors. Production source files, import batches, opening-stock posting, and cutover remain blocked.
 

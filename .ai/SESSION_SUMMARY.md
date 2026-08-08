@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-08 - TSK-043/044 Manual UAT and Controlled Go-Live readiness
+
+- **Agent / scope:** Completed source-safe Local/Dev readiness boundaries after reviewing UAT, Definition of Done, manual test plan, release gates, and existing artifacts.
+- **Completed:** Added `uat.*` and `release.*` pending policies, Initial Setup cards, guarded `/uat-readiness` and `/release-readiness`, UI-SYS-010/UI-SYS-011, bilingual read-only cards, explicit no-execution boundaries, and task/control documentation.
+- **Files changed:** `CustomerPolicySettingRegistry.php`, `InitialSetupStatus.php`, `RetailTutorialFactory.php`, UI-SYS-010/011 wrappers, two Blade views, `routes/retail.php`, locale files, `TASKS.md`, and active `.ai` state/evidence files.
+- **Verification actually run:** PHP lint, optimize clear, Blade cache, route discovery, locale parity `1680/1680`, modified-file Pint, PHPStan no errors, Vite build, diff check, browser English/LTR, Arabic/RTL, 403, Initial Setup pending, 7 cards per screen, no overflow, UAT guide 4/4, clean probes.
+- **Remaining blockers / next action:** Actual UAT, defects/retests, reconciliation, production cutover, restore, monitoring, client approval, and go-live remain blocked pending owner inputs and evidence.
+- **Code, tests, browser, commit, push:** Readiness code verified; no automated tests created/run; local commit pending; no push.
+
 ## 2026-08-08 - TSK-042 Production Operations and Handover readiness
 
 - **Agent / scope:** Implemented the authorized Local/Dev operations/device/backup/training readiness boundary after reviewing docs 30, 39, 53 and actual repository surfaces.

@@ -1664,5 +1664,19 @@
     "Training and release gate": "Training and release gate",
     "Training attendees, role-specific scenarios, completion evidence, UAT, security review, rollback, and go-live sign-off remain pending.": "Training attendees, role-specific scenarios, completion evidence, UAT, security review, rollback, and go-live sign-off remain pending.",
     "Production operations and handover": "Production operations and handover",
-    "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.": "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled."
+    "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.": "Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.",
+    "Manual UAT and evidence readiness": "Manual UAT and evidence readiness",
+    "Review scenarios, owners, data/devices, evidence, defects, reconciliation, and acceptance values; blanks remain PENDING and no UAT sign-off is created.": "Review scenarios, owners, data/devices, evidence, defects, reconciliation, and acceptance values; blanks remain PENDING and no UAT sign-off is created.",
+    "Controlled go-live and handover readiness": "Controlled go-live and handover readiness",
+    "Review cutover, rollback, monitoring, support, and approval values; blanks remain PENDING and no production deployment is performed.": "Review cutover, rollback, monitoring, support, and approval values; blanks remain PENDING and no production deployment is performed.",
+    "TSK-043 · Local/Dev readiness": "TSK-043 · Local/Dev readiness",
+    "Review the manual UAT scenario pack, owners, data/devices, evidence, defects, reconciliation, and acceptance prerequisites without recording a UAT result.": "Review the manual UAT scenario pack, owners, data/devices, evidence, defects, reconciliation, and acceptance prerequisites without recording a UAT result.",
+    "No scenario is marked Pass, no defect is closed, no evidence is accepted, and no UAT sign-off is created in this readiness boundary.": "No scenario is marked Pass, no defect is closed, no evidence is accepted, and no UAT sign-off is created in this readiness boundary.",
+    "PENDING — owner and evidence approval required": "PENDING — owner and evidence approval required",
+    "No UAT run IDs, Pass/Fail/Blocked results, defect closures, retests, or written acceptance are available in this Local/Dev readiness boundary.": "No UAT run IDs, Pass/Fail/Blocked results, defect closures, retests, or written acceptance are available in this Local/Dev readiness boundary.",
+    "TSK-044 · Local/Dev readiness": "TSK-044 · Local/Dev readiness",
+    "Review controlled cutover, rollback, monitoring, support, training, and approval prerequisites without deploying or changing production.": "Review controlled cutover, rollback, monitoring, support, training, and approval prerequisites without deploying or changing production.",
+    "No deployment, migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval is executed in this readiness boundary.": "No deployment, migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval is executed in this readiness boundary.",
+    "PENDING — owner and approval required": "PENDING — owner and approval required",
+    "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary.": "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary."
 }

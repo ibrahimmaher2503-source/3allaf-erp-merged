@@ -667,7 +667,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-043 — Execute Scenario-Based Manual UAT and Defect Retesting
 
-- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **In Progress — Local/Dev manual-UAT evidence and scenario-pack readiness active; no UAT sign-off, device acceptance, production approval, or automated-test claim**.
+- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **Completed for Local/Dev manual-UAT readiness — scenario/evidence boundary verified; actual UAT execution, sign-off, device acceptance, production approval, and automated-test claim remain blocked**.
 - **Title / Purpose / Description:** Execute manual UAT across all roles, 72 requirements, source acceptance scenarios, devices, prints, integrity and offline scope; triage/retest defects. This is not an automated-test task.
 - **Traceability:** all 72 PRD IDs, US-001–032, all FLWs/UI screens, all ACs, SEC-001–040.
 - **Dependencies / Required Inputs:** DM 6.2 complete; named UAT owners, approved scenarios/data/devices/evidence repository/severity/sign-off.
@@ -681,7 +681,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-044 — Execute Controlled Go-Live and Operational Handover
 
-- **Task ID / Phase / Milestone / Status:** TSK-044; Phase 6; DM 6.4; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-044; Phase 6; DM 6.4; **Completed for Local/Dev controlled go-live and handover readiness — launch boundary verified; actual production cutover, deployment, client sign-off, and go-live remain blocked**.
 - **Title / Purpose / Description:** Perform authorized cutover, final production verification, controlled launch, support monitoring and full operational/client handover.
 - **Traceability:** all requirements and Delivery Criteria; all stories/flows/screens/AC/security items.
 - **Dependencies / Required Inputs:** TSK-041–043 complete; client release approval, final data/config/users/printers/backups/training/support/rollback readiness.

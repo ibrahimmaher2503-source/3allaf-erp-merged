@@ -1,16 +1,16 @@
-# Active Progress — TSK-043 Scenario-Based Manual UAT and Defect Retesting — 2026-08-08
+# Active Progress — TSK-044 Controlled Go-Live and Operational Handover Readiness — 2026-08-08
 
-**Implementation status:** TSK-042 operations/device/backup/training Local/Dev readiness is complete and browser-verified; TSK-043 is active for source-safe manual-UAT scenario/evidence readiness.
+**Implementation status:** TSK-043 and TSK-044 Local/Dev readiness boundaries are complete and browser-verified. Actual UAT, production cutover, client sign-off, and go-live remain blocked.
 
-**Completed in TSK-042:** docs 30, 39, 53 reviewed; added eight pending `operations.*` policies, `operations-readiness` Initial Setup card, guarded `/operations-readiness`, UI-SYS-009, bilingual screen/guide, English/LTR and Arabic/RTL browser evidence, Initial Setup pending visibility, no-access denial, no overflow/no operational controls, route/view/cache/locale/Pint/PHPStan/lint/build/diff diagnostics, and local evidence.
+**Completed in TSK-043:** reviewed docs 12, 13, 14, 39 and artifacts; added seven pending `uat.*` policy keys, `uat-readiness` Initial Setup card, guarded `/uat-readiness`, UI-SYS-010, bilingual screen/guide, seven scenario/evidence cards, English/LTR and Arabic/RTL browser evidence, no-access denial, no overflow/no UAT controls, and diagnostics.
 
-**Next concrete step:** inspect the approved UAT scenario pack, evidence/defect storage, current browser verification coverage, role/device/print/offline boundaries, and whether a source-safe manual-UAT readiness surface is missing.
+**Completed in TSK-044:** added pending `release.*` policies, `release-readiness` Initial Setup card, guarded `/release-readiness`, UI-SYS-011, bilingual screen/guide, seven cutover/handover cards, English/LTR and Arabic/RTL browser evidence, no-access denial, no overflow/no production controls, and diagnostics.
 
-**Boundary:** no UAT sign-off, production approval, automated-test claim, financial/stock posting, device acceptance, or release claim is enabled.
+**Permanent boundary:** named owners, approved UAT data/devices/printers, protected evidence repository, defects/retests, reconciliation, release approval, backup/restore record, and client sign-off remain `PENDING/TBD`.
 
 ---
 
-# Previous Active Progress — TSK-041 Approved Master Data Import and Reconciliation — 2026-08-08
+# Previous Active Progress — TSK-042 Production Readiness, Devices, Backup, and Training — 2026-08-08
 
 **Implementation status:** TSK-041 master-data import/cutover Local/Dev readiness is complete and browser-verified; production source files, import batches, opening-stock posting, and cutover remain blocked.
 

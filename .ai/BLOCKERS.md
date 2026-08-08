@@ -1,5 +1,13 @@
 # Blocker Register
 
+## TSK-043/044 gate blockers — 2026-08-08
+
+Local/Dev readiness boundaries are complete and browser-verified. Actual UAT and Go-Live remain blocked by missing named owners, approved scenario/data/device/printer inputs, protected evidence repository, defect/retest register, stock/payment/wallet/party/report reconciliation, release ID, final production data/config/users, backup/restore evidence, rollback rehearsal, monitoring/support/training handover, client approval, and written sign-off.
+
+No UAT result, defect closure, production deployment, migration, cutover, rollback, production restore, monitoring activation, or go-live authorization was executed. These values remain `PENDING/TBD`.
+
+Next action requires owner-provided approvals and evidence, not additional application mutations.
+
 ## TSK-042 Production Operations and Handover boundary — 2026-08-08
 
 TSK-042 bounded Local/Dev readiness is complete and browser-verified. Production infrastructure, secret inventory, device enrollment/acceptance, backup destination, restore rehearsal, support owner, training attendance, UAT, and go-live remain blocked pending approved operational inputs and evidence.

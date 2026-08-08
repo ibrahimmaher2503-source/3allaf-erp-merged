@@ -191,6 +191,22 @@ final class InitialSetupStatus
                 'complete' => $this->operationsReadinessPolicyValuesConfigured(),
             ],
             [
+                'key' => 'uat-readiness',
+                'label' => (string) __('Manual UAT and evidence readiness'),
+                'description' => (string) __('Review scenarios, owners, data/devices, evidence, defects, reconciliation, and acceptance values; blanks remain PENDING and no UAT sign-off is created.'),
+                'required' => false,
+                'route' => route('uat.readiness'),
+                'complete' => $this->uatReadinessPolicyValuesConfigured(),
+            ],
+            [
+                'key' => 'release-readiness',
+                'label' => (string) __('Controlled go-live and handover readiness'),
+                'description' => (string) __('Review cutover, rollback, monitoring, support, and approval values; blanks remain PENDING and no production deployment is performed.'),
+                'required' => false,
+                'route' => route('release.readiness'),
+                'complete' => $this->releaseReadinessPolicyValuesConfigured(),
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -426,6 +442,27 @@ final class InitialSetupStatus
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->count() === 8;
+    }
+
+    private function uatReadinessPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'uat.scenario_pack', 'uat.owners', 'uat.data_devices', 'uat.evidence',
+                'uat.defects', 'uat.reconciliation', 'uat.signoff',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->count() === 7;
+    }
+
+    private function releaseReadinessPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', ['release.cutover', 'release.approval'])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->count() === 2;
     }
 
     private function financialSettingsReady(): bool

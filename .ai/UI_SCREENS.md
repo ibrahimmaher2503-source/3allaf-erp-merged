@@ -1,5 +1,17 @@
 # UI Screen Inventory
 
+## TSK-043 Manual UAT and Evidence Readiness screen — 2026-08-08
+
+- `/uat-readiness` (`UI-SYS-010`) is guarded by `audit_logs.view` and presents seven pending cards: scenario coverage, owners, data/devices, evidence repository, defects/retests, reconciliation, and written acceptance.
+- Stable targets: `uat-readiness-header`, `uat-readiness-boundary`, `uat-readiness-summary`, `uat-readiness-cards`, `uat-readiness-first-card`, indexed `uat-readiness-card-*`, and `uat-readiness-empty`.
+- Read-only boundary explicitly forbids UAT results, evidence acceptance, defect closure, and sign-off. English/LTR, Arabic/RTL, no overflow, no-access `403`, Initial Setup `PENDING`, and UAT Page Guide `4/4` were verified.
+
+## TSK-044 Controlled Go-Live and Handover Readiness screen — 2026-08-08
+
+- `/release-readiness` (`UI-SYS-011`) is guarded by `audit_logs.view` and presents seven pending cards: release/freeze, cutover data, backup/restore, monitoring, devices/users, training/support, and go-live approval.
+- Stable targets: `release-readiness-header`, `release-readiness-boundary`, `release-readiness-summary`, `release-readiness-cards`, `release-readiness-first-card`, indexed `release-readiness-card-*`, and `release-readiness-empty`.
+- Read-only boundary explicitly forbids deployment, migration, cutover, rollback, restore, monitoring activation, and approval. English/LTR, Arabic/RTL, no overflow, no-access `403`, and Initial Setup `PENDING` were verified.
+
 ## TSK-042 Production Operations and Handover screen — 2026-08-08
 
 - `/operations-readiness` (`UI-SYS-009`) is a guarded read-only boundary using `audit_logs.view`, with stable targets: `operations-readiness-header`, `operations-readiness-boundary`, `operations-readiness-summary`, `operations-readiness-cards`, `operations-readiness-first-card`, `operations-readiness-card-6`, and `operations-readiness-empty`.

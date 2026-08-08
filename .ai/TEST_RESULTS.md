@@ -1,5 +1,13 @@
 # Test and Verification Status
 
+## TSK-043/044 Manual UAT and Controlled Go-Live readiness — 2026-08-08
+
+- Reviewed contracts: `docs/12-acceptance-criteria.md`, `docs/13-definition-of-done.md`, `docs/14-test-plan.md`, `docs/39-uat-and-release-gates.md`, and TSK-043/044 task sections.
+- Added guarded `/uat-readiness` (`UI-SYS-010`) and `/release-readiness` (`UI-SYS-011`), seven pending cards per screen, `uat.*` and `release.*` policy keys, Initial Setup cards, bilingual guides, and explicit no-execution boundaries.
+- Diagnostics PASS for changed scope: PHP lint, optimize clear, Blade cache, route discovery, locale parity `1680/1680`, modified-file Pint, PHPStan `[OK] No errors`, Vite build, and diff check. Full Pint reports five pre-existing issues outside changed files; no unrelated fixes applied. Vite retains the optional `fontaine` warning.
+- Browser PASS: authorized `demo-admin` English/LTR and Arabic/RTL for both routes; 7 cards each; no overflow; no mutation/deployment/UAT controls; UAT Page Guide `4/4` valid selectors; `demo-no-access` receives `403`; Initial Setup shows both cards `PENDING`; console probes clean.
+- Boundary: these are Local/Dev readiness results only. No UAT Pass/Fail, defect closure, evidence acceptance, backup restore, deployment, cutover, rollback, monitoring activation, client sign-off, or go-live was claimed or executed. No automated tests were created or run.
+
 ## TSK-042 Production Operations and Handover readiness — 2026-08-08
 
 - Reviewed `docs/30-platform-operations-specification.md`, `docs/39-uat-and-release-gates.md`, `docs/53-deployment-backup-and-rollback-runbook.md`, and actual health/device/backup/training references; no unified source-safe production handover surface existed.
