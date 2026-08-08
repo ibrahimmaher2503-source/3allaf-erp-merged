@@ -13,14 +13,20 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Authorization Baseline')] class extends Component {
+new #[Title('Authorization Baseline')] class extends Component
+{
     use WithPagination;
 
     public string $search = '';
+
     public ?int $editingUserId = null;
+
     public bool $authorizationModalOpen = false;
+
     public array $roleIds = [];
+
     public array $branchIds = [];
+
     public array $storeIds = [];
 
     public function mount(): void
@@ -150,7 +156,7 @@ new #[Title('Authorization Baseline')] class extends Component {
         @if ($users->isEmpty())
             <x-state.empty :title="__('No users found')" :description="__('No user records match this search.')" />
         @else
-            <table class="w-full min-w-[48rem] text-sm">
+            <table class="data-table w-full min-w-[48rem] text-sm">
                 <caption class="sr-only">{{ __('Current user authorization inventory') }}</caption>
                 <thead class="bg-surface-muted/70 text-xs text-text-muted">
                     <tr>

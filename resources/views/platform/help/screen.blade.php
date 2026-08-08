@@ -8,7 +8,7 @@
 @endphp
 
 <x-layouts::app :title="$title">
-    <main class="guide-page" aria-labelledby="guide-page-title">
+    <x-app.page class="guide-page" max-width="6xl" aria-labelledby="guide-page-title">
         <div class="guide-page__topbar">
             <a class="guide-page__back" href="{{ url()->previous() }}">
                 <span aria-hidden="true">{{ $isArabic ? '→' : '←' }}</span>
@@ -152,5 +152,5 @@
                 <section class="guide-summary-card guide-summary-card--trust"><p class="guide-card__eyebrow">{{ $isArabic ? 'نطاق الدليل' : 'GUIDE SCOPE' }}</p><p>{{ $isArabic ? 'المحتوى إرشادي فقط. الصلاحيات وقواعد المجال وحالة السجل هي المرجع النهائي قبل أي إجراء.' : 'This content is guidance only. Permissions, domain rules, and record state remain authoritative before any action.' }}</p></section>
             </aside>
         </div>
-    </main>
+    </x-app.page>
 </x-layouts::app>

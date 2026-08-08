@@ -12,16 +12,21 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Cash Drawer Masters')] class extends Component {
+new #[Title('Cash Drawer Masters')] class extends Component
+{
     use WithPagination;
 
     public string $search = '';
+
     public string $branchFilter = 'all';
+
     public string $statusFilter = 'all';
 
     // Drawer Modal State
     public bool $showDrawerModal = false;
+
     public ?int $editingDrawerId = null;
+
     public array $drawerForm = [
         'branch_id' => '',
         'store_id' => '',
@@ -120,7 +125,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
             $action->execute($validated, $this->editingDrawerId);
             Flux::toast(variant: 'success', text: $this->editingDrawerId ? __('Cash drawer updated successfully.') : __('Cash drawer created successfully.'));
             $this->showDrawerModal = false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -132,7 +137,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
         try {
             $action->toggleStatus($id, $status);
             Flux::toast(variant: 'success', text: __('Cash drawer status updated successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -144,7 +149,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
         try {
             $action->delete($id);
             Flux::toast(variant: 'success', text: __('Cash drawer deleted successfully.'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
     }
@@ -241,7 +246,7 @@ new #[Title('Cash Drawer Masters')] class extends Component {
     <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden shadow-xs" data-guide="drawers-table">
         @if($drawers->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full text-start text-sm">
+                <table class="data-table w-full text-start text-sm">
                     <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                         <tr>
                             <th class="px-4 py-3 text-start">{{ __('Code') }}</th>

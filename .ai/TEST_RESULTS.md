@@ -1044,3 +1044,27 @@ The existing `CatalogImplementationAbsenceTest` was run once as the only TSK-010
 - RTL and LTR language toggles were manually exercised on `/purchasing/orders`; headers, status badges, filters, and rows rendered in both directions. Mobile viewport verification remains pending because the current browser session exposes a fixed 1280px viewport and no real viewport resize control.
 - No passwords, tokens, or real credentials were created or exposed. Demo fixture authorization is recorded as DEC-045; TSK-015 remains not started.
 - **Excluded-surface visual checks:** Dedicated `/pos` full-screen shell and `/purchasing/orders/1/print` A4 document were also visually verified; both retained their independent layouts and rendered without clipping.
+
+## Shared Design System Phase 9 Help & Guide Adoption — 2026-08-05
+
+- **Scope:** Migrated the final two authenticated Help/Guide views to `x-app.page`: `resources/views/platform/help/screen.blade.php` and `resources/views/platform/help/flow.blade.php`.
+- **Completed:** Preserved guide hero, sticky aside, screen/flow IDs, localized `$text` helper, `url()->previous()` links, data-guide anchors, steps, actions, alternate/failure paths, and all guide-specific behavior. Removed the legacy `page-frame max-w-4xl space-y-6` wrapper from the flow view.
+- **Verification:** AGY implementation and final read-only review returned PASS. Global `x-app.page` count increased from 21 to 23; AGY classified all remaining non-page-shell views as correct components, layouts, auth, error, public, POS, or print exemptions. `php artisan view:cache`, `npm run build`, and `git diff --check` passed.
+- **Browser boundary:** Before the Demo Auth deployment fix, the cached route set lacked `__demo/auth`; after the fix, the authorized browser walkthrough was completed for Dashboard, Help Screen, and Help Flow. Real device-sized mobile verification remains pending.
+- **Demo Auth deployment fix (2026-08-05):** The local-only `__demo/auth` route was missing after `config:cache` because `env('DEMO_AUTH')` was read directly from `routes/web.php`. Added `config('app.demo_auth')` backed by `DEMO_AUTH`, rebuilt config/route caches, and verified `GET /__demo/auth?as=demo-admin&redirect=/dashboard` returns `302` to `/dashboard` on `http://169.58.101.5:8000`. Browser verification reached Dashboard, Help Screen `UI-SYS-001`, and Help Flow `FLW-HELP-01` successfully.
+
+## Table Design System Consistency Review — 2026-08-05
+
+- **AGY audit:** Found 14 rendered table/table-like structures; 4 genuine raw-table consistency gaps and intentional specialized exemptions for POS, A4 print, and Help/Guide layouts.
+- **Implemented:** Added scoped `table.data-table` fallback styling in `resources/css/app.css` for shared borders, muted headers, row hover, logical alignment, action-cell nowrap, bounded table behavior, and `comfortable`/`compact` `data-table-density` support.
+- **Targeted views:** Applied `data-table` to all operational raw tables in Suppliers, Purchase Orders, Cash Drawers, and Authorization Baseline, including relevant modal/detail tables.
+- **Status/actions:** Replaced Purchase Order inline status spans with shared `<x-status.badge>` while preserving localized labels and semantic colors; preserved Livewire actions, permissions, forms, pagination, and data contracts.
+- **Browser QA:** Verified `/catalog/suppliers`, `/purchasing/orders`, `/admin/cash-drawers`, and `/admin/authorization-baseline` through Demo Auth. Headers, row density, badges, actions, RTL/LTR logical alignment, and bounded overflow rendered correctly; no page-level overflow was observed.
+- **Final review:** AGY final read-only review returned PASS. `php artisan view:cache`, `npm run build`, and `git diff --check` passed. No commit or push was performed.
+
+## TSK-014/015/016 Delivery Gate Review — 2026-08-05
+
+- **TSK-014:** PASS for approved local scope. Static/route/UI evidence confirms PO and line tables, concurrency/version guards, number allocation, draft/submit/cancel/close actions, audit logging, authorization, filters/pagination, responsive bilingual UI, and A4 print. Full DM 2.2 remains open because receipt-linked `partially_received`/`received` transitions belong to TSK-015.
+- **TSK-015:** BLOCKED. No invoice/receipt foundation exists in the repository. Missing owner-approved cost/tax/discount/rounding, approval/duty separation, supplier-reference/attachment, stock movement/balance, WAC, opening-stock, and production contracts prevent safe implementation. No code or fake data was created.
+- **TSK-016:** BLOCKED / Not Started. Hard dependency on TSK-015 plus missing return eligibility, non-reference, reason, approval, stock disposition/reversal, and cost-history policies. No code or fake return source records were created.
+- **Verification:** AGY gate audit returned PASS for TSK-014 local scope and BLOCKED for TSK-015/016. No automated tests, commit, or push were performed.

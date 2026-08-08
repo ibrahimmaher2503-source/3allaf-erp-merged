@@ -989,9 +989,3 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Purchasing/Models/PurchaseOrderLine.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 2
-			path: routes/web.php
