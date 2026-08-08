@@ -1,12 +1,12 @@
-# Active Progress — TSK-038 Dashboards and Reconciled Report Catalog — 2026-08-08
+# Active Progress — TSK-039 Operational Alerts and Exception Queue — 2026-08-08
 
-**Implementation status:** TSK-037 quotation/proposal Local/Dev readiness slice is complete and ready for commit; TSK-038 is active for source-safe dashboard/report discovery/readiness.
+**Implementation status:** TSK-038 dashboard/report Local/Dev readiness is complete and ready for commit; TSK-039 is active for source-safe alert/exception discovery/readiness.
 
-**Completed before this task:** TSK-037 reviewed docs 35–38 and approval/roles/scope; added pending quotation policy values, `/quotations-readiness`, UI-QTN-001, bilingual browser evidence, no-access 403, diagnostics, and state handoff. Existing `dashboard_reports.view` is recorded as a temporary read-only guard because no canonical quotation permission exists.
+**Completed before this task:** TSK-038 reviewed docs 34, 36–39 and source absence; added ten pending report policy values, `/reports-readiness`, UI-RPT-001, bilingual browser evidence, no-access 403, 4/4 tour selector evidence, diagnostics, and state handoff.
 
-**Next concrete step:** inspect dashboard/report source models, formulas, scope/lineage, alerts, pagination, export, and current UI before changing code.
+**Next concrete step:** inspect alert/exception source models, trigger/severity/owner/scope policies, deduplication, acknowledgement/resolution, notification, and navigation before changing code.
 
-**Boundary:** no production KPI/report truth, cross-scope data, export artifact, alert mutation, or unsupported financial value is enabled.
+**Boundary:** no alert creation, delivery, acknowledgement, resolution, dismissal, escalation, or production exception claim is enabled.
 
 ---
 

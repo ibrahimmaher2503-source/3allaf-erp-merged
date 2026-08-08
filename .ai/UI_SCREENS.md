@@ -25,7 +25,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - Initial Setup includes optional `wallet-policies` pointing to the existing append-only Settings registry. Ten wallet policy keys remain blank/PENDING; no balance or transaction rows are seeded.
 - Full wallet linkage, balances, settlement, correction, reconciliation, source workflows, production policy, UAT, and Phase 4 remain open.
 
-## TSK-037 Standalone Retail and Party Quotations screen — 2026-08-08
+## TSK-038 Dashboards and Reconciled Report Catalog screen — 2026-08-08
+
+- `/reports-readiness` (`UI-RPT-001`) is a guarded read-only dashboard/report boundary with stable targets: `reports-readiness-header`, `reports-readiness-boundary`, `reports-readiness-summary`, `reports-readiness-cards`, `reports-readiness-card-1`, `reports-readiness-card-6`, and `reports-readiness-empty`.
+- It shows pending source lineage/scope, filters/KPI formulas, reconciliation/freshness, alerts, pagination/drilldown, and export boundaries without report rows, KPI values, alerts, artifacts, or financial numbers.
+- English/LTR and Arabic/RTL rendering were checked with no page overflow; Page Guide canonical route resolves, feature-specific title renders, and the interactive tour resolves all 4 selectors.
+
+
 
 - `/quotations-readiness` (`UI-QTN-001`) is a guarded read-only quotation boundary with stable targets: `quotations-readiness-header`, `quotations-readiness-boundary`, `quotations-readiness-summary`, `quotations-readiness-cards`, `quotations-readiness-card-1`, `quotations-readiness-card-6`, and `quotations-readiness-empty`.
 - It shows pending typed activity/customer, validity/status, prices/terms, approval/audit/numbering, print/share, and future conversion boundaries without quotation records or financial values.

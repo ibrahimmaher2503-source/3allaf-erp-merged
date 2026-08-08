@@ -13,7 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
-## 2026-08-08 - TSK-037 Standalone Retail and Party Quotations readiness
+## 2026-08-08 - TSK-038 Dashboards and Reconciled Report Catalog readiness
+
+- **Agent / scope:** Completed the authorized Local/Dev dashboard/report readiness slice after reviewing docs 34, 36–39 and existing source absence.
+- **Implementation:** Added ten pending report policy values, Initial Setup visibility, `/reports-readiness`, and UI-RPT-001 with a feature-specific Page Guide/tour. Fixed selector prefix mismatch and verified 4/4 interactive tour selectors.
+- **Boundary:** No KPI calculation, report truth, financial amount, alert creation, drilldown, export artifact, unrestricted cache, or cross-scope data.
+- **Evidence:** Static gates passed; English/LTR and Arabic/RTL, no-access 403, no overflow/no numeric or currency leak/no mutation controls, Initial Setup pending card, feature-specific guide and 4/4 tour steps passed. This remains Local/Dev readiness only.
+- **Next:** TSK-039 — Implement Operational Alerts and Exception Queue.
+
+
 
 - **Agent / scope:** Completed the authorized Local/Dev quotation/proposal readiness slice after reviewing docs 35–38, approval/roles, scope, and source absence.
 - **Implementation:** Added ten pending quotation policy values, Initial Setup visibility, `/quotations-readiness`, and UI-QTN-001 with feature-specific Page Guide.

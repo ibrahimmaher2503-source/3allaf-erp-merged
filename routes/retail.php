@@ -59,6 +59,24 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.readiness');
 
+    Route::get('reports-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('dashboard_reports.view'), 403);
+
+        return view('pages.reports.readiness', [
+            'title' => __('Dashboards and Reconciled Reports Readiness'),
+            'cards' => [
+                ['title' => __('Source lineage and scope'), 'body' => __('Every figure must identify its source, snapshot, branch/store/user scope, and authorization before rendering.')],
+                ['title' => __('Filters and KPI formulas'), 'body' => __('Date, comparison, status, activity, and domain filters plus KPI formulas remain pending; no aggregation runs here.')],
+                ['title' => __('Reconciliation and freshness'), 'body' => __('Precision, currency, historical snapshots, freshness, and cache rules require approved source contracts.')],
+                ['title' => __('Operational alerts'), 'body' => __('Triggers, severity, owner, due time, acknowledgement, resolution, source link, and deduplication remain pending.')],
+                ['title' => __('Pagination and drilldown'), 'body' => __('Detail views must be bounded, indexed, scope-filtered, and separately authorized before drilldown exists.')],
+                ['title' => __('Export boundary'), 'body' => __('PDF/Excel/export artifacts require permission, bounded scope, audit, and approved source values; none are generated.')],
+            ],
+        ]);
+    })->middleware('can:dashboard_reports.view')->name('reports.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

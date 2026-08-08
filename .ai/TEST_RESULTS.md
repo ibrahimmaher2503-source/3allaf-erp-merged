@@ -26,7 +26,17 @@
 - Diagnostics after the final target correction: `php artisan optimize:clear`, `php artisan view:cache`, locale parity `1356/1356`, targeted Pint PASS (12 files), PHPStan `[OK] No errors`, `npm run build` PASS, and `git diff --check` PASS. Vite emitted only the existing optional `fontaine` optimization warning.
 - Coverage limitation: the current browser session cannot resize to a true 390px mobile viewport; mobile tour acceptance remains unverified. No PHPUnit/Pest or automated browser tests were created or run per repository policy. This remains Local/Demo evidence only; no UAT/Production claim.
 
-## TSK-037 Standalone Retail and Party Quotations readiness — 2026-08-08
+## TSK-038 Dashboards and Reconciled Report Catalog readiness — 2026-08-08
+
+- Reviewed docs 34, 36–39 and existing dashboard/report routes/models/UI; no reconciled report catalog or approved source-read-model/report data surface exists.
+- Added ten `report.*` pending policy keys and `reporting-policies` Initial Setup card.
+- Added guarded `/reports-readiness` (`reports.readiness`) using `dashboard_reports.view` as the existing Local/Dev read-only boundary; no metric permission or operational report grant was invented.
+- Added UI-RPT-001 and bilingual feature-specific Page Guide/tour with stable `reports-readiness-*` targets.
+- Screen is read-only: no KPI calculation, report rows, alert creation, drilldown, export artifact, financial amount, cache, or cross-scope data.
+- Static: Blade/cache, route list, locale parity `1581/1581`, Pint, PHPStan `[OK] No errors`, PHP lint, build, and diff check passed. A real Blade component error was corrected before final pass.
+- Browser: English/LTR and Arabic/RTL verified; no overflow, no numeric/currency leak, no mutation controls; demo-no-access HTTP 403; Page Guide title and interactive tour verified with 4/4 selectors resolving and first step visible.
+
+
 
 - Reviewed docs 35–38, roles/permissions, approval policy, scope, and repository; quotation source models/routes/views are absent.
 - Added ten `quotation.*` pending policy keys and `quotation-policies` Initial Setup card.

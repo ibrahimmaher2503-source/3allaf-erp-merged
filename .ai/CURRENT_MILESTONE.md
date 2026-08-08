@@ -1,15 +1,15 @@
-# Active Milestone — TSK-038 Dashboards and Reconciled Report Catalog
+# Active Milestone — TSK-039 Operational Alerts and Exception Queue
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
 **Current milestone:** DM 6.1 — Quotations, Reporting, Acceptance, and Launch
-**Status:** TSK-037 Local/Dev quotation/proposal readiness slice is completed and browser-verified. TSK-038 is now In Progress for source-safe dashboard/report discovery/readiness.
-**Progress:** TSK-037 added `/quotations-readiness`, ten pending quotation policy keys, Initial Setup visibility, and UI-QTN-001. TSK-038 must first inspect dashboard/report sources, formulas, scope/lineage, alerts, pagination, export, and current UI; no KPI/report/export/alert mutation or unsupported financial claim is authorized.
+**Status:** TSK-038 Local/Dev dashboard/report catalog readiness is completed and browser-verified. TSK-039 is now In Progress for source-safe alert/exception discovery/readiness.
+**Progress:** TSK-038 added `/reports-readiness`, ten pending report policies, Initial Setup visibility, and UI-RPT-001. TSK-039 must inspect alert sources, triggers, severity, scope, ownership, deduplication, acknowledge/resolve, notification, and navigation; no alert mutation or production notification is authorized.
 
 ---
-# Previous Milestone Record — TSK-037
+# Previous Milestone Record — TSK-038
 
-**Status:** Completed for verified Local/Dev quotation/proposal readiness; quote creation, approval, price/number allocation, print/share, conversion, sale, party invoice, inventory, wallet, payment, and financial mutations remain open.
-**Evidence:** Docs 35–38, approval/roles, scope, and repository absence reviewed; guarded quotation readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and static diagnostics passed.
+**Status:** Completed for verified Local/Dev dashboard/report catalog readiness; KPI calculation, report truth, financial figures, cross-scope access, alerts, drilldown, exports, and reconciliation claims remain open.
+**Evidence:** Docs 34, 36–39 and source absence reviewed; guarded report readiness route, pending policy keys, bilingual screen/guide, English/LTR and Arabic/RTL checks, HTTP 403 denial, no overflow/no numeric or currency leak/no mutation controls, and 4/4 interactive tour selectors passed.
 
 ---
 

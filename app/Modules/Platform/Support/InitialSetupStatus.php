@@ -151,6 +151,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'reporting-policies',
+                'label' => (string) __('Dashboard and reporting policies'),
+                'description' => (string) __('Review report source lineage, scope, filters, KPI formulas, reconciliation, alerts, pagination, export, precision, and freshness; blanks remain PENDING and no metric is certified.'),
+                'route' => route('reports.readiness'),
+                'complete' => $this->reportPolicyValuesConfigured(),
+                'required' => false,
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -296,6 +304,18 @@ final class InitialSetupStatus
             ->whereIn('key', [
                 'asset.damage', 'asset.loss', 'asset.maintenance', 'asset.assessment', 'asset.responsibility',
                 'asset.evidence', 'asset.cost', 'asset.damage_approval', 'asset.depreciation', 'asset.correction',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->exists();
+    }
+
+    private function reportPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'report.source_lineage', 'report.scope', 'report.filters', 'report.kpi', 'report.reconciliation',
+                'report.alerts', 'report.pagination', 'report.export', 'report.precision', 'report.freshness',
             ])
             ->whereNotNull('value')
             ->where('value', '!=', '')

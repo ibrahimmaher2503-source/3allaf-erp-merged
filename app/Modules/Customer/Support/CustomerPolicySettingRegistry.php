@@ -345,6 +345,16 @@ final class CustomerPolicySettingRegistry
             'quotation.numbering' => ['title' => 'Quotation numbering', 'description' => 'Unique sequence and document identity rules; no number is allocated.'],
             'quotation.print_share' => ['title' => 'Quotation print and share', 'description' => 'Read-only print/share boundary and privacy; no output is generated.'],
             'quotation.conversion' => ['title' => 'Quotation future conversion', 'description' => 'Future source reference only; Phase 1 conversion to sale or party invoice is blocked.'],
+            'report.source_lineage' => ['title' => 'Report source lineage', 'description' => 'Every report figure requires an approved source and lineage; no metric is calculated.'],
+            'report.scope' => ['title' => 'Report scope and authorization', 'description' => 'Branch, store, role, user, and activity scope; no cross-scope result is exposed.'],
+            'report.filters' => ['title' => 'Report filters and periods', 'description' => 'Date, comparison, status, and domain filters; no filter result is loaded.'],
+            'report.kpi' => ['title' => 'Dashboard KPI catalog', 'description' => 'Sales, cash, inventory, purchasing, customer, party, and asset KPI formulas; no value is rendered.'],
+            'report.reconciliation' => ['title' => 'Report reconciliation', 'description' => 'Formula, source snapshot, precision, and reconciliation rules; no report is certified.'],
+            'report.alerts' => ['title' => 'Operational alert catalog', 'description' => 'Trigger, severity, owner, scope, deduplication, and state rules; no alert is created.'],
+            'report.pagination' => ['title' => 'Report pagination and drilldown', 'description' => 'Bounded detail, indexed search, and drilldown rules; no unbounded result is loaded.'],
+            'report.export' => ['title' => 'Report export boundary', 'description' => 'Permissioned bounded PDF/Excel/export rules; no artifact is generated.'],
+            'report.precision' => ['title' => 'Report precision and currency', 'description' => 'Explicit precision, currency, snapshot, and no-general-ledger boundary; no amount is shown.'],
+            'report.freshness' => ['title' => 'Report freshness and cache', 'description' => 'Freshness, cache scope, and historical snapshot rules; no unrestricted cache is enabled.'],
         ];
     }
 }

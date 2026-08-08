@@ -4,7 +4,13 @@
 
 The Local/Dev TSK-028 foundation/readiness slice is implemented and browser-verified. Full task scope remains open for customer/source linkage, balances, credit/debt calculation, settlement, correction, reconciliation, payment, transfer, owner policy, Phase 4, UAT, and Production. Ten wallet policy values are exposed through Initial Setup/Settings as blank `PENDING` keys; they do not approve or activate any downstream mutation. Product/Party separation, server authorization, append-only history, idempotency, audit, and no generic transfer remain fixed invariants.
 
-## TSK-037 Standalone Retail and Party Quotations boundary — 2026-08-08
+## TSK-038 Dashboards and Reconciled Report Catalog boundary — 2026-08-08
+
+TSK-038 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending report source lineage/scope/filters/KPI/reconciliation/alerts/pagination/export/precision/freshness policies and a guarded read-only screen only. KPI calculation, report rows, financial values, cross-scope access, alerts, drilldown, export, cache, and reconciliation claims remain blocked pending approved source contracts and data.
+
+Next task: TSK-039 Operational Alerts and Exception Queue.
+
+
 
 TSK-037 bounded Local/Dev readiness is complete and ready for local commit. The implementation exposes pending quotation type/customer/validity/status/prices/terms/approval/numbering/print-share/conversion policies and a guarded read-only screen only. Quote creation, approval, pricing, numbering, output, conversion, sale, party invoice, inventory, wallet, payment, and financial mutations remain blocked pending approved source contracts.
 
