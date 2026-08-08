@@ -1,8 +1,8 @@
 # Project Progress
 
-**Overall progress:** 1%  
-**Implementation status:** In Progress  
-**Documentation status:** Baseline prepared and implementation tracking updated
+**Overall progress:** 1% (project-level aggregate remains historical)
+**Implementation status:** In Progress
+**Documentation status:** Updated through Phase 9 shared UI completion and today’s verification
 
 TSK-011 closure note (2026-08-04): local product-card fields, approved types, attributes, protected media, detail/full edit, authorization, audit, stale-update behavior, and safe oversized-upload messages are implemented. Composite component lines remain deferred by the insufficient approved Phase 1 contract. The local PHP upload limit is documented as an infrastructure dependency without weakening the application policy. TSK-011 is Completed for approved local scope. No Phase 1/Phase 2 gate, UAT, or production-readiness claim is made.
 
@@ -209,3 +209,31 @@ Completed the Company, payment, tax, store, mapping, and drawer browser mutation
 - TSK-005 remains `In Progress — specific local work remains`: tax effective-date fields/overlap validation and actual configuration print-preview flows are absent. Company/payment/tax/numbering/printer mutations, duplicate validation, audit, and local TBD behavior were verified.
 - Fixed closure defects: cash-drawer forms now expose server validation errors instead of being blocked by native required validation; branch selling-store mapping now filters by selected branch and rejects cross-branch stores.
 - TSK-009 remains `In Progress`; no new TSK-009 implementation was performed during this audit. Production blockers remain open and Phase 1/DM production gates are not claimed.
+
+## Shared Design System Completion Update — 2026-08-05
+
+- Completed the AGY read-only audit of all 83 registered routes and 27 user-facing screen/document endpoints.
+- Completed the shared UI migration for the final authenticated Help/Guide views: `resources/views/platform/help/screen.blade.php` and `resources/views/platform/help/flow.blade.php`.
+- Global adoption is now 23 `x-app.page` standard application views with zero genuine standard-page gaps. POS, print, auth, error, public, components, partials, and layouts remain intentional exemptions.
+- AGY implementation and final review returned `PASS`; no routes, controllers, models, policies, migrations, or business logic were changed in Phase 9.
+- Verified `php artisan view:cache`, `npm run build`, and `git diff --check` successfully. Vite retained only the known optional `fontaine` warning.
+- Full application suite result recorded: 212 passed, 8 failed, 3 risky, 1,085 assertions. Failures remain documented and were not hidden or weakened.
+- Local commit `54e7c64` contains the prior shared UI delivery. GitHub push remains blocked by missing SSH credentials; no secrets were stored.
+- Remaining evidence gaps: authorized post-login Help visual walkthrough on the deployed host, real device-sized mobile QA, UAT, automated-suite failure triage, production readiness, and GitHub authentication.
+
+### UI Change Inventory
+
+- Added centralized semantic CSS/theme tokens for typography, spacing, surfaces, borders, shadows, radii, status colors, accent colors, light/dark/system appearance, content width, font scale, table density, and reduced motion.
+- Added the shared `x-app.page` shell and reusable page header, app logo, stat card, section card, data panel, filter bar, loading state, audit panel, theme bootstrap, and persistent Appearance Customizer patterns.
+- Updated application shell, sidebar, head/theme initialization, POS shell, and print shell while preserving dedicated POS full-screen and A4 print contracts.
+- Migrated all standard application views across Dashboard, Catalog, Purchasing, Platform Admin/System, Audit, Authorization, User Settings, and Help/Guide to the shared shell; global count is 23 views.
+- Preserved Livewire/Volt behavior, permissions, forms, modals, uploads, pagination, status semantics, ARIA anchors, `data-guide` anchors, RTL/LTR direction, responsive sidebar behavior, and semantic success/warning/danger/info colors.
+
+### Table Consistency Update
+
+- AGY reviewed 14 rendered table/table-like structures and identified 4 genuine raw operational table gaps.
+- Added shared scoped `table.data-table` styling for headers, dividers, row hover, logical alignment, action-cell nowrap, bounded overflow, and comfortable/compact density.
+- Applied the shared class to Suppliers, Purchase Orders, Cash Drawers, and Authorization Baseline operational tables, including modal/detail tables.
+- Standardized Purchase Order statuses with `<x-status.badge>` while preserving labels, colors, Livewire actions, permissions, pagination, and data contracts.
+- Browser QA passed on all four affected routes through Demo Auth; AGY final review, Blade cache, Vite build, and `git diff --check` passed.
+- Intentional specialized tables remain unchanged: POS cart, A4 print documents, and Help/Guide documentation grids.

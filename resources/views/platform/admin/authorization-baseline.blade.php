@@ -150,7 +150,7 @@ new #[Title('Authorization Baseline')] class extends Component {
         @if ($users->isEmpty())
             <x-state.empty :title="__('No users found')" :description="__('No user records match this search.')" />
         @else
-            <table class="w-full min-w-[48rem] text-sm">
+            <table class="data-table w-full min-w-[48rem] text-sm">
                 <caption class="sr-only">{{ __('Current user authorization inventory') }}</caption>
                 <thead class="bg-surface-muted/70 text-xs text-text-muted">
                     <tr>

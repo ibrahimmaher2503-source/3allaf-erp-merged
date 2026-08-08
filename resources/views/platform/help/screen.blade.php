@@ -6,7 +6,7 @@
 @endphp
 
 <x-layouts::app :title="$title">
-    <main class="guide-page" aria-labelledby="guide-page-title">
+    <x-app.page class="guide-page" max-width="6xl" aria-labelledby="guide-page-title">
         <div class="guide-page__topbar">
             <a class="guide-page__back" href="{{ url()->previous() }}">
                 <span aria-hidden="true">{{ $locale === 'ar' ? '→' : '←' }}</span>
@@ -80,5 +80,5 @@
                 <section class="guide-summary-card guide-summary-card--tour"><span class="guide-summary-card__spark" aria-hidden="true">✦</span><div><p class="guide-card__eyebrow">{{ $locale === 'ar' ? 'تعلم تفاعلي' : 'INTERACTIVE LEARNING' }}</p><h2>{{ $locale === 'ar' ? 'تحتاج إلى جولة؟' : 'Need a walkthrough?' }}</h2><p>{{ $locale === 'ar' ? 'ابدأ الجولة من دليل الصفحة عندما تكون أهداف الجولة متاحة على الشاشة.' : 'Start the tour from the Page Guide when its targets are available on the screen.' }}</p></div></section>
             </aside>
         </div>
-    </main>
+    </x-app.page>
 </x-layouts::app>

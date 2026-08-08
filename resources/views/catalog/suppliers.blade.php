@@ -277,7 +277,7 @@ new #[Title('Supplier Masters')] class extends Component {
 
         <flux:card class="overflow-hidden p-0" data-guide="suppliers-table">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-border">
+                <table class="data-table min-w-full divide-y divide-border">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ __('Supplier code') }}</th>
@@ -567,7 +567,7 @@ new #[Title('Supplier Masters')] class extends Component {
                         </div>
 
                         <div class="overflow-x-auto rounded-lg border border-border">
-                            <table class="min-w-full divide-y divide-border">
+                            <table class="data-table min-w-full divide-y divide-border">
                                 <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                                     <tr>
                                         <th class="px-3 py-2 text-start text-xs font-semibold text-text-muted">{{ __('Item code') }}</th>

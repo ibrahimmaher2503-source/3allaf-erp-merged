@@ -2,8 +2,8 @@
 
 **Current phase:** Phase 2 local implementation exception (formal Phase 1 gate remains open)
 **Current milestone:** DM 2.2 Purchase Cycle — TSK-015 feasibility/readiness continuation
-**Status:** In Progress (TSK-014 local slice closed; TSK-015 feasibility analyzed; receipt/inventory/production/UAT gates open)
-**Progress:** TSK-010 through TSK-014 approved local slices are closed/verified as recorded. TSK-015 feasibility/readiness analysis is complete. BLK-008/BLK-010/BLK-017, inventory foundations, receipt/invoice policies, production inputs, UAT, and phase gates remain open.
+**Status:** In Progress (TSK-014 approved local scope closed; TSK-015 blocked by owner-approved receipt/inventory/commercial/approval inputs; TSK-016 blocked by TSK-015 and return policies)
+**Progress:** TSK-010 through TSK-014 approved local slices are closed/verified as recorded. TSK-015 feasibility/readiness analysis is complete and TSK-016 remains not started. Shared UI migration is complete for all 23 standard application views, including Help/Guide Phase 9. BLK-008/BLK-010/BLK-017, inventory foundations, receipt/invoice policies, production inputs, UAT, and phase gates remain open.
 **Started:** 2026-08-04
 
 ## Active Scope
@@ -76,7 +76,7 @@ No automated application test suite was created or run in this audit. Manual bro
 
 ## Next Action
 
-Keep TSK-009 In Progress with new implementation paused until the closure-audit handoff is accepted. Then resume only its approved remaining scope. Keep production infrastructure, real master data, legal wording, hardware, and final numeric values configurable or pending as recorded in the blocker register.
+Continue TSK-015 only within its documented feasibility/readiness boundary. Do not create stock movements, WAC updates, fake receipts, production invoices, tax/payment defaults, discount rules, or approval thresholds until owner-approved TSK-015 and inventory contracts are available. Shared UI migration is complete for standard application screens; only authorized Help visual walkthrough, real mobile evidence, UAT, automated-suite triage, production gates, and GitHub authentication remain as delivery follow-ups.
 
 ## Verification Update - 2026-08-03
 

@@ -300,6 +300,16 @@ Append one factual entry for every agent session that changes repository or proj
   - `git diff --check`: Passed with 0 whitespace/conflict errors.
 - **Code, tests, browser, commit, push:** Modified `dashboard-tools.blade.php` and session summary log. No automated tests run. Browser verification completed on desktop and 390x844 mobile, including first-step visible highlight, table-step highlight, card positioning, and finish cleanup. No commit or push occurred.
 
+## 2026-08-05 - Shared Table Design Consistency
+
+- **Agent / scope:** AGY read-only audit, scoped implementation, final read-only review, and browser verification for operational tables.
+- **Audit result:** 14 rendered table/table-like structures reviewed; 4 raw operational table gaps identified; POS, A4 print, and Help/Guide specialized layouts retained as intentional exemptions.
+- **Implementation:** Added scoped `table.data-table` CSS in `resources/css/app.css` covering shared borders, muted headers, hover states, logical alignment, action-cell nowrap, bounded overflow, and comfortable/compact density. Applied it to all raw operational tables in Suppliers, Purchase Orders, Cash Drawers, and Authorization Baseline, including modal/detail tables.
+- **Behavior:** Purchase Order status markup now uses shared `<x-status.badge>` with localized labels preserved. Livewire behavior, permissions, forms, pagination, queries, routes, and data contracts were preserved.
+- **Browser evidence:** `/catalog/suppliers`, `/purchasing/orders`, `/admin/cash-drawers`, and `/admin/authorization-baseline` passed visual review through Demo Auth. No page-level overflow or JavaScript errors were observed.
+- **Verification:** AGY final review PASS; `php artisan view:cache`, `npm run build`, and `git diff --check` PASS. No commit or push.
+
+
 ## 2026-08-04 - TSK-004B Guided Tour Expansion Across Registered Screens
 
 - AGY replaced broad selectors with explicit `data-guide` hooks across the 17 registered screen views and expanded metadata to five steps per screen, with seven Product Import steps.
@@ -582,3 +592,18 @@ Append one factual entry for every agent session that changes repository or proj
 - **Completed:** Preserved Product Import file uploads, batch staging/review/approval/cancellation/error-download flows, permissions, and anchors. Preserved Audit Logs filters, pagination, scoped authorization, protected/redacted detail modal, and responsive table behavior. No POS/backend/routes/shared layout files changed.
 - **Verification actually run:** AGY audit SAFE and final review PASS; view clear/cache, Vite build, and diff check passed; browser verification passed for Product Import and Audit Logs. Audit Logs page-level `scrollWidth` equaled viewport width; final browser console had no JavaScript errors.
 - **Remaining:** POS intentionally excluded; real device-sized mobile viewport, automated application suite, UAT, commit, and push remain pending.
+
+## 2026-08-05 - Shared Design System Phase 9 Help & Guide Adoption
+
+- **Agent / scope:** Migrated `resources/views/platform/help/screen.blade.php` and `resources/views/platform/help/flow.blade.php` to `x-app.page` only.
+- **Completed:** Preserved guide hero, sticky aside, localized text, IDs, data-guide anchors, back links, steps, actions, alternate/failure paths, and flow content; removed the legacy `page-frame` wrapper.
+- **Verification actually run:** AGY implementation and final review PASS; `x-app.page` count is now 23; view cache, Vite build, and diff check passed. All remaining non-page-shell views were classified as correct exemptions.
+- **Browser boundary:** The current host has no `__demo/auth` route or authorized browser session. Help routes correctly redirect unauthenticated visitors to `/login`; post-login visual walkthrough remains pending an authorized session.
+
+## 2026-08-05 - TSK-014/015/016 Delivery Gate Review
+
+- **Agent / scope:** AGY read-only gate audit for TSK-014, TSK-015, and TSK-016; no business code, migrations, routes, tests, commit, or push created in this review.
+- **TSK-014:** PASS for approved local scope. Existing Purchase Order implementation and evidence cover schema/lines, number allocation, concurrency/version guards, draft/submit/cancel/close actions, audit, authorization, filters/pagination, bilingual responsive UI, and A4 print. Receipt-linked partial/full receipt transitions remain downstream of TSK-015.
+- **TSK-015:** BLOCKED. No invoice/receipt foundation exists; owner-approved cost/tax/discount/rounding, approval/duty separation, supplier-reference/attachment, stock movement/balance, WAC, opening-stock, and production inputs are missing. No financial or inventory behavior was fabricated.
+- **TSK-016:** BLOCKED / Not Started. It depends on TSK-015 and missing return eligibility, non-reference, reason, approval, stock disposition/reversal, and cost-history policies. No return tables/actions/UI or fake source records were fabricated.
+- **Documentation:** Updated `TASKS.md`, `.ai/CURRENT_TASK.md`, and `.ai/TEST_RESULTS.md`; DM 2.2, UAT, production readiness, and owner-input gates remain open.

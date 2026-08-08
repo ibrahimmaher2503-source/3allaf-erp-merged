@@ -93,10 +93,13 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-004B — Implement Persistent UI Customizer and Contextual Tutorial Assistant
 
-- **Task ID / Phase / Milestone / Status:** TSK-004B; Platform shared feature; **In Progress (2026-08-04)**.
+- **Task ID / Phase / Milestone / Status:** TSK-004B; Platform shared feature; **Completed for approved local scope (2026-08-05); authorized post-login Help visual walkthrough and real device-sized mobile verification remain pending.**
 - **Purpose:** Add persistent Appearance Customizer and permission-aware, bilingual Contextual Page Guide/Tutorial Assistant without changing business workflows, authorization grants, commercial policy, or unrelated task statuses.
 - **Implementation:** Shared `TutorialRegistry`, `UserFlowRegistry`, `PageGuideContext`, `user_ui_preferences`, persistent dashboard/POS controls, bounded drawer/full guide/flow views, and a small explicit-selector guided tour.
 - **Initial real coverage:** UI-SYS-001/002/003/004, UI-ADM-002/003/004/005/010/011/012, UI-CAT-001/002/003/004/006/007. Non-existent proposed screens are not fabricated.
+- **Completion update (2026-08-05):** AGY audited all 83 registered routes and 27 user-facing screen/document endpoints. All 23 standard application page views now use `x-app.page`; the final Help/Guide screen and flow views were migrated in the strict allowlist `resources/views/platform/help/screen.blade.php` and `resources/views/platform/help/flow.blade.php`. POS, print, auth, error, public, layout, component, and partial views remain correct exemptions.
+- **Delivery evidence:** AGY implementation and final review returned PASS; `php artisan view:cache`, `npm run build`, and `git diff --check` passed. Full suite result was 212 passed, 8 failed, 3 risky, 1,085 assertions; failures are documented in `.ai/TEST_RESULTS.md` and were not hidden or weakened. Local commit `54e7c64` exists; push remains blocked by missing GitHub SSH credentials.
+- **UI delivery inventory (2026-08-05):** Centralized semantic design tokens, typography/spacing/surfaces/borders/shadows/radii, light/dark/system appearance, accent color, dark sidebar, sidebar expanded/collapsed/hover/focus/mobile behavior, content width, font scale, table density, reduced motion, and RTL/LTR direction. Added the `x-app.page` shell, shared page header, app logo, stat/section cards, data panel/filter bar, loading/audit patterns, theme bootstrap, and persistent Appearance Customizer. Migrated Dashboard, Catalog, Purchasing, Platform Admin/System, Audit, Authorization, User Settings, and Help/Guide views while preserving Livewire/Volt bindings, permissions, forms, modals, uploads, pagination, print links, ARIA, and `data-guide` anchors. Updated shared app/sidebar/head/POS/print composition and semantic status colors without changing business behavior.
 - **Definition of Done:** Shared controls, persisted preferences, registered guides/flows, permission/scope filtering, tour behavior, documentation, and real-browser evidence under `artifacts/platform-dashboard-assistant/`; no Critical/High defect; no UAT/production-readiness claim.
 - **Traceability:** US-046; FLW-UI-01, FLW-HELP-01, FLW-HELP-02; AC-UI-06–15; `docs/40-contextual-page-guide-specification.md`.
 
@@ -237,7 +240,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-014 — Implement Purchase Orders
 
-- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **In Progress — local slice implemented and manually browser-verified; TSK-015 receipt states and production/UAT gates remain open**.
+- **Task ID / Phase / Milestone / Status:** TSK-014; Phase 2; DM 2.2; **Completed for approved local scope — PO slice implemented and manually browser-verified; downstream receipt states, formal phase gates, UAT, and production readiness remain open**.
 - **Title / Purpose / Description:** Deliver purchase-order line entry and Draft/Submitted/Partially Received/Received/Cancelled/Closed state machine with receipt links.
 - **Traceability:** PUR-03, NFR-01–NFR-03, NFR-06; US-010; FLW-PUR-01; UI UI-PUR-001; AC-PUR-03; SEC-011–012, SEC-015, SEC-017–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 2 DM 2.1 complete; supplier/store/product and PO authorization/terms.
@@ -265,7 +268,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-016 — Implement Supplier Returns
 
-- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-016; Phase 2; DM 2.2; **Not Started — blocked by TSK-015 dependency and missing return eligibility/reason/approval/stock-reversal policies**.
 - **Title / Purpose / Description:** Create approved supplier return linked to original purchase where available with cost/history and exact stock reduction.
 - **Traceability:** PUR-06, NFR-01–NFR-02, NFR-06; US-012; FLW-PUR-03; UI UI-PUR-003; AC-PUR-06; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-015; eligible/non-reference policy, return reasons/approvals.
@@ -682,6 +685,22 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 Closure status (2026-08-04): TSK-011 and TSK-012 are Completed for approved local scope. The task-specific statuses above supersede the historical aggregate totals below; TSK-001, TSK-005, and TSK-009 remain In Progress, and later tasks remain Not Started.
 
 - Total tasks: 45.
-- Task status totals: 3 `In Progress`, 9 completed for approved local scope/complete, 33 `Not Started`.
+- **Status note (2026-08-05):** The historical aggregate totals above are retained for backlog continuity; the task-specific status lines are authoritative. TSK-004B and TSK-014 are completed for approved local scope, while TSK-001, TSK-005, TSK-009, TSK-013, TSK-015, and TSK-016 retain open local/production/UAT/dependency boundaries as described above.
 - No task exists for creating or running automated tests.
-- Current implementation progress remains tracked at the project level; TSK-011 and TSK-012 are closed for approved local scope, TSK-004B is active, and DM 2.1/production exit remain open.
+- Current implementation progress remains tracked at the project level; shared UI migration is complete for all standard application screens (23 `x-app.page` views), while DM 2.1/DM 2.2 production exit, UAT, mobile evidence, and GitHub authentication remain open.
+
+## UI Table Consistency Update — 2026-08-05
+
+- **Task scope:** Reviewed all rendered user-facing table patterns with AGY and separated genuine operational inconsistencies from intentional POS, print, and Help/Guide layouts.
+- **Completed UI work:** Added the shared `table.data-table` fallback layer for consistent headers, borders, row hover, logical RTL/LTR alignment, action-cell behavior, bounded overflow, and `data-table-density` comfortable/compact support.
+- **Updated screens:** Suppliers, Purchase Orders, Cash Drawers, and Authorization Baseline. All raw operational tables in those views, including modal/detail tables, now use the shared table class.
+- **Behavior preserved:** Livewire bindings, pagination, permissions, forms, statuses, labels, routes, and data contracts were not changed. Purchase Order statuses now use shared semantic status badges.
+- **Evidence:** AGY implementation and final review both PASS; browser QA passed for all four screens; `php artisan view:cache`, `npm run build`, and `git diff --check` passed.
+- **Remaining:** Real device-sized mobile verification and broader owner/UAT acceptance remain open. No commit or push was performed.
+
+## TSK-014/015/016 Delivery Gate Review — 2026-08-05
+
+- **TSK-014:** AGY audit PASS for approved local Purchase Order scope. Existing implementation includes PO/line schema, concurrency lock, number allocation, draft/submit/cancel/close actions, audit events, authorization, server-side filters/pagination, responsive bilingual UI, and A4 print. Receipt-linked `partially_received`/`received` transitions remain downstream of TSK-015.
+- **TSK-015:** BLOCKED. Repository inspection found no `purchase_invoices`/`purchase_invoice_lines` tables, models, actions, routes, or views. Safe implementation requires owner-approved tax/discount/rounding, supplier-reference/attachment, approval limits/duty separation, stock movement/balance, WAC, opening-stock, and production inputs. No financial or inventory behavior was fabricated.
+- **TSK-016:** BLOCKED / Not Started. It depends on TSK-015 and requires approved eligibility, non-reference return, reason taxonomy, approval, stock disposition/reversal, and cost-history policies. No return tables, actions, routes, or UI were fabricated.
+- **AGY result:** TSK-014 PASS for local scope; TSK-015 BLOCKED; TSK-016 BLOCKED. Documentation statuses were updated accordingly. No automated tests, commit, or push were performed.

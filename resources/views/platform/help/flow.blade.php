@@ -2,12 +2,12 @@
 @php($text = fn ($value): string => is_array($value) ? ($value[$locale] ?? $value['en'] ?? $value['ar'] ?? '') : (string) $value)
 
 <x-layouts::app :title="$text($flow['title'])">
-    <div class="page-frame max-w-4xl space-y-6">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{{ $flow['flow_id'] }}</p>
-            <flux:heading size="xl">{{ $text($flow['title']) }}</flux:heading>
-            <flux:text>{{ $text($flow['actor']) }}</flux:text>
-        </div>
+    <x-app.page
+        :title="$text($flow['title'])"
+        :description="$text($flow['actor'])"
+        :eyebrow="$flow['flow_id']"
+        max-width="4xl"
+    >
         <section class="rounded-xl border border-border bg-surface p-5 shadow-card">
             <flux:heading size="lg">{{ $locale === 'ar' ? 'الشروط المسبقة' : 'Preconditions' }}</flux:heading>
             <p class="mt-3 text-sm text-text-muted">{{ $text($flow['preconditions']) }}</p>
@@ -34,5 +34,5 @@
             </section>
         </div>
         <a class="platform-assistant__secondary" href="{{ url()->previous() }}">{{ $locale === 'ar' ? 'العودة' : 'Back' }}</a>
-    </div>
+    </x-app.page>
 </x-layouts::app>

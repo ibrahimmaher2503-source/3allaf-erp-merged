@@ -4,9 +4,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-if (app()->environment('local') && (bool) env('DEMO_AUTH', false)) {
+if (app()->environment('local') && (bool) config('app.demo_auth', false)) {
     Route::get('/__demo/auth', function () {
-        abort_unless(app()->environment('local') && (bool) env('DEMO_AUTH', false), 404);
+        abort_unless(app()->environment('local') && (bool) config('app.demo_auth', false), 404);
 
         $personas = [
             'demo-admin' => 'demo.admin@toyjoy.local',

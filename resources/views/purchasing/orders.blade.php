@@ -347,7 +347,7 @@ new #[Title('Purchase Orders')] class extends Component {
     <!-- Orders Table -->
     <flux:card class="overflow-hidden p-0" data-guide="po-table">
         <div class="overflow-x-auto">
-            <table class="w-full text-start text-sm">
+            <table class="data-table w-full text-start text-sm">
                 <thead class="bg-zinc-50 dark:bg-zinc-800/80 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-border">
                     <tr>
                         <th class="px-4 py-3 text-start">{{ __('PO Number') }}</th>
@@ -375,15 +375,16 @@ new #[Title('Purchase Orders')] class extends Component {
                                 {{ $order->store ? (app()->getLocale() === 'ar' ? $order->store->name_ar : $order->store->name_en) : '—' }}
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide
-                                    @if($order->status === 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300
-                                    @elseif($order->status === 'submitted') bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300
-                                    @elseif($order->status === 'partially_received') bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300
-                                    @elseif($order->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300
-                                    @elseif($order->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300
-                                    @else bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300 @endif">
-                                    {{ __(ucfirst(str_replace('_', ' ', $order->status))) }}
-                                </span>
+                                @php
+                                    $statusKey = match($order->status) {
+                                        'draft' => 'pending',
+                                        'submitted', 'partially_received' => 'processing',
+                                        'received' => 'completed',
+                                        'cancelled' => 'rejected',
+                                        default => 'closed',
+                                    };
+                                @endphp
+                                <x-status.badge :status="$statusKey" :label="__(ucfirst(str_replace('_', ' ', $order->status)))" />
                             </td>
                             <td class="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                                 {{ $order->order_date?->format('Y-m-d') }}
@@ -542,15 +543,16 @@ new #[Title('Purchase Orders')] class extends Component {
                     </p>
                 </div>
                 <div>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider
-                        @if($viewingOrder->status === 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300
-                        @elseif($viewingOrder->status === 'submitted') bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300
-                        @elseif($viewingOrder->status === 'partially_received') bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300
-                        @elseif($viewingOrder->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
-                        @elseif($viewingOrder->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300
-                        @else bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300 @endif">
-                        {{ __(ucfirst(str_replace('_', ' ', $viewingOrder->status))) }}
-                    </span>
+                    @php
+                        $viewingStatusKey = match($viewingOrder->status) {
+                            'draft' => 'pending',
+                            'submitted', 'partially_received' => 'processing',
+                            'received' => 'completed',
+                            'cancelled' => 'rejected',
+                            default => 'closed',
+                        };
+                    @endphp
+                    <x-status.badge :status="$viewingStatusKey" :label="__(ucfirst(str_replace('_', ' ', $viewingOrder->status)))" />
                 </div>
             </div>
 
@@ -589,7 +591,7 @@ new #[Title('Purchase Orders')] class extends Component {
                     </div>
 
                     <div class="border border-border rounded-lg overflow-hidden">
-                        <table class="w-full text-xs">
+                        <table class="data-table w-full text-xs">
                             <thead class="bg-zinc-100 dark:bg-zinc-800 font-semibold uppercase text-zinc-600 dark:text-zinc-300">
                                 <tr>
                                     <th class="px-3 py-2 text-start">#</th>

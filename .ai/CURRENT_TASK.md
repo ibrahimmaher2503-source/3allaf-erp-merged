@@ -1,10 +1,14 @@
-# Selected Task: TSK-015
+# Selected Task: TSK-015 / TSK-016 Gate Review
 
 ## Current State
 
-TSK-015 is **In Progress — feasibility/readiness analysis completed; implementation is gated by documented receipt, inventory, commercial, and approval inputs**. TSK-014's approved local PO slice is complete and remains the dependency baseline.
+TSK-014 is **Completed for approved local scope**: the Purchase Order slice, state/actions, audit, authorization, pagination, responsive RTL/LTR UI, and A4 print were implemented and manually verified. Receipt-linked `partially_received`/`received` transitions remain downstream of TSK-015.
 
-The safe next slice is to finalize the bounded invoice/receipt data contract and dependency map without creating stock effects, WAC updates, tax/payment defaults, approval thresholds, production data, or fake receipts. Existing Platform audit/approval/attachment foundations and TSK-014 PO linkage must be reused. Full invoice approval, receipt posting, stock movements/balances, WAC, and PO Partially Received/Received transitions require the documented TSK-015/Inventory contracts and owner-approved policies.
+TSK-015 is **In Progress — feasibility/readiness analysis completed; implementation is blocked by missing owner-approved receipt, inventory, cost/WAC, tax/discount, supplier-reference/attachment, approval-limit, and production inputs**. No invoice/receipt/stock/WAC code or tables exist, and none may be fabricated.
+
+TSK-016 is **Not Started — blocked by TSK-015 and missing supplier-return eligibility, reason taxonomy, approval, stock-reversal, and non-reference return policies**. Do not create return tables, posting actions, or UI until those dependencies are approved.
+
+The next safe action is owner-input resolution for TSK-015/TSK-016, or an explicitly approved bounded local contract/design slice that does not post stock, change cost, create financial defaults, or invent source records.
 
 ## TSK-015 Verification Boundary
 
