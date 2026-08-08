@@ -1,5 +1,11 @@
 # UI Screen Inventory
 
+## TSK-042 Production Operations and Handover screen — 2026-08-08
+
+- `/operations-readiness` (`UI-SYS-009`) is a guarded read-only boundary using `audit_logs.view`, with stable targets: `operations-readiness-header`, `operations-readiness-boundary`, `operations-readiness-summary`, `operations-readiness-cards`, `operations-readiness-first-card`, `operations-readiness-card-6`, and `operations-readiness-empty`.
+- It shows pending runtime, secrets, workers, scheduler, storage, monitoring, backup/restore, devices, support, training, and release contracts without sensitive values or operational mutation controls.
+- English/LTR and Arabic/RTL rendering, no overflow, no-access denial, Initial Setup pending card, clean console probe, feature-specific guide, and all four tour selectors were verified.
+
 ## TSK-041 Master Data Import and Cutover screen — 2026-08-08
 
 - `/master-data-migration-readiness` (`UI-SYS-008`) is a guarded read-only boundary using `company_settings.view`, with stable targets: `master-data-migration-readiness-header`, `master-data-migration-readiness-boundary`, `master-data-migration-readiness-summary`, `master-data-migration-readiness-cards`, `master-data-migration-readiness-first-card`, `master-data-migration-readiness-card-6`, and `master-data-migration-readiness-empty`.

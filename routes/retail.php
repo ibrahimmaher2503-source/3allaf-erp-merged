@@ -134,6 +134,26 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:company_settings.view')->name('master-data.migration.readiness');
 
+    Route::get('operations-readiness', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('audit_logs.view'), 403);
+
+        return view('pages.operations.readiness', [
+            'title' => __('Production Operations and Handover Readiness'),
+            'cards' => [
+                ['title' => __('Runtime and environment'), 'body' => __('Host, domain, TLS, runtime versions, debug mode, environment separation, and named ownership remain pending; local behavior is not production proof.')],
+                ['title' => __('Secrets and access'), 'body' => __('Secret storage, rotation, least privilege, redaction, service accounts, and access review remain pending; no secret is displayed here.')],
+                ['title' => __('Workers, scheduler, and cache'), 'body' => __('Worker supervision, scheduler heartbeat, retries, failed jobs, queue idempotency, and cache availability remain pending.')],
+                ['title' => __('Storage and monitoring'), 'body' => __('Private attachment storage, capacity, retention, request IDs, error monitoring, alert recipients, and escalation remain pending.')],
+                ['title' => __('Backup and restore evidence'), 'body' => __('Destination, encryption, retention, restore rehearsal in isolation, RPO/RTO, recovery owner, and reconciliation evidence remain pending; no backup is created.')],
+                ['title' => __('Printers, scanners, and devices'), 'body' => __('Managed device enrollment, branch/store binding, printer/scanner models, bridges, templates, safe failure, and browser evidence remain pending.')],
+                ['title' => __('Support and handover'), 'body' => __('Named support contact, escalation path, incident ownership, known issues, runbooks, and handover evidence remain pending.')],
+                ['title' => __('Training and release gate'), 'body' => __('Training attendees, role-specific scenarios, completion evidence, UAT, security review, rollback, and go-live sign-off remain pending.')],
+            ],
+        ]);
+    })->middleware('can:audit_logs.view')->name('operations.readiness');
+
     Route::get('quotations-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

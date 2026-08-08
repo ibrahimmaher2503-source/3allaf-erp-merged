@@ -653,7 +653,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-042 — Complete Production Readiness, Devices, Backup, and Training
 
-- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **In Progress — Local/Dev production-readiness/device/backup/training discovery boundary active; production infrastructure, devices, restore sign-off, and training evidence remain pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **Completed — verified Local/Dev production-operations/device/backup/training readiness boundary; production infrastructure, secrets, devices, restore evidence, training, UAT, and go-live remain deferred**.
 - **Title / Purpose / Description:** Verify production configuration/secrets/workers/scheduler/storage/monitoring, target branches/scanners/printers, baseline backup/restore, training and operational runbooks.
 - **Traceability:** all requirements, especially NFR-04–NFR-07 and print/device requirements; US-032; all operational flows/screens; AC-NFR-04–07, AC-UI-02–05; SEC-028–040.
 - **Dependencies / Required Inputs:** TSK-041; approved hosting/domain/devices/printers/support/backup/training attendees/runbooks.
@@ -667,7 +667,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-043 — Execute Scenario-Based Manual UAT and Defect Retesting
 
-- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **Not Started**.
+- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **In Progress — Local/Dev manual-UAT evidence and scenario-pack readiness active; no UAT sign-off, device acceptance, production approval, or automated-test claim**.
 - **Title / Purpose / Description:** Execute manual UAT across all roles, 72 requirements, source acceptance scenarios, devices, prints, integrity and offline scope; triage/retest defects. This is not an automated-test task.
 - **Traceability:** all 72 PRD IDs, US-001–032, all FLWs/UI screens, all ACs, SEC-001–040.
 - **Dependencies / Required Inputs:** DM 6.2 complete; named UAT owners, approved scenarios/data/devices/evidence repository/severity/sign-off.

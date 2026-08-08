@@ -1,15 +1,15 @@
-# Active Milestone — TSK-042 Production Readiness, Devices, Backup, and Training
+# Active Milestone — TSK-043 Scenario-Based Manual UAT and Defect Retesting
 
 **Current phase:** Phase 6 (formal Phase 4 gate remains open)
-**Current milestone:** DM 6.4 — Production Readiness and Operational Handoff
-**Status:** TSK-041 Local/Dev master-data import/cutover readiness is complete and browser-verified; TSK-042 is active for source-safe production-readiness/device/backup/training discovery.
-**Evidence:** TSK-041 reviewed canonical docs 23, 42, 44, 54 and source absence; guarded `/master-data-migration-readiness`, pending migration policies, bilingual UI/SYS-008, English/LTR and Arabic/RTL checks, Initial Setup pending card, no-access denial, no overflow/no operational controls, and 4/4 Page Guide selectors passed. Production data, import, cutover, infrastructure, devices, UAT, and Production remain open.
+**Current milestone:** DM 6.3 — Manual UAT and Evidence
+**Status:** TSK-042 Local/Dev production-operations/device/backup/training readiness is complete and browser-verified; TSK-043 is active for source-safe manual-UAT scenario/evidence readiness.
+**Evidence:** TSK-042 reviewed docs 30, 39, 53 and actual health/device/backup/training surfaces; guarded `/operations-readiness`, pending operations policies, bilingual UI-SYS-009, English/LTR and Arabic/RTL checks, Initial Setup pending card, no-access denial, no overflow/no operational controls, and 4/4 Page Guide selectors passed. Production infrastructure, restore evidence, device acceptance, training, UAT, and go-live remain open.
 
 ---
-# Previous Milestone Record — TSK-040
+# Previous Milestone Record — TSK-042
 
-**Status:** Completed for verified Local/Dev export-center and audit-view readiness; PDF/Excel/CSV generation, protected download, artifacts, redaction execution, audit export, UAT, and release approval remain open.
-**Evidence:** Docs 19, 34, 38, 39, 53 and source absence reviewed; guarded `/exports-audit-readiness`, pending export/audit policies, bilingual screen/guide, English/LTR and Arabic/RTL checks, Initial Setup pending card, HTTP 403 denial, no overflow/no mutation controls, and 4/4 interactive tour selectors passed after selector correction.
+**Status:** Completed for verified Local/Dev operations/device/backup/training readiness; production deployment, secrets, device enrollment, backup/restore, training, UAT, and go-live remain open.
+**Evidence:** Docs 30, 39, 53 reviewed; guarded `/operations-readiness`, pending operations policies, bilingual UI-SYS-009, English/LTR and Arabic/RTL checks, Initial Setup pending card, no-access denial, no overflow/no operational controls, and 4/4 interactive tour selectors passed.
 
 ---
 # Previous Milestone Record — TSK-031

@@ -13,6 +13,15 @@ Append one factual entry for every agent session that changes repository or proj
 - **Remaining blockers / next action:**
 - **Code, tests, browser, commit, push:**
 
+## 2026-08-08 - TSK-042 Production Operations and Handover readiness
+
+- **Agent / scope:** Implemented the authorized Local/Dev operations/device/backup/training readiness boundary after reviewing docs 30, 39, 53 and actual repository surfaces.
+- **Completed:** Added eight pending `operations.*` policies, Initial Setup card, guarded `/operations-readiness`, UI-SYS-009, bilingual stable-selector screen, and no-secret/no-device-payload/no-deploy boundary.
+- **Files changed:** `TASKS.md`, active `.ai/` control/evidence files, policy registry, Initial Setup, tutorial factory/wrapper, route, Blade view, `lang/en.json`, `lang/ar.json`.
+- **Verification actually run:** PHP lint, optimize clear, Blade cache, route discovery, locale parity `1666/1666`, Pint, PHPStan `[OK] No errors`, Vite build, diff check; authorized English/LTR and Arabic/RTL, no overflow/operational controls, Initial Setup pending, no-access denial, clean console probe, Page Guide `4/4`.
+- **Remaining blockers / next action:** Production infrastructure, secrets, devices, backup/restore, training, UAT, and go-live remain deferred. TSK-043 is active for manual-UAT scenario/evidence readiness.
+- **Code, tests, browser, commit, push:** Code changed; no automated tests created/run; browser verified; local commit pending in this continuation; no push.
+
 ## 2026-08-08 - TSK-041 Master Data Import and Cutover readiness
 
 - **Agent / scope:** Implemented the authorized Local/Dev source-safe readiness boundary after mapping missing requested filenames to canonical docs 23, 42, 44, and 54.

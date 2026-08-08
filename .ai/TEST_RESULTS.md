@@ -1,5 +1,14 @@
 # Test and Verification Status
 
+## TSK-042 Production Operations and Handover readiness — 2026-08-08
+
+- Reviewed `docs/30-platform-operations-specification.md`, `docs/39-uat-and-release-gates.md`, `docs/53-deployment-backup-and-rollback-runbook.md`, and actual health/device/backup/training references; no unified source-safe production handover surface existed.
+- Added eight pending `operations.*` policy keys, `operations-readiness` Initial Setup card, guarded `/operations-readiness` using existing `audit_logs.view`, and UI-SYS-009.
+- Boundary covers runtime/environment, secrets/access, workers/scheduler/cache, storage/monitoring, backup/restore evidence, printers/scanners/devices, support/handover, and training/release gate; no secret, host detail, device identifier, backup file, deployment, enrollment, backup, restore, or approval is enabled.
+- Diagnostics PASS: PHP lint, optimize clear, Blade cache, route discovery, locale parity `1666/1666`, Pint after one indentation fix, PHPStan `[OK] No errors`, Vite build, and diff check. Vite retained the existing optional `fontaine` warning.
+- Browser PASS: authorized English/LTR and Arabic/RTL, no page overflow or operational controls, Initial Setup pending card, no-access denial, clean console probe, and Page Guide interactive tour `4/4` valid selectors.
+- Boundary: Local/Dev evidence only; production infrastructure, secrets, device acceptance, backup/restore evidence, training sign-off, UAT, and go-live remain deferred. No automated tests were created or run per repository policy.
+
 ## TSK-041 Master Data Import and Cutover readiness — 2026-08-08
 
 - Reviewed canonical documents `docs/23-product-barcode-policy.md` (mapping for missing requested docs/23), `docs/42-purchase-invoice-import-specification.md`, `docs/44-opening-stock-cutover-specification.md`, and `docs/54-production-data-migration-and-reconciliation.md`; documented filename mismatch in the active task records.

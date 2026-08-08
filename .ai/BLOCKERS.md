@@ -1,5 +1,11 @@
 # Blocker Register
 
+## TSK-042 Production Operations and Handover boundary — 2026-08-08
+
+TSK-042 bounded Local/Dev readiness is complete and browser-verified. Production infrastructure, secret inventory, device enrollment/acceptance, backup destination, restore rehearsal, support owner, training attendance, UAT, and go-live remain blocked pending approved operational inputs and evidence.
+
+Next task: TSK-043 Scenario-Based Manual UAT and Defect Retesting.
+
 ## TSK-041 Master Data Import and Cutover boundary — 2026-08-08
 
 TSK-041 bounded Local/Dev readiness is complete and browser-verified. Approved source files, production batch import, destructive replacement, opening-stock posting, cutover timestamp, backup/restore sign-off, and production reconciliation remain blocked pending owner data, operational inputs, and UAT/Production gates.

@@ -183,6 +183,14 @@ final class InitialSetupStatus
                 'required' => false,
             ],
             [
+                'key' => 'operations-readiness',
+                'label' => (string) __('Production operations and handover'),
+                'description' => (string) __('Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.'),
+                'required' => false,
+                'route' => route('operations.readiness'),
+                'complete' => $this->operationsReadinessPolicyValuesConfigured(),
+            ],
+            [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
                 'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
@@ -406,6 +414,18 @@ final class InitialSetupStatus
             ->whereNotNull('value')
             ->where('value', '!=', '')
             ->count() === 9;
+    }
+
+    private function operationsReadinessPolicyValuesConfigured(): bool
+    {
+        return CustomerPolicySettingVersion::query()
+            ->whereIn('key', [
+                'operations.runtime', 'operations.secrets', 'operations.workers', 'operations.storage',
+                'operations.monitoring', 'operations.backup', 'operations.devices', 'operations.training',
+            ])
+            ->whereNotNull('value')
+            ->where('value', '!=', '')
+            ->count() === 8;
     }
 
     private function financialSettingsReady(): bool
