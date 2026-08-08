@@ -695,9 +695,24 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ## Backlog Status Confirmation
 
-Closure status (2026-08-04): TSK-011 and TSK-012 are Completed for approved local scope. The task-specific statuses above supersede the historical aggregate totals below; TSK-001, TSK-005, and TSK-009 remain In Progress, and later tasks remain Not Started.
+**Status snapshot:** 2026-08-08. The task-level statuses above are authoritative and classify work honestly as `Completed for approved Local/Dev scope`, `Implemented for approved Local/Dev scope`, or `In Progress`; they do not constitute UAT, Phase Gate, Production Readiness, Go-Live, or client sign-off.
 
-- Total tasks: 45.
-- Task status totals: 3 `In Progress`, 9 completed for approved local scope/complete, 33 `Not Started`.
-- No task exists for creating or running automated tests.
-- Current implementation progress remains tracked at the project level; TSK-011 and TSK-012 are closed for approved local scope, TSK-004B is active, and DM 2.1/production exit remain open.
+### Phase status summary
+
+| Phase | Tasks | Local/Dev scope | Remaining gate / blocker |
+|---|---:|---|---|
+| Phase 1 — Foundation and Controls | TSK-001–009 + TSK-004B | 6 completed for approved local scope; TSK-001, TSK-004B, TSK-005, and TSK-009 remain In Progress | Backup/restore capability, runbooks, print-preview/config gaps, platform guide work, and closure audit remain open |
+| Phase 2 — Catalog, Purchasing, Pricing, Inventory | TSK-010–022 | All task slices implemented/completed for approved Local/Dev scope | Production master data, true queue/print delivery, owner approvals, UAT, and release gates remain open |
+| Phase 3 — POS and Daily Finance | TSK-023–026 | All four discovery/readiness slices implemented and browser-verified | Financial, shift/cash, offline transaction/sync mutations, reconciliation, UAT, and Production remain open |
+| Phase 4 — Customers, Loyalty, Wallets, Returns | TSK-027–030 | All four Local/Dev settings/foundation/readiness slices implemented and browser-verified | Customer/loyalty, wallet, Gift Card, refund/exchange/restock mutations, UAT, and Production remain open |
+| Phase 5 — Parties and Assets | TSK-031–036 | All six Local/Dev Party/asset readiness slices completed and browser-verified | Booking, payment, operating order, asset, settlement, posting, UAT, and Production remain open |
+| Phase 6 — Reporting, UAT, Launch | TSK-037–044 | All eight Local/Dev readiness slices completed and browser-verified, including TSK-043 UAT readiness and TSK-044 go-live readiness | Approved UAT owners/scenarios/data/devices/evidence, defect closure, reconciliation, production data/config, backup/restore, rollback, client approval, and Go-Live remain blocked |
+
+### Overall counts
+
+- Total task records: **45** (TSK-001–044 plus TSK-004B).
+- In Progress: **4** — TSK-001, TSK-004B, TSK-005, TSK-009.
+- Completed/implemented for approved Local/Dev scope: **41**.
+- Fully accepted UAT/Production/Go-Live tasks: **0**.
+- No task exists for creating or running automated tests; automated tests remain `Not Created / Not Run` under the current owner directive.
+- Phase Gates, UAT acceptance, Production Readiness, and Go-Live remain open until the named owners provide the required approvals and evidence.
