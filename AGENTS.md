@@ -7,9 +7,15 @@ This file governs every AI coding agent working on TOY & JOY Phase 1. The reposi
 - PHP 8.4.21 and Laravel 13.23.0
 - Livewire 4.3.4, Flux UI 2.15.0, Tailwind CSS 4, and Vite 8
 - Laravel Fortify authentication with passkey and two-factor foundations from the official starter
-- SQLite for local development only; the production database remains an owner decision
+- XAMPP MySQL/MariaDB managed through phpMyAdmin for local development; the production database remains an owner decision
 - Responsive application and authentication shells with locale-aware Arabic RTL and English LTR direction
 - Automated tests remain Not Created and Not Run by explicit project-owner directive
+
+## Database Direction
+
+- Use only the XAMPP MySQL/MariaDB server through phpMyAdmin for local, development, staging, and test database operations.
+- SQLite is prohibited: do not create SQLite files, configure SQLite connections, run migrations or seeders against SQLite, or add SQLite test/backup fixtures.
+- Use a dedicated MySQL/MariaDB database for each disposable workflow and record its name before running destructive database commands.
 
 Inspect the current-state files identified by `AI_INDEX.md` before making any change.
 

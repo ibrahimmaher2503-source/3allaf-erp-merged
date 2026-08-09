@@ -2,6 +2,10 @@
 
 use App\Modules\Catalog\Actions\StageProductImportAction;
 use App\Modules\Catalog\Models\ProductImportBatch;
+use App\Modules\Platform\Actions\StoreAttachment;
+use App\Modules\Platform\Actions\RevokeAttachment;
+use App\Modules\Platform\Models\Attachment;
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
@@ -29,8 +33,17 @@ new #[Title('Product Import')] class extends Component {
         ]);
 
         try {
-            $path = $this->importFile->store('product-imports', 'local');
-            $batch = $action->stage($path, $this->importFile->getClientOriginalName(), $this->mode, auth()->id());
+            $attachment = app(StoreAttachment::class)->execute($this->importFile, 'import_source');
+            try {
+                $batch = $action->stage($attachment, $this->importFile->getClientOriginalName(), $this->mode, auth()->id());
+            } catch (Throwable $exception) {
+                app(RevokeAttachment::class)->execute(
+                    $attachment,
+                    __('The product import could not be staged.'),
+                    fn (User $user, Attachment $candidate): bool => $candidate->uploaded_by === $user->id && $candidate->source_type === null,
+                );
+                throw $exception;
+            }
             $this->selectedBatchId = $batch->id;
             $this->importFile = null;
             Flux::toast(variant: 'success', text: __('File staged. Review all rows before approval.'));
@@ -83,7 +96,13 @@ new #[Title('Product Import')] class extends Component {
             ? ProductImportBatch::query()->where('created_by', auth()->id())->with(['rows' => fn ($query) => $query->orderBy('row_number')->limit(50)])->find($this->selectedBatchId)
             : null;
 
-        return view('catalog.product-import', compact('batches', 'selectedBatch'));
+        $sourceAttachment = $selectedBatch === null ? null : Attachment::query()
+            ->where('source_type', ProductImportBatch::class)
+            ->where('source_id', (string) $selectedBatch->id)
+            ->where('purpose', 'import_source')
+            ->first();
+
+        return view('catalog.product-import', compact('batches', 'selectedBatch', 'sourceAttachment'));
     }
 };
 ?>
@@ -162,6 +181,9 @@ new #[Title('Product Import')] class extends Component {
                     <flux:text>{{ __('Valid') }}: {{ $selectedBatch->valid_rows }} · {{ __('Rejected') }}: {{ $selectedBatch->invalid_rows }}</flux:text>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
+                    @if($sourceAttachment?->status->isDeliverable())
+                        <flux:button href="{{ route('catalog.products.import.source', [$selectedBatch, $sourceAttachment]) }}" variant="subtle" icon="arrow-down-tray">{{ __('Download source') }}</flux:button>
+                    @endif
                     @can('products_categories_brands.export')
                         @if ($selectedBatch->invalid_rows > 0)
                             <flux:button href="{{ route('catalog.products.import.errors', $selectedBatch) }}" variant="subtle" icon="arrow-down-tray">{{ __('Download errors') }}</flux:button>

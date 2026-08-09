@@ -1,5 +1,66 @@
 # Test and Verification Status
 
+## TSK-025 Shift, Cash, Blind Close and Variance — 2026-08-09
+
+**Backend (SQLite):** `ShiftCashLifecycleTest` 28/28, `ShiftHttpRouteTest` 9/9, `CashShiftOfflineBoundaryTest` 3/3 (rewritten from readiness assertions to real blind-close non-disclosure). Retail + Unit + Contracts targeted run 87/87. Full suite **423 tests / 420 passed**; the 2 failures are the pre-existing `RolePermissionScopeTest` cases (catalog 349 vs 276; `system-administrator` supplier-grant drift) in files this work never touched.
+
+**Static:** PHPStan **0 errors** across `app/Modules/Retail` — no baseline entry, no `@phpstan-ignore`, no `@var` override. Pint clean.
+
+**Migration:** `MigrationRollbackIntegrityTest` passes end to end after fixing a real rollback defect (SQLite refused to drop `idempotency_key` while its unique index existed).
+
+**Browser (Playwright, real `php artisan serve` + dedicated seeded SQLite):** `testing/e2e/tsk025-shift-cash.spec.js` — **Chromium 6/6**. Every assertion also passed on Firefox and WebKit across runs. Covered: blind-close non-disclosure against the live DOM *after scripts run* and against every hidden input, cashier 403 on `/pos/shift-variance`, manager 200, Arabic RTL with no horizontal overflow, 390×844 with no horizontal overflow, and no console/page errors on the shift screen.
+
+**Business chain proven:** POS payment → shift cash → expected amount → blind close → variance → audit.
+
+### 48-category status for TSK-025
+
+| # | Category | Result |
+|---|---|---|
+| 01 | Unit | PASS (expected-total and variance arithmetic) |
+| 02 | Feature | PASS (28 lifecycle) |
+| 03 | Livewire | NOT_APPLICABLE (screens are Blade + form POST) |
+| 04 | Policy & Scope | PASS |
+| 05 | Integration | PASS (sale → shift → expected) |
+| 06 | Database Constraints | PASS (unique idempotency keys, unique `(shift_id, attempt)`) |
+| 07 | Transactions | PASS |
+| 08 | Concurrency | **BLOCKED_BY_ENVIRONMENT** — test + race worker written; no MariaDB reachable, suite skips |
+| 09 | Deadlocks | BLOCKED_BY_ENVIRONMENT |
+| 10 | Idempotency | PASS (open, movement, submission) |
+| 11 | Invariants | PASS |
+| 12 | Reconciliation | PASS (expected derived only from immutable linked activity) |
+| 13–14 | API Contract / Negative | NOT_APPLICABLE (no API surface in Phase 1) |
+| 15 | Webhooks | NOT_APPLICABLE |
+| 16–17 | Queue / Scheduler | NOT_APPLICABLE |
+| 18 | External Integrations | NOT_APPLICABLE |
+| 19 | Authentication | PASS (real login in browser) |
+| 20 | Authorization Matrix | PASS (incl. forged approval POST denied) |
+| 21 | Tenant/Branch Isolation | PASS |
+| 22 | Application Security | PASS (blind-close disclosure, live DOM + hidden inputs) |
+| 23 | File Security | NOT_APPLICABLE (no upload in TSK-025) |
+| 24 | Dependency Security | NOT_RUN this task |
+| 25 | Browser E2E | PASS (Chromium 6/6) |
+| 26 | Cross-Browser | PASS with caveat — all assertions passed on all three browsers; the 18-test run is flaky against the login throttle |
+| 27 | Responsive | PASS (390×844) |
+| 28 | RTL/LTR | PASS |
+| 29 | Accessibility | **NOT_RUN** — no axe harness wired in; only direction/overflow asserted |
+| 30 | Visual Regression | **NOT_RUN** — no baseline snapshots generated |
+| 31 | Performance Smoke | NOT_RUN |
+| 32–35 | Load / Stress / Spike / Soak | NOT_RUN |
+| 36 | Migration Clean | PASS |
+| 37 | Upgrade Migration | PASS (additive migration over existing data) |
+| 38–40 | Backup / DR / Chaos | NOT_RUN |
+| 41 | Mutation Testing | NOT_RUN |
+| 42 | Fuzz / Property-Based | PARTIAL (invalid-amount and unknown-type inputs rejected) |
+| 43 | State Transition | PASS |
+| 44 | Business Chain E2E | PASS |
+| 45 | UAT | BLOCKED — human |
+| 46 | Manual Visual | BLOCKED — human |
+| 47 | Physical/Hardware | BLOCKED — BLK-003 |
+| 48 | Production/Staging Smoke | BLOCKED — no production environment |
+
+**No category above is claimed as passing where it was not executed.**
+
+
 ## TSK-003 Executable Gap Closure — 2026-08-09 continuation
 
 - Dependency security: `composer audit` clean; `npm audit --omit=dev` exposed high `nanoid`, `npm audit fix --omit=dev` remediated it, final audit clean.

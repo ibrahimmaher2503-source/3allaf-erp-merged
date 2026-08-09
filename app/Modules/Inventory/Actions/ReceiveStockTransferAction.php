@@ -53,11 +53,11 @@ final class ReceiveStockTransferAction
                     app(PostInventoryMovement::class)->execute($line->product_id, $transfer->destination_store_id, $quantities['received'], 'transfer_receipt', (string) $line->unit_cost, 'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
                 }
                 app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $transfer->destination_store_id, '-'.$quantities['dispatched']);
-                $line->update(['quantity_received' => $quantities['received'], 'difference_quantity' => $quantities['difference'], 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
+                $line->mutateApprovedParentLine(['quantity_received' => $quantities['received'], 'difference_quantity' => $quantities['difference'], 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
             }
             $status = bccomp($totalDifference, '0', 6) === 0 ? 'received' : 'difference_review';
             $before = $transfer->only(['status', 'difference_status', 'lock_version']);
-            $transfer->update(['status' => $status, 'difference_status' => $status === 'received' ? null : 'under_review', 'reason_code' => $differenceType, 'reason_notes' => $differenceReason, 'received_by' => Auth::id(), 'received_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
+            $transfer->mutateApprovedDocument(['status' => $status, 'difference_status' => $status === 'received' ? null : 'under_review', 'reason_code' => $differenceType, 'reason_notes' => $differenceReason, 'received_by' => Auth::id(), 'received_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $transfer->destination_store_id, reasonCode: $differenceType, reasonText: $differenceReason, metadata: ['received_quantities' => $receivedByLine, 'difference_quantity' => $totalDifference]);
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);

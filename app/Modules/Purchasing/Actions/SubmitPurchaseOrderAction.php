@@ -4,6 +4,8 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\RequestApproval;
+use App\Modules\Platform\Data\ApprovalRequestData;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +52,18 @@ class SubmitPurchaseOrderAction
                 'updated_by' => $userId,
                 'lock_version' => $po->lock_version + 1,
             ]);
+
+            app(RequestApproval::class)->execute(new ApprovalRequestData(
+                sourceType: 'purchase_orders',
+                sourceId: (string) $po->id,
+                sourceVersion: (string) $po->lock_version,
+                requestedAction: 'approve',
+                requestPermission: 'purchase_orders.edit',
+                decisionPermission: 'purchase_orders.approve',
+                branchId: $po->branch_id,
+                storeId: $po->store_id,
+                idempotencyKey: 'purchase-order-approval:'.$po->id.':'.$po->lock_version,
+            ));
 
             app(RecordAuditEvent::class)->execute(
                 category: 'procurement',

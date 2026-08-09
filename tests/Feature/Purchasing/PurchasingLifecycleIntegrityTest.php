@@ -50,6 +50,14 @@ final class PurchasingLifecycleIntegrityTest extends TestCase
         parent::setUp();
         $this->seed(CanonicalAuthorizationSeeder::class);
         $this->actingAs($this->administrator('purchasing-setup'));
+        DocumentSequence::query()->create([
+            'document_type' => 'purchase_invoice', 'prefix' => 'PINV-'.now()->format('Y').'-', 'padding_length' => 5,
+            'next_value' => 1, 'status' => 'active', 'lock_version' => 1,
+        ]);
+        DocumentSequence::query()->create([
+            'document_type' => 'supplier_return', 'prefix' => 'PRET-'.now()->format('Y').'-', 'padding_length' => 5,
+            'next_value' => 1, 'status' => 'active', 'lock_version' => 1,
+        ]);
     }
 
     public function test_purchase_order_approval_is_segregated_and_has_no_stock_effect(): void
@@ -218,10 +226,13 @@ final class PurchasingLifecycleIntegrityTest extends TestCase
 
     public function test_document_number_allocators_advance_each_sequence_without_reuse(): void
     {
+        DocumentSequence::query()->whereIn('document_type', ['purchase_invoice', 'supplier_return'])->delete();
         DocumentSequence::query()->create([
             'document_type' => 'purchase_order', 'prefix' => 'PO-', 'padding_length' => 5,
             'next_value' => 7, 'status' => 'active', 'lock_version' => 1,
         ]);
+        DocumentSequence::query()->create(['document_type' => 'purchase_invoice', 'prefix' => 'PINV-'.now()->format('Y').'-', 'padding_length' => 5, 'next_value' => 1, 'status' => 'active', 'lock_version' => 1]);
+        DocumentSequence::query()->create(['document_type' => 'supplier_return', 'prefix' => 'PRET-'.now()->format('Y').'-', 'padding_length' => 5, 'next_value' => 1, 'status' => 'active', 'lock_version' => 1]);
 
         self::assertSame('PO-00007', app(AllocatePurchaseOrderNumberAction::class)->execute());
         self::assertSame('PO-00008', app(AllocatePurchaseOrderNumberAction::class)->execute());

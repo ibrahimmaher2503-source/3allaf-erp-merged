@@ -230,9 +230,8 @@ new #[Title('Branch Management')] class extends Component
         $this->historyBranchId = $branch->id;
         $this->historyBranchName = app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en;
         $this->historyRecords = $branch->sellingStoreMappings
-            // MySQL's default `timestamp` precision is whole seconds (unlike
-            // SQLite, which preserves microseconds), so two mappings created
-            // within the same second tie on `created_at` and previously fell
+            // MySQL's default `timestamp` precision is whole seconds, so two
+            // mappings created within the same second tie on `created_at` and previously fell
             // back to insertion order — showing history oldest-first instead
             // of newest-first. `id` is a monotonically increasing, unambiguous
             // proxy for creation order regardless of timestamp precision.
@@ -283,9 +282,11 @@ new #[Title('Branch Management')] class extends Component
     data-guide="branches-header"
 >
     <x-slot:actions>
-        @can('branches_stores.create')
-            <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
-        @endcan
+        <x-tables.resource-toolbar filter-target="branches-filters">
+            @can('branches_stores.create')
+                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <!-- TBD / BLK-006 Tracking Banner -->
@@ -294,7 +295,7 @@ new #[Title('Branch Management')] class extends Component
     </flux:callout>
 
     <!-- Filters & Controls -->
-    <flux:card class="space-y-4" data-guide="branches-filters">
+    <flux:card id="branches-filters" class="scroll-mt-24 space-y-4" data-guide="branches-filters">
         <div class="grid gap-4 sm:grid-cols-3">
             <flux:input
                 wire:model.live.debounce.300ms="search"

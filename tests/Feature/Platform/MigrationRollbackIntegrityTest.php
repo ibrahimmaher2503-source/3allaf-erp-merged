@@ -9,9 +9,9 @@ use Tests\TestCase;
 
 /**
  * Proves `php artisan migrate:rollback` can reverse every migration in this
- * project cleanly, end to end, against a real database file — not the shared
- * in-memory test connection. Runs on its own dedicated SQLite connection so it
- * never interacts with RefreshDatabase or any other test's state.
+ * project cleanly, end to end, against a dedicated MySQL/MariaDB schema — not
+ * the shared test connection. It never interacts with RefreshDatabase or any
+ * other test's state.
  *
  * Regression coverage for a real deployment-rollback defect found 2026-08-09
  * (QA-042/QA-043): several `down()` migrations dropped a foreign-key- or
@@ -23,20 +23,26 @@ class MigrationRollbackIntegrityTest extends TestCase
 {
     private const CONNECTION = 'migration_rollback_test';
 
+    private const SERVER_CONNECTION = 'migration_rollback_server';
+
+    private const DATABASE = 'toyjoy_migration_rollback';
+
     public function test_the_full_migration_set_rolls_back_cleanly_end_to_end(): void
     {
-        $databasePath = storage_path('framework/testing/migration-rollback-integrity.sqlite');
-
-        if (! is_dir(dirname($databasePath))) {
-            mkdir(dirname($databasePath), 0777, true);
-        }
-        file_put_contents($databasePath, '');
-
+        $this->createDedicatedDatabase();
         config(['database.connections.'.self::CONNECTION => [
-            'driver' => 'sqlite',
-            'database' => $databasePath,
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => self::DATABASE,
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
-            'foreign_key_constraints' => true,
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
         ]]);
         DB::purge(self::CONNECTION);
 
@@ -46,7 +52,7 @@ class MigrationRollbackIntegrityTest extends TestCase
                 '--force' => true,
             ]);
 
-            self::assertSame(0, $migrateExitCode, 'Fresh migration against a real SQLite file failed: '.Artisan::output());
+            self::assertSame(0, $migrateExitCode, 'Fresh migration against the dedicated MySQL/MariaDB schema failed: '.Artisan::output());
             self::assertTrue(Schema::connection(self::CONNECTION)->hasTable('users'), 'Migration did not create the expected users table.');
             self::assertTrue(Schema::connection(self::CONNECTION)->hasTable('purchase_invoices'), 'Migration did not create the expected purchase_invoices table.');
 
@@ -65,9 +71,34 @@ class MigrationRollbackIntegrityTest extends TestCase
             self::assertFalse(Schema::connection(self::CONNECTION)->hasTable('products'), 'products table survived a full rollback.');
         } finally {
             DB::purge(self::CONNECTION);
-            if (file_exists($databasePath)) {
-                unlink($databasePath);
-            }
+            $this->dropDedicatedDatabase();
         }
+    }
+
+    private function createDedicatedDatabase(): void
+    {
+        config(['database.connections.'.self::SERVER_CONNECTION => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => null,
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ]]);
+        DB::purge(self::SERVER_CONNECTION);
+        DB::connection(self::SERVER_CONNECTION)->statement('CREATE DATABASE IF NOT EXISTS `'.self::DATABASE.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    }
+
+    private function dropDedicatedDatabase(): void
+    {
+        DB::purge(self::SERVER_CONNECTION);
+        DB::connection(self::SERVER_CONNECTION)->statement('DROP DATABASE IF EXISTS `'.self::DATABASE.'`');
+        DB::purge(self::SERVER_CONNECTION);
     }
 }

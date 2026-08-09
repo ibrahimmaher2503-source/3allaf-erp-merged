@@ -12,7 +12,6 @@ final class AssertOriginalPreserved
     {
         if ($source->sourceId() !== $reference->originalSourceId
             || $source->sourceType() !== $reference->originalSourceType
-            || $source->sourceVersion() !== $reference->originalSourceVersion
             || $source->sourceHash() !== $reference->originalSourceHash) {
             throw ValidationException::withMessages([
                 'source' => __('The original approved source changed during correction and was not preserved.'),

@@ -13,6 +13,7 @@ use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
@@ -24,6 +25,7 @@ use App\Modules\Inventory\Models\StockCountLine;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\StockTransferLine;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
@@ -63,6 +65,9 @@ final class InventoryWorkflowIntegrityTest extends TestCase
             'unit_cost' => '5',
         ]);
 
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
+        $approver = $this->userWith('transfer-approver', ['warehouse-manager'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id, $scenario['destination']->id]);
+        $this->actingAs($approver);
         self::assertSame('approved', app(ApproveStockTransferAction::class)->execute($transfer->id)->status);
         self::assertSame('in_transit', app(DispatchStockTransferAction::class)->execute($transfer->id)->status);
         self::assertSame('6.000000', (string) StockBalance::query()->where('store_id', $scenario['source']->id)->value('on_hand'));
@@ -80,6 +85,8 @@ final class InventoryWorkflowIntegrityTest extends TestCase
         self::assertSame(1, StockMovement::query()->where('movement_type', 'transfer_dispatch')->count());
         self::assertSame(1, StockMovement::query()->where('movement_type', 'transfer_receipt')->count());
         self::assertSame(1, AuditLog::query()->where('event', 'receive_stock_transfer')->count());
+        self::assertSame('approved', ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->firstOrFail()->approval_state->value);
+        self::assertSame(1, AuditLog::query()->where('event', 'approval_approved')->where('metadata->source_type', 'stock_transfers')->count());
 
         $this->expectException(InvalidArgumentException::class);
         app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '3'], null, null);

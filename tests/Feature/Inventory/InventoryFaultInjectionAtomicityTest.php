@@ -11,6 +11,7 @@ use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryAdjustmentLine;
@@ -84,6 +85,9 @@ final class InventoryFaultInjectionAtomicityTest extends TestCase
             'quantity_requested' => '4', 'unit_cost' => '5',
         ]);
 
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
+        $approver = $this->userWith('transfer-fault-approver-control', ['warehouse-manager'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id, $scenario['destination']->id]);
+        $this->actingAs($approver);
         app(ApproveStockTransferAction::class)->execute($transfer->id);
         app(DispatchStockTransferAction::class)->execute($transfer->id);
 
@@ -115,6 +119,9 @@ final class InventoryFaultInjectionAtomicityTest extends TestCase
             'quantity_requested' => '4', 'unit_cost' => '5',
         ]);
 
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
+        $approver = $this->userWith('transfer-fault-approver', ['warehouse-manager'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id, $scenario['destination']->id]);
+        $this->actingAs($approver);
         app(ApproveStockTransferAction::class)->execute($transfer->id);
         app(DispatchStockTransferAction::class)->execute($transfer->id);
         $destinationBalanceABefore = StockBalance::query()->where('product_id', $scenario['productA']->id)->where('store_id', $scenario['destination']->id)->value('on_hand');

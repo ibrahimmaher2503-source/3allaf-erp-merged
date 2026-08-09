@@ -269,20 +269,22 @@ new #[Title('Supplier Masters')] class extends Component
     data-guide="suppliers-header"
 >
     <x-slot:actions>
-        @if ($canCreate)
-            <flux:button
-                icon="plus"
-                variant="primary"
-                wire:click="openCreateSupplierModal"
-                data-guide="suppliers-add-action"
-            >
-                {{ __('Add supplier') }}
-            </flux:button>
-        @endif
+        <x-tables.resource-toolbar filter-target="suppliers-filters">
+            @if ($canCreate)
+                <flux:button
+                    icon="plus"
+                    variant="primary"
+                    wire:click="openCreateSupplierModal"
+                    data-guide="suppliers-add-action"
+                >
+                    {{ __('Add supplier') }}
+                </flux:button>
+            @endif
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <div class="space-y-5">
-        <flux:card class="space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
+        <flux:card id="suppliers-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:input
                     wire:model.live.debounce.300ms="search"
@@ -314,7 +316,7 @@ new #[Title('Supplier Masters')] class extends Component
                 </x-tables.bulk-actions>
             </div>
             <div class="app-table-frame">
-                <table class="min-w-full divide-y divide-border">
+                <table class="data-table min-w-full">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider"><span class="sr-only">{{ __('Select') }}</span></th>

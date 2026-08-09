@@ -3,7 +3,10 @@
 namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Auth;
@@ -30,6 +33,9 @@ class ApprovePurchaseOrderAction
                 throw new InvalidArgumentException(__('This purchase order was modified in another session. Please reload before approving.'));
             }
 
+            if ($order->status === 'approved') {
+                return $order->fresh(['supplier', 'store', 'creator', 'submitter', 'approver', 'lines.product']);
+            }
             if ($order->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted purchase orders can be approved.'));
             }
@@ -41,6 +47,15 @@ class ApprovePurchaseOrderAction
             }
 
             $before = $order->only(['status', 'submitted_by', 'approved_at', 'approved_by', 'lock_version']);
+
+            $approval = ApprovalRecord::query()
+                ->where('source_type', 'purchase_orders')
+                ->where('source_id', (string) $order->id)
+                ->where('requested_action', 'approve')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->lockForUpdate()
+                ->firstOrFail();
+            app(ApproveRequest::class)->execute($approval, (string) $order->lock_version, decisionNote: __('Purchase order approved.'));
 
             $order->update([
                 'status' => 'approved',
@@ -58,7 +73,7 @@ class ApprovePurchaseOrderAction
                 after: $order->fresh()->only(['status', 'submitted_by', 'approved_at', 'approved_by', 'lock_version']),
                 branchId: $order->branch_id,
                 storeId: $order->store_id,
-                metadata: ['stock_posting' => false, 'invoice_posting' => false],
+                metadata: ['stock_posting' => false, 'invoice_posting' => false, 'approval_record_id' => $approval->id],
             );
 
             return $order->fresh(['supplier', 'store', 'creator', 'submitter', 'approver', 'lines.product']);

@@ -86,7 +86,7 @@ return [
                     'en' => 'Component Health Cards Grid',
                 ],
                 'body' => [
-                    'ar' => 'فحص قاعدة البيانات (SQLite)، نظام الملفات، الذاكرة المؤقتة، والبيئة.',
+                    'ar' => 'فحص قاعدة بيانات MySQL عبر phpMyAdmin، ونظام الملفات، والذاكرة المؤقتة، والبيئة.',
                     'en' => 'Inspect Database, Storage, Cache, and Application environment statuses.',
                 ],
             ],
@@ -193,7 +193,7 @@ return [
                 'en' => 'Component Health Cards Grid',
             ],
             'body' => [
-                'ar' => 'فحص قاعدة البيانات (SQLite)، نظام الملفات، الذاكرة المؤقتة، والبيئة.',
+                'ar' => 'فحص قاعدة بيانات MySQL عبر phpMyAdmin، ونظام الملفات، والذاكرة المؤقتة، والبيئة.',
                 'en' => 'Inspect Database, Storage, Cache, and Application environment statuses.',
             ],
         ],

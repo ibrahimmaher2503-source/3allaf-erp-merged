@@ -1,5 +1,9 @@
 # Blocker Register
 
+## Database Direction Override — 2026-08-09
+
+DEC-068 supersedes the earlier local SQLite assumption: current local/development/test database operations use only XAMPP MySQL/MariaDB through phpMyAdmin. The older BLK-001 wording remains historical context; it is not active runtime configuration.
+
 ## TSK-043/044 gate blockers — 2026-08-08
 
 Local/Dev readiness boundaries are complete and browser-verified. Actual UAT and Go-Live remain blocked by missing named owners, approved scenario/data/device/printer inputs, protected evidence repository, defect/retest register, stock/payment/wallet/party/report reconciliation, release ID, final production data/config/users, backup/restore evidence, rollback rehearsal, monitoring/support/training handover, client approval, and written sign-off.

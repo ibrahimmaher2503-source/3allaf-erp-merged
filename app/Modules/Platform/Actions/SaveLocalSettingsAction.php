@@ -221,8 +221,9 @@ class SaveLocalSettingsAction
             ];
 
             if ($id) {
-                $seq = DocumentSequence::findOrFail($id);
+                $seq = DocumentSequence::query()->lockForUpdate()->findOrFail($id);
                 $before = $seq->getAttributes();
+                unset($attributes['next_value']);
                 $seq->update($attributes);
                 $action = 'update_document_sequence';
             } else {

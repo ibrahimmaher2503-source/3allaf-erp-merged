@@ -7,6 +7,9 @@ namespace App\Modules\Inventory\Actions;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\RequestApproval;
+use App\Modules\Platform\Data\ApprovalRequestData;
+use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -36,6 +39,19 @@ final class SubmitStockCountAction
             }
             $before = $count->only(['status', 'lock_version']);
             $count->update(['status' => 'submitted', 'submitted_at' => now(), 'lock_version' => $count->lock_version + 1]);
+            $branchId = Store::query()->whereKey($count->store_id)->value('branch_id');
+            app(RequestApproval::class)->execute(new ApprovalRequestData(
+                sourceType: 'stock_counts',
+                sourceId: (string) $count->id,
+                sourceVersion: (string) $count->lock_version,
+                requestedAction: 'reconcile',
+                requestPermission: 'stock_counts.submit',
+                decisionPermission: 'stock_counts.reconcile',
+                branchId: $branchId === null ? null : (int) $branchId,
+                storeId: $count->store_id,
+                limitContext: ['uncounted_lines' => $count->lines->where('is_counted', false)->count()],
+                idempotencyKey: 'stock-count-reconciliation:'.$count->id.':'.$count->lock_version,
+            ));
             app(RecordAuditEvent::class)->execute('inventory', 'submit_stock_count', $count, $before, $count->only(['status', 'submitted_at', 'lock_version']), storeId: $count->store_id, metadata: ['uncounted_lines' => $count->lines->where('is_counted', false)->count()]);
 
             return $count->fresh(['store', 'lines.product']);

@@ -21,7 +21,7 @@ class GetPlatformStatus
 
         // 1. Database Check
         $dbStatus = 'healthy';
-        $dbDriver = config('database.default', 'sqlite');
+        $dbDriver = config('database.default', 'mysql');
         $dbMessage = 'Connected';
 
         try {

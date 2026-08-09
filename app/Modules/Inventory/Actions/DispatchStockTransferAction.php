@@ -30,10 +30,10 @@ final class DispatchStockTransferAction
                 $quantity = (string) $line->quantity_requested;
                 $poster->execute($line->product_id, $transfer->source_store_id, '-'.$quantity, 'transfer_dispatch', (string) $line->unit_cost, 'DEMO-TRANSFER-DISPATCH:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
                 $poster->adjustInTransit($line->product_id, $transfer->destination_store_id, $quantity);
-                $line->update(['quantity_dispatched' => $quantity]);
+                $line->mutateApprovedParentLine(['quantity_dispatched' => $quantity]);
             }
             $before = $transfer->only(['status', 'lock_version']);
-            $transfer->update(['status' => 'in_transit', 'dispatched_by' => Auth::id(), 'dispatched_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
+            $transfer->mutateApprovedDocument(['status' => 'in_transit', 'dispatched_by' => Auth::id(), 'dispatched_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'dispatch_stock_transfer', $transfer, $before, $transfer->only(['status', 'dispatched_by', 'dispatched_at', 'lock_version']), storeId: $transfer->source_store_id);
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);

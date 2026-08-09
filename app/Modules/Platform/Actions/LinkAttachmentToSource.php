@@ -31,6 +31,21 @@ class LinkAttachmentToSource
                 throw ValidationException::withMessages(['attachment' => __('Only an unlinked temporary attachment can be linked.')]);
             }
 
+            $countLimit = config("attachments.count_limits.{$attachment->purpose}");
+            if (! is_int($countLimit) || $countLimit < 1) {
+                throw ValidationException::withMessages(['purpose' => __('The attachment count policy is not configured.')]);
+            }
+            $currentCount = Attachment::query()
+                ->where('source_type', $source->sourceType)
+                ->where('source_id', $source->sourceId)
+                ->where('purpose', $attachment->purpose)
+                ->whereIn('status', [AttachmentState::Active->value, AttachmentState::Quarantined->value])
+                ->lockForUpdate()
+                ->count();
+            if ($currentCount >= $countLimit) {
+                throw ValidationException::withMessages(['attachment' => __('The configured attachment count limit has been reached for this source.')]);
+            }
+
             $before = $this->auditValues($attachment);
             $attachment->mutate([
                 'source_type' => $source->sourceType,

@@ -1,4 +1,49 @@
-# Active Progress — TSK-044 Controlled Go-Live and Operational Handover Readiness — 2026-08-08
+# Active Progress — TSK-025 Shift, Cash, Blind Close and Variance — 2026-08-09
+
+**Status:** `FULL_IMPLEMENTATION` for Local/Dev under DEC-066 / `docs/32`. The `/pos/shift-readiness` boundary was **removed**, not preserved.
+
+**Built:** `ShiftState` enum (open → closing_submitted → variance_review → closed, plus cancelled); `cash_movements` and `shift_closing_submissions` tables; `OpenShiftAction` (float, currency, idempotency, one active shift per drawer *and* per cashier under a drawer row lock); `RecordCashMovementAction` (append-only, signed by type, reason required); `ShiftExpectedTotalsService` (expected = float + cash sales + movements, electronic expected per method); `SubmitBlindShiftCloseAction` (actuals captured first, expected derived only afterwards, immutable versioned attempts); `ReviewShiftVarianceAction` (recount, approve-and-close, separation of duties, stale-`lock_version` guard, `shift_close` numbering). `RetailSaleAction` now locks the shift and rejects a sale racing a close (docs/32 §16). Real routes `/pos/shift` and `/pos/shift-variance` with two new Blade screens.
+
+**Defects found and fixed:** (1) the canonical matrix `docs/04` grants Cashier view/create/edit/print on *Shifts & Cash Movements* but `CanonicalAuthorizationSeeder` granted the role **none** — a cashier could not open a shift at all; grants added for cashier, branch-manager and reviewer. (2) Migration rollback failed on SQLite because a unique index still referenced a dropped column. (3) Three actions crashed after the status enum cast was introduced. (4) Stale compiled Blade referenced the deleted readiness route and produced a 500 in an unrelated audit test.
+
+**Verification:** 37 backend tests (28 lifecycle + 9 HTTP/UI) plus the rewritten blind-close disclosure tests; **423 tests / 420 passed** overall — still exactly the 2 pre-existing `RolePermissionScopeTest` failures. PHPStan **0 errors** across `app/Modules/Retail` with no baseline entry or suppression; Pint clean. Browser E2E `testing/e2e/tsk025-shift-cash.spec.js`: **6/6 on Chromium**, and every assertion also passed on Firefox and WebKit.
+
+**Blind-close non-disclosure is proven, not asserted:** the cashier screen is checked against the live DOM after scripts run and against every hidden input, in all three browsers, with a real expectation in play.
+
+**NOT run — `BLOCKED_BY_ENVIRONMENT`:** real concurrency and any MariaDB parity. `ShiftOpenConcurrencyTest` and a `shift_open` race worker exist, but no MySQL/MariaDB server is reachable here (client absent, PDO refused on 3306), so the suite **skips** rather than falsely passing. Also not run: visual regression, axe accessibility, load/stress/spike/soak, mutation.
+
+**Known flakiness:** the 18-test three-browser run trips Laravel's database-backed login throttle, causing 25s `waitForURL` timeouts on whichever test hits the limit. Harness limitation, not a product defect; a clean Chromium run is 6/6.
+
+**Remaining owner decisions:** POSF-02 cash denomination (still unset); the variance tolerance threshold (deliberately not invented — only a zero variance auto-settles today, everything else goes to manager review); BLK-008 thermal/A4 close print templates; whether a `reopened` state is ever permitted.
+
+**Next action:** TSK-027 customer master (`customers`, consent, privacy, duplicate review, history) — the last remaining keystone, blocking TSK-028/029/030 and the entire Party band. Do not start TSK-026: BLK-004 offline policy remains an unanswered owner decision.
+
+---
+
+# Previous Active Progress — Implementation Gap Audit (TSK-015 → TSK-044) — 2026-08-09
+
+**Deliverable:** `testing/results/IMPLEMENTATION-GAP-MATRIX.md` — code-verified classification of every task from TSK-015 to TSK-044. Classifications derive from inspecting migrations, module code, and routes, **not** from status text in `TASKS.md`.
+
+**Headline findings:**
+- TSK-019–022 (inventory ledger/transfers/adjustments/counts) and TSK-015 (purchase invoice/WAC) are genuinely `FULL_IMPLEMENTATION` for local scope.
+- TSK-024 **was** `READINESS_ONLY` at audit time: no `sale_payments` table, `SaleLine.discount_amount` hardcoded `'0.00'`, `tax_total` never computed, and `RetailSaleAction` setting `paid_total = subtotal` — every completed sale recorded settlement that was never tendered. **This was implemented in the same session (see below).**
+- **Two keystone tables gated almost everything downstream:** `sale_payments` (was owner-blocked, now implemented) and `customers` (**still missing — the outstanding keystone**).
+- There is **no Party module** — TSK-031–036 are `MISSING`, not partial.
+- `.ai/BLOCKERS.md` is stale in places: `docs/41–45`/`47` are owner-approved (DEC-050), and BLK-017's "KPI formulas missing" is superseded by `docs/50`.
+
+**Owner decisions raised and answered:** OD-1 approved as **DEC-066** (adopt `docs/48`; POSF-01/03 per the document body, POSF-02 stays an unset configurable, POSF-04 = audited replacement). OD-2 approved as **DEC-067** (loyalty/wallet may consume DEC-064 settings but must throw when a value is unset). **OD-3 (offline, BLK-004) remains open — no engineering default was offered, and TSK-026 stays correctly readiness-only.**
+
+**TSK-024 implemented the same session.** `sale_payments`, `pos_financial_setting_versions`, `PosCalculationService`, `DiscountPolicy`, `CapturePaymentAction`, and `RetailSaleAction::assertSettled()` now exist. The previous behaviour — approving a sale with `paid_total = subtotal` and no tender ever recorded — is removed and guarded by tests. 37 new/updated tests; PHPStan 0 errors across `app/Modules/Retail` with no baseline entry or suppression. The 2 remaining suite failures are pre-existing `RolePermissionScopeTest` cases (permission catalog 349 vs 276) in files this work never touched — confirmed via `git diff HEAD`.
+
+**Checkout works end-to-end.** The POS summary panel now carries a tender block and `PosCheckoutRouteTest` drives the real HTTP route, asserting the screen renders the exact field names the route validates. Full suite: 385 tests / 382 passed.
+
+**Remaining in TSK-024 (UI layer, not domain):** the tender panel posts a single `payments[0]` row (the domain supports and tests split payment); there is an evidence *reference* field but no attachment upload; operator discount and per-invoice tax entry are not yet on the checkout screen; open-price authorisation wiring (shared with TSK-017) is not invoked; the cash-rounding receipt line awaits POSF-02; receipt/gift-receipt rendering against the new figures, including the POS-07 price-suppression leak check, is untouched.
+
+**Next executable items:** (1) TSK-025 — its TSK-024 dependency is now met, so cash movements, blind close, variance, and immutable close are unblocked; (2) TSK-027 customer master, still the outstanding keystone for TSK-028/029/030 and the whole Party band.
+
+---
+
+# Previous Active Progress — TSK-044 Controlled Go-Live and Operational Handover Readiness — 2026-08-08
 
 **Implementation status:** TSK-043 and TSK-044 Local/Dev readiness boundaries are complete and browser-verified. Actual UAT, production cutover, client sign-off, and go-live remain blocked.
 
@@ -405,3 +450,42 @@ TSK-001 local defects are fixed: maintained backup capability/configuration, iso
 - Scope stated honestly: proves schema-level rollback reversibility from a fresh/empty database against a real engine — does not prove rollback safety against a populated, production-scale dataset, or rehearse a real deployment pipeline. Gates #14/#15 raised to PARTIAL, not PASS.
 - Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
 TSK-014 closure update (2026-08-09): Targeted Purchase Order implementation is technically ready for the documented TSK-014 boundary. Scope guards were added to all PO mutations; monetary/quantity precision is validated server-side with a MariaDB-compatible precision migration; lifecycle regression and MariaDB numbering concurrency evidence passed. Cross-browser browser evidence passed after fixing fixture/test issues (Chromium 2/2, Firefox 2/2, WebKit 2/2), including RTL/LTR, A4 print, 390px mobile and axe main-content checks. Full mandatory PHPUnit regression was started but interrupted before completion and remains to be rerun for final gate evidence. Release remains blocked by global production configuration/UAT; receipts, receiving and supplier invoices are downstream TSK-015.
+
+## 2026-08-09 - Final Business Navigation Reorganization
+
+- Scope: shared authenticated sidebar only; no business module implementation, route contract, or permission grant was invented.
+- Reorganized the existing navigation into Workspace, Sales, Customers, Catalog, Pricing, Purchasing, Inventory, Parties, Rental Assets, Reports, Administration, and System & Control. Existing readiness boundaries remain reachable under user-facing business labels, including shifts/cash, offline POS, customer/loyalty, party, asset, reports, approvals, and label printing.
+- Added all currently available route-backed purchase invoice/import/return, inventory movement/transfer/adjustment/count, wallet, party, rental-asset, report, administration, and audit/system links. Features with no existing route were not represented by fake 404 links.
+- Removed developer task identifiers from the rendered sidebar: TSK-025, TSK-026, TSK-027, and POS Financial Readiness no longer appear as navigation labels. Added English/Arabic navigation translations and preserved server-side permission gates per link.
+- Verification actually run: JSON parsing for `lang/en.json` and `lang/ar.json`, `php artisan view:cache`, `npm run build`, `git diff --check`, and authenticated local HTTP smoke. Auth returned 302, dashboard returned 200, 22 expandable groups rendered, all sampled final section labels were present, and task labels were absent from the sidebar. No automated tests, browser-control checks, commit, or push occurred.
+- Remaining boundary: customer/child, attributes/UOM, composite services, full report domains, offline sync logs, and some operational screens still depend on future route-backed implementation; the sidebar intentionally does not fabricate those routes.
+
+## 2026-08-09 - Suppliers Navigation Group
+
+- Added a dedicated expandable Suppliers group to the authenticated sidebar instead of leaving Suppliers as one item inside Purchasing.
+- The group exposes the existing supplier master screen plus route-backed Supplier invoices & cost history and Supplier returns, with their existing server permission gates. Purchasing retains purchase orders, purchase invoices/import/receiving, and purchase cost workflow links.
+- During HTTP verification, found the current implementation had replaced the old `pos.shift-readiness` route with the real `pos.shift` route. Updated the sidebar to use `pos.shift` and `shifts_cash_movements.view`, removing the stale link that caused a dashboard 500.
+- Verification actually run: English/Arabic translation JSON parsing, `php artisan view:cache`, `git diff --check`, and authenticated local HTTP smoke. Auth returned 302, dashboard returned 200, Supplier group and its related labels rendered, `/pos/shift` rendered as the shift link, and `pos.shift-readiness` was absent. No automated tests, browser-control checks, commit, or push occurred.
+
+## 2026-08-09 - Shared Tables and Bulk Operations Enhancement
+
+- Scope: shared table presentation and bulk-operation UI, with no changes to Livewire mutation methods or authorization rules.
+- Enhanced `x-tables.data-panel`, `x-tables.filter-bar`, and `x-tables.bulk-actions` with reusable table-panel structure, clearer selection scope, selected-count status, page selection controls, action grouping, loading feedback, and stronger focus semantics.
+- Enhanced global table CSS for Flux and native tables: consistent cell padding, readable header rhythm, responsive edge padding, selected-row state, focus-within state, merged surface borders, scroll-safe table shells, table-panel toolbar/footer spacing, and a more visible bulk action surface. Updated the UI Showcase data table and Supplier table to use the shared `data-table` contract.
+- Verification actually run: English/Arabic JSON parsing, `php artisan view:cache`, `npm run build` (passed with the existing optional `fontaine` warning), `git diff --check`, and authenticated HTTP checks returning 200 for Dashboard, Products, Suppliers, Branches, Stores, and UI Showcase. No automated tests, browser-control checks, commit, or push occurred.
+- Remaining boundary: visual desktop/mobile and RTL/LTR browser review remains intentionally unrun under the active project directive; bulk operations still use their existing server-side actions and page-scoped selection limit.
+
+## 2026-08-09 - Shared Table Resource Actions
+
+- Added the reusable `x-tables.resource-toolbar` component for consistent table-page actions and filter anchors. Products, categories, brands, suppliers, branches, stores, cash drawers, purchase orders, purchase invoices, supplier returns, and pricing now expose the shared Filters action while preserving existing Add and workflow actions.
+- Connected only real operations: product import, purchase-invoice import/export, and pricing CSV import. Import visibility is permission-gated where the route/action requires create access; no unsupported export/import route was fabricated for other masters.
+- Added stable filter anchors, mobile action wrapping, minimum action heights, and the Arabic Export translation. Existing shared table padding, borders, selection, focus, loading, and responsive styles remain in effect.
+- Verification actually run: PHP JSON syntax parsing for both locale files, targeted Blade compilation for the new component and all changed table views, `npm run build` (passed with the existing optional `fontaine` warning), `git diff --check`, and route discovery for the connected import/export/readiness endpoints. `php artisan view:cache` remains blocked by the pre-existing missing `state.success` component referenced by `resources/views/platform/system/approval-inbox.blade.php`; this blocker is outside the table-action change. Guest HTTP smoke for Dashboard, Products, and Purchase Invoices returned 302 to `/login`. No automated tests, browser-control checks, commit, or push occurred.
+- Remaining boundary: full import/export behavior for modules without route-backed contracts remains deferred until those business actions and permissions are implemented.
+
+## Database Direction Update — 2026-08-09
+
+- Removed the five repository SQLite database files and the generated SQLite environment backup.
+- Switched the active Laravel environment, example environment, database/queue defaults, backup validation, test configuration, setup documentation, and platform health fallback to XAMPP MySQL/MariaDB through phpMyAdmin.
+- Rebuilt the local XAMPP MariaDB data directory from its bundled baseline after an interrupted DDL recovery, preserved the prior data directory as `C:\xampp\mysql\data-corrupt-20260809`, restored non-project schemas from SQL dumps, and migrated/seeded fresh `toyjoy_local` successfully.
+- No automated tests, browser checks, commit, or push were performed for this environment change.

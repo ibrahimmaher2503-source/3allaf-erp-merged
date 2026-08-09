@@ -22,9 +22,9 @@ use Tests\TestCase;
  * migrated once, canonically seeded once, never RefreshDatabase'd.
  *
  * This suite only runs under phpunit.concurrency.xml, which points DB_*
- * at real MariaDB. Running it under the default SQLite suite would either
+ * at real MariaDB. Running it under another database profile would either
  * fail to connect or (worse) silently "pass" without proving anything —
- * SQLite has no real row-level locking to prove. Guard accordingly.
+ * the intended row locks. Guard accordingly.
  */
 abstract class ConcurrencyTestCase extends TestCase
 {

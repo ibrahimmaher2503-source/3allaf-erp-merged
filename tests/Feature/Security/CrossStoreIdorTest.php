@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\DocumentSequence;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
@@ -44,6 +45,7 @@ final class CrossStoreIdorTest extends TestCase
     {
         parent::setUp();
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('retail_sale', 'SALE-');
         DocumentSequence::query()->create([
             'document_type' => 'purchase_order', 'prefix' => 'IDOR-PO-', 'padding_length' => 5,
             'next_value' => 1, 'status' => 'active', 'lock_version' => 1,
@@ -214,8 +216,21 @@ final class CrossStoreIdorTest extends TestCase
             'amount' => '9.99', 'active_key' => $product->id.'-'.$store->id,
         ]);
 
+        $cash = PaymentMethod::query()->firstOrCreate(
+            ['code' => 'cash'],
+            ['name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash', 'requires_evidence' => false, 'status' => 'active'],
+        );
+
         $this->actingAs($cashier);
 
-        return app(RetailSaleAction::class)->create($cashier, $store, [['product_id' => $product->id, 'quantity' => '1']], 'idor-sale-'.$store->id);
+        // 1 x 9.99 — a sale must be settled in full to be approved (DEC-066).
+        return app(RetailSaleAction::class)->create(
+            $cashier,
+            $store,
+            [['product_id' => $product->id, 'quantity' => '1']],
+            'idor-sale-'.$store->id,
+            false,
+            [['method' => $cash, 'amount' => '9.99']],
+        );
     }
 }

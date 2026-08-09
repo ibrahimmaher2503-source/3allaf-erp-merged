@@ -35,7 +35,6 @@ final class MilestoneReadinessAuthorizationTest extends TestCase
         'party.payments.readiness',
         'gift.receipts',
         'gift.cards',
-        'pos.shift-readiness',
         'pos.offline-readiness',
         'customers.loyalty-readiness',
         'pos.financial-readiness',

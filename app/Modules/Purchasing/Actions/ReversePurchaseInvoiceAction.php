@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
+use App\Modules\Platform\Actions\ExecuteCorrection;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Data\CorrectionReferenceData;
+use App\Modules\Platform\Enums\CorrectionType;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class ReversePurchaseInvoiceAction
@@ -40,32 +46,66 @@ final class ReversePurchaseInvoiceAction
                 throw new InvalidArgumentException(__('No receipt movement exists to reverse.'));
             }
 
+            $reversalMovementIds = [];
             foreach ($movements as $movement) {
-                $this->reverseMovement($movement);
+                $reversalMovementIds[] = $this->reverseMovement($movement);
             }
             foreach ($invoice->lines as $line) {
                 if ($line->purchase_order_line_id) {
                     $poLine = PurchaseOrderLine::query()->find($line->purchase_order_line_id);
                     if ($poLine) {
-                        $poLine->update(['quantity_received' => $this->subtract($poLine->quantity_received, $line->quantity, 6)]);
+                        $poLine->mutateApprovedParentLine(['quantity_received' => $this->subtract($poLine->quantity_received, $line->quantity, 6)]);
                     }
                 }
-                $line->update(['quantity_received' => 0]);
+                $line->mutateApprovedParentLine(['quantity_received' => 0]);
             }
 
             $before = $invoice->only(['status', 'lock_version']);
-            $invoice->update(['status' => 'reversed', 'cancelled_at' => now(), 'cancelled_by' => Auth::id(), 'cancel_reason' => $reason, 'lock_version' => $invoice->lock_version + 1]);
-            app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'reverse_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['status', 'cancelled_at', 'cancelled_by', 'cancel_reason', 'lock_version']), storeId: $invoice->store_id, metadata: ['stock_reversed' => true]);
+            $actor = Auth::user();
+            if (! $actor instanceof User) {
+                abort(403);
+            }
+            $requestId = Context::get('request_id') ?? (string) Str::uuid();
+            $reference = new CorrectionReferenceData(
+                originalSourceType: $invoice->sourceType(),
+                originalSourceId: $invoice->sourceId(),
+                originalSourceVersion: $invoice->sourceVersion(),
+                originalSourceHash: $invoice->sourceHash(),
+                correctionType: CorrectionType::Reversal,
+                correctionSourceType: StockMovement::class,
+                correctionSourceId: (string) min($reversalMovementIds),
+                reason: $reason,
+                requestedBy: $actor->id,
+                approvedBy: $actor->id,
+                branchId: $invoice->sourceBranchId(),
+                storeId: $invoice->sourceStoreId(),
+                requestId: $requestId,
+                idempotencyKey: 'purchase-invoice-reversal:'.$invoice->id,
+                createdAt: now(),
+            );
+            app(ExecuteCorrection::class)->execute(
+                $reference,
+                $invoice,
+                $actor,
+                [CorrectionType::Reversal],
+                fn (User $user): mixed => Gate::forUser($user)->authorize('purchase_invoices_supplier_returns.reverse'),
+                function () use ($invoice, $reason): PurchaseInvoice {
+                    $invoice->mutateApprovedDocument(['status' => 'reversed', 'cancelled_at' => now(), 'cancelled_by' => Auth::id(), 'cancel_reason' => $reason, 'lock_version' => $invoice->lock_version + 1]);
+
+                    return $invoice;
+                },
+            );
+            app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'reverse_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['status', 'cancelled_at', 'cancelled_by', 'cancel_reason', 'lock_version']), storeId: $invoice->store_id, reasonText: $reason, metadata: ['stock_reversed' => true, 'reversal_movement_ids' => $reversalMovementIds, 'correction_request_id' => $requestId]);
 
             return $invoice->fresh(['lines']);
         });
     }
 
-    private function reverseMovement(StockMovement $movement): void
+    private function reverseMovement(StockMovement $movement): int
     {
         $key = 'reversal:stock-movement:'.$movement->id;
         if (StockMovement::query()->where('idempotency_key', $key)->exists()) {
-            return;
+            return (int) StockMovement::query()->where('idempotency_key', $key)->value('id');
         }
         $balance = StockBalance::query()->where('product_id', $movement->product_id)->where('store_id', $movement->store_id)->lockForUpdate()->firstOrFail();
         if ($this->compare($balance->on_hand, $movement->quantity) < 0) {
@@ -74,8 +114,10 @@ final class ReversePurchaseInvoiceAction
         $newQuantity = $this->subtract($balance->on_hand, $movement->quantity, 6);
         $newValue = $this->subtract($balance->total_value, $movement->total_cost ?? 0, 4);
         $newAverage = $this->compare($newQuantity, 0) === 0 ? '0.0000' : $this->divide($newValue, $newQuantity, 4);
-        StockMovement::query()->create(['product_id' => $movement->product_id, 'store_id' => $movement->store_id, 'movement_type' => 'purchase_receipt_reversal', 'quantity' => $this->subtract(0, $movement->quantity, 6), 'unit_cost' => $movement->unit_cost, 'total_cost' => $this->subtract(0, $movement->total_cost ?? 0, 4), 'consumed_cost' => 0, 'source_type' => PurchaseInvoice::class, 'source_id' => $movement->source_id, 'source_line_id' => $movement->source_line_id, 'idempotency_key' => $key, 'posted_at' => now(), 'reversal_of_id' => $movement->id, 'created_by' => Auth::id()]);
+        $reversal = StockMovement::query()->create(['product_id' => $movement->product_id, 'store_id' => $movement->store_id, 'movement_type' => 'purchase_receipt_reversal', 'quantity' => $this->subtract(0, $movement->quantity, 6), 'unit_cost' => $movement->unit_cost, 'total_cost' => $this->subtract(0, $movement->total_cost ?? 0, 4), 'consumed_cost' => 0, 'source_type' => PurchaseInvoice::class, 'source_id' => $movement->source_id, 'source_line_id' => $movement->source_line_id, 'idempotency_key' => $key, 'posted_at' => now(), 'reversal_of_id' => $movement->id, 'created_by' => Auth::id()]);
         $balance->update(['on_hand' => $newQuantity, 'total_value' => $newValue, 'average_cost' => $newAverage, 'version' => $balance->version + 1]);
+
+        return $reversal->id;
     }
 
     /** @return numeric-string */

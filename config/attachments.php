@@ -13,6 +13,16 @@ return [
         'generated_document' => 30 * 1024 * 1024,
         // No upload workflow is approved for system support artifacts yet.
     ],
+    'count_limits' => [
+        'payment_evidence' => 3,
+        'product_image' => 5,
+        'import_source' => 1,
+        'import_error_export' => 1,
+        'party_evidence' => 10,
+        'asset_condition' => 12,
+        'approval_evidence' => 5,
+        'generated_document' => 1,
+    ],
     'allowed_mimes' => [
         'payment_evidence' => ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
         'product_image' => ['image/jpeg', 'image/png', 'image/webp'],

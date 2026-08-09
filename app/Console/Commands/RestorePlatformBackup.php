@@ -93,7 +93,7 @@ class RestorePlatformBackup extends Command
     {
         for ($index = 0; $index < $zip->numFiles; $index++) {
             $name = $zip->getNameIndex($index);
-            if (is_string($name) && (str_ends_with($name, '.sql') || str_ends_with($name, '.sqlite') || str_ends_with($name, '.sqlite3'))) {
+            if (is_string($name) && str_ends_with(strtolower($name), '.sql')) {
                 return true;
             }
         }

@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
  * document-number allocation. AllocatePurchaseOrderNumberAction locks the
  * DocumentSequence row with lockForUpdate() before reading next_value; this
  * proves that lock actually serializes real concurrent allocators on a real
- * RDBMS (SQLite's coarser locking cannot exercise or disprove this).
+ * MariaDB (the required production-like MySQL-family connection).
  */
 final class DocumentSequenceConcurrencyTest extends ConcurrencyTestCase
 {
@@ -24,10 +24,14 @@ final class DocumentSequenceConcurrencyTest extends ConcurrencyTestCase
         // Reset to a known, deterministic starting point. document_type is
         // globally unique, so re-running this suite against the same
         // persistent database must upsert, not insert.
-        DocumentSequence::query()->updateOrCreate(
+        $sequence = DocumentSequence::query()->firstOrCreate(
             ['document_type' => 'purchase_order'],
             ['prefix' => 'RACE-PO-', 'padding_length' => 5, 'suffix' => null, 'next_value' => 1, 'reset_rule' => 'never', 'status' => 'active', 'lock_version' => 1, 'policy_notes' => 'Concurrency race fixture.'],
         );
+        if (! $sequence->wasRecentlyCreated) {
+            $sequence->update(['prefix' => 'RACE-PO-', 'padding_length' => 5, 'suffix' => null, 'reset_rule' => 'never', 'status' => 'active', 'policy_notes' => 'Concurrency race fixture.']);
+            $sequence->advanceCounter(1);
+        }
 
         $workerCount = 6;
         $calls = array_fill(0, $workerCount, ['po_number', ['user_id' => $admin->id]]);

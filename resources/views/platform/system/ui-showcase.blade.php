@@ -162,7 +162,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                 </x-tables.filter-bar>
             </x-slot:toolbar>
 
-            <table class="w-full min-w-[42rem] text-sm">
+            <table class="data-table w-full min-w-[42rem]">
                 <caption class="sr-only">{{ __('Data table pattern') }}</caption>
                 <thead class="bg-surface-muted/70 text-xs text-text-muted"><tr><th class="px-3 py-2.5 text-start font-semibold">{{ __('Reference') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Name') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Scope') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Status') }}</th><th class="px-3 py-2.5 text-end font-semibold">{{ __('Action') }}</th></tr></thead>
                 <tbody>

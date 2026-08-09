@@ -377,9 +377,12 @@ new #[Title('Product Masters')] class extends Component
     data-guide="products-header"
 >
     <x-slot:actions>
-        @can('products_categories_brands.create')
-            <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
-        @endcan
+        <x-tables.resource-toolbar filter-target="products-filters">
+            @can('products_categories_brands.create')
+                <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle">{{ __('Import') }}</flux:button>
+                <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('TSK-011 product-card extension') }}">
@@ -396,7 +399,7 @@ new #[Title('Product Masters')] class extends Component
         </flux:callout>
     @endif
 
-    <div class="catalog-filter-card rounded-xl p-4 sm:p-5" data-guide="products-filters">
+    <div id="products-filters" class="catalog-filter-card scroll-mt-24 rounded-xl p-4 sm:p-5" data-guide="products-filters">
         <div class="catalog-filter-heading mb-4">
             <div>
                 <flux:heading size="sm">{{ __('Search') }}</flux:heading>

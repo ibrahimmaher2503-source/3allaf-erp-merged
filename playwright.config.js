@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  * cross-browser suite" guidance — Firefox/WebKit projects can be added once
  * the routine suite is stable.
  *
- * baseURL points at a dedicated local server + SQLite database seeded
+ * baseURL points at a dedicated local server + MySQL/MariaDB database seeded
  * specifically for this suite (see testing/e2e/README.md); it must never
  * point at a developer's real local database or any staging/production URL.
  */

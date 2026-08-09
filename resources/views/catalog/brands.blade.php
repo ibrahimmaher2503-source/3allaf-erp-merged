@@ -132,12 +132,18 @@ new #[Title('Brand Masters')] class extends Component
     class="catalog-screen"
     data-guide="brands-header"
 >
-    <x-slot:actions>@can('products_categories_brands.create')<flux:button icon="plus" variant="primary" wire:click="openCreateBrandModal" data-guide="brands-add-action">{{ __('Add brand') }}</flux:button>@endcan</x-slot:actions>
+    <x-slot:actions>
+        <x-tables.resource-toolbar filter-target="brands-filters">
+            @can('products_categories_brands.create')
+                <flux:button icon="plus" variant="primary" wire:click="openCreateBrandModal" data-guide="brands-add-action">{{ __('Add brand') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
+    </x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="tag" title="{{ __('Brand foundation') }}">{{ __('Brand master records are global catalog identity. Full supplier, terms, product media, and product-type behavior remain outside TSK-010.') }}</flux:callout>
     @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Brand action could not be completed') }}"><ul class="list-disc space-y-1 ps-5 text-sm">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></flux:callout>@endif
 
-    <div class="catalog-filter-card rounded-xl p-4 sm:p-5" data-guide="brands-filters"><div class="catalog-filter-heading mb-4"><div><flux:heading size="sm">{{ __('Search brands') }}</flux:heading><flux:text class="mt-1 text-xs text-text-muted">{{ __('Find a brand by its code or bilingual name.') }}</flux:text></div></div><div class="grid grid-cols-1 gap-3 md:grid-cols-2"><flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search brands')" :placeholder="__('Code or Arabic/English name...')" /><flux:select wire:model.live="statusFilter" :label="__('Status')"><flux:select.option value="all">{{ __('All statuses') }}</flux:select.option><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select></div></div>
+    <div id="brands-filters" class="catalog-filter-card scroll-mt-24 rounded-xl p-4 sm:p-5" data-guide="brands-filters"><div class="catalog-filter-heading mb-4"><div><flux:heading size="sm">{{ __('Search brands') }}</flux:heading><flux:text class="mt-1 text-xs text-text-muted">{{ __('Find a brand by its code or bilingual name.') }}</flux:text></div></div><div class="grid grid-cols-1 gap-3 md:grid-cols-2"><flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search brands')" :placeholder="__('Code or Arabic/English name...')" /><flux:select wire:model.live="statusFilter" :label="__('Status')"><flux:select.option value="all">{{ __('All statuses') }}</flux:select.option><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select></div></div>
     <div wire:loading.flex role="status" aria-live="polite" class="catalog-loading"><flux:icon name="arrow-path" class="size-4 animate-spin" />{{ __('Loading brands...') }}</div>
 
     @if ($brands->isEmpty())

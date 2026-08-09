@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Models;
 
+use App\Modules\Platform\Support\PaymentMethodSemantics;
 use Database\Factories\PaymentMethodFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,4 +32,9 @@ class PaymentMethod extends Model
         'requires_evidence' => 'boolean',
         'offline_eligible' => 'boolean',
     ];
+
+    public function isCash(): bool
+    {
+        return PaymentMethodSemantics::isCashType((string) $this->getAttribute('type'));
+    }
 }

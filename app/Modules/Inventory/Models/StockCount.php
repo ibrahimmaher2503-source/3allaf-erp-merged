@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class StockCount extends Model
+final class StockCount extends Model implements ImmutableSourceContract
 {
+    use GuardsApprovedDocument;
+
     protected $fillable = ['count_number', 'count_type', 'scope_type', 'branch_id', 'store_id', 'category_id', 'supplier_id', 'status', 'reference_at', 'submitted_at', 'reconciled_at', 'created_by', 'assigned_to', 'approved_by', 'idempotency_key', 'lock_version', 'notes'];
 
     protected $casts = ['reference_at' => 'datetime', 'submitted_at' => 'datetime', 'reconciled_at' => 'datetime', 'lock_version' => 'integer'];

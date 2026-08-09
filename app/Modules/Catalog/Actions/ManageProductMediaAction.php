@@ -77,6 +77,7 @@ class ManageProductMediaAction
                         if ($oldMain->attachment !== null) {
                             app(RevokeAttachment::class)->execute(
                                 $oldMain->attachment,
+                                __('Replaced by a new main product image.'),
                                 fn (User $user, Attachment $oldAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                                     && $oldAttachment->source_type === Product::class
                                     && $oldAttachment->source_id === (string) $lockedProduct->id,
@@ -113,6 +114,7 @@ class ManageProductMediaAction
             // history rather than exposing an unlinked active file.
             app(RevokeAttachment::class)->execute(
                 $attachment,
+                __('The product image could not be linked to its source.'),
                 fn (User $user, Attachment $failedAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                     && $failedAttachment->source_type === Product::class
                     && $failedAttachment->source_id === (string) $product->id,
@@ -159,6 +161,7 @@ class ManageProductMediaAction
             if ($attachment !== null) {
                 app(RevokeAttachment::class)->execute(
                     $attachment,
+                    __('Removed from the product media gallery.'),
                     fn (User $user, Attachment $linkedAttachment): bool => Gate::forUser($user)->allows('products_categories_brands.edit')
                         && $linkedAttachment->source_type === Product::class
                         && $linkedAttachment->source_id === (string) $product->id,

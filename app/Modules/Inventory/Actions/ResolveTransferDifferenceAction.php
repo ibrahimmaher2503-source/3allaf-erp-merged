@@ -34,8 +34,8 @@ final class ResolveTransferDifferenceAction
                 throw new InvalidArgumentException(__('The transfer has no unresolved quantity.'));
             }
             $before = $transfer->only(['status', 'difference_status', 'lock_version']);
-            $lines->each(fn ($line) => $line->update(['difference_type' => $differenceType, 'difference_reason' => $differenceReason]));
-            $transfer->update([
+            $lines->each(fn ($line) => $line->mutateApprovedParentLine(['difference_type' => $differenceType, 'difference_reason' => $differenceReason]));
+            $transfer->mutateApprovedDocument([
                 'status' => 'received',
                 'difference_status' => 'resolved',
                 'reason_code' => $differenceType,

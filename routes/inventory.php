@@ -9,6 +9,7 @@ use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
@@ -17,6 +18,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
@@ -41,10 +43,17 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->where(function ($query) use ($visibleStoreIds): void {
         $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
     })->latest('id')->limit(20)->get();
+    $transferApprovals = ApprovalRecord::query()
+        ->where('source_type', 'stock_transfers')
+        ->whereIn('source_id', $transfers->pluck('id')->map(fn (int $id): string => (string) $id))
+        ->latest('requested_at')
+        ->get()
+        ->unique('source_id')
+        ->keyBy('source_id');
     $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
     $counts = StockCount::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'adjustments', 'counts', 'focus') + ['canViewCost' => Gate::allows('inventory_stock_card.cost_view')]);
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'focus') + ['canViewCost' => Gate::allows('inventory_stock_card.cost_view')]);
 };
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {
@@ -75,6 +84,22 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.approve')->name('inventory.transfers.approve');
+
+    $router->post('inventory/transfers/{transfer}/request-approval', function (StockTransfer $transfer, RequestStockTransferApprovalAction $action) {
+        try {
+            $action->execute($transfer->id);
+
+            return redirect()->route('admin.approvals')->with('approval-success', __('Transfer approval requested.'));
+        } catch (Throwable $exception) {
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
+        }
+    })->whereNumber('transfer')->middleware('can:transfers.submit')->name('inventory.transfers.request-approval');
 
     $router->post('inventory/transfers/{transfer}/dispatch', function (StockTransfer $transfer, DispatchStockTransferAction $action) {
         try {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
+use App\Modules\Platform\Actions\OverrideDocumentSequenceCounter;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -75,6 +76,13 @@ new #[Title('System Settings')] class extends Component {
         'reset_rule' => 'never',
         'status' => 'active',
         'policy_notes' => 'TBD: Numbering patterns pending business owner approval.',
+    ];
+
+    public array $sequenceOverride = [
+        'sequence_id' => null,
+        'next_value' => null,
+        'expected_lock_version' => null,
+        'reason' => '',
     ];
 
     // Printer Configuration Form Data
@@ -295,7 +303,7 @@ new #[Title('System Settings')] class extends Component {
             'documentSequenceForm.prefix' => ['nullable', 'string', 'max:20'],
             'documentSequenceForm.suffix' => ['nullable', 'string', 'max:20'],
             'documentSequenceForm.padding_length' => ['required', 'integer', 'min:1', 'max:12'],
-            'documentSequenceForm.next_value' => ['required', 'integer', 'min:1'],
+            'documentSequenceForm.next_value' => [$this->documentSequenceForm['id'] ? 'nullable' : 'required', 'integer', 'min:1'],
             'documentSequenceForm.reset_rule' => ['required', 'string', 'in:never,yearly,monthly'],
             'documentSequenceForm.status' => ['required', 'string', 'in:active,inactive'],
             'documentSequenceForm.policy_notes' => ['nullable', 'string', 'max:1000'],
@@ -314,6 +322,38 @@ new #[Title('System Settings')] class extends Component {
 
         $seq = DocumentSequence::findOrFail($id);
         $this->documentSequenceForm = $seq->toArray();
+        $this->sequenceOverride = [
+            'sequence_id' => $seq->id,
+            'next_value' => $seq->next_value,
+            'expected_lock_version' => $seq->lock_version,
+            'reason' => '',
+        ];
+    }
+
+    public function overrideSequenceCounter(OverrideDocumentSequenceCounter $action): void
+    {
+        Gate::authorize('drawers_payments_tax_numbering_printers.override');
+        $validated = $this->validate([
+            'sequenceOverride.sequence_id' => ['required', 'integer', 'exists:document_sequences,id'],
+            'sequenceOverride.next_value' => ['required', 'integer', 'min:1'],
+            'sequenceOverride.expected_lock_version' => ['required', 'integer', 'min:1'],
+            'sequenceOverride.reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ]);
+        $sequence = DocumentSequence::query()->findOrFail($validated['sequenceOverride']['sequence_id']);
+        $updated = $action->execute(
+            $sequence,
+            (int) $validated['sequenceOverride']['next_value'],
+            (int) $validated['sequenceOverride']['expected_lock_version'],
+            $validated['sequenceOverride']['reason'],
+        );
+        $this->documentSequenceForm = $updated->toArray();
+        $this->sequenceOverride = [
+            'sequence_id' => $updated->id,
+            'next_value' => $updated->next_value,
+            'expected_lock_version' => $updated->lock_version,
+            'reason' => '',
+        ];
+        Flux::toast(variant: 'success', text: __('Sequence counter overridden with audit evidence.'));
     }
 
     public function resetDocumentSequenceForm(): void
@@ -329,6 +369,7 @@ new #[Title('System Settings')] class extends Component {
             'status' => 'active',
             'policy_notes' => 'TBD: Sequence rules pending owner approval.',
         ];
+        $this->sequenceOverride = ['sequence_id' => null, 'next_value' => null, 'expected_lock_version' => null, 'reason' => ''];
     }
 
     /**
@@ -911,7 +952,9 @@ new #[Title('System Settings')] class extends Component {
                             wire:model="documentSequenceForm.next_value"
                             :label="__('Next Value')"
                             type="number"
-                            required
+                            :disabled="(bool) $documentSequenceForm['id']"
+                            :description="$documentSequenceForm['id'] ? __('Existing counters require the audited override control below.') : __('Initial value for a new configured sequence.')"
+                            :required="! $documentSequenceForm['id']"
                         />
 
                         <flux:select wire:model="documentSequenceForm.reset_rule" :label="__('Reset Rule')">
@@ -938,6 +981,22 @@ new #[Title('System Settings')] class extends Component {
                         </flux:button>
                     </div>
                 </form>
+
+                @if($documentSequenceForm['id'])
+                    @can('drawers_payments_tax_numbering_printers.override')
+                        <form wire:submit="overrideSequenceCounter" class="space-y-4 border-t border-border-subtle pt-5" aria-labelledby="sequence-override-heading">
+                            <div>
+                                <flux:heading id="sequence-override-heading" size="md">{{ __('Audited counter override') }}</flux:heading>
+                                <flux:text class="mt-1 text-text-muted">{{ __('Requires a dedicated permission, a reason, and the current lock version. Allocation cannot be bypassed through ordinary settings edits.') }}</flux:text>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <flux:input wire:model="sequenceOverride.next_value" type="number" min="1" :label="__('New next value')" required />
+                                <flux:textarea wire:model="sequenceOverride.reason" :label="__('Override reason')" required />
+                            </div>
+                            <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Override this document counter? The action is permanent and audited.') }}">{{ __('Override counter') }}</flux:button></div>
+                        </form>
+                    @endcan
+                @endif
             </flux:card>
 
             <flux:card class="space-y-4">

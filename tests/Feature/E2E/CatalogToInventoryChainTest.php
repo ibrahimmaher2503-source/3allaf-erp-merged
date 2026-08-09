@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
@@ -98,8 +99,22 @@ final class CatalogToInventoryChainTest extends TestCase
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
         ]);
 
+        $this->documentSequence('retail_sale', 'SALE-');
+        $cash = PaymentMethod::query()->create([
+            'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
+            'requires_evidence' => false, 'status' => 'active',
+        ]);
+
         $this->actingAs($cashier);
-        $sale = app(RetailSaleAction::class)->create($cashier, $store, [['product_id' => $product->id, 'quantity' => '3']], 'CHAIN-SALE-1');
+        // 3 x 25.000 = 75.00 — the chain must settle in full to approve.
+        $sale = app(RetailSaleAction::class)->create(
+            $cashier,
+            $store,
+            [['product_id' => $product->id, 'quantity' => '3']],
+            'CHAIN-SALE-1',
+            false,
+            [['method' => $cash, 'amount' => '75.00']],
+        );
 
         // --- Assert the seams, not just the endpoints ----------------------
         self::assertSame('approved', $sale->status);

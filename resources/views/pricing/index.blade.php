@@ -44,6 +44,8 @@ new #[Title('Pricing Workspace')] class extends Component
         'store_id' => '',
         'amount' => '',
         'reference_amount' => '',
+        'open_price_minimum' => '',
+        'open_price_maximum' => '',
         'source_type' => 'product_card',
         'source_reference' => '',
         'effective_from' => '',
@@ -123,6 +125,8 @@ new #[Title('Pricing Workspace')] class extends Component
             'form.store_id' => ['required', 'integer', 'exists:stores,id'],
             'form.amount' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
             'form.reference_amount' => ['nullable', 'numeric', 'gte:0', 'decimal:0,3'],
+            'form.open_price_minimum' => ['nullable', 'numeric', 'gte:0', 'decimal:0,4', 'required_if:form.open_price_allowed,true'],
+            'form.open_price_maximum' => ['nullable', 'numeric', 'gte:0', 'decimal:0,4', 'required_if:form.open_price_allowed,true', 'gte:form.open_price_minimum'],
             'form.source_type' => ['required', Rule::in(['product_card', 'import', 'purchase_context', 'branch_exception'])],
             'form.source_reference' => ['nullable', 'string', 'max:120'],
             'form.effective_from' => ['nullable', 'date'],
@@ -145,6 +149,8 @@ new #[Title('Pricing Workspace')] class extends Component
             reasonText: $data['form']['reason_text'] ?: null,
             referenceAmount: $data['form']['reference_amount'] ?: null,
             openPriceAllowed: (bool) $data['form']['open_price_allowed'],
+            openPriceMinimum: $data['form']['open_price_minimum'] ?: null,
+            openPriceMaximum: $data['form']['open_price_maximum'] ?: null,
         );
 
         $this->showProposalForm = false;
@@ -219,12 +225,12 @@ new #[Title('Pricing Workspace')] class extends Component
             <flux:heading size="xl">{{ __('Pricing workspace') }}</flux:heading>
             <flux:text class="mt-1 max-w-3xl">{{ __('Create immutable price proposals, submit them through approval, and resolve only approved effective prices. Cost changes never rewrite sale prices.') }}</flux:text>
         </div>
-        @can('pricing_labels.create')
-            <div class="flex flex-wrap gap-2">
+        <x-tables.resource-toolbar filter-target="pricing-filters">
+            @can('pricing_labels.create')
                 <flux:button variant="subtle" wire:click="openImportForm">{{ __('Import CSV') }}</flux:button>
                 <flux:button variant="primary" wire:click="openProposalForm">{{ __('New proposal') }}</flux:button>
-            </div>
-        @endcan
+            @endcan
+        </x-tables.resource-toolbar>
     </div>
 
     @if (session('status'))
@@ -235,7 +241,7 @@ new #[Title('Pricing Workspace')] class extends Component
         {{ __('This workspace is a reversible Local/Dev implementation. Production price authority, branch exceptions, open-price limits, rounding, labels, UAT, and release approval remain pending.') }}
     </flux:callout>
 
-    <div class="grid gap-4 lg:grid-cols-[1fr_auto]">
+    <div id="pricing-filters" class="scroll-mt-24 grid gap-4 lg:grid-cols-[1fr_auto]">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Search list, item code, or product') }}" />
         <flux:select wire:model.live="statusFilter" class="min-w-48">
             <option value="all">{{ __('All states') }}</option>
@@ -341,6 +347,10 @@ new #[Title('Pricing Workspace')] class extends Component
                     <flux:input wire:model="form.effective_to" label="{{ __('Effective to (optional)') }}" type="datetime-local" />
                     <flux:input wire:model="form.source_reference" label="{{ __('Source reference') }}" />
                     <flux:checkbox wire:model="form.open_price_allowed" label="{{ __('Allow open-price context (still requires bounds and permission)') }}" />
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <flux:input wire:model="form.open_price_minimum" label="{{ __('Open-price minimum') }}" type="number" step="0.0001" />
+                        <flux:input wire:model="form.open_price_maximum" label="{{ __('Open-price maximum') }}" type="number" step="0.0001" />
+                    </div>
                 </div>
                 <flux:textarea wire:model="form.reason_text" label="{{ __('Proposal reason / audit note') }}" rows="3" />
                 <div class="flex justify-end gap-2"><flux:button wire:click="$set('showProposalForm', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="saveProposal">{{ __('Save draft') }}</flux:button></div>

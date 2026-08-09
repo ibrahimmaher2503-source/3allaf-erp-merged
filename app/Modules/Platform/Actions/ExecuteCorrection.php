@@ -92,6 +92,7 @@ final class ExecuteCorrection
                     'idempotency_key' => $reference->idempotencyKey,
                 ],
                 requestId: $reference->requestId,
+                explicitSourceId: $reference->correctionSourceId,
             );
 
             return $result;

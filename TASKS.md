@@ -29,6 +29,16 @@ Every task is executable/reviewable, delivers a visible result, and begins `Not 
 
 Reuse Laravel, Flux UI, and a single approved mature package where appropriate. Do not build authentication, permissions, audit, Excel, PDF, barcode, backup, media/upload, data table, pagination, filter/sort, picker, searchable select, modal/drawer, toast/alert, chart, sidebar, breadcrumbs, form controls, loading, or empty state from scratch when an approved capability exists. Package names/versions are not approved until the actual Laravel project is inspected. Automated tests are currently deferred; no task creates or runs automated tests.
 
+## Status Accuracy (2026-08-09)
+
+Task statuses below were re-verified against **actual production code** — migrations, module classes, and routes — not against previous status text. The full classification, per-task evidence, and dependency analysis live in `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
+
+A screen that renders `PENDING` cards is **not** an implementation. Several tasks previously recorded as `Completed` were readiness boundaries only and are now labelled `READINESS_ONLY`, `FOUNDATION_ONLY`, or `MISSING`. Nothing was downgraded on opinion: each label cites the table, module, or route that does or does not exist.
+
+Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINESS_ONLY`, `FOUNDATION_ONLY`, `MISSING`, `DOWNSTREAM_DEPENDENCY`, `OWNER_DECISION_REQUIRED`, `EXTERNAL_ONLY`.
+
+**No task in this repository is `RELEASE_READY`.**
+
 ## Phase 1 — Foundation, Access and Operational Controls
 
 ### TSK-001 — Establish the Laravel Platform and Operational Baseline
@@ -375,7 +385,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-023 — Implement Dedicated POS Checkout and Suspended Sales
 
-- **Task ID / Phase / Milestone / Status:** TSK-023; Phase 3; DM 3.1; **Implemented and browser-verified for approved Local/Dev scope; formal Phase/Production/UAT gates remain open**.
+- **Task ID / Phase / Milestone / Status:** TSK-023; Phase 3; DM 3.1; **PARTIAL_IMPLEMENTATION — cart, barcode/product resolution, effective pricing, suspend/resume, idempotency, stock posting, numbering, and audit are real. Since DEC-066 a sale is only approved once captured tender equals the payable amount, so checkout now requires a payment. Receipt/gift-receipt rendering against the new figures remains open.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Build fast barcode/name/code POS with assigned-store cart, authorized quantity/customer, suspend/retrieve, atomic sale, stock movement and thermal/A4 output.
 - **Local/Dev boundary — 2026-08-07:** Implemented online assigned-store checkout, server-resolved price/stock/store/branch/drawer/shift context, idempotent sale approval, append-only sale movements, suspended/retrieved carts, bilingual POS/sales/detail/thermal-A4 baseline, and denied-role boundary. Tax, discounts, payments/evidence, open price, offline, customer, hardware acceptance, final print policy, formal Phase 3 gate, UAT, and Production readiness remain outside this slice and pending/configurable.
 - **Traceability:** PRC-07, INV-02, POS-01–POS-02, POS-04, NFR-05–NFR-06; US-017; FLW-POS-01–02; UI UI-POS-001–002, UI-POS-006–007; AC-PRC-07, AC-INV-02, AC-POS-01–02, AC-POS-04; SEC-006, SEC-011–013, SEC-017–021, SEC-038.
@@ -390,7 +400,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-024 — Implement Discounts, Tax, Payments, Evidence, and Open Price
 
-- **Task ID / Phase / Milestone / Status:** TSK-024; Phase 3; DM 3.2; **Discovery/read-only boundary implemented and browser-verified after TSK-023; financial mutation remains pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-024; Phase 3; DM 3.2; **Domain layer implemented for Local/Dev under DEC-066 — `sale_payments`, `PosCalculationService` (docs/48 §3), `DiscountPolicy` (POS-05 non-stacking, POSF-04 replacement), `CapturePaymentAction`, and the settlement invariant are in place and automated-tested (31 tests). A sale can no longer be approved without tender. POS tender/discount/tax UI, open-price wiring, cash-rounding line, and receipt rendering remain; POSF-02 stays unset and BLK-008 production values remain Open.**
 - **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/financial-readiness` behind `pos_sales.view`. It reads only active payment/tax row counts and presents explicit pending cards for discount replacement, tax, payments/evidence, rounding/split residual, open price, and exact print totals. No financial records, defaults, uploads, or mutation actions were added.
 - **Title / Purpose / Description:** Add one-discount replacement rule, optional invoice tax, cash/manual electronic settlement/evidence, open-price authorization and exact printed totals.
 - **Traceability:** PRC-08, POS-03–POS-06, NFR-01, NFR-04; US-008, US-018; FLW-POS-01, FLW-POS-03; UI UI-POS-001, UI-POS-007, UI-SYS-005; AC-PRC-08, AC-POS-03–06; SEC-006, SEC-015–016, SEC-019–020, SEC-022–024, SEC-027.
@@ -405,7 +415,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-025 — Implement Shift Opening, Cash Movements, Blind Closing, and Variance Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-025; Phase 3; DM 3.3; **Discovery/read-only boundary implemented and browser-verified; shift/cash mutation remains pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-025; Phase 3; DM 3.3; **FULL_IMPLEMENTATION for Local/Dev under DEC-066 (docs/32) — replaced the readiness-only boundary. Shift open with opening float and drawer/cashier exclusivity, `cash_movements`, server-derived expected totals, blind actual submission, variance by method, recount, manager approval with separation of duties, immutable close with `shift_close` numbering, audit, idempotency, and stale-version protection are implemented and tested (37 backend tests + 6 browser tests). Real HTTP routes `/pos/shift` and `/pos/shift-variance` replace `/pos/shift-readiness`. POSF-02 cash denomination and the variance tolerance threshold remain unset owner values; thermal/A4 close prints and MariaDB concurrency execution remain open.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/shift-readiness` behind `pos_sales.view`. It reads only scoped active-drawer and current-user open-shift counts; it passes no monetary fields and exposes no shift/cash/payment/variance mutation.
 - **Title / Purpose / Description:** Deliver exclusive drawer shift, opening float, linked payments/cash movements, blind actual submission, expected/variance manager review and thermal/A4 close.
 - **Traceability:** CSH-01–CSH-04, NFR-01–NFR-03; US-024; FLW-CSH-01–03; UI UI-POS-003–005; AC-CSH-01–04; SEC-011–012, SEC-015–020, SEC-027, SEC-037–038.
@@ -420,7 +430,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-026 — Implement Restricted Offline POS, Synchronization, and Conflict Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-026; Phase 3; DM 3.4; **Discovery/readiness boundary implemented and browser-verified; offline transaction/sync mutation remains pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-026; Phase 3; DM 3.4; **READINESS_ONLY / BLOCKED_BY_OWNER — no offline queue table, no sync endpoint, no conflict model; only `/pos/offline-readiness`. BLK-004 (enabled devices, limits, price age, retry, review ownership, conflict disposition) is genuinely open and is behaviour rather than parameters. Recorded as OD-3 with deliberately no recommended default, because a wrong conflict disposition can duplicate or silently drop sales.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Local/Dev boundary — 2026-08-07:** Added guarded `GET /pos/offline-readiness` behind `pos_sales.view`. It records OFF-01..OFF-05 and NFR-04 as pending, shows PRD permitted/blocked operation classes, and enables no queue, sync, replay, conflict, or transactional offline behavior.
 - **Title / Purpose / Description:** Deliver owner-approved device-bound provisional POS queue, restricted offline eligibility, protected/expiring IndexedDB, service-worker messaging, idempotent server sync and explicit conflict disposition.
 - **Traceability:** POS-01–POS-05 offline boundary, NFR-01, NFR-03–NFR-06; US-032; FLW-OFF-01–03; UI UI-OFF-001–003, UI-POS-001; AC-NFR-01, AC-NFR-03–06; SEC-004–005, SEC-011–016, SEC-019–020, SEC-032–036.
@@ -437,7 +447,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-027 — Implement Customer Profiles and Shared Loyalty
 
-- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **Dynamic Local/Dev settings/readiness slice implemented and browser-verified; customer/loyalty mutation remains pending**.
+- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **PARTIAL_IMPLEMENTATION (settings only) — `customer_policy_setting_versions` + `CustomerPolicySettingRegistry` are real and append-only. There is no `customers` table, no consent capture, no duplicate/phone review, no child-profile handling, and no loyalty ledger. DEC-067 now permits ledgers to consume these settings (throwing when unset). The customer master needs no further owner decision and is the outstanding keystone blocking TSK-028, TSK-029, TSK-030, TSK-031–036, and TSK-037.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Deliver unique-phone customer/consent/contact/children, authorized unified history and shared activity-rule loyalty earn/redeem/expiry.
 - **Traceability:** MD-06, CUS-01, CUS-03–CUS-04, NFR-01–NFR-03; US-003, US-023; FLW-CUS-01–03; UI UI-CUS-001–003; AC-MD-06, AC-CUS-01, AC-CUS-03–04; SEC-006, SEC-010–012, SEC-015–021, SEC-027.
 - **Dependencies / Required Inputs:** Phase 3 gate; BLK-014 mitigated by `docs/27-customer-loyalty-wallet-gift-policy.md`; final consent wording, legal retention, loyalty rates, rounding, expiry, and approval values remain configurable or pending.
@@ -451,7 +461,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-028 — Implement Separated Product and Party Wallets
 
-- **Task ID / Phase / Milestone / Status:** TSK-028; Phase 4; DM 4.2; **Completed — verified Local/Dev foundation/readiness slice; full wallet operations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-028; Phase 4; DM 4.2; **FOUNDATION_ONLY — `product_wallet_ledger` and `party_wallet_ledger` exist as genuinely separate, append-only, idempotent tables (structural non-transferability holds). Neither carries a holder column, so a per-holder balance cannot be derived at all; there are no mutation actions, no balance derivation, no settlement, correction, or reconciliation. Blocked by the missing `customers` table.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Local/Dev boundary — 2026-08-07:** Implement separate Product Wallet and Party Wallet ledger foundations, guarded empty/readiness screens, and Setup Dashboard `PENDING/TBD` policy values. Do not seed wallet rows or enable settlement, adjustment, transfer, payment, customer linkage, or production behavior.
 - **Dependencies / Required Inputs:** TSK-027 dynamic settings/readiness; `docs/27-customer-loyalty-wallet-gift-policy.md`; wallet limits, settlement, adjustment, visibility, reporting, source linkage, and owner/Production values remain configurable or pending.
 - **Acceptance boundary:** Close only the verified Local/Dev foundation/readiness slice; retain full TSK-028 requirements and Phase/UAT/Production gates as open.
@@ -467,7 +477,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-029 — Implement Gift Cards and Gift Receipts
 
-- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **Completed — verified Local/Dev Gift Card/Gift Receipt foundation/readiness slice; full issue/redeem/void/expiry/print remains deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-029; Phase 4; DM 4.3; **READINESS_ONLY — `/gift-cards` and `/gift-receipts` are read-only closures stating that issue, balance, redeem, void, and expiry are disabled. No `gift_cards` table exists. Blocked by `customers` (holder) and by gift card as a tender method. POS-07 price suppression is fully specified and still unimplemented, including its page-source leak check.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Deliver price-free Gift Receipt issue/reprint/use and unique Gift Card issue/balance/partial/full redeem/void/expiry ledger.
 - **Traceability:** POS-07, RET-02, RET-04, NFR-01–NFR-03, NFR-06; US-019, US-021; FLW-POS-04, FLW-RET-03; UI UI-POS-010–011; AC-POS-07, AC-RET-02, AC-RET-04; SEC-011–012, SEC-015–020, SEC-024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-028; `docs/27-customer-loyalty-wallet-gift-policy.md`; final Gift Card/Gift Receipt eligibility, validity, holder, void, reprint, and format values remain configurable or pending.
@@ -481,7 +491,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-030 — Implement Returns and Exchanges
 
-- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **Completed — verified Local/Dev returns/exchanges source-safe readiness slice; refund/exchange/restock mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-030; Phase 4; DM 4.4; **READINESS_ONLY — `/pos/returns-readiness` only; no `sales_returns` or `return_lines` tables and no return, refund, exchange, restock, or payment-reversal behaviour. The TSK-024 payment rows a refund must reverse now exist, so the remaining blocker is the `customers` table plus BLK-013 numeric limits (configurable per DEC-065).** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Validate original invoice/Gift Receipt, inspect condition/approval, then same/different exchange, cash refund, or Gift Card settlement with stock disposition and references.
 - **Traceability:** RET-01–RET-03, NFR-01–NFR-03, NFR-06; US-020; FLW-RET-01–02; UI UI-POS-008–010; AC-RET-01–03; SEC-006, SEC-011–012, SEC-015, SEC-017–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-029; BLK-013 mitigated by `docs/26-discount-return-policy.md`; final return window, exceptions, condition, refund, approval, non-saleable, and damage values remain configurable or pending.
@@ -497,7 +507,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-031 — Implement Party Bookings and Working Invoices
 
-- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **Completed — verified Local/Dev Party-only booking/working-invoice readiness slice; booking/customer/invoice mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-031; Phase 5; DM 5.1; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Booking, working invoice, customer/child linkage, and invoice mutations are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Deliver party-only booking/calendar, customer/child/schedule/location/contact/plans/responsibilities and editable working invoice frozen at final close.
 - **Traceability:** PTY-01–PTY-03, NFR-01–NFR-03; US-025; FLW-PTY-01–02; UI UI-PTY-001–003; AC-PTY-01–03; SEC-006, SEC-010–015, SEC-017, SEC-019–020, SEC-027.
 - **Dependencies / Required Inputs:** Phase 4 gate; BLK-015 mitigated by `docs/28-party-operations-policy.md`; final party stores, services/packages, schedule, cancellation, edit, responsibility, price, and real master data remain configurable or pending.
@@ -511,7 +521,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-032 — Implement Party Payments on Account and Party Balance
 
-- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **Completed — verified Local/Dev Party payment/balance readiness slice; payment, receipt, balance, reversal, and wallet mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-032; Phase 5; DM 5.2; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Payment on account, receipt, party balance, reversal, and wallet mutations are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Post multiple party payments, each with exact PRD receipt label, reconcile party balance and integrate only Party Wallet under approved policy.
 - **Traceability:** CUS-02, CUS-04, PTY-04, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-03, FLW-CUS-05; UI UI-PTY-004, UI-CUS-005; AC-CUS-02, AC-PTY-04; SEC-011–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031; `docs/28-party-operations-policy.md`; DEC-019 and final payment/deposit, receipt, evidence, overpayment, Party Wallet, and legal/financial values remain configurable or pending.
@@ -525,7 +535,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-033 — Implement Party Operating Orders and Consumable Movements
 
-- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **Completed — verified Local/Dev Party operating-order/consumable readiness slice; operating and stock mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-033; Phase 5; DM 5.3; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Operating orders, consumable issue/return, and stock movements are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Create/release/execute party order, assign resources, issue/consume party-store consumables, control additions/removals and reference eligible unused returns.
 - **Traceability:** PTY-05, AST-05, NFR-01–NFR-03; US-027; FLW-PTY-04–05; UI UI-PTY-005–006; AC-PTY-05, AC-AST-05; SEC-006, SEC-011–015, SEC-017, SEC-019–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-032; `docs/28-party-operations-policy.md`; final operating checklist, party-store mapping, consumables/UOM, availability, return/change, approval, and real master data remain configurable or pending.
@@ -539,7 +549,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-034 — Implement Rental Asset Master, Calendar, Reservation, Checkout, and Return
 
-- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **Completed — verified Local/Dev rental asset/calendar readiness slice; asset, reservation, checkout, return, and condition mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-034; Phase 5; DM 5.4; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Asset master, calendar, reservation, checkout, return, and condition capture are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Maintain unique assets separately from consumables, show availability calendar, lock non-overlapping reservations, and capture checkout/return/pre-post condition/status/location.
 - **Traceability:** AST-01–AST-03, NFR-01–NFR-03; US-028; FLW-PTY-06–08; UI UI-PTY-007–012; AC-AST-01–03; SEC-006, SEC-011–013, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-033; BLK-016 mitigated by `docs/29-rental-asset-policy.md`; final asset register, categories, locations, interval buffers, checklists, state, maintenance, loss, and finance values remain configurable or pending.
@@ -553,7 +563,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-035 — Implement Asset Damage, Loss, Maintenance, and Depreciation Review
 
-- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **Completed — verified Local/Dev damage/loss/maintenance/depreciation readiness slice; event, cost, approval, depreciation, and correction mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-035; Phase 5; DM 5.4; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Damage, loss, maintenance, depreciation, approval, and correction are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Assess source-linked damage/loss/depreciation, responsibility, evidence, optional cost, approval and final asset state without implying general ledger.
 - **Traceability:** AST-04, NFR-01–NFR-03; US-029; FLW-PTY-09–10; UI UI-PTY-012–014; AC-AST-04; SEC-006, SEC-011–012, SEC-015–020, SEC-022–024, SEC-027.
 - **Dependencies / Required Inputs:** TSK-034; `docs/29-rental-asset-policy.md`; final damage/loss, maintenance, depreciation, method, cost, responsibility, approval limits, and finance values remain configurable or pending.
@@ -567,7 +577,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-036 — Implement Party Final Closure and Settlement
 
-- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **Completed — verified Local/Dev final settlement/close readiness slice; final invoice, receipt, Party Wallet, credit, settlement, close, and posting mutations remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-036; Phase 5; DM 5.5; **MISSING — there is no Party module in `app/Modules/` and no party tables exist. The only surface is a read-only readiness route. Final invoice, receipt, party wallet, credit, settlement, close, and posting are entirely unimplemented. BLK-015/BLK-016 are Mitigated (DEC-039 adopts docs/28, docs/29, docs/33 locally), so this band is policy-clear; it is blocked by the `customers` keystone, with TSK-024 payments now available.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Validate readiness, finalize immutable party invoice, reconcile payments on account, Party Wallet, remaining amount/credit and final receipt atomically.
 - **Traceability:** CUS-02, PTY-06, NFR-01–NFR-03, NFR-06; US-026; FLW-PTY-11; UI UI-PTY-015; AC-CUS-02, AC-PTY-06; SEC-011–020, SEC-027.
 - **Dependencies / Required Inputs:** TSK-031–035; `docs/28-party-operations-policy.md` and `docs/29-rental-asset-policy.md`; final-close, credit, overpayment, Party Wallet, approval, receipt, readiness, and financial values remain configurable or pending.
@@ -583,7 +593,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-037 — Implement Standalone Retail and Party Quotations
 
-- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **Completed — verified Local/Dev quotation/proposal readiness slice; quote creation, approval, output, conversion, and financial effects remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-037; Phase 6; DM 6.1 (Proposed mapping); **MISSING — `/quotations-readiness` only; no `quotations` table and no quote creation, approval, output, conversion, or financial effect. Pricing is available; blocked by `customers`.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Create typed retail/party quotation with customer/lines/prices/terms/notes/validity/status, print/share and future identity, with no posting or Phase 1 conversion.
 - **Traceability:** QTN-01–QTN-03, NFR-01–NFR-03, NFR-06; US-030; FLW-QTN-01; UI UI-QTN-001; AC-QTN-01–03; SEC-006, SEC-011–013, SEC-017–020, SEC-024, SEC-026–027.
 - **Dependencies / Required Inputs:** Phase 5 gate; DEC-025 owner confirmation; quotation statuses/terms/price authority/share/format.
@@ -597,7 +607,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-038 — Implement Dashboards and Reconciled Report Catalog
 
-- **Task ID / Phase / Milestone / Status:** TSK-038; Phase 6; DM 6.1; **Completed — verified Local/Dev dashboard/report catalog readiness slice; KPI calculation, reports, alerts, drilldown, export, and financial claims remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-038; Phase 6; DM 6.1; **READINESS_ONLY / BLOCKED_BY_OWNER — `/reports-readiness` only; no KPI calculation, report read-models, drilldown, or reconciliation. BLK-017 is partially stale: `docs/50-reporting-formula-catalog.md` now supplies the formulas but remains team-adopted with owner approval outstanding, so what is missing is adoption rather than authorship. Deliberately sequenced last — reports must reconcile to source transactions, and building them before the upstream money paths are correct would produce reports that are wrong by construction.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Deliver role/date/branch/store scoped KPI dashboard and required report groups with formula/source lineage, pagination and drilldown.
 - **Traceability:** RPT-01, RPT-03, NFR-03, NFR-05; US-031; FLW-RPT-01; UI UI-ADM-001, UI-RPT-001; AC-RPT-01, AC-RPT-03, AC-NFR-05; SEC-011–012, SEC-016, SEC-026, SEC-037.
 - **Dependencies / Required Inputs:** Phase 5 gate; BLK-017; formula catalog/access/ranges/layouts and complete source data.
@@ -611,7 +621,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-039 — Implement Operational Alerts and Notifications
 
-- **Task ID / Phase / Milestone / Status:** TSK-039; Phase 6; DM 6.1; **Completed — verified Local/Dev operational-alert and exception-queue readiness slice; trigger evaluation, alert creation, delivery, acknowledgement, resolution, dismissal, escalation, and source navigation remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-039; Phase 6; DM 6.1; **MISSING — `/alerts-readiness` only; no `alerts` table and no trigger evaluation, creation, delivery, acknowledgement, resolution, dismissal, escalation, or source navigation. Inventory-sourced alerts (for example low stock) are dependency-ready today; escalation ownership remains BLK-017.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Surface all PRD low/zero/unpriced/price/transfer/count/invoice/shift/party/balance/asset alerts and role-safe notification navigation.
 - **Traceability:** RPT-02, NFR-03, NFR-05; US-031; FLW-RPT-01; UI UI-ADM-001, UI-SYS-007, UI-RPT-001; AC-RPT-02, AC-NFR-03, AC-NFR-05; SEC-011–012, SEC-016, SEC-037.
 - **Dependencies / Required Inputs:** TSK-038; alert thresholds/timing/ownership/dismissal/escalation policy.
@@ -625,7 +635,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-040 — Implement PDF/Excel Export Center and Audit Views
 
-- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **Completed — verified Local/Dev export-center and audit-view readiness slice; PDF/Excel/CSV generation, artifact storage/download, audit export, redaction, and production/UAT release gates remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-040; Phase 6; DM 6.2; **MISSING — `/exports-audit-readiness` only; no `export_jobs` table and no PDF/Excel/CSV generation, artifact storage, download, audit export, or redaction. Audit *screens* exist and are tested. The export infrastructure is content-agnostic and dependency-ready; redaction rules and layouts remain BLK-017/BLK-008.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Provide safe permissioned PDF/Excel generation/download/expiry and append-only audit filters/detail/before-after/export.
 - **Traceability:** RPT-03, NFR-01–NFR-05; US-031–032; FLW-RPT-02–03; UI UI-RPT-002, UI-AUD-001, UI-OFF-003; AC-RPT-03, AC-NFR-01–05; SEC-011–012, SEC-016, SEC-022–029, SEC-037.
 - **Dependencies / Required Inputs:** TSK-038–039; export formats/limits/retention/storage/redaction/audit access.
@@ -639,7 +649,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-041 — Import and Reconcile Approved Production Master Data
 
-- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **Completed — verified Local/Dev master-data import/cutover readiness boundary; approved production source files, batch import, destructive replacement, opening-stock posting, cutover, and production sign-off remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-041; Phase 6; DM 6.4; **READINESS_ONLY / BLOCKED_BY_DEPENDENCY — import mechanics partly exist (`purchase_invoice_import_*`, `product_import_batches`), but BLK-010 is Open and no approved production source files exist, so batch import, destructive replacement, opening-stock posting, and cutover cannot proceed.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Execute controlled validated import/cutover for approved company/branches/stores/drawers/users/products/suppliers/customers/opening stock and supporting masters.
 - **Traceability:** MD-01–MD-06, PRC-01, PUR-01, INV-01, NFR-01–NFR-07; applicable stories/flows; UI import/admin/error screens; applicable ACs; SEC-006, SEC-009–012, SEC-017–021, SEC-022–027, SEC-039.
 - **Dependencies / Required Inputs:** DM 6.3 passed; final signed data/templates/cutoff/opening valuation and maker/checker owners.
@@ -653,7 +663,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-042 — Complete Production Readiness, Devices, Backup, and Training
 
-- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **Completed — verified Local/Dev production-operations/device/backup/training readiness boundary; production infrastructure, secrets, devices, restore evidence, training, UAT, and go-live remain deferred**.
+- **Task ID / Phase / Milestone / Status:** TSK-042; Phase 6; DM 6.4; **READINESS_ONLY / EXTERNAL_ONLY — `config/backup.php`, the backup/restore console commands, and `BackupOperationalTest` exist locally. Production infrastructure, secrets, physical devices, and restore evidence are outside the repository and remain BLK-001/BLK-002/BLK-003.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Verify production configuration/secrets/workers/scheduler/storage/monitoring, target branches/scanners/printers, baseline backup/restore, training and operational runbooks.
 - **Traceability:** all requirements, especially NFR-04–NFR-07 and print/device requirements; US-032; all operational flows/screens; AC-NFR-04–07, AC-UI-02–05; SEC-028–040.
 - **Dependencies / Required Inputs:** TSK-041; approved hosting/domain/devices/printers/support/backup/training attendees/runbooks.
@@ -667,7 +677,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-043 — Execute Scenario-Based Manual UAT and Defect Retesting
 
-- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **Completed for Local/Dev manual-UAT readiness — scenario/evidence boundary verified; actual UAT execution, sign-off, device acceptance, production approval, and automated-test claim remain blocked**.
+- **Task ID / Phase / Milestone / Status:** TSK-043; Phase 6; DM 6.3; **EXTERNAL_ONLY — scenario and evidence scaffolding exists (`testing/results/UAT-SCENARIOS.md`). Actual UAT execution, sign-off, and device acceptance require human execution and cannot be completed by an agent (DEC-064).** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Execute manual UAT across all roles, 72 requirements, source acceptance scenarios, devices, prints, integrity and offline scope; triage/retest defects. This is not an automated-test task.
 - **Traceability:** all 72 PRD IDs, US-001–032, all FLWs/UI screens, all ACs, SEC-001–040.
 - **Dependencies / Required Inputs:** DM 6.2 complete; named UAT owners, approved scenarios/data/devices/evidence repository/severity/sign-off.
@@ -681,7 +691,7 @@ Reuse Laravel, Flux UI, and a single approved mature package where appropriate. 
 
 ### TSK-044 — Execute Controlled Go-Live and Operational Handover
 
-- **Task ID / Phase / Milestone / Status:** TSK-044; Phase 6; DM 6.4; **Completed for Local/Dev controlled go-live and handover readiness — launch boundary verified; actual production cutover, deployment, client sign-off, and go-live remain blocked**.
+- **Task ID / Phase / Milestone / Status:** TSK-044; Phase 6; DM 6.4; **EXTERNAL_ONLY — launch boundary scaffolding exists. Actual production cutover, deployment, client sign-off, and go-live require human and production action.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Perform authorized cutover, final production verification, controlled launch, support monitoring and full operational/client handover.
 - **Traceability:** all requirements and Delivery Criteria; all stories/flows/screens/AC/security items.
 - **Dependencies / Required Inputs:** TSK-041–043 complete; client release approval, final data/config/users/printers/backups/training/support/rollback readiness.

@@ -24,11 +24,12 @@ readonly class ApprovalRequestData
         public ?string $sourceHash = null,
         public ?string $idempotencyKey = null,
         public ?CarbonInterface $expiresAt = null,
+        public ?string $decisionPermission = null,
     ) {}
 
     public function approvalPermission(): string
     {
-        return $this->sourceType.'.approve';
+        return $this->decisionPermission ?: $this->sourceType.'.approve';
     }
 
     public function pendingKey(): string

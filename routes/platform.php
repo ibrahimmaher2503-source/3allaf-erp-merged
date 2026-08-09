@@ -1,10 +1,15 @@
 <?php
 
+use App\Modules\Platform\Actions\DeliverAttachment;
+use App\Modules\Platform\Actions\ExportAuditLogs;
 use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
+use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
-use App\Modules\Platform\Models\PrinterConfiguration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Spatie\Backup\BackupDestination\BackupDestination;
 
 $router = app('router');
@@ -62,6 +67,34 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ]);
     })->middleware('can:audit_logs.view')->name('system.backups');
     $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:audit_logs.view')->name('admin.audit');
+    $router->get('admin/audit/export', function (Request $request) {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:200'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'event' => ['nullable', 'string', 'max:150'],
+            'actor_id' => ['nullable', 'integer', 'min:1'],
+            'branch_id' => ['nullable', 'integer', 'min:1'],
+            'store_id' => ['nullable', 'integer', 'min:1'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        return app(ExportAuditLogs::class)->execute($filters);
+    })->name('admin.audit.export');
+    $router->livewire('approvals', 'platform::system.approval-inbox')->name('admin.approvals');
+    $router->get('approvals/{approval}/attachments/{attachment}', function (ApprovalRecord $approval, Attachment $attachment) {
+        abort_unless($attachment->purpose === 'approval_evidence'
+            && $attachment->source_type === ApprovalRecord::class
+            && $attachment->source_id === (string) $approval->id, 404);
+        Gate::authorize('view', $approval);
+
+        return app(DeliverAttachment::class)->execute(
+            $attachment,
+            fn ($user, Attachment $candidate): bool => Gate::forUser($user)->allows('view', $approval)
+                && $candidate->source_type === ApprovalRecord::class
+                && $candidate->source_id === (string) $approval->id,
+        );
+    })->name('admin.approvals.attachments.download');
     $router->livewire('admin/system/ui-showcase', 'platform::system.ui-showcase')->middleware('can:dashboard_reports.view')->name('system.ui-showcase');
     $router->view('system/app', 'platform.system.app')->middleware('can:dashboard_reports.view')->name('system.app');
 });

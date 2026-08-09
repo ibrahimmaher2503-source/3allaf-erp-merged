@@ -3,6 +3,10 @@
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\StagePurchaseInvoiceImportAction;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
+use App\Modules\Platform\Actions\StoreAttachment;
+use App\Modules\Platform\Actions\RevokeAttachment;
+use App\Modules\Platform\Models\Attachment;
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -29,8 +33,17 @@ new #[Title('Purchase Invoice Import')] class extends Component
         $this->validate(['importFile' => 'required|file|mimes:xlsx,csv|max:10240']);
 
         try {
-            $path = $this->importFile->store('purchase-invoice-imports', 'local');
-            $batch = $action->stage($path, $this->importFile->getClientOriginalName(), (string) $this->importFile->getMimeType(), (int) $this->importFile->getSize(), (int) auth()->id());
+            $attachment = app(StoreAttachment::class)->execute($this->importFile, 'import_source');
+            try {
+                $batch = $action->stage($attachment, $this->importFile->getClientOriginalName(), (string) $this->importFile->getMimeType(), (int) $this->importFile->getSize(), (int) auth()->id());
+            } catch (Throwable $exception) {
+                app(RevokeAttachment::class)->execute(
+                    $attachment,
+                    __('The purchase-invoice import could not be staged.'),
+                    fn (User $user, Attachment $candidate): bool => $candidate->uploaded_by === $user->id && $candidate->source_type === null,
+                );
+                throw $exception;
+            }
             $this->selectedBatchId = $batch->id;
             $this->importFile = null;
             Flux::toast(__('File staged. Review every row before creating drafts.'), variant: 'success');
@@ -82,7 +95,13 @@ new #[Title('Purchase Invoice Import')] class extends Component
             ? PurchaseInvoiceImportBatch::query()->where('created_by', auth()->id())->with(['rows' => fn ($query) => $query->orderBy('row_number')->limit(100)])->find($this->selectedBatchId)
             : null;
 
-        return view('purchasing.invoice-import', compact('batches', 'selectedBatch'));
+        $sourceAttachment = $selectedBatch === null ? null : Attachment::query()
+            ->where('source_type', PurchaseInvoiceImportBatch::class)
+            ->where('source_id', (string) $selectedBatch->id)
+            ->where('purpose', 'import_source')
+            ->first();
+
+        return view('purchasing.invoice-import', compact('batches', 'selectedBatch', 'sourceAttachment'));
     }
 };
 ?>
@@ -150,6 +169,9 @@ new #[Title('Purchase Invoice Import')] class extends Component
                     <flux:text>{{ __('Valid') }}: {{ $selectedBatch->valid_rows }} · {{ __('Rejected') }}: {{ $selectedBatch->invalid_rows }}</flux:text>
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    @if($sourceAttachment?->status->isDeliverable())
+                        <flux:button href="{{ route('purchasing.invoices.import.source', [$selectedBatch, $sourceAttachment]) }}" variant="subtle" icon="arrow-down-tray">{{ __('Download source') }}</flux:button>
+                    @endif
                     @if (in_array($selectedBatch->status, ['staging', 'ready_for_review'], true))
                         <flux:button variant="danger" wire:click="cancelBatch">{{ __('Cancel batch') }}</flux:button>
                     @endif

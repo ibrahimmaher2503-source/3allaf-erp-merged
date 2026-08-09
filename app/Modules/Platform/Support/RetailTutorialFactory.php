@@ -98,7 +98,6 @@ final class RetailTutorialFactory
                 ['ar' => 'هل زر Print اعتماد رسمي؟ لا.', 'en' => 'Is Print an official approval? No.']
             ),
             'UI-RET-005' => self::readiness('pos.financial-readiness', 'جاهزية الشؤون المالية لنقطة البيع', 'POS Financial Readiness', 'financial', 'TSK-024', 'POSF-01..04 and BLK-008'),
-            'UI-RET-006' => self::readiness('pos.shift-readiness', 'جاهزية الورديات', 'TSK-025 Shift Readiness', 'shift', 'TSK-025', 'CSH-02, CSH-03, and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-RPT-001' => self::readiness('reports.readiness', 'جاهزية لوحات المعلومات وتقارير المطابقة', 'Dashboards and Reconciled Reports Readiness', 'reports', 'TSK-038', 'RPT-01..03'),

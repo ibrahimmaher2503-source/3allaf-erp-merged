@@ -4,11 +4,14 @@ namespace App\Modules\Purchasing\Models;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseOrderLine extends Model
 {
+    use GuardsApprovedParent;
+
     protected $fillable = [
         'purchase_order_id',
         'product_id',
@@ -48,5 +51,10 @@ class PurchaseOrderLine extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    protected function approvedParent(): ?Model
+    {
+        return $this->purchaseOrder()->first();
     }
 }

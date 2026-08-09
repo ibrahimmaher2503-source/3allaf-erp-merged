@@ -46,18 +46,18 @@ a shortcut. Do not report them as PASS.
 
 ## Running the suite
 
-The suite needs a running app server pointed at a **dedicated, disposable** database — never the
-developer's real local `database/database.sqlite`, and never a staging/production URL.
+The suite needs a running app server pointed at a **dedicated, disposable** MySQL/MariaDB database — never the
+developer's real local `toyjoy_local` schema, and never a staging/production URL. Create the schema in XAMPP/phpMyAdmin first.
 
 ```bash
-# 1. Migrate + seed a throwaway SQLite DB (adjust the path as needed)
-DB_DATABASE=/absolute/path/to/playwright-e2e.sqlite php artisan migrate --force
-DB_DATABASE=/absolute/path/to/playwright-e2e.sqlite php artisan db:seed --force
+# 1. Migrate + seed the dedicated MySQL/MariaDB schema
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_playwright_20260809 php artisan migrate --force
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_playwright_20260809 php artisan db:seed --force
 
 # 2. Create known-password login fixtures (CanonicalAuthorizationSeeder's `local`-gated
 #    demo users have random unknowable passwords — see DEC-064-era notes — so this suite
 #    creates its own fixed-password users instead of relying on them)
-DB_DATABASE=/absolute/path/to/playwright-e2e.sqlite php artisan tinker --execute="
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_playwright_20260809 php artisan tinker --execute="
   \$u = App\Models\User::query()->updateOrCreate(['username' => 'playwright-admin'], [
       'name' => 'Playwright Admin', 'email' => 'playwright-admin@toyjoy.local',
       'email_verified_at' => now(), 'password' => Illuminate\Support\Facades\Hash::make('PlaywrightTest!2026'),
@@ -73,7 +73,7 @@ DB_DATABASE=/absolute/path/to/playwright-e2e.sqlite php artisan tinker --execute
 #  404-for-a-nonexistent-id — is what the assertion proves)
 
 # 3. Serve the app against that same database
-DB_DATABASE=/absolute/path/to/playwright-e2e.sqlite php artisan serve --port=8791
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_playwright_20260809 php artisan serve --port=8791
 
 # 4. Run the suite
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8791 npx playwright test
@@ -103,5 +103,5 @@ work, likely as an Artisan command or a `docker compose`-based fixture once one 
   `RateLimiter::for('login')`). A single full suite run stays well under that, but re-running the
   same spec file repeatedly in quick succession against the same disposable database can trip it —
   the symptom is `login()`'s `waitForURL` timing out on a page showing "Too many requests". Fix
-  with `DB_DATABASE=<same path> php artisan cache:clear` (the login throttle uses the `database`
+  with `DB_CONNECTION=mysql DB_DATABASE=toyjoy_playwright_20260809 php artisan cache:clear` (the login throttle uses the `database`
   cache store by default) rather than waiting out the window.

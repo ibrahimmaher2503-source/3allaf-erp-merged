@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
@@ -29,6 +32,9 @@ final class ApprovePurchaseInvoiceAction
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before approving.'));
             }
+            if ($invoice->status === 'approved') {
+                return $invoice->fresh(['supplier', 'store', 'lines.product']);
+            }
             if ($invoice->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be approved.'));
             }
@@ -38,6 +44,13 @@ final class ApprovePurchaseInvoiceAction
             $this->assertStoreScope($invoice->store_id);
 
             $before = $invoice->only(['invoice_number', 'status', 'total_amount', 'lock_version']);
+            $approval = ApprovalRecord::query()
+                ->where('source_type', 'purchase_invoices')
+                ->where('source_id', (string) $invoice->id)
+                ->where('requested_action', 'approve')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->lockForUpdate()
+                ->firstOrFail();
             $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute();
             foreach ($invoice->lines as $line) {
                 $this->postLine($invoice, $line);
@@ -51,7 +64,8 @@ final class ApprovePurchaseInvoiceAction
                 'approved_by' => Auth::id(),
                 'lock_version' => $invoice->lock_version + 1,
             ]);
-            app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'approve_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['invoice_number', 'status', 'approved_at', 'approved_by', 'lock_version']), storeId: $invoice->store_id, metadata: ['stock_posted' => true, 'wac_posted' => true]);
+            app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Purchase invoice and stock receipt approved.'));
+            app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'approve_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['invoice_number', 'status', 'approved_at', 'approved_by', 'lock_version']), storeId: $invoice->store_id, metadata: ['stock_posted' => true, 'wac_posted' => true, 'approval_record_id' => $approval->id]);
 
             return $invoice->fresh(['supplier', 'store', 'lines.product']);
         });
@@ -124,11 +138,11 @@ final class ApprovePurchaseInvoiceAction
             if ($this->compare($newReceived, $poLine->quantity_ordered) < 0) {
                 throw new InvalidArgumentException(__('Partial receipt is not allowed under invoice-posts-stock Model A; invoice quantity must complete the PO line.'));
             }
-            $poLine->update(['quantity_received' => $newReceived]);
+            $poLine->mutateApprovedParentLine(['quantity_received' => $newReceived]);
         }
         $allReceived = $order->lines()->whereColumn('quantity_received', '<', 'quantity_ordered')->doesntExist();
         $someReceived = $order->lines()->where('quantity_received', '>', 0)->exists();
-        $order->update(['status' => $allReceived ? 'received' : ($someReceived ? 'partially_received' : $order->status), 'lock_version' => $order->lock_version + 1]);
+        $order->mutateApprovedDocument(['status' => $allReceived ? 'received' : ($someReceived ? 'partially_received' : $order->status), 'lock_version' => $order->lock_version + 1]);
     }
 
     /** @return numeric-string */

@@ -52,8 +52,9 @@ final class ApprovePriceProposalAction
                 $activeKey = $this->activeKey($line->product_id, $line->store_id);
                 $old = PriceLine::query()->lockForUpdate()->where('active_key', $activeKey)->first();
                 if ($old !== null && $old->price_version_id !== $version->id) {
-                    $old->update(['active_key' => null]);
-                    $old->version()->update(['state' => PriceVersionState::Superseded, 'superseded_at' => now()]);
+                    $old->mutateApprovedParentLine(['active_key' => null]);
+                    $oldVersion = $old->version()->lockForUpdate()->firstOrFail();
+                    $oldVersion->mutateApprovedDocument(['state' => PriceVersionState::Superseded, 'superseded_at' => now()]);
                 }
                 $line->update(['active_key' => $activeKey]);
             }

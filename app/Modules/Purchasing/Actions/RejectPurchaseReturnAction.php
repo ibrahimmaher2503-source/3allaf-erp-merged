@@ -6,6 +6,9 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\RejectRequest;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use Illuminate\Support\Facades\Auth;
@@ -38,9 +41,31 @@ final class RejectPurchaseReturnAction
             if ($return->created_by === Auth::id()) {
                 throw new InvalidArgumentException(__('The supplier return creator cannot reject the same return.'));
             }
+            $approval = ApprovalRecord::query()
+                ->where('source_type', 'purchase_returns')
+                ->where('source_id', (string) $return->id)
+                ->where('requested_action', 'approve')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            app(RejectRequest::class)->execute(
+                $approval,
+                (string) $return->lock_version,
+                $reason,
+            );
             $before = $return->only(['status', 'lock_version']);
             $return->update(['status' => 'rejected', 'rejected_at' => now(), 'rejected_by' => Auth::id(), 'rejection_reason' => $reason, 'updated_by' => Auth::id(), 'lock_version' => $return->lock_version + 1]);
-            app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'reject_supplier_return', source: $return, before: $before, after: $return->only(['status', 'rejected_at', 'rejected_by', 'lock_version']), storeId: $return->store_id, reasonText: $reason);
+            app(RecordAuditEvent::class)->execute(
+                category: 'procurement',
+                event: 'reject_supplier_return',
+                source: $return,
+                before: $before,
+                after: $return->only(['status', 'rejected_at', 'rejected_by', 'lock_version']),
+                storeId: $return->store_id,
+                reasonText: $reason,
+                metadata: ['approval_record_id' => $approval->id],
+            );
 
             return $return->fresh(['supplier', 'store', 'reason', 'purchaseInvoice', 'lines.product']);
         });

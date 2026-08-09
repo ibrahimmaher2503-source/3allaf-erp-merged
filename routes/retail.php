@@ -13,12 +13,33 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Actions\DeliverAttachment;
+use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\StoreAttachment;
+use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\Attachment;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Pricing\Services\OpenPricePolicy;
+use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Actions\OpenShiftAction;
+use App\Modules\Retail\Actions\RecordCashMovementAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
+use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
+use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
+use App\Modules\Retail\Enums\ShiftState;
+use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Models\SalePayment;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
+use App\Modules\Retail\Services\DiscountPolicy;
+use App\Modules\Retail\Services\PosCalculationService;
+use App\Modules\Retail\Support\DecimalMoney;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('pos/returns-readiness', function (Request $request) {
@@ -396,20 +417,230 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $availableProducts = Product::query()->active()->orderBy('item_code')->limit(24)->get();
         $priceMap = $store === null ? collect() : $availableProducts->mapWithKeys(fn (Product $product): array => [$product->id => app(EffectivePriceResolver::class)->resolve($product->id, $store->id)]);
         $suspendedCount = Sale::query()->visibleTo($user)->where('status', 'suspended')->count();
+        $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
+        $cashMethod = $paymentMethods->first(fn (PaymentMethod $method): bool => $method->isCash());
+        $electronicMethods = $paymentMethods->reject(fn (PaymentMethod $method): bool => $cashMethod !== null && $method->is($cashMethod))->values();
 
-        return view('pages.pos.index', compact('store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount'));
+        $previewLines = [];
+        foreach ($cart as $cartLine) {
+            $product = $cartProducts->get((int) $cartLine['product_id']);
+            $price = $product && $store ? app(EffectivePriceResolver::class)->resolve($product->id, $store->id) : null;
+            if ($product && $price) {
+                $previewLines[] = [
+                    'product' => $product,
+                    'quantity' => (string) $cartLine['quantity'],
+                    'unit_price' => (string) ($cartLine['open_price_amount'] ?? $price->amount),
+                    'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'),
+                    'price' => $price,
+                    'cart' => $cartLine,
+                ];
+            }
+        }
+        $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
+        $effectiveTaxes = TaxSetting::query()
+            ->where('status', 'active')
+            ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
+            ->get();
+        $taxSetting = $effectiveTaxes->count() === 1 && filled($effectiveTaxes->first()?->rate) ? $effectiveTaxes->first() : null;
+        $previewError = null;
+        try {
+            $preview = $previewLines === [] ? null : app(PosCalculationService::class)->calculate(
+                array_map(static fn (array $line): array => [
+                    'quantity' => $line['quantity'],
+                    'unit_price' => $line['unit_price'],
+                    'discount_amount' => $line['discount_amount'],
+                ], $previewLines),
+                '0.00',
+                $taxApplicable
+                    ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)]
+                    : ['applicable' => false],
+            );
+        } catch (InvalidArgumentException $exception) {
+            $preview = null;
+            $previewError = $exception->getMessage();
+        }
+
+        $checkoutToken = $request->session()->get('pos.checkout_token');
+        if (! is_string($checkoutToken) || $checkoutToken === '') {
+            $checkoutToken = (string) Str::uuid();
+            $request->session()->put('pos.checkout_token', $checkoutToken);
+        }
+
+        $cashDenomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+
+        return view('pages.pos.index', compact(
+            'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
+            'paymentMethods', 'cashMethod', 'electronicMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
+            'cashDenomination', 'taxApplicable', 'taxSetting',
+        ));
     })->middleware('can:pos_sales.view')->name('pos');
 
-    Route::get('pos/shift-readiness', function (Request $request) {
+    // TSK-025 - real shift/cash workflow (DEC-066, docs/32). Replaces the
+    // previous read-only readiness boundary.
+    Route::get('pos/shift', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->can('pos_sales.view'), 403);
+        abort_unless($user->can('shifts_cash_movements.view'), 403);
 
-        return view('pages.pos.shift-readiness', [
-            'activeDrawerCount' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->count(),
-            'openShiftCount' => PosShift::query()->where('cashier_id', $user->id)->where('status', 'open')->count(),
+        $shift = PosShift::query()->visibleTo($user)->active()
+            ->where('cashier_id', $user->id)
+            ->with(['cashDrawer', 'cashMovements'])
+            ->latest('opened_at')
+            ->first();
+
+        $openToken = (string) $request->session()->get('pos.shift.open_token', '');
+        if ($openToken === '') {
+            $openToken = (string) Str::uuid();
+            $request->session()->put('pos.shift.open_token', $openToken);
+        }
+        $movementToken = null;
+        $closeToken = null;
+        if ($shift !== null) {
+            $movementTokenKey = 'pos.shift.movement_token.'.$shift->getKey();
+            $closeTokenKey = 'pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count');
+            $movementToken = (string) $request->session()->get($movementTokenKey, '');
+            $closeToken = (string) $request->session()->get($closeTokenKey, '');
+            if ($movementToken === '') {
+                $movementToken = (string) Str::uuid();
+                $request->session()->put($movementTokenKey, $movementToken);
+            }
+            if ($closeToken === '') {
+                $closeToken = (string) Str::uuid();
+                $request->session()->put($closeTokenKey, $closeToken);
+            }
+        }
+
+        // docs/32 §10 - expected totals must not reach a cashier session
+        // before submission, so this view is given no expected figures at all.
+        return view('pages.pos.shift', [
+            'shift' => $shift,
+            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(),
+            'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
+            'movementTypes' => CashMovement::TYPES,
+            'openToken' => $openToken,
+            'movementToken' => $movementToken,
+            'closeToken' => $closeToken,
         ]);
-    })->middleware('can:pos_sales.view')->name('pos.shift-readiness');
+    })->middleware('can:shifts_cash_movements.view')->name('pos.shift');
+
+    Route::post('pos/shift/open', function (Request $request, OpenShiftAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('shifts_cash_movements.create'), 403);
+
+        $validated = $request->validate([
+            'cash_drawer_id' => ['required', 'integer', 'exists:cash_drawers,id'],
+            'opening_float' => ['required', 'numeric', 'gte:0'],
+            'idempotency_key' => ['required', 'uuid'],
+        ]);
+
+        try {
+            $action->execute(
+                $user,
+                CashDrawer::query()->findOrFail($validated['cash_drawer_id']),
+                (string) $validated['opening_float'],
+                'SHIFT-OPEN:'.$validated['idempotency_key'],
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['cash_drawer_id' => $e->getMessage()]);
+        }
+
+        $request->session()->forget('pos.shift.open_token');
+
+        return redirect()->route('pos.shift')->with('success', __('Shift opened.'));
+    })->middleware('can:shifts_cash_movements.create')->name('pos.shift.open');
+
+    Route::post('pos/shift/{shift}/cash-movement', function (Request $request, PosShift $shift, RecordCashMovementAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('shifts_cash_movements.create'), 403);
+        abort_unless(PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists(), 403);
+
+        $validated = $request->validate([
+            'movement_type' => ['required', 'string', Rule::in(CashMovement::TYPES)],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['required', 'string', 'max:500'],
+            'reference' => ['nullable', 'string', 'max:190'],
+            'idempotency_key' => ['required', 'uuid'],
+        ]);
+
+        try {
+            $action->execute(
+                $user,
+                $shift,
+                $validated['movement_type'],
+                (string) $validated['amount'],
+                $validated['reason'],
+                'CASH-MOVE:'.$validated['idempotency_key'],
+                $validated['reference'] ?? null,
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['amount' => $e->getMessage()]);
+        }
+
+        $request->session()->forget('pos.shift.movement_token.'.$shift->getKey());
+
+        return redirect()->route('pos.shift')->with('success', __('Cash movement recorded.'));
+    })->middleware('can:shifts_cash_movements.create')->name('pos.shift.cash-movement');
+
+    Route::post('pos/shift/{shift}/blind-close', function (Request $request, PosShift $shift, SubmitBlindShiftCloseAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('shifts_cash_movements.submit'), 403);
+        abort_unless(PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists(), 403);
+
+        $validated = $request->validate([
+            'actual_cash' => ['required', 'numeric', 'gte:0'],
+            'actual_by_method' => ['nullable', 'array'],
+            'actual_by_method.*' => ['nullable', 'numeric', 'gte:0'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'idempotency_key' => ['required', 'uuid'],
+        ]);
+
+        /** @var array<string, mixed> $submitted */
+        $submitted = $validated['actual_by_method'] ?? [];
+        $actualByMethod = [];
+        foreach ($submitted as $code => $value) {
+            if ($value !== null && $value !== '') {
+                $actualByMethod[(string) $code] = (string) $value;
+            }
+        }
+
+        try {
+            $action->execute(
+                $user,
+                $shift,
+                (string) $validated['actual_cash'],
+                $actualByMethod,
+                'SHIFT-CLOSE:'.$validated['idempotency_key'],
+                $validated['notes'] ?? null,
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['actual_cash' => $e->getMessage()]);
+        }
+
+        // The cashier returns to a screen that deliberately shows no expected
+        // or variance figure (docs/32 §15 redaction).
+        $request->session()->forget('pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count'));
+
+        return redirect()->route('pos.shift')->with('success', __('Count submitted for review.'));
+    })->middleware('can:shifts_cash_movements.submit')->name('pos.shift.blind-close');
+
+    Route::get('pos/shift-variance', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        // Expected vs actual is manager/reviewer-only (docs/32 §13).
+        abort_unless($user->can('shifts_cash_movements.approve'), 403);
+
+        $shifts = PosShift::query()->visibleTo($user)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+            ->with(['cashDrawer', 'cashier', 'closingSubmissions'])
+            ->latest('submitted_at')
+            ->paginate(20);
+
+        return view('pages.pos.shift-variance', compact('shifts'));
+    })->middleware('can:shifts_cash_movements.approve')->name('pos.shift-variance');
 
     Route::get('pos/offline-readiness', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.view'), 403);
@@ -476,13 +707,34 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('pos/financial-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->can('pos_sales.view'), 403);
+        abort_unless($user->can('company_settings.view'), 403);
+
+        $latest = PosFinancialSettingVersion::query()
+            ->whereIn('key', array_keys(PosFinancialSettingRegistry::all()))
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('key')
+            ->map(fn ($versions) => $versions->first());
 
         return view('pages.pos.financial-readiness', [
             'activePaymentMethods' => PaymentMethod::query()->where('status', 'active')->count(),
             'activeTaxSettings' => TaxSetting::query()->where('status', 'active')->count(),
+            'definitions' => PosFinancialSettingRegistry::all(),
+            'latestSettings' => $latest,
         ]);
-    })->middleware('can:pos_sales.view')->name('pos.financial-readiness');
+    })->middleware('can:company_settings.view')->name('pos.financial-readiness');
+
+    Route::post('admin/settings/pos-financial', function (Request $request, SavePosFinancialSettingAction $action) {
+        abort_unless($request->user()?->can('company_settings.edit'), 403);
+        $data = $request->validate([
+            'key' => ['required', 'string', Rule::in(array_keys(PosFinancialSettingRegistry::all()))],
+            'value' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $action->execute($data['key'], $data['value'] ?? null, $data['notes'] ?? null);
+
+        return back()->with('success', __('A new POS financial setting version was saved.'));
+    })->middleware('can:company_settings.edit')->name('admin.settings.pos-financial.save');
 
     Route::post('pos/cart/add', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
@@ -518,9 +770,171 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.remove');
 
+    Route::post('pos/cart/discount', function (Request $request, DiscountPolicy $policy) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.apply_discount'), 403);
+        $data = $request->validate([
+            'product_id' => ['required', 'integer'],
+            'discount_type' => ['required', Rule::in([DiscountPolicy::TYPE_LINE, DiscountPolicy::TYPE_CUSTOMER_GROUP])],
+            'discount_amount' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['nullable', 'string', 'max:500'],
+            'expected_revision' => ['required', 'integer', 'min:0'],
+        ]);
+
+        /** @var array<int, array<string, mixed>> $sessionCart */
+        $sessionCart = $request->session()->get('pos.cart', []);
+        $cart = collect($sessionCart);
+        $index = $cart->search(fn (array $line): bool => (int) $line['product_id'] === (int) $data['product_id']);
+        abort_if($index === false, 404);
+        $line = $cart[$index];
+        if ((int) ($line['discount_revision'] ?? 0) !== (int) $data['expected_revision']) {
+            return back()->withErrors(['discount' => __('The discount changed in another request. Review the current value and try again.')]);
+        }
+
+        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
+        abort_if($price === null, 422, __('The product has no effective price.'));
+        $unitPrice = (string) ($line['open_price_amount'] ?? $price->amount);
+        $gross = DecimalMoney::round(bcmul((string) $line['quantity'], $unitPrice, 8));
+        $existingType = filled($line['discount_type'] ?? null) ? (string) $line['discount_type'] : null;
+
+        try {
+            $resolved = $policy->buildLineDiscount(
+                actor: $user,
+                discountAmount: DecimalMoney::round((string) $data['discount_amount']),
+                baseAmount: $gross,
+                newType: (string) $data['discount_type'],
+                existingType: $existingType,
+                reason: $data['reason'] ?? null,
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['discount' => $exception->getMessage()]);
+        }
+
+        $before = [
+            'type' => $existingType,
+            'amount' => (string) ($line['discount_amount'] ?? '0.00'),
+            'revision' => (int) ($line['discount_revision'] ?? 0),
+        ];
+        $line['discount_type'] = $resolved['discount_type'];
+        $line['discount_amount'] = DecimalMoney::round($resolved['discount_amount']);
+        $line['discount_reason'] = $data['reason'] ?? null;
+        $line['discount_replaces'] = $resolved['replaces'] ?? $existingType;
+        $line['discount_previous_type'] = $existingType;
+        $line['discount_previous_amount'] = $before['amount'];
+        $line['discount_revision'] = $before['revision'] + 1;
+        $cart[$index] = $line;
+        $request->session()->put('pos.cart', $cart->values()->all());
+
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail',
+            event: $existingType === null ? 'pos_cart_discount_applied' : 'pos_cart_discount_replaced',
+            before: $before,
+            after: ['type' => $line['discount_type'], 'amount' => $line['discount_amount'], 'revision' => $line['discount_revision']],
+            branchId: (int) $store->branch_id,
+            storeId: (int) $store->id,
+            reasonText: $data['reason'] ?? null,
+            metadata: ['product_id' => (int) $line['product_id'], 'actor_id' => $user->id],
+        );
+
+        return back()->with('success', $existingType === null ? __('Discount applied.') : __('The previous discount was replaced.'));
+    })->middleware('can:pos_sales.apply_discount')->name('pos.cart.discount');
+
+    Route::post('pos/cart/open-price', function (Request $request, OpenPricePolicy $policy) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.open_price'), 403);
+        $data = $request->validate([
+            'product_id' => ['required', 'integer'],
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['required', 'string', 'max:500'],
+            'expected_revision' => ['required', 'integer', 'min:0'],
+        ]);
+
+        /** @var array<int, array<string, mixed>> $sessionCart */
+        $sessionCart = $request->session()->get('pos.cart', []);
+        $cart = collect($sessionCart);
+        $index = $cart->search(fn (array $line): bool => (int) $line['product_id'] === (int) $data['product_id']);
+        abort_if($index === false, 404);
+        $line = $cart[$index];
+        if ((int) ($line['pricing_revision'] ?? 0) !== (int) $data['expected_revision']) {
+            return back()->withErrors(['open_price' => __('The open price changed in another request. Review it and try again.')]);
+        }
+
+        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
+        abort_if($price === null || ! $price->open_price_allowed, 422, __('Open price is not enabled for this product.'));
+        $reference = (string) ($price->reference_amount ?? $price->amount);
+        $policy->validateOrThrow(
+            referenceAmount: $reference,
+            requestedAmount: (string) $data['amount'],
+            minimum: $price->open_price_minimum === null ? null : (string) $price->open_price_minimum,
+            maximum: $price->open_price_maximum === null ? null : (string) $price->open_price_maximum,
+            hasPermission: true,
+            reason: (string) $data['reason'],
+        );
+
+        $before = ['amount' => $line['open_price_amount'] ?? null, 'revision' => (int) ($line['pricing_revision'] ?? 0)];
+        $line['open_price_amount'] = DecimalMoney::normalize((string) $data['amount'], 4);
+        $line['open_price_reason'] = trim((string) $data['reason']);
+        $line['pricing_revision'] = $before['revision'] + 1;
+        $cart[$index] = $line;
+        $request->session()->put('pos.cart', $cart->values()->all());
+
+        app(RecordAuditEvent::class)->execute(
+            category: 'pricing',
+            event: 'pos_cart_open_price_set',
+            before: $before,
+            after: ['reference' => $reference, 'amount' => $line['open_price_amount'], 'minimum' => $price->open_price_minimum, 'maximum' => $price->open_price_maximum, 'revision' => $line['pricing_revision']],
+            branchId: (int) $store->branch_id,
+            storeId: (int) $store->id,
+            reasonText: (string) $data['reason'],
+            metadata: ['product_id' => (int) $line['product_id'], 'actor_id' => $user->id],
+        );
+
+        return back()->with('success', __('Open price applied to the basket line.'));
+    })->middleware('can:pos_sales.open_price')->name('pos.cart.open-price');
+
+    Route::post('pos/cart/tax', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.apply_tax'), 403);
+        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $data = $request->validate(['tax_applicable' => ['required', 'boolean']]);
+        $applicable = (bool) $data['tax_applicable'];
+        $setting = null;
+        if ($applicable) {
+            $effective = TaxSetting::query()
+                ->where('status', 'active')
+                ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
+                ->get();
+            if ($effective->count() !== 1 || blank($effective->first()?->rate)) {
+                return back()->withErrors(['tax' => __('Tax cannot be enabled until exactly one effective policy with a configured rate exists.')]);
+            }
+            $setting = $effective->first();
+        }
+
+        $before = (bool) $request->session()->get('pos.tax_applicable', false);
+        $request->session()->put('pos.tax_applicable', $applicable);
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail', event: 'pos_cart_tax_selection_changed',
+            before: ['tax_applicable' => $before],
+            after: ['tax_applicable' => $applicable, 'tax_setting_id' => $setting?->id, 'rate_snapshot' => $setting?->rate],
+            branchId: (int) $store->branch_id,
+            storeId: (int) $store->id,
+            reasonText: __('Invoice tax selection changed at POS.'),
+            metadata: ['actor_id' => $user->id],
+        );
+
+        return back()->with('success', $applicable ? __('Tax enabled for this basket.') : __('Tax disabled for this basket.'));
+    })->middleware('can:pos_sales.apply_tax')->name('pos.cart.tax');
+
     Route::post('pos/cart/clear', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $request->session()->forget('pos.cart');
+        $request->session()->forget('pos.tax_applicable');
 
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.clear');
@@ -532,8 +946,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $cart */
         $cart = $request->session()->get('pos.cart', []);
-        $sale = $action->create($user, $store, $cart, 'SUSPEND:'.$user->id.':'.hash('sha256', json_encode($cart).microtime(true)), true);
+        $token = (string) $request->session()->get('pos.checkout_token', Str::uuid());
+        $sale = $action->create(
+            $user,
+            $store,
+            $cart,
+            'SUSPEND:'.$user->id.':'.$token,
+            true,
+            [],
+            ['tax_applicable' => (bool) $request->session()->get('pos.tax_applicable', false)],
+        );
         $request->session()->forget('pos.cart');
+        $request->session()->forget('pos.checkout_token');
+        $request->session()->forget('pos.tax_applicable');
 
         return redirect()->route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->getAttribute('resume_code')]));
     })->middleware('can:pos_sales.create')->name('pos.suspend');
@@ -545,8 +970,68 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $cart */
         $cart = $request->session()->get('pos.cart', []);
-        $sale = $action->create($user, $store, $cart, 'CHECKOUT:'.$user->id.':'.hash('sha256', json_encode($cart).microtime(true)));
+
+        $validated = $request->validate([
+            'checkout_token' => ['required', 'uuid'],
+            'tax_applicable' => ['nullable', 'boolean'],
+            'payments' => ['required', 'array', 'min:1'],
+            'payments.*.method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
+            'payments.*.amount' => ['nullable', 'numeric', 'gte:0'],
+            'payments.*.tendered' => ['nullable', 'numeric', 'gte:0'],
+            'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
+            'payments.*.evidence' => ['nullable', 'file'],
+        ]);
+
+        $tenders = [];
+        foreach ($validated['payments'] as $index => $payment) {
+            if (empty($payment['method_id'])) {
+                continue;
+            }
+
+            $attachmentId = null;
+            if ($request->hasFile("payments.{$index}.evidence")) {
+                abort_unless($user->can('pos_sales.payment_evidence_upload'), 403);
+                $attachment = app(StoreAttachment::class)->execute(
+                    $request->file("payments.{$index}.evidence"),
+                    'payment_evidence',
+                    new AttachmentSourceReference(
+                        branchId: (int) $store->branch_id,
+                        storeId: (int) $store->id,
+                        visibility: 'private',
+                    ),
+                );
+                $attachmentId = $attachment->id;
+            }
+
+            $tenders[] = [
+                'method' => PaymentMethod::query()->findOrFail($payment['method_id']),
+                'amount' => isset($payment['amount']) ? (string) $payment['amount'] : '0.00',
+                'tendered' => isset($payment['tendered']) ? (string) $payment['tendered'] : null,
+                'evidence_reference' => $payment['evidence_reference'] ?? null,
+                'evidence_attachment_id' => $attachmentId,
+            ];
+        }
+        if ($tenders === []) {
+            return back()->withErrors(['payments' => __('Select at least one payment method.')]);
+        }
+
+        try {
+            $sale = $action->create(
+                $user,
+                $store,
+                $cart,
+                'CHECKOUT:'.$user->id.':'.$validated['checkout_token'],
+                false,
+                $tenders,
+                ['tax_applicable' => (bool) ($validated['tax_applicable'] ?? false)],
+            );
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            return back()->withErrors(['payments' => $e->getMessage()]);
+        }
+
         $request->session()->forget('pos.cart');
+        $request->session()->forget('pos.checkout_token');
+        $request->session()->forget('pos.tax_applicable');
 
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
     })->middleware('can:pos_sales.create')->name('pos.checkout');
@@ -560,31 +1045,194 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.pos.suspended', compact('sales'));
     })->middleware('can:suspended_sales.view')->name('pos.suspended');
 
+    Route::get('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.create'), 403);
+        abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
+
+        try {
+            $preview = $action->suspendedResumePreview($user, $sale);
+        } catch (InvalidArgumentException $exception) {
+            return redirect()->route('pos.suspended')->withErrors(['resume' => $exception->getMessage()]);
+        }
+
+        $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
+        $cashMethod = $paymentMethods->first(fn (PaymentMethod $method): bool => $method->isCash());
+        $electronicMethods = $paymentMethods->reject(fn (PaymentMethod $method): bool => $method->isCash())->values();
+        $resumeTokenKey = 'pos.suspended.resume_token.'.$sale->id;
+        $resumeToken = (string) $request->session()->get($resumeTokenKey, '');
+        if ($resumeToken === '') {
+            $resumeToken = (string) Str::uuid();
+            $request->session()->put($resumeTokenKey, $resumeToken);
+        }
+        $cashDenomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+
+        return view('pages.pos.resume', compact('sale', 'preview', 'cashMethod', 'electronicMethods', 'resumeToken', 'cashDenomination'));
+    })->middleware('can:pos_sales.create')->name('pos.suspended.resume');
+
     Route::post('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
-        $sale = $action->finalizeSuspended($user, $sale);
+
+        $validated = $request->validate([
+            'resume_token' => ['required', 'uuid'],
+            'payments' => ['required', 'array', 'min:1'],
+            'payments.*.method_id' => ['nullable', 'integer', 'exists:payment_methods,id'],
+            'payments.*.amount' => ['nullable', 'numeric', 'gte:0'],
+            'payments.*.tendered' => ['nullable', 'numeric', 'gte:0'],
+            'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
+            'payments.*.evidence' => ['nullable', 'file'],
+        ]);
+        $resumeTokenKey = 'pos.suspended.resume_token.'.$sale->id;
+        $expectedToken = (string) $request->session()->get($resumeTokenKey, '');
+        abort_unless($expectedToken !== '' && hash_equals($expectedToken, (string) $validated['resume_token']), 419);
+
+        $tenders = [];
+        foreach ($validated['payments'] as $index => $payment) {
+            if (empty($payment['method_id'])) {
+                continue;
+            }
+
+            $attachmentId = null;
+            if ($request->hasFile("payments.{$index}.evidence")) {
+                abort_unless($user->can('pos_sales.payment_evidence_upload'), 403);
+                $attachment = app(StoreAttachment::class)->execute(
+                    $request->file("payments.{$index}.evidence"),
+                    'payment_evidence',
+                    new AttachmentSourceReference(
+                        branchId: (int) $sale->branch_id,
+                        storeId: (int) $sale->store_id,
+                        visibility: 'private',
+                    ),
+                );
+                $attachmentId = $attachment->id;
+            }
+
+            $tenders[] = [
+                'method' => PaymentMethod::query()->findOrFail($payment['method_id']),
+                'amount' => isset($payment['amount']) ? (string) $payment['amount'] : '0.00',
+                'tendered' => isset($payment['tendered']) ? (string) $payment['tendered'] : null,
+                'evidence_reference' => $payment['evidence_reference'] ?? null,
+                'evidence_attachment_id' => $attachmentId,
+            ];
+        }
+        if ($tenders === []) {
+            return back()->withErrors(['payments' => __('Select at least one payment method.')]);
+        }
+
+        try {
+            $sale = $action->finalizeSuspended($user, $sale, $tenders);
+        } catch (InvalidArgumentException|RuntimeException $exception) {
+            return back()->withInput()->withErrors(['payments' => $exception->getMessage()]);
+        }
+
+        $request->session()->forget($resumeTokenKey);
 
         return redirect()->route('sales.show', $sale)->with('success', __('Suspended sale resumed and completed.'));
-    })->middleware('can:pos_sales.create')->name('pos.suspended.resume');
+    })->middleware('can:pos_sales.create')->name('pos.suspended.finalize');
 
     Route::get('sales', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
-        $sales = Sale::query()->visibleTo($user)->with(['store', 'cashier'])->approved()->latest('approved_at')->paginate(20);
+        $query = Sale::query()->visibleTo($user)->with(['store', 'cashier'])->withCount(['lines', 'payments']);
+        $query->when($request->filled('q'), function ($query) use ($request): void {
+            $term = trim((string) $request->string('q'));
+            $query->where(function ($scope) use ($term): void {
+                $scope->where('document_number', 'like', "%{$term}%")
+                    ->orWhere('idempotency_key', 'like', "%{$term}%");
+            });
+        });
+        $query->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')));
+        $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
+        $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->string('date_from')));
+        $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->string('date_to')));
+        $sales = $query->latest('id')->paginate(20)->withQueryString();
+        $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
 
-        return view('pages.sales.index', compact('sales'));
+        return view('pages.sales.index', compact('sales', 'stores'));
     })->middleware('can:pos_sales.view')->name('sales.index');
+
+    Route::get('sales/invoices', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.view'), 403);
+        $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier'])->withCount('payments');
+        $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));
+        $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
+        $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('approved_at', '>=', $request->string('date_from')));
+        $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('approved_at', '<=', $request->string('date_to')));
+        $sales = $query->latest('approved_at')->paginate(20)->withQueryString();
+        $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
+
+        return view('pages.sales.invoices', compact('sales', 'stores'));
+    })->middleware('can:pos_sales.view')->name('sales.invoices');
+
+    Route::get('payments', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.payment_view'), 403);
+        $query = SalePayment::query()
+            ->whereHas('sale', fn ($saleQuery) => $saleQuery->visibleTo($user)->approved())
+            ->with(['sale.store', 'sale.cashier', 'paymentMethod', 'creator', 'evidenceAttachment']);
+        $query->when($request->filled('q'), fn ($query) => $query->whereHas('sale', fn ($saleQuery) => $saleQuery->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%')));
+        $query->when($request->filled('method_id'), fn ($query) => $query->where('payment_method_id', $request->integer('method_id')));
+        $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->string('date_from')));
+        $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->string('date_to')));
+        $payments = $query->latest('id')->paginate(20)->withQueryString();
+        $methods = PaymentMethod::query()->orderBy('code')->get();
+
+        return view('pages.payments.index', compact('payments', 'methods'));
+    })->middleware('can:pos_sales.payment_view')->name('payments.index');
+
+    Route::get('payment-evidence', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.payment_evidence_view'), 403);
+        $query = SalePayment::query()
+            ->whereNotNull('evidence_attachment_id')
+            ->whereHas('sale', fn ($saleQuery) => $saleQuery->visibleTo($user)->approved())
+            ->with(['sale.store', 'paymentMethod', 'creator', 'evidenceAttachment']);
+        $query->when($request->filled('q'), fn ($query) => $query->whereHas('sale', fn ($saleQuery) => $saleQuery->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%')));
+        $query->when($request->filled('method_id'), fn ($query) => $query->where('payment_method_id', $request->integer('method_id')));
+        $evidencePayments = $query->latest('id')->paginate(20)->withQueryString();
+        $methods = PaymentMethod::query()->where('requires_evidence', true)->orderBy('code')->get();
+
+        return view('pages.payments.evidence', compact('evidencePayments', 'methods'));
+    })->middleware('can:pos_sales.payment_evidence_view')->name('payments.evidence');
+
+    Route::get('payment-evidence/{attachment}', function (Request $request, Attachment $attachment) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.payment_evidence_view'), 403);
+
+        return app(DeliverAttachment::class)->execute(
+            $attachment,
+            static function (User $viewer, Attachment $candidate): bool {
+                if (! $viewer->can('pos_sales.payment_evidence_view')
+                    || $candidate->purpose !== 'payment_evidence'
+                    || $candidate->source_type !== SalePayment::class) {
+                    return false;
+                }
+
+                return SalePayment::query()
+                    ->whereKey((int) $candidate->source_id)
+                    ->where('evidence_attachment_id', $candidate->id)
+                    ->whereHas('sale', fn ($saleQuery) => $saleQuery->visibleTo($viewer)->approved())
+                    ->exists();
+            },
+        );
+    })->middleware('can:pos_sales.payment_evidence_view')->name('payments.evidence.show');
 
     Route::get('sales/{sale}', function (Request $request, Sale $sale) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
-        $sale->load(['store', 'cashier', 'lines.product', 'shift.cashDrawer']);
+        $sale->load(['store', 'cashier', 'lines.product', 'shift.cashDrawer', 'payments.paymentMethod', 'payments.evidenceAttachment']);
 
         return view('pages.sales.show', compact('sale'));
     })->middleware('can:pos_sales.view')->name('sales.show');
@@ -594,8 +1242,29 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('pos_sales.print'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
-        $sale->load(['store', 'cashier', 'lines']);
+        abort_unless($sale->status === 'approved', 422);
+        $sale->load(['store.company', 'cashier', 'lines', 'payments.paymentMethod']);
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail', event: 'sale_a4_printed', source: $sale,
+            branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,
+            metadata: ['format' => 'a4', 'reprint' => true],
+        );
 
         return view('pages.sales.print', compact('sale'));
     })->middleware('can:pos_sales.print')->name('sales.print');
+
+    Route::get('sales/{sale}/receipt/thermal', function (Request $request, Sale $sale) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.print'), 403);
+        abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->where('status', 'approved')->exists(), 404);
+        $sale->load(['store.company', 'cashier', 'lines', 'payments.paymentMethod']);
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail', event: 'sale_thermal_receipt_printed', source: $sale,
+            branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,
+            metadata: ['format' => 'thermal', 'reprint' => true],
+        );
+
+        return view('pages.sales.thermal', compact('sale'));
+    })->middleware('can:pos_sales.print')->name('sales.receipt.thermal');
 });

@@ -274,6 +274,7 @@ new #[Title('Supplier Returns')] class extends Component
     class="space-y-6"
 >
     <x-slot:actions>
+        <x-tables.resource-toolbar filter-target="supplier-returns-filters">
         <flux:button href="{{ route('purchasing.invoices') }}" variant="subtle" icon="arrow-left">{{ __('Purchase invoices') }}</flux:button>
         @can('company_settings.view')
             <flux:button href="{{ route('purchasing.returns.settings') }}" variant="subtle" icon="adjustments-horizontal">{{ __('Return settings') }}</flux:button>
@@ -281,6 +282,7 @@ new #[Title('Supplier Returns')] class extends Component
         @can('purchase_returns.create')
             <flux:button wire:click="openCreateModal" variant="primary" icon="plus" :disabled="!$hasReasonCatalog">{{ __('New supplier return') }}</flux:button>
         @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <flux:callout variant="info" icon="information-circle">
@@ -294,7 +296,7 @@ new #[Title('Supplier Returns')] class extends Component
         </flux:callout>
     @endif
 
-    <flux:card>
+    <flux:card id="supplier-returns-filters" class="scroll-mt-24">
         <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-64 flex-1">
                 <flux:label>{{ __('Search') }}</flux:label>

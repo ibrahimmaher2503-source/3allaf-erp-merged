@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductImportBatch;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\Attachment;
 use Illuminate\Support\Facades\Gate;
@@ -17,9 +18,20 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:products_categories_brands.create')
         ->name('catalog.products.import');
 
-    $router->get('catalog/products/import/{batch}/errors', function (\App\Modules\Catalog\Models\ProductImportBatch $batch, DownloadProductImportErrorsAction $action) {
+    $router->get('catalog/products/import/{batch}/errors', function (ProductImportBatch $batch, DownloadProductImportErrorsAction $action) {
         return $action->execute($batch);
     })->whereNumber('batch')->middleware('can:products_categories_brands.export')->name('catalog.products.import.errors');
+
+    $router->get('catalog/products/import/{batch}/source/{attachment}', function (ProductImportBatch $batch, Attachment $attachment) {
+        abort_unless($attachment->purpose === 'import_source' && $attachment->source_type === ProductImportBatch::class && $attachment->source_id === (string) $batch->id, 404);
+
+        return app(DeliverAttachment::class)->execute(
+            $attachment,
+            fn ($user, Attachment $candidate): bool => Gate::forUser($user)->allows('products_categories_brands.view')
+                && $candidate->source_type === ProductImportBatch::class
+                && $candidate->source_id === (string) $batch->id,
+        );
+    })->whereNumber('batch')->middleware('can:products_categories_brands.view')->name('catalog.products.import.source');
 
     $router->livewire('catalog/products/create', 'catalog::product-form')
         ->middleware('can:products_categories_brands.view')

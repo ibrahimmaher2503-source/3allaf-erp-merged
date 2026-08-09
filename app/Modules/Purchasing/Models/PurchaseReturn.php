@@ -6,13 +6,17 @@ namespace App\Modules\Purchasing\Models;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class PurchaseReturn extends Model
+final class PurchaseReturn extends Model implements ImmutableSourceContract
 {
+    use GuardsApprovedDocument;
+
     protected $fillable = [
         'return_number', 'supplier_id', 'purchase_invoice_id', 'store_id', 'reason_id', 'return_date',
         'status', 'subtotal', 'total_amount', 'idempotency_key', 'lock_version', 'notes',

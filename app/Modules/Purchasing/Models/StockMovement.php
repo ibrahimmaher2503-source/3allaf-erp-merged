@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 final class StockMovement extends Model
 {
@@ -24,6 +25,12 @@ final class StockMovement extends Model
         'consumed_cost' => 'decimal:4',
         'posted_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        self::updating(fn (): never => throw new LogicException('Posted stock movements are immutable; post a referenced reversal movement.'));
+        self::deleting(fn (): never => throw new LogicException('Posted stock movements are append-only and cannot be deleted.'));
+    }
 
     /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo

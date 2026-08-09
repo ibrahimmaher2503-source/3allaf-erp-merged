@@ -2,6 +2,35 @@
 
 Statuses: `Approved`, `Proposed`, `Assumed`, `Deferred`, `Rejected`, or `Requires Owner Decision`.
 
+## DEC-066 — Adopt `docs/48` POS Financial Calculation Policy for Local/Dev
+
+**Date:** 2026-08-09
+**Status:** Approved for Local/Dev implementation; Production values, UAT, and release gates deferred.
+**Supersedes:** the POSF-01..04 `PENDING` markers in `docs/48-pos-financial-calculation-policy.md`.
+
+The owner adopted `docs/48` as the Local/Dev policy baseline, mirroring the way DEC-050 adopted `docs/41–45`. This unblocks TSK-024 and transitively TSK-025, TSK-030, TSK-032, and TSK-036.
+
+| Item | Resolution |
+|---|---|
+| POSF-01 rounding level | Rounding is applied at **line net (§3 step 3)** and **invoice total (§3 step 7)** only. Intermediate values are never re-rounded. |
+| POSF-02 cash rounding denomination | **Not decided — becomes an unset configurable value** per DEC-065. The engine must refuse to complete a cash tender while it is unset. No default, no silent fallback. |
+| POSF-03 split payment ordering | Electronic amounts are entered explicitly; **cash settles the residual**. Cash overpayment produces change; electronic overpayment is rejected; underpayment blocks approval. |
+| POSF-04 discount replacement | A second discount on the same amount **replaces** the first as an explicit user choice, recorded with actor and reason to audit. Discounts are **never summed** (POS-05 non-stacking preserved). |
+
+This authorizes the **arithmetic and structure** only. BLK-008 production values (real tax rates, approved templates, printers, paper sizes) remain Open. `docs/48` §4 enforcement-in-service, §5 tax snapshotted on the invoice at approval, §6 payment rows summing to payable inside the approval transaction, §7 gift-receipt price suppression, and §8 server-side post-submission expected values apply as written.
+
+---
+
+## DEC-067 — Loyalty and wallet ledgers may consume customer-policy settings
+
+**Date:** 2026-08-09
+**Status:** Approved for Local/Dev; Production financial values and owner approval deferred.
+**Amends:** DEC-064, which previously forbade any calculation, ledger, or transaction from consuming `customer_policy_setting_versions`.
+
+Loyalty and wallet services may read values through `CustomerPolicySettingRegistry`. When a required key is unset, the service must **throw a domain exception** — it may not substitute a default rate, a zero, or any inferred value. No local demo financial rates are seeded. The safety invariants of DEC-065 remain fixed and non-disableable: Product/Party wallet separation, server-side authorization, append-only history, audit, idempotency, and no cross-wallet transfer.
+
+---
+
 ## DEC-065 — Undocumented operational values belong in Initial Setup
 
 **Date:** 2026-08-07
@@ -174,3 +203,10 @@ The owner explicitly authorized implementation of bounded Local/Dev slices for T
 The owner explicitly authorized inspection of all Phase 1 milestones, tasks, requirements, permissions, routes, database structures, UI, and existing tests; creation of missing automated tests where implemented behavior exists; execution of the available automated suites and diagnostics; and generation of milestone and final reports under `testing/results/`. This current instruction supersedes the prior automated-test deferral only for this named local QA audit.
 
 Missing tools, unavailable environments, unimplemented business behavior, physical devices, production infrastructure, UAT, disaster recovery, and human review must be reported as `BLOCKED_BY_ENVIRONMENT` or blocked by implementation/owner evidence. No agent may mark a human checklist complete, weaken a requirement, infer Production readiness, execute against Production, or treat readiness-only screens as implemented business workflows.
+
+## DEC-068 — Owner-directed MySQL/phpMyAdmin-only database operation
+
+**Date:** 2026-08-09
+**Status:** Active owner directive for this repository's local/development/test operations.
+
+The owner directed that the project use only the XAMPP MySQL/MariaDB server through phpMyAdmin. SQLite files, SQLite runtime configuration, SQLite migrations/seeders/tests, and SQLite backup fixtures are prohibited. The active local schema is `toyjoy_local`; disposable workflows must use separately named MySQL/MariaDB schemas. Historical `.ai/` evidence may retain factual references to the former SQLite baseline and is not an active configuration source.

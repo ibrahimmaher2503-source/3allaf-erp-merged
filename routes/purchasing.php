@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockMovement;
@@ -28,6 +31,16 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/invoices/import', 'purchasing::invoice-import')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices.import');
+    $router->get('purchasing/invoices/import/{batch}/source/{attachment}', function (PurchaseInvoiceImportBatch $batch, Attachment $attachment) {
+        abort_unless($attachment->purpose === 'import_source' && $attachment->source_type === PurchaseInvoiceImportBatch::class && $attachment->source_id === (string) $batch->id, 404);
+
+        return app(DeliverAttachment::class)->execute(
+            $attachment,
+            fn ($user, Attachment $candidate): bool => Gate::forUser($user)->allows('purchase_invoices_supplier_returns.view')
+                && $candidate->source_type === PurchaseInvoiceImportBatch::class
+                && $candidate->source_id === (string) $batch->id,
+        );
+    })->whereNumber('batch')->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.invoices.import.source');
 
     $router->livewire('purchasing/returns', 'purchasing::returns')
         ->middleware('can:purchase_returns.view')

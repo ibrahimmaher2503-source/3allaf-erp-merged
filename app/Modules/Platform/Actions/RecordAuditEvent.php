@@ -29,10 +29,11 @@ class RecordAuditEvent
         ?string $reasonText = null,
         array $metadata = [],
         ?string $requestId = null,
+        ?string $explicitSourceId = null,
     ): AuditLog {
         $actor = Auth::user();
         $sourceType = $source instanceof Model ? $source::class : $source;
-        $sourceId = $source instanceof Model ? (string) $source->getKey() : null;
+        $sourceId = $source instanceof Model ? (string) $source->getKey() : $explicitSourceId;
         $redactor = app(AuditLogValueRedactor::class);
 
         return AuditLog::create([
@@ -59,18 +60,35 @@ class RecordAuditEvent
     /** @param array<string, mixed>|null $before @param array<string, mixed>|null $after @return array<int, string> */
     private function changedFields(?array $before, ?array $after): array
     {
-        return array_values(array_unique(array_merge(array_keys($before ?? []), array_keys($after ?? []))));
+        $fields = array_unique(array_merge(array_keys($before ?? []), array_keys($after ?? [])));
+
+        return array_values(array_filter($fields, static fn (string|int $field): bool => ($before[$field] ?? null) !== ($after[$field] ?? null)));
     }
 
     /** @param array<string, mixed> $metadata @return array<string, mixed> */
     private function metadata(array $metadata): array
     {
+        $actor = Auth::user();
+        $context = [
+            'route' => app()->bound('request') ? request()->route()?->getName() : null,
+            'actor_role_codes' => $actor?->roles()->where('status', 'active')->orderBy('code')->pluck('code')->all() ?? [],
+        ];
+
+        if (! app()->bound('request')) {
+            return [...$metadata, ...$context];
+        }
+
+        $deviceId = trim((string) request()->header('X-Device-ID'));
+        $context['device_hash'] = $deviceId === '' ? null : hash('sha256', $deviceId);
+        $context['ip_hash'] = request()->ip() === null ? null : hash('sha256', (string) request()->ip());
+
         if (! request()->hasSession()) {
-            return $metadata;
+            return [...$metadata, ...$context];
         }
 
         return [
             ...$metadata,
+            ...$context,
             'session_hash' => hash('sha256', request()->session()->getId()),
             'user_agent' => Str::limit((string) request()->userAgent(), 255, ''),
         ];

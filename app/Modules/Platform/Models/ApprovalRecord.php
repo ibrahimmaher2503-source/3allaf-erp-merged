@@ -7,6 +7,7 @@ use App\Modules\Platform\Enums\ApprovalState;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use LogicException;
 
 class ApprovalRecord extends Model
@@ -15,10 +16,13 @@ class ApprovalRecord extends Model
 
     protected $fillable = [
         'source_type',
+        'uuid',
         'source_id',
         'source_version',
         'source_hash',
         'requested_action',
+        'request_permission',
+        'decision_permission',
         'approval_state',
         'requester_id',
         'approver_id',
@@ -50,6 +54,10 @@ class ApprovalRecord extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $record): void {
+            $record->uuid ??= (string) Str::uuid();
+        });
+
         static::updating(function (self $record): void {
             if (! $record->transitioning) {
                 throw new LogicException('Approval records may only change through a named transition action.');
@@ -105,5 +113,10 @@ class ApprovalRecord extends Model
                         ->orWhereIn('store_id', $storeIds);
                 });
         });
+    }
+
+    public function decisionPermission(): string
+    {
+        return $this->decision_permission ?: $this->source_type.'.approve';
     }
 }

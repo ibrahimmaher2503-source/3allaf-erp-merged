@@ -153,9 +153,11 @@ new #[Title('Category Masters')] class extends Component
     data-guide="categories-header"
 >
     <x-slot:actions>
-        @can('products_categories_brands.create')
-            <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
-        @endcan
+        <x-tables.resource-toolbar filter-target="categories-filters">
+            @can('products_categories_brands.create')
+                <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <flux:callout class="catalog-scope-note" variant="info" icon="squares-2x2" title="{{ __('Hierarchy rules') }}">
@@ -168,7 +170,7 @@ new #[Title('Category Masters')] class extends Component
         </flux:callout>
     @endif
 
-    <div class="catalog-filter-card rounded-xl p-4 sm:p-5" data-guide="categories-filters">
+    <div id="categories-filters" class="catalog-filter-card scroll-mt-24 rounded-xl p-4 sm:p-5" data-guide="categories-filters">
         <div class="catalog-filter-heading mb-4">
             <div>
                 <flux:heading size="sm">{{ __('Search categories') }}</flux:heading>

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Actions\LinkAttachmentToSource;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportRow;
@@ -29,10 +33,13 @@ final class StagePurchaseInvoiceImportAction
         'tax_rate', 'tax_code', 'notes',
     ];
 
-    public function stage(string $storagePath, string $originalFilename, string $mimeType, int $sizeBytes, int $userId): PurchaseInvoiceImportBatch
+    public function stage(string|Attachment $sourceFile, string $originalFilename, string $mimeType, int $sizeBytes, int $userId): PurchaseInvoiceImportBatch
     {
         Gate::authorize('purchase_invoices_supplier_returns.create');
-        $absolutePath = Storage::disk('local')->path($storagePath);
+        $attachment = $sourceFile instanceof Attachment ? $sourceFile : null;
+        $storageDisk = $attachment?->storage_disk ?? 'local';
+        $storagePath = $attachment?->storage_path ?? $sourceFile;
+        $absolutePath = Storage::disk($storageDisk)->path($storagePath);
         if (! is_file($absolutePath)) {
             throw new InvalidArgumentException(__('The staged import file could not be found.'));
         }
@@ -131,10 +138,24 @@ final class StagePurchaseInvoiceImportAction
                 after: $batch->only(['id', 'original_filename', 'total_rows', 'valid_rows', 'invalid_rows']),
             );
 
+            if ($attachment !== null) {
+                app(LinkAttachmentToSource::class)->execute(
+                    $attachment,
+                    new AttachmentSourceReference(PurchaseInvoiceImportBatch::class, (string) $batch->id),
+                    fn (User $user, Attachment $candidate, AttachmentSourceReference $reference): bool => $user->id === $userId
+                        && $candidate->uploaded_by === $userId
+                        && $candidate->purpose === 'import_source'
+                        && $reference->sourceType === PurchaseInvoiceImportBatch::class
+                        && $reference->sourceId === (string) $batch->id,
+                );
+            }
+
             return $batch->fresh();
         } catch (Throwable $exception) {
             $batch->delete();
-            Storage::disk('local')->delete($storagePath);
+            if ($attachment === null) {
+                Storage::disk($storageDisk)->delete($storagePath);
+            }
             throw $exception;
         } finally {
             $reader->close();

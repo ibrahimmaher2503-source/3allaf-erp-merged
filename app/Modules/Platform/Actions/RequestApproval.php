@@ -7,6 +7,7 @@ use App\Modules\Platform\Data\ApprovalRequestData;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
@@ -24,68 +25,103 @@ class RequestApproval
         $this->validateSourceReference($data);
         $this->authorizeScope($requester, $data);
 
-        return DB::transaction(function () use ($data, $requester): ApprovalRecord {
-            if ($data->idempotencyKey !== null) {
-                $existing = ApprovalRecord::query()
-                    ->where('idempotency_key', $data->idempotencyKey)
-                    ->lockForUpdate()
-                    ->first();
+        try {
+            return DB::transaction(function () use ($data, $requester): ApprovalRecord {
+                if ($data->idempotencyKey !== null) {
+                    $existing = ApprovalRecord::query()
+                        ->where('idempotency_key', $data->idempotencyKey)
+                        ->lockForUpdate()
+                        ->first();
 
-                if ($existing !== null) {
-                    if ($this->isSameRequest($existing, $data, $requester)) {
-                        return $existing;
+                    if ($existing !== null) {
+                        if ($this->isSameRequest($existing, $data, $requester)) {
+                            return $existing;
+                        }
+
+                        throw ValidationException::withMessages(['idempotency_key' => __('This idempotency key belongs to another approval request.')]);
                     }
-
-                    throw ValidationException::withMessages(['idempotency_key' => __('This idempotency key belongs to another approval request.')]);
                 }
-            }
 
-            if (ApprovalRecord::query()->where('pending_key', $data->pendingKey())->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['source' => __('A pending approval already exists for this action.')]);
-            }
+                if (ApprovalRecord::query()->where('pending_key', $data->pendingKey())->lockForUpdate()->exists()) {
+                    throw ValidationException::withMessages(['source' => __('A pending approval already exists for this action.')]);
+                }
 
-            $record = ApprovalRecord::create([
-                'source_type' => $data->sourceType,
-                'source_id' => $data->sourceId,
-                'source_version' => $data->sourceVersion,
-                'source_hash' => $data->sourceHash,
-                'requested_action' => $data->requestedAction,
-                'approval_state' => ApprovalState::Pending,
-                'requester_id' => $requester->id,
-                'branch_id' => $data->branchId,
-                'store_id' => $data->storeId,
-                'reason_code' => $data->reasonCode,
-                'reason_text' => $data->reasonText,
-                'limit_context' => $data->limitContext,
-                'request_id' => Context::get('request_id') ?? (string) Str::uuid(),
-                'idempotency_key' => $data->idempotencyKey,
-                'pending_key' => $data->pendingKey(),
-                'requested_at' => now(),
-                'expires_at' => $data->expiresAt,
-            ]);
-
-            app(RecordAuditEvent::class)->execute(
-                category: 'workflow',
-                event: 'approval_requested',
-                source: $record,
-                after: $this->auditValues($record),
-                branchId: $record->branch_id,
-                storeId: $record->store_id,
-                reasonCode: $record->reason_code,
-                reasonText: $record->reason_text,
-                metadata: [
-                    'approval_record_id' => $record->id,
-                    'source_type' => $record->source_type,
-                    'source_id' => $record->source_id,
-                    'requested_action' => $record->requested_action,
+                $record = ApprovalRecord::create([
+                    'uuid' => (string) Str::uuid(),
+                    'source_type' => $data->sourceType,
+                    'source_id' => $data->sourceId,
+                    'source_version' => $data->sourceVersion,
+                    'source_hash' => $data->sourceHash,
+                    'requested_action' => $data->requestedAction,
                     'request_permission' => $data->requestPermission,
                     'decision_permission' => $data->approvalPermission(),
-                ],
-                requestId: $record->request_id,
-            );
+                    'approval_state' => ApprovalState::Pending,
+                    'requester_id' => $requester->id,
+                    'branch_id' => $data->branchId,
+                    'store_id' => $data->storeId,
+                    'reason_code' => $data->reasonCode,
+                    'reason_text' => $data->reasonText,
+                    'limit_context' => $data->limitContext,
+                    'request_id' => Context::get('request_id') ?? (string) Str::uuid(),
+                    'idempotency_key' => $data->idempotencyKey,
+                    'pending_key' => $data->pendingKey(),
+                    'requested_at' => now(),
+                    'expires_at' => $data->expiresAt,
+                ]);
 
-            return $record;
-        });
+                app(RecordAuditEvent::class)->execute(
+                    category: 'workflow',
+                    event: 'approval_requested',
+                    source: $record,
+                    after: $this->auditValues($record),
+                    branchId: $record->branch_id,
+                    storeId: $record->store_id,
+                    reasonCode: $record->reason_code,
+                    reasonText: $record->reason_text,
+                    metadata: [
+                        'approval_record_id' => $record->id,
+                        'source_type' => $record->source_type,
+                        'source_id' => $record->source_id,
+                        'requested_action' => $record->requested_action,
+                        'request_permission' => $data->requestPermission,
+                        'decision_permission' => $data->approvalPermission(),
+                    ],
+                    requestId: $record->request_id,
+                );
+
+                return $record;
+            }, 5);
+        } catch (QueryException $exception) {
+            // A concurrent request may pass the pre-insert checks before either
+            // transaction owns the unique idempotency or pending key. Resolve
+            // the winning row into a deterministic replay/conflict response.
+            $existing = ApprovalRecord::query()
+                ->where(function ($query) use ($data): void {
+                    if ($data->idempotencyKey !== null) {
+                        $query->where('idempotency_key', $data->idempotencyKey)
+                            ->orWhere('pending_key', $data->pendingKey());
+
+                        return;
+                    }
+
+                    $query->where('pending_key', $data->pendingKey());
+                })
+                ->first();
+
+            if ($existing === null) {
+                throw $exception;
+            }
+
+            if ($data->idempotencyKey !== null
+                && $existing->idempotency_key === $data->idempotencyKey
+                && $this->isSameRequest($existing, $data, $requester)) {
+                return $existing;
+            }
+
+            throw ValidationException::withMessages([
+                'source' => __('A pending approval already exists for this action.'),
+            ]);
+        }
     }
 
     private function validateSourceReference(ApprovalRequestData $data): void
@@ -143,6 +179,8 @@ class RequestApproval
             'source_version' => $record->source_version,
             'source_hash' => $record->source_hash,
             'requested_action' => $record->requested_action,
+            'request_permission' => $record->request_permission,
+            'decision_permission' => $record->decision_permission,
             'approval_state' => $record->approval_state->value,
             'requester_id' => $record->requester_id,
             'branch_id' => $record->branch_id,

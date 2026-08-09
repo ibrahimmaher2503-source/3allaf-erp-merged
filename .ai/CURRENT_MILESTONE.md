@@ -75,12 +75,12 @@ MD-01, NFR-01, NFR-02, NFR-03, NFR-04, NFR-05, NFR-06, and NFR-07.
 - PHP 8.4.21 and Laravel 13.23.0
 - Livewire 4.3.4 and Flux UI 2.15.0
 - Tailwind CSS 4 and Vite 8
-- SQLite local development database with five starter migrations applied
+- XAMPP MySQL/MariaDB local development database managed through phpMyAdmin, with all current migrations applied
 - Laravel Fortify authentication, passkey, two-factor, account, and appearance foundations
 - Locale-aware `lang` and `dir` attributes for Arabic RTL and English LTR
 - Production frontend assets built successfully
 
-SQLite is a local implementation choice only. It does not approve the production database.
+The local database direction is XAMPP MySQL/MariaDB through phpMyAdmin. The production database and hosting choices remain owner decisions.
 
 ## Required Owner Inputs
 
@@ -106,7 +106,7 @@ SQLite is a local implementation choice only. It does not approve the production
 - Composer manifest validation
 - Laravel package discovery
 - Application key generation
-- SQLite migration execution and status review
+- MySQL/MariaDB migration execution and status review
 - Blade template compilation after the closure fixes
 - Route discovery
 - Vite production build

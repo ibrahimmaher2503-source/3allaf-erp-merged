@@ -80,7 +80,7 @@ new #[Title('System Health')] class extends Component {
                 @endif
             </div>
 
-            <flux:heading size="lg">{{ strtoupper($status['components']['database']['driver'] ?? 'SQLite') }}</flux:heading>
+            <flux:heading size="lg">{{ strtoupper($status['components']['database']['driver'] ?? 'MySQL') }}</flux:heading>
             <flux:text class="text-xs">{{ $status['components']['database']['message'] ?? '' }}</flux:text>
         </flux:card>
 

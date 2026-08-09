@@ -12,6 +12,7 @@ use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
@@ -103,6 +104,8 @@ final class InventoryLifecycleChainTest extends TestCase
             'quantity_requested' => '10', 'unit_cost' => '8',
         ]);
 
+        app(RequestStockTransferApprovalAction::class)->execute($transfer->id);
+        $this->actingAs($secondManager);
         self::assertSame('approved', app(ApproveStockTransferAction::class)->execute($transfer->id)->status);
         self::assertSame('in_transit', app(DispatchStockTransferAction::class)->execute($transfer->id)->status);
         self::assertSame('10.000000', (string) StockBalance::query()->where('product_id', $product->id)->where('store_id', $source->id)->value('on_hand'), '20 opening - 10 dispatched.');
@@ -118,6 +121,7 @@ final class InventoryLifecycleChainTest extends TestCase
 
         // --- ADJUSTMENT at the destination: correct a known damage, with
         // separation of duties (creator cannot self-approve) -----------------
+        $this->actingAs($manager);
         $adjustment = InventoryAdjustment::query()->create([
             'adjustment_number' => 'INV-CHAIN-ADJ-1', 'store_id' => $destination->id,
             'adjustment_type' => 'exit', 'status' => 'draft', 'reason_code' => 'damage',

@@ -354,6 +354,7 @@ new #[Title('Purchase Orders')] class extends Component
     data-guide="po-header"
 >
     <x-slot:actions>
+        <x-tables.resource-toolbar filter-target="po-filters">
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="clipboard-document-list" data-guide="tsk-015-readiness-link">
             {{ app()->getLocale() === 'ar' ? 'جاهزية الفواتير' : 'Invoice readiness' }}
         </flux:button>
@@ -364,10 +365,11 @@ new #[Title('Purchase Orders')] class extends Component
                 </flux:button>
             </div>
         @endif
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <!-- Filters Bar -->
-    <flux:card class="space-y-4 p-5 sm:p-6" data-guide="po-filters">
+    <flux:card id="po-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="po-filters">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by PO #, supplier or notes...')" />
 

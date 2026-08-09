@@ -32,7 +32,12 @@ final class InventoryPosContractTest extends TestCase
             'pos' => ['GET', 'auth', 'verified', 'can:pos_sales.view'],
             'pos.checkout' => ['POST', 'auth', 'verified', 'can:pos_sales.create'],
             'pos.suspend' => ['POST', 'auth', 'verified', 'can:pos_sales.create'],
-            'pos.shift-readiness' => ['GET', 'auth', 'verified', 'can:pos_sales.view'],
+            'pos.shift' => ['GET', 'auth', 'verified', 'can:shifts_cash_movements.view'],
+            'pos.shift.open' => ['POST', 'auth', 'verified', 'can:shifts_cash_movements.create'],
+            'pos.shift.cash-movement' => ['POST', 'auth', 'verified', 'can:shifts_cash_movements.create'],
+            'pos.shift.blind-close' => ['POST', 'auth', 'verified', 'can:shifts_cash_movements.submit'],
+            'pos.shift-variance' => ['GET', 'auth', 'verified', 'can:shifts_cash_movements.approve'],
+            'admin.approvals' => ['GET', 'auth', 'verified'],
             'pos.offline-readiness' => ['GET', 'auth', 'verified', 'can:pos_sales.view'],
         ];
 

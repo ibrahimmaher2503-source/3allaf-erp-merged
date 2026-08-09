@@ -3,9 +3,8 @@
 namespace App\Modules\Pricing\Actions;
 
 use App\Models\User;
-use App\Modules\Platform\Actions\ApprovalRecordTransition;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Actions\RejectRequest;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceVersion;
@@ -32,14 +31,11 @@ final class RejectPriceProposalAction
             }
             /** @var ApprovalRecord $approvalRecord */
             $approvalRecord = $version->approvalRecord;
-            app(ApprovalRecordTransition::class)->execute(
-                record: $approvalRecord,
-                state: ApprovalState::Rejected,
-                event: 'price_approval_rejected',
-                attributes: ['approver_id' => $approver->id, 'decided_at' => now(), 'decision_note' => $reason],
-                expectedSourceVersion: (string) $version->lock_version,
-                expectedSourceHash: $version->source_hash,
-                authorize: fn ($record): mixed => Gate::forUser($approver)->authorize('pricing_labels.approve'),
+            app(RejectRequest::class)->execute(
+                $approvalRecord,
+                (string) $version->lock_version,
+                $reason,
+                $version->source_hash,
             );
             $version->update(['state' => PriceVersionState::Rejected, 'lock_version' => $version->lock_version + 1]);
             $line = $version->lines->first();

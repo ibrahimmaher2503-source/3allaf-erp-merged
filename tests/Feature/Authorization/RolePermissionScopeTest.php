@@ -159,6 +159,9 @@ class RolePermissionScopeTest extends TestCase
             'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns',
             'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts',
             'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments',
+            // TSK-025 (DEC-066): shift lifecycle, cash movements, blind close,
+            // and variance review are real gated routes and actions.
+            'shifts_cash_movements',
         ];
 
         $granted = Permission::query()->whereHas('roles')->pluck('code')->all();

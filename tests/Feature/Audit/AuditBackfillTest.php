@@ -106,7 +106,7 @@ class AuditBackfillTest extends TestCase
         // The legacy row's real primary key, not an assumed `1`: MySQL/InnoDB's
         // auto_increment counter is not transactional, so it does not reset
         // when RefreshDatabase rolls back earlier tests in this file — only
-        // SQLite happens to make `id === 1` a safe assumption here.
+        // Never assume the first auto-increment id; the actual row id is read above.
         $legacyId = DB::table('settings_audit_logs')->value('id');
         app(BackfillLegacySettingsAuditLogs::class)->execute();
 

@@ -9,7 +9,7 @@
                 <thead class="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800" data-guide="suspended-table-heading"><tr><th class="p-4 text-start">{{ __('Resume code') }}</th><th class="p-4 text-start">{{ __('Items') }}</th><th class="p-4 text-start">{{ __('Created') }}</th><th class="p-4 text-end">{{ __('Action') }}</th></tr></thead>
                 <tbody>
                     @forelse ($sales as $sale)
-                        <tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800"><td class="p-4 font-mono font-semibold">{{ $sale->suspendedSale?->resume_code }}</td><td class="p-4">{{ $sale->lines->count() }}</td><td class="p-4">{{ $sale->suspended_at?->format('Y-m-d H:i') }}</td><td class="p-4 text-end"><form method="POST" action="{{ route('pos.suspended.resume', $sale) }}">@csrf<flux:button type="submit" size="sm" variant="primary" data-guide="suspended-action">{{ __('Resume and checkout') }}</flux:button></form></td></tr>
+                        <tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800"><td class="p-4 font-mono font-semibold">{{ $sale->suspendedSale?->resume_code }}</td><td class="p-4">{{ $sale->lines->count() }}</td><td class="p-4">{{ $sale->suspended_at?->format('Y-m-d H:i') }}</td><td class="p-4 text-end"><flux:button href="{{ route('pos.suspended.resume', $sale) }}" size="sm" variant="primary" data-guide="suspended-action">{{ __('Resume and checkout') }}</flux:button></td></tr>
                     @empty
                         <tr><td colspan="4" class="p-10 text-center text-zinc-500">{{ __('No suspended sales.') }}</td></tr>
                     @endforelse

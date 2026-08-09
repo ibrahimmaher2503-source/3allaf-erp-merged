@@ -168,9 +168,11 @@ new #[Title('Cash Drawer Masters')] class extends Component
     data-guide="drawers-header"
 >
     <x-slot:actions>
-        @can('drawers_payments_tax_numbering_printers.create')
-            <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
-        @endcan
+        <x-tables.resource-toolbar filter-target="drawers-filters">
+            @can('drawers_payments_tax_numbering_printers.create')
+                <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <!-- BLK-006 & Local Development Notice Banner -->
@@ -189,7 +191,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     </div>
 
     <!-- Filters & Search -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between" data-guide="drawers-filters">
+    <div id="drawers-filters" class="scroll-mt-24 flex flex-col gap-4 md:flex-row md:items-center md:justify-between" data-guide="drawers-filters">
         <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
             <div class="w-full sm:w-72">
                 <flux:input

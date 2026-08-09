@@ -8,7 +8,6 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\PriceVersion;
-use App\Modules\Pricing\Services\OpenPricePolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +29,8 @@ final class CreatePriceProposalAction
         ?string $reasonText,
         ?string $referenceAmount = null,
         bool $openPriceAllowed = false,
+        ?string $openPriceMinimum = null,
+        ?string $openPriceMaximum = null,
     ): PriceVersion {
         /** @var User $user */
         $user = Auth::user() ?? throw new \LogicException('An authenticated pricing user is required.');
@@ -52,27 +53,28 @@ final class CreatePriceProposalAction
             throw ValidationException::withMessages(['amount' => __('The proposed price must be greater than zero.')]);
         }
         if ($openPriceAllowed) {
-            app(OpenPricePolicy::class)->validateOrThrow(
-                referenceAmount: (float) ($referenceAmount ?? 0),
-                requestedAmount: (float) $amount,
-                minimum: null,
-                maximum: null,
-                hasPermission: $user->is_super_admin || $user->hasPermission('pricing_labels.override'),
-                reason: $reasonText,
-            );
+            if ($referenceAmount === null || $openPriceMinimum === null || $openPriceMaximum === null) {
+                throw ValidationException::withMessages(['open_price' => __('Reference, minimum, and maximum amounts are required when open price is enabled.')]);
+            }
+            if (bccomp($openPriceMinimum, '0', 4) < 0
+                || bccomp($openPriceMaximum, $openPriceMinimum, 4) < 0
+                || bccomp($referenceAmount, $openPriceMinimum, 4) < 0
+                || bccomp($referenceAmount, $openPriceMaximum, 4) > 0) {
+                throw ValidationException::withMessages(['open_price' => __('Open-price bounds must contain the reference amount and form a valid range.')]);
+            }
         }
         if ($effectiveFrom !== null && $effectiveTo !== null && $effectiveTo <= $effectiveFrom) {
             throw ValidationException::withMessages(['effective_to' => __('The end of the effective period must be after its start.')]);
         }
 
-        return DB::transaction(function () use ($user, $product, $store, $priceListCode, $priceListNameAr, $priceListNameEn, $amount, $sourceType, $sourceReference, $effectiveFrom, $effectiveTo, $reasonText, $referenceAmount, $openPriceAllowed): PriceVersion {
+        return DB::transaction(function () use ($user, $product, $store, $priceListCode, $priceListNameAr, $priceListNameEn, $amount, $sourceType, $sourceReference, $effectiveFrom, $effectiveTo, $reasonText, $referenceAmount, $openPriceAllowed, $openPriceMinimum, $openPriceMaximum): PriceVersion {
             $list = PriceList::query()->firstOrCreate(
                 ['company_id' => $store->company_id, 'code' => $priceListCode],
                 ['name_ar' => $priceListNameAr, 'name_en' => $priceListNameEn, 'status' => 'active', 'created_by' => $user->id],
             );
             $list = PriceList::query()->lockForUpdate()->findOrFail($list->id);
             $nextVersion = ((int) $list->versions()->lockForUpdate()->max('version')) + 1;
-            $payload = [$product->id, $store->id, $amount, $sourceType, $sourceReference, $effectiveFrom, $effectiveTo, $referenceAmount, $openPriceAllowed];
+            $payload = [$product->id, $store->id, $amount, $sourceType, $sourceReference, $effectiveFrom, $effectiveTo, $referenceAmount, $openPriceAllowed, $openPriceMinimum, $openPriceMaximum];
 
             /** @var PriceVersion $version */
             $version = $list->versions()->create([
@@ -93,6 +95,8 @@ final class CreatePriceProposalAction
                 'amount' => $amount,
                 'reference_amount' => $referenceAmount,
                 'open_price_allowed' => $openPriceAllowed,
+                'open_price_minimum' => $openPriceMinimum,
+                'open_price_maximum' => $openPriceMaximum,
             ]);
 
             app(RecordAuditEvent::class)->execute(

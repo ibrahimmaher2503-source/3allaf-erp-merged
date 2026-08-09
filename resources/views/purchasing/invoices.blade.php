@@ -265,8 +265,11 @@ new #[Title('Purchase Invoices')] class extends Component
     class="space-y-6"
 >
     <x-slot:actions>
+        <x-tables.resource-toolbar filter-target="purchase-invoices-filters">
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="shield-check">{{ __('Readiness') }}</flux:button>
-        <flux:button href="{{ route('purchasing.invoices.import') }}" variant="subtle" icon="arrow-up-tray">{{ __('Import') }}</flux:button>
+        @can('purchase_invoices_supplier_returns.create')
+            <flux:button href="{{ route('purchasing.invoices.import') }}" variant="subtle" icon="arrow-up-tray">{{ __('Import') }}</flux:button>
+        @endcan
         @can('purchase_returns.view')
             <flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-uturn-left">{{ __('Supplier returns') }}</flux:button>
         @endcan
@@ -276,13 +279,14 @@ new #[Title('Purchase Invoices')] class extends Component
         @can('purchase_invoices_supplier_returns.create')
             <flux:button wire:click="openCreateModal" variant="primary" icon="plus">{{ __('New draft invoice') }}</flux:button>
         @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <flux:callout variant="warning" icon="exclamation-triangle">
         {{ __('Drafts calculate totals and create audit records only. No stock, WAC, receipt, or sale-price mutation occurs until a separate approved posting action is completed.') }}
     </flux:callout>
 
-    <flux:card>
+    <flux:card id="purchase-invoices-filters" class="scroll-mt-24">
         <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-64 flex-1">
                 <flux:label>{{ __('Search') }}</flux:label>

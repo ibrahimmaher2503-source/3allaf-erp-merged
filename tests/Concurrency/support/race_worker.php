@@ -22,11 +22,17 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Platform\Actions\DecideApprovalSource;
+use App\Modules\Platform\Actions\RequestApproval;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
+use App\Modules\Platform\Data\ApprovalRequestData;
+use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Purchasing\Actions\AllocatePurchaseOrderNumberAction;
+use App\Modules\Retail\Actions\OpenShiftAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
@@ -48,6 +54,9 @@ try {
         'price_approve' => racePriceApprove($params),
         'sale' => raceSale($params),
         'branch_mapping' => raceBranchMapping($params),
+        'shift_open' => raceShiftOpen($params),
+        'approval_request' => raceApprovalRequest($params),
+        'shift_decision' => raceShiftDecision($params),
         default => throw new InvalidArgumentException("Unknown race scenario: {$scenario}"),
     };
     fwrite(STDOUT, json_encode(['ok' => true, 'result' => $result]).PHP_EOL);
@@ -87,6 +96,26 @@ function raceMovement(array $p): array
     ];
 }
 
+/**
+ * docs/32 §6/§16 - two cashiers racing to open a shift on the same drawer.
+ * Exactly one must win; the loser must be rejected, not silently create a
+ * second active shift on the same drawer.
+ */
+function raceShiftOpen(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+
+    $shift = app(OpenShiftAction::class)->execute(
+        $user,
+        CashDrawer::query()->findOrFail((int) $p['cash_drawer_id']),
+        (string) $p['opening_float'],
+        (string) $p['idempotency_key'],
+    );
+
+    return ['shift_id' => $shift->id, 'cashier_id' => (int) $shift->cashier_id];
+}
+
 function racePoNumber(array $p): array
 {
     if (isset($p['user_id'])) {
@@ -96,6 +125,41 @@ function racePoNumber(array $p): array
     $number = app(AllocatePurchaseOrderNumberAction::class)->execute();
 
     return ['number' => $number];
+}
+
+function raceApprovalRequest(array $p): array
+{
+    Auth::setUser(User::query()->findOrFail((int) $p['user_id']));
+    $approval = app(RequestApproval::class)->execute(new ApprovalRequestData(
+        sourceType: (string) $p['source_type'],
+        sourceId: (string) $p['source_id'],
+        sourceVersion: (string) $p['source_version'],
+        requestedAction: (string) $p['requested_action'],
+        requestPermission: (string) $p['request_permission'],
+        branchId: (int) $p['branch_id'],
+        storeId: isset($p['store_id']) ? (int) $p['store_id'] : null,
+        idempotencyKey: (string) $p['idempotency_key'],
+    ));
+
+    return ['approval_id' => $approval->id, 'uuid' => $approval->uuid, 'state' => $approval->approval_state->value];
+}
+
+/** A real central-inbox decision made by an isolated PHP process. */
+function raceShiftDecision(array $p): array
+{
+    Auth::setUser(User::query()->findOrFail((int) $p['user_id']));
+    $approval = ApprovalRecord::query()->findOrFail((int) $p['approval_id']);
+
+    if (($p['decision'] ?? 'approve') === 'recount') {
+        app(DecideApprovalSource::class)->reject($approval, (string) ($p['reason'] ?? 'Concurrent recount verification.'));
+    } else {
+        app(DecideApprovalSource::class)->approve($approval);
+    }
+
+    return [
+        'approval_id' => $approval->id,
+        'state' => $approval->fresh()->approval_state->value,
+    ];
 }
 
 function racePriceApprove(array $p): array

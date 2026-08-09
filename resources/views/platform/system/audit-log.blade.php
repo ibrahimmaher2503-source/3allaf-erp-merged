@@ -115,8 +115,20 @@ new #[Title('Audit Logs')] class extends Component {
             'branches' => Branch::query()->visibleTo($user)->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'stores' => Store::query()->visibleTo($user)->orderBy('code')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']),
             'selectedAudit' => $selectedAudit,
-            'selectedBeforeValues' => $selectedAudit === null ? null : $redactor->redact($selectedAudit->before_values),
-            'selectedAfterValues' => $selectedAudit === null ? null : $redactor->redact($selectedAudit->after_values),
+            'selectedBeforeValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->before_values, $user),
+            'selectedAfterValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->after_values, $user),
+            'canExport' => Gate::allows('export', AuditLog::class),
+            'exportConfigured' => filter_var(config('audit.export_max_rows'), FILTER_VALIDATE_INT) !== false && (int) config('audit.export_max_rows') > 0,
+            'exportUrl' => route('admin.audit.export', array_filter([
+                'search' => $this->search,
+                'category' => $this->category,
+                'event' => $this->event,
+                'actor_id' => $this->actorId,
+                'branch_id' => $this->branchId,
+                'store_id' => $this->storeId,
+                'date_from' => $this->dateFrom,
+                'date_to' => $this->dateTo,
+            ], fn ($value) => $value !== '')),
         ]);
     }
 
@@ -150,6 +162,15 @@ new #[Title('Audit Logs')] class extends Component {
     class="space-y-5"
     data-guide="audit-header"
 >
+    @if($canExport)
+        <div class="flex flex-wrap items-center justify-end gap-3">
+            @if($exportConfigured)
+                <flux:button :href="$exportUrl" icon="arrow-down-tray">{{ __('Export filtered audit log') }}</flux:button>
+            @else
+                <flux:callout variant="warning" icon="exclamation-triangle">{{ __('Audit export is blocked until an approved positive AUDIT_EXPORT_MAX_ROWS value is configured.') }}</flux:callout>
+            @endif
+        </div>
+    @endif
     <x-tables.data-panel :title="__('Audit events')" :description="__('Filter visible history by event, source, scope, actor, or request ID.')" data-guide="audit-table">
         <x-slot:toolbar>
             <x-tables.filter-bar data-guide="audit-filters">

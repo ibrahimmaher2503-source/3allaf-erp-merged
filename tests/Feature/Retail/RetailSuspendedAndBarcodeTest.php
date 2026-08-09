@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
@@ -45,7 +46,7 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
         self::assertSame(0, StockMovement::query()->count());
         self::assertSame('5.000000', (string) StockBalance::query()->where('store_id', $scenario['store']->id)->value('on_hand'));
 
-        $completed = $action->finalizeSuspended($scenario['cashier'], $suspended);
+        $completed = $action->finalizeSuspended($scenario['cashier'], $suspended, $this->cashTender($scenario['cash'], '30.00'));
         self::assertSame('approved', $completed->status);
         self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $scenario['store']->id)->value('on_hand'));
         self::assertSame(1, Sale::query()->count());
@@ -87,8 +88,8 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
         $this->actingAs($scenario['cashier']);
         $action = app(RetailSaleAction::class);
 
-        $first = $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '1']], 'POS-IDEMPOTENT-SAME-001');
-        $replay = $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '1']], 'POS-IDEMPOTENT-SAME-001');
+        $first = $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '1']], 'POS-IDEMPOTENT-SAME-001', false, $this->cashTender($scenario['cash'], '15.00'));
+        $replay = $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '1']], 'POS-IDEMPOTENT-SAME-001', false, $this->cashTender($scenario['cash'], '15.00'));
 
         self::assertTrue($first->is($replay));
         self::assertSame(1, Sale::query()->count());
@@ -100,6 +101,7 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
     private function saleScenario(bool $withShift = true): array
     {
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('retail_sale', 'SALE-');
         $branch = $this->branch('POS-SUSPEND-BR');
         $store = $this->store($branch, 'POS-SUSPEND-ST');
         $cashier = $this->userWith('pos-cashier', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
@@ -121,6 +123,19 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
         PriceLine::query()->create(['price_version_id' => $version->id, 'product_id' => $product->id, 'store_id' => $store->id, 'branch_id' => $branch->id, 'amount' => '15.000', 'active_key' => $product->id.':'.$store->id]);
         Barcode::query()->create(['product_id' => $product->id, 'barcode' => '890000001', 'source' => 'manual', 'status' => 'active', 'is_primary' => true, 'allocation_key' => 'POS-SUSPEND-BARCODE']);
 
-        return compact('branch', 'store', 'cashier', 'product');
+        $cash = PaymentMethod::query()->create([
+            'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
+            'requires_evidence' => false, 'status' => 'active',
+        ]);
+
+        return compact('branch', 'store', 'cashier', 'product', 'cash');
+    }
+
+    /**
+     * @return array<int, array{method: PaymentMethod, amount: numeric-string}>
+     */
+    private function cashTender(PaymentMethod $cash, string $amount): array
+    {
+        return [['method' => $cash, 'amount' => $amount]];
     }
 }

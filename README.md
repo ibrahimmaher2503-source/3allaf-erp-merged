@@ -20,7 +20,7 @@ The repository now contains a runnable Laravel application and the complete impl
 - Flux UI 2.15.0
 - Tailwind CSS 4
 - Vite 8
-- SQLite for local development only
+- XAMPP MySQL/MariaDB for local development, managed through phpMyAdmin
 
 The production database, hosting, cache, queue, scheduler, storage, backup, and monitoring architecture still require owner approval.
 
@@ -31,13 +31,13 @@ composer install
 npm install
 Copy-Item .env.example .env
 php artisan key:generate
-php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+# Create `toyjoy_local` in XAMPP/phpMyAdmin before running migrations.
 php artisan migrate
 npm run build
 php artisan serve
 ```
 
-The current prepared environment already has its local `.env`, application key, SQLite database, migrations, Composer dependencies, npm dependencies, and production assets.
+The current prepared environment uses its local `.env` and the `toyjoy_local` MySQL/MariaDB schema, with migrations, Composer dependencies, npm dependencies, and production assets prepared locally.
 
 ### Local Demo Authentication Personas
 
@@ -78,17 +78,16 @@ Local/staging observability is enabled through `.env` controls:
 - `SLOW_QUERY_LOG_ENABLED=true` and `SLOW_QUERY_MS=100`; logs go to `storage/logs/slow-queries-*.log`.
 - `DEBUGBAR_ENABLED=true` for the dev-only Debugbar package.
 
-For realistic volume work, use a disposable ignored database only:
+For realistic volume work, create a disposable MySQL/MariaDB schema in XAMPP/phpMyAdmin first, then use it only:
 
 ```bash
-DB_DATABASE=/tmp/toy-joy-performance.sqlite APP_ENV=local QUERY_BUDGET_ENABLED=false \
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_performance_20260809 APP_ENV=local QUERY_BUDGET_ENABLED=false \
   php artisan migrate:fresh --force
-DB_DATABASE=/tmp/toy-joy-performance.sqlite APP_ENV=local \
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=toyjoy_performance_20260809 APP_ENV=local \
   php scripts/seed-performance-fixture.php --products=50000 --movements=1000000
-rm -f /tmp/toy-joy-performance.sqlite
 ```
 
-The fixture refuses non-empty product/movement tables and must never be seeded into shared Demo data.
+Drop `toyjoy_performance_20260809` from phpMyAdmin after verification. The fixture refuses non-empty product/movement tables and must never be seeded into shared Demo data.
 
 The `toy-joy-milestone-watcher` remains paused while an interactive writer owns this repository. Resume it only after the worktree is clean and the interactive session has handed off ownership; it is read-only with respect to `.ai/`, and only one agent may modify `.ai/` at a time.
 

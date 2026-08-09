@@ -13,10 +13,9 @@ use Illuminate\Support\Str;
 
 /**
  * CONC-INV-003 (testing/results/CONCURRENCY-SCENARIOS.md) — concurrent
- * stock-balance posting, proven against real MariaDB row locking. SQLite
- * cannot prove this: it has no true row-level lock, only a coarser
- * database/file-level lock that trivially serializes anything hitting it,
- * which would mask both a real lost-update bug and a real idempotency race.
+ * stock-balance posting, proven against real MariaDB row locking. The
+ * production-like MySQL-family connection is required because application
+ * locking and idempotency races must be exercised across real transactions.
  *
  * Two claims are proven here, both requiring two genuinely overlapping
  * transactions racing the same StockBalance row:

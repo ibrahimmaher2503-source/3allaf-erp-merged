@@ -61,6 +61,24 @@ class StoreAttachment
             }
 
             return DB::transaction(function () use ($validated, $source, $user, $diskName, $relativePath, $storageFilename, $purpose): Attachment {
+                if ($source->isLinked()) {
+                    $countLimit = config("attachments.count_limits.{$purpose}");
+                    if (! is_int($countLimit) || $countLimit < 1) {
+                        throw ValidationException::withMessages(['purpose' => __('The attachment count policy is not configured.')]);
+                    }
+
+                    $currentCount = Attachment::query()
+                        ->where('source_type', $source->sourceType)
+                        ->where('source_id', $source->sourceId)
+                        ->where('purpose', $purpose)
+                        ->whereIn('status', [AttachmentState::Temporary->value, AttachmentState::Active->value, AttachmentState::Quarantined->value])
+                        ->lockForUpdate()
+                        ->count();
+                    if ($currentCount >= $countLimit) {
+                        throw ValidationException::withMessages(['file' => __('The configured attachment count limit has been reached for this source.')]);
+                    }
+                }
+
                 $attachment = Attachment::create([
                     'id' => (string) Str::uuid(),
                     'source_type' => $source->sourceType,

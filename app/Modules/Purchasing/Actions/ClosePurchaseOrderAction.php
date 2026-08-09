@@ -35,7 +35,7 @@ class ClosePurchaseOrderAction
 
             $before = $po->only(['status', 'closed_at', 'closed_by', 'lock_version']);
 
-            $po->update([
+            $po->mutateApprovedDocument([
                 'status' => 'closed',
                 'closed_at' => now(),
                 'closed_by' => $userId,

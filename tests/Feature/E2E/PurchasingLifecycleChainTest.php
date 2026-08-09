@@ -50,6 +50,9 @@ final class PurchasingLifecycleChainTest extends TestCase
     {
         parent::setUp();
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('purchase_order', 'PO-');
+        $this->documentSequence('purchase_invoice', 'PINV-');
+        $this->documentSequence('supplier_return', 'SRET-');
         DocumentSequence::query()->create([
             'document_type' => 'purchase_order', 'prefix' => 'CHAIN-PO-', 'padding_length' => 5,
             'next_value' => 1, 'status' => 'active', 'lock_version' => 1,

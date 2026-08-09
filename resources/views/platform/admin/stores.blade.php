@@ -275,9 +275,11 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     data-guide="stores-header"
 >
     <x-slot:actions>
-        @can('branches_stores.create')
-            <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add Store') }}</flux:button>
-        @endcan
+        <x-tables.resource-toolbar filter-target="stores-filters">
+            @can('branches_stores.create')
+                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add Store') }}</flux:button>
+            @endcan
+        </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <!-- TBD / BLK-006 / DEC-021 Banner -->
@@ -286,7 +288,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     </flux:callout>
 
     <!-- Filters & Search -->
-    <flux:card class="space-y-4" data-guide="stores-filters">
+    <flux:card id="stores-filters" class="scroll-mt-24 space-y-4" data-guide="stores-filters">
         <div class="grid gap-4 sm:grid-cols-4">
             <flux:input
                 wire:model.live.debounce.300ms="search"

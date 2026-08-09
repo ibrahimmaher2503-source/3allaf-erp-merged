@@ -7,7 +7,11 @@ namespace App\Modules\Inventory\Actions;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryAdjustmentLine;
 use App\Modules\Inventory\Models\StockCount;
+use App\Modules\Platform\Actions\ApproveRequest;
+use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -27,14 +31,24 @@ final class ReconcileStockCountAction
                 throw new InvalidArgumentException(__('This Local Demo count must target a store before reconciliation.'));
             }
             $this->scope->execute($count->store_id);
+            if ($count->status === 'reconciled') {
+                return $count->fresh(['store', 'lines.product']);
+            }
             if ($count->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted stock counts can be reconciled.'));
             }
             if ($count->assigned_to === Auth::id()) {
                 throw new InvalidArgumentException(__('The stock counter cannot approve the same reconciliation.'));
             }
+            $approval = ApprovalRecord::query()
+                ->where('source_type', 'stock_counts')
+                ->where('source_id', (string) $count->id)
+                ->where('requested_action', 'reconcile')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->lockForUpdate()
+                ->firstOrFail();
             $adjustment = InventoryAdjustment::query()->create([
-                'adjustment_number' => 'DEMO-COUNT-ADJ-'.$count->id,
+                'adjustment_number' => app(AllocateDocumentNumber::class)->execute('inventory_adjustment'),
                 'store_id' => $count->store_id,
                 'adjustment_type' => 'count_adjustment',
                 'status' => 'approved',
@@ -59,7 +73,8 @@ final class ReconcileStockCountAction
             }
             $before = $count->only(['status', 'lock_version']);
             $count->update(['status' => 'reconciled', 'approved_by' => Auth::id(), 'reconciled_at' => now(), 'lock_version' => $count->lock_version + 1]);
-            app(RecordAuditEvent::class)->execute('inventory', 'reconcile_stock_count', $count, $before, $count->only(['status', 'approved_by', 'reconciled_at', 'lock_version']), storeId: $count->store_id, metadata: ['adjustment_id' => $adjustment->id, 'uncounted_lines_preserved' => $count->lines->where('is_counted', false)->count()]);
+            app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Stock-count reconciliation approved.'));
+            app(RecordAuditEvent::class)->execute('inventory', 'reconcile_stock_count', $count, $before, $count->only(['status', 'approved_by', 'reconciled_at', 'lock_version']), storeId: $count->store_id, metadata: ['adjustment_id' => $adjustment->id, 'uncounted_lines_preserved' => $count->lines->where('is_counted', false)->count(), 'approval_record_id' => $approval->id]);
 
             return $count->fresh(['store', 'lines.product']);
         });

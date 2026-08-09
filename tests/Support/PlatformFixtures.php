@@ -5,6 +5,7 @@ namespace Tests\Support;
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use Database\Seeders\CanonicalAuthorizationSeeder;
@@ -30,8 +31,12 @@ trait PlatformFixtures
             'code' => 'TEST-CO',
             'name_ar' => 'شركة اختبار',
             'name_en' => 'Test Company',
-            'currency_code' => 'TBD',
-            'currency_symbol' => 'TBD',
+            // A local test fixture is an approved operational currency
+            // context, not a production policy fallback. Shift opening must
+            // exercise its documented currency guard rather than fail before
+            // the lifecycle under test begins.
+            'currency_code' => 'EGP',
+            'currency_symbol' => 'EGP',
             'timezone' => 'UTC',
             'locale_default' => 'ar',
             'status' => 'active',
@@ -104,6 +109,29 @@ trait PlatformFixtures
         }
 
         return $user->fresh();
+    }
+
+    /**
+     * Seed a document sequence.
+     *
+     * `AllocateDocumentNumber` deliberately refuses to invent a sequence, so a
+     * document type that a test needs to number must exist up front. Production
+     * numbering formats remain BLK-008; these are local test values only.
+     */
+    protected function documentSequence(string $documentType, ?string $prefix = null): DocumentSequence
+    {
+        return DocumentSequence::query()->firstOrCreate(
+            ['document_type' => $documentType],
+            [
+                'prefix' => $prefix ?? strtoupper(str_replace('_', '-', $documentType)).'-',
+                'padding_length' => 6,
+                'next_value' => 1,
+                'reset_rule' => 'never',
+                'status' => 'active',
+                'lock_version' => 1,
+                'policy_notes' => 'LOCAL TEST ONLY. Production numbering remains PENDING (BLK-008).',
+            ],
+        );
     }
 
     protected function administrator(string $username = 'test-admin'): User

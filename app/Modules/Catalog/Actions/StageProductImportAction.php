@@ -2,12 +2,16 @@
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
 use App\Modules\Catalog\Models\ProductImportRow;
+use App\Modules\Platform\Actions\LinkAttachmentToSource;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\Attachment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +30,7 @@ class StageProductImportAction
         'character', 'fractional_quantity', 'keywords_ar', 'keywords_en', 'key_points_ar', 'key_points_en',
     ];
 
-    public function stage(string $storagePath, string $originalFilename, string $mode, int $userId): ProductImportBatch
+    public function stage(string|Attachment $sourceFile, string $originalFilename, string $mode, int $userId): ProductImportBatch
     {
         if (! in_array($mode, ['create_only', 'update_existing'], true)) {
             throw new InvalidArgumentException(__('The selected import mode is not supported.'));
@@ -34,7 +38,10 @@ class StageProductImportAction
 
         Gate::authorize($mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
-        $absolutePath = Storage::disk('local')->path($storagePath);
+        $attachment = $sourceFile instanceof Attachment ? $sourceFile : null;
+        $storageDisk = $attachment?->storage_disk ?? 'local';
+        $storagePath = $attachment?->storage_path ?? $sourceFile;
+        $absolutePath = Storage::disk($storageDisk)->path($storagePath);
         if (! is_file($absolutePath)) {
             throw new InvalidArgumentException(__('The staged import file could not be found.'));
         }
@@ -67,6 +74,7 @@ class StageProductImportAction
                     if ($rowNumber === 1) {
                         $headers = array_map(fn (mixed $value): string => $this->normalizeHeader($value), $values);
                         $this->assertHeaders($headers);
+
                         continue;
                     }
 
@@ -120,6 +128,18 @@ class StageProductImportAction
                 after: $batch->only(['id', 'original_filename', 'mode', 'total_rows', 'valid_rows', 'invalid_rows']),
             );
 
+            if ($attachment !== null) {
+                app(LinkAttachmentToSource::class)->execute(
+                    $attachment,
+                    new AttachmentSourceReference(ProductImportBatch::class, (string) $batch->id),
+                    fn (User $user, Attachment $candidate, AttachmentSourceReference $reference): bool => $user->id === $userId
+                        && $candidate->uploaded_by === $userId
+                        && $candidate->purpose === 'import_source'
+                        && $reference->sourceType === ProductImportBatch::class
+                        && $reference->sourceId === (string) $batch->id,
+                );
+            }
+
             return $batch->fresh();
         } catch (Throwable $exception) {
             ProductImportBatch::query()
@@ -128,7 +148,9 @@ class StageProductImportAction
                 ->where('status', 'staging')
                 ->get()
                 ->each(fn (ProductImportBatch $batch): bool => (bool) $batch->delete());
-            Storage::disk('local')->delete($storagePath);
+            if ($attachment === null) {
+                Storage::disk($storageDisk)->delete($storagePath);
+            }
             throw $exception;
         } finally {
             $reader->close();
@@ -206,16 +228,36 @@ class StageProductImportAction
         $type = strtolower(trim((string) ($raw['product_type'] ?? 'standard')));
         $status = strtolower(trim((string) ($raw['status'] ?? 'active')));
 
-        if ($itemCode === '') $errors[] = __('Item code is required.');
-        if (isset($seenCodes[$itemCode])) $errors[] = __('The item code is duplicated in this batch.');
-        if ($itemCode !== '') $seenCodes[$itemCode] = true;
-        if (trim((string) ($raw['name_ar'] ?? '')) === '') $errors[] = __('Arabic product name is required.');
-        if (trim((string) ($raw['name_en'] ?? '')) === '') $errors[] = __('English product name is required.');
-        if (! isset($categoryCodes[$categoryCode])) $errors[] = __('The category code is missing or inactive.');
-        if ($brandCode !== '' && ! isset($brandCodes[$brandCode])) $errors[] = __('The brand code is missing or inactive.');
-        if (! in_array($type, ['standard', 'composite', 'service'], true)) $errors[] = __('The product type is not supported.');
-        if (! in_array($status, ['active', 'inactive'], true)) $errors[] = __('The product status is not supported.');
-        if ($mode === 'create_only' && $itemCode !== '' && Product::query()->where('item_code', $itemCode)->exists()) $errors[] = __('The item code already exists; Create Only does not update existing products.');
+        if ($itemCode === '') {
+            $errors[] = __('Item code is required.');
+        }
+        if (isset($seenCodes[$itemCode])) {
+            $errors[] = __('The item code is duplicated in this batch.');
+        }
+        if ($itemCode !== '') {
+            $seenCodes[$itemCode] = true;
+        }
+        if (trim((string) ($raw['name_ar'] ?? '')) === '') {
+            $errors[] = __('Arabic product name is required.');
+        }
+        if (trim((string) ($raw['name_en'] ?? '')) === '') {
+            $errors[] = __('English product name is required.');
+        }
+        if (! isset($categoryCodes[$categoryCode])) {
+            $errors[] = __('The category code is missing or inactive.');
+        }
+        if ($brandCode !== '' && ! isset($brandCodes[$brandCode])) {
+            $errors[] = __('The brand code is missing or inactive.');
+        }
+        if (! in_array($type, ['standard', 'composite', 'service'], true)) {
+            $errors[] = __('The product type is not supported.');
+        }
+        if (! in_array($status, ['active', 'inactive'], true)) {
+            $errors[] = __('The product status is not supported.');
+        }
+        if ($mode === 'create_only' && $itemCode !== '' && Product::query()->where('item_code', $itemCode)->exists()) {
+            $errors[] = __('The item code already exists; Create Only does not update existing products.');
+        }
 
         $data = [
             'item_code' => $itemCode,
@@ -246,6 +288,7 @@ class StageProductImportAction
     {
         $header = strtolower(trim((string) $value));
         $header = preg_replace('/[^a-z0-9_]+/', '_', $header) ?? '';
+
         return trim($header, '_');
     }
 
@@ -254,8 +297,12 @@ class StageProductImportAction
     {
         $unknown = array_diff(array_filter($headers), self::ALLOWED_HEADERS);
         $missing = array_diff(self::REQUIRED_HEADERS, $headers);
-        if ($unknown !== []) throw new InvalidArgumentException(__('Unsupported import columns: :columns', ['columns' => implode(', ', $unknown)]));
-        if ($missing !== []) throw new InvalidArgumentException(__('Required import columns are missing: :columns', ['columns' => implode(', ', $missing)]));
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(__('Unsupported import columns: :columns', ['columns' => implode(', ', $unknown)]));
+        }
+        if ($missing !== []) {
+            throw new InvalidArgumentException(__('Required import columns are missing: :columns', ['columns' => implode(', ', $missing)]));
+        }
     }
 
     /** @param array<int, mixed> $values */
@@ -267,6 +314,7 @@ class StageProductImportAction
     private function nullableString(mixed $value): ?string
     {
         $value = trim((string) ($value ?? ''));
+
         return $value === '' ? null : $value;
     }
 

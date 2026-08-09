@@ -4,14 +4,18 @@ namespace App\Modules\Purchasing\Models;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class PurchaseOrder extends Model
+class PurchaseOrder extends Model implements ImmutableSourceContract
 {
+    use GuardsApprovedDocument;
+
     protected $fillable = [
         'po_number',
         'supplier_id',

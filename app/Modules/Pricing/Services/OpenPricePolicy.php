@@ -2,16 +2,17 @@
 
 namespace App\Modules\Pricing\Services;
 
+use App\Modules\Retail\Support\DecimalMoney;
 use Illuminate\Validation\ValidationException;
 
 final class OpenPricePolicy
 {
     /** @return array{allowed: bool, reason: string|null} */
     public function validate(
-        float $referenceAmount,
-        float $requestedAmount,
-        ?float $minimum,
-        ?float $maximum,
+        string $referenceAmount,
+        string $requestedAmount,
+        ?string $minimum,
+        ?string $maximum,
         bool $hasPermission,
         ?string $reason,
         bool $offline = false,
@@ -24,11 +25,24 @@ final class OpenPricePolicy
             return ['allowed' => false, 'reason' => __('Open-price selling is blocked while offline.')];
         }
 
-        if ($minimum === null || $maximum === null) {
+        if ($minimum === null || $maximum === null || trim($referenceAmount) === '') {
             return ['allowed' => false, 'reason' => __('Open-price bounds are pending owner configuration.')];
         }
 
-        if ($requestedAmount < $minimum || $requestedAmount > $maximum) {
+        try {
+            $referenceAmount = DecimalMoney::normalize($referenceAmount, 4);
+            $requestedAmount = DecimalMoney::normalize($requestedAmount, 4);
+            $minimum = DecimalMoney::normalize($minimum, 4);
+            $maximum = DecimalMoney::normalize($maximum, 4);
+        } catch (\InvalidArgumentException) {
+            return ['allowed' => false, 'reason' => __('Open-price policy values must be valid decimal amounts.')];
+        }
+
+        if (bccomp($referenceAmount, '0', 4) <= 0 || bccomp($minimum, '0', 4) < 0 || bccomp($maximum, $minimum, 4) < 0) {
+            return ['allowed' => false, 'reason' => __('Open-price policy values are invalid.')];
+        }
+
+        if (bccomp($requestedAmount, $minimum, 4) < 0 || bccomp($requestedAmount, $maximum, 4) > 0) {
             return ['allowed' => false, 'reason' => __('The requested open price is outside the configured range.')];
         }
 
@@ -41,10 +55,10 @@ final class OpenPricePolicy
 
     /** @return array{allowed: bool, reason: string|null} */
     public function validateOrThrow(
-        float $referenceAmount,
-        float $requestedAmount,
-        ?float $minimum,
-        ?float $maximum,
+        string $referenceAmount,
+        string $requestedAmount,
+        ?string $minimum,
+        ?string $maximum,
         bool $hasPermission,
         ?string $reason,
         bool $offline = false,

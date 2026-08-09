@@ -11,6 +11,8 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\DocumentSequence;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
@@ -19,6 +21,7 @@ use App\Modules\Retail\Actions\RetailSaleAction;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
+use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Models\SuspendedSale;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -41,7 +44,15 @@ final class RetailSaleIntegrityTest extends TestCase
         $this->actingAs($scenario['cashier']);
         $action = app(RetailSaleAction::class);
 
-        $first = $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '2']], 'SALE-REPLAY-1');
+        // 2 x 15.00 = 30.00 payable.
+        $first = $action->create(
+            $scenario['cashier'],
+            $scenario['store'],
+            [['product_id' => $scenario['product']->id, 'quantity' => '2']],
+            'SALE-REPLAY-1',
+            false,
+            $this->cashTender($scenario['cash'], '30.00'),
+        );
 
         try {
             $action->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '999']], 'SALE-REPLAY-1');
@@ -82,7 +93,10 @@ final class RetailSaleIntegrityTest extends TestCase
         } catch (InvalidArgumentException) {
             self::assertSame(0, Sale::query()->count());
             self::assertSame(0, StockMovement::query()->count());
-            self::assertDatabaseMissing('document_sequences', ['document_type' => 'retail_sale']);
+            // The sequence is now seeded up front (AllocateDocumentNumber refuses
+            // to invent one), so a rollback is proven by the counter NOT advancing
+            // rather than by the row being absent.
+            self::assertSame(1, (int) DocumentSequence::query()->where('document_type', 'retail_sale')->value('next_value'));
         }
     }
 
@@ -132,7 +146,7 @@ final class RetailSaleIntegrityTest extends TestCase
             'branch_id' => $branch->id, 'store_id' => $scenario['store']->id, 'cash_drawer_id' => $shift->cash_drawer_id,
             'shift_id' => $shift->id, 'cashier_id' => $scenario['cashier']->id, 'status' => 'suspended',
             'idempotency_key' => 'SALE-RESUME-FAULT-'.Str::random(10), 'currency_code' => 'EGP',
-            'subtotal' => '25.00', 'total' => '25.00', 'paid_total' => '0.00', 'suspended_at' => now(),
+            'subtotal' => '25.00', 'total' => '25.00', 'payable_total' => '25.00', 'paid_total' => '0.00', 'suspended_at' => now(),
         ]);
         SaleLine::query()->create([
             'sale_id' => $sale->id, 'product_id' => $scenario['product']->id, 'line_number' => 1,
@@ -149,7 +163,10 @@ final class RetailSaleIntegrityTest extends TestCase
         ]);
 
         try {
-            app(RetailSaleAction::class)->finalizeSuspended($scenario['cashier'], $sale);
+            // Tender the full 25.00 so the settlement guard passes and the
+            // resume actually reaches the fractional-quantity failure this
+            // test exists to prove rolls back.
+            app(RetailSaleAction::class)->finalizeSuspended($scenario['cashier'], $sale, $this->cashTender($scenario['cash'], '25.00'));
             self::fail('A fractional quantity against a non-fractional product must be rejected.');
         } catch (InvalidArgumentException) {
             // expected — the assertions below are the actual proof.
@@ -161,21 +178,23 @@ final class RetailSaleIntegrityTest extends TestCase
         self::assertSame(0, StockMovement::query()->count(), 'Zero stock movements — including line 1\'s, which "succeeded" before line 2 failed inside the same transaction.');
         self::assertSame('5.000000', (string) StockBalance::query()->where('product_id', $scenario['product']->id)->where('store_id', $scenario['store']->id)->value('on_hand'), 'Line 1\'s product balance must be unchanged: a real partial commit would show 4 here (5 - 1).');
         self::assertSame(0, AuditLog::query()->where('event', 'finalize_sale')->where('source_id', (string) $sale->id)->count(), 'No audit event for a resume that never actually committed.');
+        self::assertSame(0, SalePayment::query()->where('sale_id', $sale->id)->count(), 'The tender captured during the failed resume must roll back with everything else; a surviving payment row would mean money recorded against a sale that never completed.');
+        self::assertSame('0.00', (string) $sale->fresh()->paid_total, 'A rolled-back resume must leave the sale showing nothing paid.');
         // Order-independent rollback proof: allocateNumber() runs BEFORE the
-        // per-line posting loop and unconditionally creates the
-        // `document_sequences` row on first use (this fixture never seeds
-        // one). Its absence proves a real rollback regardless of which line
-        // the eager-loaded `lines` relation happens to iterate first —
-        // unlike the movement/balance assertions above, which a
+        // per-line posting loop and advances `next_value`. That counter still
+        // reading its seeded starting value proves a real rollback regardless
+        // of which line the eager-loaded `lines` relation happens to iterate
+        // first — unlike the movement/balance assertions above, which a
         // line-iteration-order fluke could satisfy even without an actual
         // rollback if line 2 were (for some future reason) iterated first.
-        self::assertDatabaseMissing('document_sequences', ['document_type' => 'retail_sale']);
+        self::assertSame(1, (int) DocumentSequence::query()->where('document_type', 'retail_sale')->value('next_value'));
     }
 
     /** @return array{cashier: User, store: Store, product: Product} */
     private function saleScenario(bool $priced = true): array
     {
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('retail_sale', 'SALE-');
         $branch = $this->branch('POS-BR');
         $store = $this->store($branch, 'POS-ST');
         $cashier = $this->userWith('pos-cashier', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
@@ -208,6 +227,22 @@ final class RetailSaleIntegrityTest extends TestCase
             ]);
         }
 
-        return compact('cashier', 'store', 'product');
+        $cash = PaymentMethod::query()->create([
+            'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
+            'requires_evidence' => false, 'status' => 'active',
+        ]);
+
+        return compact('cashier', 'store', 'product', 'cash');
+    }
+
+    /**
+     * A sale can no longer be approved without tender (DEC-066, docs/48 §6),
+     * so every settling test states the cash it collects.
+     *
+     * @return array<int, array{method: PaymentMethod, amount: numeric-string}>
+     */
+    private function cashTender(PaymentMethod $cash, string $amount): array
+    {
+        return [['method' => $cash, 'amount' => $amount]];
     }
 }
