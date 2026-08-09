@@ -21,7 +21,10 @@ class SaveBranchSellingStoreMappingAction
         $user = Auth::user();
 
         return DB::transaction(function () use ($branchId, $storeId, $approvalNotes, $user) {
-            $branch = Branch::findOrFail($branchId);
+            // Serialize mappings for a branch. Without a row lock, two
+            // concurrent requests can both observe no active mapping (or the
+            // same old mapping) and create multiple active rows.
+            $branch = Branch::query()->lockForUpdate()->findOrFail($branchId);
             if ($branch->status !== 'active') {
                 throw new InvalidArgumentException(__('Branch must be active to map a POS selling store.'));
             }
@@ -40,8 +43,9 @@ class SaveBranchSellingStoreMappingAction
             }
 
             // Check if this branch is already actively mapped to this exact store
-            $currentActive = BranchSellingStore::where('branch_id', $branch->id)
+            $currentActive = BranchSellingStore::query()->where('branch_id', $branch->id)
                 ->where('status', 'active')
+                ->lockForUpdate()
                 ->first();
 
             if ($currentActive && $currentActive->store_id === $store->id) {

@@ -58,6 +58,8 @@ new #[Title('System Settings')] class extends Component {
         'rate' => '',
         'is_tax_inclusive' => false,
         'tax_number' => '',
+        'effective_from' => '',
+        'effective_to' => '',
         'status' => 'active',
         'policy_notes' => 'TBD: Production tax rate and inclusive policy pending owner decision.',
     ];
@@ -238,6 +240,8 @@ new #[Title('System Settings')] class extends Component {
             'taxSettingForm.rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'taxSettingForm.is_tax_inclusive' => ['boolean'],
             'taxSettingForm.tax_number' => ['nullable', 'string', 'max:50'],
+            'taxSettingForm.effective_from' => ['nullable', 'date'],
+            'taxSettingForm.effective_to' => ['nullable', 'date', 'after_or_equal:taxSettingForm.effective_from'],
             'taxSettingForm.status' => ['required', 'string', 'in:active,inactive'],
             'taxSettingForm.policy_notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -267,6 +271,8 @@ new #[Title('System Settings')] class extends Component {
             'rate' => '',
             'is_tax_inclusive' => false,
             'tax_number' => '',
+            'effective_from' => '',
+            'effective_to' => '',
             'status' => 'active',
             'policy_notes' => 'TBD: Production tax rate pending owner decision.',
         ];
@@ -768,6 +774,9 @@ new #[Title('System Settings')] class extends Component {
                             :label="__('Specific Tax Reg No.')"
                         />
 
+                        <flux:input wire:model="taxSettingForm.effective_from" :label="__('Effective From')" type="date" />
+                        <flux:input wire:model="taxSettingForm.effective_to" :label="__('Effective To')" type="date" />
+
                         <flux:select wire:model="taxSettingForm.status" :label="__('Status')">
                             <option value="active">{{ __('Active') }}</option>
                             <option value="inactive">{{ __('Inactive') }}</option>
@@ -1099,6 +1108,9 @@ new #[Title('System Settings')] class extends Component {
                                 <flux:table.cell>
                                     <flux:button size="xs" variant="subtle" wire:click="editPrinter({{ $printer->id }})">
                                         {{ __('Edit') }}
+                                    </flux:button>
+                                    <flux:button size="xs" variant="subtle" href="{{ route('admin.settings.printer-preview', $printer) }}" target="_blank">
+                                        {{ __('Preview') }}
                                     </flux:button>
                                 </flux:table.cell>
                             </flux:table.row>

@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
@@ -16,6 +17,8 @@ use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SuspendedSale;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -31,14 +34,54 @@ final class RetailSaleAction
         abort_unless($cashier->can('pos_sales.create'), 403);
         abort_unless($store->visibleTo($cashier)->whereKey($store->id)->exists(), 403);
 
-        $existing = Sale::query()->where('idempotency_key', $idempotencyKey)->with('lines')->first();
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        $shift = $this->openShift($cashier, $store);
         $lines = $this->resolveLines($store, $requestedLines);
 
+        $existing = Sale::query()->where('idempotency_key', $idempotencyKey)->with('lines')->first();
+        if ($existing !== null) {
+            return $this->assertReplaySafe($existing, $store, $cashier, $lines, $suspend);
+        }
+
+        try {
+            $shift = $this->openShift($cashier, $store);
+
+            return $this->createSale($cashier, $store, $shift, $lines, $idempotencyKey, $suspend);
+        } catch (UniqueConstraintViolationException $e) {
+            if (! str_contains($e->getMessage(), 'idempotency_key')) {
+                throw $e;
+            }
+
+            // Two concurrent submissions with the same idempotency key can
+            // both pass the pre-insert check above before either commits.
+            // The unique index is the real guard against a duplicate Sale;
+            // this recovers the loser's request as an idempotent replay
+            // instead of surfacing a raw DB error.
+            $existing = Sale::query()->where('idempotency_key', $idempotencyKey)->with('lines')->first();
+            if ($existing === null) {
+                throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
+            }
+
+            return $this->assertReplaySafe($existing, $store, $cashier, $lines, $suspend);
+        }
+    }
+
+    /** @param array<int, array{product: Product, quantity: numeric-string, unit_price: numeric-string}> $lines */
+    private function assertReplaySafe(Sale $existing, Store $store, User $cashier, array $lines, bool $suspend): Sale
+    {
+        $replaySafe = $existing->store_id === $store->id
+            && $existing->cashier_id === $cashier->id
+            && (($existing->suspended_at !== null)) === $suspend
+            && $this->linesMatch($existing->lines, $lines);
+
+        if (! $replaySafe) {
+            throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
+        }
+
+        return $existing;
+    }
+
+    /** @param array<int, array{product: Product, quantity: numeric-string, unit_price: numeric-string}> $lines */
+    private function createSale(User $cashier, Store $store, PosShift $shift, array $lines, string $idempotencyKey, bool $suspend): Sale
+    {
         return DB::transaction(function () use ($cashier, $store, $shift, $lines, $idempotencyKey, $suspend): Sale {
             $sale = Sale::query()->create([
                 'branch_id' => $store->branch_id,
@@ -140,6 +183,29 @@ final class RetailSaleAction
         return $resolved;
     }
 
+    /**
+     * @param  Collection<int, SaleLine>  $existingLines
+     * @param  array<int, array{product: Product, quantity: numeric-string, unit_price: numeric-string}>  $lines
+     */
+    private function linesMatch($existingLines, array $lines): bool
+    {
+        $existingLines = $existingLines->sortBy('line_number')->values();
+        if ($existingLines->count() !== count($lines)) {
+            return false;
+        }
+
+        foreach (array_values($lines) as $index => $line) {
+            $existingLine = $existingLines->get($index);
+            if ($existingLine === null
+                || (int) $existingLine->product_id !== $line['product']->id
+                || bccomp((string) $existingLine->quantity, $line['quantity'], 6) !== 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function openShift(User $cashier, Store $store): PosShift
     {
         $shift = PosShift::query()->open()
@@ -196,6 +262,7 @@ final class RetailSaleAction
             $line->update(['stock_movement_id' => $movement->id, 'consumed_cost' => $movement->consumed_cost]);
         }
 
+        $before = $sale->only(['status', 'document_number', 'lock_version']);
         $sale->update([
             'status' => 'approved',
             'document_number' => $number,
@@ -206,6 +273,17 @@ final class RetailSaleAction
         if ($sale->suspendedSale !== null) {
             $sale->suspendedSale->update(['status' => 'resumed', 'resumed_at' => now()]);
         }
+
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail',
+            event: 'finalize_sale',
+            source: $sale,
+            before: $before,
+            after: $sale->only(['status', 'document_number', 'total', 'lock_version']),
+            branchId: $sale->branch_id,
+            storeId: $sale->store_id,
+            metadata: ['line_count' => $sale->lines->count(), 'cashier_id' => $cashier->id, 'stock_posted' => true],
+        );
 
         return $sale->fresh('lines', 'store', 'cashier');
     }

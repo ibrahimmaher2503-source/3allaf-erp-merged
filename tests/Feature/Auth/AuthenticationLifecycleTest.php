@@ -106,15 +106,37 @@ class AuthenticationLifecycleTest extends TestCase
 
         $blocked->assertStatus(429);
         $blocked->assertHeader('Retry-After');
+        $blocked->assertSee('(429)', false);
+        $blocked->assertSee('Too many requests', false);
         $this->assertGuest();
     }
 
-    public function test_the_throttled_response_is_the_framework_default_page(): void
+    public function test_the_throttled_response_uses_the_safe_bilingual_error_view(): void
     {
-        // Recorded coverage fact: no bilingual `errors/429` view exists, so the
-        // throttled response falls back to the framework page.
-        $this->assertFalse(view()->exists('errors.429'));
-        $this->assertFalse(view()->exists('errors.419'));
+        $this->assertTrue(view()->exists('errors.429'));
+        $this->assertTrue(view()->exists('errors.419'));
+
+        config(['app.debug' => false]);
+        $response = response()->view('errors.429', [], 429);
+
+        $this->assertSame(429, $response->getStatusCode());
+        $this->assertStringContainsString('(429)', $response->getContent());
+        $this->assertStringNotContainsString((string) config('app.key'), $response->getContent());
+    }
+
+    public function test_expired_session_error_view_supports_rtl_and_ltr(): void
+    {
+        config(['app.debug' => false]);
+
+        app()->setLocale('en');
+        $response = response()->view('errors.419', [], 419);
+        $this->assertStringContainsString('dir="ltr"', $response->getContent());
+        $this->assertStringContainsString('Your session has expired', $response->getContent());
+
+        app()->setLocale('ar');
+        $response = response()->view('errors.419', [], 419);
+        $this->assertStringContainsString('dir="rtl"', $response->getContent());
+        $this->assertStringContainsString('انتهت صلاحية الجلسة', $response->getContent());
     }
 
     public function test_the_session_identifier_is_regenerated_on_login(): void

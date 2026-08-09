@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Actions;
 
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -14,15 +16,40 @@ final class PostInventoryMovement
 {
     public function execute(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType = null, ?int $sourceId = null, ?int $sourceLineId = null, bool $allowNegative = false): StockMovement
     {
-        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative): StockMovement {
-            $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
-            if ($existing !== null) {
-                return $existing;
+        try {
+            return $this->attempt($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative);
+        } catch (UniqueConstraintViolationException $e) {
+            if (! str_contains($e->getMessage(), 'idempotency_key')) {
+                throw $e;
             }
 
+            // Two concurrent callers can both pass the pre-insert idempotency
+            // check before either commits (the check-then-insert is not itself
+            // lockable). The unique index is the real guard against a
+            // duplicate row; this recovers the loser's request as a normal
+            // idempotent replay instead of surfacing a raw DB error.
+            return $this->replayExisting($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId);
+        }
+    }
+
+    private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative): StockMovement
+    {
+        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative): StockMovement {
             $quantity = $this->decimal($quantity);
+
+            $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
+            if ($existing !== null) {
+                return $this->assertReplaySafe($existing, $productId, $storeId, $quantity, $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId);
+            }
+
             if (bccomp($quantity, '0', 6) === 0) {
                 throw new InvalidArgumentException(__('Inventory movement quantity cannot be zero.'));
+            }
+
+            $product = Product::query()->select(['id', 'fractional_quantity'])->findOrFail($productId);
+            $isFractional = bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0;
+            if ($isFractional && ! $product->fractional_quantity) {
+                throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
             }
 
             $balance = StockBalance::query()->where('product_id', $productId)->where('store_id', $storeId)->lockForUpdate()->first();
@@ -69,6 +96,38 @@ final class PostInventoryMovement
 
             return $movement;
         });
+    }
+
+    private function assertReplaySafe(StockMovement $existing, int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, ?string $sourceType, ?int $sourceId, ?int $sourceLineId): StockMovement
+    {
+        $normalizedCost = $unitCost !== null ? $this->decimal($unitCost) : null;
+        $replaySafe = $existing->product_id === $productId
+            && $existing->store_id === $storeId
+            && $existing->movement_type === $movementType
+            && bccomp((string) $existing->quantity, $quantity, 6) === 0
+            && ($normalizedCost === null || bccomp((string) $existing->unit_cost, $normalizedCost, 4) === 0)
+            && $existing->source_type === $sourceType
+            && $existing->source_id === $sourceId
+            && $existing->source_line_id === $sourceLineId;
+
+        if (! $replaySafe) {
+            throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
+        }
+
+        return $existing;
+    }
+
+    private function replayExisting(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId): StockMovement
+    {
+        $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
+        if ($existing === null) {
+            // The row that caused the unique-key violation is not (yet) visible
+            // to this connection's read. This should not happen outside of
+            // extreme replication lag; surface it rather than mask it.
+            throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
+        }
+
+        return $this->assertReplaySafe($existing, $productId, $storeId, $this->decimal($quantity), $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId);
     }
 
     public function adjustInTransit(int $productId, int $storeId, string $quantity): void

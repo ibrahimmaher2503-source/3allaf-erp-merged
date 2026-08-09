@@ -196,16 +196,16 @@ class PlatformOperationalBaselineTest extends TestCase
         $this->get('/admin/system/health')->assertOk();
     }
 
-    public function test_no_backup_status_route_is_implemented_yet(): void
+    public function test_backup_status_route_is_authenticated_and_reports_verification_state(): void
     {
-        // Recorded as a coverage fact, not a passing feature: TSK-001 backup and
-        // restore status surfaces are not implemented.
-        $routes = collect(Route::getRoutes()->getRoutes())->map(fn ($route) => $route->uri());
+        $this->get('/admin/system/backups')->assertRedirect('/login');
 
-        $this->assertTrue(
-            $routes->filter(fn (string $uri) => str_contains($uri, 'backup'))->isEmpty(),
-            'A backup route now exists and this TSK-001 coverage gap must be re-tested.',
-        );
+        $this->actingAs($this->userWith('tsk001-reviewer', ['accountant-reviewer']));
+        $response = $this->getJson('/admin/system/backups');
+
+        $response->assertOk();
+        $response->assertJsonStructure(['name', 'verify_backup', 'encrypted', 'destinations']);
+        $this->assertTrue((bool) $response->json('verify_backup'));
     }
 
     public function test_runtime_queue_cache_and_session_configuration_is_resolvable(): void

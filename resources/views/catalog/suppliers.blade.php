@@ -568,7 +568,9 @@ new #[Title('Supplier Masters')] class extends Component
                 </div>
 
                 @if ($detailTab === 'profile')
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    {{-- `<dt>`/`<dd>` require a `<dl>` ancestor (WCAG 1.3.1 / axe-core `dlitem`); this
+                         was a plain `<div>` with no list semantics at all. --}}
+                    <dl class="grid gap-4 sm:grid-cols-2">
                         <div class="catalog-detail-field">
                             <dt class="catalog-detail-label">{{ __('Contact person') }}</dt>
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->contact_name ?: __('Not provided') }}</dd>
@@ -593,7 +595,7 @@ new #[Title('Supplier Masters')] class extends Component
                             <dt class="catalog-detail-label">{{ __('Address') }}</dt>
                             <dd class="mt-1 text-sm font-medium whitespace-pre-line">{{ $viewingSupplier->address ?: __('Not provided') }}</dd>
                         </div>
-                    </div>
+                    </dl>
                 @elseif ($detailTab === 'products')
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">

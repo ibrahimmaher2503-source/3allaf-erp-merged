@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Audit;
 
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\CancelApprovalRequest;
 use App\Modules\Platform\Actions\ExpireApprovalRequest;
@@ -13,8 +15,11 @@ use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Pricing\Actions\CreatePriceProposalAction;
+use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -203,7 +208,7 @@ class ApprovalFoundationTest extends TestCase
         $this->assertSame(1, AuditLog::query()->where('event', 'approval_cancelled')->count());
     }
 
-    public function test_an_expired_request_moves_to_the_expired_state(): void
+    public function test_an_expired_request_moves_to_the_expired_state_via_the_system_scheduler_path(): void
     {
         $record = app(RequestApproval::class)->execute($this->data([
             'expiresAt' => now()->addMinute(),
@@ -211,7 +216,38 @@ class ApprovalFoundationTest extends TestCase
 
         $this->travelTo(now()->addHours(2));
 
+        // Per ExpireApprovalRequest's documented contract, the unauthenticated
+        // system/scheduler path may expire a request without an authorize callback.
+        Auth::logout();
         $expired = app(ExpireApprovalRequest::class)->execute($record->fresh());
+
+        $this->assertSame(ApprovalState::Expired, $expired->approval_state);
+        $this->assertSame(1, AuditLog::query()->where('event', 'approval_expired')->count());
+    }
+
+    public function test_an_authenticated_expiry_action_is_rejected_without_explicit_authorization(): void
+    {
+        $record = app(RequestApproval::class)->execute($this->data([
+            'expiresAt' => now()->addMinute(),
+        ]));
+
+        $this->travelTo(now()->addHours(2));
+
+        $this->expectException(AuthorizationException::class);
+        app(ExpireApprovalRequest::class)->execute($record->fresh());
+    }
+
+    public function test_an_authenticated_expiry_action_succeeds_with_explicit_authorization(): void
+    {
+        $record = app(RequestApproval::class)->execute($this->data([
+            'expiresAt' => now()->addMinute(),
+        ]));
+
+        $this->travelTo(now()->addHours(2));
+
+        $expired = app(ExpireApprovalRequest::class)->execute($record->fresh(), function (): void {
+            // Explicit authorization supplied by the authenticated caller.
+        });
 
         $this->assertSame(ApprovalState::Expired, $expired->approval_state);
         $this->assertSame(1, AuditLog::query()->where('event', 'approval_expired')->count());
@@ -260,18 +296,39 @@ class ApprovalFoundationTest extends TestCase
         ]));
     }
 
-    public function test_the_approval_foundation_is_not_wired_to_any_current_source(): void
+    public function test_the_approval_foundation_is_now_wired_through_pricing_proposal_submission(): void
     {
-        // Recorded coverage fact: no current Platform action requests approval,
-        // so end-to-end approval behavior cannot be tested.
-        foreach (glob(app_path('Modules/Platform/Actions/Save*.php')) ?: [] as $file) {
-            $this->assertStringNotContainsString('RequestApproval', (string) file_get_contents($file));
-        }
+        // Superseded coverage fact: SubmitPriceProposalAction (added under
+        // TSK-017) now requests approval through this foundation end-to-end.
+        // See Tests\Feature\Pricing\PriceProposalIntegrityTest for the full
+        // proposal lifecycle; this asserts the ApprovalRecord wiring itself.
+        $this->assertStringContainsString(
+            'RequestApproval',
+            (string) file_get_contents(app_path('Modules/Pricing/Actions/SubmitPriceProposalAction.php')),
+        );
 
-        $approvalRoutes = collect(Route::getRoutes()->getRoutes())
-            ->filter(fn ($route) => str_contains($route->uri(), 'approval'));
+        $branch = $this->branch('APR-PRC-BR');
+        $store = $this->store($branch, 'APR-PRC-ST');
+        $category = Category::query()->create([
+            'code' => 'APR-PRC-CAT', 'name_ar' => 'تصنيف', 'name_en' => 'Category', 'status' => 'active',
+        ]);
+        $product = Product::query()->create([
+            'item_code' => 'APR-PRC-PROD', 'name_ar' => 'منتج', 'name_en' => 'Product', 'category_id' => $category->id, 'status' => 'active',
+        ]);
 
-        $this->assertTrue($approvalRoutes->isEmpty());
+        $proposer = $this->administrator('tsk009-price-proposer');
+        $this->actingAs($proposer);
+        $version = app(CreatePriceProposalAction::class)->execute(
+            $product, $store, 'RETAIL', 'أساسي', 'Retail', '15.000', 'product_card', 'APR-CARD-1', null, null, null,
+        );
+        $version = app(SubmitPriceProposalAction::class)->execute($version);
+
+        $this->assertNotNull($version->approval_record_id);
+        $approval = ApprovalRecord::query()->findOrFail($version->approval_record_id);
+        $this->assertSame(ApprovalState::Pending, $approval->approval_state);
+        $this->assertSame('pricing_labels', $approval->source_type);
+        $this->assertSame((string) $version->id, $approval->source_id);
+        $this->assertSame('approve_price_version', $approval->requested_action);
     }
 
     public function test_the_document_immutability_and_correction_slice_is_absent(): void

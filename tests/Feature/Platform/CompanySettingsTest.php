@@ -13,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
@@ -207,7 +208,7 @@ class CompanySettingsTest extends TestCase
         $this->assertSame(1, AuditLog::query()->where('event', 'update_tax_setting')->count());
     }
 
-    public function test_tax_effective_periods_are_stored_but_never_collected_or_validated(): void
+    public function test_tax_effective_periods_are_collected_and_overlaps_are_rejected(): void
     {
         // Recorded coverage fact for TSK-005: `tax_settings` carries
         // effective_from/effective_to columns, but no screen, action, or rule
@@ -218,9 +219,8 @@ class CompanySettingsTest extends TestCase
         $this->actingAs($this->administrator('tsk005-effective'));
 
         $form = Livewire::test('platform::admin.settings')->get('taxSettingForm');
-
-        $this->assertArrayNotHasKey('effective_from', $form);
-        $this->assertArrayNotHasKey('effective_to', $form);
+        $this->assertArrayHasKey('effective_from', $form);
+        $this->assertArrayHasKey('effective_to', $form);
 
         app(SaveLocalSettingsAction::class)->saveTaxSetting([
             'code' => 'VAT-A', 'name_ar' => 'أ', 'name_en' => 'A', 'rate' => '14', 'status' => 'active',
@@ -334,5 +334,42 @@ class CompanySettingsTest extends TestCase
 
         $this->assertSame($originalSnapshot, AuditLog::query()->whereKey($original->id)->firstOrFail()->getAttributes());
         $this->assertSame(2, AuditLog::query()->count());
+    }
+
+    public function test_overlapping_explicit_tax_periods_are_rejected_server_side(): void
+    {
+        $this->actingAs($this->administrator('tsk005-overlap'));
+
+        app(SaveLocalSettingsAction::class)->saveTaxSetting([
+            'code' => 'VAT-A', 'name_ar' => 'A', 'name_en' => 'A', 'rate' => '14',
+            'effective_from' => '2026-01-01', 'effective_to' => '2026-06-30', 'status' => 'active',
+        ]);
+
+        try {
+            app(SaveLocalSettingsAction::class)->saveTaxSetting([
+                'code' => 'VAT-B', 'name_ar' => 'B', 'name_en' => 'B', 'rate' => '10',
+                'effective_from' => '2026-06-01', 'effective_to' => '2026-12-31', 'status' => 'active',
+            ]);
+            $this->fail('Overlapping effective periods were accepted.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('taxSettingForm.effective_from', $exception->errors());
+        }
+
+        $this->assertSame(1, TaxSetting::query()->count());
+    }
+
+    public function test_printer_configuration_preview_is_permission_guarded_and_renders_configuration(): void
+    {
+        $printer = PrinterConfiguration::create([
+            'name' => 'Preview Printer', 'printer_type' => 'label', 'paper_size' => 'label',
+            'template_name' => 'label_default', 'connection_type' => 'browser', 'status' => 'active',
+        ]);
+
+        $this->actingAs($this->administrator('tsk005-preview'));
+        $this->get(route('admin.settings.printer-preview', $printer))
+            ->assertOk()->assertSee('Preview Printer')->assertSee('label_default');
+
+        $this->actingAs($this->userWith('tsk005-preview-denied', ['accountant-reviewer']));
+        $this->get(route('admin.settings.printer-preview', $printer))->assertForbidden();
     }
 }

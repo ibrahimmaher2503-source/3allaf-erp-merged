@@ -2,7 +2,9 @@
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ class SubmitPurchaseOrderAction
         return DB::transaction(function () use ($id, $expectedVersion): PurchaseOrder {
             $userId = Auth::id();
             $po = PurchaseOrder::query()->lockForUpdate()->findOrFail($id);
+            $this->assertStoreScope($po->store_id);
 
             if ($expectedVersion !== null && $po->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This purchase order was modified in another session. Please reload before submitting.'));
@@ -60,5 +63,16 @@ class SubmitPurchaseOrderAction
 
             return $po->fresh(['supplier', 'store', 'lines.product']);
         });
+    }
+
+    private function assertStoreScope(?int $storeId): void
+    {
+        $user = Auth::user();
+        if ($storeId === null || ! $user instanceof User || $user->is_super_admin) {
+            return;
+        }
+        if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
+            throw new InvalidArgumentException(__('You are not authorized for the selected purchase-order store.'));
+        }
     }
 }

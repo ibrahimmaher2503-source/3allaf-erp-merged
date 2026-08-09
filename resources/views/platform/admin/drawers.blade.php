@@ -199,7 +199,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 />
             </div>
             <div class="w-full sm:w-56">
-                <flux:select wire:model.live="branchFilter" :label="null">
+                <flux:select wire:model.live="branchFilter" :label="__('Branch')">
                     <option value="all">{{ __('All Branches') }}</option>
                     @foreach(Branch::visibleTo(auth()->user())->orderBy('name_en')->get() as $branchOption)
                         <option value="{{ $branchOption->id }}">{{ app()->getLocale() === 'ar' ? $branchOption->name_ar : $branchOption->name_en }} ({{ $branchOption->code }})</option>
@@ -207,7 +207,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 </flux:select>
             </div>
             <div class="w-full sm:w-44">
-                <flux:select wire:model.live="statusFilter" :label="null">
+                <flux:select wire:model.live="statusFilter" :label="__('Status')">
                     <option value="all">{{ __('All Statuses') }}</option>
                     <option value="active">{{ __('Active') }}</option>
                     <option value="inactive">{{ __('Inactive') }}</option>

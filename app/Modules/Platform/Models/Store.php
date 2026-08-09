@@ -3,7 +3,9 @@
 namespace App\Modules\Platform\Models;
 
 use App\Models\User;
+use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Store extends Model
 {
     use HasFactory;
+
+    protected static function newFactory(): Factory
+    {
+        return StoreFactory::new();
+    }
 
     protected $fillable = [
         'company_id',

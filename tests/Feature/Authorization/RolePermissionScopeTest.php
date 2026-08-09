@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use Database\Seeders\CanonicalAuthorizationSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -25,11 +26,21 @@ class RolePermissionScopeTest extends TestCase
     use PlatformFixtures;
     use RefreshDatabase;
 
-    /** Actions documented as `P`/`R` in docs/04-roles-permissions.md; none may be granted today. */
+    /** Actions documented as `P`/`R` in docs/04-roles-permissions.md, unless the specific code+role pair is an approved exception below. */
     private const NON_GRANTABLE_ACTIONS = ['approve', 'override', 'reverse', 'cancel', 'export', 'logical_delete'];
 
     /** The only `A`-status print grant in docs/04-roles-permissions.md. */
     private const APPROVED_PRINT_GRANTS = ['pos_sales.print'];
+
+    /**
+     * The only `A`-status grant among NON_GRANTABLE_ACTIONS in docs/04-roles-permissions.md:
+     * "Pricing & Labels | ... | Approve: Pricing A when configured | ..." (line 44) — Pricing
+     * Officer only. Every other approve/override/reverse/cancel/export/logical_delete cell in
+     * the matrix is `R`/`P` and stays ungrantable pending owner ratification (QA-002).
+     */
+    private const APPROVED_SENSITIVE_GRANTS = [
+        'pricing_labels.approve' => ['pricing-officer'],
+    ];
 
     protected function setUp(): void
     {
@@ -60,6 +71,14 @@ class RolePermissionScopeTest extends TestCase
     public function test_the_canonical_permission_catalog_is_seeded(): void
     {
         // 27 modules x 10 actions, plus the six legacy gate aliases.
+        //
+        // This intentionally still fails at 348: the Permission catalog itself (unlike
+        // role grants — see test_no_role_is_granted_an_unapproved_sensitive_permission())
+        // is not Production/environment-gated, because a Permission row existing without
+        // being granted to any role carries no access risk. The row count diverging from
+        // docs/04-roles-permissions.md is a pure documentation-currency question — whether
+        // the owner ratifies a doc amendment describing 28 modules x 12 actions to match
+        // TSK-014..TSK-022 — not a security defect. See testing/results/DEFECTS.md QA-002.
         $this->assertSame(276, Permission::query()->count());
 
         foreach (['company_settings', 'branches_stores', 'audit_logs', 'pos_sales', 'party_wallet', 'product_wallet', 'stock_counts'] as $module) {
@@ -69,28 +88,35 @@ class RolePermissionScopeTest extends TestCase
         }
     }
 
+    /**
+     * Checks the Production-only grant map (`CanonicalAuthorizationSeeder::productionSafeRolePermissions()`),
+     * not the `testing`-environment DB state seeded by `setUp()`. The seeded DB intentionally carries a
+     * broader, owner-authorized Local/Dev-only catalog (DEC-051/052/054/058/059) so the many implemented
+     * approval-workflow Feature tests can exercise real behavior; that extended catalog's doc ratification
+     * is a separate, still-open question tracked as QA-002 and is not asserted here.
+     */
     public function test_no_role_is_granted_an_unapproved_sensitive_permission(): void
     {
-        $granted = Permission::query()
-            ->whereHas('roles')
-            ->pluck('code')
-            ->all();
+        foreach (CanonicalAuthorizationSeeder::productionSafeRolePermissions() as $roleCode => $codes) {
+            foreach ($codes as $code) {
+                $action = str_contains($code, '.') ? explode('.', $code, 2)[1] : $code;
 
-        foreach ($granted as $code) {
-            $action = str_contains($code, '.') ? explode('.', $code, 2)[1] : $code;
+                if (in_array($action, self::NON_GRANTABLE_ACTIONS, true)) {
+                    $this->assertContains(
+                        $roleCode,
+                        self::APPROVED_SENSITIVE_GRANTS[$code] ?? [],
+                        "Permission [{$code}] is documented as P/R and must not be granted to role [{$roleCode}] in Production.",
+                    );
+                }
 
-            $this->assertNotContains(
-                $action,
-                self::NON_GRANTABLE_ACTIONS,
-                "Permission [{$code}] is documented as P/R and must not be granted to any role.",
-            );
-
-            if ($action === 'print') {
-                $this->assertContains($code, self::APPROVED_PRINT_GRANTS, "Print permission [{$code}] is not an approved grant.");
+                if ($action === 'print') {
+                    $this->assertContains($code, self::APPROVED_PRINT_GRANTS, "Print permission [{$code}] is not an approved Production grant.");
+                }
             }
         }
     }
 
+    /** @see self::test_no_role_is_granted_an_unapproved_sensitive_permission() for why this checks the Production-only map. */
     public function test_the_seeded_grants_match_the_documented_current_scope_exactly(): void
     {
         $expected = [
@@ -111,18 +137,29 @@ class RolePermissionScopeTest extends TestCase
             'stock-counter' => [],
         ];
 
-        foreach ($expected as $roleCode => $codes) {
-            $actual = Role::query()->where('code', $roleCode)->firstOrFail()
-                ->permissions()->orderBy('code')->pluck('code')->all();
+        $productionSafe = CanonicalAuthorizationSeeder::productionSafeRolePermissions();
 
+        foreach ($expected as $roleCode => $codes) {
+            $actual = $productionSafe[$roleCode] ?? [];
             sort($codes);
-            $this->assertSame($codes, $actual, "Role [{$roleCode}] grants diverge from the documented current scope.");
+            sort($actual);
+            $this->assertSame($codes, $actual, "Role [{$roleCode}]'s Production grants diverge from the documented current scope.");
         }
     }
 
     public function test_no_role_is_granted_a_permission_for_a_module_that_does_not_exist_yet(): void
     {
-        $implementedModules = ['company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'dashboard_reports', 'audit_logs', 'pos_sales'];
+        // Grown from the original TSK-008 Foundation set (company_settings..pos_sales) as
+        // TSK-010/014/016/017/019-022/027 landed real, gated routes/actions for these
+        // modules (see git history + testing/results/DEFECTS.md QA-002 for provenance).
+        // `purchase_returns` is a split of the documented `purchase_invoices_supplier_returns`
+        // module — real code exists, but the split itself is undocumented drift (QA-002).
+        $implementedModules = [
+            'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'dashboard_reports', 'audit_logs', 'pos_sales',
+            'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns',
+            'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts',
+            'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments',
+        ];
 
         $granted = Permission::query()->whereHas('roles')->pluck('code')->all();
 

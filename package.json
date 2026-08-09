@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "@laravel/passkeys": "^0.2.0",
@@ -20,6 +21,8 @@
         "lightningcss-linux-x64-gnu": "^1.29.1"
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.12.1",
+        "@playwright/test": "^1.62.1",
         "playwright": "^1.62.1"
     }
 }

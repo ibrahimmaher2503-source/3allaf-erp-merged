@@ -64,6 +64,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->get('purchasing/invoices/{invoice}/print', function (PurchaseInvoice $invoice) {
         Gate::authorize('purchase_invoices_supplier_returns.print');
+        $user = Auth::user();
+        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($invoice->store_id)->exists()), 403);
         $invoice->load(['supplier', 'store', 'purchaseOrder', 'lines.product']);
 
         return view('purchasing.invoice-print', compact('invoice'));
@@ -125,6 +127,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->get('purchasing/orders/{order}/print', function (PurchaseOrder $order) {
         Gate::authorize('purchase_orders.print');
+        $user = Auth::user();
+        abort_unless(
+            $order->store_id === null || $user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()),
+            403,
+        );
 
         return view('purchasing.print', [
             'order' => $order->load(['supplier', 'store', 'creator', 'lines.product']),

@@ -17,6 +17,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table): void {
+            $table->dropUnique(['username']);
             $table->dropColumn(['username', 'is_super_admin']);
         });
     }

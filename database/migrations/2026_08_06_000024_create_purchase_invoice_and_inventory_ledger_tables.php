@@ -67,7 +67,10 @@ return new class extends Migration
             $table->index(['product_id', 'store_id', 'posted_at']);
             $table->index(['store_id', 'movement_type', 'posted_at']);
             $table->index(['source_type', 'source_id', 'source_line_id']);
-            $table->index(['product_id', 'store_id', 'posted_at', 'quantity', 'unit_cost']);
+            $table->index(
+                ['product_id', 'store_id', 'posted_at', 'quantity', 'unit_cost'],
+                'stock_movements_cost_lookup_index',
+            );
         });
 
         Schema::create('stock_balances', function (Blueprint $table): void {
@@ -99,7 +102,10 @@ return new class extends Migration
             $table->boolean('is_immutable')->default(true);
             $table->timestamps();
 
-            $table->unique(['product_id', 'store_id', 'period_start', 'period_end']);
+            $table->unique(
+                ['product_id', 'store_id', 'period_start', 'period_end'],
+                'stock_period_product_store_period_unique',
+            );
             $table->index(['store_id', 'period_start', 'period_end']);
         });
     }

@@ -44,6 +44,13 @@ class SaveProductSupplierAction
 
             $before = $relation ? $relation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']) : null;
 
+            // Preferred-supplier authority is intentionally separate from ordinary
+            // supplier-link editing. Setting, replacing, or removing a preferred
+            // link requires the documented sensitive permission.
+            if ($isPreferred || ($relation?->is_preferred ?? false)) {
+                Gate::authorize('suppliers.preferred_change');
+            }
+
             if ($isPreferred) {
                 // Clear preference on all other suppliers for this product
                 ProductSupplier::query()

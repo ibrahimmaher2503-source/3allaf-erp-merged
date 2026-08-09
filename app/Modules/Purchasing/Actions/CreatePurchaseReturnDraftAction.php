@@ -12,6 +12,7 @@ use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\PurchaseReturnLine;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\SupplierReturnReason;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -52,8 +53,16 @@ final class CreatePurchaseReturnDraftAction
             }
 
             $key = $idempotencyKey !== null && trim($idempotencyKey) !== '' ? trim($idempotencyKey) : (string) Str::uuid();
-            $existing = PurchaseReturn::query()->where('idempotency_key', $key)->first();
+            $existing = PurchaseReturn::query()->where('idempotency_key', $key)->with('lines')->first();
             if ($existing !== null) {
+                $replaySafe = $existing->purchase_invoice_id === $purchaseInvoiceId
+                    && $existing->reason_id === $reasonId
+                    && $this->linesMatch($existing->lines, $lines);
+
+                if (! $replaySafe) {
+                    throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
+                }
+
                 return $existing->load(['supplier', 'store', 'reason', 'purchaseInvoice', 'lines.product']);
             }
 
@@ -141,6 +150,42 @@ final class CreatePurchaseReturnDraftAction
 
             return $return->fresh(['supplier', 'store', 'reason', 'purchaseInvoice', 'lines.product']);
         });
+    }
+
+    /**
+     * @param  Collection<int, PurchaseReturnLine>  $existingLines
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    private function linesMatch($existingLines, array $lines): bool
+    {
+        if ($existingLines->count() !== count($lines)) {
+            return false;
+        }
+
+        $remaining = $existingLines->all();
+        foreach ($lines as $lineData) {
+            $sourceLineId = (int) ($lineData['purchase_invoice_line_id'] ?? 0);
+            try {
+                $quantity = $this->decimal($lineData['quantity'] ?? '0');
+            } catch (InvalidArgumentException) {
+                return false;
+            }
+
+            $matchIndex = null;
+            foreach ($remaining as $index => $existingLine) {
+                if ((int) $existingLine->purchase_invoice_line_id === $sourceLineId
+                    && bccomp((string) $existingLine->quantity, $quantity, 6) === 0) {
+                    $matchIndex = $index;
+                    break;
+                }
+            }
+            if ($matchIndex === null) {
+                return false;
+            }
+            unset($remaining[$matchIndex]);
+        }
+
+        return true;
     }
 
     private function assertStoreScope(int $storeId): void

@@ -33,7 +33,12 @@
         @endif
 
         <div class="grid gap-4 lg:grid-cols-[1.35fr_0.9fr]">
-            <section class="flex min-h-0 flex-col gap-4">
+            {{-- `min-w-0`: a CSS Grid item's automatic minimum width defaults to its
+                 content's min-content size, which the Cart table's `min-w-[520px]`
+                 (line ~87, wrapped in its own `overflow-x-auto`) would otherwise force
+                 up through this grid item, overflowing the page horizontally on narrow
+                 (mobile) viewports even though the table's own overflow is contained. --}}
+            <section class="flex min-h-0 min-w-0 flex-col gap-4">
                 <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <div class="flex flex-wrap items-center justify-between gap-2" data-guide="pos-products-heading">
                         <div>
@@ -83,7 +88,7 @@
                             </form>
                         @endif
                     </div>
-                    <div class="mt-4 overflow-x-auto">
+                    <div class="mt-4 overflow-x-auto" tabindex="0" role="region" aria-label="{{ __('Cart') }}">
                         <table class="w-full min-w-[520px] text-sm">
                             <thead class="border-b border-zinc-200 text-start text-xs text-zinc-500 dark:border-zinc-700">
                                 <tr><th class="py-2 text-start">{{ __('Product') }}</th><th class="py-2 text-start">{{ __('Quantity') }}</th><th class="py-2 text-start">{{ __('Unit price') }}</th><th class="py-2 text-end">{{ __('Amount') }}</th><th></th></tr>

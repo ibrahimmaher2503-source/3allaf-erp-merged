@@ -230,7 +230,13 @@ new #[Title('Branch Management')] class extends Component
         $this->historyBranchId = $branch->id;
         $this->historyBranchName = app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en;
         $this->historyRecords = $branch->sellingStoreMappings
-            ->sortByDesc('created_at')
+            // MySQL's default `timestamp` precision is whole seconds (unlike
+            // SQLite, which preserves microseconds), so two mappings created
+            // within the same second tie on `created_at` and previously fell
+            // back to insertion order — showing history oldest-first instead
+            // of newest-first. `id` is a monotonically increasing, unambiguous
+            // proxy for creation order regardless of timestamp precision.
+            ->sortByDesc('id')
             ->map(fn ($item) => [
                 'id' => $item->id,
                 'store_code' => $item->store?->code,

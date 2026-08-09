@@ -24,8 +24,8 @@ class PurchaseOrderLine extends Model
 
     protected $casts = [
         'line_number' => 'integer',
-        'quantity_ordered' => 'decimal:4',
-        'quantity_received' => 'decimal:4',
+        'quantity_ordered' => 'decimal:6',
+        'quantity_received' => 'decimal:6',
         'unit_cost' => 'decimal:4',
         'subtotal' => 'decimal:4',
     ];

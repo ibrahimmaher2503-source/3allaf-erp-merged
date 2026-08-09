@@ -2,11 +2,13 @@
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use BcMath\Number;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -52,11 +54,12 @@ class SavePurchaseOrderAction
             $branchId = null;
             if ($storeId !== null) {
                 $store = Store::query()->findOrFail($storeId);
+                $this->assertStoreScope($storeId);
                 $branchId = $store->branch_id;
             }
 
             $validatedLines = [];
-            $lineSubtotalSum = '0.0000';
+            $lineSubtotalSum = new Number('0');
 
             foreach ($lines as $index => $line) {
                 $productId = (int) ($line['product_id'] ?? 0);
@@ -65,33 +68,26 @@ class SavePurchaseOrderAction
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be ordered.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
 
-                $qty = (float) ($line['quantity_ordered'] ?? 0);
-                if ($qty <= 0) {
-                    throw new InvalidArgumentException(__('Quantity ordered must be greater than zero.'));
-                }
+                $qty = $this->decimal($line['quantity_ordered'] ?? null, 6, 'Quantity ordered', false);
+                $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost', true);
 
-                $unitCost = (float) ($line['unit_cost'] ?? 0);
-                if ($unitCost < 0) {
-                    throw new InvalidArgumentException(__('Unit cost cannot be negative.'));
-                }
-
-                $lineSubtotal = round($qty * $unitCost, 4);
-                $lineSubtotalSum = bcadd((string) $lineSubtotalSum, (string) $lineSubtotal, 4);
+                $lineSubtotal = $qty->mul($unitCost)->round(4);
+                $lineSubtotalSum = $lineSubtotalSum->add($lineSubtotal)->round(4);
 
                 $validatedLines[] = [
                     'product_id' => $product->id,
                     'line_number' => $index + 1,
-                    'quantity_ordered' => $qty,
-                    'quantity_received' => 0,
-                    'unit_cost' => $unitCost,
-                    'subtotal' => $lineSubtotal,
+                    'quantity_ordered' => (string) $qty,
+                    'quantity_received' => '0.000000',
+                    'unit_cost' => (string) $unitCost,
+                    'subtotal' => (string) $lineSubtotal,
                     'notes' => ! empty($line['notes']) ? trim((string) $line['notes']) : null,
                     'updated_by' => $userId,
                 ];
             }
 
-            $taxAmount = '0.0000'; // Explicit local zero or TBD tax
-            $totalAmount = bcadd((string) $lineSubtotalSum, (string) $taxAmount, 4);
+            $taxAmount = new Number('0'); // Explicit local zero or TBD tax
+            $totalAmount = $lineSubtotalSum->add($taxAmount)->round(4);
 
             $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute();
 
@@ -105,9 +101,9 @@ class SavePurchaseOrderAction
                 'expected_delivery_date' => ! empty($data['expected_delivery_date']) ? $data['expected_delivery_date'] : null,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
                 'notes' => ! empty($data['notes']) ? trim((string) $data['notes']) : null,
-                'subtotal' => $lineSubtotalSum,
-                'tax_amount' => $taxAmount,
-                'total_amount' => $totalAmount,
+                'subtotal' => (string) $lineSubtotalSum,
+                'tax_amount' => (string) $taxAmount,
+                'total_amount' => (string) $totalAmount,
                 'updated_by' => $userId,
             ];
 
@@ -148,5 +144,42 @@ class SavePurchaseOrderAction
 
             return $po->fresh(['supplier', 'store', 'lines.product']);
         });
+    }
+
+    private function assertStoreScope(int $storeId): void
+    {
+        $user = Auth::user();
+        if (! $user instanceof User || $user->is_super_admin) {
+            return;
+        }
+
+        if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
+            throw new InvalidArgumentException(__('You are not authorized for the selected purchase-order store.'));
+        }
+    }
+
+    private function decimal(mixed $value, int $scale, string $label, bool $allowZero): Number
+    {
+        $value = trim((string) $value);
+        $this->assertDecimalFormat($value, $scale, $label);
+
+        $normalized = new Number($value);
+        if (! $allowZero && $normalized->compare(new Number('0')) <= 0) {
+            throw new InvalidArgumentException(__(':label must be greater than zero.', ['label' => $label]));
+        }
+
+        return $normalized->round($scale);
+    }
+
+    /** @phpstan-assert numeric-string $value */
+    private function assertDecimalFormat(string $value, int $scale, string $label): void
+    {
+        $pattern = $scale === 0
+            ? '/^\d+$/D'
+            : '/^\d+(?:\.\d{1,'.$scale.'})?$/D';
+
+        if ($value === '' || preg_match($pattern, $value) !== 1) {
+            throw new InvalidArgumentException(__(':label must be a valid decimal with up to :scale decimal places.', ['label' => $label, 'scale' => $scale]));
+        }
     }
 }

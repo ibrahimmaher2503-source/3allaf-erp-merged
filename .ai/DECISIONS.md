@@ -165,3 +165,12 @@ Under DEC-060, TSK-025 may expose a server-gated `/pos/shift-readiness` page usi
 **Status:** Approved for Local/Dev implementation only; Production/UAT/Phase Gates deferred.
 
 The owner explicitly authorized implementation of bounded Local/Dev slices for TSK-023 through TSK-027 while preserving every unresolved policy, hardware, device, financial, legal, owner-input, UAT, and release value as `PENDING`/configurable. These slices may use deterministic local Demo fixtures and browser evidence, but must not be represented as Production policy, Phase Gate approval, UAT acceptance, or release readiness. TSK-026 remains restricted to a truthful offline readiness/disabled boundary until DEC-018/BLK-004 inputs are supplied; it must not invent enabled devices, limits, expiry, or conflict dispositions.
+
+## DEC-064 — Owner-authorized Phase 1 automated QA audit
+
+**Date:** 2026-08-08
+**Status:** Approved for this local QA audit; Production execution and human sign-off remain prohibited.
+
+The owner explicitly authorized inspection of all Phase 1 milestones, tasks, requirements, permissions, routes, database structures, UI, and existing tests; creation of missing automated tests where implemented behavior exists; execution of the available automated suites and diagnostics; and generation of milestone and final reports under `testing/results/`. This current instruction supersedes the prior automated-test deferral only for this named local QA audit.
+
+Missing tools, unavailable environments, unimplemented business behavior, physical devices, production infrastructure, UAT, disaster recovery, and human review must be reported as `BLOCKED_BY_ENVIRONMENT` or blocked by implementation/owner evidence. No agent may mark a human checklist complete, weaken a requirement, infer Production readiness, execute against Production, or treat readiness-only screens as implemented business workflows.

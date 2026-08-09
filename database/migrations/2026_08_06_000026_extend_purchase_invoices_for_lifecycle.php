@@ -52,7 +52,11 @@ return new class extends Migration
         Schema::table('purchase_invoices', function (Blueprint $table): void {
             $table->dropIndex(['supplier_id', 'supplier_reference', 'status']);
             $table->dropIndex(['source_type', 'source_id']);
-            $table->dropForeign(['created_by', 'updated_by', 'submitted_by', 'rejected_by', 'cancelled_by']);
+            $table->dropForeign(['created_by']);
+            $table->dropForeign(['updated_by']);
+            $table->dropForeign(['submitted_by']);
+            $table->dropForeign(['rejected_by']);
+            $table->dropForeign(['cancelled_by']);
             $table->dropColumn([
                 'invoice_date', 'currency_code', 'notes', 'lock_version', 'created_by', 'updated_by',
                 'source_type', 'source_id', 'submitted_at', 'submitted_by', 'rejected_at', 'rejected_by',

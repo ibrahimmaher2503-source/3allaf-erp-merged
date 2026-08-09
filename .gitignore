@@ -6,7 +6,11 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/debugbar
 /vendor
+/composer.phar
+artifacts/*.out
+artifacts/*.err
 .env
 .env.backup
 .env.production

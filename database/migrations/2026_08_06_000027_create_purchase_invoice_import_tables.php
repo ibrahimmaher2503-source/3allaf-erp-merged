@@ -29,12 +29,16 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['created_by', 'sha256']);
-            $table->index(['created_by', 'status', 'created_at']);
+            $table->index(['created_by', 'status', 'created_at'], 'invoice_import_creator_status_index');
         });
 
         Schema::create('purchase_invoice_import_rows', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('purchase_invoice_import_batch_id')->constrained('purchase_invoice_import_batches')->cascadeOnDelete();
+            $table->unsignedBigInteger('purchase_invoice_import_batch_id');
+            $table->foreign('purchase_invoice_import_batch_id', 'invoice_import_rows_batch_fk')
+                ->references('id')
+                ->on('purchase_invoice_import_batches')
+                ->cascadeOnDelete();
             $table->unsignedInteger('row_number');
             $table->json('raw_data');
             $table->json('mapped_data')->nullable();
@@ -43,8 +47,8 @@ return new class extends Migration
             $table->foreignId('purchase_invoice_id')->nullable()->constrained('purchase_invoices')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['purchase_invoice_import_batch_id', 'row_number']);
-            $table->index(['purchase_invoice_import_batch_id', 'status']);
+            $table->unique(['purchase_invoice_import_batch_id', 'row_number'], 'invoice_import_rows_batch_row_unique');
+            $table->index(['purchase_invoice_import_batch_id', 'status'], 'invoice_import_rows_batch_status_index');
         });
     }
 

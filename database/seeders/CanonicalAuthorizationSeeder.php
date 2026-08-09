@@ -54,6 +54,7 @@ class CanonicalAuthorizationSeeder extends Seeder
 
         Permission::query()->updateOrCreate(['code' => 'purchase_returns.approve_over_limit'], ['module' => 'purchase_returns', 'action' => 'approve_over_limit', 'sensitivity' => 'sensitive', 'status' => 'active']);
         foreach ([
+            ['code' => 'suppliers.preferred_change', 'module' => 'suppliers', 'action' => 'preferred_change'],
             ['code' => 'inventory_stock_card.cost_view', 'module' => 'inventory_stock_card', 'action' => 'cost_view'],
             ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
             ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
@@ -71,22 +72,25 @@ class CanonicalAuthorizationSeeder extends Seeder
                 'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
                 'dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view',
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
+                'suppliers.preferred_change',
                 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
                 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_invoices_supplier_returns.reverse', 'purchase_invoices_supplier_returns.cancel', 'purchase_invoices_supplier_returns.override',
-                'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.approve_over_limit', 'purchase_returns.reject', 'purchase_returns.reverse', 'purchase_returns.cancel', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.approve', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'transfers.view', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile',
+                'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.approve_over_limit', 'purchase_returns.reject', 'purchase_returns.reverse', 'purchase_returns.cancel', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'transfers.view', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile',
             ],
             'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'products_categories_brands.view'],
-            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print'],
+            'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print'],
             'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.submit', 'inventory_stock_card.approve', 'inventory_stock_card.override', 'transfers.view', 'transfers.create', 'transfers.submit', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile'],
-            'pricing-officer' => ['products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit'],
+            'pricing-officer' => ['products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.approve'],
             'stock-counter' => ['products_categories_brands.view', 'inventory_stock_card.view', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.submit'],
-            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.approve', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.export', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
+            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.export', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
         ];
+
+        $effectiveRolePermissions = app()->environment('production') ? self::productionSafeRolePermissions() : $rolePermissions;
 
         foreach ($roles as $code => $_) {
             $role = Role::query()->where('code', $code)->firstOrFail();
-            $codes = $rolePermissions[$code] ?? [];
+            $codes = $effectiveRolePermissions[$code] ?? [];
             $role->permissions()->sync(Permission::query()->whereIn('code', $codes)->pluck('id')->all());
         }
 
@@ -123,5 +127,40 @@ class CanonicalAuthorizationSeeder extends Seeder
                 User::query()->where('username', 'demo-cashier')->first()?->storeScopes()->updateOrCreate(['store_id' => $storeId], ['status' => 'active']);
             }
         }
+    }
+
+    /**
+     * The only role→permission grants applied when `APP_ENV=production`.
+     *
+     * docs/04-roles-permissions.md line 12: "P and R entries are not production
+     * grants." This is exactly the TSK-008 Foundation scope DEC-038 froze as the
+     * approved-without-amendment Canonical Authorization Matrix. Every module
+     * implemented since (TSK-014..TSK-022: suppliers, purchase orders/invoices/
+     * returns, pricing, inventory, transfers, stock counts) was authorized
+     * Local/Dev-only (DEC-051/052/054/058/059) and must not reach a Production
+     * grant until the owner ratifies a docs/04 amendment. See
+     * testing/results/DEFECTS.md QA-002.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function productionSafeRolePermissions(): array
+    {
+        return [
+            'system-administrator' => [
+                'company_settings.view', 'company_settings.create', 'company_settings.edit',
+                'branches_stores.view', 'branches_stores.create', 'branches_stores.edit',
+                'drawers_payments_tax_numbering_printers.view', 'drawers_payments_tax_numbering_printers.create', 'drawers_payments_tax_numbering_printers.edit',
+                'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
+                'dashboard_reports.view', 'audit_logs.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change',
+            ],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view'],
+            'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print'],
+            'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],
+            'purchasing-officer' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change'],
+            'warehouse-manager' => [],
+            'pricing-officer' => [],
+            'party-manager' => [],
+            'stock-counter' => [],
+        ];
     }
 }

@@ -103,13 +103,18 @@ class AuditBackfillTest extends TestCase
     public function test_the_legacy_source_key_is_unique(): void
     {
         $this->seedLegacyRows(1);
+        // The legacy row's real primary key, not an assumed `1`: MySQL/InnoDB's
+        // auto_increment counter is not transactional, so it does not reset
+        // when RefreshDatabase rolls back earlier tests in this file — only
+        // SQLite happens to make `id === 1` a safe assumption here.
+        $legacyId = DB::table('settings_audit_logs')->value('id');
         app(BackfillLegacySettingsAuditLogs::class)->execute();
 
         $this->expectException(QueryException::class);
 
         DB::table('audit_logs')->insert([
             'event_id' => (string) Str::uuid(),
-            'legacy_source_key' => 'settings_audit_logs:1',
+            'legacy_source_key' => 'settings_audit_logs:'.$legacyId,
             'category' => 'master_data',
             'event' => 'duplicate_attempt',
             'created_at' => now(),
@@ -119,9 +124,10 @@ class AuditBackfillTest extends TestCase
     public function test_legacy_values_are_redacted_during_the_backfill(): void
     {
         $this->seedLegacyRows(1);
+        $legacyId = DB::table('settings_audit_logs')->value('id');
         app(BackfillLegacySettingsAuditLogs::class)->execute();
 
-        $row = DB::table('audit_logs')->where('legacy_source_key', 'settings_audit_logs:1')->first();
+        $row = DB::table('audit_logs')->where('legacy_source_key', 'settings_audit_logs:'.$legacyId)->first();
 
         $this->assertStringNotContainsString('legacy-secret', (string) $row->before_values);
         $this->assertStringNotContainsString('AK-legacy', (string) $row->after_values);

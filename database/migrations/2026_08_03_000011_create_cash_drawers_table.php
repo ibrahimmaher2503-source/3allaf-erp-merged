@@ -22,7 +22,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['branch_id', 'code']);
-            $table->index(['company_id', 'branch_id', 'store_id', 'assigned_user_id', 'status']);
+            // Keep the identifier below MySQL's 64-character limit while
+            // preserving the full scope/status index definition.
+            $table->index(
+                ['company_id', 'branch_id', 'store_id', 'assigned_user_id', 'status'],
+                'cash_drawers_scope_status_index',
+            );
         });
     }
 

@@ -124,6 +124,26 @@
         @apply px-3 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-text-muted;
     }
 
+    /*
+     * Flux's non-expandable `<flux:sidebar.group>` heading (used for the
+     * "Platform" navigation group) never actually renders a
+     * `data-flux-sidebar-group-heading` attribute — that rule above matches
+     * nothing here — so it falls through to Flux's own default
+     * `text-zinc-400`, which fails WCAG AA color contrast (2.48:1 against
+     * this sidebar's background; 4.5:1 required) per axe-core evidence in
+     * `testing/e2e/critical-accessibility-rtl-mobile.spec.js`. Target the
+     * actual rendered node by its real class list instead.
+     *
+     * `!important` is required, not just higher specificity: this rule lives
+     * in Tailwind's `@layer components`, and Flux's `.text-zinc-400` utility
+     * lives in `@layer utilities`, which Tailwind orders after `components`
+     * — CSS Cascade Layers give layer order absolute priority over
+     * specificity, so a plain higher-specificity selector here still loses.
+     */
+    .app-sidebar [data-flux-sidebar-group] > div > .text-zinc-400.font-medium.leading-none {
+        color: var(--color-text-muted) !important;
+    }
+
     .app-sidebar [data-flux-sidebar-item] {
         @apply min-h-10 rounded-lg text-sm text-text-muted transition-all duration-200;
     }
@@ -157,6 +177,7 @@
         box-shadow: 1px 0 0 oklch(0.28 0.02 245), 10px 0 30px oklch(0 0 0 / 0.35) !important;
     }
 
+    html[data-dark-sidebar="true"] .app-sidebar [data-flux-sidebar-group] > div > .text-zinc-400.font-medium.leading-none,
     html[data-dark-sidebar="true"] .app-sidebar [data-flux-sidebar-group-heading] {
         color: oklch(0.70 0.015 245) !important;
     }

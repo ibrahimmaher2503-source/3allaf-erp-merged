@@ -64,8 +64,8 @@ return new class extends Migration
             $table->decimal('total_cost', 19, 4);
             $table->timestamps();
 
-            $table->unique(['purchase_return_id', 'purchase_invoice_line_id']);
-            $table->index(['purchase_invoice_line_id', 'product_id']);
+            $table->unique(['purchase_return_id', 'purchase_invoice_line_id'], 'purchase_return_line_source_unique');
+            $table->index(['purchase_invoice_line_id', 'product_id'], 'purchase_return_line_product_index');
         });
     }
 

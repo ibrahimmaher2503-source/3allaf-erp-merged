@@ -298,3 +298,110 @@ Completed the Company, payment, tax, store, mapping, and drawer browser mutation
 - Added shared bulk-operation guidance to Products, Categories, Brands, Suppliers, Branches, and Stores using the stable bulk-region selector.
 - Added `docs/57-tutorial-content-authoring.md` so future screens/steps can be added by creating or editing one data definition without changing registry lookup logic.
 - This is a local implementation/refactor slice; browser verification of the full tour matrix and mobile remains required before claiming TSK-004B complete.
+
+## Full QA Audit — 2026-08-08
+
+- Owner-authorized automated QA covered all 72 requirement IDs, 16 cross-cutting criteria, 45 tasks and 25 Development Milestones. Lower-model agents added focused tests; the expanded suites and static/dependency/database diagnostics were executed without weakening requirements.
+- Unit: 52 passed / 81 assertions. Feature: 245 total, 231 passed, 13 failed, 1 error, 3 risky / 1,245 assertions.
+- Critical/High blockers include RBAC contract drift, changed-payload idempotency acceptance in inventory/retail/supplier returns, non-fractional inventory acceptance, unavailable/incompatible spreadsheet runtime, incomplete POS/shift/offline/customer/party/asset/report mutations, and absent backup/restore/production/UAT evidence.
+- Final reports are under `testing/results/`; final status is **NOT READY FOR PRODUCTION**. Task/phase statuses were not advanced.
+
+## Extended QA Strategy and Automation — 2026-08-08
+
+- Added the seven requested extended artifacts: strategy, E2E, security, concurrency, failure/recovery, UAT, and updated coverage matrix; added a separate mutation-testing strategy because Infection is unavailable.
+- Traceability is now 72/72 requirements, 25/25 milestones and 70/70 workflows, with at least two distinct relevant scenarios per requirement and no unknown scenario/workflow IDs.
+- Lower-cost agents added and ran IDOR, Contract, deterministic Property-Based and Fuzz/Boundary tests. Unit is 55/55 passing; Feature is 258 total with 239 passing, 13 failing, 1 error, 5 skipped and 3 risky.
+- No task or phase was advanced. E2E/browser, production concurrency/load/chaos, DR/rollback and UAT remain blocked or pending, and final status remains **NOT READY FOR PRODUCTION**.
+
+## QA Defect Closure — 2026-08-08
+
+- Re-established a fresh baseline at current `HEAD` (Unit 55/55; Feature 258 total, 244 passed, 13 failed, 1 error, 3 risky), reproducing the prior two sessions' failure set exactly, then fixed four of the five open Critical/High regression-suite defects directly (no delegation this pass):
+  - Idempotency changed-payload replay now rejected (Inventory, Retail sale, Purchasing supplier return).
+  - Fractional-quantity domain-boundary guard added to `PostInventoryMovement`.
+  - Approval-expiry test corrected to match `ExpireApprovalRequest`'s documented system/scheduler-vs-authenticated contract (test defect, not a code defect).
+  - Four stale absence tests (catalog table/model/route ×3, approval-not-wired, print-route-absent) replaced with behavioral coverage of the now-implemented features; one fully superseded file deleted.
+- RBAC (348 vs 276) was investigated to root cause — `docs/04-roles-permissions.md` frozen at TSK-008's 27-module/10-action scope while `CanonicalAuthorizationSeeder` has grown to 28 modules/12 actions under later owner-authorized TSK-010/014/015/016 work — and reported rather than resolved unilaterally, since it requires an explicit owner decision on Production policy (see `testing/results/DEFECTS.md` QA-002).
+- Post-fix regression: Unit 55/55; Feature 257 total, 253 passed, **4 failed** (all RBAC), **0 errors**, 3 risky, 1,377 assertions.
+- Final status remains **NOT READY FOR PRODUCTION**: the automated-suite RBAC gate and the still-open non-suite Critical defects (backup/restore, UAT, production infrastructure, incomplete Phase 3–6 workflows) were not resolved by this pass. No task/phase status was advanced; no commit or push occurred.
+
+## RBAC/IDOR Security Automation — 2026-08-08 (continuation, same day)
+
+- Swept all 24 app-owned parameterized routes for IDOR; found and fixed a Critical gap (QA-028): `purchasing.invoices.print` and `purchasing.orders.print` had no store-scope check, unlike every comparable route. Fixed to match the existing pattern.
+- Closed a coverage gap (QA-029, no code defect) on the shared `AssertInventoryStoreScope` helper, previously regression-tested through only one of its 8 call sites.
+- Added `tests/Feature/Security/CrossStoreIdorTest.php` and `tests/Feature/Inventory/InventoryStoreScopeGuardTest.php` (10 new tests, all passing).
+- Full regression: Unit 55/55; Feature 267 total, 263 passed, 4 failed (unchanged RBAC cluster), 0 errors, 3 risky, 1,398 assertions.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## TSK-003 Full Production Closure Audit — 2026-08-09
+
+- Revalidated TSK-003 only against current code and traceability sources. Targeted PHPUnit, MariaDB regression, dedicated staging Playwright, auth/RBAC, accessibility, RTL/LTR, and mobile checks passed as recorded in `.ai/TEST_RESULTS.md`.
+- TSK-003 remains `BLOCKED_BY_CONFIGURATION`: context resolver switching, transactional offline queue/sync, approved physical device/browser/printer/scanner matrix, cross-browser evidence, and UAT/sign-off are still absent. No TSK-004 work started.
+
+## Critical E2E Automation — 2026-08-08 (continuation, same day)
+
+- Added `tests/Feature/E2E/CatalogToInventoryChainTest.php`, the first test spanning the full CATALOG → PRICING → POS → INVENTORY chain in one continuous run. Found and fixed QA-030 (missing audit event on `RetailSaleAction::finalize()`) while building it.
+- Installed Playwright (already declared in `package.json`) and ran the project's first executed browser E2E suite: `testing/e2e/critical-auth-and-rbac.spec.js`, 4/4 passing against a real server + dedicated disposable database with purpose-created login fixtures. See `testing/e2e/README.md` for scope and setup.
+- This is real progress, not a completed gate: only ~4 of 40 E2E scenarios have browser evidence; `PRODUCTION-RELEASE-GATE.md` gate #9 moved to PARTIAL, not PASS.
+- Full regression: Unit 55/55; Feature 268 total, 264 passed, 4 failed (unchanged RBAC cluster), 0 errors, 3 risky, 1,422 assertions.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+## TSK-001 Production Closure — 2026-08-09
+
+TSK-001 production closure was executed for TSK-001 only. Local targeted checks pass, but the task remains `BLOCKED_BY_DEFECT` because actual backup/restore capability/status and custom bilingual 419/429 views are absent. MySQL verification, disposable browser server, production configuration/providers, operational signals, backup restore rehearsal, and UAT are also blocked or not executed. The complete dimension matrix and evidence are in `testing/results/PRODUCTION-CLOSURE-MATRIX.md`; TSK-002 was not started.
+## TSK-001 Production Blocker Fix Pass — 2026-08-09
+
+TSK-001 local defects are fixed: maintained backup capability/configuration, isolated restore guard, scheduled operations, backup status, and bilingual 419/429 views are implemented and targeted-tested. Status is now `BLOCKED_BY_ENVIRONMENT` pending sqlite3/MySQL tooling, approved production provider/secrets, dedicated browser E2E infrastructure, staging restore/rollback/monitoring evidence, and UAT. TSK-002 was not started.
+
+## RBAC Defect Closure + Expanded Critical E2E — 2026-08-09 (continuation, same day)
+
+- Decomposed the 4 RBAC feature failures per-test rather than as one cluster and closed 3 of 4 on real evidence: (1) fixed a genuine mis-assigned grant — `pricing_labels.approve`, docs/04's only A-status sensitive permission, moved from `system-administrator`/`accountant-reviewer` to `pricing-officer`; (2) fixed a new Critical defect (**QA-031**) — `CanonicalAuthorizationSeeder` synced R-status permissions unconditionally in every environment, including a real `APP_ENV=production` run, contradicting docs/04's "not production grants" rule; now environment-gated via a new `productionSafeRolePermissions()` method; (3) fixed a stale `$implementedModules` list (QA-004 pattern). The 4th (348 vs 276 permission-row count) stays open — a pure docs/04-amendment question with no security exposure now that grants are gated, not resolved by fiat. QA-002 narrowed from Critical to Medium.
+- Added two new backend business-chain E2E tests tracing full lifecycles in one continuous flow: `PurchasingLifecycleChainTest` (Supplier→PO→Approval→Invoice/Receipt→WAC→Return→Audit, with self-approval rejection and idempotency checks) and `InventoryLifecycleChainTest` (Transfer→Shortage-Receipt→Difference→Adjustment→Count→Reconciliation, with a denied cross-store approval proven to cause zero mutation).
+- Expanded browser E2E: `testing/e2e/critical-rbac-matrix.spec.js` — direct-URL authorization across 6 canonical roles × POS/Inventory/Purchasing/Settings/Audit (29 checks) plus one forged-direct-POST-with-valid-CSRF denial, independently confirmed via database inspection to post zero mutation. Browser suite: 33/33 passing.
+- Full regression: 328 tests, 325 passed, **1 failed** (the RBAC doc-currency count only — expected, owner-decision-blocked, zero security exposure), 0 errors.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## Accessibility/RTL/Mobile Automation — 2026-08-09 (continuation, same day)
+
+- Installed `@axe-core/playwright` and added `testing/e2e/critical-accessibility-rtl-mobile.spec.js`: axe-core (WCAG 2.1 A/AA) scans of login/dashboard/POS at desktop LTR, the dashboard again after a real Arabic locale switch (RTL, verified `dir`/`lang` + zero overflow), and all three at a 390px mobile viewport. 7/7 passing.
+- Found and fixed 5 real defects (QA-032..036), none suppressed: two `<dl>`/`<dt>`/`<dd>` structural violations (dashboard and suppliers pages — the dashboard case needed a switch from `<dl>` to a plain `<ul>` since the row data is label+description+status, not a term/definition pair); one color-contrast failure whose intended CSS fix was silently dead (targeted a Flux attribute that Flux's actual markup never renders — required an `!important` override to win against Tailwind's `@layer utilities`); one CSS Grid mobile-overflow bug on the POS Cart table (`min-w-0` fix); one resulting keyboard-inaccessible scroll region (`tabindex`/`role`/`aria-label` fix).
+- Full regression after fixes: Playwright 42/42 (1 transient login-throttle flake confirmed passing on retry); PHP 329 tests, 327 passed, 1 expected RBAC failure + 1 pre-existing unrelated flake confirmed passing in isolation.
+
+## Concurrency Automation — 2026-08-09 (continuation, same day)
+
+- A real MariaDB 10.4.32 instance became reachable this session, unblocking the "Critical concurrency" gate for the first time (previously `BLOCKED_BY_ENVIRONMENT`: SQLite cannot prove row-lock races). Provisioned an isolated `toyjoy_concurrency_20260809` database (kept separate from the other active session's `toyjoy_tsk_env_20260809`), added `phpunit.concurrency.xml`, and added `tests/Concurrency/` (outside `phpunit.xml.dist`'s roots, so the default suite is unaffected).
+- Proved 4 of the highest-risk lockable scenarios by racing genuine, independent OS processes (via `Symfony\Process`, not simulated) against the real DB: `StockBalanceConcurrencyTest` (CONC-INV-003), `DocumentSequenceConcurrencyTest` (CONC-NUM-001), `PriceApprovalConcurrencyTest` (CONC-PRC-001), `RetailSaleConcurrencyTest` (CONC-POS-003). All 4 pre-existing `lockForUpdate()` mechanisms hold correctly under real concurrency: no lost update, no duplicate/skipped document numbers, no double-active price version, no POS oversell.
+- Found and fixed two real Critical defects (**QA-037**, **QA-038**), both invisible to SQLite: `PostInventoryMovement::execute()` and `RetailSaleAction::create()` each had an idempotency check-then-insert race outside any lock — two concurrent identical submissions could both pass the check before either committed, and the DB's unique index then threw an unhandled exception instead of the intended graceful replay. Fixed both by catching the specific unique-constraint violation and replaying through the existing (unweakened) safety check.
+- Verification: concurrency suite 6/6 passing, re-run twice for idempotent-rerun safety. Full default regression after the two production-code fixes: 331 tests, 330 passed, 1 failed (same pre-existing owner-decision-blocked RBAC doc-currency count, no new failure), 3 risky.
+- Scoped deliberately to 4 of 23 `CONCURRENCY-SCENARIOS.md` entries — the rest are either already provable on SQLite (pure idempotency, no lock needed) or `BLOCKED_NOT_IMPLEMENTED` (wallet/party/asset/offline-queue modules don't exist yet). Not silently claimed as broader coverage.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## Failure/Recovery Automation — 2026-08-09 (continuation, same day)
+
+- Corrected two stale `FAILURE-RECOVERY-SCENARIOS.md` entries (FAIL-INV-002, FAIL-POS-002) still marked `FAIL` and referencing QA-027/QA-015, both fixed back on 2026-08-08.
+- Closed a real, previously-untested gap: three scenarios (FAIL-INV-003 transfer receipt, FAIL-INV-004 count reconciliation, FAIL-POS-003 suspended-sale resume) had only ever been tested for the FIRST line of a multi-line `DB::transaction()` failing (trivial) or every line succeeding — never "a LATER line fails after an earlier line's write already applied," which is the actual atomicity claim. Added 3 new tests using real fault injection (a genuine `PostInventoryMovement` fractional-quantity rejection on the second of two lines, not a mock — `PostInventoryMovement` is `final` and mocking it was avoided in favor of a real, user-triggerable failure path) proving the first line's already-applied write rolls back together with the second line's failure in all three actions, including the `InventoryAdjustment` header row for count reconciliation.
+- No new production defect found — all three actions' transaction wrapping was already correct; this converts an unproven assumption into real evidence. Honestly scoped: proves atomicity under a real business-rule failure mid-transaction, not recovery from an actual process crash/power loss, which remains a separate, later chaos-engineering item (FAIL-CHAOS-001).
+- Advisor review before declaring done caught a real gap: two of the three rollback tests couldn't distinguish "rolled back" from "the failing line ran first and the succeeding line never ran" (no explicit `orderBy` on the relevant relationships). Fixed with a positive-control test proving both transfer lines post when uninterrupted plus an explicit iteration-order assertion, and an order-independent `document_sequences`-absence assertion for the POS test (mirroring the count test's already-order-independent adjustment-header proof). Also added QA-039 to `DEFECTS.md` (closed coverage gap, matching the QA-029 precedent) and narrowed QA-014 to Partial on the concurrency-pass evidence.
+- Full regression: 338 tests, 337 passed, 1 failed (same pre-existing RBAC doc-currency count, no new failure), 3 risky, 1,715 assertions.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## Production-like Regression — 2026-08-09 (continuation, same day)
+
+- Ran the FULL 338-test Unit+Feature suite against real MariaDB for the first time this audit (`phpunit.prodlike.xml`, dedicated `toyjoy_prodlike_20260809` DB), unblocking the DB-engine dimension of gate #13. Confirmed the queue dimension is a non-gap (zero `ShouldQueue`/`dispatch()` usage in the whole app) rather than leaving it unexamined; cache/storage differences don't apply to a single-process PHPUnit run.
+- Found and fixed two real, SQLite-invisible defects: **QA-040** (Critical UI defect) — the branch/store mapping-history screen sorted by `created_at`, which ties under MySQL's whole-second timestamp precision (unlike SQLite's microseconds) and silently shows history in the wrong order; fixed by sorting on `id` instead. **QA-041** (test defect, no production code change) — two `AuditBackfillTest` tests hardcoded an assumed primary-key value that only ever held under SQLite, because MySQL/InnoDB's `AUTO_INCREMENT` counter doesn't reset on `RefreshDatabase` rollback like SQLite's does; fixed by reading the real inserted ID.
+- Final MariaDB run: 336/338 passed, 3 risky — the 2 remaining failures are both expected/explained (the same pre-existing RBAC doc-currency count, and a SQLite-isolation guard test correctly firing because this run intentionally targets MySQL). Default SQLite suite re-confirmed unaffected by both fixes.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## Production-like Regression — Correction Pass — 2026-08-09 (same day)
+
+- Advisor review of the pass above caught 4 follow-ups: verified QA-040's `sortByDesc('id')` fix is semantically correct (not just deterministic — `effective_from` is always `now()` at creation, no backdating path); swept `app/`+`resources/` for the same tie-prone timestamp-sort pattern (one other instance, `RetailSaleAction::openShift()`'s `->latest('opened_at')` — confirmed unreachable in production since no code path creates a `PosShift` yet, flagged not fixed); corrected DEFECTS.md's QA-040 wording (it overstated what SQLite verification showed); fixed `EnvironmentSafetyTest` to skip its SQLite-only assertion under non-SQLite drivers instead of permanently failing every future `phpunit.prodlike.xml` run.
+- While re-verifying, found the earlier "336/338 passed, fixed via `-d memory_limit=512M`" claim was itself a false negative: `-d` flags on `artisan test` never reach the actual PHPUnit process (Collision's `TestCommand` shells out to a child process that ignores them) — that run just got lucky on test ordering. A fresh run crashed for real on the same 128M default. Real fix: `<ini name="memory_limit" value="512M"/>` added to `phpunit.prodlike.xml`, which PHPUnit applies inside the actual child process.
+- Final corrected numbers: **339/341 passed** under real MariaDB (1 known RBAC failure, 1 correctly-skipped guard test), and identically 339/341 under SQLite run alone. (An intermediate SQLite run executed concurrently with the MariaDB run picked up 2 spurious Windows file-lock errors on the shared `storage/framework/testing` path — diagnosed and ruled out by re-running SQLite alone, which came back clean.)
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+
+## Migration/Rollback — 2026-08-09 (continuation, same day)
+
+- Ran `php artisan migrate:rollback` for the first time this audit — a full 41-migration round trip against both isolated SQLite and a dedicated real MariaDB database. Found and fixed 3 real Critical `down()` defects that would have crashed a genuine production rollback: **QA-042** — one migration's `down()` passed 5 columns to a single `dropForeign()` call, which Laravel treats as one composite constraint name, not 5 separate drops (confirmed against Laravel's own source, reproduced as a real crash). **QA-043** — two other migrations dropped an indexed/unique column without dropping the index/constraint first (same root cause, an incomplete `down()`).
+- All 3 verified failing before the fix (exact SQL error reproduced on both engines) and passing after. Added permanent regression coverage (`tests/Feature/Platform/MigrationRollbackIntegrityTest.php`), confirmed to genuinely catch the regression by temporarily reverting the fixes and watching it fail identically, then restoring and watching it pass.
+- Full regression: 342 tests, 340 passed (same pre-existing RBAC failure, no new failure), 1 skipped, 3 risky.
+- Scope stated honestly: proves schema-level rollback reversibility from a fresh/empty database against a real engine — does not prove rollback safety against a populated, production-scale dataset, or rehearse a real deployment pipeline. Gates #14/#15 raised to PARTIAL, not PASS.
+- Final status remains **NOT READY FOR PRODUCTION**. No task/phase status advanced; no commit or push occurred.
+TSK-014 closure update (2026-08-09): Targeted Purchase Order implementation is technically ready for the documented TSK-014 boundary. Scope guards were added to all PO mutations; monetary/quantity precision is validated server-side with a MariaDB-compatible precision migration; lifecycle regression and MariaDB numbering concurrency evidence passed. Cross-browser browser evidence passed after fixing fixture/test issues (Chromium 2/2, Firefox 2/2, WebKit 2/2), including RTL/LTR, A4 print, 390px mobile and axe main-content checks. Full mandatory PHPUnit regression was started but interrupted before completion and remains to be rerun for final gate evidence. Release remains blocked by global production configuration/UAT; receipts, receiving and supplier invoices are downstream TSK-015.

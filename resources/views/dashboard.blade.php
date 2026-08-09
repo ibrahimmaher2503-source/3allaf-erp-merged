@@ -27,31 +27,40 @@
                 <flux:text class="mt-1">{{ __('Verified building blocks available in the current development environment.') }}</flux:text>
             </div>
 
-            <dl class="divide-y divide-border" data-guide="dashboard-foundation-list">
-                <div class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6" data-guide="dashboard-foundation-first-row">
+            {{--
+                Not a <dl>: the HTML5 <dl> content model requires every <div>
+                child to contain *only* dt/dd groups, and each row here is a
+                three-part label/description/status item, not a pure
+                term/definition pair — a status <span> alongside dt/dd fails
+                axe-core's `definition-list` rule (WCAG 1.3.1) regardless of
+                nesting depth. A plain list conveys "N items" to assistive
+                tech without forcing an ill-fitting semantic.
+            --}}
+            <ul class="divide-y divide-border" data-guide="dashboard-foundation-list">
+                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6" data-guide="dashboard-foundation-first-row">
                     <div>
-                        <dt class="font-semibold text-text-primary">{{ __('Application shell') }}</dt>
-                        <dd class="mt-1 text-sm leading-6 text-text-muted">{{ __('Responsive sidebar, mobile navigation, and shared page structure.') }}</dd>
+                        <p class="font-semibold text-text-primary">{{ __('Application shell') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Responsive sidebar, mobile navigation, and shared page structure.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
-                </div>
+                </li>
 
-                <div class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
                     <div>
-                        <dt class="font-semibold text-text-primary">{{ __('Authentication') }}</dt>
-                        <dd class="mt-1 text-sm leading-6 text-text-muted">{{ __('Sign in, registration, password reset, verification, passkeys, and account security.') }}</dd>
+                        <p class="font-semibold text-text-primary">{{ __('Authentication') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Sign in, registration, password reset, verification, passkeys, and account security.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
-                </div>
+                </li>
 
-                <div class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
                     <div>
-                        <dt class="font-semibold text-text-primary">{{ __('Language direction') }}</dt>
-                        <dd class="mt-1 text-sm leading-6 text-text-muted">{{ __('Locale-aware document direction supports Arabic RTL and English LTR layouts.') }}</dd>
+                        <p class="font-semibold text-text-primary">{{ __('Language direction') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Locale-aware document direction supports Arabic RTL and English LTR layouts.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Configured') }}</span>
-                </div>
-            </dl>
+                </li>
+            </ul>
         </section>
 
         <section class="dashboard-next-card flex flex-col gap-5 rounded-2xl border border-primary/15 bg-primary-soft/35 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6" data-guide="dashboard-setup-section">

@@ -371,7 +371,7 @@ new #[Title('Purchase Orders')] class extends Component
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by PO #, supplier or notes...')" />
 
-            <flux:select wire:model.live="statusFilter" :label="null">
+            <flux:select wire:model.live="statusFilter" :label="__('Status')">
                 <option value="all">{{ __('All Statuses') }}</option>
                 <option value="draft">{{ __('Draft') }}</option>
                 <option value="submitted">{{ __('Submitted') }}</option>
@@ -382,7 +382,7 @@ new #[Title('Purchase Orders')] class extends Component
                 <option value="closed">{{ __('Closed') }}</option>
             </flux:select>
 
-            <flux:select wire:model.live="supplierFilter" :label="null">
+            <flux:select wire:model.live="supplierFilter" :label="__('Supplier')">
                 <option value="all">{{ __('All Suppliers') }}</option>
                 @foreach ($suppliers as $sup)
                     <option value="{{ $sup->id }}">{{ app()->getLocale() === 'ar' ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>

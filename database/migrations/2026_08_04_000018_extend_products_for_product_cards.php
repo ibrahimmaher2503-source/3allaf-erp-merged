@@ -59,6 +59,10 @@ return new class extends Migration
             $table->dropIndex(['product_type', 'status']);
             $table->dropIndex(['target_age', 'status']);
             $table->dropIndex(['suitable_gender', 'status']);
+            $table->dropIndex(['product_type']);
+            $table->dropIndex(['colour']);
+            $table->dropIndex(['size']);
+            $table->dropIndex(['character']);
             $table->dropColumn([
                 'description_ar', 'description_en', 'model_number', 'product_type', 'unit_of_measure',
                 'average_cost', 'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',

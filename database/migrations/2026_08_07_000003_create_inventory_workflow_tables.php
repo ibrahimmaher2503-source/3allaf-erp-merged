@@ -88,7 +88,7 @@ return new class extends Migration
             $table->decimal('after_on_hand', 20, 6)->nullable();
             $table->timestamps();
 
-            $table->unique(['inventory_adjustment_id', 'product_id']);
+            $table->unique(['inventory_adjustment_id', 'product_id'], 'inventory_adjustment_product_unique');
         });
 
         Schema::create('stock_counts', function (Blueprint $table): void {

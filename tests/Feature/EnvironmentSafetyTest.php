@@ -23,9 +23,32 @@ class EnvironmentSafetyTest extends TestCase
 
     public function test_the_test_database_is_an_isolated_in_memory_sqlite_database(): void
     {
-        $this->assertSame('sqlite', config('database.default'));
+        if (config('database.default') !== 'sqlite') {
+            // Non-SQLite phpunit configs (phpunit.concurrency.xml, phpunit.prodlike.xml,
+            // phpunit.staging.xml) intentionally target a real MySQL/MariaDB engine for
+            // production-like regression passes. This guard's job there is not "must be
+            // SQLite" but "must still be a dedicated, isolated test database" — see the
+            // sibling assertion below.
+            $this->markTestSkipped('Non-SQLite run: isolation is verified by test_a_non_sqlite_connection_still_targets_a_dedicated_test_database() instead.');
+        }
+
         $this->assertSame(':memory:', config('database.connections.sqlite.database'));
         $this->assertSame(':memory:', DB::connection()->getDatabaseName());
+    }
+
+    public function test_a_non_sqlite_connection_still_targets_a_dedicated_test_database(): void
+    {
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('SQLite run: isolation is verified by test_the_test_database_is_an_isolated_in_memory_sqlite_database() instead.');
+        }
+
+        $databaseName = mb_strtolower((string) DB::connection()->getDatabaseName());
+
+        $this->assertMatchesRegularExpression(
+            '/^toyjoy_(concurrency|prodlike|tsk_env)_\d{8}$/',
+            $databaseName,
+            'A non-SQLite test run must target one of this project\'s dedicated, dated test databases — never a shared dev/production database.',
+        );
     }
 
     public function test_the_local_development_sqlite_file_is_not_the_test_database(): void

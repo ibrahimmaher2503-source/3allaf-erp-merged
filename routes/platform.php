@@ -3,7 +3,9 @@
 use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
 use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
+use App\Modules\Platform\Models\PrinterConfiguration;
 use Illuminate\Http\Request;
+use Spatie\Backup\BackupDestination\BackupDestination;
 
 $router = app('router');
 
@@ -24,12 +26,41 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
 
     $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
+    $router->get('admin/settings/printers/{printer}/preview', function (PrinterConfiguration $printer) {
+        abort_unless(auth()->user()?->can('company_settings.view'), 403);
+
+        return view('platform.admin.printer-preview', compact('printer'));
+    })->name('admin.settings.printer-preview');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');
     $router->livewire('admin/stores', 'platform::admin.stores')->middleware('can:branches_stores.view')->name('admin.stores');
     $router->livewire('admin/cash-drawers', 'platform::admin.drawers')->middleware('can:drawers_payments_tax_numbering_printers.view')->name('admin.cash-drawers');
     $router->livewire('admin/authorization-baseline', 'platform::admin.authorization-baseline')->middleware('can:users_roles_permissions.view')->name('admin.authorization-baseline');
 
     $router->livewire('admin/system/health', 'platform::system.health')->middleware('can:audit_logs.view')->name('system.health');
+    $router->get('admin/system/backups', function () {
+        $name = (string) config('backup.backup.name', config('app.name'));
+        $disks = array_values(array_filter((array) config('backup.backup.destination.disks', []), static fn (mixed $disk): bool => is_string($disk)));
+        $destinations = array_map(function (string $disk) use ($name): array {
+            $destination = BackupDestination::create($disk, $name);
+            $newest = $destination->newestBackup();
+
+            return [
+                'disk' => $disk,
+                'reachable' => $destination->isReachable(),
+                'backup_count' => $destination->backups()->count(),
+                'newest' => $newest?->date()?->toIso8601String(),
+                'size_bytes' => $destination->usedStorage(),
+                'connection_error' => $destination->connectionError() === null ? null : 'unavailable',
+            ];
+        }, $disks);
+
+        return response()->json([
+            'name' => $name,
+            'verify_backup' => (bool) config('backup.backup.verify_backup'),
+            'encrypted' => filled(config('backup.backup.password')),
+            'destinations' => $destinations,
+        ]);
+    })->middleware('can:audit_logs.view')->name('system.backups');
     $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:audit_logs.view')->name('admin.audit');
     $router->livewire('admin/system/ui-showcase', 'platform::system.ui-showcase')->middleware('can:dashboard_reports.view')->name('system.ui-showcase');
     $router->view('system/app', 'platform.system.app')->middleware('can:dashboard_reports.view')->name('system.app');

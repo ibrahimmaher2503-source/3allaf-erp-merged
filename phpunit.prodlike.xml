@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="Production-like regression (real MariaDB)">
+            <directory>tests/Unit</directory>
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <!--
+            CLI `-d memory_limit=...` on `php artisan test` does NOT reach the actual
+            PHPUnit run: Collision's TestCommand shells out to a fresh child process
+            (`PHP_BINARY vendor/phpunit/phpunit/phpunit ...`) that starts from php.ini's
+            default (128M) and ignores flags passed to the outer artisan process. This
+            <ini> directive is applied by PHPUnit itself inside that child process, which
+            is the only place that actually needs the higher limit for the Blade/Livewire-
+            heavy readiness views in this suite.
+        -->
+        <ini name="memory_limit" value="512M"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_DEBUG" value="false" force="true"/>
+        <env name="APP_URL" value="http://127.0.0.1:8795" force="true"/>
+        <env name="DB_CONNECTION" value="mysql" force="true"/>
+        <env name="DB_HOST" value="127.0.0.1" force="true"/>
+        <env name="DB_PORT" value="3306" force="true"/>
+        <env name="DB_DATABASE" value="toyjoy_prodlike_20260809" force="true"/>
+        <env name="DB_USERNAME" value="root" force="true"/>
+        <env name="DB_PASSWORD" value="" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="FILESYSTEM_DISK" value="local" force="true"/>
+    </php>
+</phpunit>

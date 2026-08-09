@@ -60,6 +60,9 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                 :icon="$icon"
                 :variant="$activeSection === $section ? 'primary' : 'subtle'"
                 wire:click="$set('activeSection', '{{ $section }}')"
+                role="tab"
+                :id="'showcase-tab-'.$section"
+                :aria-controls="'showcase-panel-'.$section"
                 :aria-selected="$activeSection === $section ? 'true' : 'false'"
             >
                 {{ $label }}
@@ -68,7 +71,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
     </div>
 
     @if ($activeSection === 'overview')
-        <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-6 sm:px-6" aria-labelledby="showcase-overview-title">
+        <section id="showcase-panel-overview" role="tabpanel" tabindex="0" class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-6 sm:px-6" aria-labelledby="showcase-tab-overview">
             <div class="max-w-3xl space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.08em] text-primary">{{ __('Shared foundation') }}</p>
                 <flux:heading id="showcase-overview-title" size="xl" class="text-text-primary">{{ __('Compact, operational, and readable') }}</flux:heading>

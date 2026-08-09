@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SaveLocalSettingsAction
 {
@@ -127,9 +128,13 @@ class SaveLocalSettingsAction
                 'rate' => $data['rate'] !== null && $data['rate'] !== '' ? $data['rate'] : null,
                 'is_tax_inclusive' => (bool) ($data['is_tax_inclusive'] ?? false),
                 'tax_number' => $data['tax_number'] ?? null,
+                'effective_from' => filled($data['effective_from'] ?? null) ? $data['effective_from'] : null,
+                'effective_to' => filled($data['effective_to'] ?? null) ? $data['effective_to'] : null,
                 'status' => $data['status'] ?? 'active',
                 'policy_notes' => $data['policy_notes'] ?? 'TBD: Production tax policy pending owner approval.',
             ];
+
+            $this->assertTaxPeriodDoesNotOverlap($attributes, $id);
 
             if ($id) {
                 $tax = TaxSetting::findOrFail($id);
@@ -146,6 +151,51 @@ class SaveLocalSettingsAction
 
             return $tax;
         });
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function assertTaxPeriodDoesNotOverlap(array $attributes, ?int $id): void
+    {
+        if (($attributes['status'] ?? 'active') !== 'active') {
+            return;
+        }
+
+        $from = $attributes['effective_from'] ? now()->parse($attributes['effective_from']) : null;
+        $to = $attributes['effective_to'] ? now()->parse($attributes['effective_to']) : null;
+
+        // A missing period is an explicitly unconfigured local/TBD rule and
+        // does not claim an effective date range.
+        if ($from === null && $to === null) {
+            return;
+        }
+
+        if ($from && $to && $to->lt($from)) {
+            throw ValidationException::withMessages([
+                'taxSettingForm.effective_to' => __('The effective end must be on or after the effective start.'),
+            ]);
+        }
+
+        $overlap = TaxSetting::query()
+            ->where('status', 'active')
+            ->when($id, fn ($query) => $query->whereKeyNot($id))
+            ->get(['effective_from', 'effective_to']);
+
+        foreach ($overlap as $existing) {
+            $existingFrom = $existing->effective_from;
+            $existingTo = $existing->effective_to;
+
+            if ($existingFrom === null && $existingTo === null) {
+                continue;
+            }
+            $startsBeforeExistingEnds = $existingTo === null || $from === null || $from->lte($existingTo);
+            $endsAfterExistingStarts = $to === null || $existingFrom === null || $to->gte($existingFrom);
+
+            if ($startsBeforeExistingEnds && $endsAfterExistingStarts) {
+                throw ValidationException::withMessages([
+                    'taxSettingForm.effective_from' => __('The effective period overlaps another active tax setting.'),
+                ]);
+            }
+        }
     }
 
     /**

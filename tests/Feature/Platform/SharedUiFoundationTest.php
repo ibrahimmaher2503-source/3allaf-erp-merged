@@ -189,14 +189,30 @@ class SharedUiFoundationTest extends TestCase
         $this->get('/admin/system/ui-showcase')->assertForbidden();
     }
 
-    public function test_no_dedicated_print_route_is_implemented_yet(): void
+    public function test_dedicated_print_routes_are_implemented_and_permission_gated(): void
     {
-        // Recorded coverage fact for TSK-004: `layouts/print` exists as a shared
-        // base layout, but no route renders a printable document today.
-        $printRoutes = collect(Route::getRoutes()->getRoutes())
-            ->filter(fn ($route) => str_contains($route->uri(), 'print'));
+        // Superseded coverage fact for TSK-004: dedicated print routes now
+        // exist for retail sales and purchasing documents. Each must be
+        // gated behind its own `.print` ability, matching docs/04's rule
+        // that print/export are never bare `view` capabilities.
+        $expected = [
+            'sales.print' => ['pos_sales.print', base_path('routes/retail.php')],
+            'purchasing.returns.print' => ['purchase_returns.print', base_path('routes/purchasing.php')],
+            'purchasing.invoices.print' => ['purchase_invoices_supplier_returns.print', base_path('routes/purchasing.php')],
+            'purchasing.orders.print' => ['purchase_orders.print', base_path('routes/purchasing.php')],
+        ];
 
-        $this->assertTrue($printRoutes->isEmpty());
+        foreach ($expected as $routeName => [$ability, $routeFile]) {
+            $route = Route::getRoutes()->getByName($routeName);
+            $this->assertNotNull($route, "Expected print route [{$routeName}] to be registered.");
+            $this->assertStringContainsString('print', $route->uri());
+            $this->assertStringContainsString(
+                $ability,
+                (string) file_get_contents($routeFile),
+                "Print route [{$routeName}] must be gated behind the [{$ability}] ability.",
+            );
+        }
+
         $this->assertTrue(view()->exists('layouts.print'));
     }
 }
