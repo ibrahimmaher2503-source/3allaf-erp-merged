@@ -94,8 +94,8 @@ No role edits a ledger entry directly (`docs/04`, Explicit Boundaries).
 
 ---
 
-## 7. Manual Browser Verification
+## 7. Verification boundary
 
 Verify: a retail cashier cannot reach Party Wallet balance by any route including direct URL and export; a Party Manager cannot reach Product Wallet balance; no screen or export shows a combined wallet total; points earn and redeem round down; expiry consumes oldest first; a returned sale reverses earned points and routes already-redeemed points to approval; a wallet balance derived from entries matches the displayed balance; credit blocked when disabled; gift card partial redemption leaves the correct remainder; expiry writes an entry rather than zeroing; void preserves history; outstanding liability reconciles to unredeemed balances; every operation audited once; RTL/LTR and mobile clean.
 
-No automated tests are created or executed.
+TSK-027 closure evidence covers the customer and retail-loyalty rows in this document. Wallet, gift-card, return, party-payment, and production reconciliation rows remain outside TSK-027 and are not claimed as implemented.

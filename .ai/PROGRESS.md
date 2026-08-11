@@ -1,4 +1,38 @@
-# Active Progress — TSK-025 Shift, Cash, Blind Close and Variance — 2026-08-09
+# Active Progress — TSK-027 Real Functional Closure — 2026-08-10
+
+**Status:** `ACTUALLY_IMPLEMENTED` for the accepted Local/Dev customer and retail-loyalty contract. TSK-028, TSK-029, and TSK-030 were not started.
+
+**Completed:** Replaced the customer/loyalty readiness-only boundary with real customer master, bilingual identity/contact data, normalized unique phone, controlled duplicate/merge history, consent snapshots, purpose-scoped child profiles, branch/store visibility, customer history, POS customer selection/registration, and customer-linked approved retail sales. Added immutable source-linked loyalty ledger earn/redeem/expiry, FIFO allocations, approved/rejected adjustments with canonical ApprovalRecord/SoD, audit, idempotency, transactions, locking, rollback, and bounded customer/loyalty exports. Added named child mutations and ledger/history scope filters; removed Retail Loyalty grants from Party Manager.
+
+**Verification actually run:** SQLite lifecycle 10/10, 81 assertions; MariaDB lifecycle 10/10, 81 assertions; MariaDB concurrency 3/3, 27 assertions; readiness authorization regression 3/3, 71 assertions; final Playwright 7 executed tests passed across Chromium/Firefox/WebKit with 2 intentional non-Chromium viewport/visual skips. The business-chain test now uses real `RetailSaleAction` → loyalty earn → balance → redemption → audit.
+
+**Known remaining boundaries:** The 48-category classification is recorded in `testing/results/TSK-027-48-TEST-MATRIX.md`. Automatic scheduler-driven expiry, human visual review, UAT, production role grants/configuration, legal wording/final rates, infrastructure, backup/restore, and release smoke remain open. Party-side history/loyalty and TSK-028/029/030 behavior remain downstream.
+
+---
+
+# Requirement-Bounded User-Story Audit Correction — 2026-08-10
+
+**Status:** `COMPLETED` for the corrected inventory artifact.
+
+**Completed:** Rebuilt `testing/results/USER-STORY-IMPLEMENTATION-INVENTORY-20260810.md` using only `docs/05-user-stories.md` for requirements and current production source code for implementation evidence. The current checkpoint is 33 stories: 13 FULL, 20 PARTIAL, 0 MISSING. The refresh credits the completed POS, gift/return, Party, and asset-integrated local/dev slices and leaves documented gaps in the PARTIAL queue.
+
+**Verification actually run:** Read-only source inspection and artifact review. No automated tests or browser checks were run for this audit.
+
+**Next action:** Use the corrected inventory as the audit baseline; implementation work remains governed by the active task and milestone files.
+
+---
+
+# Store Location Type Terminology Correction — 2026-08-09
+
+**Status:** Implemented for the Local/Dev Stores and Branch Mapping UI.
+
+**Completed:** Replaced the ambiguous `Store Type` / `نوع المتجر` presentation with `Location Type` / `نوع الموقع`; preserved all five internal type codes; applied the requested bilingual names to the filter, table badges, create/edit form, validation message, and UI-ADM-004 guide; recorded the terminology decision as DEC-069.
+
+**Verification:** PHP lint passed for the changed PHP files, both locale JSON files parsed and matched the requested bilingual labels, targeted Blade compilation passed for `resources/views/platform/admin/stores.blade.php`, and `git diff --check` passed with only the repository's existing line-ending warnings. No automated tests or browser checks were run.
+
+---
+
+# Previous Active Progress — TSK-025 Shift, Cash, Blind Close and Variance — 2026-08-09
 
 **Status:** `FULL_IMPLEMENTATION` for Local/Dev under DEC-066 / `docs/32`. The `/pos/shift-readiness` boundary was **removed**, not preserved.
 
@@ -489,3 +523,119 @@ TSK-014 closure update (2026-08-09): Targeted Purchase Order implementation is t
 - Switched the active Laravel environment, example environment, database/queue defaults, backup validation, test configuration, setup documentation, and platform health fallback to XAMPP MySQL/MariaDB through phpMyAdmin.
 - Rebuilt the local XAMPP MariaDB data directory from its bundled baseline after an interrupted DDL recovery, preserved the prior data directory as `C:\xampp\mysql\data-corrupt-20260809`, restored non-project schemas from SQL dumps, and migrated/seeded fresh `toyjoy_local` successfully.
 - No automated tests, browser checks, commit, or push were performed for this environment change.
+
+## 2026-08-10 — Full User-Story Inventory and TSK-025 Print Closure
+
+- Read `docs/05-user-stories.md` in full, including derived US-046, and mapped all 33 stories to tasks, flows, acceptance criteria, security, implementation layers, existing evidence, and business risk in `testing/results/USER-STORY-IMPLEMENTATION-INVENTORY-20260810.md`.
+- Product-first checkpoint: 13 stories have a documented local/dev vertical slice (`FULL`), 10 are `PARTIAL`, and 10 are `MISSING`. The Party, gift/return, quotation, reporting/export, and offline gaps remain confirmed implementation gaps; they were not disguised as test blockers.
+- Completed the US-024 print layer: permissioned immutable closed-shift Thermal and A4 routes/templates, closed-shift discoverability, expected/variance redaction, print/reprint audit metadata, and route-contract coverage. Removed A4 automatic native print-on-load after headed verification showed it blocked observable review; the explicit Print control remains.
+- Verification: `ShiftHttpRouteTest` focused print/auth/redaction coverage passed 2 tests/24 assertions on MariaDB; `InventoryPosContractTest` passed 1/104 assertions; real MariaDB shift-open/variance decision races passed 5/59 assertions; headed Chromium cashier → manager → approval → Thermal/A4 flow passed 1/1 in 35.2 seconds with output screenshots and final closed/audited database state.
+- Disposable MariaDB schemas used/created: `toyjoy_flow_browser_20260810`, `toyjoy_concurrency_20260809`, and `toyjoy_shift_concurrency_20260810`; no normal application database was mutated or deleted. No commit or push occurred.
+- Remaining next action: implement and close the highest-risk `PARTIAL`/`MISSING` stories in dependency order, beginning with POS tender/receipt exceptions and then gift/returns, rather than broad repair of low-value legacy tests.
+## 2026-08-10 - Parallel Agent D US-028 to US-031 implementation
+
+- Scope: US-028 rental assets, US-029 damage/loss/maintenance/depreciation events, US-030 non-posting quotations, and US-031 scoped reports/alerts/exports only. This records the owner-directed parallel stream and does not alter the shared active TSK-027 task pointer.
+- Product status: US-028 and US-029 local/dev vertical slices implemented; US-030 local/dev quotation create/edit/number/print/share/status/non-posting slice implemented; US-031 stable-source scoped snapshot/alerts/safe XLSX export slice implemented, with wider report breadth and PDF artifacts remaining partial.
+- Verification: focused MariaDB suite passed 4 tests / 29 assertions on toyjoy_flow_assets_reporting_20260810d; headed Chromium on http://127.0.0.1:8800 passed 3/3 checks for English surfaces, 390x844 overflow, and Arabic RTL.
+- Remaining gates: depreciation policy, quotation conversion, PDF/report breadth, physical printing, UAT, production grants/configuration, backup/restore, commit, and push remain open.
+
+## 2026-08-10 - Agent D calendar UI follow-up
+
+- Added a bounded 30-day reservation calendar to the rental-asset screen, scoped through the visible asset relation and capped at 100 reservations. Reservation start/end controls are now visible editable datetime fields instead of hidden fixed dates.
+- Verification: focused MariaDB suite passed 4/4 tests with 29 assertions on `toyjoy_flow_assets_reporting_20260810d`; headed Chromium rerun passed 3/3 on port 8800 for English surfaces, 390x844 layout, and Arabic RTL. PHP lint and `git diff --check` remained clean.
+
+## 2026-08-10 - Agent D UI workflow closure
+
+- TDD/browser RED findings: quotation draft edit returned HTTP 405 because the form emitted POST while the route accepted only PUT; the browser fixture also initially used nonexistent product ID 1. The route was widened to the same server-authorized action for POST|PUT, and the fixture now uses seeded active product ID 2.
+- GREEN: headed Chromium on isolated port 8800 passed 4/4 checks, including the real asset lifecycle, quotation create/edit/print NON-POSTING flow, bounded report date filter/reconciliation/Excel export/job-center flow, English surfaces, 390x844 layout, and Arabic RTL.
+
+## 2026-08-10 - Parallel Agent C US-025 to US-027 Party implementation
+
+- Scope: US-025 Party booking/working invoice, US-026 Party payments/final close/Party Wallet, and US-027 Party operating order/consumable operations only. Historical task and story inventory rows remain unchanged; this is the latest owner-authorized parallel-slice status.
+- Product status: US-025 FULL for the approved local/dev booking and Party-only working-invoice contract; US-026 FULL for multiple payments, receipt output, Party Wallet settlement, final close, and immutability; US-027 PARTIAL overall, with the operating-order/Party-store consumable issue/return, source-linked inventory, reconciliation, and completion slice FULL and rental-asset reservation integration remaining an external US-028/TSK-034 dependency.
+- Verification: focused MariaDB lifecycle suite 7/7 tests with 37 assertions; focused genuine two-process MariaDB payment race 1/1 test with 9 assertions; targeted PHP lint, route discovery, view cache, and headed Chromium flows on port 8799 passed. Headed checks covered English LTR booking/payment/final close/prints, direct 403 denial, Arabic RTL, and 390x844 no-horizontal-overflow checks.
+- Remaining gates: asset reservation integration, exact owner-configured approval/SoD thresholds, physical print delivery, backup/restore, UAT, production configuration, full regression, commit, and push remain open. No SQLite, full suite, production, commit, or push was used or claimed.
+
+## 2026-08-10 - US-027 rental-asset integration closure
+
+- Scope: only the remaining US-027 dependency boundary; US-025 and US-026 were not reopened. Party booking/operating-order lines now carry authoritative US-028 rental-asset and reservation references instead of free-text allocation.
+- Product status: **US-027 FULL local/dev**. The supported path is Party booking -> US-028 reservation -> operating order -> US-028 checkout/return/inspection -> Party completion, with branch/store scope, source linkage, Party audit, and completion immutability.
+- Concurrency: a real two-process MariaDB overlap race produced exactly one confirmed booking, one clean rejection, and one persisted reservation. The authoritative US-028 overlap read was tightened to a locking read so Party's outer transaction cannot reuse a stale repeatable-read snapshot.
+- Verification: isolated `toyjoy_flow_party_asset_20260810` focused integration passed 3/3 tests and 14 assertions; prior Party regression passed 7/7 and 37 assertions; focused US-028 asset suite passed 4/4 and 29 assertions; genuine asset race passed 1/1 and 10 assertions. Headed Chromium on port 8801 completed the real asset create/booking/confirm/order/release/checkout/return/inspection/completion flow; LTR/RTL 390px checks showed no horizontal overflow.
+- Remaining gates: physical printer/UAT, owner production configuration, backup/restore, full regression, commit, and push remain external or later release gates. No US-025/US-026 rework was performed.
+
+## 2026-08-10 - Agent E US-019 to US-021 Gift Receipt, Returns, Gift Cards
+
+- Scope: US-019 Gift Receipt, US-020 Returns/Exchanges, and US-021 Gift Cards only. Existing schema-only migration was completed with models, transactional actions, scoped routes, explicit permissions, real Blade/Flux screens, privacy-safe print output, append-only Gift Card ledger, source-linked return documents, stock disposition, settlement records, audit events, idempotency, and MariaDB concurrency controls.
+- Product status: **US-019 FULL local/dev**, **US-020 FULL local/dev**, **US-021 FULL local/dev**. Original sales remain immutable; Gift Receipts suppress price fields and reuse the same source identity on reprint; return quantity is checked under source-sale serialization; Gift Card balance is ledger-backed and row-locked.
+- TDD: lifecycle RED identified the empty-line selection guard defect; browser RED identified a real Gift Card list lazy-loading 500; concurrency RED proved two return workers could both complete under a stale aggregate read. GREEN fixes were the empty-selection guard, eager-loaded store relation, and MariaDB source-sale advisory lock plus current-read eligibility check.
+- Verification: focused MariaDB lifecycle suite passed 4/4 tests with 24 assertions on toyjoy_flow_returns_gifts_20260810; targeted reprint/privacy rerun passed 1/1 with 16 assertions; genuine two-process MariaDB return and Gift Card races passed 2/2 with 8 assertions on the same dedicated schema. PHP lint and route discovery passed.
+- Browser: headed Chromium on http://127.0.0.1:8801 passed 1/1 after real demo-admin login, Gift Card issue/redeem, Gift Receipt privacy surface, 390x844 responsive check, and Arabic RTL/no-overflow check. The dedicated MariaDB schema was seeded only for this local browser workflow.
+- Remaining gates: owner-configured return windows/cash limits/SoD and exact original-tender accounting behavior, expiry duration policy, physical printer delivery, Production authorization/configuration, UAT, backup/restore, full regression, commit, and push remain open. No unrelated stories were changed.
+
+## 2026-08-10 - Agent E final print/UI verification
+
+- Added Gift Card print/reprint output with immutable print-event audit records, `gift_cards.print` authorization, scope enforcement, and a real responsive print view. Direct return creation now rejects a missing reason server-side.
+- Focused lifecycle rerun passed 4/4 tests with 31 assertions on `toyjoy_flow_returns_gifts_20260810`, including Gift Card first-print/reprint behavior. Impeccable detector returned clean for the scoped Gift Receipt, Gift Card, and Return views.
+- Headed Chromium on port 8801 passed 1/1 after repairing and seeding the disposable schema. The flow covered real Gift Card issue -> print -> redeem, Gift Receipt privacy UI, 390x844 layout, and Arabic RTL/no-overflow. No commit or push occurred.
+
+## 2026-08-10 - System-wide confidence test pass
+
+- Created the requested [`new_test_results_10/8`](../new_test_results_10/8) report after reading the required source-of-truth documentation and inspecting current test infrastructure, fixtures, MariaDB schemas, browser specs, and implementation-gap reports.
+- Current run: 68/68 Unit tests passed; feature/domain 23/24 passed; integration 7/7 passed; selected MariaDB concurrency 10/14 completed cases passed. Current completed automated total is 108 PASS, 3 fixture/test FAIL, and 2 fixture ERROR across 113 cases and 421 assertions.
+- Current browser confidence is blocked: 5 Chromium attempts timed out in the local authentication hook before business assertions. Returns/Gift Card concurrency and broad MariaDB bundles also did not produce usable current summaries.
+- No new valid critical product defect was proven. Remaining system risks are missing offline queue/sync/conflict capability, incomplete current POS/shift reconciliation and POS race evidence, partial documented flows, and release/browser/configuration gates.
+- System confidence verdict: **LOW**. Automated tests, business browser checks, commits, and pushes were not claimed beyond the results explicitly recorded above. Next action is fixture/configuration/browser-auth repair followed by the affected regression waves.
+
+## 2026-08-10 - Independent second confidence verification in progress
+
+- Repaired the current test harness and reproduced the previously blocked POS, shift, wallet, and Returns/Gift Card concurrency paths on isolated MariaDB schemas. All five focused suites now pass after deterministic prerequisite and isolation repairs.
+- Confirmed headed Chromium authentication against a freshly seeded dedicated database/server. Browser surface coverage is not yet accepted because `/quotations` timed out during concurrent shared-workspace browser activity.
+- No production business logic was changed. Full POS/shift reconciliation, purchasing/inventory chains, permissions/maker-checker matrix, state-machine abuse, broader headed browser/RTL/mobile/print/tutorial verification, and regression remain in progress.
+
+## 2026-08-10 - US-008 / US-017 / US-018 POS closure
+
+- Product status: US-008 FULL local/dev; US-017 FULL local/dev; US-018 FULL local/dev.
+- Added the shared POS discount approval path for above-limit discounts: approval record/migration linkage, manager approve/reject actions, inbox dispatch, scope/separation/hash/expiry checks, checkout-time MariaDB locking and revalidation, sale-line approver snapshots, audit, and POS pending/approved/rejected/threshold feedback.
+- Verification: OpenPriceApprovalTest 6/6 with 51 assertions; DiscountNonStackingTest 9/9 with 20 assertions; PosPaymentSettlementTest 12/12 with 39 assertions; RetailSaleConcurrencyTest 2/2 with 19 assertions. A broader multi-file PHPUnit invocation and a separate PosCheckoutRouteTest rerun exceeded the shared five-minute execution window without a result; neither is counted as a product failure.
+- Headed Chromium on http://127.0.0.1:8802 passed 1/1 in 48.9 seconds: real cashier login, open-price manager approval, above-limit discount manager approval, tax, cash rounding, checkout, receipt, mobile 390x844, Arabic RTL, and no console/request/HTTP errors. Inventory refreshed to 33 stories: 13 FULL, 20 PARTIAL, 0 MISSING. No commit or push occurred.
+
+## 2026-08-10 - US-013 to US-016 inventory operations closure
+
+- Scope: US-013 scoped stock visibility, US-014 stock transfers, US-015 inventory entry/exit/exchange/adjustments, and US-016 stock count/reconciliation only. The global implementation inventory was intentionally not updated.
+- Work completed: bounded and filterable stock/movement queries and scoped CSV export; informational cross-store availability; transfer draft create/edit/submit/approve/dispatch/receive/difference routes; user-facing adjustment create/edit/submit/approve/reverse flow with immutable source-linked reversal movements; stock count create/assignment, category/supplier/partial selection, manual/recount entry, submission, and movement-aware reconciliation barrier. All paths reuse existing StockBalance, StockMovement, scope, lock, approval, and audit infrastructure.
+- TDD evidence: a valid RED for the missing transfer draft edit action was fixed with the smallest named action; a stale count fixture RED for missing stock-count numbering was corrected in the existing inventory scenario fixture; headed UI REDs exposed an adjustment edit renderer argument bug, an exhausted disposable source balance, an authenticated-context browser-spec bug, and super-admin counter filtering/validation. Each was fixed in the smallest scoped route/action/spec change. No new test framework or new test file was created.
+- Verification: isolated XAMPP MariaDB focused inventory regression passed 4/4 tests and 26 assertions; the existing scope/safety subset passed 4/4 and 14 assertions; the post-fix count setup rerun passed 1/1 and 7 assertions; existing integrated `InventoryLifecycleChainTest` passed 1/1 and 25 assertions; existing MariaDB `StockBalanceConcurrencyTest` passed 2/2 and 20 assertions; `InventoryPosContractTest` passed 1/1 and 179 assertions. PHP lint, Node syntax, route discovery, and scoped `git diff --check` passed.
+- Browser: existing headed Chromium spec passed on isolated server `http://127.0.0.1:8810` the real English/LTR inventory search -> transfer draft -> submit -> separate approver -> approve -> dispatch -> receive -> adjustment create -> submit -> approve/post -> count create/assign -> manual entry -> submit -> review -> reconcile flow; the same spec passed Arabic RTL at 390x844 with usable filters/table and no blocking overflow. Tests used disposable MariaDB browser data only.
+- Remaining gates: full repository suite, physical print/UAT, owner production grants/configuration, backup/restore, commit, and push remain open. No SQLite, normal application-data destructive operation, commit, or push was used.
+## 2026-08-10 - US-031 reporting/KPI/alert/export local-dev closure
+
+- Scope: US-031 only. Implemented scoped report snapshots, date/branch/store/user/module and source filters, status-consistent sales reconciliation, permission-redacted cost, source navigation, authoritative purchasing/cash/customer/party/asset/inventory summaries, scoped deduplicated alerts, queued private XLSX/PDF exports, expiry, formula-safety reuse, audit, and requester/scope enforcement.
+- TDD: extended the existing `AssetQuotationReportingTest`; valid RED/GREEN cycles covered ignored filters, missing PDF queue support, cost exposure, missing alerts, foreign branch scope, and document-status KPI/detail mismatch. No new reporting framework or Playwright spec was created.
+- Verification: focused MariaDB report cases passed for user/module arithmetic, source filters, document status, snapshot/export boundary, PDF queue/artifact, cost redaction, alerts, and foreign scope in separate runs. The full focused bundle exceeded the five-minute runner window and is not claimed as passed. PHP lint, Blade cache, report route discovery, and Composer validation passed.
+- Browser: the existing Agent D spec passed 4/4 in the clean full run; the final report workflow also passed with queued polling and an actual owner Excel download, and isolated surface smoke passed 1/1. The latest disposable-browser export was `ready` with 113 rows and `export_downloaded` audit evidence. No production/normal data was used.
+- Product status: **US-031 FULL local/dev**. Remaining release gates are Arabic PDF font/physical print UAT, production grants/configuration, backup/restore, full repository regression, commit, and push. No commit or push occurred.
+
+## 2026-08-10 - Sidebar and reporting remediation (DUP-001 to DUP-013)
+
+- Resolved all 13 audited navigation groups at the local/dev boundary: retained the intentional Workspace Reports shortcut; removed the redundant Workspace export and Suppliers return links; replaced readiness/operational aliases with real customer, purchasing, Party, pricing, inventory, asset, audit, and report destinations.
+- Added addressable focused states for pricing, inventory balances, rental-asset workflows, and audit override/print views; added customer history/loyalty, supplier/cost history, and ID-free Party invoice entry points.
+- Added seven genuine shared-architecture report destinations for Sales, Customer/Loyalty, Cash/Shift, Purchasing, Inventory, Party, and Rental Assets. Their scoped filters, KPI cards, bounded source details, field-level permissions, report identity, and shared XLSX/PDF export path reconcile through the existing reporting infrastructure.
+- Focused MariaDB regression passed 13/13 tests with 179 assertions; additional foreign-scope/cost-redaction checks passed 2/2 with 3 assertions. Headed Chromium passed the 25-destination navigation matrix, English/LTR, Arabic RTL, 390x844 overflow, and real Sales-report XLSX creation/download. No new test file was created.
+- One older combined Asset/Quotation/Reporting browser scenario remains fixture-blocked before its reporting step because the disposable database contains no Product while that scenario hard-codes product ID 2; the isolated reporting export scenario passes and no product defect was inferred from the stale fixture.
+- Remaining release gates: full repository regression, physical print/PDF UAT, production grants/configuration, backup/restore, commit, and push. No SQLite, normal application database, commit, or push was used.
+
+## 2026-08-10 - Advanced reporting UI and visualization enhancement
+
+- Enhanced the shared renderer used by all seven focused report routes with a report-category switcher, compact scope controls, semantic color-coded KPI cards, source-aligned chart sections, richer reconciliation summaries, and upgraded bounded detail tables.
+- Added one reusable KPI component and one accessible visual component. Charts are server-rendered HTML/CSS bars and donuts with a native SVG line fallback, explicit accessible names, visible legends, empty guidance, and equivalent expandable data tables. No chart package or second frontend framework was introduced.
+- Added bounded permission-safe chart payloads for Sales, Customer/Loyalty, Cash/Shift, Purchasing, Inventory, Party, and Rental Assets. Inventory quantity visuals use full scoped aggregates rather than summing the 50-row display sample; wallet, cost, variance, loyalty, Gift Card, and payment visuals remain independently permission-gated.
+- Verification: MariaDB focused reporting regression passed 4/4 tests with 258 assertions. Headed Chromium passed all seven advanced report destinations, 390x844 no-root-overflow, Arabic RTL/translated heading, accessible chart/table contracts, and a real focused XLSX export/download. Vite build, Blade compilation, PHP/Node syntax, Arabic JSON parsing, and scoped diff checks passed.
+- Remaining gates are full repository regression, populated-data visual UAT across every business distribution, physical PDF/print UAT, production authorization/configuration, backup/restore, commit, and push.
+
+## 2026-08-10 - US-017/018/020/021 POS money-flow closure
+
+- Product status: US-017, US-018, US-020, and US-021 are FULL local/dev. The broad implementation inventory was intentionally not updated.
+- Completed atomic Gift Card POS tendering, strict idempotency payload checks, scoped suspended-sale resume, complete return/exchange entry and settlement UI, damaged-store posting, refund-method and original-tender bounds, maker/checker approval, bounded Gift Card history, and source-linked return settlement visibility.
+- Focused MariaDB verification passed 51 PHPUnit cases with 222 assertions, including four real-process concurrency cases. Two headed Chromium journeys passed for POS pricing/discount/payment/receipt and Gift Card issue/POS redeem/return settlement, including English/LTR, Arabic/RTL, and 390x844.
+- Remaining release gates: production grants/configuration, external card-provider execution where applicable, physical printer/UAT, backup/restore, full release regression, commit, and push.

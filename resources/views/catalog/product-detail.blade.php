@@ -112,7 +112,7 @@ new #[Title('Product Details')] class extends Component {
                                 @endif
                             </div>
                             <div class="text-xs text-text-muted text-end">
-                                <div>{{ __('Last Price') }}: {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '— (TSK-015)' }}</div>
+                                <div>{{ __('Last Price') }}: {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '—' }}</div>
                             </div>
                         </div>
                     @empty
@@ -137,7 +137,7 @@ new #[Title('Product Details')] class extends Component {
             @if ($canViewCost)
                 <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
             @else
-                <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('DEC-038 grants no catalog cost-field capability in the current local matrix, so cost is omitted from this view.') }}</flux:callout>
+                <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('Cost information is restricted to authorized purchasing and finance users.') }}</flux:callout>
             @endif
 
             <flux:card class="space-y-4 p-5">

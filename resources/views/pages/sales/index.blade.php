@@ -13,25 +13,25 @@
             <div class="flex items-end gap-2"><flux:input name="date_to" type="date" value="{{ request('date_to') }}" :label="__('To')" /><flux:button type="submit">{{ __('Filter') }}</flux:button></div>
         </form>
 
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900" tabindex="0" role="region" aria-label="{{ __('Sales') }}">
-            <table class="w-full min-w-[900px] text-sm">
-                <thead class="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800"><tr><th class="p-4 text-start">{{ __('Reference') }}</th><th class="p-4 text-start">{{ __('Status') }}</th><th class="p-4 text-start">{{ __('Store') }}</th><th class="p-4 text-start">{{ __('Cashier') }}</th><th class="p-4 text-end">{{ __('Lines') }}</th><th class="p-4 text-end">{{ __('Payments') }}</th><th class="p-4 text-end">{{ __('Total') }}</th></tr></thead>
+        <x-tables.table-shell :label="__('Sales')">
+            <table class="data-table w-full min-w-[900px] text-sm">
+                <thead><tr><th>{{ __('Reference') }}</th><th>{{ __('Status') }}</th><th>{{ __('Store') }}</th><th>{{ __('Cashier') }}</th><th class="text-end">{{ __('Lines') }}</th><th class="text-end">{{ __('Payments') }}</th><th class="text-end">{{ __('Total') }}</th></tr></thead>
                 <tbody>
                     @forelse ($sales as $sale)
-                        <tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                            <td class="p-4"><a class="font-semibold text-blue-600 hover:underline" href="{{ route('sales.show', $sale) }}">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</a><div class="text-xs text-zinc-500">{{ $sale->created_at?->format('Y-m-d H:i') }}</div></td>
-                            <td class="p-4"><flux:badge :color="$sale->status === 'approved' ? 'green' : ($sale->status === 'suspended' ? 'amber' : 'zinc')">{{ __(ucfirst($sale->status)) }}</flux:badge></td>
-                            <td class="p-4">{{ app()->getLocale() === 'ar' ? $sale->store->name_ar : $sale->store->name_en }}</td>
-                            <td class="p-4">{{ $sale->cashier->name }}</td>
-                            <td class="p-4 text-end">{{ $sale->lines_count }}</td><td class="p-4 text-end">{{ $sale->payments_count }}</td>
-                            <td class="p-4 text-end font-semibold">{{ $sale->total }} {{ $sale->currency_code }}</td>
+                        <tr>
+                            <td><a class="font-semibold text-primary hover:underline" href="{{ route('sales.show', $sale) }}">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</a><div class="text-xs text-text-muted">{{ $sale->created_at?->format('Y-m-d H:i') }}</div></td>
+                            <td><x-status.badge :status="$sale->status" /></td>
+                            <td>{{ app()->getLocale() === 'ar' ? $sale->store->name_ar : $sale->store->name_en }}</td>
+                            <td>{{ $sale->cashier->name }}</td>
+                            <td class="text-end tabular-nums">{{ $sale->lines_count }}</td><td class="text-end tabular-nums">{{ $sale->payments_count }}</td>
+                            <td class="text-end"><x-money :amount="$sale->total" :currency="$sale->currency_code" class="font-semibold" /></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="p-10 text-center text-zinc-500">{{ __('No sales match the selected filters.') }}</td></tr>
+                        <tr><td colspan="7"><x-state.empty :title="__('No sales match the selected filters.')" :description="__('Try another filter or clear the current filters.')" /></td></tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-tables.table-shell>
         {{ $sales->links() }}
     </div>
 </x-layouts::app>

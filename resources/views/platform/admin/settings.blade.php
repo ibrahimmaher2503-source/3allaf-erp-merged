@@ -1,7 +1,7 @@
 <?php
 
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
-use App\Modules\Platform\Actions\OverrideDocumentSequenceCounter;
+use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -20,21 +20,21 @@ new #[Title('System Settings')] class extends Component {
 
     // Company Form Data
     public array $companyForm = [
-        'code' => 'TBD',
+        'code' => '',
         'name_ar' => '',
         'name_en' => '',
         'legal_name' => '',
         'tax_number' => '',
         'commercial_registration' => '',
-        'currency_code' => 'TBD',
-        'currency_symbol' => 'TBD',
+        'currency_code' => '',
+        'currency_symbol' => '',
         'timezone' => 'UTC',
         'locale_default' => 'ar',
         'phone' => '',
         'email' => '',
         'address' => '',
         'status' => 'active',
-        'policy_notes' => 'TBD: Production currency, tax, and company legal structure pending owner decision.',
+        'policy_notes' => '',
     ];
 
     // Payment Method Form Data
@@ -47,7 +47,7 @@ new #[Title('System Settings')] class extends Component {
         'requires_evidence' => false,
         'offline_eligible' => false,
         'status' => 'active',
-        'policy_notes' => 'TBD: Payment evidence and verification rules pending technical owner approval.',
+        'policy_notes' => '',
     ];
 
     // Tax Setting Form Data
@@ -62,7 +62,7 @@ new #[Title('System Settings')] class extends Component {
         'effective_from' => '',
         'effective_to' => '',
         'status' => 'active',
-        'policy_notes' => 'TBD: Production tax rate and inclusive policy pending owner decision.',
+        'policy_notes' => '',
     ];
 
     // Document Sequence Form Data
@@ -75,7 +75,7 @@ new #[Title('System Settings')] class extends Component {
         'next_value' => 1,
         'reset_rule' => 'never',
         'status' => 'active',
-        'policy_notes' => 'TBD: Numbering patterns pending business owner approval.',
+        'policy_notes' => '',
     ];
 
     public array $sequenceOverride = [
@@ -97,7 +97,7 @@ new #[Title('System Settings')] class extends Component {
         'port' => 9100,
         'is_default' => false,
         'status' => 'active',
-        'notes' => 'TBD: Local device and network printer baseline.',
+        'notes' => '',
     ];
 
     /**
@@ -124,7 +124,7 @@ new #[Title('System Settings')] class extends Component {
     }
 
     /**
-     * Load existing settings or seed default local TBD records.
+     * Load the current settings.
      */
     public function loadSettings(): void
     {
@@ -221,14 +221,14 @@ new #[Title('System Settings')] class extends Component {
             'requires_evidence' => false,
             'offline_eligible' => false,
             'status' => 'active',
-            'policy_notes' => 'TBD: Payment evidence rules pending technical owner approval.',
+            'policy_notes' => '',
         ];
     }
 
     /**
      * Save tax setting.
      */
-    public function saveTaxSetting(SaveLocalSettingsAction $action): void
+    public function saveTaxSetting(PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('manage-settings');
 
@@ -254,11 +254,18 @@ new #[Title('System Settings')] class extends Component {
             'taxSettingForm.policy_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $action->saveTaxSetting($validated['taxSettingForm'], $this->taxSettingForm['id'] ?? null);
+        $tax = $this->taxSettingForm['id'] ? TaxSetting::query()->findOrFail((int) $this->taxSettingForm['id']) : null;
+        $approvalAction->request(
+            resource: 'tax_setting',
+            id: $tax?->id,
+            proposed: $validated['taxSettingForm'],
+            before: $tax?->getAttributes(),
+            reason: $validated['taxSettingForm']['policy_notes'] ?? null,
+        );
 
         $this->resetTaxSettingForm();
 
-        Flux::toast(variant: 'success', text: __('Tax setting saved successfully.'));
+        Flux::toast(variant: 'success', text: __('Tax setting submitted for independent approval.'));
     }
 
     public function editTaxSetting(int $id): void
@@ -282,14 +289,14 @@ new #[Title('System Settings')] class extends Component {
             'effective_from' => '',
             'effective_to' => '',
             'status' => 'active',
-            'policy_notes' => 'TBD: Production tax rate pending owner decision.',
+            'policy_notes' => '',
         ];
     }
 
     /**
      * Save document sequence.
      */
-    public function saveDocumentSequence(SaveLocalSettingsAction $action): void
+    public function saveDocumentSequence(PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('manage-settings');
 
@@ -309,11 +316,18 @@ new #[Title('System Settings')] class extends Component {
             'documentSequenceForm.policy_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $action->saveDocumentSequence($validated['documentSequenceForm'], $this->documentSequenceForm['id'] ?? null);
+        $sequence = $this->documentSequenceForm['id'] ? DocumentSequence::query()->findOrFail((int) $this->documentSequenceForm['id']) : null;
+        $approvalAction->request(
+            resource: 'document_sequence',
+            id: $sequence?->id,
+            proposed: $validated['documentSequenceForm'],
+            before: $sequence?->getAttributes(),
+            reason: $validated['documentSequenceForm']['policy_notes'] ?? null,
+        );
 
         $this->resetDocumentSequenceForm();
 
-        Flux::toast(variant: 'success', text: __('Document sequence saved successfully.'));
+        Flux::toast(variant: 'success', text: __('Document sequence submitted for independent approval.'));
     }
 
     public function editDocumentSequence(int $id): void
@@ -330,7 +344,7 @@ new #[Title('System Settings')] class extends Component {
         ];
     }
 
-    public function overrideSequenceCounter(OverrideDocumentSequenceCounter $action): void
+    public function overrideSequenceCounter(PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.override');
         $validated = $this->validate([
@@ -340,20 +354,14 @@ new #[Title('System Settings')] class extends Component {
             'sequenceOverride.reason' => ['required', 'string', 'min:5', 'max:1000'],
         ]);
         $sequence = DocumentSequence::query()->findOrFail($validated['sequenceOverride']['sequence_id']);
-        $updated = $action->execute(
-            $sequence,
-            (int) $validated['sequenceOverride']['next_value'],
-            (int) $validated['sequenceOverride']['expected_lock_version'],
-            $validated['sequenceOverride']['reason'],
+        $approvalAction->request(
+            resource: 'document_sequence_override',
+            id: $sequence->id,
+            proposed: $validated['sequenceOverride'],
+            before: $sequence->only(['document_type', 'next_value', 'lock_version']),
+            reason: $validated['sequenceOverride']['reason'],
         );
-        $this->documentSequenceForm = $updated->toArray();
-        $this->sequenceOverride = [
-            'sequence_id' => $updated->id,
-            'next_value' => $updated->next_value,
-            'expected_lock_version' => $updated->lock_version,
-            'reason' => '',
-        ];
-        Flux::toast(variant: 'success', text: __('Sequence counter overridden with audit evidence.'));
+        Flux::toast(variant: 'success', text: __('Sequence counter override submitted for independent approval.'));
     }
 
     public function resetDocumentSequenceForm(): void
@@ -367,7 +375,7 @@ new #[Title('System Settings')] class extends Component {
             'next_value' => 1,
             'reset_rule' => 'never',
             'status' => 'active',
-            'policy_notes' => 'TBD: Sequence rules pending owner approval.',
+            'policy_notes' => '',
         ];
         $this->sequenceOverride = ['sequence_id' => null, 'next_value' => null, 'expected_lock_version' => null, 'reason' => ''];
     }
@@ -424,26 +432,26 @@ new #[Title('System Settings')] class extends Component {
             'port' => 9100,
             'is_default' => false,
             'status' => 'active',
-            'notes' => 'TBD: Printer configuration baseline.',
+            'notes' => '',
         ];
     }
 }; ?>
 
 <x-app.page
-    :title="__('System Settings Baseline (TSK-005)')"
-    :description="__('Local company identity, payment methods, tax rules, document sequence counters, printer profiles, and append-only settings audit trail.')"
+    :title="__('System Settings')"
+    :description="__('Manage company identity, payment methods, tax rules, document numbering, printers, and audit history.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="settings-header"
 >
     <x-slot:actions>
         <flux:badge size="sm" color="amber" icon="exclamation-triangle">
-            {{ __('Local TBD Policy Baseline') }}
+            {{ __('Policy review') }}
         </flux:badge>
     </x-slot:actions>
 
-    <flux:callout variant="warning" icon="information-circle" title="{{ __('Unapproved Business Policy Guard') }}">
-        {{ __('All unapproved tax rates, payment rules, numbering policies, currency settings, and printer templates carry explicit local TBD values. Production policy decisions remain blocked until owner sign-off.') }}
+    <flux:callout variant="warning" icon="information-circle" title="{{ __('Configuration review') }}">
+        {{ __('Changes to financial, numbering, and printing policies require approval before operational use.') }}
     </flux:callout>
 
     @if ($errors->any())
@@ -576,18 +584,18 @@ new #[Title('System Settings')] class extends Component {
                 </flux:card>
 
                 <flux:card class="space-y-4" data-guide="settings-localization-card">
-                    <flux:heading size="lg">{{ __('Localization & Currency Policy Baseline') }}</flux:heading>
+                    <flux:heading size="lg">{{ __('Localization and currency') }}</flux:heading>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <flux:input
                             wire:model="companyForm.currency_code"
-                            :label="__('Currency Code (TBD)')"
+                            :label="__('Currency code')"
                             required
                         />
 
                         <flux:input
                             wire:model="companyForm.currency_symbol"
-                            :label="__('Currency Symbol (TBD)')"
+                            :label="__('Currency symbol')"
                             required
                         />
 
@@ -689,7 +697,7 @@ new #[Title('System Settings')] class extends Component {
 
                     <flux:input
                         wire:model="paymentMethodForm.policy_notes"
-                        :label="__('Method Policy Notes (TBD)')"
+                        :label="__('Notes')"
                     />
 
                     <div class="flex items-center justify-end gap-3">
@@ -778,7 +786,7 @@ new #[Title('System Settings')] class extends Component {
         <div id="panel-tax" role="tabpanel" aria-labelledby="tab-tax" class="space-y-6">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">
-                    {{ $taxSettingForm['id'] ? __('Edit Tax Rule') : __('Add Tax Rule Baseline (TBD)') }}
+                    {{ $taxSettingForm['id'] ? __('Edit Tax Rule') : __('Add Tax Rule') }}
                 </flux:heading>
 
                 <form wire:submit="saveTaxSetting" class="space-y-4">
@@ -804,7 +812,7 @@ new #[Title('System Settings')] class extends Component {
 
                         <flux:input
                             wire:model="taxSettingForm.rate"
-                            :label="__('Tax Rate % (Nullable if TBD)')"
+                            :label="__('Tax rate % (optional)')"
                             placeholder="15.00"
                             type="number"
                             step="0.01"
@@ -831,7 +839,7 @@ new #[Title('System Settings')] class extends Component {
 
                     <flux:input
                         wire:model="taxSettingForm.policy_notes"
-                        :label="__('Tax Policy Notes (TBD)')"
+                        :label="__('Notes')"
                     />
 
                     <div class="flex items-center justify-end gap-3">
@@ -873,7 +881,7 @@ new #[Title('System Settings')] class extends Component {
                                     @if ($tax->rate !== null)
                                         <span class="font-mono font-semibold">{{ number_format((float)$tax->rate, 2) }}%</span>
                                     @else
-                                        <flux:badge size="sm" color="amber">{{ __('TBD') }}</flux:badge>
+                                        <flux:badge size="sm" color="amber">{{ __('Not configured') }}</flux:badge>
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
@@ -966,7 +974,7 @@ new #[Title('System Settings')] class extends Component {
 
                     <flux:input
                         wire:model="documentSequenceForm.policy_notes"
-                        :label="__('Sequence Policy Notes (TBD)')"
+                        :label="__('Notes')"
                     />
 
                     <div class="flex items-center justify-end gap-3">
@@ -1086,14 +1094,14 @@ new #[Title('System Settings')] class extends Component {
 
                         <flux:input
                             wire:model="printerForm.template_name"
-                            :label="__('Template Name (TBD)')"
+                            :label="__('Template name')"
                             placeholder="default_thermal"
                             required
                         />
 
                         <flux:select wire:model="printerForm.connection_type" :label="__('Connection Type')">
                             <option value="network">{{ __('Network / IP') }}</option>
-                            <option value="usb">{{ __('USB Local') }}</option>
+                            <option value="usb">{{ __('USB') }}</option>
                             <option value="bluetooth">{{ __('Bluetooth') }}</option>
                             <option value="browser">{{ __('Browser Print') }}</option>
                         </flux:select>
@@ -1112,7 +1120,7 @@ new #[Title('System Settings')] class extends Component {
 
                     <flux:input
                         wire:model="printerForm.notes"
-                        :label="__('Printer Notes (TBD)')"
+                        :label="__('Notes')"
                     />
 
                     <div class="flex items-center justify-end gap-3">
@@ -1149,7 +1157,7 @@ new #[Title('System Settings')] class extends Component {
                                 <flux:table.cell class="font-medium">{{ $printer->name }}</flux:table.cell>
                                 <flux:table.cell><flux:badge size="sm" color="zinc">{{ strtoupper($printer->printer_type) }}</flux:badge></flux:table.cell>
                                 <flux:table.cell class="font-mono text-xs">{{ $printer->paper_size }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs">{{ $printer->connection_type }} ({{ $printer->ip_address ?? 'Local' }})</flux:table.cell>
+                                <flux:table.cell class="font-mono text-xs">{{ $printer->connection_type }} ({{ $printer->ip_address ?? __('Not specified') }})</flux:table.cell>
                                 <flux:table.cell>
                                     @if ($printer->is_default)
                                         <flux:badge size="sm" color="green">{{ __('Default') }}</flux:badge>
@@ -1197,10 +1205,10 @@ new #[Title('System Settings')] class extends Component {
                 <div class="flex items-center justify-between">
                     <div>
                         <flux:heading size="lg">{{ __('Settings Audit Trail') }}</flux:heading>
-                        <flux:subheading>{{ __('Append-only unified audit events for current platform settings.') }}</flux:subheading>
+                        <flux:subheading>{{ __('Review changes made to platform settings.') }}</flux:subheading>
                     </div>
                     <flux:badge size="sm" color="zinc" icon="shield-check">
-                        {{ __('Append-Only') }}
+                        {{ __('Settings history') }}
                     </flux:badge>
                 </div>
 
@@ -1243,7 +1251,7 @@ new #[Title('System Settings')] class extends Component {
                                 <flux:table.cell colspan="6" class="text-center py-4">
                                     <x-state.empty
                                         :title="__('No Audit Logs Recorded')"
-                                        :description="__('No settings modifications have been recorded yet. Successful updates generate append-only audit entries here.')"
+                                        :description="__('Changes to platform settings will appear here.')"
                                         icon="shield-check"
                                     />
                                 </flux:table.cell>

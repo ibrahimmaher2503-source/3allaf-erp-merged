@@ -40,7 +40,7 @@ class LocalDemoSeeder extends Seeder
         $admin = User::query()->updateOrCreate(
             ['email' => 'demo.admin@toyjoy.local'],
             [
-                'name' => 'Local Demo Administrator',
+                'name' => 'System Administrator',
                 'username' => 'demo-admin',
                 'email_verified_at' => now(),
                 'password' => Hash::make('LocalDemoOnly!2026'),
@@ -51,14 +51,14 @@ class LocalDemoSeeder extends Seeder
         $company = Company::query()->updateOrCreate(
             ['code' => 'TOY-JOY-DEMO'],
             [
-                'name_ar' => 'توي آند جوي - بيانات تجريبية',
-                'name_en' => 'TOY & JOY - Local Demo',
+                'name_ar' => 'توي آند جوي',
+                'name_en' => 'TOY & JOY',
                 'currency_code' => 'EGP',
                 'currency_symbol' => 'ج.م',
                 'timezone' => 'Africa/Cairo',
                 'locale_default' => 'ar',
                 'status' => 'active',
-                'policy_notes' => 'Local demo data only. Not approved production master data.',
+                'policy_notes' => 'Company identity and currency settings.',
             ],
         );
 
@@ -66,11 +66,11 @@ class LocalDemoSeeder extends Seeder
             ['code' => 'DEMO-CAI'],
             [
                 'company_id' => $company->id,
-                'name_ar' => 'فرع القاهرة التجريبي',
-                'name_en' => 'Cairo Demo Branch',
+                'name_ar' => 'فرع القاهرة',
+                'name_en' => 'Cairo Branch',
                 'timezone' => 'Africa/Cairo',
                 'status' => 'active',
-                'policy_notes' => 'Local demo branch only.',
+                'policy_notes' => 'Cairo branch operating details.',
             ],
         );
 
@@ -81,8 +81,8 @@ class LocalDemoSeeder extends Seeder
             );
         }
 
-        $sellingStore = $this->store($company, $branch, 'DEMO-SELL', 'selling', 'متجر البيع التجريبي', 'Demo Selling Store');
-        $warehouseStore = $this->store($company, $branch, 'DEMO-WH', 'warehouse', 'مخزن تجريبي', 'Demo Warehouse');
+        $sellingStore = $this->store($company, $branch, 'DEMO-SELL', 'selling', 'متجر البيع', 'Selling Store');
+        $warehouseStore = $this->store($company, $branch, 'DEMO-WH', 'warehouse', 'المخزن الرئيسي', 'Main Warehouse');
 
         BranchSellingStore::query()->updateOrCreate(
             ['branch_id' => $branch->id, 'store_id' => $sellingStore->id],
@@ -90,7 +90,7 @@ class LocalDemoSeeder extends Seeder
                 'effective_from' => now()->startOfDay(),
                 'effective_to' => null,
                 'status' => 'active',
-                'approval_notes' => 'Local demo mapping only. Owner approval remains required.',
+                'approval_notes' => 'Selling store assigned to the branch.',
                 'created_by' => $admin->id,
             ],
         );
@@ -101,10 +101,10 @@ class LocalDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'store_id' => $sellingStore->id,
                 'assigned_user_id' => $admin->id,
-                'name_ar' => 'درج الكاش التجريبي',
-                'name_en' => 'Demo Cash Drawer',
+                'name_ar' => 'درج النقدية الرئيسي',
+                'name_en' => 'Main cash drawer',
                 'status' => 'active',
-                'policy_notes' => 'Local demo only. Opening/closing and variance policy remains PENDING.',
+                'policy_notes' => 'Opening, closing, and variance policy.',
             ],
         );
 
@@ -114,32 +114,32 @@ class LocalDemoSeeder extends Seeder
                 'branch_id' => $branch->id,
                 'opening_cash' => '0.00',
                 'opened_at' => now()->startOfDay(),
-                'policy_notes' => 'LOCAL DEMO ONLY. Opening/closing and variance policy remains PENDING.',
+                'policy_notes' => 'Opening, closing, and variance policy.',
             ],
         );
 
         PaymentMethod::query()->updateOrCreate(
             ['code' => 'DEMO-CASH'],
             [
-                'name_ar' => 'نقدي تجريبي',
-                'name_en' => 'Demo Cash',
+                'name_ar' => 'نقدي',
+                'name_en' => 'Cash',
                 'type' => 'manual',
                 'requires_evidence' => false,
                 'offline_eligible' => false,
                 'status' => 'active',
-                'policy_notes' => 'Local Demo policy only. Active for walkthrough display; not approved production payment policy.',
+                'policy_notes' => 'Cash payment method.',
             ],
         );
 
         TaxSetting::query()->updateOrCreate(
             ['code' => 'DEMO-TAX-TBD'],
             [
-                'name_ar' => 'ضريبة تجريبية - قيد القرار',
-                'name_en' => 'Demo Tax - Pending Decision',
+                'name_ar' => 'ضريبة القيمة المضافة',
+                'name_en' => 'Value added tax',
                 'rate' => null,
                 'is_tax_inclusive' => false,
                 'status' => 'inactive',
-                'policy_notes' => 'Local Demo policy only. No rate is implied and this inactive row is not a production tax policy.',
+                'policy_notes' => 'Tax rule awaiting a configured rate.',
             ],
         );
 
@@ -152,12 +152,31 @@ class LocalDemoSeeder extends Seeder
                 'reset_rule' => 'never',
                 'status' => 'inactive',
                 'lock_version' => 1,
-                'policy_notes' => 'Local Demo policy only. Not available for business documents or Production/UAT.',
+                'policy_notes' => 'Document numbering settings.',
             ],
         );
 
+        foreach ([
+            ['document_type' => 'stock_transfer', 'prefix' => 'TR-', 'policy_notes' => 'Local inventory transfer numbering.'],
+            ['document_type' => 'inventory_adjustment', 'prefix' => 'ADJ-', 'policy_notes' => 'Local inventory movement numbering.'],
+            ['document_type' => 'stock_count', 'prefix' => 'CNT-', 'policy_notes' => 'Local stock count numbering.'],
+        ] as $sequence) {
+            DocumentSequence::query()->updateOrCreate(
+                ['document_type' => $sequence['document_type']],
+                [
+                    'prefix' => $sequence['prefix'],
+                    'padding_length' => 6,
+                    'next_value' => 1,
+                    'reset_rule' => 'never',
+                    'status' => 'active',
+                    'lock_version' => 1,
+                    'policy_notes' => $sequence['policy_notes'],
+                ],
+            );
+        }
+
         PrinterConfiguration::query()->updateOrCreate(
-            ['name' => 'Demo Printer - Unconfigured'],
+            ['name' => 'Main printer'],
             [
                 'printer_type' => 'thermal',
                 'paper_size' => '80mm',
@@ -165,7 +184,7 @@ class LocalDemoSeeder extends Seeder
                 'connection_type' => 'network',
                 'is_default' => false,
                 'status' => 'inactive',
-                'notes' => 'Local Demo policy only. UI sample; no printer or print format is approved for Production/UAT.',
+                'notes' => 'Printer profile awaiting connection details.',
             ],
         );
 
@@ -194,12 +213,12 @@ class LocalDemoSeeder extends Seeder
             ],
             [
                 'key' => 'purchasing.supplier_return.print_title',
-                'value' => 'TOY & JOY - DEMO SUPPLIER RETURN',
+                'value' => 'TOY & JOY - Supplier Return',
                 'value_type' => 'string',
             ],
             [
                 'key' => 'purchasing.supplier_return.print_footer',
-                'value' => 'DEMO ONLY - NOT FOR PRODUCTION OR UAT SIGN-OFF',
+                'value' => 'Supplier return document.',
                 'value_type' => 'string',
             ],
             [
@@ -223,7 +242,7 @@ class LocalDemoSeeder extends Seeder
                     'created_by' => $admin->id,
                     'approval_record_id' => null,
                     'locked_at' => null,
-                    'notes' => 'DEMO-ONLY pending policy example. No ApprovalRecord exists; not active, not Production policy, and not UAT sign-off.',
+                    'notes' => 'Supplier return policy settings.',
                 ],
             );
         }
@@ -234,14 +253,14 @@ class LocalDemoSeeder extends Seeder
         $primarySupplier = Supplier::query()->updateOrCreate(
             ['code' => 'DEMO-SUP-001'],
             [
-                'name_ar' => 'مورد الألعاب الرئيسي التجريبي',
-                'name_en' => 'Primary Demo Toy Supplier',
-                'contact_name' => 'ممثل المورد التجريبي الرئيسي',
+                'name_ar' => 'مورد الألعاب الرئيسي',
+                'name_en' => 'Primary Toy Supplier',
+                'contact_name' => 'ممثل المورد الرئيسي',
                 'email' => 'demo.supplier.primary@toyjoy.local',
                 'phone' => '+200000000001',
                 'tax_number' => 'DEMO-TAX-SUP-001',
-                'payment_terms' => 'Local demo payment terms only; not approved production master data.',
-                'address' => 'Local Demo Address - Cairo, Egypt',
+                'payment_terms' => 'Net 30 days',
+                'address' => 'Cairo, Egypt',
                 'status' => 'active',
                 'lock_version' => 1,
                 'created_by' => $admin->id,
@@ -252,14 +271,14 @@ class LocalDemoSeeder extends Seeder
         $secondarySupplier = Supplier::query()->updateOrCreate(
             ['code' => 'DEMO-SUP-002'],
             [
-                'name_ar' => 'مورد الألعاب الثانوي التجريبي',
-                'name_en' => 'Secondary Demo Toy Supplier',
-                'contact_name' => 'مسؤول المبيعات التجريبي الثانوي',
+                'name_ar' => 'مورد الألعاب الثانوي',
+                'name_en' => 'Secondary Toy Supplier',
+                'contact_name' => 'مسؤول مبيعات المورد الثانوي',
                 'email' => 'demo.supplier.secondary@toyjoy.local',
                 'phone' => '+200000000002',
                 'tax_number' => 'DEMO-TAX-SUP-002',
-                'payment_terms' => 'Local demo payment terms only; not approved production master data.',
-                'address' => 'Local Demo Address - Giza, Egypt',
+                'payment_terms' => 'Net 30 days',
+                'address' => 'Giza, Egypt',
                 'status' => 'active',
                 'lock_version' => 1,
                 'created_by' => $admin->id,
@@ -270,14 +289,14 @@ class LocalDemoSeeder extends Seeder
         $inactiveSupplier = Supplier::query()->updateOrCreate(
             ['code' => 'DEMO-SUP-003'],
             [
-                'name_ar' => 'مورد تجريبي قديم غير نشط',
-                'name_en' => 'Inactive Historical Demo Supplier',
-                'contact_name' => 'جهة اتصال سابقة تجريبية',
+                'name_ar' => 'مورد قديم غير نشط',
+                'name_en' => 'Inactive historical supplier',
+                'contact_name' => 'جهة اتصال سابقة',
                 'email' => 'demo.supplier.inactive@toyjoy.local',
                 'phone' => '+200000000003',
                 'tax_number' => 'DEMO-TAX-SUP-003',
-                'payment_terms' => 'Local demo historical terms only; not approved production master data.',
-                'address' => 'Local Demo Address - Historical Archive, Egypt',
+                'payment_terms' => 'Historical terms',
+                'address' => 'Historical archive, Egypt',
                 'status' => 'inactive',
                 'lock_version' => 1,
                 'created_by' => $admin->id,
@@ -300,7 +319,7 @@ class LocalDemoSeeder extends Seeder
                     'is_preferred' => true,
                     'last_purchase_price' => null,
                     'last_purchase_date' => null,
-                    'notes' => 'Local demo link only; not approved production master data.',
+                    'notes' => 'Preferred supplier link.',
                     'created_by' => $admin->id,
                     'updated_by' => $admin->id,
                 ],
@@ -313,7 +332,7 @@ class LocalDemoSeeder extends Seeder
                     'is_preferred' => false,
                     'last_purchase_price' => null,
                     'last_purchase_date' => null,
-                    'notes' => 'Local demo link only; not approved production master data.',
+                    'notes' => 'Supplier product link.',
                     'created_by' => $admin->id,
                     'updated_by' => $admin->id,
                 ],
@@ -326,7 +345,7 @@ class LocalDemoSeeder extends Seeder
                     'is_preferred' => true,
                     'last_purchase_price' => null,
                     'last_purchase_date' => null,
-                    'notes' => 'Local demo link only; not approved production master data.',
+                    'notes' => 'Preferred supplier link.',
                     'created_by' => $admin->id,
                     'updated_by' => $admin->id,
                 ],
@@ -339,7 +358,7 @@ class LocalDemoSeeder extends Seeder
                     'is_preferred' => false,
                     'last_purchase_price' => null,
                     'last_purchase_date' => null,
-                    'notes' => 'Local demo link only; not approved production master data.',
+                    'notes' => 'Supplier product link.',
                     'created_by' => $admin->id,
                     'updated_by' => $admin->id,
                 ],
@@ -367,7 +386,7 @@ class LocalDemoSeeder extends Seeder
                 'reset_rule' => 'never',
                 'status' => 'active',
                 'lock_version' => 1,
-                'policy_notes' => 'Local demo sequence only; production numbering policy remains pending owner approval.',
+                'policy_notes' => 'Purchase order numbering settings.',
             ],
         );
 
@@ -375,7 +394,7 @@ class LocalDemoSeeder extends Seeder
         $prod2 = $products->count() > 1 ? $products[1] : $products[0];
 
         // 1. Draft PO
-        $po1 = PurchaseOrder::query()->updateOrCreate(
+        $po1 = PurchaseOrder::query()->firstOrCreate(
             ['po_number' => 'PO-DEMO-000001'],
             [
                 'supplier_id' => $supplier1->id,
@@ -384,8 +403,8 @@ class LocalDemoSeeder extends Seeder
                 'status' => 'draft',
                 'order_date' => now()->toDateString(),
                 'expected_delivery_date' => now()->addDays(7)->toDateString(),
-                'payment_terms' => 'Local demo payment terms.',
-                'notes' => 'Draft order for replenishment testing.',
+                'payment_terms' => 'Net 30 days',
+                'notes' => 'Draft order for replenishment.',
                 'subtotal' => 150.0000,
                 'tax_amount' => 0.0000,
                 'total_amount' => 150.0000,
@@ -397,7 +416,7 @@ class LocalDemoSeeder extends Seeder
         $this->ensurePurchaseOrderLine($po1, $prod1, 10.0000, 15.0000, 150.0000, $admin->id);
 
         // 2. Submitted PO
-        $po2 = PurchaseOrder::query()->updateOrCreate(
+        $po2 = PurchaseOrder::query()->firstOrCreate(
             ['po_number' => 'PO-DEMO-000002'],
             [
                 'supplier_id' => $supplier2 ? $supplier2->id : $supplier1->id,
@@ -406,8 +425,8 @@ class LocalDemoSeeder extends Seeder
                 'status' => 'submitted',
                 'order_date' => now()->subDays(2)->toDateString(),
                 'expected_delivery_date' => now()->addDays(5)->toDateString(),
-                'payment_terms' => 'Local demo payment terms.',
-                'notes' => 'Submitted purchase order pending goods receipt.',
+                'payment_terms' => 'Net 30 days',
+                'notes' => 'Submitted purchase order awaiting goods receipt.',
                 'subtotal' => 200.0000,
                 'tax_amount' => 0.0000,
                 'total_amount' => 200.0000,
@@ -421,7 +440,7 @@ class LocalDemoSeeder extends Seeder
         $this->ensurePurchaseOrderLine($po2, $prod2, 20.0000, 10.0000, 200.0000, $admin->id);
 
         // 3. Cancelled PO
-        $po3 = PurchaseOrder::query()->updateOrCreate(
+        $po3 = PurchaseOrder::query()->firstOrCreate(
             ['po_number' => 'PO-DEMO-000003'],
             [
                 'supplier_id' => $supplier1->id,
@@ -429,7 +448,7 @@ class LocalDemoSeeder extends Seeder
                 'branch_id' => $store->branch_id,
                 'status' => 'cancelled',
                 'order_date' => now()->subDays(5)->toDateString(),
-                'cancel_reason' => 'Cancelled during local demo testing due to item discontinuation.',
+                'cancel_reason' => 'Cancelled because the item was discontinued.',
                 'subtotal' => 75.0000,
                 'tax_amount' => 0.0000,
                 'total_amount' => 75.0000,
@@ -451,6 +470,10 @@ class LocalDemoSeeder extends Seeder
         float $subtotal,
         int $adminId,
     ): void {
+        if (! $purchaseOrder->wasRecentlyCreated && ! $purchaseOrder->isDraft()) {
+            return;
+        }
+
         $lineIds = $purchaseOrder->lines()->pluck('id');
 
         if ($lineIds->isNotEmpty() && PurchaseInvoiceLine::query()->whereIn('purchase_order_line_id', $lineIds)->exists()) {
@@ -488,7 +511,7 @@ class LocalDemoSeeder extends Seeder
                 'name_en' => $nameEn,
                 'status' => 'active',
                 'allows_negative_stock' => false,
-                'policy_notes' => 'Local demo store only. Production structure is pending owner approval.',
+                'policy_notes' => 'Store operating details.',
             ],
         );
     }

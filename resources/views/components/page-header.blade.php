@@ -7,9 +7,9 @@
     'breadcrumbs' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'app-page-header mb-8 w-full space-y-4 border-b border-border pb-6']) }}>
+<div {{ $attributes->merge(['class' => 'app-page-header mb-6 w-full space-y-3 border-b border-border pb-5']) }}>
     @if ($breadcrumbs || isset($breadcrumbs))
-        <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-text-muted">
+        <div class="min-w-0 text-xs font-semibold tracking-wide text-text-muted" dir="auto">
             @if (isset($breadcrumbs))
                 {{ $breadcrumbs }}
             @else
@@ -18,8 +18,8 @@
         </div>
     @endif
 
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="space-y-1">
+    <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 space-y-1">
             <div class="flex flex-wrap items-center gap-2.5">
                 <flux:heading size="xl" level="1" class="font-bold tracking-[-0.03em] text-text-primary">
                     {{ $title }}
@@ -45,7 +45,7 @@
             @endif
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:w-auto sm:justify-end">
             @if ($requestId)
                 <flux:badge size="sm" variant="outline" icon="finger-print" class="font-mono text-xs" title="{{ __('Correlation ID') }}">
                     {{ $requestId }}

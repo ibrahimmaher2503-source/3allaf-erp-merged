@@ -18,7 +18,7 @@
         @if ($retryAfter)
             <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Retry after') }}: {{ $retryAfter }}s</p>
         @endif
-        <p class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ __('Reference') }}: {{ \Illuminate\Support\Facades\Context::get('request_id') ?? request()->header('X-Request-ID') ?? 'REQ-LOCAL' }}</p>
+        <p class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ __('Reference') }}: {{ \Illuminate\Support\Facades\Context::get('request_id') ?? request()->header('X-Request-ID') ?? 'REQ-UNAVAILABLE' }}</p>
         <a href="{{ request()->fullUrl() }}" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">{{ app()->getLocale() === 'ar' ? 'حاول مرة أخرى' : 'Try again' }}</a>
     </main>
 </body>

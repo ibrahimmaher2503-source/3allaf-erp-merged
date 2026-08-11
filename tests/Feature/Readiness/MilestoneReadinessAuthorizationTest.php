@@ -54,7 +54,12 @@ final class MilestoneReadinessAuthorizationTest extends TestCase
         $administrator = $this->administrator('readiness-admin');
 
         foreach ($this->readinessRoutes as $routeName) {
-            $this->actingAs($administrator)->get(route($routeName))->assertOk();
+            $response = $this->actingAs($administrator)->get(route($routeName));
+            if ($routeName === 'customers.loyalty-readiness') {
+                $response->assertRedirect(route('customers.index'));
+            } else {
+                $response->assertOk();
+            }
         }
     }
 
@@ -67,7 +72,12 @@ final class MilestoneReadinessAuthorizationTest extends TestCase
         ];
 
         foreach ($this->readinessRoutes as $routeName) {
-            $this->actingAs($administrator)->get(route($routeName))->assertOk();
+            $response = $this->actingAs($administrator)->get(route($routeName));
+            if ($routeName === 'customers.loyalty-readiness') {
+                $response->assertRedirect(route('customers.index'));
+            } else {
+                $response->assertOk();
+            }
         }
 
         foreach ($protectedTables as $table) {

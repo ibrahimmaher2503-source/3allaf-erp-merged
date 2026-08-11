@@ -21,8 +21,14 @@ declare(strict_types=1);
  */
 
 use App\Models\User;
+use App\Modules\Customer\Actions\CreateCustomerAction;
+use App\Modules\Customer\Actions\RedeemLoyaltyAction;
+use App\Modules\Customer\Actions\PostProductWalletEntryAction;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Platform\Actions\DecideApprovalSource;
+use App\Modules\Platform\Actions\AllocateDocumentNumber;
+use App\Modules\Platform\Actions\OverrideDocumentSequenceCounter;
 use App\Modules\Platform\Actions\RequestApproval;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Data\ApprovalRequestData;
@@ -34,6 +40,12 @@ use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Purchasing\Actions\AllocatePurchaseOrderNumberAction;
 use App\Modules\Retail\Actions\OpenShiftAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
+use App\Modules\Retail\Models\Sale;
+use App\Modules\Party\Actions\RecordPartyPaymentAction;
+use App\Modules\Party\Actions\ConfirmPartyBookingAction;
+use App\Modules\Party\Models\PartyBooking;
+use App\Modules\Party\Models\PartyInvoice;
+use App\Modules\Platform\Models\PaymentMethod;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -51,12 +63,19 @@ try {
     $result = match ($scenario) {
         'movement' => raceMovement($params),
         'po_number' => racePoNumber($params),
+        'sequence_override' => raceSequenceOverride($params),
+        'sequence_allocate' => raceSequenceAllocation($params),
         'price_approve' => racePriceApprove($params),
         'sale' => raceSale($params),
         'branch_mapping' => raceBranchMapping($params),
         'shift_open' => raceShiftOpen($params),
         'approval_request' => raceApprovalRequest($params),
+        'customer_create' => raceCustomerCreate($params),
+        'loyalty_redeem' => raceLoyaltyRedeem($params),
+        'product_wallet_entry' => raceProductWalletEntry($params),
         'shift_decision' => raceShiftDecision($params),
+        'party_payment' => racePartyPayment($params),
+        'party_asset_confirm' => racePartyAssetConfirm($params),
         default => throw new InvalidArgumentException("Unknown race scenario: {$scenario}"),
     };
     fwrite(STDOUT, json_encode(['ok' => true, 'result' => $result]).PHP_EOL);
@@ -127,6 +146,34 @@ function racePoNumber(array $p): array
     return ['number' => $number];
 }
 
+/**
+ * KS-013: race a stale-safe audited override against a real allocation.  The
+ * callers deliberately start as independent OS processes so MariaDB row locks
+ * and the lock-version guard, rather than process-local timing, determine the
+ * result.
+ */
+function raceSequenceOverride(array $p): array
+{
+    Auth::setUser(User::query()->findOrFail((int) $p['user_id']));
+    $sequence = \App\Modules\Platform\Models\DocumentSequence::query()->findOrFail((int) $p['sequence_id']);
+    $updated = app(OverrideDocumentSequenceCounter::class)->execute(
+        $sequence,
+        (int) $p['next_value'],
+        (int) $p['expected_lock_version'],
+        (string) $p['reason'],
+    );
+
+    return ['next_value' => $updated->next_value, 'lock_version' => $updated->lock_version];
+}
+
+function raceSequenceAllocation(array $p): array
+{
+    Auth::setUser(User::query()->findOrFail((int) $p['user_id']));
+    $number = app(AllocateDocumentNumber::class)->execute((string) $p['document_type']);
+
+    return ['number' => $number];
+}
+
 function raceApprovalRequest(array $p): array
 {
     Auth::setUser(User::query()->findOrFail((int) $p['user_id']));
@@ -142,6 +189,82 @@ function raceApprovalRequest(array $p): array
     ));
 
     return ['approval_id' => $approval->id, 'uuid' => $approval->uuid, 'state' => $approval->approval_state->value];
+}
+
+function raceCustomerCreate(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+    $customer = app(CreateCustomerAction::class)->execute($user, Store::query()->findOrFail((int) $p['store_id']), [
+        'idempotency_key' => (string) $p['idempotency_key'],
+        'phone' => (string) $p['phone'],
+        'name_ar' => (string) $p['name_ar'],
+        'name_en' => (string) $p['name_en'],
+        'consents' => [['purpose' => (string) $p['consent_purpose'], 'status' => 'granted', 'source' => 'pos']],
+    ]);
+
+    return ['customer_id' => $customer->id, 'public_id' => $customer->public_id];
+}
+
+function raceLoyaltyRedeem(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+    $entry = app(RedeemLoyaltyAction::class)->execute(
+        $user,
+        Customer::query()->findOrFail((int) $p['customer_id']),
+        Store::query()->findOrFail((int) $p['store_id']),
+        Sale::query()->findOrFail((int) $p['sale_id']),
+        (int) $p['points'],
+        (string) $p['idempotency_key'],
+    );
+
+    return ['ledger_id' => $entry->id, 'points' => $entry->points];
+}
+
+function raceProductWalletEntry(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+    $entry = app(PostProductWalletEntryAction::class)->settle(
+        $user,
+        Customer::query()->findOrFail((int) $p['customer_id']),
+        Store::query()->findOrFail((int) $p['store_id']),
+        (string) $p['amount'],
+        (string) ($p['direction'] ?? 'credit'),
+        (string) $p['source_type'],
+        (string) $p['source_id'],
+        (string) $p['idempotency_key'],
+    );
+
+    return ['ledger_id' => $entry->id, 'balance_after' => (string) $entry->balance_after, 'idempotency_key' => $entry->idempotency_key];
+}
+
+function racePartyPayment(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+    $payment = app(RecordPartyPaymentAction::class)->execute(
+        $user,
+        PartyInvoice::query()->findOrFail((int) $p['invoice_id']),
+        PaymentMethod::query()->findOrFail((int) $p['payment_method_id']),
+        (string) $p['amount'],
+        (string) $p['idempotency_key'],
+    );
+
+    return ['payment_id' => $payment->id, 'receipt_number' => $payment->receipt_number];
+}
+
+function racePartyAssetConfirm(array $p): array
+{
+    $user = User::query()->findOrFail((int) $p['user_id']);
+    Auth::setUser($user);
+    $booking = app(ConfirmPartyBookingAction::class)->execute(
+        $user,
+        PartyBooking::query()->findOrFail((int) $p['booking_id']),
+    );
+
+    return ['booking_id' => $booking->id, 'status' => $booking->status];
 }
 
 /** A real central-inbox decision made by an isolated PHP process. */
@@ -185,6 +308,10 @@ function raceSale(array $p): array
         $p['lines'],
         (string) $p['idempotency_key'],
         (bool) ($p['suspend'] ?? false),
+        [[
+            'method' => PaymentMethod::query()->where('type', 'cash')->where('status', 'active')->firstOrFail(),
+            'amount' => '0.00',
+        ]],
     );
 
     return [

@@ -7,6 +7,7 @@ namespace Tests\Concurrency;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
+use Illuminate\Support\Str;
 
 /**
  * Requirements: CSH-01, NFR-01. Policy: docs/32 §6, §16 (DEC-066).
@@ -21,18 +22,19 @@ final class ShiftOpenConcurrencyTest extends ConcurrencyTestCase
 {
     public function test_two_cashiers_racing_the_same_drawer_produce_exactly_one_shift(): void
     {
-        $branch = $this->branch('RACE-SH-BR');
-        $store = $this->store($branch, 'RACE-SH-ST');
-        $cashierA = $this->userWith('race-cashier-a', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
-        $cashierB = $this->userWith('race-cashier-b', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
+        $tag = 'RACE-SH-'.Str::lower(Str::random(10));
+        $branch = $this->branch($tag.'-BR');
+        $store = $this->store($branch, $tag.'-ST');
+        $cashierA = $this->userWith($tag.'-cashier-a', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
+        $cashierB = $this->userWith($tag.'-cashier-b', ['cashier'], branchIds: [$branch->id], storeIds: [$store->id]);
         $drawer = CashDrawer::query()->create([
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
-            'assigned_user_id' => $cashierA->id, 'code' => 'RACE-SH-DR', 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
+            'assigned_user_id' => $cashierA->id, 'code' => $tag.'-DR', 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
         ]);
 
         $results = $this->race([
-            ['shift_open', ['user_id' => $cashierA->id, 'cash_drawer_id' => $drawer->id, 'opening_float' => '100.00', 'idempotency_key' => 'RACE-SH-A']],
-            ['shift_open', ['user_id' => $cashierB->id, 'cash_drawer_id' => $drawer->id, 'opening_float' => '200.00', 'idempotency_key' => 'RACE-SH-B']],
+            ['shift_open', ['user_id' => $cashierA->id, 'cash_drawer_id' => $drawer->id, 'opening_float' => '100.00', 'idempotency_key' => $tag.'-A']],
+            ['shift_open', ['user_id' => $cashierB->id, 'cash_drawer_id' => $drawer->id, 'opening_float' => '200.00', 'idempotency_key' => $tag.'-B']],
         ]);
 
         $winners = array_filter($results, static fn (array $r): bool => $r['ok'] === true);

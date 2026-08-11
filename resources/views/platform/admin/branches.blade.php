@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Platform\Actions\SaveBranchAction;
+use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
@@ -91,7 +92,7 @@ new #[Title('Branch Management')] class extends Component
             'address' => '',
             'timezone' => 'UTC',
             'status' => 'active',
-            'policy_notes' => 'TBD: Production branch details pending owner approval (BLK-006).',
+            'policy_notes' => '',
         ];
         $this->resetValidation();
         $this->showBranchModal = true;
@@ -175,13 +176,14 @@ new #[Title('Branch Management')] class extends Component
         }
     }
 
-    public function deleteBranch(int $id, SaveBranchAction $action): void
+    public function deleteBranch(int $id, PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('branches_stores.logical_delete');
 
         try {
-            $action->delete($id);
-            Flux::toast(variant: 'success', text: __('Branch deleted successfully.'));
+            $branch = Branch::query()->findOrFail($id);
+            $approvalAction->request('branch_delete', $branch->id, ['deleted' => true], $branch->getAttributes(), $branch->id);
+            Flux::toast(variant: 'success', text: __('Branch deletion submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -289,11 +291,6 @@ new #[Title('Branch Management')] class extends Component
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <!-- TBD / BLK-006 Tracking Banner -->
-    <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Development Baseline Only (BLK-006 Unresolved)') }}">
-        {{ __('This is a local schema and UI slice (TSK-006). Official branch codes, locations, and operational policies are TBD pending owner input.') }}
-    </flux:callout>
-
     <!-- Filters & Controls -->
     <flux:card id="branches-filters" class="scroll-mt-24 space-y-4" data-guide="branches-filters">
         <div class="grid gap-4 sm:grid-cols-3">
@@ -321,11 +318,11 @@ new #[Title('Branch Management')] class extends Component
             </div>
             <flux:heading level="3" size="lg">{{ __('No Branches Configured') }}</flux:heading>
             <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('No local branch records found. Click below to add a local branch for testing, or wait for official master data (BLK-006).') }}
+                {{ __('Add a branch to organize stores and daily operations.') }}
             </flux:text>
             <div class="pt-2">
                 @can('branches_stores.create')
-                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal">{{ __('Create Local Branch') }}</flux:button>
+                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal">{{ __('Add branch') }}</flux:button>
                 @endcan
             </div>
         </flux:card>
@@ -434,7 +431,7 @@ new #[Title('Branch Management')] class extends Component
     <flux:modal wire:model="showBranchModal" class="md:w-160 space-y-6">
         <div>
             <flux:heading size="lg">{{ $editingBranchId ? __('Edit Branch Master') : __('Create Branch Master') }}</flux:heading>
-            <flux:subheading>{{ __('Define branch code, bilingual name, contact information, and local policies.') }}</flux:subheading>
+            <flux:subheading>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</flux:subheading>
         </div>
 
         <form wire:submit="saveBranch" class="space-y-4">
@@ -499,7 +496,7 @@ new #[Title('Branch Management')] class extends Component
 
             <flux:textarea
                 wire:model="branchForm.policy_notes"
-                :label="__('Policy / TBD Notes')"
+                :label="__('Notes')"
                 rows="2"
             />
 

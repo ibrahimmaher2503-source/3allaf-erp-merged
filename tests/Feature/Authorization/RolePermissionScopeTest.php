@@ -3,6 +3,7 @@
 namespace Tests\Feature\Authorization;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\SaveUserAction;
 use App\Modules\Platform\Actions\SaveUserAuthorizationAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Permission;
@@ -159,6 +160,10 @@ class RolePermissionScopeTest extends TestCase
             'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns',
             'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts',
             'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments',
+            // TSK-027 now provides real customer and retail-loyalty routes,
+            // ledgers, and server-side authorization; this inventory must not
+            // keep treating those permissions as future-module grants.
+            'customers', 'loyalty',
             // TSK-025 (DEC-066): shift lifecycle, cash movements, blind close,
             // and variance review are real gated routes and actions.
             'shifts_cash_movements',
@@ -281,6 +286,52 @@ class RolePermissionScopeTest extends TestCase
         $this->assertFalse(Store::visibleTo($branchUser)->whereKey($foreignStore)->exists());
     }
 
+    public function test_authorization_rejects_inactive_scopes_and_cross_branch_store_assignments(): void
+    {
+        $this->actingAs($this->administrator('tsk008-scope-validation'));
+        $branch = $this->branch('SCOPE-VALID-BR');
+        $foreignBranch = $this->branch('SCOPE-FOREIGN-BR');
+        $foreignStore = $this->store($foreignBranch, 'SCOPE-FOREIGN-ST');
+        $target = $this->userWith('tsk008-scope-validation-target');
+        $manager = Role::query()->where('code', 'branch-manager')->firstOrFail();
+
+        try {
+            app(SaveUserAuthorizationAction::class)->execute($target, [$manager->id], [$branch->id], [$foreignStore->id]);
+            $this->fail('A store outside the selected branch scope was assigned.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('storeIds', $exception->errors());
+        }
+
+        $this->assertDatabaseCount('user_branch_scopes', 0);
+        $this->assertDatabaseCount('user_store_scopes', 0);
+        $this->assertSame(0, AuditLog::query()->where('event', 'update_user_authorization')->count());
+    }
+
+    public function test_user_creation_and_deactivation_are_scoped_audited_and_permission_effective(): void
+    {
+        $administrator = $this->administrator('tsk008-user-maintenance');
+        $this->actingAs($administrator);
+        $branch = $this->branch('USR-MAINT-BR');
+        $store = $this->store($branch, 'USR-MAINT-ST');
+        $cashier = Role::query()->where('code', 'cashier')->firstOrFail();
+
+        $user = app(SaveUserAction::class)->execute(
+            ['name' => 'Managed User', 'email' => 'managed-user@toyjoy.test', 'password' => 'TestOnly!2026', 'status' => 'active'],
+            [$cashier->id], [$branch->id], [$store->id],
+        );
+
+        $this->assertSame('active', $user->status);
+        $this->assertTrue($user->fresh()->hasPermission('pos_sales.view'));
+        $this->assertTrue($user->fresh()->canAccessStore($store->id));
+
+        app(SaveUserAuthorizationAction::class)->execute($user->fresh(), [$cashier->id], [$branch->id], [$store->id], 'inactive');
+
+        $this->assertSame('inactive', $user->fresh()->status);
+        $this->assertFalse($user->fresh()->hasPermission('pos_sales.view'));
+        $this->assertSame(1, AuditLog::query()->where('event', 'create_user')->count());
+        $this->assertSame(2, AuditLog::query()->where('event', 'update_user_authorization')->count());
+    }
+
     public function test_a_role_change_takes_effect_immediately_and_is_audited(): void
     {
         $administrator = $this->administrator('tsk008-role-change');
@@ -348,6 +399,15 @@ class RolePermissionScopeTest extends TestCase
 
         $this->assertTrue($administrator->fresh()->roles()->whereKey($administratorRole)->exists());
         $this->assertSame($auditBefore, AuditLog::query()->count());
+
+        try {
+            app(SaveUserAuthorizationAction::class)->execute($administrator->fresh(), [$administratorRole->id], [], [], 'inactive');
+            $this->fail('The final active administrator was deactivated.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('roleIds', $exception->errors());
+        }
+
+        $this->assertSame('active', $administrator->fresh()->status);
     }
 
     public function test_an_administrator_may_be_demoted_once_a_second_administrator_exists(): void

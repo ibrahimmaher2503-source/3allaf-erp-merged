@@ -21,11 +21,12 @@ $router->post('locale', function (Request $request) {
 
     session(['locale' => $validated['locale']]);
 
-    return back();
+    return back()->withCookie(cookie('locale', $validated['locale'], 60 * 24 * 365));
 })->name('locale.switch');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->post('ui/preferences', [DashboardAssistantController::class, 'preferences'])->name('platform.ui-preferences');
+    $router->post('ui/tutorial-progress', [DashboardAssistantController::class, 'tutorialProgress'])->name('platform.tutorial-progress');
     $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', TutorialRegistry::screenIds())->name('platform.help.screen');
     $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
@@ -69,6 +70,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:audit_logs.view')->name('admin.audit');
     $router->get('admin/audit/export', function (Request $request) {
         $filters = $request->validate([
+            'mode' => ['nullable', 'string', 'in:all,override,print'],
             'search' => ['nullable', 'string', 'max:200'],
             'category' => ['nullable', 'string', 'max:100'],
             'event' => ['nullable', 'string', 'max:150'],

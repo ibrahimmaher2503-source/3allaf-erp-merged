@@ -1,5 +1,9 @@
 # Blocker Register
 
+## Current TSK-027 closure boundary — 2026-08-10
+
+TSK-027 customer master and retail-loyalty behavior is implemented and focused-tested for Local/Dev, including customer/consent/child/privacy records, controlled merge/history, POS linkage, immutable earn/redeem/expiry, approved/rejected adjustments, audit, idempotency, concurrency, and scope/RBAC. BLK-014 remains mitigated rather than closed because legal wording, final loyalty values, production roles, UAT, and release evidence remain owner-controlled. TSK-028, TSK-029, and TSK-030 were not started.
+
 ## Database Direction Override — 2026-08-09
 
 DEC-068 supersedes the earlier local SQLite assumption: current local/development/test database operations use only XAMPP MySQL/MariaDB through phpMyAdmin. The older BLK-001 wording remains historical context; it is not active runtime configuration.
@@ -102,7 +106,7 @@ The bounded Local/Dev TSK-029 slice is implemented and browser-verified. `/gift-
 
 Full issue, reference generation, balance, redemption, partial/full use, void, expiry, privacy enforcement, numbering, source reconciliation, and print workflows remain blocked by missing owner-approved eligibility/validity/holder/void/reprint/format/privacy/source values. This slice is Local/Dev evidence only; no Production/UAT approval is implied.
 
-## TSK-027 dynamic settings boundary — 2026-08-07
+## Historical TSK-027 dynamic settings boundary — 2026-08-07
 
 The owner authorized dynamic Local/Dev customer-policy values. The reversible settings/readiness slice is implemented, but BLK-014 is not closed: configured values are not owner/legal approval and are not consumed by domain workflows. Consent/retention wording, children privacy, loyalty rates/tiers/earn rules, expiry/reversal, rounding, approval/SoD, ledger/idempotency, wallet, Gift Card, Phase 4, UAT, and Production inputs remain required.
 
@@ -114,7 +118,7 @@ The requested next sequence is `TSK-023` through `TSK-027`. Each task was read a
 - **TSK-024 — Discounts/Payments:** the read-only `/pos/financial-readiness` boundary is implemented and browser-verified under `pos_sales.view`. It reads only active configuration counts and explicitly displays pending discount/tax/payment/evidence/rounding/open-price/print states. Financial mutation remains blocked by BLK-008 and POSF-01..04.
 - **TSK-025 — Shifts/Cash Control:** the read-only `/pos/shift-readiness` boundary is implemented and browser-verified under `pos_sales.view`. It reads only scoped active-drawer/current-user open-shift counts, passes no monetary fields, and preserves blind close; shift/cash/payment/variance/close mutation remains blocked by BLK-006/BLK-008 and owner policy.
 - **TSK-026 — Offline POS:** the read-only `/pos/offline-readiness` boundary is implemented and browser-verified under `pos_sales.view`. It records OFF-01..OFF-05/NFR-04 as pending and exposes no queue/sync/replay/conflict/transaction surface. BLK-004 and DEC-018 remain open; no device, limit, expiry, retry, price-age, or conflict disposition is enabled.
-- **TSK-027 — Customers/Loyalty:** the read-only `/customers/loyalty-readiness` boundary is implemented and browser-verified under the existing `pos_sales.view` gate solely to protect an empty page. It creates/loads no customer, child, consent, history, loyalty, wallet, or Gift Card data; BLK-014 legal/configuration inputs and the Phase 4 gate remain open.
+- **Historical TSK-027 — Customers/Loyalty:** the old read-only `/customers/loyalty-readiness` boundary was implemented and browser-verified under the temporary `pos_sales.view` gate solely to protect an empty page. It has since been replaced by the real Local/Dev customer and retail-loyalty contract; current evidence is recorded in `.ai/CURRENT_TASK.md` and `testing/results/TSK-027-48-TEST-MATRIX.md`.
 
 **Prepared plans:** each task must start with the documented dependencies above, use Local/Dev-only configurable values if explicitly authorized, preserve all pending owner inputs, and close only after its own server/UI/manual-browser/integrity evidence plus the applicable phase gate. Next action requires owner/phase-gate inputs or an explicit authorization for bounded Local/Dev slices; production/UAT completion is not claimed.
 

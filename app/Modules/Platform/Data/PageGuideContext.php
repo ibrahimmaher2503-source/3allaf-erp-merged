@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Platform\Data;
 
 use App\Models\User;
+use App\Modules\Platform\Support\TutorialModuleRegistry;
 use App\Modules\Platform\Support\TutorialRegistry;
 use Illuminate\Support\Facades\Gate;
 
@@ -17,6 +18,7 @@ final readonly class PageGuideContext
         public array $guide,
         public array $allowedActions,
         public string $state = 'default',
+        public ?array $module = null,
     ) {}
 
     public static function fromRequest(?User $user): ?self
@@ -45,6 +47,7 @@ final readonly class PageGuideContext
             locale: (string) app()->getLocale(),
             guide: $guide,
             allowedActions: $allowedActions,
+            module: TutorialModuleRegistry::forRoute($routeName),
         );
     }
 
@@ -59,6 +62,7 @@ final readonly class PageGuideContext
             'purpose' => $this->guide['purpose'],
             'when_to_use' => $this->guide['when_to_use'],
             'route_names' => $this->guide['route_names'],
+            'module' => $this->module,
             'permissions' => $this->guide['permissions'],
             'approved_actions' => $this->allowedActions,
             'stories' => $this->guide['stories'],

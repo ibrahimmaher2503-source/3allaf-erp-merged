@@ -23,23 +23,23 @@
     </div>
     <h1>{{ $invoice->invoice_number ?: __('Draft invoice') }}</h1>
     <div class="grid">
-        <div><div class="muted">{{ __('Supplier') }}</div>{{ $invoice->supplier?->name_en ?: $invoice->supplier?->name_ar }} ({{ $invoice->supplier?->code }})</div>
-        <div><div class="muted">{{ __('Receiving store') }}</div>{{ $invoice->store?->name_en ?: $invoice->store?->name_ar }} ({{ $invoice->store?->code }})</div>
-        <div><div class="muted">{{ __('Status') }}</div>{{ $invoice->status }}<br>{{ $invoice->invoice_date?->format('Y-m-d') }}</div>
+        <div><div class="muted">{{ __('Supplier') }}</div>{{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }} ({{ $invoice->supplier?->code }})</div>
+        <div><div class="muted">{{ __('Receiving store') }}</div>{{ app()->getLocale() === 'ar' ? ($invoice->store?->name_ar ?: $invoice->store?->name_en) : ($invoice->store?->name_en ?: $invoice->store?->name_ar) }} ({{ $invoice->store?->code }})</div>
+        <div><div class="muted">{{ __('Status') }}</div>{{ \App\Modules\Platform\Support\UiLabel::status($invoice->status) }}<br>{{ $invoice->invoice_date?->format('Y-m-d') }}</div>
     </div>
     <table>
         <thead><tr><th>#</th><th>{{ __('Product') }}</th><th>{{ __('Quantity') }}</th><th>{{ __('Unit cost') }}</th><th>{{ __('Discount') }}</th><th>{{ __('Tax') }}</th><th>{{ __('Total') }}</th></tr></thead>
         <tbody>
         @foreach ($invoice->lines as $index => $line)
-            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ $line->product?->name_en ?: $line->product?->name_ar }}</td><td>{{ $line->quantity }}</td><td>{{ $line->unit_cost }}</td><td>{{ $line->discount_amount }}</td><td>{{ $line->tax_amount }}</td><td>{{ $line->line_total }}</td></tr>
+            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) }}</td><td class="tabular-nums">{{ number_format((float) $line->quantity, 2) }}</td><td class="tabular-nums">{{ number_format((float) $line->unit_cost, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->discount_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->tax_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->line_total, 2) }} {{ $invoice->currency_code }}</td></tr>
         @endforeach
         </tbody>
     </table>
     <div class="totals">
-        <div><span>{{ __('Subtotal') }}</span><span>{{ $invoice->subtotal }}</span></div>
-        <div><span>{{ __('Discount') }}</span><span>{{ $invoice->discount_amount }}</span></div>
-        <div><span>{{ __('Tax') }}</span><span>{{ $invoice->tax_amount }}</span></div>
-        <div class="total"><span>{{ __('Total') }}</span><span>{{ $invoice->total_amount }}</span></div>
+        <div><span>{{ __('Subtotal') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->subtotal, 2) }} {{ $invoice->currency_code }}</span></div>
+        <div><span>{{ __('Discount') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->discount_amount, 2) }} {{ $invoice->currency_code }}</span></div>
+        <div><span>{{ __('Tax') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->tax_amount, 2) }} {{ $invoice->currency_code }}</span></div>
+        <div class="total"><span>{{ __('Total') }}</span><span class="tabular-nums">{{ number_format((float) $invoice->total_amount, 2) }} {{ $invoice->currency_code }}</span></div>
     </div>
     @if ($invoice->notes)<p><span class="muted">{{ __('Notes') }}:</span> {{ $invoice->notes }}</p>@endif
 </body>

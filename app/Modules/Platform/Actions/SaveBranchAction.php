@@ -128,4 +128,29 @@ class SaveBranchAction
             );
         });
     }
+
+    /** Apply an approved logical delete while preserving approval foreign keys and master history. */
+    public function logicalDeleteAfterApproval(int $id): void
+    {
+        Gate::authorize('branches_stores.logical_delete');
+
+        DB::transaction(function () use ($id): void {
+            $branch = Branch::query()->lockForUpdate()->findOrFail($id);
+            if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
+                throw new InvalidArgumentException(__('Cannot delete branch while it has active stores or an active selling store mapping.'));
+            }
+
+            $before = $branch->getAttributes();
+            $branch->update(['status' => 'inactive']);
+            app(RecordAuditEvent::class)->execute(
+                category: 'master_data',
+                event: 'delete_branch',
+                source: $branch,
+                before: $before,
+                after: ['deleted' => true, 'status' => 'inactive'],
+                branchId: $branch->id,
+                metadata: ['logical_delete' => true, 'approval_required' => true],
+            );
+        });
+    }
 }

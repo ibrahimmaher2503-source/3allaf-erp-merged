@@ -1330,3 +1330,232 @@ TSK-014 Production Closure (2026-08-09): Targeted SQLite and MariaDB Purchase Or
 - Database work: created `toyjoy_local` and `toyjoy_testing` in XAMPP MariaDB; after an interrupted first migration caused an InnoDB startup failure, preserved the prior XAMPP data directory as `C:\xampp\mysql\data-corrupt-20260809`, rebuilt from the bundled XAMPP baseline, restored non-project schemas from SQL dumps, and completed all 52 current migrations plus `db:seed --force` successfully against `toyjoy_local`.
 - Verification actually run: XAMPP MariaDB `10.4.32-MariaDB` reachable on port `3306`; SQL dump/restore exit checks passed for restored schemas; Laravel migrations and seeders passed; no SQLite files remain in `database/`; no automated tests, browser checks, commit, or push occurred.
 - Remaining note: historical `.ai/` reports retain factual legacy SQLite references and are not active configuration. The preserved `data-corrupt-20260809` directory and temporary recovery SQL dumps remain outside the project for recovery until the owner confirms they may be removed.
+
+## 2026-08-09 - Local Demo and Factory Seeding
+
+- Task: run the local demo seeders and factory-backed deterministic test data against XAMPP MySQL/MariaDB.
+- Completed: fixed `DemoPricingSeeder` to attach an approval record through the existing named approved-document mutation API; made `LocalDemoSeeder` preserve existing approved/cancelled purchase orders and their immutable lines on reruns. `DemoSeeder` then completed successfully, followed by `php artisan testing:data --size=tiny`.
+- Verification actually run: Laravel reported `mysql|toyjoy_local|mysql`; seeded counts included 6 users, 2 companies, 2 branches, 3 stores, 3 products, 2 price lists, 2 approved price versions, 3 purchase orders, 4 stock balances, 3 stock movements, 2 cash drawers, and 2 POS shifts. PHP syntax checks for both modified seeders and `git diff --check` passed.
+- Remaining blockers/next action: no blocker for the requested local seed. Automated application tests and browser checks were not run under the active project directive. Code changed; no commit or push occurred in this seeding task.
+
+## 2026-08-09 - Local Development Server Launch
+
+- Task: launch the local Laravel application after the user reported that the project was not working.
+- Completed: cleared the Laravel configuration cache and started `php artisan serve --host=127.0.0.1 --port=8000` from the repository; the server is running as process ID `13996`.
+- Verification actually run: XAMPP MariaDB remained listening on port `3306`; `GET http://127.0.0.1:8000/login` returned HTTP `200`.
+- Remaining blockers/next action: open the local login URL and sign in with the local demo credentials. No code changes, automated tests, browser checks, commit, or push occurred for this launch task.
+
+## 2026-08-09 - Cash Drawer Branch/Store Dependency Fix
+
+- Task: fix the Linked Store dropdown dependency on Branch in the Create and Edit Cash Drawer forms.
+- Completed: changed the Branch binding to update live; added the nested Livewire branch-change hook to clear `drawerForm.store_id` and its validation; keyed the Store control by form/branch; and filtered Store options to the selected branch only, leaving only the branch-level option when no stores exist. Existing server authorization and SaveCashDrawerAction branch/store validation were unchanged.
+- Verification actually run: focused one-off Playwright Chromium browser flow against `http://127.0.0.1:8000` passed the requested Create, no-store, submit, and Edit scenarios with 0 console errors, 0 page errors, and 0 HTTP errors. The temporary UI fixture branch and drawers were cleaned up in MariaDB after the browser run. No backend test suite was run.
+- Files changed for this task: `resources/views/platform/admin/drawers.blade.php`, `.ai/TEST_RESULTS.md`, and this session summary. No commit or push occurred.
+
+## 2026-08-09 - Store Location Type Terminology Correction
+
+- Task: clarify the five existing Stores screen type labels without changing their internal codes or behavior.
+- Completed: changed the visible field/filter label to `Location Type` / `نوع الموقع`; renamed the five displayed choices to Point of Sale (POS), Main Warehouse, Service Center, Damaged & Defective Stock, and Stock in Transit with Arabic equivalents; applied the wording to table badges, the create/edit form, validation copy, and the UI-ADM-004 guide; recorded DEC-069.
+- Verification actually run: PHP lint, bilingual locale JSON parsing/assertions, targeted bootstrapped Blade compilation, and `git diff --check` passed. A full `php artisan view:cache` attempt was stopped after no output in the local verification window. No automated tests, browser checks, commit, or push occurred.
+- Remaining next action: perform the prescribed manual Arabic RTL, English LTR, and responsive browser verification when the active task explicitly authorizes browser control.
+
+## 2026-08-09 — TSK-027 Real Functional Closure
+
+- **Task:** Executed TSK-027 only. TSK-028, TSK-029, and TSK-030 were not started.
+- **Work completed:** Replaced the customer/loyalty readiness boundary with the real customer master, bilingual identity/contact data, normalized unique phone, scoped customer search/history, consent snapshots, purpose-scoped child profiles, controlled duplicate merge, POS customer linkage, POS selection/registration, immutable retail loyalty ledger, FIFO earn/redeem/expiry, approval-backed adjustments with SoD, idempotency, transaction/lock boundaries, audit, bounded exports, and scope-aware history reads. Added a named child-profile mutation guard and removed Retail Loyalty grants from Party Manager.
+- **Defect fixed during closure:** The business-chain test was initially creating an approved `Sale` directly. It now uses the real `RetailSaleAction` with an open shift, stock, price, cash tender, customer linkage, automatic earn, balance assertion, redemption, and audit assertions. A MariaDB same-phone deadlock found by concurrency workers was fixed earlier with transaction retry and remained green in the final run.
+- **Verification actually run:** SQLite lifecycle 10/10 tests, 77 assertions; MariaDB lifecycle 10/10 tests, 77 assertions; MariaDB concurrency 3/3 tests, 27 assertions; final Playwright run 7 executed tests passed across Chromium/Firefox/WebKit with 2 intentional non-Chromium viewport/visual skips. Full Browser MariaDB schema was freshly migrated and seeded. PHP lint, route discovery, and Blade cache checks passed for the changed scope.
+- **Documentation/status:** Added `testing/results/TSK-027-48-TEST-MATRIX.md`; updated `TASKS.md`, `testing/results/IMPLEMENTATION-GAP-MATRIX.md`, `testing/results/E2E-SCENARIOS.md`, `testing/results/DEFECTS.md`, `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, and DEC-070 in `.ai/DECISIONS.md`.
+- **Remaining blockers/next action:** No automatic scheduler-driven expiry job, human visual review, UAT/sign-off, production roles/policy values, infrastructure/backup/restore/release smoke, or Party/wallet/gift/return consumer behavior was claimed. Technical status is Local/Dev implemented for the accepted customer + retail-loyalty contract; release status remains blocked. No commit or push occurred.
+
+## 2026-08-10 — TSK-027 Final Closure Validation
+
+- **Task:** Finalize TSK-027 only; TSK-028, TSK-029, and TSK-030 were not started.
+- **Work completed:** Repointed the active customer tutorial definition to the real Customer Master route and preserved the old customer readiness URL only as an authorization-protected redirect to Customer Master. Updated the active task/milestone/progress and 48-test evidence with the final closure validation.
+- **Verification actually run:** PHP lint passed for the changed tutorial and readiness test; `php artisan view:cache --no-ansi` passed; customer route discovery listed 15 routes; `git diff --check` passed with existing line-ending warnings; `MilestoneReadinessAuthorizationTest` passed 3/3 tests with 71 assertions. The previously recorded final browser run remains 7 executed tests passed across Chromium/Firefox/WebKit with 2 intentional non-Chromium mobile/visual skips.
+- **Remaining blockers/next action:** Scheduler-driven expiry, exhaustive authorization enumeration, human visual review, UAT/sign-off, production values/role grants, infrastructure, backup/restore, release smoke, and downstream Party/wallet/gift/return consumers remain open. No commit or push occurred.
+- **State changes:** Code changed; tests run; browser was not rerun in this follow-up because only non-visual tutorial/redirect/test-expectation changes were made; no commit; no push.
+
+## 2026-08-10 — TSK-027 Approval and Browser Finalization
+
+- **Task:** Continue TSK-027 only; TSK-028, TSK-029, and TSK-030 were not started.
+- **Work completed:** Wired `loyalty_adjustments` into the canonical Approval Inbox approve/reject dispatcher, added mandatory-reason rejection with separation of duties, immutable source transition and audit, direct rejection route, and customer loyalty UI rejection control. Removed the unreachable legacy customer loyalty-readiness Blade template while retaining its protected redirect route.
+- **Defects found and fixed:** The first browser rerun used a previously populated disposable browser database, causing expected duplicate-phone validation and a stale visual snapshot height. The exact disposable database was freshly migrated and reseeded; the clean rerun passed.
+- **Verification actually run:** SQLite lifecycle 10/10 tests, 81 assertions; MariaDB lifecycle 10/10 tests, 81 assertions; focused approval/rejection regression 1/1 with 13 assertions on each engine; MariaDB concurrency 3/3 with 27 assertions; Pint, PHP lint, Blade cache, loyalty route discovery, and `git diff --check` passed; final Playwright 7 executed tests passed across Chromium/Firefox/WebKit with 2 intentional skips.
+- **Remaining blockers/next action:** Automatic scheduler expiry, exhaustive authorization enumeration, human visual review, UAT/sign-off, production values/role grants, infrastructure, backup/restore, release smoke, and downstream Party/wallet/gift/return consumers remain open. Code changed; tests and browser checks run; no commit; no push.
+
+## 2026-08-10 — KS-013 Sequence Override Verification
+
+- **Task:** Execute the supplied KS-013 stale-safe sequence override scenario only against `toyjoy_ks_011_020_20260810`.
+- **Work completed:** Added the focused, real-MariaDB two-process allocation-versus-override race proof and a headed Chromium KS-013 visible-flow harness. Restarted only the verified 8793 listener with explicit isolated-schema configuration after the original listener was proven to use a different schema.
+- **Verification actually run:** MariaDB race proof passed 1/1 test with 13 assertions. A headed Chromium trace completed the full exact workflow: stale UI override rejected after an authenticated allocation, reload saw the new counter, reasoned override succeeded, and the next allocation/audit invariants were verified. The assertion body completed in the retained trace; subsequent clean runner attempts were affected by intermittent Livewire edit hydration/runner shutdown delays and are recorded as test-infrastructure/performance evidence, not a product failure.
+- **Remaining next action:** Review the KS-013 trace timing packet before any performance fix; no production code was changed, no commit or push occurred.
+
+## 2026-08-10 — Local Development Server and Admin Login
+
+- **Task:** Launch the local Laravel project and authenticate as the local administrator through Playwright.
+- **Work completed:** Started `php artisan serve --host=127.0.0.1 --port=8000`; no application code changed.
+- **Verification actually run:** `/login` returned HTTP 200; a one-off Playwright Chromium flow authenticated the local `demo-admin` fixture and reached `http://127.0.0.1:8000/dashboard` with title `Dashboard - TOY & JOY`; zero console errors and page errors were observed. XAMPP MariaDB was listening on port 3306.
+- **Remaining blockers/next action:** The local server remains running on port 8000 (listener PID 20616). No automated suite, commit, or push occurred. The Playwright browser context was closed after verification.
+
+## 2026-08-10 â€” FLW-ADM-03 Active Shift Drawer Guard
+
+- **Task:** Establish a genuine RED test and implement the smallest server-side guard preventing a cash drawer with a non-terminal POS shift from being retired/deactivated or reassigned to a different branch/store.
+- **Work completed:** Replaced the obsolete `shifts`-table test premise with an open `pos_shifts` fixture. `SaveCashDrawerAction` now locks the drawer before checking active shifts with a row lock; it rejects non-active status transitions and branch/store assignment changes while an active shift exists. Safe non-assignment edits remain permitted.
+- **Verification actually run:** The new focused test was RED first: 1 test, 1 assertion, 1 expected failure (`An active drawer was deactivated while its POS shift was active.`). After the guard, the same focused test passed 1/1 with 6 assertions; the full `CashDrawerMasterTest` passed 11/11 with 47 assertions, all via `phpunit.flow-foundation.xml` against `toyjoy_flow_foundation_20260810`. A `ShiftCashLifecycleTest` attempt using `phpunit.flow-inventory-retail.xml` was cancelled by owner instruction before a result and is not evidence. No browser verification, commit, or push occurred.
+- **Authorization finding:** The focused foundation baseline remains RED in `RolePermissionScopeTest` on four unresolved docs/seed/route divergences. DEC-038 makes `docs/04` authoritative; no subsequent decision explicitly authorizes every observed production-grant divergence. No authorization code was changed.
+
+## 2026-08-10 — Full User-Story Inventory and US-024 Print Verification
+
+- **Task:** Shifted execution to the implementation-first requirement in `docs/05-user-stories.md`, then completed the high-risk US-024 shift-output slice without broad legacy-suite repair.
+- **Work completed:** Read all 33 stories and created `testing/results/USER-STORY-IMPLEMENTATION-INVENTORY-20260810.md` with story → task → flow → AC/security → product layers → tests → risk traceability. Added permissioned Thermal/A4 closed-shift routes/templates, immutable closed-shift discoverability, reviewer-only expected/variance detail, print/reprint audit events, and route-contract coverage. Removed A4 auto-print-on-load after headed review found it blocked observable output inspection; the explicit Print button remains.
+- **TDD / classification:** The focused HTTP test first failed because the print route did not exist: PRODUCT IMPLEMENTATION GAP. The first headed attempt exposed a browser fixture scope defect, then a missing disposable `shift_close` numbering configuration; both were classified as test data/configuration defects and corrected only in disposable MariaDB setup. Several stale Flux semantic locators were corrected. No production behavior was changed to satisfy a stale test.
+- **Verification:** MariaDB focused shift print/auth/redaction 2/2 tests, 24 assertions; inventory/POS route contract 1/1, 104 assertions; real MariaDB shift-open/decision races 5/5, 59 assertions; headed Chromium cashier → manager → approve → Thermal/A4 flow 1/1 passed in 35.2 seconds. Final browser database state was closed `SHIFT-000001`, approval approved, and audit contained close plus both print events. PHP lint and `git diff --check` passed.
+- **Database:** Used `toyjoy_flow_browser_20260810`, `toyjoy_concurrency_20260809`, and `toyjoy_shift_concurrency_20260810` as disposable MariaDB schemas. The stale/missing configured concurrency schema was provisioned; no normal database was deleted or mutated.
+- **Remaining blockers/next action:** The 33-story matrix is 13 FULL, 10 PARTIAL, 10 MISSING. Party, gift/return, quotation, reporting/export, offline, and other documented gaps remain confirmed implementation work. No commit or push occurred.
+## 2026-08-10 - Parallel Agent D US-028 to US-031
+
+- Task: Implement US-028 rental assets, US-029 asset events, US-030 quotations, and US-031 reporting/alerts/exports in parallel-safe module files.
+- Work completed: Added migrations, models, actions, routes, authorization, scope locks, approval/audit, print/share, non-posting quotation edit, bounded reports, alerts, safe XLSX export job center, and real responsive UI screens. Added focused MariaDB and headed Chromium verification specs.
+- Verification: Focused MariaDB PHPUnit passed 4/4 tests with 29 assertions on toyjoy_flow_assets_reporting_20260810d. Final headed Chromium run on 8800 passed 3/3 English, mobile, and RTL checks. PHP lint and route discovery passed. No broad unrelated suite, commit, or push.
+- Remaining blockers: depreciation policy, quotation conversion, wider report/PDF scope, physical print/UAT, production grants/configuration, backup/restore, commit, and push.
+
+## 2026-08-10 - Agent D calendar UI follow-up
+
+- Task: close the rental-asset calendar/UI gap found during final review of US-028.
+- Work completed: added a scoped, 30-day, 100-row-bounded reservation calendar and visible editable reservation start/end fields; no unrelated modules changed.
+- Verification: focused MariaDB suite passed 4/4 tests with 29 assertions; headed Chromium on port 8800 passed 3/3 English, mobile, and RTL checks; PHP lint and `git diff --check` passed. One earlier rerun timed out from shared MariaDB contention without assertions; the exact rerun passed.
+- Remaining blockers: depreciation policy, quotation conversion, wider report/PDF scope, physical print/UAT, production grants/configuration, backup/restore, commit, and push. No commit or push occurred.
+
+## 2026-08-10 - Agent D real UI workflow closure
+
+- Task: complete visible verification for US-028 through US-031 and fix defects found by the real forms.
+- Work completed: corrected quotation draft edit routing to accept the emitted POST form method alongside native PUT; retained the exact action, scope, and permission checks. Corrected only the local browser fixture’s seeded product ID.
+- Verification: headed Chromium on port 8800 passed 4/4, covering asset create/reserve/checkout/return/inspect, quotation create/edit/print NON-POSTING behavior, bounded report date filter/reconciliation/export/job center, English LTR, 390x844 layout, and Arabic RTL. Route discovery, PHP lint, Node syntax, and `git diff --check` passed. The focused MariaDB suite remains GREEN at 4/4 tests and 29 assertions.
+- Remaining blockers: depreciation policy, quotation conversion, wider report/PDF scope, physical print/UAT, production grants/configuration, backup/restore, commit, and push. No commit or push occurred.
+
+## 2026-08-10 - Parallel Agent C - US-025 to US-027 Party
+
+- Task: Implement only the owner-requested US-025 Party booking/working invoice, US-026 Party payments/final close/Party Wallet, and US-027 Party operating order/consumable workflow.
+- Work completed: Added isolated Party schema tables, enums, models, transactional actions, scope/permission grants, routes, real Flux/Blade booking/invoice/payment/operating-order screens, Party payment and invoice print outputs, Party browser fixture, source-linked inventory issue/return, audit events, final immutability, and idempotency payload guards. Reused existing customer, Party Wallet, numbering, audit, inventory movement, and store-scope infrastructure.
+- Verification actually run: valid TDD RED for missing booking action; valid TDD RED for mismatched movement replay; focused MariaDB lifecycle GREEN 7/7 tests and 37 assertions; genuine two-process MariaDB payment race GREEN 1/1 and 9 assertions; route discovery, PHP lint, Blade view cache, and headed Chromium on port 8799. English LTR and Arabic RTL/mobile no-overflow checks were run. No full suite, SQLite, commit, or push occurred.
+- Remaining blockers/next action: US-027 rental-asset reservation integration remains dependent on the separate US-028/TSK-034 asset contract and is not claimed. Physical printer/UAT/production configuration, full regression, commit, and push remain external or later gates.
+
+## 2026-08-10 - Parallel Agent C - US-027 asset integration closure
+
+- Task: close only the remaining US-027 integration with the newly implemented US-028 rental-asset reservation domain; US-025 and US-026 were not reopened.
+- Work completed: added Party invoice/order asset and reservation references, actual-asset selectors, Party checkout/return/inspection actions and routes, completion guards, Party asset lifecycle audit links, and authoritative delegation to US-028. Added a locking overlap read in the existing US-028 reservation action to make the Party outer transaction safe under MariaDB repeatable-read concurrency.
+- TDD: valid RED for missing Party reservation; valid RED for missing Party checkout action; valid concurrency RED when two real workers both confirmed; GREEN after the smallest integration and locking fix. Added a regression guard that free-text asset codes cannot bypass actual asset selection.
+- Verification actually run: isolated MariaDB `toyjoy_flow_party_asset_20260810` Party asset integration 3/3 tests and 14 assertions; genuine two-process asset overlap race 1/1 and 10 assertions; prior Party regression 7/7 and 37 assertions; US-028 focused suite 4/4 and 29 assertions; PHP lint, route discovery, Blade view cache; headed Chromium on port 8801 through asset create -> Party booking -> operating order -> checkout -> return -> inspection -> completion; LTR/RTL 390px no-overflow and accessible-name checks.
+- Final local/dev status: **US-027 PARTIAL -> FULL**. Remaining gates are physical print/UAT, production configuration, backup/restore, full regression/release acceptance, commit, and push.
+- Code, tests, browser, commit, push: code changed; tests created/extended and run; headed browser verification completed; no commit or push.
+
+## 2026-08-10 - Agent E - US-019 to US-021
+
+- Task: replace readiness-only Gift Receipt, Returns/Exchanges, and Gift Card behavior with local/dev product implementation.
+- Work completed: added the schema correction for optional Gift Card expiry, Retail Gift Receipt/Gift Card/Return/Exchange models, transactional actions, append-only ledger and print events, source-linked return lines and settlements, stock posting through existing inventory infrastructure, explicit scoped permissions, isolated routes, sidebar links, responsive English/Arabic screens, privacy-safe Gift Receipt print, focused PHPUnit XML suites, and genuine MariaDB worker race coverage.
+- TDD and defects: lifecycle RED fixed the documented empty Gift Receipt line-selection behavior; concurrency RED exposed two successful over-returns under a stale MariaDB aggregate read and was fixed with a source-sale advisory lock plus current-read eligibility; browser RED fixed a real Gift Card list lazy-load 500 by eager-loading store; selector/test defects were corrected without weakening product rules.
+- Verification actually run: focused MariaDB lifecycle 4/4 tests and 24 assertions; targeted Gift Receipt reprint/privacy 1/1 and 16 assertions; genuine two-process MariaDB return/Gift Card concurrency 2/2 and 8 assertions; PHP lint; route discovery; headed Chromium on dedicated port 8801 with real login, Gift Card issue/redeem, privacy surface, 390x844, and Arabic RTL/no-overflow 1/1 pass.
+- Database/runtime: used only disposable toyjoy_flow_returns_gifts_20260810 MariaDB for focused tests/browser; no SQLite and no normal database destructive operation. No commit or push occurred.
+- Remaining blockers/next action: owner policy values for return windows/cash limits/SoD, precise original-tender accounting, and Gift Card expiry duration; physical print, Production grants/configuration, UAT, backup/restore, full regression, commit, and push remain open.
+
+## 2026-08-10 - Requirement-bounded user-story audit correction
+
+- Task: rebuild the user-story implementation inventory from the authoritative requirements file and current production source only.
+- Work completed: replaced `testing/results/USER-STORY-IMPLEMENTATION-INVENTORY-20260810.md` with a requirement-versus-code matrix for US-046 and US-001–US-032; corrected the checkpoint to 33 stories, 5 FULL, 28 PARTIAL, 0 MISSING; removed prior gaps that were not stated in `docs/05-user-stories.md`.
+- Verification actually run: read-only source inspection and inventory review. No tests, browser checks, commits, or pushes occurred.
+- Remaining blockers/next action: use the corrected inventory as the baseline for future implementation decisions; no implementation change was made by this audit.
+
+## 2026-08-10 - Agent E final verification follow-up
+
+- Task: finish US-019 Gift Receipt, US-020 Returns/Exchanges, and US-021 Gift Cards after the initial local/dev implementation.
+- Work completed: added Gift Card print/reprint UI and immutable print-event audit storage, granted the scoped print permission to the instrument viewer role, tightened direct return creation to require a reason, and extended the lifecycle regression accordingly.
+- Verification actually run: focused MariaDB lifecycle rerun passed 4/4 tests with 31 assertions; PHP lint and route discovery passed; scoped Impeccable detection exited successfully; headed Chromium on port 8801 passed 1/1 with Gift Card issue -> print -> redeem, Gift Receipt privacy, 390x844, and Arabic RTL checks. The disposable MariaDB schema was repaired/reseeded after concurrent schema interference before the final browser run.
+- Remaining blockers: owner policy values, physical printer delivery, Production authorization/configuration, UAT, backup/restore, full regression, commit, and push remain open. Code and tests changed; no commit or push occurred.
+
+## 2026-08-10 - System-wide confidence test pass
+
+- Task: perform the owner-requested system-wide TOY & JOY Phase 1 confidence pass and create the report at `new_test_results_10/8`.
+- Work completed: read the required source-of-truth documentation and current implementation/test infrastructure; inspected fixtures, factories, MariaDB setup, browser specs, and current implementation-gap evidence; built the 54-flow matrix; executed selected Unit, feature/domain, integration, and MariaDB concurrency waves; recorded current results separately from historical evidence; created the detailed report; updated `.ai/TEST_RESULTS.md` and `.ai/PROGRESS.md`.
+- Verification actually run: Unit 68/68 passed with 151 assertions; feature/domain 23/24 passed with one active-shift fixture failure; integration 7/7 passed; selected MariaDB concurrency completed 10/14 with two fixture failures and two fixture errors; static route/view/build/diff checks passed. Five current Chromium attempts timed out in local authentication before business assertions. Returns/Gift Card concurrency and broad MariaDB runs timed out without usable summaries.
+- Findings: no new valid critical product defect was proven. Active-shift, reused-schema, missing PHPUnit-suite, MariaDB runtime, and browser-auth findings were classified as test/fixture/configuration/environment blockers. Offline queue/sync/conflict remains missing, and current POS/shift reconciliation plus several documented partial flows remain release risks.
+- Verdict: **LOW system confidence**. No product code, tests, browser specs, commits, or pushes were changed by this reporting session; the report and `.ai` documentation were changed. Next action is to repair test isolation/configuration/browser authentication and rerun the affected POS, reconciliation, concurrency, browser, and regression waves.
+
+## 2026-08-10 - Independent second system confidence verification (in progress)
+
+- Task: independently verify the prior LOW confidence result from code and real execution, beginning with test-harness repair and the POS/shift/concurrency gate.
+- Work completed: repaired test-only active-shift, unique race-identifier, wallet replay-key, worker-database propagation, Returns/Gift Card one-time schema setup, and incomplete PHPUnit-suite configuration defects. Created and used dedicated MariaDB schemas `toyjoy_confidence_pos_20260810`, `toyjoy_confidence_concurrency_20260810`, and `toyjoy_confidence_returns_20260810`; no SQLite, production, or normal local schema was used.
+- Verification actually run: POS race 2/2 (19 assertions), shift-open race 1/1 (7), wallet race 3/3 (24), Returns/Gift Card race 2/2 (8), and POS HTTP checkout 4/4 (17) passed after repairs. Headed Chromium successfully logged in as `demo-admin` against a fresh seeded server on port 8802 and rendered `/party/assets`; `/quotations` timed out under concurrent browser activity and is not a pass.
+- Environment handling: an aborted confidence-only migration left a partial table in the empty owned Returns schema; after proving no process used it, that disposable schema was dropped/recreated and migrated successfully. No data outside that schema was removed.
+- Remaining blockers/next action: finish POS/shift financial and inventory reconciliation, then purchasing/inventory/party/permission/state/idempotency/failure matrices and an uncontended headed Chromium RTL/mobile/print/tutorial pass. No commit or push occurred. Test harness/configuration and `.ai` files changed; production business logic did not.
+
+## 2026-08-10 - Independent verification report update
+
+- Updated `new_test_results_10/8` by appending a clearly separated second-verification addendum. It records only the newly reproduced harness, MariaDB concurrency, POS checkout, and headed-browser evidence and does not replace the historical LOW verdict before the remaining waves run.
+- No additional test, browser, production-code, commit, or push action occurred for this documentation update.
+
+## 2026-08-10 - Independent verification reconciliation wave (in progress)
+
+- Fresh evidence: selected POS/shift reconciliation cases passed 5/5 (15 assertions); payment, stock rollback, evidence, suspension, and active-shift edges passed 7/7 (29 assertions). Purchase/inventory selected cases passed 8/8 and 102 assertions after adding the missing `inventory_adjustment` document-sequence test fixture.
+- Product defect: the current checkout code called an undefined discount-approval validation method when a manager-approved open-price sale finalized. The checkout approval validation path was completed using the existing approval contract. Focused open-price approval passed 1/1 (20 assertions), and the existing above-limit discount approval regression passed 1/1 (11 assertions). A duplicate test drafted during concurrent work was removed in favor of the pre-existing stronger regression.
+- Direct server-side security/approval matrix initially passed 16/17 selected cases (63 assertions); its sole non-pass was the checkout defect above. The complete matrix has not yet been rerun after the fix.
+- A combined Customer/Wallet/Party/Asset/Returns runner was stopped after more than six minutes without a usable PHPUnit result; classify only as test-runner/performance blockage. Its dedicated schema remains owned and isolated. No commit or push occurred.
+- Follow-up split execution: `CustomerLoyaltyLifecycleTest::test_business_chain_uses_the_real_pos_sale_before_earn_balance_redeem_and_audit` passed 1/1 with 14 assertions on `toyjoy_confidence_business_20260810`.
+
+## 2026-08-10 - US-008 / US-017 / US-018 POS closure
+
+- Task: complete the documented local/dev POS vertical slice for controlled open price, core sale lifecycle, and payment/tax/discount/evidence/settlement/receipt.
+- Work completed: reused the shared ApprovalRecord and inbox for above-limit POS discounts; added discount approval persistence/link migration, approve/reject actions, central source dispatch, independent requester/approver and scope checks, source hash/version/expiry checkout revalidation under MariaDB locks, sale-line approver/audit evidence, POS threshold and approval-state feedback, integrated browser tax fixture, and cashier POS-aware login fallback. Refreshed `testing/results/USER-STORY-IMPLEMENTATION-INVENTORY-20260810.md` to current 13 FULL / 20 PARTIAL / 0 MISSING counts and reconciled US-017/018 plus recent US-019–031 rows.
+- Verification actually run: PHP lint passed for changed POS/action/route/test files; OpenPriceApprovalTest 6/6 with 51 assertions; DiscountNonStackingTest 9/9 with 20; PosPaymentSettlementTest 12/12 with 39; RetailSaleConcurrencyTest 2/2 with 19. Dedicated MariaDB schemas were `toyjoy_flow_pos_closure_20260810` and `toyjoy_browser_pos_20260810`.
+- Browser actually run: headed Chromium on port 8802 passed `us008-017-018-pos-closure.spec.js` 1/1 in 48.9 seconds with real English/LTR login and checkout, open-price and above-limit discount manager approvals through the Approval Inbox, tax, cash rounding, receipt, 390x844 no-overflow, Arabic RTL/no-overflow, and no console/failed-request/HTTP errors. Screenshots were captured and visually inspected. No axe run, physical printer, production, UAT, commit, or push was claimed.
+- Remaining next action: owner production configuration/grants, physical printer delivery, UAT, backup/restore, and full-suite/release gates remain outside local/dev completion. Two additional PHPUnit invocations exceeded the shared five-minute window without usable summaries and are not counted as failures.
+
+## 2026-08-10 - US-013 to US-016 inventory operations closure
+
+- Task: close only US-013 scoped stock visibility, US-014 stock transfers, US-015 inventory entry/exit/exchange/adjustments, and US-016 stock count/reconciliation.
+- Work completed: added bounded inventory balance/movement search/filter/export behavior; completed transfer draft create/edit and lifecycle route actions; added adjustment document create/edit and referenced immutable reversal flow; added stock count create/assignment, scoped product selection, manual/recount entry, and movement-aware reconciliation review barrier. Reused the authoritative StockBalance, StockMovement, locking, scope, approval, numbering, and audit infrastructure.
+- TDD: searched existing `tests/` and `testing/` first. A real RED for the missing transfer draft edit action led to `UpdateStockTransferDraftAction`; a stale count test fixture RED led only to the missing stock-count document sequence fixture. Headed UI REDs then exposed the adjustment edit renderer argument bug, disposable stock exhaustion, an authenticated-context spec bug, and super-admin counter filtering/validation; each was fixed in scope. Existing inventory workflow and concurrency tests were extended; no new test file or test framework was created.
+- Verification actually run: isolated XAMPP MariaDB focused inventory regression passed 4/4 tests with 26 assertions; the existing scope/safety subset passed 4/4 with 14 assertions; the post-fix count setup rerun passed 1/1 with 7 assertions; existing integrated inventory lifecycle passed 1/1 with 25 assertions; existing MariaDB stock-balance concurrency passed 2/2 with 20 assertions; inventory route contract passed 1/1 with 179 assertions. Changed PHP lint, Node syntax, route discovery, and scoped diff checks passed.
+- Browser actually run: existing headed Chromium on disposable MariaDB server `http://127.0.0.1:8810` passed English/LTR inventory search/filter and transfer draft -> submit -> separate approver -> approve -> dispatch -> receive -> adjustment create -> submit -> approve/post -> count create/assign -> manual entry -> submit -> review -> reconcile; headed Chromium Arabic RTL at 390x844 passed the inventory surface usability/no-blocking-overflow check. No warehouse/cashier login attempt is counted as a pass. No SQLite or normal application data was used.
+- Remaining blockers/next action: full repository regression, physical print/UAT, owner production grants/configuration, backup/restore, commit, and push remain open. No commit or push occurred. The global inventory report was intentionally not updated.
+## 2026-08-10 - US-031 reporting/KPI/alert/export completion
+
+- Task: take US-031 from partial to the local/dev boundary using only the exact user-story requirements and current production sources.
+- Work completed: added complete scoped report/filter UI; reconciled sales arithmetic to Sale/SaleLine/SalePayment and returns to completed return settlements; added source-backed purchasing, cash, customer/loyalty/wallet/gift-card, party, asset, and inventory summaries; enforced server-side scope and field permissions; added status-consistent KPI/detail/export reconciliation; added actionable deduplicated alerts; added queued XLSX/PDF exports with private local storage, expiry, audit, snapshot integrity, and existing formula sanitization; extended the existing report/browser tests only.
+- TDD: valid RED/GREEN evidence covered ignored filters, missing PDF queue support, cost exposure, missing alerts, foreign scope, and document-status mismatch. The status RED failed at 10.00 versus expected 99.00 and GREEN passed 1/1 with 6 assertions.
+- Verification actually run: focused report filter tests 2/2 with 11 assertions; document status 1/1 with 6; report snapshot/export boundary 1/1 with 13; earlier PDF queued/private artifact, cost-redaction, alert, and foreign-scope cases passed separately. Full focused PHPUnit exceeded the five-minute runner window and was stopped; it is not claimed as a pass. PHP lint, Blade cache, Composer validation, and report route discovery passed.
+- Browser actually run: existing Agent D spec clean run 4/4; final report workflow passed with queued export completion and actual owner Excel download; isolated surface smoke passed 1/1. The newest disposable-browser XLSX was ready with 113 rows and reporting audit included `export_downloaded`. No production/normal database, commit, or push was used.
+- Remaining blockers/next action: Arabic PDF font fidelity/physical print UAT, production grants/configuration, backup/restore, and full repository regression remain release gates. Local/dev US-031 is complete; code and tests changed, browser checks occurred, commit/push did not occur.
+
+## 2026-08-10 - Sidebar + reporting remediation DUP-001 to DUP-013
+
+- Task: implement the owner-requested complete sidebar/navigation remediation and replace misleading operational/readiness report links with genuine focused business/report destinations.
+- Work completed: removed two proven redundant links, retained the intentional Workspace Reports shortcut, wired real Party routes, added customer/loyalty, purchasing history, and Party invoice entry points, added pricing/inventory/assets/audit focused states, and implemented seven named report surfaces over one scoped query/layout/export architecture. Audit focused exports now preserve the selected override/print mode.
+- TDD and verification actually run: existing tests were extended only. Focused MariaDB regression passed 13/13 with 179 assertions; report foreign-scope and cost-redaction passed 2/2 with 3 assertions; audit mode/export parity passed 1/1 with 10 assertions. PHP/JavaScript syntax, Blade cache, route discovery, Vite build, and scoped diff checks passed.
+- Browser actually run: visible headed Chromium passed the English/LTR remediated-sidebar matrix and 25 destinations, Arabic RTL, 390x844 no-overflow, and a real Sales XLSX export/download through the private export center. An old combined scenario was classified as fixture drift because it hard-codes a missing Product ID before reaching reporting.
+- Database/runtime: only dedicated MariaDB schemas `toyjoy_sidebar_reports_20260810` and `toyjoy_us031_tdd_20260810` were used. Code and existing tests/specs changed; no new test file, SQLite, normal-data operation, commit, or push occurred.
+- Remaining gates: full repository regression, physical print/PDF UAT, production authorization/configuration, backup/restore, commit, and push.
+
+## 2026-08-10 - Advanced design for all report screens
+
+- Task: make all seven focused report screens visually advanced with more color, cards, charts, useful data presentation, responsive behavior, and accessible RTL/LTR support.
+- Work completed: redesigned the single shared report Blade surface; added reusable report KPI and visual components; added source-reconciled chart payloads for every report module; retained independent permissions for sensitive financial series; added Arabic translations for the new report hierarchy and chart states; kept export and detail tables connected to the same filter snapshot.
+- TDD: the browser acceptance first failed on the absent advanced dashboard contract. Backend visual tests then failed on missing payload/description and on an inventory chart incorrectly summing only 50 displayed rows. GREEN uses full scoped inventory aggregates and bounded neutral chart contracts. A browser regression for the Excel action name was corrected with an explicit accessible label.
+- Verification actually run: focused MariaDB 4/4 tests and 258 assertions; headed Chromium all-seven report UI, 390x844, Arabic RTL, accessible charts/tables, and real XLSX export/download; Vite build, Blade cache, PHP/Node syntax, Arabic JSON parse, scoped diff checks. Screenshots were visually inspected.
+- Code/tests/browser changed and run: yes. New product test files: none. SQLite, normal/production data changes, commit, and push: none.
+- Remaining gates: populated-data owner UAT, physical PDF/print verification, full repository regression, production grants/configuration, backup/restore, commit, and push.
+
+## 2026-08-10 - US-017/018/020/021 POS money-flow closure
+
+- Task: close the connected POS sale, pricing/discount/payment, returns/refunds/exchanges, and Gift Card stories at the local/dev boundary.
+- Work completed: added atomic Gift Card tender capture and Sale-linked ledger posting; strict Gift Card idempotency conflict detection; scoped suspended-sale resume; complete exchange-line and return settlement UI; damaged-store inventory posting; cash/original-tender settlement validation; non-superadmin return maker/checker separation; bounded Gift Card history; and clear generated-card settlement links. Removed the unsafe standalone source-less Gift Card redemption UI/route.
+- TDD/RCA: valid REDs proved Gift Card idempotency payload aliasing, the optional-tender fingerprint array-key race regression, and a Blade compile failure on the real return detail. The smallest production fixes were rerun GREEN. One suspended-sale non-pass was a stale test actor missing the intentionally separate payment permission; only that existing fixture was corrected.
+- Verification actually run: 51 focused PHPUnit tests and 222 assertions passed on dedicated MariaDB, including POS stock/duplicate-finalize and return/Gift Card real-process races. Two existing headed Chromium specs passed with real English/LTR flows plus Arabic RTL and 390x844. Blade cache, PHP lint, routes, scoped diff checks, and read-only financial/stock/Gift Card/shift reconciliation passed.
+- Repository state: production code, existing tests/specs, one migration, one focused PHPUnit config, browser fixture, and required `.ai` evidence changed. No new test file, SQLite, normal-data mutation, global implementation-inventory update, commit, or push occurred. Remaining release gates are production/provider configuration, physical printer/UAT, backup/restore, and full release regression.
+
+## 2026-08-11 - Repository publication
+
+- Task: publish the current project working tree to the configured GitHub remote.
+- Work completed: prepared one commit containing the current application, documentation, migrations, and relevant test/spec changes; excluded generated browser artifacts, local screenshots, and the prohibited SQLite PHPUnit configuration.
+- Verification actually run: inspected repository status, configured remote, branch divergence, and staged file set. No automated tests, browser checks, database operations, or application verification were run for this publication task.
+- Commit: created `cf1b96b` (`chore: publish current project state`). Push is the remaining action for this session.

@@ -17,8 +17,9 @@ use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
 
 /**
- * TSK-027 local/dev boundary: policy versions are persisted and audited, but
- * customer, loyalty, wallet, and settlement mutations remain deferred.
+ * TSK-027 settings boundary: policy versions are persisted and audited. The
+ * active customer/loyalty lifecycle is covered by the dedicated lifecycle
+ * feature tests.
  */
 final class CustomerPolicySettingTest extends TestCase
 {

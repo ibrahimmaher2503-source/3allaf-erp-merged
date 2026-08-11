@@ -307,7 +307,7 @@
     }
 
     table.data-table thead {
-        @apply border-b border-border bg-surface-muted/70 text-xs font-semibold uppercase tracking-wider text-text-muted;
+        @apply border-b border-border bg-surface-muted/70 text-xs font-semibold tracking-wide text-text-muted;
     }
 
     table.data-table th {
@@ -336,6 +336,20 @@
         white-space: nowrap;
     }
 
+    @media (max-width: 640px) {
+        table.data-table.data-table--mobile-summary {
+            min-width: 100%;
+        }
+
+        table.data-table.data-table--mobile-summary :where(th:nth-child(2), td:nth-child(2), th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5)) {
+            display: none;
+        }
+
+        table.data-table.data-table--mobile-summary :where(th, td) {
+            padding-inline: 0.65rem;
+        }
+    }
+
     .data-table-row {
         @apply border-t border-border transition-colors hover:bg-surface-muted/70;
     }
@@ -361,7 +375,7 @@
     }
 
     .table-panel-toolbar {
-        @apply rounded-xl bg-surface-muted/15 p-1;
+        @apply bg-surface;
     }
 
     .table-panel-footer {
@@ -369,7 +383,8 @@
     }
 
     .table-filter-bar {
-        @apply border border-border/70 bg-surface-muted/20 p-3;
+        @apply bg-surface-muted/35;
+        border: 0;
     }
 
     .table-resource-toolbar {
@@ -497,7 +512,7 @@
     .app-table-frame :where(thead th),
     .catalog-table-frame :where(thead th),
     main [data-flux-columns] > [data-flux-column] {
-        padding-block: 0.8rem;
+        padding-block: 0.7rem;
         padding-inline: 1rem;
         line-height: 1.35;
         white-space: nowrap;
@@ -507,7 +522,7 @@
     .app-table-frame :where(tbody td),
     .catalog-table-frame :where(tbody td),
     main [data-flux-row] > [data-flux-cell] {
-        padding-block: 0.9rem;
+        padding-block: 0.72rem;
         padding-inline: 1rem;
         line-height: 1.45;
     }
@@ -542,6 +557,23 @@
     .catalog-table-frame tbody tr:focus-within,
     main [data-flux-row]:focus-within {
         box-shadow: inset 3px 0 0 var(--color-primary);
+    }
+
+    [dir="rtl"] .app-table-frame tbody tr:focus-within,
+    [dir="rtl"] .catalog-table-frame tbody tr:focus-within,
+    [dir="rtl"] main [data-flux-row]:focus-within {
+        box-shadow: inset -3px 0 0 var(--color-primary);
+    }
+
+    .table-shell > table,
+    .table-panel-surface > table,
+    .table-panel-surface [data-flux-table] {
+        min-width: 100%;
+    }
+
+    .table-panel-surface [data-flux-table] {
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .app-table-frame :where(a, button, input):focus-visible,
@@ -633,6 +665,7 @@
     .platform-assistant__body h3 { @apply text-sm font-semibold text-text-primary; }
     .platform-assistant__body section > p, .platform-assistant__body details > p { @apply mt-2 leading-6; }
     .platform-assistant__body details { @apply rounded-lg border border-border px-3 py-3; }
+    .platform-assistant__progress { @apply flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary-soft/30 px-3 py-2 text-xs font-semibold text-primary; }
     .platform-assistant__body summary { @apply cursor-pointer font-semibold text-text-primary; }
     .platform-assistant__list { @apply mt-2 list-disc space-y-1 ps-5; }
     .platform-assistant__steps { @apply mt-2 space-y-2; }
@@ -664,7 +697,7 @@
     .guide-page__back { @apply inline-flex items-center gap-2 font-semibold text-text-muted transition hover:text-primary; }
     .guide-page__kicker { @apply text-[0.6875rem] font-bold uppercase tracking-[0.18em] text-text-muted; }
     .guide-page__hero { @apply relative isolate mb-6 flex overflow-hidden rounded-[1.75rem] border border-primary/20 bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-9 sm:py-9 lg:items-end lg:justify-between; }
-    .guide-page__hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 85% 10%, rgba(45, 212, 191, .34), transparent 36%), linear-gradient(135deg, #0f172a, #123b45); }
+    .guide-page__hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: #0f172a; }
     .guide-page__hero-glow { @apply absolute -end-12 -top-16 -z-10 size-48 rounded-full border border-white/10 bg-white/5 blur-2xl; }
     .guide-page__hero-copy { @apply relative max-w-2xl; }
     .guide-page__eyebrow-row { @apply mb-4 flex flex-wrap items-center gap-2; }
@@ -705,7 +738,7 @@
     .guide-card--next > div > p:last-child { @apply mt-2; }
     .guide-page__flow-link { @apply inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-accent-foreground transition hover:opacity-90; }
     .guide-summary-card { @apply p-5; }
-    .guide-summary-card nav { @apply mt-3 flex flex-col gap-2 border-s-2 border-border ps-3; }
+    .guide-summary-card nav { @apply mt-3 flex flex-col gap-2 rounded-xl border border-border p-3; }
     .guide-summary-card nav a { @apply text-sm text-text-muted transition hover:text-primary; }
     .guide-summary-card--actions ul { @apply mt-3 space-y-3; }
     .guide-summary-card--actions li { @apply flex items-start gap-2 text-sm leading-5 text-text-muted; }
@@ -723,6 +756,10 @@
     .guide-page__hero-primary { @apply bg-white text-slate-900 hover:bg-slate-100; }
     .guide-page__hero-secondary { @apply border border-white/20 bg-white/10 text-white hover:bg-white/15; }
     .guide-page__quick-grid { @apply mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
+    .guide-module-intro { @apply mb-6 flex items-start gap-4 rounded-2xl border border-primary/20 bg-primary-soft/20 p-5 shadow-sm sm:p-6; }
+    .guide-module-intro__icon { @apply flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-semibold text-primary; }
+    .guide-module-intro h2 { @apply text-lg font-semibold text-text-primary; }
+    .guide-module-intro p:last-child { @apply mt-1 max-w-3xl text-sm leading-6 text-text-muted; }
     .guide-quick-card { @apply flex min-h-24 items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm; }
     .guide-quick-card--accent { @apply border-primary/20 bg-primary-soft/25; }
     .guide-quick-card__icon { @apply flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary; }

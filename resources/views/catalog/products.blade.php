@@ -385,8 +385,8 @@ new #[Title('Product Masters')] class extends Component
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('TSK-011 product-card extension') }}">
-        {{ __('Item codes remain immutable and independent from barcodes. Product types and attributes are catalog metadata only; protected images use the shared Attachment Foundation. No stock, price, label, import, or supplier-history effect is created here.') }}
+    <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('Product catalog') }}">
+        {{ __('Item codes remain immutable and independent from barcodes. Product details and images are managed here; stock, pricing, and purchasing records are managed in their respective workspaces.') }}
     </flux:callout>
 
     @if ($errors->any())

@@ -14,11 +14,14 @@ use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Support\Str;
 
 /**
@@ -37,6 +40,7 @@ final class RetailSaleConcurrencyTest extends ConcurrencyTestCase
     /** @return array{0: Product, 1: Store, 2: Branch} */
     private function productStoreWithApprovedPrice(string $tag, string $amount = '20.000'): array
     {
+        $this->documentSequence('retail_sale', 'SALE-');
         $branch = $this->branch($tag.'-'.Str::random(6));
         $store = $this->store($branch, $tag.'-'.Str::random(6));
         $admin = $this->administrator($tag.'-admin-'.Str::random(6));
@@ -58,6 +62,14 @@ final class RetailSaleConcurrencyTest extends ConcurrencyTestCase
         $version = app(SubmitPriceProposalAction::class)->execute($version);
         $this->actingAs($approver);
         app(ApprovePriceProposalAction::class)->execute($version);
+        PosFinancialSettingVersion::query()->create([
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '0.05', 'value_type' => 'decimal', 'version' => ((int) PosFinancialSettingVersion::query()->where('key', PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION)->max('version')) + 1, 'created_by' => $approver->id,
+        ]);
+        PaymentMethod::query()->firstOrCreate(['code' => 'cash'], [
+            'code' => 'cash', 'name_ar' => 'Cash', 'name_en' => 'Cash', 'type' => 'cash',
+            'requires_evidence' => false, 'status' => 'active',
+        ]);
 
         return [$product, $store, $branch];
     }
@@ -69,9 +81,16 @@ final class RetailSaleConcurrencyTest extends ConcurrencyTestCase
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
             'assigned_user_id' => $cashier->id, 'code' => $tag.'-DR-'.Str::random(6), 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
         ]);
-        PosShift::query()->create([
+        $shift = PosShift::query()->create([
             'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('active_pos_shift_assignments')->insert([
+            'shift_id' => $shift->id,
+            'cashier_id' => $cashier->id,
+            'cash_drawer_id' => $drawer->id,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return $cashier;

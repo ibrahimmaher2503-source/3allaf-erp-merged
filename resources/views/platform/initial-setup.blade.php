@@ -6,7 +6,7 @@
 <x-layouts::app :title="__('Initial setup')">
     <x-app.page
         :title="__('Complete initial setup')"
-        :description="__('Prepare the first operational data set without inventing production values or bypassing approvals.')"
+        :description="__('Set the business information required for daily operations.')"
         max-width="7xl"
         class="space-y-6"
         data-guide="initial-setup-header"
@@ -23,39 +23,6 @@
                 {{ __('Back to dashboard') }}
             </flux:button>
         </x-slot:actions>
-
-        <section class="relative isolate overflow-hidden rounded-[1.75rem] bg-primary px-6 py-7 text-white shadow-xl shadow-primary/15 sm:px-8 sm:py-9" data-guide="initial-setup-hero">
-            <div class="pointer-events-none absolute -end-12 -top-16 size-56 rounded-full border-[24px] border-white/10"></div>
-            <div class="pointer-events-none absolute -bottom-24 start-1/3 size-64 rounded-full border-[28px] border-white/5"></div>
-            <div class="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
-                <div class="max-w-2xl">
-                    <div class="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                        <span>{{ __('First launch setup') }}</span>
-                        <span class="size-1 rounded-full bg-white/60"></span>
-                        <span>{{ __('Owner workspace') }}</span>
-                    </div>
-                    <flux:heading size="xl" class="max-w-xl text-white">
-                        {{ __('Your operations, ready in order') }}
-                    </flux:heading>
-                    <flux:text class="mt-3 max-w-xl !text-white" style="color: #ffffff !important;">
-                        {{ __('Enter the real owner data one step at a time. The system will show what is ready, what needs attention, and what still requires approval.') }}
-                    </flux:text>
-                    <div class="mt-6 flex flex-wrap gap-2 text-sm">
-                        <span class="rounded-full bg-white/15 px-3 py-1.5 font-medium"><span dir="ltr">{{ $setup['completed_count'] }}</span> {{ __('required steps completed') }}</span>
-                        <span class="rounded-full bg-white/10 px-3 py-1.5 font-medium"><span dir="ltr">{{ $setup['required_count'] - $setup['completed_count'] }}</span> {{ __('required steps remaining') }}</span>
-                        <span class="rounded-full bg-white/10 px-3 py-1.5 font-medium">{{ __('Owner data only') }}</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4 lg:justify-end">
-                    <div class="flex size-32 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 p-2 shadow-inner shadow-black/10">
-                        <div class="flex size-full flex-col items-center justify-center rounded-full bg-primary text-center ring-1 ring-white/10">
-                            <span class="text-3xl font-semibold tracking-tight">{{ $setup['progress_percent'] }}%</span>
-                            <span class="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/70">{{ __('Ready') }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]" data-guide="initial-setup-summary">
             <div class="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
@@ -105,7 +72,7 @@
             </flux:callout>
         @else
             <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Complete the required steps before opening operations') }}">
-                {{ __('Empty states are intentional until the owner supplies the values. Demo data never counts as production approval.') }}
+                {{ __('Required values are still missing. Add them from the relevant settings screens before opening daily operations.') }}
             </flux:callout>
         @endif
 
@@ -115,7 +82,6 @@
                     <div class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{{ __('Owner checklist') }}</div>
                     <flux:heading size="lg" class="mt-2">{{ __('Initial setup steps') }}</flux:heading>
                 </div>
-                <div class="hidden text-xs text-text-muted sm:block">{{ __('No demo values') }}</div>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach ($setup['steps'] as $index => $step)
@@ -147,8 +113,8 @@
             </div>
         </section>
 
-        <flux:callout variant="info" icon="shield-check" title="{{ __('Approval and safety boundary') }}" data-guide="initial-setup-safety">
-            {{ __('Financial settings become active only after an approved version is recorded. This setup page never creates production defaults or bypasses approval.') }}
+        <flux:callout variant="info" icon="shield-check" title="{{ __('Approval required for financial settings') }}" data-guide="initial-setup-safety">
+            {{ __('Financial settings become active after an approved version is recorded.') }}
         </flux:callout>
     </x-app.page>
 </x-layouts::app>

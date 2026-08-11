@@ -45,10 +45,10 @@ final class DemoPricingSeeder extends Seeder
             $list = PriceList::query()->updateOrCreate(
                 ['company_id' => $store->company_id, 'code' => 'DEMO-RETAIL'],
                 [
-                    'name_ar' => 'قائمة أسعار البيع التجريبية',
-                    'name_en' => 'Demo Retail Price List',
+                    'name_ar' => 'قائمة أسعار البيع',
+                    'name_en' => 'Retail price list',
                     'status' => 'active',
-                    'notes' => 'DEMO ONLY. Not Production pricing authority.',
+                    'notes' => 'Retail prices for the configured selling store.',
                     'created_by' => $admin->id,
                     'updated_by' => $admin->id,
                 ],
@@ -68,7 +68,7 @@ final class DemoPricingSeeder extends Seeder
                     'effective_to' => null,
                     'submitted_at' => Carbon::now()->subDay(),
                     'approved_at' => Carbon::now()->subDay(),
-                    'reason_text' => 'DEMO ONLY approved price for label walkthrough.',
+                    'reason_text' => 'Approved retail price.',
                     'lock_version' => 1,
                 ],
             );
@@ -86,15 +86,15 @@ final class DemoPricingSeeder extends Seeder
                     'approver_id' => $admin->id,
                     'branch_id' => $store->branch_id,
                     'store_id' => $store->id,
-                    'reason_text' => 'DEMO ONLY approval record for local label walkthrough.',
-                    'decision_note' => 'Not Production/UAT approval.',
+                    'reason_text' => 'Approved retail price.',
+                    'decision_note' => 'Price approved for the configured selling store.',
                     'requested_at' => Carbon::now()->subDay(),
                     'decided_at' => Carbon::now()->subDay(),
                 ],
             );
 
             if ($version->approval_record_id !== $approval->id) {
-                $version->forceFill(['approval_record_id' => $approval->id])->save();
+                $version->mutateApprovedDocument(['approval_record_id' => $approval->id]);
             }
 
             PriceLine::query()->updateOrCreate(
@@ -105,7 +105,7 @@ final class DemoPricingSeeder extends Seeder
                     'reference_amount' => '125.000',
                     'open_price_allowed' => false,
                     'active_key' => $product->id.':'.$store->id,
-                    'notes' => 'DEMO ONLY. Used for local label queue walkthrough.',
+                    'notes' => 'Retail price for the configured selling store.',
                 ],
             );
         });

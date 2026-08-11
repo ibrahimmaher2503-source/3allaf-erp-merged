@@ -36,10 +36,10 @@
 <body class="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-sans p-4 sm:p-8 min-h-screen">
     <div class="max-w-4xl mx-auto mb-4 no-print flex items-center justify-between">
         <a href="{{ route('purchasing.orders') }}" class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1">
-            &larr; {{ __('Back to Purchase Orders') }}
+            {{ app()->getLocale() === 'ar' ? '→' : '←' }} {{ __('Back to Purchase Orders') }}
         </a>
         <button onclick="window.print()" class="px-4 py-2 bg-primary hover:bg-primary/90 text-accent-foreground rounded-lg text-sm font-medium transition shadow">
-            🖨️ {{ __('Print Document') }} (A4)
+            🖨️ {{ __('Print A4 document') }}
         </button>
     </div>
 
@@ -48,8 +48,8 @@
         <div class="flex items-start justify-between border-b border-zinc-200 dark:border-zinc-700 pb-6">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">TOY & JOY</h1>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ __('Local Demo Environment — Proof of Procurement Document') }}</p>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-1">{{ __('Tax Reg: TBD (Local Demo Placeholder)') }}</p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ __('Purchase order copy') }}</p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-1">{{ __('Tax registration: not configured') }}</p>
             </div>
             <div class="text-end">
                 <div class="inline-block px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider
@@ -59,7 +59,7 @@
                     @elseif($order->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
                     @elseif($order->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300
                     @else bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300 @endif">
-                    {{ __(ucfirst(str_replace('_', ' ', $order->status))) }}
+                    {{ \App\Modules\Platform\Support\UiLabel::status($order->status) }}
                 </div>
                 <h2 class="text-xl font-mono font-bold mt-2 text-zinc-900 dark:text-white">{{ $order->po_number }}</h2>
                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ __('Order Date') }}: {{ $order->order_date?->format('Y-m-d') }}</p>
@@ -128,7 +128,7 @@
                 </div>
                 <div class="flex justify-between text-zinc-600 dark:text-zinc-400">
                     <span>{{ __('Tax Rate / Amount') }}:</span>
-                    <span class="font-mono text-xs text-zinc-500">TBD / {{ number_format((float)$order->tax_amount, 2) }}</span>
+                    <span class="font-mono text-xs text-zinc-500">{{ __('Not configured') }} / {{ number_format((float)$order->tax_amount, 2) }}</span>
                 </div>
                 <div class="border-t border-zinc-200 dark:border-zinc-700 pt-2 flex justify-between font-bold text-base text-zinc-900 dark:text-white">
                     <span>{{ __('Total') }}:</span>

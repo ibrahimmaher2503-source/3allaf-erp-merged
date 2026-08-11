@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Retail;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockBalance;
@@ -48,6 +49,80 @@ final class PosCheckoutRouteTest extends TestCase
         // silently starts rejecting every real submission.
         $response->assertSee('payments[0][method_id]', escape: false);
         $response->assertSee('payments[0][amount]', escape: false);
+    }
+
+    public function test_the_pos_product_search_matches_barcode_code_and_name_and_can_return_empty_results(): void
+    {
+        $scenario = $this->scenario();
+        Barcode::query()->create([
+            'product_id' => $scenario['product']->id,
+            'barcode' => '890000010',
+            'source' => 'manual',
+            'status' => 'active',
+            'is_primary' => true,
+            'allocation_key' => 'POS-ROUTE-BARCODE',
+        ]);
+        $this->actingAs($scenario['cashier']);
+
+        $this->get(route('pos', ['product_q' => '890000010']))
+            ->assertOk()
+            ->assertSee('ROUTE-PROD')
+            ->assertSee('890000010');
+
+        $this->get(route('pos', ['product_q' => 'does-not-exist']))
+            ->assertOk()
+            ->assertSee(__('No products available.'));
+    }
+
+    public function test_pos_search_shows_read_only_other_store_availability_without_selling_it(): void
+    {
+        $scenario = $this->scenario();
+        $otherStore = $this->store($scenario['store']->branch, 'ROUTE-OTHER-ST');
+        StockBalance::query()->create([
+            'product_id' => $scenario['product']->id,
+            'store_id' => $otherStore->id,
+            'on_hand' => '4',
+            'reserved' => '1',
+            'in_transit' => '0',
+            'average_cost' => '10',
+            'total_value' => '40',
+            'version' => 1,
+        ]);
+        $this->actingAs($scenario['cashier']);
+
+        $response = $this->get(route('pos', ['product_q' => 'ROUTE-PROD']))
+            ->assertOk();
+        $body = $response->getContent();
+        self::assertSame(
+            [true, true, true],
+            [
+                str_contains($body, 'Other store availability'),
+                str_contains($body, 'ROUTE-OTHER-ST'),
+                str_contains($body, '3.000000'),
+            ],
+            'POS availability markers: '.json_encode([
+                'heading' => str_contains($body, 'Other store availability'),
+                'store' => str_contains($body, 'ROUTE-OTHER-ST'),
+                'quantity' => str_contains($body, '3.000000'),
+            ], JSON_THROW_ON_ERROR),
+        );
+    }
+
+    public function test_the_pos_cart_quantity_can_be_updated_without_losing_the_cart_line(): void
+    {
+        $scenario = $this->scenario();
+        $this->actingAs($scenario['cashier']);
+
+        $this->post(route('pos.cart.add'), ['product_id' => $scenario['product']->id, 'quantity' => '1'])
+            ->assertRedirect();
+
+        $this->post(route('pos.cart.quantity'), [
+            'product_id' => $scenario['product']->id,
+            'quantity' => '3',
+        ])->assertRedirect();
+
+        self::assertSame('3', (string) session('pos.cart.0.quantity'));
+        $this->get(route('pos'))->assertOk()->assertSee(__('Qty').' 3', escape: false);
     }
 
     public function test_checkout_over_http_settles_the_sale_and_records_the_tender(): void
@@ -118,9 +193,13 @@ final class PosCheckoutRouteTest extends TestCase
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
             'assigned_user_id' => $cashier->id, 'code' => 'ROUTE-DR', 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
         ]);
-        PosShift::query()->create([
+        $shift = PosShift::query()->create([
             'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('active_pos_shift_assignments')->insert([
+            'shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'cash_drawer_id' => $drawer->id,
+            'created_at' => now(), 'updated_at' => now(),
         ]);
         $category = Category::query()->create(['code' => 'ROUTE-CAT', 'name_ar' => 'فئة', 'name_en' => 'Category', 'status' => 'active']);
         $product = Product::query()->create(['item_code' => 'ROUTE-PROD', 'name_ar' => 'لعبة', 'name_en' => 'Toy', 'category_id' => $category->id, 'status' => 'active']);

@@ -53,10 +53,12 @@ final class PurchasingLifecycleChainTest extends TestCase
         $this->documentSequence('purchase_order', 'PO-');
         $this->documentSequence('purchase_invoice', 'PINV-');
         $this->documentSequence('supplier_return', 'SRET-');
-        DocumentSequence::query()->create([
-            'document_type' => 'purchase_order', 'prefix' => 'CHAIN-PO-', 'padding_length' => 5,
-            'next_value' => 1, 'status' => 'active', 'lock_version' => 1,
-        ]);
+        DocumentSequence::query()
+            ->where('document_type', 'purchase_order')
+            ->update([
+                'prefix' => 'CHAIN-PO-', 'padding_length' => 5,
+                'next_value' => 1, 'status' => 'active', 'lock_version' => 1,
+            ]);
     }
 
     public function test_a_supplier_flows_through_order_approval_invoice_receipt_and_return(): void

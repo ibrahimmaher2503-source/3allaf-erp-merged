@@ -50,7 +50,7 @@ class ApprovalRecordPolicy
         }
 
         if ($record->branch_id === null && $record->store_id === null) {
-            return false;
+            return $user->hasPermission($record->decisionPermission());
         }
 
         // A branch-scoped reviewer may decide records for stores inside that

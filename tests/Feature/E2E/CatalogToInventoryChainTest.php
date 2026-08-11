@@ -17,9 +17,12 @@ use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Retail\Actions\RetailSaleAction;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
 
@@ -94,15 +97,26 @@ final class CatalogToInventoryChainTest extends TestCase
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
             'assigned_user_id' => $cashier->id, 'code' => 'CHAIN-DR', 'name_ar' => 'Test', 'name_en' => 'Test', 'status' => 'active',
         ]);
-        PosShift::query()->create([
+        $shift = PosShift::query()->create([
             'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+        ]);
+        DB::table('active_pos_shift_assignments')->insert([
+            'shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'cash_drawer_id' => $drawer->id,
+            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $this->documentSequence('retail_sale', 'SALE-');
         $cash = PaymentMethod::query()->create([
             'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
             'requires_evidence' => false, 'status' => 'active',
+        ]);
+        PosFinancialSettingVersion::query()->create([
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '0.05',
+            'value_type' => 'decimal',
+            'version' => 1,
+            'created_by' => $cashier->id,
         ]);
 
         $this->actingAs($cashier);

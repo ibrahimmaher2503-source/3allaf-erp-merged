@@ -324,7 +324,7 @@ new #[Title('Product Card')] class extends Component {
             @if ($productForm['product_type'] === 'composite')
                 <flux:callout variant="info" icon="information-circle" title="{{ __('Composite type boundary') }}">{{ __('The product type is stored and audited. Component lines, assembly, and bundle pricing are deferred because the approved Phase 1 data contract does not define them.') }}</flux:callout>
             @elseif ($productForm['product_type'] === 'service')
-                <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Service product boundary') }}">{{ __('Services do not create stock balances. Reorder threshold is disabled for this type; appointment and fulfillment workflows are outside TSK-011.') }}</flux:callout>
+                <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Service product') }}">{{ __('Services do not create stock balances, so stock thresholds are not required for this type.') }}</flux:callout>
             @endif
         </flux:card>
 
@@ -355,7 +355,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:input wire:model="productForm.dimension_height" :label="__('Height')" type="number" min="0" step="0.001" />
                 <flux:input wire:model="productForm.dimension_unit" :label="__('Dimension unit')" placeholder="cm" />
             </div>
-            <flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity later')" description="{{ __('This flag is stored for future inventory policy; TSK-011 creates no stock.') }}" />
+                    <flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity')" description="{{ __('Use this for products sold by weight, length, or another fractional unit.') }}" />
         </flux:card>
 
         <flux:card class="catalog-form-card space-y-5 p-4 sm:p-6" data-guide="product-form-media">

@@ -38,7 +38,7 @@ final class CustomerPolicySettingRegistry
             ],
             'loyalty.retail_rule' => [
                 'title' => 'Retail loyalty rule',
-                'description' => 'Configurable retail earn/redeem rule reference; no calculation is enabled.',
+                'description' => 'Active TSK-027 retail earn/redeem rule snapshot used by the customer loyalty ledger.',
             ],
             'loyalty.party_rule' => [
                 'title' => 'Party loyalty rule',
@@ -46,59 +46,59 @@ final class CustomerPolicySettingRegistry
             ],
             'loyalty.expiry_policy' => [
                 'title' => 'Loyalty expiry policy',
-                'description' => 'Owner-configurable expiry convention; no expiry action is enabled.',
+                'description' => 'Active TSK-027 FIFO expiry convention used by the customer loyalty ledger.',
             ],
             'loyalty.rounding_policy' => [
                 'title' => 'Loyalty rounding policy',
-                'description' => 'Owner-configurable rounding convention; no points calculation is enabled.',
+                'description' => 'Active TSK-027 floor rounding convention used by earn and redeem calculations.',
             ],
             'loyalty.approval_policy' => [
                 'title' => 'Loyalty approval policy',
-                'description' => 'Approval and adjustment separation reference; no approval action is enabled.',
+                'description' => 'Active TSK-027 approval and separation-of-duties policy for sensitive adjustments.',
             ],
             'loyalty.ledger_integrity' => [
                 'title' => 'Loyalty ledger integrity policy',
-                'description' => 'Source/idempotency/concurrency convention; no ledger exists in this slice.',
+                'description' => 'Active TSK-027 immutable source, idempotency, and concurrency controls for the ledger.',
             ],
             'wallet.product.credit_limit' => [
                 'title' => 'Product Wallet credit limit',
-                'description' => 'Owner-configurable local placeholder; no credit entry or balance calculation is enabled.',
+                'description' => 'Required non-negative four-decimal upper balance limit consumed by the TSK-028 Product Wallet actions; no value is invented when unset.',
             ],
             'wallet.product.debt_limit' => [
                 'title' => 'Product Wallet debt limit',
-                'description' => 'Owner-configurable local placeholder; no debt entry or balance calculation is enabled.',
+                'description' => 'Required non-negative four-decimal lower debt limit consumed by the TSK-028 Product Wallet actions; no value is invented when unset.',
             ],
             'wallet.product.settlement_policy' => [
                 'title' => 'Product Wallet settlement policy',
-                'description' => 'Settlement convention reference; no settlement or payment action is enabled.',
+                'description' => 'Required JSON policy, for example {"enabled":true,"operations":["credit","debit","settlement"]}; invalid or unset values fail closed.',
             ],
             'wallet.product.adjustment_policy' => [
                 'title' => 'Product Wallet adjustment policy',
-                'description' => 'Correction and approval convention; no adjustment action is enabled.',
+                'description' => 'Required JSON policy with enabled=true and approval_required=true for sensitive adjustments and referenced corrections.',
             ],
             'wallet.product.visibility_scope' => [
                 'title' => 'Product Wallet visibility scope',
-                'description' => 'Role and source visibility convention; no cross-scope exposure is enabled.',
+                'description' => 'Required JSON policy with mode=branch_store; ledger and approval queries remain server-scoped.',
             ],
             'wallet.party.credit_limit' => [
                 'title' => 'Party Wallet credit limit',
-                'description' => 'Owner-configurable local placeholder; no credit entry or balance calculation is enabled.',
+                'description' => 'Required non-negative four-decimal upper balance limit consumed by the TSK-028 Party Wallet actions; no value is invented when unset.',
             ],
             'wallet.party.debt_limit' => [
                 'title' => 'Party Wallet debt limit',
-                'description' => 'Owner-configurable local placeholder; no debt entry or balance calculation is enabled.',
+                'description' => 'Required non-negative four-decimal lower debt limit consumed by the TSK-028 Party Wallet actions; no value is invented when unset.',
             ],
             'wallet.party.settlement_policy' => [
                 'title' => 'Party Wallet settlement policy',
-                'description' => 'Settlement convention reference; no settlement or payment action is enabled.',
+                'description' => 'Required JSON policy, for example {"enabled":true,"operations":["credit","debit","settlement"]}; invalid or unset values fail closed.',
             ],
             'wallet.party.adjustment_policy' => [
                 'title' => 'Party Wallet adjustment policy',
-                'description' => 'Correction and approval convention; no adjustment action is enabled.',
+                'description' => 'Required JSON policy with enabled=true and approval_required=true for sensitive adjustments and referenced corrections.',
             ],
             'wallet.party.visibility_scope' => [
                 'title' => 'Party Wallet visibility scope',
-                'description' => 'Role and source visibility convention; no cross-scope exposure is enabled.',
+                'description' => 'Required JSON policy with mode=branch_store; ledger and approval queries remain server-scoped.',
             ],
             'gift.receipt.eligibility' => [
                 'title' => 'Gift Receipt eligibility policy',

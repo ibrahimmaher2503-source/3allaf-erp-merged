@@ -18,6 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(SetRequestId::class);
+        // Locale is a non-sensitive display preference. It must be readable
+        // before route middleware so unmatched safe-error pages preserve RTL.
+        $middleware->encryptCookies(['locale']);
+        // Route middleware is not reached for an unmatched route, so locale
+        // selection also runs globally from the non-sensitive locale cookie.
+        $middleware->append(SetLocale::class);
         $middleware->web(append: [
             SetLocale::class,
         ]);

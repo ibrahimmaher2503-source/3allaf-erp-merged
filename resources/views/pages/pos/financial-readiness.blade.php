@@ -3,7 +3,7 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <flux:heading size="xl">{{ __('POS Financial Controls') }}</flux:heading>
-                <flux:text class="mt-1 max-w-3xl">{{ __('Current payment and tax readiness plus append-only Local/Dev configuration used by POS money rules.') }}</flux:text>
+                <flux:text class="mt-1 max-w-3xl">{{ __('Current payment, tax, and POS configuration used to control checkout amounts.') }}</flux:text>
             </div>
             <flux:button href="{{ route('pos') }}" variant="primary">{{ __('Back to POS') }}</flux:button>
         </div>
@@ -62,8 +62,8 @@
         </section>
 
         <flux:callout variant="warning" icon="information-circle">
-            <flux:callout.heading>{{ __('Production configuration remains blocked') }}</flux:callout.heading>
-            <flux:callout.text>{{ __('These controls make Local/Dev behavior explicit and auditable. BLK-008 still requires owner-approved Production values and formats.') }}</flux:callout.text>
+            <flux:callout.heading>{{ __('Financial settings require approval') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('These controls keep payment and tax behavior explicit. Values require owner approval before operational use.') }}</flux:callout.text>
         </flux:callout>
     </div>
 </x-layouts::app>

@@ -138,7 +138,7 @@ new #[Title('Product Import')] class extends Component {
                 </flux:select>
             </div>
             <div class="md:col-span-3 flex items-center justify-between gap-3">
-                <flux:text>{{ __('Nothing is written during staging or validation.') }}</flux:text>
+                    <flux:text>{{ __('Nothing is saved until the import is confirmed.') }}</flux:text>
                 <flux:button type="submit" variant="primary" wire:loading.attr="disabled" data-guide="import-stage-button">{{ __('Stage file') }}</flux:button>
             </div>
         </form>

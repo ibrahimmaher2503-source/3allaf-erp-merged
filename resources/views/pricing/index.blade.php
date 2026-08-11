@@ -11,6 +11,7 @@ use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceVersion;
+use App\Modules\Platform\Support\UiLabel;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,10 @@ use Livewire\WithPagination;
 new #[Title('Pricing Workspace')] class extends Component
 {
     use WithPagination;
+
+    private const MODES = ['workspace', 'versions', 'unpriced', 'history'];
+
+    public string $mode = 'workspace';
 
     public string $search = '';
 
@@ -38,8 +43,8 @@ new #[Title('Pricing Workspace')] class extends Component
 
     public array $form = [
         'price_list_code' => 'LOCAL-RETAIL',
-        'price_list_name_ar' => 'قائمة أسعار العرض المحلي',
-        'price_list_name_en' => 'Local Demo Retail Price List',
+        'price_list_name_ar' => 'قائمة أسعار البيع',
+        'price_list_name_en' => 'Retail price list',
         'product_id' => '',
         'store_id' => '',
         'amount' => '',
@@ -54,15 +59,18 @@ new #[Title('Pricing Workspace')] class extends Component
         'open_price_allowed' => false,
     ];
 
-    public function mount(): void
+    public function mount(?string $mode = null): void
     {
         Gate::authorize('pricing_labels.view');
+        $this->mode = $mode ?? 'workspace';
+        abort_unless(in_array($this->mode, self::MODES, true), 404);
     }
 
     public function updatingSearch(string $value): void
     {
         $this->search = Str::limit($value, 100, '');
         $this->resetPage();
+        $this->resetPage('unpriced_page');
     }
 
     public function updatingStatusFilter(): void
@@ -94,8 +102,8 @@ new #[Title('Pricing Workspace')] class extends Component
         app(ImportPriceProposalsAction::class)->execute(
             csv: $data['importCsv'],
             priceListCode: 'LOCAL-RETAIL',
-            priceListNameAr: 'قائمة أسعار العرض المحلي',
-            priceListNameEn: 'Local Demo Retail Price List',
+            priceListNameAr: 'قائمة أسعار البيع',
+            priceListNameEn: 'Retail price list',
         );
 
         $this->showImportForm = false;
@@ -181,6 +189,7 @@ new #[Title('Pricing Workspace')] class extends Component
 
     public function render(): mixed
     {
+        abort_unless(in_array($this->mode, self::MODES, true), 404);
         $query = PriceVersion::query()->with(['priceList', 'lines.product', 'lines.store', 'approvalRecord.requester', 'approvalRecord.approver'])->latest('id');
         if ($this->statusFilter !== 'all') {
             $query->where('state', $this->statusFilter);
@@ -211,7 +220,15 @@ new #[Title('Pricing Workspace')] class extends Component
             })
             ->pluck('product_id')
             ->unique();
-        $unpricedProducts = Product::query()->active()->whereNotIn('id', $pricedProductIds)->orderBy('item_code')->limit(12)->get(['id', 'item_code', 'name_ar', 'name_en']);
+        $unpricedQuery = Product::query()->active()->whereNotIn('id', $pricedProductIds);
+        if ($this->search !== '') {
+            $unpricedQuery->where(function ($query): void {
+                $query->where('item_code', 'like', '%'.$this->search.'%')
+                    ->orWhere('name_en', 'like', '%'.$this->search.'%')
+                    ->orWhere('name_ar', 'like', '%'.$this->search.'%');
+            });
+        }
+        $unpricedProducts = $unpricedQuery->orderBy('item_code')->paginate(12, ['id', 'item_code', 'name_ar', 'name_en'], 'unpriced_page')->withQueryString();
         $diffVersion = $this->compareVersionId === null ? null : PriceVersion::query()->with(['priceList', 'lines.product', 'lines.store'])->find($this->compareVersionId);
         $diffPrevious = $diffVersion === null ? null : PriceVersion::query()->with(['lines.product', 'lines.store'])->where('price_list_id', $diffVersion->price_list_id)->where('version', '<', $diffVersion->version)->latest('version')->first();
 
@@ -219,10 +236,11 @@ new #[Title('Pricing Workspace')] class extends Component
     }
 };
 ?>
-<div class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<div class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" data-pricing-mode="{{ $mode }}">
+    @php($modeTitles = ['workspace' => __('Pricing workspace'), 'versions' => __('Price lists & versions'), 'unpriced' => __('Unpriced products'), 'history' => __('Price change history')])
     <div class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Pricing workspace') }}</flux:heading>
+            <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $modeTitles[$mode] }}</h1>
             <flux:text class="mt-1 max-w-3xl">{{ __('Create immutable price proposals, submit them through approval, and resolve only approved effective prices. Cost changes never rewrite sale prices.') }}</flux:text>
         </div>
         <x-tables.resource-toolbar filter-target="pricing-filters">
@@ -237,27 +255,29 @@ new #[Title('Pricing Workspace')] class extends Component
         <flux:callout variant="success" icon="check-circle">{{ session('status') }}</flux:callout>
     @endif
 
-    <flux:callout variant="warning" icon="exclamation-triangle" heading="{{ __('Local/Dev boundary') }}">
-        {{ __('This workspace is a reversible Local/Dev implementation. Production price authority, branch exceptions, open-price limits, rounding, labels, UAT, and release approval remain pending.') }}
-    </flux:callout>
+    <nav class="flex flex-wrap gap-2" aria-label="{{ __('Pricing views') }}">
+        @foreach($modeTitles as $modeKey => $modeTitle)
+            <flux:button size="sm" :variant="$mode === $modeKey ? 'primary' : 'subtle'" href="{{ route('pricing.focus', ['mode' => $modeKey]) }}" wire:navigate>{{ $modeTitle }}</flux:button>
+        @endforeach
+    </nav>
 
     <div id="pricing-filters" class="scroll-mt-24 grid gap-4 lg:grid-cols-[1fr_auto]">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Search list, item code, or product') }}" />
-        <flux:select wire:model.live="statusFilter" class="min-w-48">
+        @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter" class="min-w-48">
             <option value="all">{{ __('All states') }}</option>
             @foreach (PriceVersionState::cases() as $state)
                 <option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>
             @endforeach
-        </flux:select>
+        </flux:select>@endif
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-3">
+    @if($mode !== 'unpriced')<div class="grid gap-4 sm:grid-cols-3">
         <flux:card><flux:text>{{ __('Total versions') }}</flux:text><flux:heading size="lg">{{ $versions->total() }}</flux:heading></flux:card>
         <flux:card><flux:text>{{ __('Pending approval') }}</flux:text><flux:heading size="lg">{{ $versions->where('state', 'submitted')->count() }}</flux:heading></flux:card>
-        <flux:card><flux:text>{{ __('Owner-configurable') }}</flux:text><flux:heading size="lg">{{ __('Open') }}</flux:heading></flux:card>
-    </div>
+        <flux:card><flux:text>{{ __('Active price list') }}</flux:text><flux:heading size="lg">{{ __('Open') }}</flux:heading></flux:card>
+    </div>@endif
 
-    @if ($unpricedProducts->isNotEmpty())
+    @if (in_array($mode, ['workspace', 'unpriced'], true))
         <flux:card>
             <div class="flex items-start justify-between gap-4">
                 <div>
@@ -267,46 +287,49 @@ new #[Title('Pricing Workspace')] class extends Component
                 <flux:badge color="amber">{{ __('Pricing pending') }}</flux:badge>
             </div>
             <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach ($unpricedProducts as $unpricedProduct)
+                @forelse ($unpricedProducts as $unpricedProduct)
                     <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900 dark:bg-amber-950/30"><span class="font-semibold">{{ $unpricedProduct->item_code }}</span><span class="text-zinc-600 dark:text-zinc-300"> · {{ app()->getLocale() === 'ar' ? $unpricedProduct->name_ar : $unpricedProduct->name_en }}</span></div>
-                @endforeach
+                @empty
+                    <x-state.empty :title="__('No unpriced products in the visible stores.')" />
+                @endforelse
             </div>
+            @if($unpricedProducts->hasPages())<div class="mt-4">{{ $unpricedProducts->links() }}</div>@endif
         </flux:card>
     @endif
 
-    <flux:card class="overflow-hidden p-0">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-700">
-                <thead class="bg-zinc-50 text-start dark:bg-zinc-800/60"><tr><th class="px-4 py-3">{{ __('Version') }}</th><th class="px-4 py-3">{{ __('Product / location') }}</th><th class="px-4 py-3">{{ __('Amount') }}</th><th class="px-4 py-3">{{ __('Source') }}</th><th class="px-4 py-3">{{ __('State') }}</th><th class="px-4 py-3">{{ __('Actions') }}</th></tr></thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+    @if(in_array($mode, ['workspace', 'versions', 'history'], true))
+    <x-tables.data-panel :title="$mode === 'history' ? __('Price change history') : __('Price versions')" :description="__('Review proposed and approved prices by product and store.')">
+        <table class="data-table min-w-full text-start text-sm">
+                <thead><tr><th scope="col">{{ __('Version') }}</th><th scope="col">{{ __('Product / location') }}</th><th scope="col">{{ __('Amount') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col">{{ __('State') }}</th><th scope="col">{{ __('Actions') }}</th></tr></thead>
+                <tbody>
                     @forelse ($versions as $version)
                         @php($line = $version->lines->first())
                         <tr wire:key="price-version-{{ $version->id }}" class="align-top">
-                            <td class="px-4 py-4"><div class="font-semibold">{{ $version->priceList->code }} · v{{ $version->version }}</div><div class="text-xs text-zinc-500">{{ optional($version->effective_from)->format('Y-m-d H:i') ?: __('Immediate') }}</div></td>
-                            <td class="px-4 py-4"><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->getLocale() === 'ar' ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-zinc-500">{{ $line?->store?->code }} · {{ app()->getLocale() === 'ar' ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
-                            <td class="px-4 py-4 font-semibold">{{ $line?->amount }}</td>
-                            <td class="px-4 py-4"><div>{{ __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-zinc-500">{{ $version->source_reference ?: '—' }}</div></td>
-                            <td class="px-4 py-4"><flux:badge :color="$version->state === PriceVersionState::Approved ? 'green' : ($version->state === PriceVersionState::Rejected ? 'red' : 'amber')">{{ __(ucfirst($version->state->value)) }}</flux:badge><div class="mt-1 text-xs text-zinc-500">{{ $version->approvalRecord ? __('Approval') . ': ' . __(ucfirst($version->approvalRecord->approval_state->value)) : __('No approval yet') }}</div></td>
-                            <td class="space-y-2 px-4 py-4">
+                            <td><div class="font-semibold text-text-primary">{{ $version->priceList->code }} · v{{ $version->version }}</div><div class="text-xs text-text-muted">{{ optional($version->effective_from)->format('Y-m-d H:i') ?: __('Immediate') }}</div></td>
+                            <td><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->getLocale() === 'ar' ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-text-muted">{{ $line?->store?->code }} · {{ app()->getLocale() === 'ar' ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
+                            <td class="font-semibold"><x-money :amount="$line?->amount" /></td>
+                            <td><div>{{ $version->source_type === 'product_card' ? __('Product price') : __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-text-muted">{{ $version->source_reference ?: '—' }}</div></td>
+                            <td><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div></td>
+                            <td class="space-y-2">
                                 @can('pricing_labels.view')<flux:button size="sm" variant="subtle" wire:click="openDiff({{ $version->id }})">{{ __('Compare history') }}</flux:button>@endcan
                                 @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:click="submitProposal({{ $version->id }})">{{ __('Submit') }}</flux:button>@endif @endcan
                                 @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)<flux:button size="sm" variant="primary" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</flux:button><flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" /><flux:button size="sm" variant="danger" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</flux:button>@endif @endcan
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-4 py-12 text-center text-zinc-500">{{ __('No price proposals yet. Create a Local/Dev proposal to begin the approval workflow.') }}</td></tr>
+                        <tr><td colspan="6"><x-state.empty :title="__('No price versions yet.')" :description="__('Create a price proposal to begin the approval workflow.')" /></td></tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
-        <div class="border-t border-zinc-200 p-4 dark:border-zinc-700">{{ $versions->links() }}</div>
-    </flux:card>
+        <x-slot:footer>{{ $versions->links() }}</x-slot:footer>
+    </x-tables.data-panel>
+    @endif
 
     @if ($showImportForm)
         <flux:modal wire:model="showImportForm" name="price-import" class="md:w-[48rem]">
             <div class="space-y-5">
                 <flux:heading size="lg">{{ __('Import price proposals') }}</flux:heading>
-                <flux:callout variant="warning">{{ __('Local/Dev CSV only. Every imported row becomes Draft and must be approved; no production master data is created.') }}</flux:callout>
+                <flux:callout variant="info">{{ __('Each imported row starts as a draft and requires approval before it affects selling prices.') }}</flux:callout>
                 <flux:textarea wire:model="importCsv" label="{{ __('CSV rows') }}" rows="10" />
                 <flux:text class="text-xs">{{ __('Columns: item_code, store_code, amount, effective_from, source_reference. Header optional; maximum 200 rows.') }}</flux:text>
                 <div class="flex justify-end gap-2"><flux:button wire:click="$set('showImportForm', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="importProposals">{{ __('Import as Draft') }}</flux:button></div>

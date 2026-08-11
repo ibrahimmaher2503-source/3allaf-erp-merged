@@ -107,6 +107,41 @@ final class PriceProposalIntegrityTest extends TestCase
         $this->get(route('pricing.labels'))->assertForbidden();
     }
 
+    public function test_pricing_focused_modes_are_addressable_and_invalid_modes_are_rejected(): void
+    {
+        foreach ([
+            'workspace' => 'Pricing workspace',
+            'versions' => 'Price lists & versions',
+            'unpriced' => 'Unpriced products',
+            'history' => 'Price change history',
+        ] as $mode => $heading) {
+            $this->get('/pricing/'.$mode)
+                ->assertOk()
+                ->assertSee($heading)
+                ->assertSee('data-pricing-mode="'.$mode.'"', escape: false);
+        }
+
+        $this->get('/pricing/not-a-mode')->assertNotFound();
+    }
+
+    public function test_unpriced_focused_mode_paginates_the_complete_visible_catalog(): void
+    {
+        [$product] = $this->productAndStore('unpriced-page');
+
+        foreach (range(2, 13) as $number) {
+            $copy = $product->replicate();
+            $copy->item_code = sprintf('ITEM-unpriced-page-%02d', $number);
+            $copy->name_en = 'Unpriced product '.$number;
+            $copy->name_ar = 'Unpriced product '.$number;
+            $copy->save();
+        }
+
+        $this->get('/pricing/unpriced?unpriced_page=2')
+            ->assertOk()
+            ->assertSee('Unpriced product 13')
+            ->assertDontSee('Price versions');
+    }
+
     /** @return array{0: Product, 1: Store} */
     private function productAndStore(string $suffix): array
     {

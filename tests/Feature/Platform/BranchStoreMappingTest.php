@@ -3,9 +3,11 @@
 namespace Tests\Feature\Platform;
 
 use App\Modules\Platform\Actions\SaveBranchAction;
+use App\Modules\Platform\Actions\DecideApprovalSource;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Actions\SaveStoreAction;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Role;
@@ -360,5 +362,27 @@ class BranchStoreMappingTest extends TestCase
         $this->assertSame('HIST-SELL-2', $records[0]['store_code']);
         $this->assertSame('HIST-SELL-1', $records[1]['store_code']);
         $this->assertNotNull($records[1]['effective_to']);
+    }
+
+    public function test_branch_delete_is_pending_until_an_independent_approver_decides(): void
+    {
+        $requester = $this->administrator('tsk006-delete-requester');
+        $approver = $this->administrator('tsk006-delete-approver');
+        $this->actingAs($requester);
+        $branch = $this->branch('APP-DEL-BR');
+
+        Livewire::test('platform::admin.branches')
+            ->call('deleteBranch', $branch->id)
+            ->assertHasNoErrors();
+
+        $approval = ApprovalRecord::query()->where('source_type', 'platform_settings')->sole();
+        $this->assertSame('branch_delete', $approval->requested_action);
+        $this->assertDatabaseHas('branches', ['id' => $branch->id]);
+
+        $this->actingAs($approver);
+        app(DecideApprovalSource::class)->approve($approval);
+
+        $this->assertDatabaseHas('branches', ['id' => $branch->id, 'status' => 'inactive']);
+        $this->assertTrue(AuditLog::query()->where('event', 'delete_branch')->where('source_id', (string) $branch->id)->exists());
     }
 }

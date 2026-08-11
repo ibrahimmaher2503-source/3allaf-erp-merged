@@ -7,19 +7,73 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
+use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
 
 $router = app('router');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router): void {
+    $purchaseHistory = static function (Request $request, string $mode) {
+        $user = $request->user();
+        abort_unless($user !== null && $user->can('purchase_invoices_supplier_returns.view'), 403);
+        $visibleStoreIds = Store::query()->visibleTo($user)->pluck('id');
+        $supplierId = $request->integer('supplier_id') ?: null;
+        $productId = $request->integer('product_id') ?: null;
+        $dateFrom = trim((string) $request->string('date_from'));
+        $dateTo = trim((string) $request->string('date_to'));
+
+        $approvedInvoices = PurchaseInvoice::query()
+            ->where('status', 'approved')->whereIn('store_id', $visibleStoreIds)
+            ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+            ->when($productId, fn ($query) => $query->whereHas('lines', fn ($lines) => $lines->where('product_id', $productId)))
+            ->when($dateFrom !== '', fn ($query) => $query->whereDate('invoice_date', '>=', $dateFrom))
+            ->when($dateTo !== '', fn ($query) => $query->whereDate('invoice_date', '<=', $dateTo));
+
+        $suppliers = Supplier::query()->whereIn('id', (clone $approvedInvoices)->select('supplier_id'))->orderBy('name_en')->get();
+        $products = Product::query()->whereIn('id', PurchaseInvoiceLine::query()
+            ->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->whereIn('store_id', $visibleStoreIds))
+            ->select('product_id'))->orderBy('item_code')->get(['id', 'item_code', 'name_ar', 'name_en']);
+
+        $invoices = $mode === 'supplier'
+            ? (clone $approvedInvoices)->with(['supplier', 'store'])->latest('invoice_date')->latest('id')->paginate(20)->withQueryString()
+            : null;
+        $costLines = $mode === 'cost'
+            ? PurchaseInvoiceLine::query()->with(['invoice.supplier', 'invoice.store', 'product'])
+                ->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->whereIn('store_id', $visibleStoreIds)
+                    ->when($supplierId, fn ($scope) => $scope->where('supplier_id', $supplierId))
+                    ->when($dateFrom !== '', fn ($scope) => $scope->whereDate('invoice_date', '>=', $dateFrom))
+                    ->when($dateTo !== '', fn ($scope) => $scope->whereDate('invoice_date', '<=', $dateTo)))
+                ->when($productId, fn ($query) => $query->where('product_id', $productId))
+                ->latest('id')->paginate(30)->withQueryString()
+            : null;
+        $supplierReturns = $mode === 'supplier'
+            ? PurchaseReturn::query()->with(['supplier', 'store', 'purchaseInvoice'])
+                ->where('status', 'approved')->whereIn('store_id', $visibleStoreIds)
+                ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+                ->when($dateFrom !== '', fn ($query) => $query->whereDate('return_date', '>=', $dateFrom))
+                ->when($dateTo !== '', fn ($query) => $query->whereDate('return_date', '<=', $dateTo))
+                ->latest('return_date')->latest('id')->limit(20)->get()
+            : collect();
+        $lastPrices = $mode === 'supplier' && $supplierId
+            ? ProductSupplier::query()->with('product')->where('supplier_id', $supplierId)
+                ->whereNotNull('last_purchase_price')->latest('last_purchase_date')->limit(50)->get()
+            : collect();
+
+        return view('purchasing.history', compact('mode', 'invoices', 'costLines', 'supplierReturns', 'lastPrices', 'suppliers', 'products', 'supplierId', 'productId', 'dateFrom', 'dateTo'));
+    };
+
     $router->livewire('purchasing/orders', 'purchasing::orders')
         ->middleware('can:purchase_orders.view')
         ->name('purchasing.orders');
@@ -27,6 +81,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/invoices', 'purchasing::invoices')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices');
+
+    $router->get('purchasing/supplier-history', fn (Request $request) => $purchaseHistory($request, 'supplier'))
+        ->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.history.suppliers');
+    $router->get('purchasing/cost-history', fn (Request $request) => $purchaseHistory($request, 'cost'))
+        ->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.history.costs');
 
     $router->livewire('purchasing/invoices/import', 'purchasing::invoice-import')
         ->middleware('can:purchase_invoices_supplier_returns.view')

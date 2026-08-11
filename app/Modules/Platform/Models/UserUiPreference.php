@@ -14,12 +14,12 @@ final class UserUiPreference extends Model
 
     protected $fillable = [
         'appearance', 'accent_color', 'sidebar_mode', 'navbar_mode',
-        'content_width', 'table_density', 'font_scale', 'reduced_motion',
+        'content_width', 'table_density', 'font_scale', 'reduced_motion', 'tutorial_progress',
     ];
 
     protected function casts(): array
     {
-        return ['reduced_motion' => 'boolean'];
+        return ['reduced_motion' => 'boolean', 'tutorial_progress' => 'array'];
     }
 
     public function user(): BelongsTo
@@ -32,7 +32,7 @@ final class UserUiPreference extends Model
         return [
             'appearance' => 'system', 'accent_color' => 'teal', 'sidebar_mode' => 'expanded',
             'navbar_mode' => 'sticky', 'content_width' => 'wide', 'table_density' => 'comfortable',
-            'font_scale' => 'normal', 'reduced_motion' => false,
+            'font_scale' => 'normal', 'reduced_motion' => false, 'tutorial_progress' => [],
         ];
     }
 }

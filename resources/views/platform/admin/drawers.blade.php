@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Modules\Platform\Actions\SaveCashDrawerAction;
+use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
@@ -58,6 +59,12 @@ new #[Title('Cash Drawer Masters')] class extends Component
         $this->resetPage();
     }
 
+    public function updatedDrawerFormBranchId(): void
+    {
+        $this->drawerForm['store_id'] = '';
+        $this->resetValidation('drawerForm.store_id');
+    }
+
     public function openCreateDrawerModal(): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.create');
@@ -73,7 +80,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             'name_ar' => '',
             'name_en' => '',
             'status' => 'active',
-            'policy_notes' => 'TBD: Production cash drawer baseline pending shift rules and owner approval (BLK-006).',
+            'policy_notes' => '',
         ];
         $this->resetValidation();
         $this->showDrawerModal = true;
@@ -126,7 +133,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingDrawerId ? __('Cash drawer updated successfully.') : __('Cash drawer created successfully.'));
             $this->showDrawerModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: $e->getMessage());
         }
     }
 
@@ -138,17 +145,18 @@ new #[Title('Cash Drawer Masters')] class extends Component
             $action->toggleStatus($id, $status);
             Flux::toast(variant: 'success', text: __('Cash drawer status updated successfully.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: $e->getMessage());
         }
     }
 
-    public function deleteDrawer(int $id, SaveCashDrawerAction $action): void
+    public function deleteDrawer(int $id, PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.logical_delete');
 
         try {
-            $action->delete($id);
-            Flux::toast(variant: 'success', text: __('Cash drawer deleted successfully.'));
+            $drawer = CashDrawer::query()->findOrFail($id);
+            $approvalAction->request('cash_drawer_delete', $drawer->id, ['deleted' => true], $drawer->getAttributes(), $drawer->branch_id, $drawer->store_id);
+            Flux::toast(variant: 'success', text: __('Cash drawer deletion submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -162,7 +170,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
 <x-app.page
     :title="__('Cash Drawer Masters')"
-    :description="__('Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).')"
+    :description="__('Configure branch-scoped cash drawers and default assignments for POS operations. Drawers with an active POS shift cannot be deactivated or reassigned.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="drawers-header"
@@ -174,21 +182,6 @@ new #[Title('Cash Drawer Masters')] class extends Component
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
-
-    <!-- BLK-006 & Local Development Notice Banner -->
-    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30 text-xs text-amber-800 dark:text-amber-300">
-        <div class="flex items-start gap-3">
-            <flux:icon name="exclamation-triangle" class="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-            <div class="space-y-1">
-                <p class="font-semibold">
-                    {{ __('Local Baseline — Reversible Cash Drawer Masters (TSK-007 / BLK-006)') }}
-                </p>
-                <p>
-                    {{ __('Cash drawers are registered per branch and optional store/cashier link. Opening balances, shift sessions, cash movements, and blind close reconciliation are explicitly deferred to DM 3.3 (TSK-025). Shift dependency guards remain set to TBD.') }}
-                </p>
-            </div>
-        </div>
-    </div>
 
     <!-- Filters & Search -->
     <div id="drawers-filters" class="scroll-mt-24 flex flex-col gap-4 md:flex-row md:items-center md:justify-between" data-guide="drawers-filters">
@@ -374,7 +367,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <flux:select
-                    wire:model="drawerForm.branch_id"
+                    wire:model.live="drawerForm.branch_id"
                     :label="__('Branch')"
                     required
                 >
@@ -412,12 +405,13 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <flux:select
+                    wire:key="cash-drawer-store-select-{{ $editingDrawerId ?? 'create' }}-{{ $drawerForm['branch_id'] ?: 'none' }}"
                     wire:model="drawerForm.store_id"
                     :label="__('Linked Store (Optional)')"
                 >
                     <option value="">{{ __('None / Branch Level') }}</option>
                     @foreach($allStores as $st)
-                        @if(empty($drawerForm['branch_id']) || (int) $st->branch_id === (int) $drawerForm['branch_id'])
+                        @if(! empty($drawerForm['branch_id']) && (int) $st->branch_id === (int) $drawerForm['branch_id'])
                             <option value="{{ $st->id }}">{{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
                         @endif
                     @endforeach
@@ -448,7 +442,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
             <flux:textarea
                 wire:model="drawerForm.policy_notes"
-                :label="__('Policy / Operational Notes (BLK-006 / Local TBD)')"
+                :label="__('Operational notes')"
                 rows="2"
             />
 

@@ -1,9 +1,9 @@
 <x-layouts::app :title="__('Dashboard')">
     <x-app.page
         :title="__('Operations workspace')"
-        :description="__('The shared application foundation is ready for authentication, operational modules, and role-scoped workflows.')"
-        :eyebrow="__('Platform foundation')"
-        :badge="__('DM 1.1 in progress')"
+        :description="__('Monitor daily operations and open the workspaces available to your role.')"
+        :eyebrow="__('Operations')"
+        :badge="__('Operational overview')"
         badge-color="primary"
         max-width="7xl"
         data-guide="dashboard-header"
@@ -23,8 +23,8 @@
 
         <section aria-labelledby="foundation-heading" class="dashboard-status-card overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-card" data-guide="dashboard-foundation">
             <div class="border-b border-border bg-surface-muted/35 px-5 py-5 sm:px-6">
-                <flux:heading id="foundation-heading" data-guide="dashboard-foundation-heading" size="lg">{{ __('Foundation status') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Verified building blocks available in the current development environment.') }}</flux:text>
+                <flux:heading id="foundation-heading" data-guide="dashboard-foundation-heading" size="lg">{{ __('Operational areas') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('Use these areas to move from daily work to review and administration.') }}</flux:text>
             </div>
 
             {{--
@@ -39,24 +39,24 @@
             <ul class="divide-y divide-border" data-guide="dashboard-foundation-list">
                 <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6" data-guide="dashboard-foundation-first-row">
                     <div>
-                        <p class="font-semibold text-text-primary">{{ __('Application shell') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Responsive sidebar, mobile navigation, and shared page structure.') }}</p>
+                        <p class="font-semibold text-text-primary">{{ __('Daily operations') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Point of sale, sales history, shifts, and cash movements are available from the workspace.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
                 </li>
 
                 <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
                     <div>
-                        <p class="font-semibold text-text-primary">{{ __('Authentication') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Sign in, registration, password reset, verification, passkeys, and account security.') }}</p>
+                        <p class="font-semibold text-text-primary">{{ __('Catalog and inventory') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Review products, prices, purchasing, stock balances, and movement history.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
                 </li>
 
                 <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
                     <div>
-                        <p class="font-semibold text-text-primary">{{ __('Language direction') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Locale-aware document direction supports Arabic RTL and English LTR layouts.') }}</p>
+                        <p class="font-semibold text-text-primary">{{ __('Administration and review') }}</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Manage customers, permissions, approvals, reports, and system settings within your role.') }}</p>
                     </div>
                     <span class="w-fit text-sm font-semibold text-primary">{{ __('Configured') }}</span>
                 </li>
@@ -65,8 +65,8 @@
 
         <section class="dashboard-next-card flex flex-col gap-5 rounded-2xl border border-primary/15 bg-primary-soft/35 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6" data-guide="dashboard-setup-section">
             <div>
-                <flux:heading data-guide="dashboard-setup-heading" size="lg">{{ __('Continue platform setup') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Account settings are available while roles, audit controls, and infrastructure decisions remain in the active milestone.') }}</flux:text>
+            <flux:heading data-guide="dashboard-setup-heading" size="lg">{{ __('Complete business setup') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('Finish the owner-provided setup values before opening every operational workflow.') }}</flux:text>
             </div>
             <flux:button :href="route('profile.edit')" variant="primary" wire:navigate data-guide="dashboard-profile-action">
                 {{ __('Open account settings') }}

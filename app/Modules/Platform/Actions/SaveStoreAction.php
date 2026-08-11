@@ -11,7 +11,7 @@ use InvalidArgumentException;
 class SaveStoreAction
 {
     /**
-     * Allowed store types.
+     * Allowed location types.
      */
     public const ALLOWED_TYPES = [
         'selling',
@@ -31,7 +31,7 @@ class SaveStoreAction
         Gate::authorize($id ? 'branches_stores.edit' : 'branches_stores.create');
         $type = $data['type'] ?? 'selling';
         if (! in_array($type, self::ALLOWED_TYPES, true)) {
-            throw new InvalidArgumentException(__('Invalid store type specified.'));
+            throw new InvalidArgumentException(__('Invalid location type specified.'));
         }
 
         return DB::transaction(function () use ($data, $id, $type) {
@@ -144,6 +144,32 @@ class SaveStoreAction
                 branchId: $store->branch_id,
                 storeId: $id,
                 metadata: ['deleted_source_id' => $id],
+            );
+        });
+    }
+
+    /** Apply an approved logical delete while preserving approval foreign keys and master history. */
+    public function logicalDeleteAfterApproval(int $id): void
+    {
+        Gate::authorize('branches_stores.logical_delete');
+
+        DB::transaction(function () use ($id): void {
+            $store = Store::query()->lockForUpdate()->findOrFail($id);
+            if ($store->sellingStoreMappings()->exists()) {
+                throw new InvalidArgumentException(__('Cannot delete store while it has active or historical branch mappings.'));
+            }
+
+            $before = $store->getAttributes();
+            $store->update(['status' => 'inactive']);
+            app(RecordAuditEvent::class)->execute(
+                category: 'master_data',
+                event: 'delete_store',
+                source: $store,
+                before: $before,
+                after: ['deleted' => true, 'status' => 'inactive'],
+                branchId: $store->branch_id,
+                storeId: $store->id,
+                metadata: ['logical_delete' => true, 'approval_required' => true],
             );
         });
     }

@@ -7,10 +7,14 @@ namespace App\Modules\Retail\Actions;
 use App\Models\User;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Actions\EarnLoyaltyAction;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
@@ -18,6 +22,7 @@ use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\OpenPricePolicy;
 use App\Modules\Retail\Enums\ShiftState;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
@@ -25,6 +30,7 @@ use App\Modules\Retail\Models\SuspendedSale;
 use App\Modules\Retail\Services\DiscountPolicy;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,7 +50,7 @@ final class RetailSaleAction
 
     /**
      * @param array<int, array<string, mixed>> $requestedLines
-     * @param array<int, array{method: PaymentMethod, amount?: numeric-string, tendered?: numeric-string|null, evidence_reference?: string|null, evidence_attachment_id?: string|null}> $tenders
+     * @param array<int, array{method: PaymentMethod, amount?: numeric-string, tendered?: numeric-string|null, evidence_reference?: string|null, evidence_attachment_id?: string|null, gift_card?: GiftCard|null}> $tenders
      * @param array{tax_applicable?: bool} $financial
      */
     public function create(
@@ -55,25 +61,30 @@ final class RetailSaleAction
         bool $suspend = false,
         array $tenders = [],
         array $financial = [],
+        ?Customer $customer = null,
     ): Sale {
         abort_unless($cashier->can('pos_sales.create'), 403);
         abort_unless(Store::query()->visibleTo($cashier)->whereKey($store->id)->exists(), 403);
         $store->loadMissing('company');
+        if ($customer !== null) {
+            abort_unless($customer->status === 'active', 404);
+            abort_unless(Customer::query()->visibleFrom($cashier, (int) $store->branch_id, (int) $store->id)->whereKey($customer->id)->exists(), 404);
+        }
 
         $lines = $this->resolveLines($cashier, $store, $requestedLines);
         $tax = $this->resolveTax($cashier, (bool) ($financial['tax_applicable'] ?? false));
         $tenders = $this->orderedTenders($tenders);
-        $fingerprint = $this->fingerprint($store, $cashier, $lines, $tax, $tenders, $suspend);
+        $fingerprint = $this->fingerprint($store, $cashier, $lines, $tax, $tenders, $suspend, $customer);
 
         $existing = Sale::query()->where('idempotency_key', $idempotencyKey)->with('lines', 'payments')->first();
         if ($existing !== null) {
-            return $this->assertReplaySafe($existing, $store, $cashier, $fingerprint, $suspend);
+            return $this->assertReplaySafe($existing, $store, $cashier, $fingerprint, $suspend, $customer);
         }
 
         try {
             $shift = $this->openShift($cashier, $store);
 
-            return $this->createSale($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders);
+            return $this->createSale($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer);
         } catch (UniqueConstraintViolationException $exception) {
             if (! str_contains($exception->getMessage(), 'idempotency_key')) {
                 throw $exception;
@@ -84,14 +95,15 @@ final class RetailSaleAction
                 throw new InvalidArgumentException(__('The checkout is already being processed. Retry with the same checkout token.'));
             }
 
-            return $this->assertReplaySafe($existing, $store, $cashier, $fingerprint, $suspend);
+            return $this->assertReplaySafe($existing, $store, $cashier, $fingerprint, $suspend, $customer);
         }
     }
 
-    private function assertReplaySafe(Sale $existing, Store $store, User $cashier, string $fingerprint, bool $suspend): Sale
+    private function assertReplaySafe(Sale $existing, Store $store, User $cashier, string $fingerprint, bool $suspend, ?Customer $customer): Sale
     {
         $safe = (int) $existing->store_id === (int) $store->id
             && (int) $existing->cashier_id === (int) $cashier->id
+            && (int) ($existing->customer_id ?? 0) === (int) ($customer?->id ?? 0)
             && ($existing->suspended_at !== null) === $suspend
             && hash_equals((string) $existing->request_fingerprint, $fingerprint);
 
@@ -113,8 +125,9 @@ final class RetailSaleAction
         ?TaxSetting $tax,
         bool $suspend,
         array $tenders,
+        ?Customer $customer,
     ): Sale {
-        return DB::transaction(function () use ($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders): Sale {
+        return DB::transaction(function () use ($cashier, $store, $shift, $lines, $idempotencyKey, $fingerprint, $tax, $suspend, $tenders, $customer): Sale {
             $shift = PosShift::query()->lockForUpdate()->findOrFail((int) $shift->getKey());
             /** @var ShiftState $shiftState */
             $shiftState = $shift->status;
@@ -127,6 +140,8 @@ final class RetailSaleAction
             }
 
             $this->assertPricesRemainCurrent($store, $lines);
+            $this->assertOpenPriceApprovalsRemainCurrent($cashier, $store, $lines);
+            $this->assertDiscountApprovalsRemainCurrent($cashier, $store, $lines);
 
             $totals = $this->calculator->calculate(
                 array_map(static fn (array $line): array => [
@@ -158,6 +173,7 @@ final class RetailSaleAction
                 'cash_drawer_id' => $shift->cash_drawer_id,
                 'shift_id' => $shift->id,
                 'cashier_id' => $cashier->id,
+                'customer_id' => $customer?->id,
                 'status' => $suspend ? 'suspended' : 'draft',
                 'idempotency_key' => $idempotencyKey,
                 'request_fingerprint' => $fingerprint,
@@ -190,7 +206,8 @@ final class RetailSaleAction
                     'unit_price' => $line['unit_price'],
                     'reference_price' => $line['reference_price'],
                     'is_open_price' => $line['is_open_price'],
-                    'open_price_authorized_by' => $line['is_open_price'] ? $cashier->id : null,
+                    'open_price_authorized_by' => $line['is_open_price'] ? ($line['open_price_approver_id'] ?? $cashier->id) : null,
+                    'open_price_approval_record_id' => $line['open_price_approval_id'],
                     'open_price_minimum_snapshot' => $line['open_price_minimum'],
                     'open_price_maximum_snapshot' => $line['open_price_maximum'],
                     'open_price_reason' => $line['open_price_reason'],
@@ -201,6 +218,7 @@ final class RetailSaleAction
                     'discount_applied_by' => $line['discount_type'] ? $cashier->id : null,
                     'discount_replaced_by' => $line['discount_replaced'] ? $cashier->id : null,
                     'discount_replaced_at' => $line['discount_replaced'] ? now() : null,
+                    'discount_approval_record_id' => $line['discount_approval_id'],
                     'allocated_invoice_discount' => '0.00',
                     'net_amount' => $computed['net_amount'],
                 ]);
@@ -218,17 +236,29 @@ final class RetailSaleAction
                         metadata: ['actor_id' => $cashier->id, 'sale_id' => $sale->id],
                     );
                 }
+                if ($line['discount_approval_id'] !== null) {
+                    app(RecordAuditEvent::class)->execute(
+                        category: 'retail',
+                        event: 'sale_discount_approved',
+                        source: $saleLine,
+                        after: ['amount' => $line['discount_amount'], 'type' => $line['discount_type'], 'approval_record_id' => $line['discount_approval_id'], 'approver_id' => $line['discount_approver_id']],
+                        branchId: (int) $store->branch_id,
+                        storeId: (int) $store->id,
+                        reasonText: $line['discount_reason'],
+                        metadata: ['actor_id' => $cashier->id, 'sale_id' => $sale->id],
+                    );
+                }
                 if ($line['is_open_price']) {
                     app(RecordAuditEvent::class)->execute(
                         category: 'pricing',
                         event: 'sale_open_price_applied',
                         source: $saleLine,
                         before: ['reference_price' => $line['reference_price']],
-                        after: ['selling_price' => $line['unit_price'], 'minimum' => $line['open_price_minimum'], 'maximum' => $line['open_price_maximum']],
+                        after: ['selling_price' => $line['unit_price'], 'minimum' => $line['open_price_minimum'], 'maximum' => $line['open_price_maximum'], 'approval_record_id' => $line['open_price_approval_id'], 'approver_id' => $line['open_price_approver_id']],
                         branchId: (int) $store->branch_id,
                         storeId: (int) $store->id,
                         reasonText: $line['open_price_reason'],
-                        metadata: ['actor_id' => $cashier->id, 'sale_id' => $sale->id],
+                        metadata: ['actor_id' => $cashier->id, 'sale_id' => $sale->id, 'approval_limit_percent' => $line['open_price_approval_limit']],
                     );
                 }
             }
@@ -313,7 +343,8 @@ final class RetailSaleAction
                     'unit_price' => $line['unit_price'],
                     'reference_price' => $line['reference_price'],
                     'is_open_price' => $line['is_open_price'],
-                    'open_price_authorized_by' => $line['is_open_price'] ? $cashier->id : null,
+                    'open_price_authorized_by' => $line['is_open_price'] ? ($line['open_price_approver_id'] ?? $cashier->id) : null,
+                    'open_price_approval_record_id' => $line['open_price_approval_id'],
                     'open_price_minimum_snapshot' => $line['open_price_minimum'],
                     'open_price_maximum_snapshot' => $line['open_price_maximum'],
                     'open_price_reason' => $line['open_price_reason'],
@@ -322,6 +353,7 @@ final class RetailSaleAction
                     'discount_type' => $line['discount_type'],
                     'discount_reason' => $line['discount_reason'],
                     'discount_applied_by' => $line['discount_type'] ? $cashier->id : null,
+                    'discount_approval_record_id' => $line['discount_approval_id'],
                     'allocated_invoice_discount' => '0.00',
                     'net_amount' => $computed['net_amount'],
                 ]);
@@ -356,6 +388,7 @@ final class RetailSaleAction
                 isset($tender['tendered']) ? (string) $tender['tendered'] : null,
                 isset($tender['evidence_reference']) ? (string) $tender['evidence_reference'] : null,
                 isset($tender['evidence_attachment_id']) ? (string) $tender['evidence_attachment_id'] : null,
+                $tender['gift_card'] ?? null,
             );
         }
     }
@@ -391,6 +424,11 @@ final class RetailSaleAction
             $unitPrice = $standardPrice;
             $openPriceReason = null;
             $isOpenPrice = filled($requested['open_price_amount'] ?? null);
+            $openPriceApprovalId = filled($requested['open_price_approval_id'] ?? null)
+                ? (int) $requested['open_price_approval_id']
+                : null;
+            $openPriceApprovalRequired = false;
+            $openPriceApproverId = null;
             if ($isOpenPrice) {
                 abort_unless($cashier->can('pos_sales.open_price'), 403);
                 if (! $price->open_price_allowed) {
@@ -406,6 +444,25 @@ final class RetailSaleAction
                     hasPermission: true,
                     reason: $openPriceReason,
                 );
+                $approvalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
+                $openPriceApprovalRequired = $this->openPrices->requiresApproval($referencePrice, $unitPrice, $approvalLimit);
+                if ($openPriceApprovalRequired && $openPriceApprovalId === null) {
+                    throw new InvalidArgumentException(__('Independent manager approval is required for this open-price deviation.'));
+                }
+                if ($openPriceApprovalId !== null) {
+                    $openPriceApproverId = $this->assertOpenPriceApproval(
+                        $cashier,
+                        $store,
+                        $product->id,
+                        $price,
+                        $referencePrice,
+                        $unitPrice,
+                        $openPriceReason,
+                        $approvalLimit,
+                        $openPriceApprovalId,
+                        false,
+                    );
+                }
             }
 
             $discountAmount = filled($requested['discount_amount'] ?? null)
@@ -414,10 +471,37 @@ final class RetailSaleAction
             $discountType = bccomp($discountAmount, '0', 2) > 0 ? (string) ($requested['discount_type'] ?? '') : null;
             $discountReason = filled($requested['discount_reason'] ?? null) ? trim((string) $requested['discount_reason']) : null;
             $discountReplaces = filled($requested['discount_replaces'] ?? null) ? (string) $requested['discount_replaces'] : null;
+            $discountApprovalId = filled($requested['discount_approval_id'] ?? null)
+                ? (int) $requested['discount_approval_id']
+                : null;
             $discountReplaced = false;
+            $discountApprovalRequired = false;
+            $discountApproverId = null;
             if ($discountType !== null) {
                 abort_unless($cashier->can('pos_sales.apply_discount'), 403);
                 $gross = DecimalMoney::round(bcmul($quantity, $unitPrice, 8));
+                $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
+                $discountApprovalRequired = $this->discounts->requiresApproval($discountAmount, $gross);
+                if ($discountApprovalRequired && $discountApprovalId === null) {
+                    throw new InvalidArgumentException(__('Independent manager approval is required before checkout.'));
+                }
+                if ($discountApprovalId !== null) {
+                    $discountApproverId = $this->assertDiscountApproval(
+                        $cashier,
+                        $store,
+                        (int) $product->id,
+                        $price,
+                        $gross,
+                        $discountAmount,
+                        $discountType,
+                        $discountReason,
+                        $discountReplaces,
+                        (string) ($requested['discount_previous_amount'] ?? '0.00'),
+                        $discountApprovalLimit,
+                        $discountApprovalId,
+                        false,
+                    );
+                }
                 $payload = $this->discounts->buildLineDiscount(
                     actor: $cashier,
                     discountAmount: $discountAmount,
@@ -425,6 +509,7 @@ final class RetailSaleAction
                     newType: $discountType,
                     existingType: $discountReplaces,
                     reason: $discountReason,
+                    approved: $discountApprovalRequired || $discountApprovalId !== null,
                 );
                 $discountAmount = DecimalMoney::round($payload['discount_amount']);
                 $discountType = $payload['discount_type'];
@@ -441,12 +526,20 @@ final class RetailSaleAction
                 'open_price_minimum' => $isOpenPrice ? (string) $price->open_price_minimum : null,
                 'open_price_maximum' => $isOpenPrice ? (string) $price->open_price_maximum : null,
                 'open_price_reason' => $openPriceReason,
+                'open_price_approval_id' => $openPriceApprovalId,
+                'open_price_approval_required' => $openPriceApprovalRequired,
+                'open_price_approval_limit' => $isOpenPrice ? PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT) : null,
+                'open_price_approver_id' => $openPriceApproverId,
                 'discount_amount' => $discountAmount,
                 'discount_type' => $discountType,
                 'discount_reason' => $discountReason,
                 'discount_replaced' => $discountReplaced,
                 'discount_previous_type' => $discountReplaced ? $discountReplaces : null,
                 'discount_previous_amount' => $discountReplaced ? (string) ($requested['discount_previous_amount'] ?? '0.00') : null,
+                'discount_approval_id' => $discountApprovalId,
+                'discount_approval_required' => $discountApprovalRequired,
+                'discount_approval_limit' => $discountType !== null ? PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT) : null,
+                'discount_approver_id' => $discountApproverId,
             ];
         }
 
@@ -463,6 +556,208 @@ final class RetailSaleAction
                 throw new InvalidArgumentException(__('A basket price changed before checkout. Review the basket and try again.'));
             }
         }
+    }
+
+    /** @param array<int, array<string, mixed>> $lines */
+    private function assertOpenPriceApprovalsRemainCurrent(User $cashier, Store $store, array $lines): void
+    {
+        foreach ($lines as $line) {
+            if (! $line['is_open_price']) {
+                continue;
+            }
+
+            $price = $this->prices->resolve($line['product']->id, $store->id);
+            if (! $price instanceof PriceLine) {
+                throw new InvalidArgumentException(__('The approved price is no longer available for this open-price line.'));
+            }
+
+            $approvalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
+            $required = $this->openPrices->requiresApproval((string) $line['reference_price'], (string) $line['unit_price'], $approvalLimit);
+            if ($required && $line['open_price_approval_id'] === null) {
+                throw new InvalidArgumentException(__('Independent manager approval is required before checkout.'));
+            }
+
+            $this->assertOpenPriceApproval(
+                $cashier,
+                $store,
+                (int) $line['product']->id,
+                $price,
+                (string) $line['reference_price'],
+                (string) $line['unit_price'],
+                (string) $line['open_price_reason'],
+                $approvalLimit,
+                $line['open_price_approval_id'],
+                true,
+            );
+        }
+    }
+
+    private function assertOpenPriceApproval(
+        User $cashier,
+        Store $store,
+        int $productId,
+        PriceLine $price,
+        string $reference,
+        string $requested,
+        string $reason,
+        ?string $approvalLimit,
+        ?int $approvalId,
+        bool $lock,
+    ): ?int {
+        if ($approvalId === null) {
+            return null;
+        }
+
+        $query = ApprovalRecord::query();
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+        $approval = $query->findOrFail($approvalId);
+
+        if ($approval->source_type !== 'pos_open_price' || $approval->requested_action !== 'approve_open_price') {
+            throw new InvalidArgumentException(__('The approval record is not a POS open-price approval.'));
+        }
+        if ($approval->approval_state !== ApprovalState::Approved) {
+            throw new InvalidArgumentException(__('The open-price approval is not approved. Checkout remains blocked.'));
+        }
+        if ((int) $approval->requester_id !== (int) $cashier->id) {
+            throw new InvalidArgumentException(__('The open-price approval belongs to a different cashier session.'));
+        }
+        if ($approval->approver_id === null || (int) $approval->approver_id === (int) $cashier->id) {
+            throw new InvalidArgumentException(__('An independent manager must approve the open price.'));
+        }
+        if ((int) $approval->branch_id !== (int) $store->branch_id || (int) $approval->store_id !== (int) $store->id) {
+            throw new InvalidArgumentException(__('The open-price approval scope does not match the selling store.'));
+        }
+        if ($approval->expires_at !== null && $approval->expires_at->isPast()) {
+            throw new InvalidArgumentException(__('The open-price approval has expired. Request a fresh decision.'));
+        }
+
+        $sourceHash = $this->openPrices->fingerprint([
+            'product_id' => $productId,
+            'store_id' => (int) $store->id,
+            'price_line_id' => (int) $price->id,
+            'price_updated_at' => (string) $price->updated_at,
+            'reference' => $reference,
+            'minimum' => $price->open_price_minimum,
+            'maximum' => $price->open_price_maximum,
+            'requested_amount' => DecimalMoney::normalize($requested, 4),
+            'reason' => trim($reason),
+            'approval_limit' => $approvalLimit,
+        ]);
+
+        if ($approval->source_hash === null || ! hash_equals((string) $approval->source_hash, $sourceHash)) {
+            throw new InvalidArgumentException(__('The open-price approval is stale. Request approval again for the current price policy.'));
+        }
+
+        return (int) $approval->approver_id;
+    }
+
+    /** @param array<int, array<string, mixed>> $lines */
+    private function assertDiscountApprovalsRemainCurrent(User $cashier, Store $store, array &$lines): void
+    {
+        foreach ($lines as &$line) {
+            if ($line['discount_type'] === null || bccomp((string) $line['discount_amount'], '0', 2) <= 0) {
+                continue;
+            }
+
+            $gross = DecimalMoney::round(bcmul((string) $line['quantity'], (string) $line['unit_price'], 8));
+            $approvalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
+            $required = $this->discounts->requiresApproval((string) $line['discount_amount'], $gross);
+            if ($required && $line['discount_approval_id'] === null) {
+                throw new InvalidArgumentException(__('Independent manager approval is required before checkout.'));
+            }
+
+            if ($line['discount_approval_id'] !== null) {
+                $price = PriceLine::query()->lockForUpdate()->findOrFail((int) $line['price_line_id']);
+                $line['discount_approver_id'] = $this->assertDiscountApproval(
+                    $cashier,
+                    $store,
+                    (int) $line['product']->id,
+                    $price,
+                    $gross,
+                    (string) $line['discount_amount'],
+                    (string) $line['discount_type'],
+                    $line['discount_reason'],
+                    $line['discount_previous_type'],
+                    (string) ($line['discount_previous_amount'] ?? '0.00'),
+                    $approvalLimit,
+                    (int) $line['discount_approval_id'],
+                    true,
+                );
+            }
+        }
+        unset($line);
+    }
+
+    private function assertDiscountApproval(
+        User $cashier,
+        Store $store,
+        int $productId,
+        PriceLine $price,
+        string $gross,
+        string $discountAmount,
+        string $discountType,
+        ?string $reason,
+        ?string $existingType,
+        string $existingAmount,
+        ?string $approvalLimit,
+        ?int $approvalId,
+        bool $lock,
+    ): ?int {
+        if ($approvalId === null) {
+            return null;
+        }
+
+        $query = ApprovalRecord::query();
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+        $approval = $query->findOrFail($approvalId);
+
+        if ($approval->source_type !== 'pos_discount' || $approval->requested_action !== 'approve_discount') {
+            throw new InvalidArgumentException(__('The approval record is not a POS discount approval.'));
+        }
+        if ($approval->approval_state !== ApprovalState::Approved) {
+            throw new InvalidArgumentException(__('The discount approval is not approved. Checkout remains blocked.'));
+        }
+        if ((int) $approval->requester_id !== (int) $cashier->id) {
+            throw new InvalidArgumentException(__('The discount approval belongs to a different cashier session.'));
+        }
+        if ($approval->approver_id === null || (int) $approval->approver_id === (int) $cashier->id) {
+            throw new InvalidArgumentException(__('An independent manager must approve the discount.'));
+        }
+        if ((int) $approval->branch_id !== (int) $store->branch_id || (int) $approval->store_id !== (int) $store->id) {
+            throw new InvalidArgumentException(__('The discount approval scope does not match the selling store.'));
+        }
+        if ($approval->expires_at !== null && $approval->expires_at->isPast()) {
+            throw new InvalidArgumentException(__('The discount approval has expired. Request a fresh decision.'));
+        }
+
+        $sourceVersion = (string) $price->id.':'.(string) $price->updated_at;
+        if ($approval->source_version !== $sourceVersion) {
+            throw new InvalidArgumentException(__('The discount approval is stale. Request approval again for the current price policy.'));
+        }
+
+        $sourceHash = $this->openPrices->fingerprint([
+            'product_id' => $productId,
+            'store_id' => (int) $store->id,
+            'price_line_id' => (int) $price->id,
+            'price_updated_at' => (string) $price->updated_at,
+            'gross' => $gross,
+            'discount_amount' => DecimalMoney::round($discountAmount),
+            'discount_type' => $discountType,
+            'reason' => trim((string) $reason),
+            'existing_type' => $existingType,
+            'existing_amount' => DecimalMoney::round($existingAmount),
+            'approval_limit' => $approvalLimit,
+        ]);
+
+        if ($approval->source_hash === null || ! hash_equals((string) $approval->source_hash, $sourceHash)) {
+            throw new InvalidArgumentException(__('The discount approval is stale. Request approval again for the current cart.'));
+        }
+
+        return (int) $approval->approver_id;
     }
 
     private function resolveTax(User $cashier, bool $applicable): ?TaxSetting
@@ -499,6 +794,15 @@ final class RetailSaleAction
                 throw new InvalidArgumentException(__('Every tender requires a configured payment method.'));
             }
             $tender['method'] = PaymentMethod::query()->findOrFail($tender['method']->id);
+            $isGiftCard = (string) $tender['method']->type === 'gift_card';
+            if ($isGiftCard !== (($tender['gift_card'] ?? null) instanceof GiftCard)) {
+                throw new InvalidArgumentException($isGiftCard
+                    ? __('A Gift Card tender requires a valid Gift Card.')
+                    : __('A Gift Card may only be used with a Gift Card payment method.'));
+            }
+            if ($isGiftCard) {
+                $tender['gift_card'] = GiftCard::query()->findOrFail($tender['gift_card']->id);
+            }
             if ($this->isCashMethod($tender['method'])) {
                 $cashCount++;
             }
@@ -529,7 +833,7 @@ final class RetailSaleAction
 
     private function finalize(Sale $sale, User $cashier): Sale
     {
-        $sale->loadMissing('lines', 'store', 'payments');
+        $sale->loadMissing('lines', 'store', 'payments', 'customer');
         $this->assertSettled($sale);
 
         foreach ($sale->lines as $line) {
@@ -568,6 +872,11 @@ final class RetailSaleAction
             'lock_version' => ((int) $sale->lock_version) + 1,
         ]);
 
+        // Customer loyalty is part of the same approval transaction. If a
+        // configured rule is missing or the ledger cannot be posted, the sale
+        // and every stock/payment effect roll back together.
+        app(EarnLoyaltyAction::class)->executeForSale($cashier, $sale->fresh(['customer', 'store']));
+
         if ($sale->suspendedSale !== null) {
             $sale->suspendedSale->update(['status' => 'resumed', 'resumed_at' => now()]);
         }
@@ -586,6 +895,7 @@ final class RetailSaleAction
                 'stock_posted' => true,
                 'payment_count' => $sale->payments()->count(),
                 'payment_total' => $paid,
+                'customer_id' => $sale->customer_id,
                 'tax_setting_snapshot' => $sale->tax_setting_id,
                 'open_price_line_ids' => $sale->lines->where('is_open_price', true)->pluck('id')->all(),
                 'discount_line_ids' => $sale->lines->where('discount_amount', '>', 0)->pluck('id')->all(),
@@ -623,7 +933,8 @@ final class RetailSaleAction
     private function revalidateSuspendedContext(User $cashier, Sale $sale, bool $lock): array
     {
         abort_unless($sale->status === 'suspended' && $sale->suspendedSale?->status === 'suspended', 422, __('This suspended sale is no longer available.'));
-        abort_unless((int) $sale->cashier_id === (int) $cashier->id || $cashier->is_super_admin, 403);
+        $ownsSale = (int) $sale->cashier_id === (int) $cashier->id;
+        abort_unless($ownsSale || $cashier->is_super_admin || $cashier->can('suspended_sales.view'), 403);
 
         $storeQuery = Store::query()->visibleTo($cashier)->whereKey($sale->store_id)->where('status', 'active')->where('type', 'selling')->with('company');
         $store = $lock ? $storeQuery->lockForUpdate()->firstOrFail() : $storeQuery->firstOrFail();
@@ -655,13 +966,18 @@ final class RetailSaleAction
             'quantity' => (string) $line->quantity,
             'open_price_amount' => $line->is_open_price ? (string) $line->unit_price : null,
             'open_price_reason' => $line->open_price_reason,
+            'open_price_approval_id' => $line->open_price_approval_record_id,
             'discount_amount' => (string) $line->discount_amount,
             'discount_type' => $line->discount_type,
             'discount_reason' => $line->discount_reason,
+            'discount_approval_id' => $line->discount_approval_record_id,
+            'discount_previous_amount' => (string) $line->discount_amount,
         ])->values()->all();
 
         $lines = $this->resolveLines($cashier, $store, $requestedLines);
         $this->assertPricesRemainCurrent($store, $lines);
+        $this->assertOpenPriceApprovalsRemainCurrent($cashier, $store, $lines);
+        $this->assertDiscountApprovalsRemainCurrent($cashier, $store, $lines);
         $tax = $this->resolveTax($cashier, (bool) $sale->tax_applicable);
         $totals = $this->calculator->calculate(
             array_map(static fn (array $line): array => [
@@ -677,11 +993,12 @@ final class RetailSaleAction
     }
 
     /** @param array<int, array<string, mixed>> $lines @param array<int, array<string, mixed>> $tenders */
-    private function fingerprint(Store $store, User $cashier, array $lines, ?TaxSetting $tax, array $tenders, bool $suspend): string
+    private function fingerprint(Store $store, User $cashier, array $lines, ?TaxSetting $tax, array $tenders, bool $suspend, ?Customer $customer): string
     {
         $payload = [
             'store_id' => $store->id,
             'cashier_id' => $cashier->id,
+            'customer_id' => $customer?->id,
             'suspend' => $suspend,
             'tax_setting_id' => $tax?->id,
             'lines' => array_map(static fn (array $line): array => [
@@ -702,6 +1019,7 @@ final class RetailSaleAction
                 'tendered' => (string) ($tender['tendered'] ?? ''),
                 'evidence_reference' => (string) ($tender['evidence_reference'] ?? ''),
                 'evidence_attachment_id' => (string) ($tender['evidence_attachment_id'] ?? ''),
+                'gift_card_id' => ($tender['gift_card'] ?? null)?->id,
             ], $tenders),
         ];
 

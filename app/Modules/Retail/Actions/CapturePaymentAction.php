@@ -13,6 +13,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -33,11 +34,12 @@ final class CapturePaymentAction
         ?string $tenderedAmount = null,
         ?string $evidenceReference = null,
         ?string $evidenceAttachmentId = null,
+        ?GiftCard $giftCard = null,
     ): SalePayment {
         abort_unless($cashier->can('pos_sales.payment_create'), 403);
 
         try {
-            return $this->attempt($cashier, $sale, $method, $amount, $idempotencyKey, $tenderedAmount, $evidenceReference, $evidenceAttachmentId);
+            return $this->attempt($cashier, $sale, $method, $amount, $idempotencyKey, $tenderedAmount, $evidenceReference, $evidenceAttachmentId, $giftCard);
         } catch (UniqueConstraintViolationException $exception) {
             if (! str_contains($exception->getMessage(), 'idempotency_key')) {
                 throw $exception;
@@ -51,6 +53,7 @@ final class CapturePaymentAction
                 $tenderedAmount,
                 $evidenceReference,
                 $evidenceAttachmentId,
+                $giftCard,
             );
         }
     }
@@ -64,13 +67,14 @@ final class CapturePaymentAction
         ?string $tenderedAmount,
         ?string $evidenceReference,
         ?string $evidenceAttachmentId,
+        ?GiftCard $giftCard,
     ): SalePayment {
-        return DB::transaction(function () use ($cashier, $sale, $method, $amount, $idempotencyKey, $tenderedAmount, $evidenceReference, $evidenceAttachmentId): SalePayment {
+        return DB::transaction(function () use ($cashier, $sale, $method, $amount, $idempotencyKey, $tenderedAmount, $evidenceReference, $evidenceAttachmentId, $giftCard): SalePayment {
             $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
 
             $existing = SalePayment::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                return $this->assertReplaySafe($existing, $sale, $method, $amount, $tenderedAmount, $evidenceReference, $evidenceAttachmentId);
+                return $this->assertReplaySafe($existing, $sale, $method, $amount, $tenderedAmount, $evidenceReference, $evidenceAttachmentId, $giftCard);
             }
 
             if (in_array($sale->status, ['approved', 'cancelled'], true)) {
@@ -78,6 +82,22 @@ final class CapturePaymentAction
             }
             if ($method->status !== 'active') {
                 throw new InvalidArgumentException(__('This payment method is not active.'));
+            }
+
+            $isGiftCard = (string) $method->type === 'gift_card';
+            if ($isGiftCard !== ($giftCard instanceof GiftCard)) {
+                throw new InvalidArgumentException($isGiftCard
+                    ? __('A Gift Card tender requires a valid Gift Card.')
+                    : __('A Gift Card may only be used with a Gift Card payment method.'));
+            }
+            if ($giftCard instanceof GiftCard) {
+                $giftCard = GiftCard::query()->visibleTo($cashier)->findOrFail($giftCard->id);
+                if ((int) $giftCard->branch_id !== (int) $sale->branch_id || (int) $giftCard->store_id !== (int) $sale->store_id) {
+                    throw new InvalidArgumentException(__('The Gift Card is not valid for this sale scope.'));
+                }
+                if (strtoupper((string) $giftCard->currency_code) !== strtoupper((string) $sale->currency_code)) {
+                    throw new InvalidArgumentException(__('The Gift Card currency does not match this sale.'));
+                }
             }
 
             $isCash = $method->isCash();
@@ -127,6 +147,7 @@ final class CapturePaymentAction
             $payment = SalePayment::query()->create([
                 'sale_id' => $sale->id,
                 'payment_method_id' => $method->id,
+                'gift_card_id' => $giftCard?->id,
                 'method_code' => $method->code,
                 'method_type' => $method->type,
                 'amount' => $amount,
@@ -157,6 +178,18 @@ final class CapturePaymentAction
                 );
             }
 
+            if ($giftCard instanceof GiftCard) {
+                app(GiftCardAction::class)->redeem(
+                    $cashier,
+                    $giftCard,
+                    $amount,
+                    'SALE-PAYMENT:'.$payment->id.':GIFT-CARD',
+                    Sale::class,
+                    (string) $sale->id,
+                    'SALE:'.$sale->id,
+                );
+            }
+
             app(RecordAuditEvent::class)->execute(
                 category: 'retail',
                 event: 'sale_payment_captured',
@@ -167,6 +200,7 @@ final class CapturePaymentAction
                     'amount' => $amount,
                     'tendered_amount' => $tenderedAmount,
                     'change_amount' => $change,
+                    'gift_card_id' => $giftCard?->id,
                     'evidence_attachment_id' => $attachment?->id,
                 ],
                 branchId: (int) $sale->branch_id,
@@ -210,12 +244,14 @@ final class CapturePaymentAction
         ?string $tenderedAmount,
         ?string $evidenceReference,
         ?string $evidenceAttachmentId,
+        ?GiftCard $giftCard,
     ): SalePayment {
         $isCash = $method->isCash();
         $expectedAmount = $isCash ? (string) $existing->amount : DecimalMoney::round($amount);
         $expectedTendered = $tenderedAmount === null || trim($tenderedAmount) === '' ? null : DecimalMoney::round($tenderedAmount);
         $replaySafe = (int) $existing->sale_id === (int) $sale->id
             && (int) $existing->payment_method_id === (int) $method->id
+            && (int) ($existing->gift_card_id ?? 0) === (int) ($giftCard?->id ?? 0)
             && bccomp((string) $existing->amount, $expectedAmount, 2) === 0
             && ($isCash || $existing->tendered_amount === null)
             && (! $isCash || $expectedTendered === null || bccomp((string) $existing->tendered_amount, $expectedTendered, 2) === 0)

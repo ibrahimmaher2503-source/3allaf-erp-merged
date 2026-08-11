@@ -2,6 +2,7 @@
 
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Actions\SaveStoreAction;
+use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Store;
@@ -90,7 +91,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             'name_en' => '',
             'status' => 'active',
             'allows_negative_stock' => false,
-            'policy_notes' => 'TBD: Production store type, location, and negative-stock policy pending owner decision (BLK-006 / DEC-021).',
+            'policy_notes' => '',
         ];
         $this->resetValidation();
         $this->showStoreModal = true;
@@ -172,13 +173,14 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         }
     }
 
-    public function deleteStore(int $id, SaveStoreAction $action): void
+    public function deleteStore(int $id, PlatformSettingsApprovalAction $approvalAction): void
     {
         Gate::authorize('branches_stores.logical_delete');
 
         try {
-            $action->delete($id);
-            Flux::toast(variant: 'success', text: __('Store deleted successfully.'));
+            $store = Store::query()->findOrFail($id);
+            $approvalAction->request('store_delete', $store->id, ['deleted' => true], $store->getAttributes(), $store->branch_id, $store->id);
+            Flux::toast(variant: 'success', text: __('Store deletion submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -269,7 +271,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
 <x-app.page
     :title="__('Store Masters & Branch Mapping')"
-    :description="__('Manage physical/logical stores (selling, warehouse, party, damaged, transit) and POS branch assignments.')"
+    :description="__('Manage physical/logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit) and POS branch assignments.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="stores-header"
@@ -281,11 +283,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
-
-    <!-- TBD / BLK-006 / DEC-021 Banner -->
-    <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Development Baseline Only (BLK-006 & DEC-021 Unresolved)') }}">
-        {{ __('Official store list, warehouse categories, selling-store assignments, and negative-stock flags are TBD pending owner approval. Negative stock is blocked by default.') }}
-    </flux:callout>
 
     <!-- Filters & Search -->
     <flux:card id="stores-filters" class="scroll-mt-24 space-y-4" data-guide="stores-filters">
@@ -307,13 +304,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endforeach
             </flux:select>
 
-            <flux:select wire:model.live="typeFilter" size="sm" :label="__('Store Type')">
-                <flux:select.option value="all">{{ __('All Types') }}</flux:select.option>
-                <flux:select.option value="selling">{{ __('Selling Store') }}</flux:select.option>
-                <flux:select.option value="warehouse">{{ __('Warehouse / Central') }}</flux:select.option>
-                <flux:select.option value="party">{{ __('Party Store') }}</flux:select.option>
-                <flux:select.option value="damaged">{{ __('Damaged / Defective') }}</flux:select.option>
-                <flux:select.option value="transit">{{ __('In-Transit Stock') }}</flux:select.option>
+            <flux:select wire:model.live="typeFilter" size="sm" :label="__('Location Type')">
+                <flux:select.option value="all">{{ __('All Location Types') }}</flux:select.option>
+                <flux:select.option value="selling">{{ __('Point of Sale (POS)') }}</flux:select.option>
+                <flux:select.option value="warehouse">{{ __('Main Warehouse') }}</flux:select.option>
+                <flux:select.option value="party">{{ __('Service Center') }}</flux:select.option>
+                <flux:select.option value="damaged">{{ __('Damaged & Defective Stock') }}</flux:select.option>
+                <flux:select.option value="transit">{{ __('Stock in Transit') }}</flux:select.option>
             </flux:select>
 
             <flux:select wire:model.live="statusFilter" size="sm" :label="__('Status Filter')">
@@ -333,11 +330,11 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             </div>
             <flux:heading level="3" size="lg">{{ __('No Stores Configured') }}</flux:heading>
             <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('No local store records found. Click below to add a store location for testing, or wait for official master data (BLK-006).') }}
+                {{ __('Add a store to make it available for sales, inventory, or service operations.') }}
             </flux:text>
             <div class="pt-2">
                 @can('branches_stores.create')
-                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Create Local Store') }}</flux:button>
+                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Add store') }}</flux:button>
                 @endcan
             </div>
         </flux:card>
@@ -381,19 +378,19 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                         <flux:table.cell>
                             @switch($st->type)
                                 @case('selling')
-                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Selling Store') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Point of Sale (POS)') }}</flux:badge>
                                     @break
                                 @case('warehouse')
-                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Warehouse') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Main Warehouse') }}</flux:badge>
                                     @break
                                 @case('party')
-                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Party Store') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="zinc">{{ __('Service Center') }}</flux:badge>
                                     @break
                                 @case('damaged')
-                                    <flux:badge size="sm" variant="subtle" color="rose">{{ __('Damaged') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="rose">{{ __('Damaged & Defective Stock') }}</flux:badge>
                                     @break
                                 @case('transit')
-                                    <flux:badge size="sm" variant="subtle" color="amber">{{ __('In-Transit') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="amber">{{ __('Stock in Transit') }}</flux:badge>
                                     @break
                                 @default
                                     <flux:badge size="sm" variant="subtle">{{ $st->type }}</flux:badge>
@@ -476,7 +473,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     <flux:modal wire:model="showStoreModal" class="md:w-160 space-y-6">
         <div>
             <flux:heading size="lg">{{ $editingStoreId ? __('Edit Store Master') : __('Create Store Master') }}</flux:heading>
-            <flux:subheading>{{ __('Define store code, type, bilingual names, branch association, and negative stock policy.') }}</flux:subheading>
+            <flux:subheading>{{ __('Define location code, location type, bilingual names, branch association, and negative stock policy.') }}</flux:subheading>
         </div>
 
         <form wire:submit="saveStore" class="space-y-4">
@@ -488,12 +485,12 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                     required
                 />
 
-                <flux:select wire:model="storeForm.type" :label="__('Store Type')" required>
-                    <flux:select.option value="selling">{{ __('Selling Store (POS)') }}</flux:select.option>
-                    <flux:select.option value="warehouse">{{ __('Warehouse / Central Stock') }}</flux:select.option>
-                    <flux:select.option value="party">{{ __('Party Store') }}</flux:select.option>
-                    <flux:select.option value="damaged">{{ __('Damaged / Defective Stock') }}</flux:select.option>
-                    <flux:select.option value="transit">{{ __('In-Transit Stock') }}</flux:select.option>
+                <flux:select wire:model="storeForm.type" :label="__('Location Type')" required>
+                    <flux:select.option value="selling">{{ __('Point of Sale (POS)') }}</flux:select.option>
+                    <flux:select.option value="warehouse">{{ __('Main Warehouse') }}</flux:select.option>
+                    <flux:select.option value="party">{{ __('Service Center') }}</flux:select.option>
+                    <flux:select.option value="damaged">{{ __('Damaged & Defective Stock') }}</flux:select.option>
+                    <flux:select.option value="transit">{{ __('Stock in Transit') }}</flux:select.option>
                 </flux:select>
 
                 <flux:select wire:model="storeForm.status" :label="__('Status')" required>
@@ -515,7 +512,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <div class="flex items-center pt-6">
                     <flux:checkbox
                         wire:model="storeForm.allows_negative_stock"
-                        :label="__('Allow Negative Stock (DEC-012 default: Blocked)')"
+                        :label="__('Allow negative stock')"
                     />
                 </div>
             </div>
@@ -538,7 +535,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
             <flux:textarea
                 wire:model="storeForm.policy_notes"
-                :label="__('Policy / TBD Notes')"
+                :label="__('Notes')"
                 rows="2"
             />
 

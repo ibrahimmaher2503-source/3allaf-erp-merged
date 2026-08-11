@@ -123,7 +123,13 @@ Routes are proposals and must be reconciled with the actual future Laravel proje
 - English/LTR and Arabic/RTL browser review passed with no page overflow; authorized Admin saw both screens and the Gift Card tour began at the Gift-specific `Gift Card boundary`. `demo-no-access` was denied with HTTP 403.
 - Full issue/use/redeem/void/expiry/print UI remains intentionally absent until policy/source approval.
 
-## TSK-027 customer/loyalty dynamic-settings reconciliation — 2026-08-07
+## TSK-027 customer/loyalty implementation reconciliation — 2026-08-10
+
+- `/customers`, `/customers/create`, `/customers/{customerId}`, and `/customers/{customerId}/loyalty` are real Local/Dev customer master, profile, history, consent/child, and retail-loyalty surfaces with server-side scope/RBAC.
+- `/customers/loyalty-readiness` is retained only as an authenticated compatibility redirect to `/customers`; the old readiness Blade template is removed. `/admin/settings/customer-loyalty` remains the append-only owner-configuration boundary consumed fail-closed by TSK-027 customer/retail-loyalty actions.
+- Customer creation, POS selection, real approved-sale linkage, earn/redeem/expiry, approved/rejected adjustment workflows, exports, audit, idempotency, and RTL/LTR/mobile browser evidence are recorded in `testing/results/TSK-027-48-TEST-MATRIX.md`.
+
+### Historical dynamic-settings reconciliation — 2026-08-07
 
 - `/admin/settings/customer-loyalty` is an implemented Local/Dev settings screen with 12 stable decision keys, append-only version saves, company settings view/edit gates, and no approval control. `/customers/loyalty-readiness` resolves the latest values and displays blank values as PENDING.
 - Authenticated app sidebar now exposes all added POS/readiness/settings routes. English LTR and Arabic RTL sidebar/page labels were visually reviewed; TSK-027 sidebar text was shortened after a clipping finding. Mobile viewport evidence remains unavailable in this browser session.

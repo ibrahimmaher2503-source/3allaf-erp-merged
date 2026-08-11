@@ -4,21 +4,19 @@
     'icon' => 'inbox',
 ])
 
-<div {{ $attributes->merge(['class' => 'flex flex-col items-center justify-center p-8 text-center rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 my-4 space-y-4']) }}>
-    <div class="flex items-center justify-center size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+<div {{ $attributes->merge(['class' => 'my-3 flex flex-col items-center justify-center space-y-3 rounded-xl border border-dashed border-border bg-surface-muted/40 p-6 text-center']) }} role="status">
+    <div class="flex size-10 items-center justify-center rounded-full bg-surface-muted text-text-muted">
         <flux:icon :name="$icon" class="size-6 shrink-0" />
     </div>
 
-    <div class="space-y-1 max-w-md">
-        <flux:heading level="3" size="lg" class="font-semibold text-zinc-900 dark:text-zinc-100">
+    <div class="max-w-md space-y-1">
+        <flux:heading level="3" size="lg" class="font-semibold text-text-primary">
             {{ $title ?? __('No records found') }}
         </flux:heading>
 
-        @if ($description)
-            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                {{ $description }}
-            </flux:text>
-        @endif
+        <flux:text class="text-sm leading-6 text-text-muted">
+            {{ $description ?? __('No records match the current filters.') }}
+        </flux:text>
     </div>
 
     @if (isset($action))

@@ -13,6 +13,7 @@ use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -33,7 +34,10 @@ new #[Title('Approval Inbox')] class extends Component
 
     public string $storeId = '';
 
+    #[Locked]
     public ?int $selectedApprovalId = null;
+
+    public bool $approvalModalOpen = false;
 
     public string $decisionReason = '';
 
@@ -55,6 +59,9 @@ new #[Title('Approval Inbox')] class extends Component
                 'stock_counts.submit', 'stock_counts.reconcile',
                 'transfers.submit', 'transfers.approve',
                 'shifts_cash_movements.submit', 'shifts_cash_movements.approve', 'shifts_cash_movements.reject',
+                'pos_sales.open_price_approve',
+                'pos_sales.discount_approve',
+                'company_settings.approve',
             ])->contains(fn (string $permission): bool => $user->hasPermission($permission))), 403);
     }
 
@@ -70,17 +77,26 @@ new #[Title('Approval Inbox')] class extends Component
         $approval = $this->baseQuery()->findOrFail($approvalId);
         Gate::authorize('view', $approval);
         $this->selectedApprovalId = $approval->id;
+        $this->approvalModalOpen = true;
         $this->decisionReason = '';
         $this->resetValidation();
     }
 
     public function closeApproval(): void
     {
+        $this->approvalModalOpen = false;
         $this->selectedApprovalId = null;
         $this->decisionReason = '';
         $this->evidence = null;
         $this->revokeReason = '';
         $this->resetValidation();
+    }
+
+    public function updatedApprovalModalOpen(bool $isOpen): void
+    {
+        if (! $isOpen && $this->selectedApprovalId !== null) {
+            $this->closeApproval();
+        }
     }
 
     public function approve(): void
@@ -267,7 +283,7 @@ new #[Title('Approval Inbox')] class extends Component
         <x-slot:footer>{{ $approvals->links() }}</x-slot:footer>
     </x-tables.data-panel>
 
-    <flux:modal wire:model="selectedApprovalId" class="max-w-3xl">
+    <flux:modal wire:model="approvalModalOpen" class="max-w-3xl">
         @if($selectedApproval)
             <div class="space-y-5">
                 <div><flux:heading size="lg">{{ __('Approval request') }}</flux:heading><flux:text class="mt-1 font-mono text-xs">{{ $selectedApproval->uuid }}</flux:text></div>

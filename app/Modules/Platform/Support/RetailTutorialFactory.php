@@ -116,7 +116,7 @@ final class RetailTutorialFactory
             'UI-POS-008' => self::readiness('returns.readiness', 'جاهزية المرتجعات والاستبدال', 'Returns and Exchanges Readiness', 'returns', 'TSK-030', 'RET-01..03'),
             'UI-POS-010' => self::readiness('gift.receipts', 'إيصالات الهدايا', 'Gift Receipts', 'gift-receipts', 'TSK-029', 'POS-07 / RET-04'),
             'UI-POS-011' => self::readiness('gift.cards', 'بطاقات الهدايا', 'Gift Cards', 'gift-cards', 'TSK-029', 'validity, holder, redemption, and void'),
-            'UI-CUS-001' => self::readiness('customers.loyalty-readiness', 'جاهزية العملاء والولاء', 'Customer and Loyalty Readiness', 'customer', 'TSK-027', 'BLK-014'),
+            'UI-CUS-001' => self::customerMaster(),
             'UI-CUS-002' => self::readiness('admin.settings.customer-loyalty', 'إعدادات سياسات العملاء', 'Customer Policy Settings', 'settings', 'TSK-027', 'Owner approval'),
             'UI-CUS-004' => self::wallet('wallets.product', 'محفظة المنتجات', 'Product Wallet', 'product', 'product_wallet.view'),
             'UI-CUS-005' => self::wallet('wallets.party', 'محفظة الأطراف', 'Party Wallet', 'party', 'party_wallet.view'),
@@ -139,7 +139,120 @@ final class RetailTutorialFactory
         $definition['tour_steps'] = array_slice($definition['steps'], 0, 5);
         unset($definition['steps'], $definition['fields'], $definition['notes'], $definition['warnings'], $definition['errors'], $definition['next_step'], $definition['faq']);
 
+        $definition = self::polishUserCopy($definition);
+
         return ['screen_id' => $screenId] + $definition + ['version' => '1.0.0', 'updated_at' => '2026-08-07'];
+    }
+
+    /**
+     * Keep internal requirement IDs and selectors intact while making copy
+     * shown in the page guide suitable for a customer-facing product.
+     *
+     * @param  array<string, mixed>  $definition
+     * @return array<string, mixed>
+     */
+    private static function polishUserCopy(array $definition): array
+    {
+        foreach (['title', 'purpose', 'when_to_use', 'notes', 'warnings', 'errors', 'next_step', 'faq'] as $key) {
+            if (array_key_exists($key, $definition)) {
+                $definition[$key] = self::polishLocalizedValue($definition[$key]);
+            }
+        }
+
+        foreach ($definition['approved_actions'] ?? [] as $index => $action) {
+            if (isset($action['label'])) {
+                $definition['approved_actions'][$index]['label'] = self::polishLocalizedValue($action['label']);
+            }
+        }
+
+        foreach ($definition['sections']['steps'] ?? [] as $index => $step) {
+            $definition['sections']['steps'][$index] = self::polishLocalizedValue($step);
+        }
+
+        foreach ($definition['sections']['fields'] ?? [] as $index => $field) {
+            $definition['sections']['fields'][$index] = self::polishLocalizedValue($field);
+        }
+
+        foreach (['notes', 'warnings', 'errors', 'next_step', 'faq'] as $key) {
+            if (array_key_exists($key, $definition['sections'] ?? [])) {
+                $definition['sections'][$key] = self::polishLocalizedValue($definition['sections'][$key]);
+            }
+        }
+
+        foreach ($definition['tour_steps'] ?? [] as $index => $step) {
+            $definition['tour_steps'][$index] = self::polishLocalizedValue($step);
+        }
+
+        return $definition;
+    }
+
+    private static function polishLocalizedValue(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (array_key_exists('ar', $value) || array_key_exists('en', $value)) {
+            if (isset($value['ar']) && is_string($value['ar'])) {
+                $value['ar'] = self::polishString($value['ar'], true);
+            }
+
+            if (isset($value['en']) && is_string($value['en'])) {
+                $value['en'] = self::polishString($value['en'], false);
+            }
+
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = self::polishLocalizedValue($item);
+        }
+
+        return $value;
+    }
+
+    private static function polishString(string $value, bool $arabic): string
+    {
+        $value = preg_replace('/\bTSK-\d+\b\s*·?\s*/iu', $arabic ? 'هذا النطاق التشغيلي ' : 'this operational scope ', $value) ?? $value;
+
+        $replacements = $arabic
+            ? [
+                'Local/Dev' => 'البيئة المحلية',
+                'local online' => 'عبر الإنترنت في البيئة المحلية',
+                'online' => 'عبر الإنترنت',
+                'checkout cash sale' => 'إتمام البيع النقدي',
+                'checkout' => 'إتمام البيع',
+                'gateway' => 'بوابة الدفع',
+                'PENDING/TBD' => 'قيد المراجعة ولم يُحسم بعد',
+                'PENDING' => 'قيد المراجعة',
+                'Production-ready' => 'جاهز للإنتاج',
+                'Production' => 'الإنتاج',
+                'append-only' => 'غير قابل للتعديل بعد الترحيل',
+                'mutation' => 'تغيير تشغيلي',
+                'readiness' => 'التهيئة',
+                'Readiness' => 'التهيئة',
+                'version' => 'إصدار',
+                'audit' => 'تدقيق',
+                'customer' => 'العميل',
+                'Product Wallet' => 'محفظة المنتجات',
+                'Party Wallet' => 'محفظة الأطراف',
+                'expected' => 'المتوقع',
+                'actual' => 'الفعلي',
+                'Print baseline' => 'نسخة الطباعة المرجعية',
+                'Print' => 'الطباعة',
+                'TBD' => 'لم يُحسم بعد',
+            ]
+            : [
+                'Local/Dev' => 'local preview',
+                'PENDING/TBD' => 'pending review / not yet defined',
+                'PENDING' => 'pending review',
+                'readiness' => 'enablement review',
+                'Readiness' => 'Enablement review',
+                'mutation' => 'operational change',
+                'TSK-' => '',
+            ];
+
+        return strtr($value, $replacements);
     }
 
     /** @return array<string, mixed> */
@@ -175,6 +288,39 @@ final class RetailTutorialFactory
             'next_step' => ['ar' => 'راجع القيم المعلقة من Settings ثم عد إلى هذه الشاشة.', 'en' => 'Review pending values in Settings, then return to this screen.'],
             'faq' => ['ar' => 'هل توجد حركة تحويل بين Product وParty Wallet؟ لا.', 'en' => 'Is there a transfer between Product and Party Wallet? No.'],
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function customerMaster(): array
+    {
+        return self::definition(
+            ['customers.index'],
+            ['ar' => 'سجل العملاء', 'en' => 'Customer Master'],
+            ['ar' => 'ينظم هذا الدليل إنشاء ملفات العملاء والبحث فيها ضمن نطاق الفرع والمتجر المصرح به.', 'en' => 'This guide covers creating and searching customer profiles within the authorized branch and store scope.'],
+            ['ar' => 'استخدمه لمراجعة الهاتف والاسم والموافقة قبل ربط العميل ببيع POS.', 'en' => 'Use it to review phone, name, and consent before linking a customer to a POS sale.'],
+            ['customers.view'],
+            self::actions([
+                ['customer.search', ['ar' => 'البحث في العملاء', 'en' => 'Search customers'], 'customers.view'],
+                ['customer.create', ['ar' => 'إنشاء ملف عميل', 'en' => 'Create a customer profile'], 'customers.create'],
+            ]),
+            ['TSK-027'], ['FLW-CUS-01', 'FLW-CUS-02'], ['AC-MD-06', 'AC-CUS-01', 'AC-CUS-03'],
+            [
+                self::step('header', 'customer-list-header', ['ar' => 'نطاق سجل العملاء', 'en' => 'Customer master scope'], ['ar' => 'تظهر هنا الملفات التي يسمح بها نطاق المستخدم فقط؛ إخفاء الزر لا يغني عن فحص الخادم.', 'en' => 'Only profiles in the user scope appear; server authorization remains authoritative.']),
+                self::step('search', 'customer-search', ['ar' => 'ابحث بالاسم أو الهاتف', 'en' => 'Search by name or phone'], ['ar' => 'يدعم البحث الاسم العربي والإنجليزي والهاتف المطبّع.', 'en' => 'Search supports Arabic/English names and the normalized phone number.']),
+                self::step('profiles', 'customer-table', ['ar' => 'راجع الملفات', 'en' => 'Review profiles'], ['ar' => 'الهاتف فريد، وحالات الموافقة والبيانات الحساسة تخضع للصلاحية.', 'en' => 'Phone numbers are unique, and consent/sensitive data remains permission-controlled.']),
+                self::step('create', 'customer-create-action', ['ar' => 'أنشئ ملفًا بموافقة', 'en' => 'Create with consent'], ['ar' => 'يتطلب إنشاء العميل اسمًا ثنائي اللغة وسجل موافقة ومفتاح منع التكرار.', 'en' => 'Creation requires bilingual names, a consent record, and an idempotency key.']),
+                self::step('export', 'customer-export-action', ['ar' => 'صدّر ضمن النطاق', 'en' => 'Export within scope'], ['ar' => 'التصدير محدود ومراجع ومتاح للصلاحية الحساسة فقط؛ لا يضم بيانات الأطفال.', 'en' => 'Export is bounded, audited, and sensitive-permission controlled; child data is excluded.']),
+            ],
+            [
+                self::field('phone', ['ar' => 'الهاتف', 'en' => 'Phone'], ['ar' => 'يُطبّع الخادم الرقم قبل فحص التفرد.', 'en' => 'The server normalizes the phone before enforcing uniqueness.']),
+                self::field('consent', ['ar' => 'الموافقة', 'en' => 'Consent'], ['ar' => 'تُحفظ نسخة من الغرض والصياغة والإصدار والاحتفاظ.', 'en' => 'Purpose, wording, version, and retention are snapshotted.']),
+            ],
+            ['ar' => 'لا تستخدم هذا الدليل لتجاوز النطاق أو دمج ملفين دون سبب ومراجعة.', 'en' => 'Do not use this guide to bypass scope or merge profiles without a reason and review.'],
+            ['ar' => 'القيم القانونية ومعدلات الولاء النهائية إعدادات مالك وليست قيمًا افتراضية.', 'en' => 'Legal wording and final loyalty rates are owner configuration, not invented defaults.'],
+            ['ar' => 'إذا لم يظهر الملف، راجع الصلاحية والنطاق بدل استخدام رابط مباشر غير مصرح.', 'en' => 'If a profile is missing, review permission and scope instead of bypassing a direct route.'],
+            ['ar' => 'افتح الملف لمراجعة التاريخ والولاء أو انتقل إلى POS لربط بيع معتمد.', 'en' => 'Open the profile for history and loyalty, or return to POS to link an approved sale.'],
+            ['ar' => 'هل يمكن حذف سجل العميل؟ لا، تُحفظ المراجع التاريخية وتستخدم إجراءات تصحيح مسماة.', 'en' => 'Can a customer history row be deleted? No; history is preserved through named correction actions.'],
+        );
     }
 
     /** @return array<string, mixed> */

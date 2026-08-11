@@ -14,8 +14,8 @@ final class DemoProductSeeder extends Seeder
         $category = Category::query()->updateOrCreate(
             ['code' => 'DEMO-CAT-TOYS'],
             [
-                'name_ar' => 'ألعاب تجريبية',
-                'name_en' => 'Demo Toys',
+                'name_ar' => 'ألعاب',
+                'name_en' => 'Toys',
                 'status' => 'active',
                 'sort_order' => 1,
             ],
@@ -24,8 +24,8 @@ final class DemoProductSeeder extends Seeder
         $brand = Brand::query()->updateOrCreate(
             ['code' => 'DEMO-BRAND-01'],
             [
-                'name_ar' => 'علامة تجريبية',
-                'name_en' => 'Demo Brand',
+                'name_ar' => 'علامة الألعاب',
+                'name_en' => 'Toy brand',
                 'status' => 'active',
             ],
         );
@@ -33,10 +33,10 @@ final class DemoProductSeeder extends Seeder
         foreach ([
             [
                 'item_code' => 'DEMO-PROD-001',
-                'name_ar' => 'سيارة سباق تجريبية',
-                'name_en' => 'Demo Racing Car',
-                'description_ar' => 'منتج تجريبي للتحقق المحلي من دورة الشراء.',
-                'description_en' => 'Demo product for local purchase-cycle verification.',
+                'name_ar' => 'سيارة سباق',
+                'name_en' => 'Racing car',
+                'description_ar' => 'سيارة سباق للأطفال.',
+                'description_en' => 'A racing car for children.',
                 'product_type' => 'standard',
                 'unit_of_measure' => 'unit',
                 'status' => 'active',
@@ -44,10 +44,10 @@ final class DemoProductSeeder extends Seeder
             ],
             [
                 'item_code' => 'DEMO-PROD-002',
-                'name_ar' => 'مجموعة بناء تجريبية',
-                'name_en' => 'Demo Building Set',
-                'description_ar' => 'منتج تجريبي ثانٍ للتحقق من سطور أمر الشراء.',
-                'description_en' => 'Second demo product for purchase-order line verification.',
+                'name_ar' => 'مجموعة بناء',
+                'name_en' => 'Building set',
+                'description_ar' => 'مجموعة بناء للأطفال.',
+                'description_en' => 'A building set for children.',
                 'product_type' => 'standard',
                 'unit_of_measure' => 'unit',
                 'status' => 'active',

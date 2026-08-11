@@ -5,10 +5,10 @@ namespace Tests\Feature\Platform;
 use App\Modules\Platform\Actions\SaveCashDrawerAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Retail\Models\PosShift;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Livewire\Livewire;
 use Tests\Support\PlatformFixtures;
@@ -238,23 +238,86 @@ class CashDrawerMasterTest extends TestCase
         $this->assertSame(2, CashDrawer::query()->count());
     }
 
-    public function test_no_shift_dependency_guard_exists_yet(): void
+    public function test_an_active_shift_blocks_drawer_retirement_and_reassignment(): void
     {
-        // Recorded coverage fact for TSK-007: the shift module is not
-        // implemented, so the "no retire/reassign with an active shift" rule
-        // cannot be exercised. The action currently deactivates unconditionally.
-        $this->assertFalse(Schema::hasTable('shifts'));
-
         $this->actingAs($this->administrator('tsk007-shift'));
         $branch = $this->branch('SHF-BR');
+        $store = $this->store($branch, 'SHF-SELL');
+        $destinationBranch = $this->branch('SHF-DST');
+        $destinationStore = $this->store($destinationBranch, 'SHF-DST-SELL');
         $drawer = app(SaveCashDrawerAction::class)->execute([
+            'store_id' => $store->id,
             'branch_id' => $branch->id, 'code' => 'SHF-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
         ]);
+        $cashier = $this->userWith('tsk007-active-shift-cashier', ['cashier'], false, [$branch->id], [$store->id]);
+        PosShift::query()->create([
+            'branch_id' => $branch->id,
+            'store_id' => $store->id,
+            'cash_drawer_id' => $drawer->id,
+            'cashier_id' => $cashier->id,
+            'status' => 'open',
+            'opening_cash' => '0.00',
+            'opened_at' => now(),
+        ]);
+        $auditBefore = AuditLog::query()->count();
 
-        app(SaveCashDrawerAction::class)->toggleStatus($drawer->id, 'inactive');
+        $retirementBlocked = false;
+        try {
+            app(SaveCashDrawerAction::class)->toggleStatus($drawer->id, 'inactive');
+        } catch (InvalidArgumentException) {
+            $retirementBlocked = true;
+        }
 
-        $event = AuditLog::query()->where('event', 'toggle_cash_drawer_status')->sole();
-        $this->assertStringContainsString('Active shift validation non-active', $event->metadata['dependency_guard']);
+        $reassignmentBlocked = false;
+        try {
+            app(SaveCashDrawerAction::class)->execute([
+                'branch_id' => $destinationBranch->id,
+                'store_id' => $destinationStore->id,
+                'code' => 'SHF-1',
+                'name_ar' => 'Ø¯Ø±Ø¬',
+                'name_en' => 'Drawer',
+            ], $drawer->id);
+        } catch (InvalidArgumentException) {
+            $reassignmentBlocked = true;
+        }
+
+        $editDeactivationBlocked = false;
+        try {
+            app(SaveCashDrawerAction::class)->execute([
+                'branch_id' => $branch->id,
+                'store_id' => $store->id,
+                'code' => 'SHF-1',
+                'name_ar' => 'درج',
+                'name_en' => 'Drawer',
+                'status' => 'inactive',
+            ], $drawer->id);
+        } catch (InvalidArgumentException) {
+            $editDeactivationBlocked = true;
+        }
+
+        $this->assertTrue($retirementBlocked, 'An active drawer was deactivated while its POS shift was active.');
+        $this->assertTrue($reassignmentBlocked, 'An active drawer was reassigned while its POS shift was active.');
+        $this->assertTrue($editDeactivationBlocked, 'The drawer edit form deactivated a drawer with an active POS shift.');
+        $this->assertSame('active', $drawer->fresh()->status);
+        $this->assertSame($branch->id, $drawer->fresh()->branch_id);
+        $this->assertSame($store->id, $drawer->fresh()->store_id);
+
+        $blockedEvents = AuditLog::query()
+            ->where('event', 'cash_drawer_mutation_blocked')
+            ->where('source_id', (string) $drawer->id)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(3, $blockedEvents);
+        $this->assertSame($auditBefore + 3, AuditLog::query()->count());
+        $this->assertSame('active_shift', $blockedEvents[0]->reason_code);
+        $this->assertSame('deactivate', $blockedEvents[0]->metadata['operation']);
+        $this->assertSame('reassign', $blockedEvents[1]->metadata['operation']);
+        $this->assertSame('deactivate', $blockedEvents[2]->metadata['operation']);
+        $this->assertSame($branch->id, $blockedEvents[0]->branch_id);
+        $this->assertSame($store->id, $blockedEvents[0]->store_id);
+        $this->assertSame('active', $blockedEvents[0]->before_values['status']);
+        $this->assertSame('active', $blockedEvents[0]->after_values['status']);
     }
 
     public function test_a_drawer_delete_removes_the_record_and_records_the_prior_state(): void

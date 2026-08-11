@@ -141,17 +141,24 @@ class RequestApproval
 
     private function authorizeScope(User $requester, ApprovalRequestData $data): void
     {
-        if ($data->branchId === null && $data->storeId === null && ! $requester->is_super_admin) {
+        if ($data->branchId === null && $data->storeId === null && ! $requester->is_super_admin && ! $requester->hasPermission($data->approvalPermission())) {
             throw ValidationException::withMessages(['scope' => __('A branch or store scope is required for non-global approval requests.')]);
         }
 
-        if ($data->branchId !== null && ! $requester->canAccessBranch($data->branchId)) {
+        $store = $data->storeId !== null
+            ? Store::query()->findOrFail($data->storeId)
+            : null;
+
+        // A store-scoped operator is allowed to request a decision for the
+        // branch that owns their assigned store. The branch is still recorded
+        // and must match the store, but a separate branch scope is not needed.
+        if ($data->branchId !== null
+            && ! $requester->canAccessBranch($data->branchId)
+            && ($store === null || ! $requester->canAccessStore($store->id))) {
             abort(403);
         }
 
-        if ($data->storeId !== null) {
-            $store = Store::query()->findOrFail($data->storeId);
-
+        if ($store !== null) {
             if (! $requester->canAccessStore($store->id)
                 || ($data->branchId !== null && $store->branch_id !== $data->branchId)) {
                 abort(403);

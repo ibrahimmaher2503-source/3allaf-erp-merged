@@ -266,7 +266,7 @@ new #[Title('Purchase Invoices')] class extends Component
 >
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="purchase-invoices-filters">
-        <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="shield-check">{{ __('Readiness') }}</flux:button>
+        <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="shield-check">{{ __('Invoice availability') }}</flux:button>
         @can('purchase_invoices_supplier_returns.create')
             <flux:button href="{{ route('purchasing.invoices.import') }}" variant="subtle" icon="arrow-up-tray">{{ __('Import') }}</flux:button>
         @endcan

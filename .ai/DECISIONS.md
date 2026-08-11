@@ -210,3 +210,42 @@ Missing tools, unavailable environments, unimplemented business behavior, physic
 **Status:** Active owner directive for this repository's local/development/test operations.
 
 The owner directed that the project use only the XAMPP MySQL/MariaDB server through phpMyAdmin. SQLite files, SQLite runtime configuration, SQLite migrations/seeders/tests, and SQLite backup fixtures are prohibited. The active local schema is `toyjoy_local`; disposable workflows must use separately named MySQL/MariaDB schemas. Historical `.ai/` evidence may retain factual references to the former SQLite baseline and is not an active configuration source.
+
+## DEC-069 — Store location type UI terminology
+
+**Date:** 2026-08-09
+**Status:** Approved for the Local/Dev UI; internal type codes, data behavior, and production policy remain unchanged.
+
+The Stores screen uses `Location Type` / `نوع الموقع` as the field and filter label. The five existing type codes remain `selling`, `warehouse`, `party`, `damaged`, and `transit`, with these user-facing names: Point of Sale (POS) / نقطة بيع, Main Warehouse / مستودع رئيسي, Service Center / مركز خدمات, Damaged & Defective Stock / مخزون تالف ومعيب, and Stock in Transit / مخزون قيد النقل. This is a terminology clarification only and does not resolve the separate production Store/Warehouse ownership and policy decision in DEC-021.
+
+## DEC-070 — Named TSK-027 cross-engine verification override
+
+**Date:** 2026-08-09
+**Status:** Approved only for the owner-requested TSK-027 closure run; the repository's normal Local/Dev database direction remains DEC-068.
+
+For TSK-027 only, the owner explicitly required both a disposable SQLite run and the XAMPP MariaDB run, plus real MariaDB concurrency workers. This named verification requirement supersedes DEC-068 only for the test execution evidence in this task. The application/local default remains MySQL/MariaDB, no SQLite file or SQLite fixture is retained, and the disposable MariaDB schemas are named and isolated. No Production database or Production data was used.
+## DEC-071 - Agent D rental, quotation, and reporting Local/Dev boundary
+
+Date: 2026-08-10. Status: implemented for the owner-requested Local/Dev slice; policy and release gates remain unapproved.
+
+US-028 through US-031 use existing approval, audit, scope, numbering, print, and export infrastructure. Depreciation remains operational history only until owner method/valuation/accounting inputs exist. Quotations remain non-posting with no Phase 1 conversion. Reporting uses stable bounded source read models; the implemented artifact is permission-aware XLSX, while PDF and additional report definitions remain pending where the approved boundary is incomplete. No Production grant, UAT acceptance, physical printer delivery, or Phase Gate approval is inferred.
+
+## DEC-072 - Owner-directed parallel Party slice boundary
+
+Date: 2026-08-10. Status: active for this local/dev implementation session; no Phase Gate or Production readiness is inferred.
+
+The owner explicitly authorized parallel implementation of US-025 through US-027 while the repository marker still points at another active task. This override applies only to the requested Party slice and does not authorize edits to unrelated stories. US-025 booking/working-invoice and US-026 Party payment/final-close slices are implemented for local/dev. US-027 operating-order, Party-store consumable issue/return, source-linked stock movement, and completion are implemented; rental-asset reservation remains dependent on the separate asset contract and is not claimed as complete here.
+
+## DEC-073 - Owner-directed local/dev Gift Receipt, Returns, and Gift Card slice
+
+Date: 2026-08-10. Status: implemented for the requested local/dev vertical slice; Production/UAT and unresolved owner policy values remain open.
+
+US-019 through US-021 use the existing sale, inventory movement, scope, audit, numbering, and permission infrastructure. Gift Receipt output is intentionally price-free and a reprint records an immutable print event against the same source identity. Returns require an approved source-linked document and explicit inspection/stock disposition; original sales are never rewritten. Return settlement records support the documented cash/original-tender reference, Gift Card, and exchange-difference boundaries without inventing an accounting ledger. Gift Card balances are derived from an append-only ledger, with issue/redeem/void/expiry state effects and MariaDB locking/idempotency.
+
+The following remain owner/external gates: numeric return windows and cash/SoD limits, exact original-tender accounting posting, Gift Card expiry duration/validity policy, physical printer delivery, Production authorization grants/configuration, UAT, backup/restore, and release acceptance. No Production policy or Phase Gate approval is inferred from the local evidence.
+
+## DEC-074 - US-031 Local/Dev PDF renderer selection
+
+Date: 2026-08-10. Status: adopted for Local/Dev implementation; Production font/UAT verification remains open.
+
+US-031 requires a protected PDF artifact, while the repository had no PDF renderer dependency. Add the direct `dompdf/dompdf` package at the current `^3.1` compatibility line and render a dedicated report template with local-only resources. Keep PDF generation inside the existing queued export job, reuse the report snapshot filters/hash, and preserve the existing private storage, expiry, audit, and authorization boundaries. Do not load remote resources. Arabic font/shaping and physical output remain a required manual/UAT verification; this decision does not approve Production deployment or printer behavior.

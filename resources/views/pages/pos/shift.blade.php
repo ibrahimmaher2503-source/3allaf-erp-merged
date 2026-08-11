@@ -36,16 +36,52 @@
                     </form>
                 @endif
             </div>
+
+            @if ($closedShifts->isNotEmpty())
+                <section class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="closed-shifts-heading">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <flux:heading id="closed-shifts-heading" size="lg">{{ __('Closed shifts') }}</flux:heading>
+                            <flux:text class="mt-1">{{ __('Print a historical close without changing its immutable record.') }}</flux:text>
+                        </div>
+                        <flux:badge color="zinc">{{ $closedShifts->count() }}</flux:badge>
+                    </div>
+                    <div class="mt-4 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                        <table class="data-table w-full min-w-[36rem] text-sm">
+                            <thead><tr><th class="text-start">{{ __('Document') }}</th><th class="text-start">{{ __('Drawer') }}</th><th class="text-start">{{ __('Closed at') }}</th><th class="text-end">{{ __('Outputs') }}</th></tr></thead>
+                            <tbody>
+                                @foreach ($closedShifts as $closedShift)
+                                    <tr>
+                                        <td class="font-mono font-semibold">{{ $closedShift->closing_document_number }}</td>
+                                        <td>{{ $closedShift->cashDrawer?->code ?: $closedShift->cash_drawer_code_snapshot }}</td>
+                                        <td>{{ $closedShift->closed_at?->toDayDateTimeString() }}</td>
+                                        <td class="text-end">
+                                            @can('shifts_cash_movements.print')
+                                                <div class="flex flex-wrap justify-end gap-2">
+                                                    <a class="text-sm font-medium text-zinc-700 underline hover:text-zinc-950" href="{{ route('pos.shift.print.thermal', $closedShift) }}" target="_blank" rel="noopener">{{ __('Thermal') }}</a>
+                                                    <a class="text-sm font-medium text-zinc-700 underline hover:text-zinc-950" href="{{ route('pos.shift.print.a4', $closedShift) }}" target="_blank" rel="noopener">{{ __('Print A4') }}</a>
+                                                </div>
+                                            @else
+                                                <span class="text-zinc-500">{{ __('Not permitted') }}</span>
+                                            @endcan
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            @endif
         @else
             <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <flux:heading size="lg">{{ __('Active shift') }}</flux:heading>
-                    <flux:badge>{{ __($shift->status->value) }}</flux:badge>
+                    <x-status.badge :status="$shift->status->value" />
                 </div>
                 <dl class="mt-4 grid gap-2 text-sm">
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="font-semibold">{{ $shift->cashDrawer?->code }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->toDayDateTimeString() }}</dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd>{{ number_format((float) $shift->opening_cash, 2) }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>
                     @if ($shift->recount_count > 0)
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Recounts requested') }}</dt><dd>{{ $shift->recount_count }}</dd></div>
                     @endif
@@ -71,20 +107,20 @@
                     </form>
 
                     @if ($shift->cashMovements->isNotEmpty())
-                        <div class="mt-5 overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead><tr class="text-start text-zinc-500"><th class="py-2 text-start">{{ __('Type') }}</th><th class="py-2 text-start">{{ __('Reason') }}</th><th class="py-2 text-end">{{ __('Amount') }}</th></tr></thead>
+                        <x-tables.table-shell :label="__('Cash movement')" class="mt-5">
+                            <table class="data-table w-full text-sm">
+                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
                                 <tbody>
                                     @foreach ($shift->cashMovements as $movement)
-                                        <tr class="border-t border-zinc-100 dark:border-zinc-800">
-                                            <td class="py-2">{{ __(ucwords(str_replace('_', ' ', $movement->movement_type))) }}</td>
-                                            <td class="py-2">{{ $movement->reason }}</td>
-                                            <td class="py-2 text-end font-semibold">{{ number_format((float) $movement->amount, 2) }}</td>
+                                        <tr>
+                                            <td>{{ __(ucwords(str_replace('_', ' ', $movement->movement_type))) }}</td>
+                                            <td>{{ $movement->reason }}</td>
+                                            <td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
-                        </div>
+                        </x-tables.table-shell>
                     @endif
                 </div>
 

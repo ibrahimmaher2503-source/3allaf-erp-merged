@@ -14,10 +14,10 @@ use InvalidArgumentException;
 
 final class PostInventoryMovement
 {
-    public function execute(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType = null, ?int $sourceId = null, ?int $sourceLineId = null, bool $allowNegative = false): StockMovement
+    public function execute(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType = null, ?int $sourceId = null, ?int $sourceLineId = null, bool $allowNegative = false, ?int $reversalOfId = null): StockMovement
     {
         try {
-            return $this->attempt($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative);
+            return $this->attempt($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId);
         } catch (UniqueConstraintViolationException $e) {
             if (! str_contains($e->getMessage(), 'idempotency_key')) {
                 throw $e;
@@ -28,18 +28,18 @@ final class PostInventoryMovement
             // lockable). The unique index is the real guard against a
             // duplicate row; this recovers the loser's request as a normal
             // idempotent replay instead of surfacing a raw DB error.
-            return $this->replayExisting($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId);
+            return $this->replayExisting($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $reversalOfId);
         }
     }
 
-    private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative): StockMovement
+    private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative, ?int $reversalOfId): StockMovement
     {
-        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative): StockMovement {
+        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId): StockMovement {
             $quantity = $this->decimal($quantity);
 
             $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                return $this->assertReplaySafe($existing, $productId, $storeId, $quantity, $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId);
+                return $this->assertReplaySafe($existing, $productId, $storeId, $quantity, $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId, $reversalOfId);
             }
 
             if (bccomp($quantity, '0', 6) === 0) {
@@ -89,6 +89,7 @@ final class PostInventoryMovement
                 'source_line_id' => $sourceLineId,
                 'idempotency_key' => $idempotencyKey,
                 'posted_at' => now(),
+                'reversal_of_id' => $reversalOfId,
                 'created_by' => Auth::id(),
             ]);
 
@@ -98,7 +99,7 @@ final class PostInventoryMovement
         });
     }
 
-    private function assertReplaySafe(StockMovement $existing, int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, ?string $sourceType, ?int $sourceId, ?int $sourceLineId): StockMovement
+    private function assertReplaySafe(StockMovement $existing, int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, ?int $reversalOfId): StockMovement
     {
         $normalizedCost = $unitCost !== null ? $this->decimal($unitCost) : null;
         $replaySafe = $existing->product_id === $productId
@@ -108,7 +109,8 @@ final class PostInventoryMovement
             && ($normalizedCost === null || bccomp((string) $existing->unit_cost, $normalizedCost, 4) === 0)
             && $existing->source_type === $sourceType
             && $existing->source_id === $sourceId
-            && $existing->source_line_id === $sourceLineId;
+            && $existing->source_line_id === $sourceLineId
+            && ($existing->reversal_of_id === null ? null : (int) $existing->reversal_of_id) === $reversalOfId;
 
         if (! $replaySafe) {
             throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
@@ -117,7 +119,7 @@ final class PostInventoryMovement
         return $existing;
     }
 
-    private function replayExisting(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId): StockMovement
+    private function replayExisting(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, ?int $reversalOfId): StockMovement
     {
         $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
         if ($existing === null) {
@@ -127,7 +129,7 @@ final class PostInventoryMovement
             throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
         }
 
-        return $this->assertReplaySafe($existing, $productId, $storeId, $this->decimal($quantity), $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId);
+        return $this->assertReplaySafe($existing, $productId, $storeId, $this->decimal($quantity), $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId, $reversalOfId);
     }
 
     public function adjustInTransit(int $productId, int $storeId, string $quantity): void

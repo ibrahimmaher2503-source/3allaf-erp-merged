@@ -14,7 +14,7 @@
             <p class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{{ __('Session expired') }} (419)</p>
         </div>
         <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{{ app()->getLocale() === 'ar' ? 'انتهت صلاحية الصفحة لأسباب أمنية. أعد تحميلها ثم حاول مرة أخرى.' : 'This page expired for your security. Refresh it and try again.' }}</p>
-        <p class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ __('Reference') }}: {{ \Illuminate\Support\Facades\Context::get('request_id') ?? request()->header('X-Request-ID') ?? 'REQ-LOCAL' }}</p>
+        <p class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ __('Reference') }}: {{ \Illuminate\Support\Facades\Context::get('request_id') ?? request()->header('X-Request-ID') ?? 'REQ-UNAVAILABLE' }}</p>
         <a href="{{ request()->fullUrl() }}" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">{{ app()->getLocale() === 'ar' ? 'إعادة تحميل الصفحة' : 'Refresh page' }}</a>
     </main>
 </body>

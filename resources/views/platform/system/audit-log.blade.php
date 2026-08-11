@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,11 +23,14 @@ new #[Title('Audit Logs')] class extends Component {
     public string $storeId = '';
     public string $dateFrom = '';
     public string $dateTo = '';
+    #[Url]
+    public string $mode = 'all';
     public ?int $selectedAuditId = null;
 
     public function mount(): void
     {
         Gate::authorize('audit_logs.view');
+        abort_unless(in_array($this->mode, ['all', 'override', 'print'], true), 404);
     }
 
     public function updatedSearch(): void
@@ -120,6 +124,7 @@ new #[Title('Audit Logs')] class extends Component {
             'canExport' => Gate::allows('export', AuditLog::class),
             'exportConfigured' => filter_var(config('audit.export_max_rows'), FILTER_VALIDATE_INT) !== false && (int) config('audit.export_max_rows') > 0,
             'exportUrl' => route('admin.audit.export', array_filter([
+                'mode' => $this->mode === 'all' ? null : $this->mode,
                 'search' => $this->search,
                 'category' => $this->category,
                 'event' => $this->event,
@@ -135,6 +140,10 @@ new #[Title('Audit Logs')] class extends Component {
     private function applyFilters(Builder $query): Builder
     {
         return $query
+            ->when($this->mode === 'print', fn (Builder $query) => $query->where('event', 'like', '%print%'))
+            ->when($this->mode === 'override', fn (Builder $query) => $query->where(function (Builder $mode): void {
+                $mode->where('event', 'like', '%override%')->orWhereJsonContains('metadata->override', true);
+            }))
             ->when($this->search !== '', function (Builder $query): void {
                 $search = '%'.trim($this->search).'%';
                 $query->where(function (Builder $searchQuery) use ($search): void {
@@ -156,7 +165,7 @@ new #[Title('Audit Logs')] class extends Component {
 }; ?>
 
 <x-app.page
-    :title="__('Audit logs')"
+    :title="$mode === 'override' ? __('Override log') : ($mode === 'print' ? __('Print log') : __('Audit logs'))"
     :description="__('Append-only, permission-scoped operational history with protected before and after values.')"
     max-width="7xl"
     class="space-y-5"

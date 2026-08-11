@@ -1,11 +1,15 @@
 <?php
 
 use App\Concerns\ProfileValidationRules;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -15,6 +19,12 @@ new #[Title('Profile settings')] class extends Component {
     public string $name = '';
     public string $email = '';
 
+    #[Locked]
+    public string $originalName = '';
+
+    #[Locked]
+    public string $originalEmail = '';
+
     /**
      * Mount the component.
      */
@@ -22,24 +32,54 @@ new #[Title('Profile settings')] class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->originalName = $this->name;
+        $this->originalEmail = $this->email;
     }
 
     /**
      * Update the profile information for the currently authenticated user.
      */
-    public function updateProfileInformation(): void
+    public function updateProfileInformation(RecordAuditEvent $audit): void
     {
-        $user = Auth::user();
+        $actorId = Auth::id();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate($this->profileRules($actorId));
 
-        $user->fill($validated);
+        $user = DB::transaction(function () use ($actorId, $validated, $audit) {
+            $user = \App\Models\User::query()->lockForUpdate()->findOrFail($actorId);
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
+            if ($user->name !== $this->originalName || $user->email !== $this->originalEmail) {
+                throw ValidationException::withMessages([
+                    'name' => __('Your profile was updated in another session. Reload the page and try again.'),
+                ]);
+            }
 
-        $user->save();
+            $before = $user->only(['name', 'email']);
+            $user->fill($validated);
+
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
+
+            if ($user->isDirty()) {
+                $user->save();
+
+                $audit->execute(
+                    category: 'authentication',
+                    event: 'profile_updated',
+                    source: $user,
+                    before: $before,
+                    after: $user->only(['name', 'email']),
+                );
+            }
+
+            return $user;
+        });
+
+        $this->name = $user->name;
+        $this->email = $user->email;
+        $this->originalName = $user->name;
+        $this->originalEmail = $user->email;
 
         Flux::toast(variant: 'success', text: __('Profile updated.'));
     }

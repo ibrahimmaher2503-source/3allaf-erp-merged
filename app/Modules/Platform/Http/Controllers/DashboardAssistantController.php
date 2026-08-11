@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Platform\Http\Controllers;
 
 use App\Modules\Platform\Actions\SaveUiPreferences;
+use App\Modules\Platform\Actions\SaveTutorialProgress;
 use App\Modules\Platform\Data\PageGuideContext;
+use App\Modules\Platform\Support\TutorialModuleRegistry;
 use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
 use Illuminate\Http\JsonResponse;
@@ -41,7 +43,7 @@ final class DashboardAssistantController
             $guide['approved_actions'],
             fn (array $action): bool => Gate::allows($action['required_permission']),
         ));
-        $context = new PageGuideContext($screenId, $guide['route_names'][0], (string) app()->getLocale(), $guide, $allowedActions, 'full-guide');
+        $context = new PageGuideContext($screenId, $guide['route_names'][0], (string) app()->getLocale(), $guide, $allowedActions, 'full-guide', TutorialModuleRegistry::forRoute($guide['route_names'][0]));
         $payload = $context->toArray();
         $payload['related_flows'] = array_values(array_filter(array_map(
             function (string $flowId): ?array {
@@ -64,6 +66,20 @@ final class DashboardAssistantController
             ->view('platform.help.screen', ['context' => $payload])
             ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache');
+    }
+
+    public function tutorialProgress(Request $request, SaveTutorialProgress $action): JsonResponse
+    {
+        $data = $request->validate([
+            'screen_id' => ['required', 'string', 'max:80'],
+            'status' => ['required', 'string', 'in:'.implode(',', SaveTutorialProgress::STATUSES)],
+        ]);
+
+        abort_unless(TutorialRegistry::find($data['screen_id']), 404);
+
+        $preference = $action->execute($request->user(), $data['screen_id'], $data['status']);
+
+        return response()->json(['tutorial_progress' => $preference->tutorial_progress ?? []]);
     }
 
     public function flow(Request $request, string $flowId): Response

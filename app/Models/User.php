@@ -29,6 +29,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string $name
  * @property string|null $username
  * @property string $email
+ * @property string $status
  * @property bool $is_super_admin
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -39,7 +40,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'username', 'email', 'password'])]
+#[Fillable(['name', 'username', 'email', 'password', 'status'])]
 #[Hidden(['password', 'is_super_admin', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -56,6 +57,7 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'is_super_admin' => 'boolean',
+            'status' => 'string',
             'password' => 'hashed',
         ];
     }
@@ -84,6 +86,10 @@ class User extends Authenticatable implements PasskeyUser
 
     public function hasPermission(string $code): bool
     {
+        if ($this->status === 'inactive') {
+            return false;
+        }
+
         return $this->roles()
             ->where('status', 'active')
             ->whereHas('permissions', fn ($query) => $query->where('code', $code)->where('status', 'active'))
@@ -92,6 +98,10 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canAccessBranch(int $branchId): bool
     {
+        if ($this->status === 'inactive') {
+            return false;
+        }
+
         if ($this->is_super_admin) {
             return true;
         }
@@ -104,6 +114,10 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canAccessStore(int $storeId): bool
     {
+        if ($this->status === 'inactive') {
+            return false;
+        }
+
         if ($this->is_super_admin) {
             return true;
         }

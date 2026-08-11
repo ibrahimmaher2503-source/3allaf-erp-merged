@@ -2,15 +2,16 @@
     'headers' => [],
     'rows' => [],
     'emptyMessage' => 'No records found.',
+    'ariaLabel' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'app-table-frame']) }}>
+<x-tables.table-shell :label="$ariaLabel" {{ $attributes }}>
     @if (count($rows) > 0)
-        <table class="min-w-full text-sm">
+        <table class="data-table min-w-full text-sm">
             <thead>
                 <tr>
                     @foreach ($headers as $key => $label)
-                        <th scope="col" class="whitespace-nowrap px-4 py-3">{{ $label }}</th>
+                        <th scope="col" class="whitespace-nowrap px-4 py-3 text-start">{{ $label }}</th>
                     @endforeach
                 </tr>
             </thead>
@@ -27,8 +28,6 @@
             </tbody>
         </table>
     @else
-        <div class="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400" role="status">
-            {{ $emptyMessage }}
-        </div>
+        <x-state.empty :description="$emptyMessage" />
     @endif
-</div>
+</x-tables.table-shell>

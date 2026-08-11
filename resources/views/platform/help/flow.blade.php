@@ -5,7 +5,7 @@
     <x-app.page
         :title="$text($flow['title'])"
         :description="$text($flow['actor'])"
-        :eyebrow="$flow['flow_id']"
+        :eyebrow="$locale === 'ar' ? 'مسار تشغيلي' : 'Operational workflow'"
         max-width="4xl"
     >
         <section class="rounded-xl border border-border bg-surface p-5 shadow-card">

@@ -447,12 +447,12 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 
 ### TSK-027 — Implement Customer Profiles and Shared Loyalty
 
-- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **PARTIAL_IMPLEMENTATION (settings only) — `customer_policy_setting_versions` + `CustomerPolicySettingRegistry` are real and append-only. There is no `customers` table, no consent capture, no duplicate/phone review, no child-profile handling, and no loyalty ledger. DEC-067 now permits ledgers to consume these settings (throwing when unset). The customer master needs no further owner decision and is the outstanding keystone blocking TSK-028, TSK-029, TSK-030, TSK-031–036, and TSK-037.** Status verified against production code on 2026-08-09; see `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
+- **Task ID / Phase / Milestone / Status:** TSK-027; Phase 4; DM 4.1; **ACTUALLY_IMPLEMENTED for the Local/Dev customer and retail-loyalty contract; production/UAT/release remain open.** Real customer, scope, consent, child, merge-history, sales-link, immutable loyalty ledger, earn/redeem/expiry, adjustment approval, audit, idempotency, concurrency, direct-route, and POS-selection paths now exist. Exact legal/production policy values and Party-side history remain owner/downstream boundaries. Status verified against production code and focused evidence on 2026-08-10; see `testing/results/TSK-027-48-TEST-MATRIX.md` and `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.
 - **Title / Purpose / Description:** Deliver unique-phone customer/consent/contact/children, authorized unified history and shared activity-rule loyalty earn/redeem/expiry.
 - **Traceability:** MD-06, CUS-01, CUS-03–CUS-04, NFR-01–NFR-03; US-003, US-023; FLW-CUS-01–03; UI UI-CUS-001–003; AC-MD-06, AC-CUS-01, AC-CUS-03–04; SEC-006, SEC-010–012, SEC-015–021, SEC-027.
 - **Dependencies / Required Inputs:** Phase 3 gate; BLK-014 mitigated by `docs/27-customer-loyalty-wallet-gift-policy.md`; final consent wording, legal retention, loyalty rates, rounding, expiry, and approval values remain configurable or pending.
 - **Database Entities:** `customers`, `customer_children`, `loyalty_ledger`, sales/party source links, rule/version structures, `audit_logs`.
-- **Backend / Livewire / Blade Deliverables:** Local/Dev append-only `customer_policy_setting_versions`, guarded customer-policy Settings screen, dynamic readiness values, and audit events are implemented; unique profile/duplicate review, purpose scopes, append-only locked loyalty actions, and customer list/profile/loyalty screens remain pending.
+- **Backend / Livewire / Blade Deliverables:** Append-only policy settings, unique customer master, bilingual contact data, purpose-scoped consent/children, controlled merge, unified retail history, immutable source-linked loyalty ledger, FIFO earn/redeem/expiry, canonical adjustment approval/rejection, scoped audit/idempotency, customer master/profile/loyalty screens, and POS customer selection/registration are implemented for Local/Dev. No TSK-028 wallet, TSK-029 gift-instrument, or TSK-030 return behavior is included.
 - **UI / Flux / Alpine / Vite:** Flux Search/Table/Filters/Pagination/Form/Tabs/Cards/Timeline/Badges/Dialog; Alpine none; common assets.
 - **Suggested Packages:** None for loyalty engine; explicit rules. Customer phone library only if mature/necessary after locale review.
 - **Permissions / Validation / Audit / States / Print:** Customer Sensitive/Merge/Export; Loyalty View/Earn/Redeem/Adjust/Approve; phone/consent/source/rule/balance/expiry/idempotency; all access/movements; profile/loyalty statement.
@@ -726,3 +726,19 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 - Fully accepted UAT/Production/Go-Live tasks: **0**.
 - No task exists for creating or running automated tests; automated tests remain `Not Created / Not Run` under the current owner directive.
 - Phase Gates, UAT acceptance, Production Readiness, and Go-Live remain open until the named owners provide the required approvals and evidence.
+
+## Parallel Party implementation update - 2026-08-10
+
+Owner-directed parallel-slice override for US-025 through US-027 only; historical task entries remain preserved.
+
+| Task | Latest local/dev status | Boundary |
+|---|---|---|
+| TSK-031 / US-025 | FULL | Party booking, Party-only editable working invoice, schedule conflict recheck, audit, and print. |
+| TSK-032 + TSK-036 / US-026 | FULL | Multiple Party payments, idempotent receipt, overpay guard, Party Wallet settlement, final close, audit, and print. |
+| TSK-033 / US-027 | FULL local/dev | Operating order, Party-store issue/return, source-linked stock movement, authoritative US-028 asset reservation/checkout/return/inspection, reconciliation, completion, audit, and immutability. |
+
+This local/dev status does not advance the Phase 1 gate or claim UAT, production configuration, physical printer delivery, backup/restore, or release approval.
+
+### US-027 integration closure addendum — 2026-08-10
+
+The remaining US-028 dependency is now implemented locally. **TSK-033 / US-027: FULL local/dev** for Party operating order, authoritative rental-asset reservation, scoped checkout/return/inspection, source-linked completion, audit, and immutability. The earlier row is retained as historical status; this addendum is the current owner-directed classification. US-028 remains the authoritative asset reservation domain; no second reservation system was added.

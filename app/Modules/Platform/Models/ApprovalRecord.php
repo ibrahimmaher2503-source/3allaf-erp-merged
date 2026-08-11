@@ -109,9 +109,15 @@ class ApprovalRecord extends Model
         return $query->where(function (Builder $scope) use ($user, $branchIds, $storeIds): void {
             $scope->where('requester_id', $user->id)
                 ->orWhere(function (Builder $scoped) use ($branchIds, $storeIds): void {
-                    $scoped->whereIn('branch_id', $branchIds)
+                $scoped->whereIn('branch_id', $branchIds)
                         ->orWhereIn('store_id', $storeIds);
                 });
+
+            if ($user->hasPermission('company_settings.approve')) {
+                $scope->orWhere(function (Builder $global): void {
+                    $global->whereNull('branch_id')->whereNull('store_id');
+                });
+            }
         });
     }
 

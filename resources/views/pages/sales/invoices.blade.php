@@ -10,12 +10,18 @@
             <flux:input name="date_from" type="date" value="{{ request('date_from') }}" :label="__('From')" />
             <div class="flex items-end gap-2"><flux:input name="date_to" type="date" value="{{ request('date_to') }}" :label="__('To')" /><flux:button type="submit">{{ __('Filter') }}</flux:button></div>
         </form>
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" tabindex="0" role="region" aria-label="{{ __('Sales Invoices') }}">
-            <table class="w-full min-w-[780px] text-sm"><thead class="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800"><tr><th class="p-4 text-start">{{ __('Invoice') }}</th><th class="p-4 text-start">{{ __('Store') }}</th><th class="p-4 text-start">{{ __('Cashier') }}</th><th class="p-4 text-start">{{ __('Approved') }}</th><th class="p-4 text-end">{{ __('Payments') }}</th><th class="p-4 text-end">{{ __('Final total') }}</th></tr></thead><tbody>
-                @forelse ($sales as $sale)<tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800"><td class="p-4"><a class="font-semibold text-blue-600 hover:underline" href="{{ route('sales.show', $sale) }}">{{ $sale->document_number }}</a></td><td class="p-4">{{ $sale->store->code }}</td><td class="p-4">{{ $sale->cashier->name }}</td><td class="p-4">{{ $sale->approved_at?->format('Y-m-d H:i') }}</td><td class="p-4 text-end">{{ $sale->payments_count }}</td><td class="p-4 text-end font-semibold">{{ $sale->total }} {{ $sale->currency_code }}</td></tr>
-                @empty<tr><td colspan="6" class="p-10 text-center text-zinc-500">{{ __('No approved invoices match the selected filters.') }}</td></tr>@endforelse
-            </tbody></table>
-        </div>
+        <x-tables.table-shell :label="__('Sales Invoices')">
+            <table class="data-table w-full min-w-[780px] text-sm">
+                <thead><tr><th>{{ __('Invoice') }}</th><th>{{ __('Store') }}</th><th>{{ __('Cashier') }}</th><th>{{ __('Approved') }}</th><th class="text-end">{{ __('Payments') }}</th><th class="text-end">{{ __('Final total') }}</th></tr></thead>
+                <tbody>
+                    @forelse ($sales as $sale)
+                        <tr><td><a class="font-semibold text-primary hover:underline" href="{{ route('sales.show', $sale) }}">{{ $sale->document_number }}</a></td><td>{{ $sale->store->code }}</td><td>{{ $sale->cashier->name }}</td><td class="whitespace-nowrap text-xs text-text-muted">{{ $sale->approved_at?->format('Y-m-d H:i') }}</td><td class="text-end tabular-nums">{{ $sale->payments_count }}</td><td class="text-end"><x-money :amount="$sale->total" :currency="$sale->currency_code" class="font-semibold" /></td></tr>
+                    @empty
+                        <tr><td colspan="6"><x-state.empty :title="__('No approved invoices match the selected filters.')" :description="__('Try another filter or clear the current filters.')" /></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </x-tables.table-shell>
         {{ $sales->links() }}
     </div>
 </x-layouts::app>

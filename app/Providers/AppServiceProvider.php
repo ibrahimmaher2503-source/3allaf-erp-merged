@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Responses\PosAwareLoginResponse;
 use App\Models\User;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LoginResponseContract::class, PosAwareLoginResponse::class);
     }
 
     /**
@@ -51,13 +53,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         foreach ([
-            'company_settings.view', 'company_settings.create', 'company_settings.edit', 'company_settings.logical_delete',
+            'company_settings.view', 'company_settings.create', 'company_settings.edit', 'company_settings.logical_delete', 'company_settings.approve',
             'branches_stores.view', 'branches_stores.create', 'branches_stores.edit', 'branches_stores.logical_delete',
             'drawers_payments_tax_numbering_printers.view', 'drawers_payments_tax_numbering_printers.create',
             'drawers_payments_tax_numbering_printers.edit', 'drawers_payments_tax_numbering_printers.logical_delete',
-            'drawers_payments_tax_numbering_printers.override',
-            'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
-            'dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
+            'drawers_payments_tax_numbering_printers.override', 'pos_sales.open_price_approve',
+            'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit', 'pos_sales.discount_approve',
+            'dashboard_reports.view', 'audit_logs.view', 'product_wallet.view', 'product_wallet.export', 'product_wallet.settle', 'product_wallet.adjust', 'product_wallet.approve', 'party_wallet.view', 'party_wallet.export', 'party_wallet.settle', 'party_wallet.adjust', 'party_wallet.approve', 'party_bookings_invoices.view', 'party_bookings_invoices.create', 'party_bookings_invoices.edit', 'party_bookings_invoices.print', 'party_bookings_invoices.approve', 'party_bookings_invoices.reject', 'party_bookings_invoices.export', 'party_bookings_invoices.reverse', 'party_bookings_invoices.cancel', 'party_bookings_invoices.override', 'party_operating_orders_consumables.view', 'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit', 'party_operating_orders_consumables.print', 'party_operating_orders_consumables.approve', 'party_operating_orders_consumables.reject', 'party_operating_orders_consumables.export', 'party_operating_orders_consumables.reverse', 'party_operating_orders_consumables.cancel', 'party_operating_orders_consumables.override', 'returns_exchanges_gift_instruments.view', 'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
+            'dashboard_reports.export', 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf', 'dashboard_reports.edit',
+            'rental_assets.view', 'rental_assets.create', 'rental_assets.edit', 'rental_assets.print', 'rental_assets.approve', 'rental_assets.reject', 'rental_assets.export', 'rental_assets.cancel', 'rental_assets.override', 'rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'rental_assets.status', 'rental_assets.cost_view', 'rental_assets.cost_edit',
+            'quotations.view', 'quotations.create', 'quotations.edit', 'quotations.print', 'quotations.approve', 'quotations.export', 'quotations.cancel', 'quotations.issue', 'quotations.share',
+            'customers.view', 'customers.create', 'customers.edit', 'customers.sensitive', 'customers.merge', 'customers.export',
+            'loyalty.view', 'loyalty.earn', 'loyalty.redeem', 'loyalty.adjust', 'loyalty.approve', 'loyalty.export', 'loyalty.expire',
             'products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit',
             'products_categories_brands.logical_delete', 'products_categories_brands.print', 'products_categories_brands.approve',
             'products_categories_brands.export', 'products_categories_brands.reverse', 'products_categories_brands.cancel',

@@ -356,7 +356,7 @@ new #[Title('Purchase Orders')] class extends Component
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="po-filters">
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="clipboard-document-list" data-guide="tsk-015-readiness-link">
-            {{ app()->getLocale() === 'ar' ? 'جاهزية الفواتير' : 'Invoice readiness' }}
+            {{ app()->getLocale() === 'ar' ? 'فواتير الشراء' : 'Purchase invoices' }}
         </flux:button>
         @if ($canCreate)
             <div>
@@ -573,7 +573,7 @@ new #[Title('Purchase Orders')] class extends Component
                     <div class="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-end">
                         <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
                         <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</span>
-                        <span class="text-xs text-zinc-400 block mt-0.5">{{ __('Tax (Explicit local zero / TBD)') }}</span>
+                        <span class="text-xs text-zinc-400 block mt-0.5">{{ __('Tax is not configured') }}</span>
                     </div>
                 </div>
             </div>
@@ -677,7 +677,7 @@ new #[Title('Purchase Orders')] class extends Component
                                 <span class="font-mono font-semibold">{{ number_format((float)$viewingOrder->subtotal, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-zinc-600 dark:text-zinc-400">
-                                <span>{{ __('Tax (TBD)') }}:</span>
+                                <span>{{ __('Tax') }}:</span>
                                 <span class="font-mono">{{ number_format((float)$viewingOrder->tax_amount, 2) }}</span>
                             </div>
                             <div class="border-t border-border pt-1 flex justify-between font-bold text-sm text-zinc-900 dark:text-white">
@@ -698,7 +698,7 @@ new #[Title('Purchase Orders')] class extends Component
                     <flux:icon name="archive-box" class="size-10 mx-auto text-zinc-400" />
                     <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No Goods Receipts or Purchase Invoices') }}</h3>
                     <p class="text-xs text-zinc-500 max-w-sm mx-auto">
-                        {{ __('Goods receipts and purchase invoice processing are handled in downstream milestone TSK-015. No receiving stock records or invoices exist for this order yet.') }}
+                        {{ __('Goods receipts and purchase invoices will appear here after the order is received.') }}
                     </p>
                 </div>
             @elseif ($detailTab === 'audit')

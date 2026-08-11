@@ -1,20 +1,35 @@
 import { test, expect } from '@playwright/test';
 import { AxeBuilder } from '@axe-core/playwright';
-import { login } from '../helpers/auth.js';
+import { login, LOCAL_BROWSER_ACTORS } from '../helpers/auth.js';
 
 test.describe('TSK-007 cash drawer masters', () => {
     test.setTimeout(60_000);
 
     test('administrator can reach the protected cash drawer master', async ({ page }) => {
-        await login(page, 'playwright-admin', 'PlaywrightTest!2026');
+        await login(page, LOCAL_BROWSER_ACTORS.administrator.username, LOCAL_BROWSER_ACTORS.administrator.password);
         const response = await page.goto('/admin/cash-drawers');
         expect(response?.status()).toBe(200);
         await expect(page.getByRole('heading', { name: 'Cash Drawer Masters' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Add Cash Drawer', exact: true })).toBeVisible();
     });
 
+    test('open shift blocks drawer deactivation with clear feedback', async ({ page }) => {
+        await login(page, LOCAL_BROWSER_ACTORS.administrator.username, LOCAL_BROWSER_ACTORS.administrator.password);
+        await page.goto('/admin/cash-drawers');
+
+        const drawerRow = page.locator('tbody tr').filter({ hasText: 'DEMO-DR-01' });
+        await expect(drawerRow).toHaveCount(1);
+        await expect(drawerRow.getByText('Active', { exact: true })).toBeVisible();
+
+        await drawerRow.getByRole('button', { name: 'Deactivate', exact: true }).click();
+
+        await expect(page.getByText('Cash drawer change blocked.', { exact: true })).toBeVisible();
+        await expect(page.getByText('Cannot deactivate or reassign a cash drawer while it has an active POS shift. Close the shift before trying again.', { exact: true })).toBeVisible();
+        await expect(drawerRow.getByText('Active', { exact: true })).toBeVisible();
+    });
+
     test('Arabic mobile view is axe-clean and responsive', async ({ page }) => {
-        await login(page, 'playwright-admin', 'PlaywrightTest!2026');
+        await login(page, LOCAL_BROWSER_ACTORS.administrator.username, LOCAL_BROWSER_ACTORS.administrator.password);
         await page.goto('/admin/cash-drawers');
         await page.setViewportSize({ width: 390, height: 844 });
         const token = await page.locator('input[name="_token"]').first().inputValue();

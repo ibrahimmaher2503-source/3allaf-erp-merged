@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Support\PaymentMethodSemantics;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ final class SalePayment extends Model implements ImmutableSourceContract
     protected $fillable = [
         'sale_id',
         'payment_method_id',
+        'gift_card_id',
         'method_code',
         'method_type',
         'amount',
@@ -55,6 +57,12 @@ final class SalePayment extends Model implements ImmutableSourceContract
     public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    /** @return BelongsTo<GiftCard, $this> */
+    public function giftCard(): BelongsTo
+    {
+        return $this->belongsTo(GiftCard::class);
     }
 
     /** @return BelongsTo<User, $this> */

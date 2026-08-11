@@ -94,4 +94,66 @@ test.describe('TSK-025 shift and cash workflow', () => {
 
         expect(problems).toEqual([]);
     });
+
+    test('cashier submits a blind close, manager approves it, and closed outputs are reachable from the UI', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const cashierContext = await browser.newContext();
+        const cashierPage = await cashierContext.newPage();
+
+        await cashierPage.goto('/__demo/auth?as=demo-cashier&redirect=/pos/shift');
+        await cashierPage.waitForURL(/\/pos\/shift$/);
+        await cashierPage.goto('/pos/shift');
+        await expect(cashierPage.locator('main').getByText('Cash Shift', { exact: true })).toBeVisible();
+        await cashierPage.getByLabel('Counted cash', { exact: true }).fill('0.00');
+        await cashierPage.getByRole('button', { name: 'Submit count' }).click();
+        await cashierPage.waitForURL(/\/pos\/shift$/);
+        await expect(cashierPage.getByText(/awaiting review/i)).toBeVisible();
+        await cashierContext.close();
+
+        const managerContext = await browser.newContext();
+        const managerPage = await managerContext.newPage();
+        await managerPage.goto('/__demo/auth?as=demo-branch-manager&redirect=/pos/shift-variance');
+        await managerPage.waitForURL(/\/pos\/shift-variance$/);
+        await managerPage.goto('/pos/shift-variance');
+        await expect(managerPage.getByText('Shift Variance Review', { exact: true })).toBeVisible();
+        await managerPage.getByRole('link', { name: 'Open canonical approval request' }).click();
+        await managerPage.waitForURL(/\/approvals$/);
+
+        const pendingShiftRow = managerPage.locator('tr').filter({ hasText: /Pos Shifts #1/ }).first();
+        await expect(pendingShiftRow).toBeVisible();
+        await pendingShiftRow.getByRole('button', { name: 'Review' }).click();
+        await expect(managerPage.getByText('Approval request', { exact: true })).toBeVisible();
+        managerPage.once('dialog', async (dialog) => {
+            await dialog.accept();
+        });
+        await managerPage.getByRole('button', { name: 'Approve and close', exact: true }).click();
+        await expect(managerPage.getByRole('dialog')).toBeHidden({ timeout: 15000 });
+        await expect(managerPage.getByText('The source was approved and its audit trail was recorded.')).toBeVisible();
+
+        await managerPage.goto('/pos/shift-variance');
+        const closedShiftRow = managerPage.locator('section').filter({ hasText: 'Closed shifts' }).locator('tr').filter({ hasText: /SHIFT-/ }).first();
+        await expect(closedShiftRow).toBeVisible();
+
+        const thermalTabPromise = managerContext.waitForEvent('page');
+        await closedShiftRow.getByRole('link', { name: 'Thermal' }).click();
+        const thermalPage = await thermalTabPromise;
+        await thermalPage.waitForLoadState('domcontentloaded');
+        await expect(thermalPage).toHaveURL(/\/pos\/shifts\/1\/print\/thermal$/);
+        await expect(thermalPage.locator('body')).toContainText('Shift closing receipt');
+        await expect(thermalPage.locator('body')).toContainText('0.00');
+        await thermalPage.screenshot({ path: testInfo.outputPath('shift-close-thermal-en.png'), fullPage: true });
+
+        const a4TabPromise = managerContext.waitForEvent('page');
+        await closedShiftRow.getByRole('link', { name: 'Print A4' }).click();
+        const a4Page = await a4TabPromise;
+        await a4Page.waitForLoadState('domcontentloaded');
+        await expect(a4Page).toHaveURL(/\/pos\/shifts\/1\/print\/a4$/);
+        await expect(a4Page.locator('body')).toContainText('Payment methods');
+        await expect(a4Page.locator('body')).toContainText('Expected');
+        await a4Page.screenshot({ path: testInfo.outputPath('shift-close-a4-en.png'), fullPage: true });
+
+        await thermalPage.close();
+        await a4Page.close();
+        await managerContext.close();
+    });
 });

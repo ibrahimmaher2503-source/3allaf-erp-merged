@@ -28,6 +28,7 @@ class DemoSeeder extends Seeder
             CanonicalAuthorizationSeeder::class,
             DemoProductSeeder::class,
             LocalDemoSeeder::class,
+            PlaywrightLocalActorsSeeder::class,
             DemoApprovedPurchaseOrderSeeder::class,
             DemoPricingSeeder::class,
             DemoLabelQueueSeeder::class,

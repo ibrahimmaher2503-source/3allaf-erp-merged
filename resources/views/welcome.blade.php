@@ -38,7 +38,7 @@
             <main class="grid flex-1 items-center gap-14 py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)] lg:py-24">
                 <section class="max-w-3xl">
                     <p class="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                        {{ __('Phase 1 platform foundation') }}
+                        {{ __('TOY & JOY operations') }}
                     </p>
                     <h1 class="mt-5 text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
                         {{ __('One dependable workspace for daily TOY & JOY operations.') }}
@@ -68,10 +68,10 @@
 
                     <ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
                         @foreach ([
-                            __('Secure authentication and account recovery'),
-                            __('Responsive application and authentication shells'),
+                            __('Daily retail sales and payments'),
+                            __('Inventory and purchasing visibility'),
+                            __('Customer, party, and asset workflows'),
                             __('Arabic RTL and English LTR direction support'),
-                            __('Local database and asset build workflow'),
                         ] as $item)
                             <li class="flex items-start gap-3 px-6 py-4 text-sm text-zinc-700 dark:text-zinc-200">
                                 <span class="mt-1.5 size-2 shrink-0 rounded-full bg-teal-600" aria-hidden="true"></span>
@@ -81,13 +81,13 @@
                     </ul>
 
                     <div class="px-6 py-5 text-sm text-zinc-500 dark:text-zinc-400">
-                        {{ __('Implementation is proceeding milestone by milestone.') }}
+                        {{ __('Use the workspace to manage the work assigned to your role.') }}
                     </div>
                 </aside>
             </main>
 
             <footer class="border-t border-zinc-200 py-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                {{ __('TOY & JOY Phase 1 operational platform') }}
+                {{ __('TOY & JOY operational workspace') }}
             </footer>
         </div>
 

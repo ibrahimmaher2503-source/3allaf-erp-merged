@@ -27,7 +27,7 @@
             <div class="guide-page__hero-glow" aria-hidden="true"></div>
             <div class="guide-page__hero-copy">
                 <div class="guide-page__eyebrow-row">
-                    <span class="guide-page__screen-id">{{ $context['screen_id'] }}</span>
+                    <span class="guide-page__screen-id">{{ $isArabic ? 'دليل تشغيلي' : 'Operational guide' }}</span>
                     <span class="guide-page__published"><span aria-hidden="true">●</span> {{ $isArabic ? 'دليل منشور' : 'Published guide' }}</span>
                 </div>
                 <h1 id="guide-page-title">{{ $title }}</h1>
@@ -45,6 +45,17 @@
                 <small>{{ $isArabic ? 'الإصدار' : 'Version' }} {{ $context['version'] }}</small>
             </div>
         </section>
+
+        @if (!empty($context['module']))
+            <section class="guide-module-intro" aria-labelledby="guide-module-title">
+                <div class="guide-module-intro__icon" aria-hidden="true">◎</div>
+                <div>
+                    <p class="guide-card__eyebrow">{{ $isArabic ? 'عن الوحدة' : 'ABOUT THIS MODULE' }}</p>
+                    <h2 id="guide-module-title">{{ $text($context['module']['title']) }}</h2>
+                    <p>{{ $text($context['module']['description']) }}</p>
+                </div>
+            </section>
+        @endif
 
         <section class="guide-page__quick-grid" aria-label="{{ $isArabic ? 'ملخص سريع' : 'Quick summary' }}">
             <article class="guide-quick-card guide-quick-card--accent">

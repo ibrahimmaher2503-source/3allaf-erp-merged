@@ -103,6 +103,82 @@ class LayoutsAndPwaShellTest extends TestCase
         }
     }
 
+    public function test_the_sidebar_keeps_one_canonical_export_and_supplier_return_destination(): void
+    {
+        $this->actingAs($this->administrator('tsk003-nav-canonical-destinations'));
+
+        $html = (string) $this->get('/dashboard')->assertOk()->getContent();
+        $document = new \DOMDocument();
+        @$document->loadHTML($html);
+        $navigation = (new \DOMXPath($document))->query('//nav[@aria-label="Workspace"]')->item(0);
+        $this->assertNotNull($navigation);
+        $xpath = new \DOMXPath($document);
+
+        $this->assertSame(
+            2,
+            $xpath->query('.//a[normalize-space(.)="PDF / Excel export center"]', $navigation)->length,
+            'The one canonical export item is rendered in Flux desktop and collapsed variants only.',
+        );
+        $this->assertSame(
+            2,
+            $xpath->query('.//a[normalize-space(.)="Supplier returns"]', $navigation)->length,
+            'The one canonical supplier-return item is rendered in Flux desktop and collapsed variants only.',
+        );
+    }
+
+    public function test_the_sidebar_targets_real_operational_focused_and_report_destinations(): void
+    {
+        $this->actingAs($this->administrator('tsk003-nav-remediated-destinations'));
+
+        $html = (string) $this->get('/dashboard')->assertOk()->getContent();
+        $document = new \DOMDocument();
+        @$document->loadHTML($html);
+        $navigation = (new \DOMXPath($document))->query('//nav[@aria-label="Workspace"]')->item(0);
+        $this->assertNotNull($navigation);
+        $xpath = new \DOMXPath($document);
+        $hrefFor = static function (string $label) use ($xpath, $navigation): ?string {
+            $literal = str_replace("'", "&apos;", $label);
+            $node = $xpath->query(".//a[normalize-space(.)='{$literal}']", $navigation)->item(0);
+
+            return $node?->attributes?->getNamedItem('href')?->nodeValue;
+        };
+
+        foreach ([
+            'Loyalty & points' => route('customers.index', ['mode' => 'loyalty']),
+            'Transaction history' => route('customers.index', ['mode' => 'history']),
+            'Supplier invoices & cost history' => route('purchasing.history.suppliers'),
+            'Purchase cost history' => route('purchasing.history.costs'),
+            'Price lists & versions' => route('pricing.focus', ['mode' => 'versions']),
+            'Unpriced products' => route('pricing.focus', ['mode' => 'unpriced']),
+            'Price change history' => route('pricing.focus', ['mode' => 'history']),
+            'Balances' => route('inventory.balances'),
+            'Party bookings' => route('parties.bookings.index'),
+            'Working invoice' => route('parties.invoices.index', ['mode' => 'working']),
+            'Party payments' => route('parties.invoices.index', ['mode' => 'payments']),
+            'Operating orders & consumables' => route('parties.orders.index'),
+            'Final close & settlement' => route('parties.invoices.index', ['mode' => 'settlement']),
+            'Rental assets & calendar' => route('party.assets.index', ['mode' => 'workspace']),
+            'Asset reservations & checkout' => route('party.assets.index', ['mode' => 'reservations']),
+            'Return, condition & damages' => route('party.assets.index', ['mode' => 'returns']),
+            'Depreciation & asset history' => route('party.assets.index', ['mode' => 'history']),
+            'Sales reports' => route('reports.sales'),
+            'Customer & loyalty reports' => route('reports.customers'),
+            'Cash & shift reports' => route('reports.cash'),
+            'Purchasing reports' => route('reports.purchasing'),
+            'Inventory reports' => route('reports.inventory'),
+            'Party reports' => route('reports.parties'),
+            'Rental asset reports' => route('reports.assets'),
+            'Override log' => route('admin.audit', ['mode' => 'override']),
+            'Print log' => route('admin.audit', ['mode' => 'print']),
+        ] as $label => $expectedHref) {
+            $this->assertSame($expectedHref, $hrefFor($label), "Unexpected sidebar destination for [{$label}].");
+        }
+
+        $sidebarHtml = (string) $document->saveHTML($navigation);
+        $this->assertNull($hrefFor('Bookings calendar'));
+        $this->assertStringNotContainsString(route('party.readiness'), $sidebarHtml);
+    }
+
     public function test_hidden_navigation_is_not_the_only_control_on_a_denied_route(): void
     {
         $this->actingAs($this->userWith('tsk003-direct', ['branch-manager']));

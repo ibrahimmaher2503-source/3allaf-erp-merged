@@ -1,11 +1,11 @@
-@php $isArabic = app()->getLocale() === 'ar'; @endphp
 <x-layouts::app :title="$title">
-    <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="quotations-readiness-header"><div><p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-600">{{ __('TSK-037') }}</p><h1 class="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">{{ $title }}</h1><p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $description }}</p></div><div class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200" data-guide="quotations-readiness-boundary">{{ __('Local/Dev readiness only') }}</div></div>
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-700 dark:bg-amber-950/20 dark:text-amber-100" data-guide="quotations-readiness-summary"><strong>{{ __('Quotation boundary:') }}</strong> {{ __('No quote, approval, print, share, conversion, sale, party invoice, inventory, wallet, payment, or financial effect is created. Retail and party activity types remain separate.') }}</div>
-        <div class="grid gap-4 md:grid-cols-2" data-guide="quotations-readiness-cards">
-            @foreach ($items as $index => $item)<article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" data-guide="quotations-readiness-card-{{ $index + 1 }}"><h2 class="text-base font-semibold text-zinc-900 dark:text-white">{{ $item['title'] }}</h2><p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $item['body'] }}</p><span class="mt-4 inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">{{ __('PENDING') }}</span></article>@endforeach
-        </div>
-        <div class="rounded-2xl border border-dashed border-zinc-300 p-5 text-sm leading-6 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300" data-guide="quotations-readiness-empty">{{ __('No quotation records exist in this Local/Dev readiness slice. Keep owner inputs PENDING/TBD until type, price, terms, approval, numbering, output, and future conversion contracts are reviewed.') }}</div>
-    </div>
+    <x-state.capability-boundary
+        :title="$title"
+        :description="$description"
+        :boundary="__('Quotations will appear here when the workflow is available.')"
+        :cards="$items"
+        :empty="__('No quotations are available yet.')"
+        guide-prefix="quotations-readiness"
+        :card-status-label="__('Review required')"
+    />
 </x-layouts::app>

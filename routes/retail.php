@@ -4,20 +4,32 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
+use App\Modules\Customer\Actions\ApprovePartyWalletAdjustmentAction;
+use App\Modules\Customer\Actions\ApproveProductWalletAdjustmentAction;
+use App\Modules\Customer\Actions\RejectPartyWalletAdjustmentAction;
+use App\Modules\Customer\Actions\RejectProductWalletAdjustmentAction;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletLedger;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Customer\Support\CustomerPolicySettingRegistry;
+use App\Modules\Customer\Support\WalletPolicy;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Actions\DeliverAttachment;
+use App\Modules\Platform\Actions\RequestApproval;
+use App\Modules\Platform\Data\ApprovalRequestData;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\OpenPricePolicy;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
@@ -28,6 +40,7 @@ use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\CashMovement;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
@@ -43,22 +56,8 @@ use Illuminate\Validation\Rule;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('pos/returns-readiness', function (Request $request) {
-        /** @var User $user */
-        $user = $request->user();
-
-        abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
-
-        return view('pages.returns.readiness', [
-            'title' => __('Returns and Exchanges Readiness'),
-            'description' => __('Review source, condition, approval, settlement, and print prerequisites without creating a return, refund, exchange, or stock movement.'),
-            'items' => [
-                ['title' => __('Source reference'), 'body' => __('Original invoice or price-free Gift Receipt requirement and no-reference exception policy remain PENDING.')],
-                ['title' => __('Eligibility window'), 'body' => __('Return window, quantity, duplicate/excess checks, and out-of-window exception rules remain PENDING.')],
-                ['title' => __('Condition and disposition'), 'body' => __('Sellable, non-saleable, damaged, and manager-review outcomes remain PENDING; no stock movement is posted.')],
-                ['title' => __('Approval and settlement'), 'body' => __('Approval/SoD, cash/original-method refund, Gift Card settlement, and exchange difference rules remain PENDING.')],
-                ['title' => __('Audit and print'), 'body' => __('Immutable source history, numbering, privacy, evidence, and return/exchange output format remain PENDING.')],
-            ],
-        ]);
+        abort_unless($request->user()->is_super_admin || $request->user()->can('returns.view') || $request->user()->can('returns_exchanges_gift_instruments.view'), 403);
+        return redirect()->route('returns.index');
     })->name('returns.readiness');
 
     Route::get('party/readiness', function (Request $request) {
@@ -67,8 +66,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.readiness', [
-            'title' => __('Party Booking and Working Invoice Readiness'),
-            'description' => __('Review party-only stores, services, schedule, privacy, cancellation, pricing, and final-close prerequisites without creating a booking, customer, child, invoice, payment, or final receipt.'),
+            'title' => __('Party Bookings and Invoices'),
+            'description' => __('Review party bookings, services, schedules, invoices, payments, and final settlement.'),
             'items' => [
                 ['title' => __('Party store scope'), 'body' => __('Party stores and operational context remain separate from retail products and supplier returns.')],
                 ['title' => __('Services and packages'), 'body' => __('Service/package catalog, rental assets, consumables, and planned lines remain owner-configurable.')],
@@ -86,7 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('dashboard_reports.view'), 403);
 
         return view('pages.reports.readiness', [
-            'title' => __('Dashboards and Reconciled Reports Readiness'),
+            'title' => __('Reports'),
             'cards' => [
                 ['title' => __('Source lineage and scope'), 'body' => __('Every figure must identify its source, snapshot, branch/store/user scope, and authorization before rendering.')],
                 ['title' => __('Filters and KPI formulas'), 'body' => __('Date, comparison, status, activity, and domain filters plus KPI formulas remain pending; no aggregation runs here.')],
@@ -104,7 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('dashboard_reports.view'), 403);
 
         return view('pages.alerts.readiness', [
-            'title' => __('Operational Alerts and Exception Queue Readiness'),
+            'title' => __('Operational Alerts'),
             'cards' => [
                 ['title' => __('Alert triggers and source eligibility'), 'body' => __('Low/zero stock, unpriced, price approval, transfer, count, invoice, shift, party, balance, asset, and job triggers require approved source contracts; no alert is evaluated.')],
                 ['title' => __('Severity and owner role'), 'body' => __('Severity, escalation, due time, and responsible owner role remain PENDING; no priority or assignment is applied.')],
@@ -122,7 +121,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('dashboard_reports.view'), 403);
 
         return view('pages.exports.audit-readiness', [
-            'title' => __('Export Center and Audit Views Readiness'),
+            'title' => __('Export Center and Audit History'),
             'cards' => [
                 ['title' => __('Formats and templates'), 'body' => __('PDF, Excel, CSV eligibility, localized headers, templates, page breaks, and output dimensions remain PENDING; no artifact is generated.')],
                 ['title' => __('Limits and queueing'), 'body' => __('Row, file-size, timeout, pagination, queue, retry, and failed-job limits remain PENDING; no export job is queued.')],
@@ -140,7 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('company_settings.view'), 403);
 
         return view('pages.master-data.migration-readiness', [
-            'title' => __('Master Data Import and Cutover Readiness'),
+            'title' => __('Import Master Data'),
             'cards' => [
                 ['title' => __('Approved source artifacts'), 'body' => __('Signed owner-approved lists or files are required for company, branches, stores, users, catalog, suppliers, prices, and opening stock; no production source is inferred.')],
                 ['title' => __('Dependency load order'), 'body' => __('Company, branches, stores, selling mappings, drawers, users/scopes, categories, brands, products, barcodes, suppliers, prices, and opening stock must follow the documented dependency order.')],
@@ -161,7 +160,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('audit_logs.view'), 403);
 
         return view('pages.operations.readiness', [
-            'title' => __('Production Operations and Handover Readiness'),
+            'title' => __('Operations and Handover'),
             'cards' => [
                 ['title' => __('Runtime and environment'), 'body' => __('Host, domain, TLS, runtime versions, debug mode, environment separation, and named ownership remain pending; local behavior is not production proof.')],
                 ['title' => __('Secrets and access'), 'body' => __('Secret storage, rotation, least privilege, redaction, service accounts, and access review remain pending; no secret is displayed here.')],
@@ -191,7 +190,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ['title' => $isArabic ? 'القبول الكتابي' : 'Written acceptance', 'body' => $isArabic ? 'لا يوجد إغلاق للعيوب الحرجة أو توقيع UAT أو تفويض قبول.' : 'No critical-defect closure, UAT sign-off, or acceptance authorization exists.'],
         ];
 
-        return view('pages.uat.readiness', ['title' => $isArabic ? 'جاهزية الاختبار اليدوي وقاعدة الأدلة' : 'Manual UAT and Evidence Readiness', 'cards' => $cards]);
+        return view('pages.uat.readiness', ['title' => $isArabic ? 'مراجعة التحقق' : 'Validation Review', 'cards' => $cards]);
     })->name('uat.readiness');
 
     Route::get('release-readiness', function (Request $request) {
@@ -210,7 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ['title' => $isArabic ? 'الموافقة على الإطلاق' : 'Go-live approval', 'body' => $isArabic ? 'لا توجد موافقة عميل أو تفويض إطلاق أو قبول إنتاجي.' : 'No client approval, launch authorization, or production acceptance exists.'],
         ];
 
-        return view('pages.release.readiness', ['title' => $isArabic ? 'جاهزية القطع والإطلاق والإحالة' : 'Controlled Go-Live and Handover Readiness', 'cards' => $cards]);
+        return view('pages.release.readiness', ['title' => $isArabic ? 'ضوابط الإصدار' : 'Release Controls', 'cards' => $cards]);
     })->name('release.readiness');
 
     Route::get('quotations-readiness', function (Request $request) {
@@ -219,8 +218,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('dashboard_reports.view'), 403);
 
         return view('pages.quotations.readiness', [
-            'title' => __('Quotations and Proposals Readiness'),
-            'description' => __('Review typed retail/party quotation fields, customer, validity, status, prices, terms, approval, numbering, print/share, and future conversion boundaries without creating a quotation or operational/financial effect.'),
+            'title' => __('Quotations'),
+            'description' => __('Review quotation details, customers, validity, prices, terms, approvals, and sharing options.'),
             'items' => [
                 ['title' => __('Typed activity and customer'), 'body' => __('Retail and party activity types remain separate; customer/source linkage and mixed-line blocking remain PENDING.')],
                 ['title' => __('Validity, expiry, and status'), 'body' => __('Draft, issued, expired, cancelled, superseded, validity, and closure rules remain PENDING; no status changes are enabled.')],
@@ -238,8 +237,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.final-close-readiness', [
-            'title' => __('Party Final Close and Settlement Readiness'),
-            'description' => __('Review booking, operating, return, payment, Party Wallet, invoice freeze, credit, receipt, approval, numbering, and close prerequisites without creating a final invoice, receipt, wallet entry, or settlement.'),
+            'title' => __('Party Final Settlement'),
+            'description' => __('Review the booking, invoice, payment, credit, receipt, and settlement details before closing a party order.'),
             'items' => [
                 ['title' => __('Final readiness checklist'), 'body' => __('Booking, operating order, consumables, rental return/inspection, payment, and outstanding-operation checks remain PENDING; no close is enabled.')],
                 ['title' => __('Working invoice and freeze'), 'body' => __('Editable-before-close, immutable-after-close, controlled corrections, and no mixed retail lines remain PENDING; no invoice is frozen.')],
@@ -257,8 +256,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.asset-events-readiness', [
-            'title' => __('Asset Damage, Loss, Maintenance and Depreciation Readiness'),
-            'description' => __('Review source-linked damage, loss, maintenance, assessment, responsibility, evidence, cost privacy, approval, depreciation, and correction prerequisites without creating an event or changing an asset state.'),
+            'title' => __('Asset Events'),
+            'description' => __('Review damage, loss, maintenance, assessment, responsibility, evidence, and correction details for rental assets.'),
             'items' => [
                 ['title' => __('Damage and loss event'), 'body' => __('Asset, party/source, reason, assessment, responsible user, final status, and evidence rules remain PENDING; no event is created.')],
                 ['title' => __('Maintenance lifecycle'), 'body' => __('Maintenance reason, owner, inspection, release, final state, and evidence rules remain PENDING; no maintenance event is recorded.')],
@@ -276,8 +275,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.assets-readiness', [
-            'title' => __('Rental Assets and Calendar Readiness'),
-            'description' => __('Review unique asset identity, consumable separation, availability states, reservations, checkout, return, condition, approval, audit, and print prerequisites without creating an asset or calendar allocation.'),
+            'title' => __('Rental Assets and Calendar'),
+            'description' => __('Review rental asset identity, availability, reservations, checkout, return, condition, and calendar details.'),
             'items' => [
                 ['title' => __('Rental asset identity'), 'body' => __('Unique code, name, category, location, status, condition, and immutable history remain PENDING; no asset is created.')],
                 ['title' => __('Asset and consumable separation'), 'body' => __('Unique rental assets remain separate from consumables and retail products; no mixed resource is created.')],
@@ -295,8 +294,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.operating-readiness', [
-            'title' => __('Party Operating Orders and Consumables Readiness'),
-            'description' => __('Review Party-only operating-order, party-store, consumable, issue, return, reconciliation, approval, audit, and print prerequisites without creating stock or operating movements.'),
+            'title' => __('Party Operating Orders'),
+            'description' => __('Review party operating orders, services, consumables, issues, returns, and reconciliation.'),
             'items' => [
                 ['title' => __('Operating-order lifecycle'), 'body' => __('Draft, release, execute, complete, immutable history, and source-link rules remain PENDING; no order is created.')],
                 ['title' => __('Party store and resource scope'), 'body' => __('Party-only store, services, rental resources, responsibilities, and source scope remain PENDING; no stock is reserved.')],
@@ -314,8 +313,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('party_bookings_invoices.view'), 403);
 
         return view('pages.party.payments-readiness', [
-            'title' => __('Party Payments and Balance Readiness'),
-            'description' => __('Review Party-only payment methods, deposits, evidence, idempotency, receipt wording, balance visibility, and Party Wallet boundaries without posting money or creating a receipt.'),
+            'title' => __('Party Payments and Balances'),
+            'description' => __('Review party payment methods, deposits, evidence, receipts, balances, and settlement history.'),
             'items' => [
                 ['title' => __('Party payment methods'), 'body' => __('Allowed source, method, actor, and scope rules remain PENDING; no payment is posted.')],
                 ['title' => __('Deposit and payment on account'), 'body' => __('Multiple/partial payment, deposit, source invoice, and exact receipt-label rules remain PENDING.')],
@@ -327,7 +326,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:party_bookings_invoices.view')->name('party.payments.readiness');
 
-    Route::get('gift-receipts', function (Request $request) {
+    Route::get('gift-receipts-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
@@ -335,7 +334,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.gift-instruments.readiness', [
             'kind' => 'gift-receipts',
             'title' => __('Gift Receipts'),
-            'description' => __('Price-free source-reference readiness; issue, validate, reprint, and use remain disabled.'),
+            'description' => __('Review price-free gift receipt references, eligibility, privacy, numbering, and print options.'),
             'boundary' => __('Gift Receipt policy values are configurable from Settings, but no source sale lines or receipt references are loaded until eligibility, privacy, numbering, and format are approved.'),
             'items' => [
                 ['title' => __('Source eligibility'), 'detail' => __('Eligible approved-sale lines, return context, and source linkage remain PENDING.')],
@@ -348,7 +347,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:returns_exchanges_gift_instruments.view')->name('gift.receipts');
 
-    Route::get('gift-cards', function (Request $request) {
+    Route::get('gift-cards-readiness', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('returns_exchanges_gift_instruments.view'), 403);
@@ -356,7 +355,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.gift-instruments.readiness', [
             'kind' => 'gift-cards',
             'title' => __('Gift Cards'),
-            'description' => __('Gift Card ledger readiness; issue, balance, redeem, void, and expiry remain disabled.'),
+            'description' => __('Review gift card identifiers, balances, holders, redemption, voiding, and expiry rules.'),
             'boundary' => __('Gift Card policy values are configurable from Settings, but no identifier, balance, holder, payment, ledger entry, or redemption is loaded until source and validity policies are approved.'),
             'items' => [
                 ['title' => __('Unique identifier'), 'detail' => __('Identifier format, uniqueness, concurrency, and source reference remain PENDING.')],
@@ -374,6 +373,29 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('product_wallet.view'), 403);
 
+        $entries = ProductWalletLedger::query()->visibleTo($user)->with(['customer', 'store'])->latestFirst()->paginate(20)->withQueryString();
+        $store = Store::query()->visibleTo($user)->where('status', 'active')->with('company')->orderBy('id')->first();
+        $policyError = null;
+        try {
+            WalletPolicy::for('product');
+        } catch (InvalidArgumentException $exception) {
+            $policyError = $exception->getMessage();
+        }
+        $pendingAdjustments = $user->can('product_wallet.approve')
+            ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'product_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'product_wallet.approve')->latest('id')->limit(20)->get()
+            : collect();
+        return view('pages.wallets.ledger', [
+            'title' => __('Product Wallet'), 'description' => __('Retail-only customer balance derived from a separate immutable, source-linked ledger.'),
+            'wallet' => 'product', 'customer' => null, 'ledgerTable' => 'product_wallet_ledger', 'entries' => $entries,
+            'balance' => bcadd((string) ProductWalletLedger::query()->visibleTo($user)->sum('amount'), '0', 4),
+            'currencyCode' => strtoupper((string) $store?->company?->currency_code), 'policyError' => $policyError,
+            'pendingAdjustments' => $pendingAdjustments, 'canSettle' => $user->can('product_wallet.settle'), 'canAdjust' => $user->can('product_wallet.adjust'), 'canApprove' => $user->can('product_wallet.approve'),
+            'otherRoute' => 'wallets.party', 'otherCustomerRoute' => 'customers.party-wallet', 'otherPermission' => 'party_wallet.view', 'otherLabel' => __('Open Party Wallet'),
+            'exportRoute' => $user->can('product_wallet.export') ? route('wallets.product.export') : null,
+            'approveRoute' => static fn (int $approvalId): string => route('wallets.product.adjustments.approve', $approvalId),
+            'rejectRoute' => static fn (int $approvalId): string => route('wallets.product.adjustments.reject', $approvalId), 'guidePrefix' => 'product-wallet',
+        ]);
+
         return view('pages.wallets.ledger', [
             'title' => app()->getLocale() === 'ar' ? 'محفظة المنتجات' : 'Product Wallet',
             'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالمنتج، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for product-linked entries while source, policy, and authorization remain outside this slice.',
@@ -381,7 +403,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'entries' => ProductWalletLedger::query()->latestFirst()->paginate(20),
             'otherRoute' => 'wallets.party',
             'otherPermission' => 'party_wallet.view',
-            'otherLabel' => app()->getLocale() === 'ar' ? 'فتح Party Wallet' : 'Open Party Wallet',
+            'otherLabel' => __('Open Party Wallet'),
             'guidePrefix' => 'product-wallet',
         ]);
     })->middleware('can:product_wallet.view')->name('wallets.product');
@@ -391,6 +413,29 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('party_wallet.view'), 403);
 
+        $entries = PartyWalletLedger::query()->visibleTo($user)->with(['customer', 'store'])->latestFirst()->paginate(20)->withQueryString();
+        $store = Store::query()->visibleTo($user)->where('status', 'active')->with('company')->orderBy('id')->first();
+        $policyError = null;
+        try {
+            WalletPolicy::for('party');
+        } catch (InvalidArgumentException $exception) {
+            $policyError = $exception->getMessage();
+        }
+        $pendingAdjustments = $user->can('party_wallet.approve')
+            ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'party_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'party_wallet.approve')->latest('id')->limit(20)->get()
+            : collect();
+        return view('pages.wallets.ledger', [
+            'title' => __('Party Wallet'), 'description' => __('Party-only customer balance derived from a separate immutable, source-linked ledger.'),
+            'wallet' => 'party', 'customer' => null, 'ledgerTable' => 'party_wallet_ledger', 'entries' => $entries,
+            'balance' => bcadd((string) PartyWalletLedger::query()->visibleTo($user)->sum('amount'), '0', 4),
+            'currencyCode' => strtoupper((string) $store?->company?->currency_code), 'policyError' => $policyError,
+            'pendingAdjustments' => $pendingAdjustments, 'canSettle' => $user->can('party_wallet.settle'), 'canAdjust' => $user->can('party_wallet.adjust'), 'canApprove' => $user->can('party_wallet.approve'),
+            'otherRoute' => 'wallets.product', 'otherCustomerRoute' => 'customers.product-wallet', 'otherPermission' => 'product_wallet.view', 'otherLabel' => __('Open Product Wallet'),
+            'exportRoute' => $user->can('party_wallet.export') ? route('wallets.party.export') : null,
+            'approveRoute' => static fn (int $approvalId): string => route('wallets.party.adjustments.approve', $approvalId),
+            'rejectRoute' => static fn (int $approvalId): string => route('wallets.party.adjustments.reject', $approvalId), 'guidePrefix' => 'party-wallet',
+        ]);
+
         return view('pages.wallets.ledger', [
             'title' => app()->getLocale() === 'ar' ? 'محفظة الأطراف' : 'Party Wallet',
             'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالطرف، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for party-linked entries while source, policy, and authorization remain outside this slice.',
@@ -398,10 +443,88 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'entries' => PartyWalletLedger::query()->latestFirst()->paginate(20),
             'otherRoute' => 'wallets.product',
             'otherPermission' => 'product_wallet.view',
-            'otherLabel' => app()->getLocale() === 'ar' ? 'فتح Product Wallet' : 'Open Product Wallet',
+            'otherLabel' => __('Open Product Wallet'),
             'guidePrefix' => 'party-wallet',
         ]);
     })->middleware('can:party_wallet.view')->name('wallets.party');
+
+    Route::get('wallets/product/export', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('product_wallet.export'), 403);
+        $rows = ProductWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'product_wallet_exported', metadata: ['wallet' => 'product', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+
+        return response()->streamDownload(static function () use ($rows): void {
+            $handle = fopen('php://output', 'wb');
+            fputcsv($handle, ['customer_id', 'entry_type', 'amount', 'balance_before', 'balance_after', 'currency_code', 'source_type', 'source_id', 'created_at']);
+            foreach ($rows as $entry) {
+                fputcsv($handle, [$entry->customer_id, $entry->entry_type, $entry->amount, $entry->balance_before, $entry->balance_after, $entry->currency_code, $entry->source_type, $entry->source_id, $entry->created_at?->format('c')]);
+            }
+            fclose($handle);
+        }, 'product-wallet.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    })->middleware('can:product_wallet.export')->name('wallets.product.export');
+
+    Route::get('wallets/party/export', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_wallet.export'), 403);
+        $rows = PartyWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'party_wallet_exported', metadata: ['wallet' => 'party', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+
+        return response()->streamDownload(static function () use ($rows): void {
+            $handle = fopen('php://output', 'wb');
+            fputcsv($handle, ['customer_id', 'entry_type', 'amount', 'balance_before', 'balance_after', 'currency_code', 'source_type', 'source_id', 'created_at']);
+            foreach ($rows as $entry) {
+                fputcsv($handle, [$entry->customer_id, $entry->entry_type, $entry->amount, $entry->balance_before, $entry->balance_after, $entry->currency_code, $entry->source_type, $entry->source_id, $entry->created_at?->format('c')]);
+            }
+            fclose($handle);
+        }, 'party-wallet.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    })->middleware('can:party_wallet.export')->name('wallets.party.export');
+
+    Route::post('wallets/product/adjustments/{approvalId}/approve', function (Request $request, int $approvalId, ApproveProductWalletAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('product_wallet.approve'), 403);
+        $approval = ApprovalRecord::query()->visibleTo($user)->whereKey($approvalId)->where('source_type', 'product_wallet_adjustments')->firstOrFail();
+        $store = Store::query()->visibleTo($user)->whereKey($approval->store_id)->where('status', 'active')->firstOrFail();
+        $action->execute($user, $approval, $store);
+
+        return back()->with('success', __('Product Wallet adjustment approved and posted.'));
+    })->middleware('can:product_wallet.approve')->name('wallets.product.adjustments.approve');
+
+    Route::post('wallets/product/adjustments/{approvalId}/reject', function (Request $request, int $approvalId, RejectProductWalletAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('product_wallet.approve'), 403);
+        $validated = $request->validate(['decision_note' => ['required', 'string', 'min:3', 'max:1000']]);
+        $approval = ApprovalRecord::query()->visibleTo($user)->whereKey($approvalId)->where('source_type', 'product_wallet_adjustments')->firstOrFail();
+        $action->execute($user, $approval, $validated['decision_note']);
+
+        return back()->with('success', __('Product Wallet adjustment rejected and audited.'));
+    })->middleware('can:product_wallet.approve')->name('wallets.product.adjustments.reject');
+
+    Route::post('wallets/party/adjustments/{approvalId}/approve', function (Request $request, int $approvalId, ApprovePartyWalletAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_wallet.approve'), 403);
+        $approval = ApprovalRecord::query()->visibleTo($user)->whereKey($approvalId)->where('source_type', 'party_wallet_adjustments')->firstOrFail();
+        $store = Store::query()->visibleTo($user)->whereKey($approval->store_id)->where('status', 'active')->firstOrFail();
+        $action->execute($user, $approval, $store);
+
+        return back()->with('success', __('Party Wallet adjustment approved and posted.'));
+    })->middleware('can:party_wallet.approve')->name('wallets.party.adjustments.approve');
+
+    Route::post('wallets/party/adjustments/{approvalId}/reject', function (Request $request, int $approvalId, RejectPartyWalletAdjustmentAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('party_wallet.approve'), 403);
+        $validated = $request->validate(['decision_note' => ['required', 'string', 'min:3', 'max:1000']]);
+        $approval = ApprovalRecord::query()->visibleTo($user)->whereKey($approvalId)->where('source_type', 'party_wallet_adjustments')->firstOrFail();
+        $action->execute($user, $approval, $validated['decision_note']);
+
+        return back()->with('success', __('Party Wallet adjustment rejected and audited.'));
+    })->middleware('can:party_wallet.approve')->name('wallets.party.adjustments.reject');
 
     Route::get('pos', function (Request $request) {
         /** @var User $user */
@@ -409,20 +532,105 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.view'), 403);
         $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->with('company')->orderBy('id')->first();
         $shift = $store !== null ? PosShift::query()->open()->where('store_id', $store->id)->where('cashier_id', $user->id)->with('cashDrawer')->latest('opened_at')->first() : null;
+        $selectedCustomer = null;
+        $customerSearchResults = collect();
+        $customerQuery = trim((string) $request->query('customer_q', ''));
+        $customerPurposes = [];
+        $customerPolicyError = null;
+        if ($store !== null && $user->can('customers.view')) {
+            try {
+                $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
+            } catch (InvalidArgumentException $exception) {
+                $customerPolicyError = $exception->getMessage();
+            }
+            $selectedCustomerId = $request->session()->get('pos.customer_id');
+            if (is_numeric($selectedCustomerId)) {
+                $selectedCustomer = Customer::query()
+                    ->visibleFrom($user, (int) $store->branch_id, (int) $store->id)
+                    ->where('status', 'active')
+                    ->find((int) $selectedCustomerId);
+            }
+            if ($customerQuery !== '') {
+                $digits = preg_replace('/[^0-9]+/', '', $customerQuery);
+                $customerSearchResults = Customer::query()->visibleTo($user)->where('status', 'active')
+                    ->where(function ($query) use ($customerQuery, $digits): void {
+                        $query->where('name_ar', 'like', '%'.$customerQuery.'%')->orWhere('name_en', 'like', '%'.$customerQuery.'%');
+                        if (is_string($digits) && $digits !== '') {
+                            $query->orWhere('phone_normalized', 'like', '%'.$digits.'%');
+                        }
+                    })->orderBy('name_en')->limit(10)->get();
+            }
+        }
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
         $sessionCart = $request->session()->get('pos.cart', []);
         $cart = collect($sessionCart);
         $productIds = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->all();
         $cartProducts = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
-        $availableProducts = Product::query()->active()->orderBy('item_code')->limit(24)->get();
+        $productQuery = trim((string) $request->query('product_q', ''));
+        $availableProductsQuery = Product::query()
+            ->active()
+            ->with(['barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('barcode')])
+            ->orderBy('item_code')
+            ->limit(24);
+        if ($productQuery !== '') {
+            $availableProductsQuery->where(function ($query) use ($productQuery): void {
+                $query->where('item_code', 'like', '%'.$productQuery.'%')
+                    ->orWhere('name_ar', 'like', '%'.$productQuery.'%')
+                    ->orWhere('name_en', 'like', '%'.$productQuery.'%')
+                    ->orWhereHas('barcodes', fn ($barcodeQuery) => $barcodeQuery->active()->where('barcode', 'like', '%'.$productQuery.'%'));
+            });
+        }
+        $availableProducts = $availableProductsQuery->get();
         $priceMap = $store === null ? collect() : $availableProducts->mapWithKeys(fn (Product $product): array => [$product->id => app(EffectivePriceResolver::class)->resolve($product->id, $store->id)]);
+        $otherStoreAvailability = collect();
+        if ($productQuery !== '' && $store !== null) {
+            $visibleOtherStoreIds = Store::query()
+                ->visibleTo($user)
+                ->where('type', 'selling')
+                ->where('status', 'active')
+                ->where('id', '<>', $store->id)
+                ->limit(50)
+                ->pluck('id');
+            if ($visibleOtherStoreIds->isNotEmpty()) {
+                $otherStoreAvailability = StockBalance::query()
+                    ->with(['product', 'store.branch'])
+                    ->whereIn('store_id', $visibleOtherStoreIds)
+                    ->whereRaw('(on_hand - reserved) > 0')
+                    ->whereHas('product', function ($query) use ($productQuery): void {
+                        $query->active()->where(function ($productSearch) use ($productQuery): void {
+                            $productSearch->where('item_code', 'like', '%'.$productQuery.'%')
+                                ->orWhere('name_ar', 'like', '%'.$productQuery.'%')
+                                ->orWhere('name_en', 'like', '%'.$productQuery.'%')
+                                ->orWhereHas('barcodes', fn ($barcodeQuery) => $barcodeQuery->active()->where('barcode', 'like', '%'.$productQuery.'%'));
+                        });
+                    })
+                    ->orderBy('store_id')
+                    ->limit(50)
+                    ->get();
+            }
+        }
         $suspendedCount = Sale::query()->visibleTo($user)->where('status', 'suspended')->count();
         $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
         $cashMethod = $paymentMethods->first(fn (PaymentMethod $method): bool => $method->isCash());
-        $electronicMethods = $paymentMethods->reject(fn (PaymentMethod $method): bool => $cashMethod !== null && $method->is($cashMethod))->values();
+        $giftCardMethods = $paymentMethods->filter(fn (PaymentMethod $method): bool => (string) $method->type === 'gift_card')->values();
+        $electronicMethods = $paymentMethods->reject(fn (PaymentMethod $method): bool => ($cashMethod !== null && $method->is($cashMethod)) || (string) $method->type === 'gift_card')->values();
 
         $previewLines = [];
         foreach ($cart as $cartLine) {
+            $approvalIds = collect([
+                $cartLine['open_price_approval_id'] ?? null,
+                $cartLine['discount_approval_id'] ?? null,
+            ])->filter(fn ($id): bool => filled($id))->map(fn ($id): int => (int) $id)->unique()->values();
+            if ($approvalIds->isNotEmpty()) {
+                $approvals = ApprovalRecord::query()->whereIn('id', $approvalIds)->get()->keyBy('id');
+                if (filled($cartLine['open_price_approval_id'] ?? null) && ($approval = $approvals->get((int) $cartLine['open_price_approval_id'])) !== null) {
+                    $cartLine['open_price_approval_state'] = $approval->approval_state->value;
+                }
+                if (filled($cartLine['discount_approval_id'] ?? null) && ($approval = $approvals->get((int) $cartLine['discount_approval_id'])) !== null) {
+                    $cartLine['discount_approval_state'] = $approval->approval_state->value;
+                }
+                $cart[$cart->search(fn (array $candidate): bool => (int) ($candidate['product_id'] ?? 0) === (int) $cartLine['product_id'])] = $cartLine;
+            }
             $product = $cartProducts->get((int) $cartLine['product_id']);
             $price = $product && $store ? app(EffectivePriceResolver::class)->resolve($product->id, $store->id) : null;
             if ($product && $price) {
@@ -436,6 +644,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ];
             }
         }
+        $request->session()->put('pos.cart', $cart->values()->all());
         $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
         $effectiveTaxes = TaxSetting::query()
             ->where('status', 'active')
@@ -468,11 +677,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
 
         $cashDenomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+        $openPriceApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
+        $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
 
         return view('pages.pos.index', compact(
             'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
-            'paymentMethods', 'cashMethod', 'electronicMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
-            'cashDenomination', 'taxApplicable', 'taxSetting',
+            'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
+            'cashDenomination', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
+            'productQuery', 'otherStoreAvailability',
         ));
     })->middleware('can:pos_sales.view')->name('pos');
 
@@ -488,6 +700,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->with(['cashDrawer', 'cashMovements'])
             ->latest('opened_at')
             ->first();
+
+        $closedShifts = PosShift::query()->visibleTo($user)
+            ->where('cashier_id', $user->id)
+            ->where('status', ShiftState::Closed->value)
+            ->with(['cashDrawer'])
+            ->latest('closed_at')
+            ->limit(10)
+            ->get();
 
         $openToken = (string) $request->session()->get('pos.shift.open_token', '');
         if ($openToken === '') {
@@ -515,6 +735,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         // before submission, so this view is given no expected figures at all.
         return view('pages.pos.shift', [
             'shift' => $shift,
+            'closedShifts' => $closedShifts,
             'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(),
             'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
             'movementTypes' => CashMovement::TYPES,
@@ -639,8 +860,112 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->latest('submitted_at')
             ->paginate(20);
 
-        return view('pages.pos.shift-variance', compact('shifts'));
+        $closedShifts = PosShift::query()->visibleTo($user)
+            ->where('status', ShiftState::Closed->value)
+            ->with(['cashDrawer', 'cashier'])
+            ->latest('closed_at')
+            ->limit(20)
+            ->get();
+
+        return view('pages.pos.shift-variance', compact('shifts', 'closedShifts'));
     })->middleware('can:shifts_cash_movements.approve')->name('pos.shift-variance');
+
+    /**
+     * Closed-shift print data is deliberately assembled from immutable source
+     * rows at request time. The routes do not expose an open/submitted shift,
+     * and the visibility query prevents a permitted reviewer from printing a
+     * foreign branch/store document by guessing its ID.
+     *
+     * Expected totals and variance are sensitive review data. A cashier may
+     * print the actual close summary, while only a reviewer with the approval
+     * permission receives expected/variance values.
+     *
+     * @return array<string, mixed>
+     */
+    $closedShiftPrintData = static function (Request $request, PosShift $routeShift, string $format): array {
+        /** @var User $user */
+        $user = $request->user();
+        $shift = PosShift::query()
+            ->visibleTo($user)
+            ->whereKey($routeShift->getKey())
+            ->where('status', ShiftState::Closed->value)
+            ->with([
+                'branch',
+                'store.company',
+                'cashDrawer',
+                'cashier',
+                'closingSubmissions',
+                'cashMovements',
+                'sales' => static fn ($query) => $query->approved()->with('payments.paymentMethod'),
+            ])
+            ->firstOrFail();
+
+        $submission = $shift->closingSubmissions->sortByDesc('attempt')->first();
+        abort_unless($submission !== null, 409, __('This closed shift has no immutable closing submission.'));
+
+        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve');
+        $event = $format === 'thermal' ? 'shift_thermal_printed' : 'shift_a4_printed';
+        $alreadyPrinted = AuditLog::query()
+            ->where('event', $event)
+            ->where('source_type', PosShift::class)
+            ->where('source_id', (string) $shift->getKey())
+            ->exists();
+
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail',
+            event: $event,
+            source: $shift,
+            branchId: (int) $shift->getAttribute('branch_id'),
+            storeId: (int) $shift->getAttribute('store_id'),
+            metadata: [
+                'format' => $format,
+                'reprint' => $alreadyPrinted,
+                'viewer_can_view_expected' => $viewerCanSeeExpected,
+                'closing_document_number' => $shift->getAttribute('closing_document_number'),
+            ],
+        );
+
+        $expectedByMethod = $submission->expected_by_method ?? [];
+        $actualByMethod = $submission->actual_by_method ?? [];
+        $methodVariance = $submission->method_variance ?? [];
+        $methodCodes = array_values(array_unique(array_merge(
+            array_keys($expectedByMethod),
+            array_keys($actualByMethod),
+            array_keys($methodVariance),
+        )));
+        sort($methodCodes);
+
+        $salesTotal = $shift->sales->reduce(
+            static fn (string $total, Sale $sale): string => bcadd($total, (string) $sale->payable_total, 2),
+            '0.00',
+        );
+
+        return [
+            'shift' => $shift,
+            'submission' => $submission,
+            'canViewExpected' => $viewerCanSeeExpected,
+            'methodRows' => collect($methodCodes)->map(static fn (string $code): array => [
+                'code' => $code,
+                'expected' => $expectedByMethod[$code] ?? '0.00',
+                'actual' => $actualByMethod[$code] ?? '0.00',
+                'variance' => $methodVariance[$code] ?? '0.00',
+            ]),
+            'salesCount' => $shift->sales->count(),
+            'salesTotal' => $salesTotal,
+            // Return/refund source documents are not part of the current
+            // retail schema. Keep the report truthful until US-020 exists.
+            'refundCount' => 0,
+            'refundTotal' => '0.00',
+        ];
+    };
+
+    Route::get('pos/shifts/{shift}/print/thermal', function (Request $request, PosShift $shift) use ($closedShiftPrintData) {
+        return view('pages.pos.shift-print-thermal', $closedShiftPrintData($request, $shift, 'thermal'));
+    })->middleware('can:shifts_cash_movements.print')->name('pos.shift.print.thermal');
+
+    Route::get('pos/shifts/{shift}/print/a4', function (Request $request, PosShift $shift) use ($closedShiftPrintData) {
+        return view('pages.pos.shift-print-a4', $closedShiftPrintData($request, $shift, 'a4'));
+    })->middleware('can:shifts_cash_movements.print')->name('pos.shift.print.a4');
 
     Route::get('pos/offline-readiness', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.view'), 403);
@@ -649,25 +974,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     })->middleware('can:pos_sales.view')->name('pos.offline-readiness');
 
     Route::get('customers/loyalty-readiness', function (Request $request) {
-        abort_unless($request->user()?->can('pos_sales.view'), 403);
+        abort_unless($request->user()?->can('customers.view'), 403);
 
-        $definitions = CustomerPolicySettingRegistry::all();
-        $latest = CustomerPolicySettingVersion::query()
-            ->whereIn('key', array_keys($definitions))
-            ->orderByDesc('version')
-            ->get()
-            ->groupBy('key')
-            ->map(static fn ($versions) => $versions->first());
-
-        $decisionSettings = collect($definitions)->mapWithKeys(static fn (array $definition, string $key): array => [
-            $key => [
-                ...$definition,
-                'record' => $latest->get($key),
-            ],
-        ]);
-
-        return view('pages.customers.loyalty-readiness', compact('decisionSettings'));
-    })->middleware('can:pos_sales.view')->name('customers.loyalty-readiness');
+        return to_route('customers.index');
+    })->middleware('can:customers.view')->name('customers.loyalty-readiness');
 
     Route::get('admin/settings/customer-loyalty', function (Request $request) {
         abort_unless($request->user()?->can('company_settings.view'), 403);
@@ -701,7 +1011,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $action->execute($data['key'], $data['value'] ?? null, $data['notes'] ?? null);
 
-        return to_route('admin.settings.customer-loyalty')->with('status', 'Customer policy setting version saved locally; owner approval is still required.');
+        return to_route('admin.settings.customer-loyalty')->with('status', __('Customer policy settings saved. Owner approval is still required before publishing a policy.'));
     })->middleware('can:company_settings.edit')->name('admin.settings.customer-loyalty.save');
 
     Route::get('pos/financial-readiness', function (Request $request) {
@@ -770,6 +1080,40 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.remove');
 
+    Route::post('pos/cart/quantity', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.create'), 403);
+        $data = $request->validate([
+            'product_id' => ['required', 'integer'],
+            'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999'],
+        ]);
+        /** @var array<int, array<string, mixed>> $sessionCart */
+        $sessionCart = $request->session()->get('pos.cart', []);
+        $cart = collect($sessionCart);
+        $index = $cart->search(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === (int) $data['product_id']);
+        abort_if($index === false, 404);
+        $line = $cart[$index];
+        $before = ['quantity' => (string) ($line['quantity'] ?? '0')];
+        $line['quantity'] = (string) $data['quantity'];
+        $cart[$index] = $line;
+        $request->session()->put('pos.cart', $cart->values()->all());
+
+        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->first();
+        app(RecordAuditEvent::class)->execute(
+            category: 'retail',
+            event: 'pos_cart_quantity_updated',
+            explicitSourceId: 'cart:'.((int) $data['product_id']),
+            before: $before,
+            after: ['quantity' => $line['quantity']],
+            branchId: $store?->branch_id,
+            storeId: $store?->id,
+            metadata: ['product_id' => (int) $data['product_id'], 'actor_id' => $user->id],
+        );
+
+        return back()->with('success', __('Cart quantity updated.'));
+    })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
+
     Route::post('pos/cart/discount', function (Request $request, DiscountPolicy $policy) {
         /** @var User $user */
         $user = $request->user();
@@ -799,14 +1143,59 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $gross = DecimalMoney::round(bcmul((string) $line['quantity'], $unitPrice, 8));
         $existingType = filled($line['discount_type'] ?? null) ? (string) $line['discount_type'] : null;
 
+        $discountAmount = DecimalMoney::round((string) $data['discount_amount']);
+        $requiresApproval = $policy->requiresApproval($discountAmount, $gross);
+        $approvalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
+        $checkoutToken = (string) $request->session()->get('pos.checkout_token', Str::uuid());
+        $request->session()->put('pos.checkout_token', $checkoutToken);
+        $nextRevision = (int) ($line['discount_revision'] ?? 0) + 1;
+        $sourceHash = app(OpenPricePolicy::class)->fingerprint([
+            'product_id' => (int) $line['product_id'],
+            'store_id' => (int) $store->id,
+            'price_line_id' => (int) $price->id,
+            'price_updated_at' => (string) $price->updated_at,
+            'gross' => $gross,
+            'discount_amount' => $discountAmount,
+            'discount_type' => (string) $data['discount_type'],
+            'reason' => trim((string) ($data['reason'] ?? '')),
+            'existing_type' => $existingType,
+            'existing_amount' => (string) ($line['discount_amount'] ?? '0.00'),
+            'approval_limit' => $approvalLimit,
+        ]);
+        $approval = null;
+        if ($requiresApproval) {
+            $approval = app(RequestApproval::class)->execute(new ApprovalRequestData(
+                sourceType: 'pos_discount',
+                sourceId: 'cart:'.$checkoutToken.':product:'.$line['product_id'].':discount-revision:'.$nextRevision,
+                sourceVersion: (string) $price->id.':'.(string) $price->updated_at,
+                requestedAction: 'approve_discount',
+                requestPermission: 'pos_sales.apply_discount',
+                branchId: (int) $store->branch_id,
+                storeId: (int) $store->id,
+                reasonText: trim((string) ($data['reason'] ?? '')),
+                limitContext: [
+                    'product_id' => (int) $line['product_id'],
+                    'gross' => $gross,
+                    'discount_amount' => $discountAmount,
+                    'discount_type' => (string) $data['discount_type'],
+                    'approval_limit_percent' => $approvalLimit,
+                ],
+                sourceHash: $sourceHash,
+                idempotencyKey: 'POS-DISCOUNT:'.$checkoutToken.':'.$line['product_id'].':'.$nextRevision.':'.$discountAmount,
+                expiresAt: now()->addMinutes(30),
+                decisionPermission: 'pos_sales.discount_approve',
+            ));
+        }
+
         try {
             $resolved = $policy->buildLineDiscount(
                 actor: $user,
-                discountAmount: DecimalMoney::round((string) $data['discount_amount']),
+                discountAmount: $discountAmount,
                 baseAmount: $gross,
                 newType: (string) $data['discount_type'],
                 existingType: $existingType,
                 reason: $data['reason'] ?? null,
+                approved: $requiresApproval,
             );
         } catch (InvalidArgumentException $exception) {
             return back()->withErrors(['discount' => $exception->getMessage()]);
@@ -824,6 +1213,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $line['discount_previous_type'] = $existingType;
         $line['discount_previous_amount'] = $before['amount'];
         $line['discount_revision'] = $before['revision'] + 1;
+        $line['discount_approval_id'] = $approval?->id;
+        $line['discount_approval_state'] = $approval?->approval_state->value;
         $cart[$index] = $line;
         $request->session()->put('pos.cart', $cart->values()->all());
 
@@ -835,10 +1226,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             branchId: (int) $store->branch_id,
             storeId: (int) $store->id,
             reasonText: $data['reason'] ?? null,
-            metadata: ['product_id' => (int) $line['product_id'], 'actor_id' => $user->id],
+            metadata: ['product_id' => (int) $line['product_id'], 'actor_id' => $user->id, 'approval_record_id' => $approval?->id, 'approval_limit_percent' => $approvalLimit],
         );
 
-        return back()->with('success', $existingType === null ? __('Discount applied.') : __('The previous discount was replaced.'));
+        return back()->with('success', $requiresApproval
+            ? __('Discount saved. Independent manager approval is required before checkout.')
+            : ($existingType === null ? __('Discount applied.') : __('The previous discount was replaced.')));
     })->middleware('can:pos_sales.apply_discount')->name('pos.cart.discount');
 
     Route::post('pos/cart/open-price', function (Request $request, OpenPricePolicy $policy) {
@@ -865,7 +1258,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
         $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
         abort_if($price === null || ! $price->open_price_allowed, 422, __('Open price is not enabled for this product.'));
-        $reference = (string) ($price->reference_amount ?? $price->amount);
+        $reference = DecimalMoney::normalize((string) ($price->reference_amount ?? $price->amount), 4);
         $policy->validateOrThrow(
             referenceAmount: $reference,
             requestedAmount: (string) $data['amount'],
@@ -876,8 +1269,52 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         );
 
         $before = ['amount' => $line['open_price_amount'] ?? null, 'revision' => (int) ($line['pricing_revision'] ?? 0)];
+        $approvalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
+        $requiresApproval = $policy->requiresApproval($reference, (string) $data['amount'], $approvalLimit);
+        $checkoutToken = (string) $request->session()->get('pos.checkout_token', Str::uuid());
+        $request->session()->put('pos.checkout_token', $checkoutToken);
+        $sourceHash = $policy->fingerprint([
+            'product_id' => (int) $line['product_id'],
+            'store_id' => (int) $store->id,
+            'price_line_id' => (int) $price->id,
+            'price_updated_at' => (string) $price->updated_at,
+            'reference' => $reference,
+            'minimum' => $price->open_price_minimum,
+            'maximum' => $price->open_price_maximum,
+            'requested_amount' => DecimalMoney::normalize((string) $data['amount'], 4),
+            'reason' => trim((string) $data['reason']),
+            'approval_limit' => $approvalLimit,
+        ]);
+        $approval = null;
+        if ($requiresApproval) {
+            $approval = app(RequestApproval::class)->execute(new ApprovalRequestData(
+                sourceType: 'pos_open_price',
+                sourceId: 'cart:'.$checkoutToken.':product:'.$line['product_id'].':revision:'.((int) $before['revision'] + 1),
+                sourceVersion: (string) $price->id.':'.(string) $price->updated_at,
+                requestedAction: 'approve_open_price',
+                requestPermission: 'pos_sales.open_price',
+                branchId: (int) $store->branch_id,
+                storeId: (int) $store->id,
+                reasonText: trim((string) $data['reason']),
+                limitContext: [
+                    'product_id' => (int) $line['product_id'],
+                    'reference_amount' => $reference,
+                    'minimum' => $price->open_price_minimum,
+                    'maximum' => $price->open_price_maximum,
+                    'requested_amount' => DecimalMoney::normalize((string) $data['amount'], 4),
+                    'approval_limit_percent' => $approvalLimit,
+                ],
+                sourceHash: $sourceHash,
+                idempotencyKey: 'POS-OPEN-PRICE:'.$checkoutToken.':'.$line['product_id'].':'.((int) $before['revision'] + 1),
+                expiresAt: now()->addMinutes(30),
+                decisionPermission: 'pos_sales.open_price_approve',
+            ));
+        }
+
         $line['open_price_amount'] = DecimalMoney::normalize((string) $data['amount'], 4);
         $line['open_price_reason'] = trim((string) $data['reason']);
+        $line['open_price_approval_id'] = $approval?->id;
+        $line['open_price_approval_state'] = $approval?->approval_state->value;
         $line['pricing_revision'] = $before['revision'] + 1;
         $cart[$index] = $line;
         $request->session()->put('pos.cart', $cart->values()->all());
@@ -893,7 +1330,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             metadata: ['product_id' => (int) $line['product_id'], 'actor_id' => $user->id],
         );
 
-        return back()->with('success', __('Open price applied to the basket line.'));
+        return back()->with('success', $requiresApproval
+            ? __('Open price saved. Independent manager approval is required before checkout.')
+            : __('Open price applied to the basket line.'));
     })->middleware('can:pos_sales.open_price')->name('pos.cart.open-price');
 
     Route::post('pos/cart/tax', function (Request $request) {
@@ -955,10 +1394,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             true,
             [],
             ['tax_applicable' => (bool) $request->session()->get('pos.tax_applicable', false)],
+            $request->session()->get('pos.customer_id') ? Customer::query()->visibleFrom($user, (int) $store->branch_id, (int) $store->id)->where('status', 'active')->findOrFail((int) $request->session()->get('pos.customer_id')) : null,
         );
         $request->session()->forget('pos.cart');
         $request->session()->forget('pos.checkout_token');
         $request->session()->forget('pos.tax_applicable');
+        $request->session()->forget('pos.customer_id');
 
         return redirect()->route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->getAttribute('resume_code')]));
     })->middleware('can:pos_sales.create')->name('pos.suspend');
@@ -980,7 +1421,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'payments.*.tendered' => ['nullable', 'numeric', 'gte:0'],
             'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
             'payments.*.evidence' => ['nullable', 'file'],
+            'payments.*.gift_card_identifier' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $customer = null;
+        $customerId = $request->session()->get('pos.customer_id');
+        if ($customerId !== null) {
+            $customer = Customer::query()->visibleFrom($user, (int) $store->branch_id, (int) $store->id)->where('status', 'active')->findOrFail((int) $customerId);
+        }
 
         $tenders = [];
         foreach ($validated['payments'] as $index => $payment) {
@@ -1003,12 +1451,27 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $attachmentId = $attachment->id;
             }
 
+            $method = PaymentMethod::query()->findOrFail($payment['method_id']);
+            $giftCard = null;
+            if ((string) $method->type === 'gift_card') {
+                abort_unless($user->can('gift_cards.redeem'), 403);
+                $identifier = trim((string) ($payment['gift_card_identifier'] ?? ''));
+                $giftCard = GiftCard::query()
+                    ->visibleTo($user)
+                    ->where('identifier', $identifier)
+                    ->where('branch_id', $store->branch_id)
+                    ->where('store_id', $store->id)
+                    ->whereIn('status', ['active', 'partially_used'])
+                    ->firstOrFail();
+            }
+
             $tenders[] = [
-                'method' => PaymentMethod::query()->findOrFail($payment['method_id']),
+                'method' => $method,
                 'amount' => isset($payment['amount']) ? (string) $payment['amount'] : '0.00',
                 'tendered' => isset($payment['tendered']) ? (string) $payment['tendered'] : null,
                 'evidence_reference' => $payment['evidence_reference'] ?? null,
                 'evidence_attachment_id' => $attachmentId,
+                'gift_card' => $giftCard,
             ];
         }
         if ($tenders === []) {
@@ -1024,6 +1487,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 false,
                 $tenders,
                 ['tax_applicable' => (bool) ($validated['tax_applicable'] ?? false)],
+                $customer,
             );
         } catch (InvalidArgumentException|RuntimeException $e) {
             return back()->withErrors(['payments' => $e->getMessage()]);
@@ -1032,6 +1496,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $request->session()->forget('pos.cart');
         $request->session()->forget('pos.checkout_token');
         $request->session()->forget('pos.tax_applicable');
+        $request->session()->forget('pos.customer_id');
 
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
     })->middleware('can:pos_sales.create')->name('pos.checkout');
@@ -1085,6 +1550,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'payments.*.tendered' => ['nullable', 'numeric', 'gte:0'],
             'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
             'payments.*.evidence' => ['nullable', 'file'],
+            'payments.*.gift_card_identifier' => ['nullable', 'string', 'max:100'],
         ]);
         $resumeTokenKey = 'pos.suspended.resume_token.'.$sale->id;
         $expectedToken = (string) $request->session()->get($resumeTokenKey, '');
@@ -1111,12 +1577,27 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $attachmentId = $attachment->id;
             }
 
+            $method = PaymentMethod::query()->findOrFail($payment['method_id']);
+            $giftCard = null;
+            if ((string) $method->type === 'gift_card') {
+                abort_unless($user->can('gift_cards.redeem'), 403);
+                $identifier = trim((string) ($payment['gift_card_identifier'] ?? ''));
+                $giftCard = GiftCard::query()
+                    ->visibleTo($user)
+                    ->where('identifier', $identifier)
+                    ->where('branch_id', $sale->branch_id)
+                    ->where('store_id', $sale->store_id)
+                    ->whereIn('status', ['active', 'partially_used'])
+                    ->firstOrFail();
+            }
+
             $tenders[] = [
-                'method' => PaymentMethod::query()->findOrFail($payment['method_id']),
+                'method' => $method,
                 'amount' => isset($payment['amount']) ? (string) $payment['amount'] : '0.00',
                 'tendered' => isset($payment['tendered']) ? (string) $payment['tendered'] : null,
                 'evidence_reference' => $payment['evidence_reference'] ?? null,
                 'evidence_attachment_id' => $attachmentId,
+                'gift_card' => $giftCard,
             ];
         }
         if ($tenders === []) {

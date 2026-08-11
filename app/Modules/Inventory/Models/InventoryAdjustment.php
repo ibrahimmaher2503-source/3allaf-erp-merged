@@ -16,7 +16,7 @@ final class InventoryAdjustment extends Model implements ImmutableSourceContract
 {
     use GuardsApprovedDocument;
 
-    protected $fillable = ['adjustment_number', 'store_id', 'adjustment_type', 'status', 'reason_code', 'reason_notes', 'allow_negative', 'created_by', 'submitted_by', 'approved_by', 'reversed_by', 'submitted_at', 'approved_at', 'reversed_at', 'idempotency_key', 'lock_version', 'notes'];
+    protected $fillable = ['adjustment_number', 'store_id', 'adjustment_type', 'status', 'reason_code', 'reason_notes', 'allow_negative', 'created_by', 'submitted_by', 'approved_by', 'reversed_by', 'reversal_of_id', 'submitted_at', 'approved_at', 'reversed_at', 'reversal_reason', 'idempotency_key', 'lock_version', 'notes'];
 
     protected $casts = ['allow_negative' => 'boolean', 'submitted_at' => 'datetime', 'approved_at' => 'datetime', 'reversed_at' => 'datetime', 'lock_version' => 'integer'];
 
@@ -30,6 +30,12 @@ final class InventoryAdjustment extends Model implements ImmutableSourceContract
     public function lines(): HasMany
     {
         return $this->hasMany(InventoryAdjustmentLine::class);
+    }
+
+    /** @return BelongsTo<self, $this> */
+    public function reversalOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
     }
 
     /** @return BelongsTo<User, $this> */

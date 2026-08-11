@@ -3,6 +3,7 @@
 
     $pageGuideContext = $pageGuide ?? PageGuideContext::fromRequest(auth()->user());
     $guide = $pageGuideContext?->toArray();
+    $tutorialProgress = auth()->user()?->uiPreference?->tutorial_progress ?? [];
     $locale = app()->getLocale();
     $isArabic = $locale === 'ar';
     $fallback = $isArabic
@@ -11,8 +12,10 @@
 @endphp
 
 <div
-    x-data="dashboardAssistant({ context: @js($guide), locale: @js($locale), fallback: @js($fallback), preferences: window.__toyJoyUiPreferences || {} })"
+    x-data="dashboardAssistant({ context: @js($guide), locale: @js($locale), fallback: @js($fallback), preferences: window.__toyJoyUiPreferences || {}, progress: @js($tutorialProgress), progressUrl: @js(route('platform.tutorial-progress')) })"
     x-on:keydown.escape.window="closeAll()"
+    x-on:keydown.arrow-right.window="if (tour.active) nextTour()"
+    x-on:keydown.arrow-left.window="if (tour.active) previousTour()"
     class="platform-assistant"
 >
     <div class="platform-assistant__desktop-launchers" aria-label="{{ $isArabic ? 'أدوات الصفحة' : 'Page tools' }}">
@@ -38,7 +41,7 @@
             <div>
                 <p class="platform-assistant__eyebrow">{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</p>
                 <h2 id="page-guide-title" class="platform-assistant__title" x-text="text(context?.title) || (locale === 'ar' ? 'دليل الصفحة' : 'Page Guide')"></h2>
-                <p class="platform-assistant__screen" x-show="context?.screen_id" x-text="context?.screen_id"></p>
+                <p class="platform-assistant__screen" x-show="context?.screen_id">{{ $isArabic ? 'إرشاد مرتبط بهذه الشاشة' : 'Guidance for this screen' }}</p>
             </div>
             <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}">×</button>
         </header>
@@ -46,6 +49,8 @@
         <div class="platform-assistant__body">
             <template x-if="context">
                 <div class="space-y-5">
+                    <div class="platform-assistant__progress" role="status" aria-live="polite"><span x-text="tutorialStatusText()"></span><span x-show="tutorialStatus === 'completed'" aria-hidden="true">✓</span></div>
+                    <section x-show="context.module" class="rounded-xl border border-border bg-surface-muted p-4"><h3>{{ $isArabic ? 'عن هذه الوحدة' : 'About this module' }}</h3><p x-text="text(context.module?.description)"></p></section>
                     <section><h3>{{ $isArabic ? 'ماذا تفعل هذه الصفحة؟' : 'What this page does' }}</h3><p x-text="text(context.purpose)"></p></section>
                     <section><h3>{{ $isArabic ? 'متى تستخدمها؟' : 'When to use it' }}</h3><p x-text="text(context.when_to_use)"></p></section>
                     <section><h3>{{ $isArabic ? 'ما يمكنك فعله' : 'What you can do here' }}</h3><ul class="platform-assistant__list"><template x-for="action in context.approved_actions" :key="action.key"><li x-text="text(action.label)"></li></template></ul><p x-show="!context.approved_actions?.length" class="platform-assistant__muted">{{ $isArabic ? 'لا توجد إجراءات متاحة لهذا المستخدم هنا.' : 'No actions are available for this user here.' }}</p></section>
@@ -62,7 +67,8 @@
         </div>
 
         <footer class="platform-assistant__footer">
-            <button type="button" class="platform-assistant__primary" x-show="context?.tour_steps?.length" x-on:click="startTour()">{{ $isArabic ? 'ابدأ الجولة التفاعلية' : 'Start Interactive Tour' }}</button>
+            <button type="button" class="platform-assistant__primary" x-show="context?.tour_steps?.length" x-on:click="startTour()" x-text="tourButtonLabel()"></button>
+            <button type="button" class="platform-assistant__secondary" x-show="context?.tour_steps?.length && ['completed', 'dismissed'].includes(tutorialStatus)" x-on:click="startTour(true)">{{ $isArabic ? 'إعادة الجولة' : 'Restart tour' }}</button>
             <a x-show="context?.screen_id" :href="context?.screen_id ? '{{ url('/help/screens') }}/' + context.screen_id : '#'" class="platform-assistant__secondary">{{ $isArabic ? 'فتح الدليل الكامل' : 'Open Full Guide' }}</a>
             <a x-show="context?.flows?.length" :href="context?.flows?.length ? '{{ url('/help/flows') }}/' + context.flows[0] : '#'" class="platform-assistant__secondary">{{ $isArabic ? 'فتح تدفق المستخدم' : 'Open User Flow' }}</a>
         </footer>
@@ -118,13 +124,14 @@
 
 <script>
     document.addEventListener('alpine:init', () => {
-        Alpine.data('dashboardAssistant', ({ context, locale, fallback, preferences }) => ({
-            context, locale, fallback,
+        Alpine.data('dashboardAssistant', ({ context, locale, fallback, preferences, progress, progressUrl }) => ({
+            context, locale, fallback, progress, progressUrl,
             defaults: { appearance: 'system', accent_color: 'teal', sidebar_mode: 'expanded', navbar_mode: 'sticky', content_width: 'wide', table_density: 'comfortable', font_scale: 'normal', reduced_motion: false },
             preferences: {},
             darkSidebar: false,
             guideOpen: false, customizerOpen: false, mobileMenuOpen: false,
             saveStatus: 'idle',
+            tutorialStatus: 'not_started',
             launcherFocus: null,
             tour: { active: false, steps: [], step: null, visibleIndex: 0, lastFocus: null, currentElement: null, savedStyle: null, cardPosition: null, scrollAdjusting: false },
             _tourScrollHandler: null,
@@ -137,7 +144,48 @@
                 }
                 this.darkSidebar = initialDark;
                 this.preferences = this.normalizePreferences(preferences);
+                this.progress = progress || {};
+                this.tutorialStatus = this.statusForContext();
                 this.applyPreferences();
+            },
+            statusForContext() {
+                const screenId = this.context?.screen_id;
+                return screenId && this.progress?.[screenId]?.status ? this.progress[screenId].status : 'not_started';
+            },
+            tutorialStatusText() {
+                return {
+                    not_started: locale === 'ar' ? 'لم تبدأ الجولة بعد' : 'Tour not started',
+                    in_progress: locale === 'ar' ? 'جولة قيد التقدم' : 'Tour in progress',
+                    completed: locale === 'ar' ? 'اكتملت الجولة' : 'Tour completed',
+                    dismissed: locale === 'ar' ? 'تم تخطي الجولة' : 'Tour dismissed',
+                }[this.tutorialStatus] || '';
+            },
+            tourButtonLabel() {
+                return this.tutorialStatus === 'in_progress'
+                    ? (locale === 'ar' ? 'متابعة الجولة' : 'Continue tour')
+                    : (locale === 'ar' ? 'ابدأ الجولة التفاعلية' : 'Start interactive tour');
+            },
+            async persistTutorialStatus(status) {
+                const screenId = this.context?.screen_id;
+                if (!screenId) return;
+                this.tutorialStatus = status;
+                this.progress = {
+                    ...(this.progress || {}),
+                    [screenId]: { status, updated_at: new Date().toISOString() },
+                };
+                try {
+                    await fetch(this.progressUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        },
+                        body: JSON.stringify({ screen_id: screenId, status }),
+                    });
+                } catch (error) {
+                    console.warn('Tutorial progress could not be saved', error);
+                }
             },
             normalizePreferences(value = {}) {
                 const merged = { ...this.defaults, ...(value || {}) };
@@ -191,7 +239,7 @@
                 this.customizerOpen = false;
                 this.mobileMenuOpen = false;
                 if (this.tour.active) {
-                    this.finishTour();
+                    this.finishTour('dismissed');
                 } else if (hadOpen) {
                     this.restoreLauncherFocus();
                 }
@@ -424,6 +472,7 @@
                 this.tour.visibleIndex = 0;
                 this.tour.active = true;
                 this.guideOpen = false;
+                this.persistTutorialStatus('in_progress');
                 
                 if (!this._tourScrollHandler) {
                     this._tourScrollHandler = () => {
@@ -442,7 +491,7 @@
                 this.tour.steps = this.getValidSteps();
                 
                 if (!this.tour.steps.length || index < 0 || index >= this.tour.steps.length) {
-                    return this.finishTour();
+                    return this.finishTour('dismissed');
                 }
                 
                 this.tour.visibleIndex = index + 1;
@@ -470,7 +519,7 @@
                 if (!this.tour.active) return;
                 const nextIndex = this.tour.visibleIndex;
                 if (nextIndex >= this.tour.steps.length) {
-                    return this.finishTour();
+                    return this.finishTour('completed');
                 }
                 this.showTourStep(nextIndex);
             },
@@ -481,9 +530,12 @@
                 this.showTourStep(prevIndex);
             },
             skipTour() {
-                this.finishTour();
+                this.finishTour('dismissed');
             },
-            finishTour() {
+            finishTour(status = 'dismissed') {
+                if (this.tour.active && status) {
+                    this.persistTutorialStatus(status);
+                }
                 this.clearHighlight();
                 this.tour.active = false;
                 this.tour.step = null;
@@ -509,4 +561,3 @@
         }));
     });
 </script>
-

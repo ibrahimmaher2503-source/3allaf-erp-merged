@@ -10,7 +10,7 @@ test.describe('TSK-008 authorization baseline', () => {
         const response = await page.goto('/admin/authorization-baseline');
         expect(response?.status()).toBe(200);
         await expect(page.getByRole('heading', { name: 'Authorization Baseline' })).toBeVisible();
-        await expect(page.getByText('Canonical authorization', { exact: true })).toBeVisible();
+        await expect(page.getByText('Access management', { exact: true })).toBeVisible();
         await expect(page.getByText(/Current access is role-based and scope-aware/)).toBeVisible();
         await page.setViewportSize({ width: 390, height: 844 });
         const token = await page.locator('input[name="_token"]').first().inputValue();

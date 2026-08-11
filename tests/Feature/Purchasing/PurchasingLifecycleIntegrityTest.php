@@ -60,6 +60,34 @@ final class PurchasingLifecycleIntegrityTest extends TestCase
         ]);
     }
 
+    public function test_supplier_and_purchase_cost_history_are_approved_source_linked_views(): void
+    {
+        [$supplier, $product, $store] = $this->masterData('history');
+        $approved = PurchaseInvoice::query()->create([
+            'invoice_number' => 'PINV-HISTORY-APPROVED', 'supplier_id' => $supplier->id, 'store_id' => $store->id,
+            'supplier_reference' => 'SUP-HISTORY-1', 'invoice_date' => now()->toDateString(), 'currency_code' => 'EGP',
+            'status' => 'draft', 'subtotal' => '20', 'tax_amount' => '0', 'discount_amount' => '0',
+            'total_amount' => '20', 'idempotency_key' => 'history-approved',
+        ]);
+        PurchaseInvoiceLine::query()->create([
+            'purchase_invoice_id' => $approved->id, 'product_id' => $product->id, 'quantity' => '2',
+            'quantity_received' => '2', 'unit_cost' => '10', 'discount_amount' => '0', 'tax_rate' => '0',
+            'tax_amount' => '0', 'subtotal' => '20', 'line_total' => '20',
+        ]);
+        $approved->forceFill(['status' => 'approved', 'approved_at' => now()])->save();
+        PurchaseInvoice::query()->create([
+            'invoice_number' => 'PINV-HISTORY-DRAFT', 'supplier_id' => $supplier->id, 'store_id' => $store->id,
+            'supplier_reference' => 'SUP-HISTORY-DRAFT', 'invoice_date' => now()->toDateString(), 'currency_code' => 'EGP',
+            'status' => 'draft', 'subtotal' => '99', 'tax_amount' => '0', 'discount_amount' => '0',
+            'total_amount' => '99', 'idempotency_key' => 'history-draft',
+        ]);
+
+        $this->get(route('purchasing.history.suppliers', ['supplier_id' => $supplier->id]))
+            ->assertOk()->assertSee('Supplier invoice history')->assertSee('PINV-HISTORY-APPROVED')->assertDontSee('PINV-HISTORY-DRAFT');
+        $this->get(route('purchasing.history.costs', ['product_id' => $product->id]))
+            ->assertOk()->assertSee('Purchase cost history')->assertSee('PINV-HISTORY-APPROVED')->assertSee($product->item_code);
+    }
+
     public function test_purchase_order_approval_is_segregated_and_has_no_stock_effect(): void
     {
         [$supplier, $product, $store] = $this->masterData('po');

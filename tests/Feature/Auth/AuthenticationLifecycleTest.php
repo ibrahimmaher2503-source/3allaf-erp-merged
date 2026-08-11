@@ -51,6 +51,19 @@ class AuthenticationLifecycleTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_a_pos_only_cashier_enters_pos_instead_of_an_unauthorized_dashboard(): void
+    {
+        $user = $this->userWith('tsk002-cashier-home', ['cashier']);
+
+        $response = $this->post('/login', [
+            'username' => 'tsk002-cashier-home',
+            'password' => self::PASSWORD,
+        ]);
+
+        $response->assertRedirect(route('pos'));
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_an_invalid_password_is_rejected_and_leaves_the_visitor_a_guest(): void
     {
         $this->userWith('tsk002-user', ['cashier']);

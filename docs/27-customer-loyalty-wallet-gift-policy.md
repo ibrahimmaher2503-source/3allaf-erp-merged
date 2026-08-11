@@ -108,7 +108,7 @@ Overuse, duplicate use, expired use, and voided use are blocked.
 
 ---
 
-## 9. Manual Browser Verification
+## 9. Verification boundary
 
 Verify:
 
@@ -123,4 +123,4 @@ Verify:
 9. Source reconciliation.
 10. RTL/LTR, responsive, console, and network.
 
-No automated tests are created or executed.
+TSK-027 closure evidence includes SQLite and MariaDB feature coverage, real MariaDB concurrency workers, direct HTTP scope/RBAC checks, and Chromium/Firefox/WebKit browser checks. Party history/payment/return/gift/wallet scenarios remain downstream tasks and are not claimed here.

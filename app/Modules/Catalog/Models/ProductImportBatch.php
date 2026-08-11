@@ -11,11 +11,12 @@ class ProductImportBatch extends Model
 {
     protected $fillable = [
         'created_by', 'original_filename', 'storage_path', 'mime_type', 'size_bytes',
-        'sha256', 'mode', 'status', 'headers', 'total_rows', 'valid_rows', 'invalid_rows', 'approved_at',
+        'sha256', 'mode', 'status', 'headers', 'column_mapping', 'total_rows', 'valid_rows', 'invalid_rows', 'approved_at',
     ];
 
     protected $casts = [
         'headers' => 'array',
+        'column_mapping' => 'array',
         'approved_at' => 'datetime',
     ];
 

@@ -44,6 +44,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', ['setup' => $setupStatus->snapshot()]);
     })->middleware('can:dashboard_reports.view')->name('dashboard');
     require __DIR__.'/retail.php';
+    require __DIR__.'/customers.php';
+    require __DIR__.'/party.php';
+    require __DIR__.'/assets.php';
+    require __DIR__.'/quotations.php';
+    require __DIR__.'/reporting.php';
+    require __DIR__.'/returns-gifts.php';
 });
 
 require __DIR__.'/platform.php';

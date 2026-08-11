@@ -202,6 +202,7 @@ final class InventoryFaultInjectionAtomicityTest extends TestCase
     private function twoProductScenario(string $tag): array
     {
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('inventory_adjustment');
         $branch = $this->branch($tag.'-BR');
         $source = $this->store($branch, $tag.'-SRC', 'warehouse');
         $destination = $this->store($branch, $tag.'-DST', 'selling');

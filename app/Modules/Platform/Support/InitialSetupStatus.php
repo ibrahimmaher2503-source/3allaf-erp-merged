@@ -73,7 +73,7 @@ final class InitialSetupStatus
             [
                 'key' => 'wallet-policies',
                 'label' => (string) __('Wallet policy values'),
-                'description' => (string) __('Review Product Wallet and Party Wallet limits and policies; blank values remain PENDING and no wallet mutation is enabled.'),
+                'description' => (string) __('Review product and party wallet limits and policies.'),
                 'route' => route('admin.settings.customer-loyalty'),
                 'complete' => $this->walletPolicyValuesConfigured(),
                 'required' => false,
@@ -81,7 +81,7 @@ final class InitialSetupStatus
             [
                 'key' => 'gift-instruments',
                 'label' => (string) __('Gift Card and Gift Receipt policies'),
-                'description' => (string) __('Review eligibility, validity, holder, void, reprint, and format values; blanks remain PENDING and no instrument mutation is enabled.'),
+                'description' => (string) __('Review gift instrument eligibility, validity, holder, voiding, reprint, and format settings.'),
                 'route' => route('gift.receipts'),
                 'complete' => $this->giftPolicyValuesConfigured(),
                 'required' => false,
@@ -89,7 +89,7 @@ final class InitialSetupStatus
             [
                 'key' => 'return-policies',
                 'label' => (string) __('Return and Exchange policies'),
-                'description' => (string) __('Review source, window, condition, approval, settlement, and print values; blanks remain PENDING and no return mutation is enabled.'),
+                'description' => (string) __('Review return source, time window, condition, approval, settlement, and print settings.'),
                 'route' => route('returns.readiness'),
                 'complete' => $this->returnPolicyValuesConfigured(),
                 'required' => false,
@@ -97,7 +97,7 @@ final class InitialSetupStatus
             [
                 'key' => 'party-policies',
                 'label' => (string) __('Party booking and working invoice policies'),
-                'description' => (string) __('Review party-only stores, services, schedule, privacy, cancellation, pricing, and final-close values; blanks remain PENDING and no party mutation is enabled.'),
+                'description' => (string) __('Review party stores, services, schedule, privacy, cancellation, pricing, and settlement settings.'),
                 'route' => route('party.readiness'),
                 'complete' => $this->partyPolicyValuesConfigured(),
                 'required' => false,
@@ -105,7 +105,7 @@ final class InitialSetupStatus
             [
                 'key' => 'party-payment-policies',
                 'label' => (string) __('Party payment and balance policies'),
-                'description' => (string) __('Review Party-only payment, evidence, receipt, balance, idempotency, and Party Wallet values; blanks remain PENDING and no financial mutation is enabled.'),
+                'description' => (string) __('Review party payment, evidence, receipt, balance, retry, and wallet settings.'),
                 'route' => route('party.payments.readiness'),
                 'complete' => $this->partyPaymentPolicyValuesConfigured(),
                 'required' => false,
@@ -113,7 +113,7 @@ final class InitialSetupStatus
             [
                 'key' => 'party-operating-policies',
                 'label' => (string) __('Party operating-order and consumable policies'),
-                'description' => (string) __('Review Party-only operating order, consumable, issue, return, reconciliation, approval, audit, and print values; blanks remain PENDING and no stock mutation is enabled.'),
+                'description' => (string) __('Review party operating orders, consumables, issues, returns, reconciliation, approval, and print settings.'),
                 'route' => route('party.operating.readiness'),
                 'complete' => $this->partyOperatingPolicyValuesConfigured(),
                 'required' => false,
@@ -121,7 +121,7 @@ final class InitialSetupStatus
             [
                 'key' => 'rental-asset-policies',
                 'label' => (string) __('Rental asset and calendar policies'),
-                'description' => (string) __('Review asset identity, separation, availability, reservation, checkout, return, condition, approval, audit, and print values; blanks remain PENDING and no asset mutation is enabled.'),
+                'description' => (string) __('Review asset identity, availability, reservations, checkout, return, condition, approval, and print settings.'),
                 'route' => route('party.assets.readiness'),
                 'complete' => $this->rentalAssetPolicyValuesConfigured(),
                 'required' => false,
@@ -129,7 +129,7 @@ final class InitialSetupStatus
             [
                 'key' => 'rental-asset-event-policies',
                 'label' => (string) __('Rental asset event and depreciation policies'),
-                'description' => (string) __('Review damage, loss, maintenance, assessment, responsibility, evidence, cost privacy, approval, depreciation, and correction values; blanks remain PENDING and no event mutation is enabled.'),
+                'description' => (string) __('Review asset damage, loss, maintenance, assessment, responsibility, evidence, cost, and correction settings.'),
                 'route' => route('party.asset-events.readiness'),
                 'complete' => $this->rentalAssetEventPolicyValuesConfigured(),
                 'required' => false,
@@ -137,7 +137,7 @@ final class InitialSetupStatus
             [
                 'key' => 'party-final-close-policies',
                 'label' => (string) __('Party final-close and settlement policies'),
-                'description' => (string) __('Review final readiness, invoice freeze, payment reconciliation, credit, Party Wallet settlement, receipt, approval, idempotency, numbering, and print values; blanks remain PENDING and no close mutation is enabled.'),
+                'description' => (string) __('Review final invoice, payment reconciliation, credit, wallet settlement, receipt, approval, numbering, and print settings.'),
                 'route' => route('party.final-close.readiness'),
                 'complete' => $this->partyFinalClosePolicyValuesConfigured(),
                 'required' => false,
@@ -145,7 +145,7 @@ final class InitialSetupStatus
             [
                 'key' => 'quotation-policies',
                 'label' => (string) __('Quotation and proposal policies'),
-                'description' => (string) __('Review typed activity, customer, validity, status, price, terms, approval, numbering, print/share, and future conversion values; blanks remain PENDING and no quote action is enabled.'),
+                'description' => (string) __('Review quotation activity, customer, validity, status, price, terms, approval, numbering, and sharing settings.'),
                 'route' => route('quotations.readiness'),
                 'complete' => $this->quotationPolicyValuesConfigured(),
                 'required' => false,
@@ -153,7 +153,7 @@ final class InitialSetupStatus
             [
                 'key' => 'reporting-policies',
                 'label' => (string) __('Dashboard and reporting policies'),
-                'description' => (string) __('Review report source lineage, scope, filters, KPI formulas, reconciliation, alerts, pagination, export, precision, and freshness; blanks remain PENDING and no metric is certified.'),
+                'description' => (string) __('Review report sources, scope, filters, formulas, reconciliation, alerts, pagination, export, and freshness.'),
                 'route' => route('reports.readiness'),
                 'complete' => $this->reportPolicyValuesConfigured(),
                 'required' => false,
@@ -161,7 +161,7 @@ final class InitialSetupStatus
             [
                 'key' => 'alert-policies',
                 'label' => (string) __('Operational alert and exception policies'),
-                'description' => (string) __('Review alert triggers, severity, ownership, scope, lifecycle, source links, deduplication, notification, and queue navigation; blanks remain PENDING and no alert is created.'),
+                'description' => (string) __('Review alert triggers, severity, ownership, scope, lifecycle, source links, notifications, and queue navigation.'),
                 'route' => route('alerts.readiness'),
                 'complete' => $this->alertPolicyValuesConfigured(),
                 'required' => false,
@@ -169,7 +169,7 @@ final class InitialSetupStatus
             [
                 'key' => 'export-audit-policies',
                 'label' => (string) __('Export and audit policies'),
-                'description' => (string) __('Review formats, limits, retention, redaction, formula safety, reauthorization, audit export, and bounded audit filters; blanks remain PENDING and no artifact is generated.'),
+                'description' => (string) __('Review export formats, limits, retention, privacy, audit export, and filters.'),
                 'route' => route('exports.audit.readiness'),
                 'complete' => $this->exportAuditPolicyValuesConfigured(),
                 'required' => false,
@@ -177,31 +177,31 @@ final class InitialSetupStatus
             [
                 'key' => 'master-data-migration',
                 'label' => (string) __('Master-data import and cutover'),
-                'description' => (string) __('Review approved source, load order, create-only staging, reconciliation, maker/checker, backup, and cutover values; blanks remain PENDING and no import is enabled.'),
+                'description' => (string) __('Prepare approved company, catalog, and stock data for import and reconciliation.'),
                 'route' => route('master-data.migration.readiness'),
                 'complete' => $this->masterDataMigrationPolicyValuesConfigured(),
                 'required' => false,
             ],
             [
                 'key' => 'operations-readiness',
-                'label' => (string) __('Production operations and handover'),
-                'description' => (string) __('Review runtime, secrets, workers, storage, monitoring, backup/restore, devices, support, and training values; blanks remain PENDING and no production claim is enabled.'),
+                'label' => (string) __('Operations and handover'),
+                'description' => (string) __('Review service health, backups, devices, support, training, and handover details.'),
                 'required' => false,
                 'route' => route('operations.readiness'),
                 'complete' => $this->operationsReadinessPolicyValuesConfigured(),
             ],
             [
                 'key' => 'uat-readiness',
-                'label' => (string) __('Manual UAT and evidence readiness'),
-                'description' => (string) __('Review scenarios, owners, data/devices, evidence, defects, reconciliation, and acceptance values; blanks remain PENDING and no UAT sign-off is created.'),
+                'label' => (string) __('Validation review'),
+                'description' => (string) __('Review validation scenarios, evidence, issues, reconciliation, and sign-off.'),
                 'required' => false,
                 'route' => route('uat.readiness'),
                 'complete' => $this->uatReadinessPolicyValuesConfigured(),
             ],
             [
                 'key' => 'release-readiness',
-                'label' => (string) __('Controlled go-live and handover readiness'),
-                'description' => (string) __('Review cutover, rollback, monitoring, support, and approval values; blanks remain PENDING and no production deployment is performed.'),
+                'label' => (string) __('Release controls'),
+                'description' => (string) __('Review release approval, rollback, monitoring, support, and handover details.'),
                 'required' => false,
                 'route' => route('release.readiness'),
                 'complete' => $this->releaseReadinessPolicyValuesConfigured(),
@@ -209,7 +209,7 @@ final class InitialSetupStatus
             [
                 'key' => 'printers',
                 'label' => (string) __('Printer configuration'),
-                'description' => (string) __('Review the local printer profile and leave production device values pending until verified.'),
+                'description' => (string) __('Review the printer profile and verify device settings before use.'),
                 'route' => route('admin.settings'),
                 'complete' => PrinterConfiguration::query()->where('status', 'active')->exists(),
                 'required' => false,

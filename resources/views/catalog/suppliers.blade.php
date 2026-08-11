@@ -634,7 +634,7 @@ new #[Title('Supplier Masters')] class extends Component
                                                 @endif
                                             </td>
                                             <td class="px-3 py-2 text-xs text-end text-text-muted">
-                                                {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '— (TSK-015)' }}
+                                                {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '—' }}
                                             </td>
                                         </tr>
                                     @empty
@@ -652,7 +652,7 @@ new #[Title('Supplier Masters')] class extends Component
                     <div class="py-6 text-center space-y-3">
                         <x-state.empty
                             :title="__('No purchase history yet')"
-                            :message="__('Purchase orders, invoices, weighted-average cost, and last purchase price history will be populated starting in TSK-015.')"
+                            :message="__('Purchase orders, invoices, weighted-average cost, and last purchase price history appear after related documents are recorded.')"
                             icon="document-text"
                         />
                     </div>

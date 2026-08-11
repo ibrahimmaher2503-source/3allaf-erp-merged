@@ -9,14 +9,20 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
+use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
 use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
+use App\Modules\Inventory\Actions\ReverseInventoryAdjustmentAction;
+use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
+use App\Modules\Inventory\Actions\RecordStockCountLineAction;
+use App\Modules\Inventory\Actions\SaveStockCountAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
+use App\Modules\Inventory\Actions\UpdateStockTransferDraftAction;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryAdjustmentLine;
 use App\Modules\Inventory\Models\StockBalance;
@@ -92,6 +98,74 @@ final class InventoryWorkflowIntegrityTest extends TestCase
         app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '3'], null, null);
     }
 
+    public function test_transfer_draft_creation_is_scoped_idempotent_audited_and_does_not_post_stock(): void
+    {
+        $scenario = $this->inventoryScenario();
+        $this->documentSequence('stock_transfer', 'TR-');
+        $this->actingAs($scenario['manager']);
+
+        $action = app(CreateStockTransferDraftAction::class);
+        $transfer = $action->execute(
+            sourceStoreId: $scenario['source']->id,
+            destinationStoreId: $scenario['destination']->id,
+            lines: [['product_id' => $scenario['product']->id, 'quantity_requested' => '2']],
+            reasonCode: 'replenishment',
+            notes: 'Replenish selling store.',
+            idempotencyKey: 'TR-DRAFT-CREATE-001',
+        );
+        $replay = $action->execute(
+            sourceStoreId: $scenario['source']->id,
+            destinationStoreId: $scenario['destination']->id,
+            lines: [['product_id' => $scenario['product']->id, 'quantity_requested' => '2']],
+            reasonCode: 'replenishment',
+            notes: 'Replenish selling store.',
+            idempotencyKey: 'TR-DRAFT-CREATE-001',
+        );
+
+        self::assertTrue($transfer->is($replay));
+        self::assertSame('draft', $transfer->status);
+        self::assertSame('TR-000001', $transfer->transfer_number);
+        self::assertSame($scenario['manager']->id, $transfer->requested_by);
+        self::assertSame('2.000000', (string) $transfer->fresh('lines')->lines->sole()->quantity_requested);
+        self::assertSame(1, StockTransfer::query()->count());
+        self::assertSame(0, StockMovement::query()->count());
+        self::assertSame('10.000000', (string) StockBalance::query()->where('store_id', $scenario['source']->id)->value('on_hand'));
+        self::assertSame(1, AuditLog::query()->where('event', 'create_stock_transfer_draft')->where('source_id', (string) $transfer->id)->count());
+    }
+
+    public function test_transfer_draft_edit_is_locked_versioned_audited_and_does_not_post_stock(): void
+    {
+        $scenario = $this->inventoryScenario();
+        $this->documentSequence('stock_transfer', 'TR-');
+        $this->actingAs($scenario['manager']);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute(
+            $scenario['source']->id,
+            $scenario['destination']->id,
+            [['product_id' => $scenario['product']->id, 'quantity_requested' => '2']],
+            'replenishment',
+            'Initial draft',
+            'TR-DRAFT-EDIT-001',
+        );
+
+        $updated = app(UpdateStockTransferDraftAction::class)->execute(
+            $transfer->id,
+            $scenario['source']->id,
+            $scenario['destination']->id,
+            [['product_id' => $scenario['product']->id, 'quantity_requested' => '3']],
+            'replenishment',
+            'Updated draft',
+            $transfer->lock_version,
+        );
+
+        self::assertSame('draft', $updated->status);
+        self::assertSame(2, $updated->lock_version);
+        self::assertSame('3.000000', (string) $updated->fresh('lines')->lines->sole()->quantity_requested);
+        self::assertSame('Updated draft', $updated->notes);
+        self::assertSame(0, StockMovement::query()->count());
+        self::assertSame('10.000000', (string) StockBalance::query()->where('store_id', $scenario['source']->id)->value('on_hand'));
+        self::assertSame(1, AuditLog::query()->where('event', 'update_stock_transfer_draft')->where('source_id', (string) $transfer->id)->count());
+    }
+
     public function test_transfer_receipt_rejects_invalid_difference_and_does_not_post_partial_changes(): void
     {
         $scenario = $this->inventoryScenario();
@@ -157,6 +231,55 @@ final class InventoryWorkflowIntegrityTest extends TestCase
         self::assertSame($line->id, $adjustment->fresh('lines')->lines->sole()->id);
     }
 
+    public function test_adjustment_document_can_be_created_approved_and_reversed_without_rewriting_history(): void
+    {
+        $scenario = $this->inventoryScenario();
+        $this->actingAs($scenario['manager']);
+        $adjustment = app(SaveInventoryAdjustmentAction::class)->execute(
+            ['store_id' => $scenario['source']->id, 'adjustment_type' => 'entry', 'reason_code' => 'opening_correction', 'reason_notes' => 'Documented receipt correction'],
+            [['product_id' => $scenario['product']->id, 'quantity_delta' => '2', 'unit_cost' => '5']],
+        );
+        self::assertSame('draft', $adjustment->status);
+        self::assertSame('10.000000', (string) StockBalance::query()->where('store_id', $scenario['source']->id)->value('on_hand'));
+
+        self::assertSame('submitted', app(SubmitInventoryAdjustmentAction::class)->execute($adjustment->id)->status);
+        $approver = $this->userWith('inventory-reversal-approver', ['warehouse-manager'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id]);
+        $this->actingAs($approver);
+        self::assertSame('approved', app(ApproveInventoryAdjustmentAction::class)->execute($adjustment->id)->status);
+        $originalMovement = StockMovement::query()->where('source_type', InventoryAdjustment::class)->where('source_id', $adjustment->id)->sole();
+
+        $reversal = app(ReverseInventoryAdjustmentAction::class)->execute($adjustment->id, 'Corrected source document');
+        self::assertSame($adjustment->id, $reversal->reversal_of_id);
+        $reversalMovement = StockMovement::query()->where('source_type', InventoryAdjustment::class)->where('source_id', $reversal->id)->sole();
+        self::assertSame($originalMovement->id, $reversalMovement->reversal_of_id);
+        self::assertSame('10.000000', (string) StockBalance::query()->where('store_id', $scenario['source']->id)->value('on_hand'));
+        self::assertSame('approved', $adjustment->fresh()->status);
+        self::assertSame(2, StockMovement::query()->count());
+        self::assertSame(1, AuditLog::query()->where('event', 'reverse_inventory_adjustment')->count());
+    }
+
+    public function test_count_setup_assigns_a_counter_and_records_manual_and_recount_input(): void
+    {
+        $scenario = $this->inventoryScenario();
+        $counter = $this->userWith('inventory-entry-counter', ['stock-counter'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id]);
+        $this->actingAs($scenario['manager']);
+        $count = app(SaveStockCountAction::class)->execute(
+            ['store_id' => $scenario['source']->id, 'assigned_to' => $counter->id, 'count_type' => 'partial', 'scope_type' => 'partial'],
+            [$scenario['product']->id],
+        );
+        self::assertSame('in_progress', $count->status);
+        self::assertSame($counter->id, $count->assigned_to);
+        self::assertFalse($count->lines->sole()->is_counted);
+
+        $this->actingAs($counter);
+        $saved = app(RecordStockCountLineAction::class)->execute($count->id, [$scenario['product']->id => '9'], [$scenario['product']->id => 'manual']);
+        self::assertTrue($saved->lines->sole()->is_counted);
+        self::assertSame('9.000000', (string) $saved->lines->sole()->counted_quantity);
+        $recounted = app(RecordStockCountLineAction::class)->execute($count->id, [$scenario['product']->id => '10'], [$scenario['product']->id => 'manual'], true);
+        self::assertSame(1, $recounted->lines->sole()->recount_number);
+        self::assertSame('10.000000', (string) $recounted->lines->sole()->counted_quantity);
+    }
+
     public function test_count_reconciles_after_intervening_sale_and_preserves_uncounted_item(): void
     {
         $scenario = $this->inventoryScenario();
@@ -196,6 +319,37 @@ final class InventoryWorkflowIntegrityTest extends TestCase
         self::assertSame(1, StockMovement::query()->where('movement_type', 'count_reconciliation')->count());
         self::assertSame(1, AuditLog::query()->where('event', 'reconcile_stock_count')->count());
         self::assertSame(1, InventoryAdjustment::query()->count());
+    }
+
+    public function test_count_reconciliation_rejects_a_movement_posted_after_submission(): void
+    {
+        $scenario = $this->inventoryScenario();
+        $counter = $this->userWith('inventory-stale-counter', ['stock-counter'], branchIds: [$scenario['branch']->id], storeIds: [$scenario['source']->id]);
+        $manager = $scenario['manager'];
+        $count = StockCount::query()->create([
+            'count_number' => 'CNT-STALE-001', 'count_type' => 'partial', 'scope_type' => 'store',
+            'branch_id' => $scenario['branch']->id, 'store_id' => $scenario['source']->id,
+            'status' => 'in_progress', 'reference_at' => now()->subMinute(), 'created_by' => $counter->id,
+            'assigned_to' => $counter->id, 'idempotency_key' => 'CNT-STALE-IDEMP-001',
+        ]);
+        StockCountLine::query()->create([
+            'stock_count_id' => $count->id, 'product_id' => $scenario['product']->id,
+            'reference_on_hand' => '10', 'counted_quantity' => '10', 'is_counted' => true,
+            'input_method' => 'manual',
+        ]);
+
+        $this->actingAs($counter);
+        self::assertSame('submitted', app(SubmitStockCountAction::class)->execute($count->id)->status);
+
+        $this->actingAs($manager);
+        app(PostInventoryMovement::class)->execute($scenario['product']->id, $scenario['source']->id, '-1', 'sale', null, 'CNT-STALE-SALE-001');
+
+        $this->expectException(InvalidArgumentException::class);
+        app(ReconcileStockCountAction::class)->execute($count->id);
+
+        self::assertSame('submitted', $count->fresh()->status);
+        self::assertSame(0, InventoryAdjustment::query()->count());
+        self::assertSame(0, StockMovement::query()->where('movement_type', 'count_reconciliation')->count());
     }
 
     public function test_inventory_action_fails_closed_for_out_of_scope_store(): void
@@ -262,6 +416,8 @@ final class InventoryWorkflowIntegrityTest extends TestCase
     private function inventoryScenario(): array
     {
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('inventory_adjustment');
+        $this->documentSequence('stock_count', 'CNT-');
         $branch = $this->branch('INV-WORKFLOW');
         $source = $this->store($branch, 'INV-SOURCE', 'warehouse');
         $destination = $this->store($branch, 'INV-DEST', 'selling');

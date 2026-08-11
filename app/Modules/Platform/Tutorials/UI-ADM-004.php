@@ -68,8 +68,8 @@ return [
                     'en' => 'Store Masters & Mapping Header',
                 ],
                 'body' => [
-                    'ar' => 'إدارة المتاجر البيعية والمستودعات والمتاجر الخاصة وتعيينات الفروع.',
-                    'en' => 'Manage physical and logical stores (selling, warehouse, party, damaged, transit).',
+                    'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مستودع رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
+                    'en' => 'Manage physical and logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit).',
                 ],
             ],
             1 => [
@@ -80,20 +80,20 @@ return [
                     'en' => 'Add Store Action Button',
                 ],
                 'body' => [
-                    'ar' => 'فتح نافذة إضافة متجر جديد وتحديد نوعه والفرع التابع له.',
-                    'en' => 'Open form modal to add a store location and define its operational type.',
+                    'ar' => 'فتح نافذة إضافة موقع جديد وتحديد نوع الموقع والفرع التابع له.',
+                    'en' => 'Open the form modal to add a location and define its location type.',
                 ],
             ],
             2 => [
                 'key' => 'step-3',
                 'selector' => '[data-guide="stores-filters"]',
                 'title' => [
-                    'ar' => 'تصفية المتاجر حسب الفرع والنوع',
-                    'en' => 'Search, Branch & Type Filters',
+                    'ar' => 'تصفية المواقع حسب الفرع ونوع الموقع',
+                    'en' => 'Search, Branch & Location Type Filters',
                 ],
                 'body' => [
-                    'ar' => 'تصفية نتائج المتاجر حسب كود الفرع، نوع المتجر، أو الحالة التشغيلية.',
-                    'en' => 'Filter stores by branch context, store type, and active status.',
+                    'ar' => 'تصفية نتائج المواقع حسب كود الفرع، نوع الموقع، أو الحالة التشغيلية.',
+                    'en' => 'Filter locations by branch context, location type, and active status.',
                 ],
             ],
             3 => [
@@ -104,8 +104,8 @@ return [
                     'en' => 'Store Directory Table & Stock Policy',
                 ],
                 'body' => [
-                    'ar' => 'استعراض أكواد المتاجر، النمط التشغيلي، ربط نقاط البيع، وسياسة المخزون السالب.',
-                    'en' => 'View store codes, types, branch mapping, negative stock policy, and row actions.',
+                    'ar' => 'استعراض أكواد المواقع، نوع الموقع، ربط نقاط البيع، وسياسة المخزون السالب.',
+                    'en' => 'View location codes, location types, branch mapping, negative stock policy, and row actions.',
                 ],
             ],
             4 => [
@@ -137,12 +137,12 @@ return [
             0 => [
                 'key' => 'field-1',
                 'title' => [
-                    'ar' => 'كود المتجر ونوعه',
-                    'en' => 'Store Code & Type',
+                    'ar' => 'كود الموقع ونوعه',
+                    'en' => 'Location Code & Type',
                 ],
                 'body' => [
-                    'ar' => 'كود موقع التخزين ونوعه (مستودع رئيسي / متجر بيعي / موقع فرعي).',
-                    'en' => 'Stock location code and type (primary warehouse / selling store / sub-location).',
+                    'ar' => 'كود موقع التخزين ونوع الموقع (نقطة بيع / مستودع رئيسي / مركز خدمات / مخزون تالف ومعيب / مخزون قيد النقل).',
+                    'en' => 'Stock location code and location type (point of sale / main warehouse / service center / damaged & defective stock / stock in transit).',
                 ],
             ],
             1 => [
@@ -187,8 +187,8 @@ return [
                 'en' => 'Store Masters & Mapping Header',
             ],
             'body' => [
-                'ar' => 'إدارة المتاجر البيعية والمستودعات والمتاجر الخاصة وتعيينات الفروع.',
-                'en' => 'Manage physical and logical stores (selling, warehouse, party, damaged, transit).',
+                'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مستودع رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
+                'en' => 'Manage physical and logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit).',
             ],
         ],
         1 => [
@@ -199,20 +199,20 @@ return [
                 'en' => 'Add Store Action Button',
             ],
             'body' => [
-                'ar' => 'فتح نافذة إضافة متجر جديد وتحديد نوعه والفرع التابع له.',
-                'en' => 'Open form modal to add a store location and define its operational type.',
+                'ar' => 'فتح نافذة إضافة موقع جديد وتحديد نوع الموقع والفرع التابع له.',
+                'en' => 'Open the form modal to add a location and define its location type.',
             ],
         ],
         2 => [
             'key' => 'step-3',
             'selector' => '[data-guide="stores-filters"]',
             'title' => [
-                'ar' => 'تصفية المتاجر حسب الفرع والنوع',
-                'en' => 'Search, Branch & Type Filters',
+                'ar' => 'تصفية المواقع حسب الفرع ونوع الموقع',
+                'en' => 'Search, Branch & Location Type Filters',
             ],
             'body' => [
-                'ar' => 'تصفية نتائج المتاجر حسب كود الفرع، نوع المتجر، أو الحالة التشغيلية.',
-                'en' => 'Filter stores by branch context, store type, and active status.',
+                'ar' => 'تصفية نتائج المواقع حسب كود الفرع، نوع الموقع، أو الحالة التشغيلية.',
+                'en' => 'Filter locations by branch context, location type, and active status.',
             ],
         ],
         3 => [
@@ -223,8 +223,8 @@ return [
                 'en' => 'Store Directory Table & Stock Policy',
             ],
             'body' => [
-                'ar' => 'استعراض أكواد المتاجر، النمط التشغيلي، ربط نقاط البيع، وسياسة المخزون السالب.',
-                'en' => 'View store codes, types, branch mapping, negative stock policy, and row actions.',
+                'ar' => 'استعراض أكواد المواقع، نوع الموقع، ربط نقاط البيع، وسياسة المخزون السالب.',
+                'en' => 'View location codes, location types, branch mapping, negative stock policy, and row actions.',
             ],
         ],
         4 => [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Models;
 
 use App\Models\User;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
@@ -20,7 +21,7 @@ final class Sale extends Model implements ImmutableSourceContract
 {
     use GuardsApprovedDocument;
 
-    protected $fillable = ['branch_id', 'store_id', 'cash_drawer_id', 'shift_id', 'cashier_id', 'document_number', 'status', 'idempotency_key', 'request_fingerprint', 'subtotal', 'discount_total', 'invoice_discount_type', 'invoice_discount_reason', 'invoice_discount_applied_by', 'tax_total', 'tax_applicable', 'tax_setting_id', 'tax_rate_snapshot', 'tax_inclusive_snapshot', 'total', 'paid_total', 'change_total', 'cash_rounding_amount', 'payable_total', 'currency_code', 'notes', 'approved_at', 'suspended_at', 'lock_version'];
+    protected $fillable = ['branch_id', 'store_id', 'cash_drawer_id', 'shift_id', 'cashier_id', 'customer_id', 'document_number', 'status', 'idempotency_key', 'request_fingerprint', 'subtotal', 'discount_total', 'invoice_discount_type', 'invoice_discount_reason', 'invoice_discount_applied_by', 'tax_total', 'tax_applicable', 'tax_setting_id', 'tax_rate_snapshot', 'tax_inclusive_snapshot', 'total', 'paid_total', 'change_total', 'cash_rounding_amount', 'payable_total', 'currency_code', 'notes', 'approved_at', 'suspended_at', 'lock_version'];
 
     protected $casts = ['subtotal' => 'decimal:2', 'discount_total' => 'decimal:2', 'tax_total' => 'decimal:2', 'total' => 'decimal:2', 'paid_total' => 'decimal:2', 'change_total' => 'decimal:2', 'cash_rounding_amount' => 'decimal:2', 'payable_total' => 'decimal:2', 'tax_applicable' => 'boolean', 'tax_inclusive_snapshot' => 'boolean', 'tax_rate_snapshot' => 'decimal:2', 'approved_at' => 'datetime', 'suspended_at' => 'datetime'];
 
@@ -52,6 +53,12 @@ final class Sale extends Model implements ImmutableSourceContract
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     /** @return HasMany<SaleLine, $this> */

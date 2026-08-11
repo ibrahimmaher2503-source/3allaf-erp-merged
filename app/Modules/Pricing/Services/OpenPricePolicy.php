@@ -7,6 +7,39 @@ use Illuminate\Validation\ValidationException;
 
 final class OpenPricePolicy
 {
+    /**
+     * Return whether a configured deviation requires an independent approval.
+     * A missing limit means the owner has not enabled this extra branch; it
+     * never weakens the permission, bounds, reason, or stale-policy checks.
+     */
+    public function requiresApproval(string $referenceAmount, string $requestedAmount, ?string $approvalLimitPercent): bool
+    {
+        if ($approvalLimitPercent === null || trim($approvalLimitPercent) === '') {
+            return false;
+        }
+
+        $referenceAmount = DecimalMoney::normalize($referenceAmount, 4);
+        $requestedAmount = DecimalMoney::normalize($requestedAmount, 4);
+        $approvalLimitPercent = DecimalMoney::normalize($approvalLimitPercent, 4);
+
+        if (bccomp($referenceAmount, '0', 4) <= 0 || bccomp($approvalLimitPercent, '0', 4) < 0) {
+            throw new \InvalidArgumentException(__('Open-price approval policy values are invalid.'));
+        }
+
+        $delta = bccomp($requestedAmount, $referenceAmount, 4) < 0
+            ? bcsub($referenceAmount, $requestedAmount, 8)
+            : bcsub($requestedAmount, $referenceAmount, 8);
+        $deviationPercent = bcdiv(bcmul($delta, '100', 8), $referenceAmount, 8);
+
+        return bccomp($deviationPercent, $approvalLimitPercent, 4) > 0;
+    }
+
+    /** @param array<string, scalar|null> $values */
+    public function fingerprint(array $values): string
+    {
+        return hash('sha256', json_encode($values, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION));
+    }
+
     /** @return array{allowed: bool, reason: string|null} */
     public function validate(
         string $referenceAmount,

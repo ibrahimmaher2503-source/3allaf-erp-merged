@@ -7,6 +7,8 @@ namespace App\Modules\Inventory\Actions;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\InventoryAdjustmentLine;
 use App\Modules\Inventory\Models\StockCount;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -39,6 +41,22 @@ final class ReconcileStockCountAction
             }
             if ($count->assigned_to === Auth::id()) {
                 throw new InvalidArgumentException(__('The stock counter cannot approve the same reconciliation.'));
+            }
+            foreach ($count->lines as $line) {
+                $balance = StockBalance::query()
+                    ->where('product_id', $line->product_id)
+                    ->where('store_id', $count->store_id)
+                    ->lockForUpdate()
+                    ->first();
+                $movementQuantity = StockMovement::query()
+                    ->where('product_id', $line->product_id)
+                    ->where('store_id', $count->store_id)
+                    ->where('posted_at', '>', $count->reference_at)
+                    ->sum('quantity');
+                if (bccomp((string) $movementQuantity, (string) $line->movement_quantity_after_reference, 6) !== 0) {
+                    throw new InvalidArgumentException(__('Stock changed after count submission. Submit the count again before reconciliation.'));
+                }
+                unset($balance);
             }
             $approval = ApprovalRecord::query()
                 ->where('source_type', 'stock_counts')

@@ -22,13 +22,19 @@ use Throwable;
 
 class StageProductImportAction
 {
-    private const REQUIRED_HEADERS = ['item_code', 'name_ar', 'name_en', 'category_code'];
+    private const REQUIRED_FIELDS = ['item_code', 'name_ar', 'name_en', 'category_code'];
 
-    private const ALLOWED_HEADERS = [
+    private const ALLOWED_FIELDS = [
         'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
         'product_type', 'unit_of_measure', 'category_code', 'brand_code', 'status', 'colour', 'size',
         'character', 'fractional_quantity', 'keywords_ar', 'keywords_en', 'key_points_ar', 'key_points_en',
     ];
+
+    /** @return array<int, string> */
+    public static function supportedFields(): array
+    {
+        return self::ALLOWED_FIELDS;
+    }
 
     public function stage(string|Attachment $sourceFile, string $originalFilename, string $mode, int $userId): ProductImportBatch
     {
@@ -62,10 +68,6 @@ class StageProductImportAction
             $headers = null;
             $rows = [];
             $rowNumber = 0;
-            $seenCodes = [];
-            $categoryCodes = Category::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
-            $brandCodes = Brand::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
-
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $row) {
                     $rowNumber++;
@@ -73,7 +75,7 @@ class StageProductImportAction
 
                     if ($rowNumber === 1) {
                         $headers = array_map(fn (mixed $value): string => $this->normalizeHeader($value), $values);
-                        $this->assertHeaders($headers);
+                        $this->assertUniqueSourceHeaders($headers);
 
                         continue;
                     }
@@ -94,14 +96,11 @@ class StageProductImportAction
                     }
 
                     $errors = $this->formulaErrors($row->getCells());
-                    $mapped = $this->mapRow($raw, $mode, $categoryCodes, $brandCodes, $seenCodes, $errors);
-                    $status = $mapped['errors'] === [] ? 'valid' : 'invalid';
                     $rows[] = new ProductImportRow([
                         'row_number' => $rowNumber,
                         'raw_data' => $raw,
-                        'mapped_data' => $mapped['data'],
-                        'errors' => $mapped['errors'],
-                        'status' => $status,
+                        'errors' => $errors,
+                        'status' => $errors === [] ? 'staged' : 'invalid',
                     ]);
 
                     if (count($rows) >= 250) {
@@ -116,16 +115,16 @@ class StageProductImportAction
             $batch->loadCount(['rows as total_rows_count']);
             $batch->update([
                 'total_rows' => $batch->rows()->count(),
-                'valid_rows' => $batch->rows()->where('status', 'valid')->count(),
+                'valid_rows' => 0,
                 'invalid_rows' => $batch->rows()->where('status', 'invalid')->count(),
-                'status' => 'ready_for_review',
+                'status' => 'mapping_required',
             ]);
 
             app(RecordAuditEvent::class)->execute(
                 category: 'catalog_import',
                 event: 'stage_product_import',
                 source: $batch,
-                after: $batch->only(['id', 'original_filename', 'mode', 'total_rows', 'valid_rows', 'invalid_rows']),
+                after: $batch->only(['id', 'original_filename', 'mode', 'headers', 'total_rows', 'valid_rows', 'invalid_rows', 'status']),
             );
 
             if ($attachment !== null) {
@@ -157,12 +156,75 @@ class StageProductImportAction
         }
     }
 
+    /** @param array<string, mixed> $mapping */
+    public function applyMapping(ProductImportBatch $batch, array $mapping): ProductImportBatch
+    {
+        Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
+        abort_unless($batch->created_by === auth()->id(), 404);
+
+        return DB::transaction(function () use ($batch, $mapping): ProductImportBatch {
+            $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            abort_unless($batch->created_by === auth()->id(), 404);
+
+            if ($batch->status !== 'mapping_required') {
+                throw new InvalidArgumentException(__('Only an import awaiting column mapping can be mapped.'));
+            }
+
+            $mapping = $this->assertMapping($batch->headers ?? [], $mapping);
+            $seenCodes = [];
+            $validRows = 0;
+            $invalidRows = 0;
+            $categoryCodes = Category::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $brandCodes = Brand::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+
+            foreach ($batch->rows()->orderBy('row_number')->lockForUpdate()->get() as $row) {
+                $raw = [];
+                foreach ($mapping as $sourceHeader => $targetField) {
+                    $raw[$targetField] = data_get($row->raw_data, $sourceHeader);
+                }
+
+                $mapped = $this->mapRow(
+                    $raw,
+                    $batch->mode,
+                    $categoryCodes,
+                    $brandCodes,
+                    $seenCodes,
+                    $this->formulaErrorsFromRow($row),
+                );
+                $status = $mapped['errors'] === [] ? 'valid' : 'invalid';
+                $row->update([
+                    'mapped_data' => $mapped['data'],
+                    'errors' => $mapped['errors'],
+                    'status' => $status,
+                ]);
+                $status === 'valid' ? $validRows++ : $invalidRows++;
+            }
+
+            $batch->update([
+                'column_mapping' => $mapping,
+                'valid_rows' => $validRows,
+                'invalid_rows' => $invalidRows,
+                'status' => 'ready_for_review',
+            ]);
+            app(RecordAuditEvent::class)->execute(
+                category: 'catalog_import',
+                event: 'map_product_import_columns',
+                source: $batch,
+                after: $batch->only(['id', 'mode', 'headers', 'column_mapping', 'total_rows', 'valid_rows', 'invalid_rows', 'status']),
+            );
+
+            return $batch->fresh();
+        });
+    }
+
     public function approve(ProductImportBatch $batch, SaveProductAction $saveProduct): ProductImportBatch
     {
         Gate::authorize('products_categories_brands.approve');
+        abort_unless($batch->created_by === auth()->id(), 404);
 
         return DB::transaction(function () use ($batch, $saveProduct): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            abort_unless($batch->created_by === auth()->id(), 404);
             if ($batch->status !== 'ready_for_review' || $batch->invalid_rows > 0) {
                 throw new InvalidArgumentException(__('Only a ready import with no rejected rows can be approved.'));
             }
@@ -191,7 +253,7 @@ class StageProductImportAction
         Gate::authorize('products_categories_brands.create');
         abort_unless($batch->created_by === auth()->id(), 404);
 
-        if (! in_array($batch->status, ['staging', 'ready_for_review'], true)) {
+        if (! in_array($batch->status, ['staging', 'mapping_required', 'ready_for_review'], true)) {
             throw new InvalidArgumentException(__('Only a staged or reviewable import can be cancelled.'));
         }
 
@@ -211,7 +273,7 @@ class StageProductImportAction
     {
         foreach ($cells as $cell) {
             if ($cell instanceof FormulaCell || (is_string($cell->getValue()) && str_starts_with(trim($cell->getValue()), '='))) {
-                return [__('Formula cells are not accepted in product imports.')];
+                return [$this->formulaErrorMessage()];
             }
         }
 
@@ -255,8 +317,12 @@ class StageProductImportAction
         if (! in_array($status, ['active', 'inactive'], true)) {
             $errors[] = __('The product status is not supported.');
         }
-        if ($mode === 'create_only' && $itemCode !== '' && Product::query()->where('item_code', $itemCode)->exists()) {
+        $existingProduct = $itemCode === '' ? null : Product::query()->where('item_code', $itemCode)->first();
+        if ($mode === 'create_only' && $existingProduct !== null) {
             $errors[] = __('The item code already exists; Create Only does not update existing products.');
+        }
+        if ($mode === 'update_existing' && $itemCode !== '' && $existingProduct === null) {
+            $errors[] = __('The item code does not exist; Update Existing does not create new products.');
         }
 
         $data = [
@@ -293,16 +359,48 @@ class StageProductImportAction
     }
 
     /** @param array<int, string> $headers */
-    private function assertHeaders(array $headers): void
+    private function assertUniqueSourceHeaders(array $headers): void
     {
-        $unknown = array_diff(array_filter($headers), self::ALLOWED_HEADERS);
-        $missing = array_diff(self::REQUIRED_HEADERS, $headers);
-        if ($unknown !== []) {
-            throw new InvalidArgumentException(__('Unsupported import columns: :columns', ['columns' => implode(', ', $unknown)]));
+        $nonBlankHeaders = array_values(array_filter($headers));
+        if (count($nonBlankHeaders) !== count(array_unique($nonBlankHeaders))) {
+            throw new InvalidArgumentException(__('Duplicate source column headers cannot be mapped safely.'));
         }
+    }
+
+    /** @param array<int, string> $headers @param array<string, mixed> $mapping @return array<string, string> */
+    private function assertMapping(array $headers, array $mapping): array
+    {
+        $headers = array_values(array_filter($headers));
+        $mapping = collect($mapping)
+            ->filter(fn (mixed $target): bool => is_string($target) && trim($target) !== '')
+            ->mapWithKeys(fn (mixed $target, mixed $source): array => [(string) $source => trim((string) $target)])
+            ->all();
+
+        if (array_diff(array_keys($mapping), $headers) !== []) {
+            throw new InvalidArgumentException(__('The selected source column does not exist in this import file.'));
+        }
+        if (array_diff($mapping, self::ALLOWED_FIELDS) !== []) {
+            throw new InvalidArgumentException(__('The selected product field is not supported by this import.'));
+        }
+        if (count($mapping) !== count(array_unique($mapping))) {
+            throw new InvalidArgumentException(__('Each product field can be mapped from only one source column.'));
+        }
+        $missing = array_diff(self::REQUIRED_FIELDS, $mapping);
         if ($missing !== []) {
-            throw new InvalidArgumentException(__('Required import columns are missing: :columns', ['columns' => implode(', ', $missing)]));
+            throw new InvalidArgumentException(__('Required product fields are not mapped: :fields', ['fields' => implode(', ', $missing)]));
         }
+
+        return $mapping;
+    }
+
+    private function formulaErrorMessage(): string
+    {
+        return __('Formula cells are not accepted in product imports.');
+    }
+
+    private function formulaErrorsFromRow(ProductImportRow $row): array
+    {
+        return in_array($this->formulaErrorMessage(), $row->errors ?? [], true) ? [$this->formulaErrorMessage()] : [];
     }
 
     /** @param array<int, mixed> $values */
@@ -336,6 +434,7 @@ class StageProductImportAction
                 'mode' => $mode,
                 'status' => 'staging',
                 'headers' => $headers,
+                'column_mapping' => null,
             ],
         );
 
@@ -349,6 +448,7 @@ class StageProductImportAction
                 'mode' => $mode,
                 'status' => 'staging',
                 'headers' => $headers,
+                'column_mapping' => null,
                 'total_rows' => 0,
                 'valid_rows' => 0,
                 'invalid_rows' => 0,

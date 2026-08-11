@@ -73,6 +73,38 @@ final class ImportRuntimeCompatibilityTest extends TestCase
         self::assertSame(0, ProductImportBatch::query()->where('status', 'completed')->count());
     }
 
+    public function test_product_import_detects_source_headers_then_applies_an_authoritative_user_mapping(): void
+    {
+        $this->requireOpenSpout();
+        app(SaveCategoryAction::class)->execute([
+            'code' => 'CAT-MAP', 'name_ar' => 'Category AR', 'name_en' => 'Mapped category',
+            'parent_id' => null, 'status' => 'active', 'sort_order' => 0,
+        ]);
+        Storage::disk('local')->put('imports/product-mapping.csv', "SKU,Arabic title,English title,Category\nMAP-001,Arabic product,English product,CAT-MAP\n");
+
+        $batch = app(StageProductImportAction::class)->stage('imports/product-mapping.csv', 'product-mapping.csv', 'create_only', auth()->id());
+
+        self::assertSame('mapping_required', $batch->status);
+        self::assertSame(['sku', 'arabic_title', 'english_title', 'category'], $batch->headers);
+
+        $mapped = app(StageProductImportAction::class)->applyMapping($batch, [
+            'sku' => 'item_code',
+            'arabic_title' => 'name_ar',
+            'english_title' => 'name_en',
+            'category' => 'category_code',
+        ]);
+
+        self::assertSame('ready_for_review', $mapped->status);
+        self::assertSame(1, $mapped->valid_rows);
+        self::assertSame([
+            'sku' => 'item_code',
+            'arabic_title' => 'name_ar',
+            'english_title' => 'name_en',
+            'category' => 'category_code',
+        ], $mapped->column_mapping);
+        self::assertSame('MAP-001', $mapped->rows()->firstOrFail()->mapped_data['item_code']);
+    }
+
     public function test_duplicate_product_import_file_is_rejected_for_the_same_user(): void
     {
         $this->requireOpenSpout();

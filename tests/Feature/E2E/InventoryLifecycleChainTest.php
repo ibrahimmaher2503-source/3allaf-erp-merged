@@ -53,6 +53,7 @@ final class InventoryLifecycleChainTest extends TestCase
     public function test_stock_flows_through_transfer_difference_adjustment_and_count_reconciliation(): void
     {
         $this->seedCanonicalAuthorization();
+        $this->documentSequence('inventory_adjustment');
         $branch = $this->branch('INV-CHAIN-BR');
         $source = $this->store($branch, 'INV-CHAIN-SRC', 'warehouse');
         $destination = $this->store($branch, 'INV-CHAIN-DST', 'selling');

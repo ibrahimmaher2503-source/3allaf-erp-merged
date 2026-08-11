@@ -3,6 +3,9 @@
 namespace Tests\Feature\Platform;
 
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
+use App\Modules\Platform\Actions\DecideApprovalSource;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -177,9 +180,11 @@ class CompanySettingsTest extends TestCase
 
     public function test_a_tax_setting_can_be_created_and_updated_with_bounded_rates(): void
     {
-        $this->actingAs($this->administrator('tsk005-tax'));
+        $requester = $this->administrator('tsk005-tax');
+        $approver = $this->administrator('tsk005-tax-approver');
+        $this->actingAs($requester);
 
-        $component = Livewire::test('platform::admin.settings')
+        Livewire::test('platform::admin.settings')
             ->set('taxSettingForm.code', 'VAT14')
             ->set('taxSettingForm.name_ar', 'ضريبة القيمة المضافة')
             ->set('taxSettingForm.name_en', 'Value Added Tax')
@@ -188,21 +193,26 @@ class CompanySettingsTest extends TestCase
             ->call('saveTaxSetting')
             ->assertHasNoErrors();
 
+        $this->actingAs($approver);
+        app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->where('source_type', 'platform_settings')->sole());
         $tax = TaxSetting::query()->where('code', 'VAT14')->firstOrFail();
         $this->assertSame('14.00', (string) $tax->rate);
 
-        $component->call('editTaxSetting', $tax->id)
+        $this->actingAs($requester);
+        Livewire::test('platform::admin.settings')->call('editTaxSetting', $tax->id)
             ->set('taxSettingForm.rate', '150')
             ->call('saveTaxSetting')
             ->assertHasErrors(['taxSettingForm.rate' => 'max']);
 
         $this->assertSame('14.00', (string) $tax->fresh()->rate);
 
-        $component->call('editTaxSetting', $tax->id)
+        Livewire::test('platform::admin.settings')->call('editTaxSetting', $tax->id)
             ->set('taxSettingForm.rate', '10')
             ->call('saveTaxSetting')
             ->assertHasNoErrors();
 
+        $this->actingAs($approver);
+        app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->where('source_type', 'platform_settings')->where('approval_state', ApprovalState::Pending)->sole());
         $this->assertSame('10.00', (string) $tax->fresh()->rate);
         $this->assertSame(1, AuditLog::query()->where('event', 'create_tax_setting')->count());
         $this->assertSame(1, AuditLog::query()->where('event', 'update_tax_setting')->count());
@@ -235,7 +245,9 @@ class CompanySettingsTest extends TestCase
 
     public function test_a_document_sequence_type_is_unique_at_both_the_form_and_database_level(): void
     {
-        $this->actingAs($this->administrator('tsk005-sequence'));
+        $requester = $this->administrator('tsk005-sequence');
+        $approver = $this->administrator('tsk005-sequence-approver');
+        $this->actingAs($requester);
 
         $save = function (string $type) {
             return Livewire::test('platform::admin.settings')
@@ -249,6 +261,9 @@ class CompanySettingsTest extends TestCase
         };
 
         $save('pos_invoice')->assertHasNoErrors();
+        $this->actingAs($approver);
+        app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->where('source_type', 'platform_settings')->sole());
+        $this->actingAs($requester);
         $save('pos_invoice')->assertHasErrors(['documentSequenceForm.document_type' => 'unique']);
 
         $this->assertSame(1, DocumentSequence::query()->where('document_type', 'pos_invoice')->count());
@@ -356,6 +371,35 @@ class CompanySettingsTest extends TestCase
         }
 
         $this->assertSame(1, TaxSetting::query()->count());
+    }
+
+    public function test_tax_changes_follow_the_shared_pending_independent_approval_workflow(): void
+    {
+        $requester = $this->userWith('tsk005-tax-requester', ['system-administrator']);
+        $approver = $this->userWith('tsk005-tax-approver', ['system-administrator']);
+        $this->actingAs($requester);
+
+        Livewire::test('platform::admin.settings')
+            ->set('taxSettingForm.code', 'VAT-APPROVAL')
+            ->set('taxSettingForm.name_ar', 'ضريبة اعتماد')
+            ->set('taxSettingForm.name_en', 'Approval Tax')
+            ->set('taxSettingForm.rate', '14')
+            ->set('taxSettingForm.status', 'active')
+            ->call('saveTaxSetting')
+            ->assertHasNoErrors();
+
+        $approval = ApprovalRecord::query()->where('source_type', 'platform_settings')->sole();
+        $this->assertSame(ApprovalState::Pending, $approval->approval_state);
+        $this->assertSame($requester->id, $approval->requester_id);
+        $this->assertFalse(TaxSetting::query()->where('code', 'VAT-APPROVAL')->exists());
+
+        $this->actingAs($approver);
+        app(DecideApprovalSource::class)->approve($approval);
+
+        $this->assertSame(ApprovalState::Approved, $approval->fresh()->approval_state);
+        $this->assertDatabaseHas('tax_settings', ['code' => 'VAT-APPROVAL', 'rate' => '14.00']);
+        $this->assertTrue(AuditLog::query()->where('event', 'approval_approved')->where('source_id', (string) $approval->id)->exists());
+        $this->assertTrue(AuditLog::query()->where('event', 'create_tax_setting')->exists());
     }
 
     public function test_printer_configuration_preview_is_permission_guarded_and_renders_configuration(): void

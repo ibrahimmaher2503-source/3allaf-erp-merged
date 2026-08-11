@@ -6,12 +6,16 @@
             <flux:select name="method_id" :label="__('Method')"><flux:select.option value="">{{ __('All') }}</flux:select.option>@foreach ($methods as $method)<flux:select.option value="{{ $method->id }}" :selected="(string) request('method_id') === (string) $method->id">{{ app()->getLocale() === 'ar' ? $method->name_ar : $method->name_en }}</flux:select.option>@endforeach</flux:select>
             <div class="flex items-end"><flux:button type="submit">{{ __('Filter') }}</flux:button></div>
         </form>
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" tabindex="0" role="region" aria-label="{{ __('Payment Evidence') }}">
-            <table class="w-full min-w-[780px] text-sm"><thead class="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800"><tr><th class="p-4 text-start">{{ __('Invoice') }}</th><th class="p-4 text-start">{{ __('Method') }}</th><th class="p-4 text-start">{{ __('Store') }}</th><th class="p-4 text-start">{{ __('File') }}</th><th class="p-4 text-start">{{ __('Status') }}</th><th class="p-4 text-start">{{ __('Uploaded by') }}</th></tr></thead><tbody>
-                @forelse ($evidencePayments as $payment)@php($attachment = $payment->evidenceAttachment)<tr class="border-b border-zinc-100 last:border-0 dark:border-zinc-800"><td class="p-4"><a class="font-semibold text-blue-600 hover:underline" href="{{ route('sales.show', $payment->sale) }}">{{ $payment->sale->document_number }}</a></td><td class="p-4">{{ app()->getLocale() === 'ar' ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</td><td class="p-4">{{ $payment->sale->store->code }}</td><td class="p-4">@if ($attachment)<a class="text-blue-600 hover:underline" href="{{ route('payments.evidence.show', $attachment) }}" target="_blank">{{ $attachment->original_filename }}</a><div class="text-xs text-zinc-500">{{ $attachment->detected_mime_type }} · {{ number_format($attachment->size_bytes / 1024, 1) }} KB</div>@endif</td><td class="p-4"><flux:badge :color="$attachment?->status->value === 'active' ? 'green' : 'amber'">{{ __(ucfirst($attachment?->status->value ?? 'missing')) }}</flux:badge></td><td class="p-4">{{ $payment->creator->name }}</td></tr>
-                @empty<tr><td colspan="6" class="p-10 text-center text-zinc-500">{{ __('No protected payment evidence matches the selected filters.') }}</td></tr>@endforelse
+        <x-tables.table-shell :label="__('Payment Evidence')">
+            <table class="data-table w-full min-w-[780px] text-sm"><thead><tr><th>{{ __('Invoice') }}</th><th>{{ __('Method') }}</th><th>{{ __('Store') }}</th><th>{{ __('File') }}</th><th>{{ __('Status') }}</th><th>{{ __('Uploaded by') }}</th></tr></thead><tbody>
+                @forelse ($evidencePayments as $payment)
+                    @php($attachment = $payment->evidenceAttachment)
+                    <tr><td><a class="font-semibold text-primary hover:underline" href="{{ route('sales.show', $payment->sale) }}">{{ $payment->sale->document_number }}</a></td><td>{{ app()->getLocale() === 'ar' ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</td><td>{{ $payment->sale->store->code }}</td><td>@if ($attachment)<a class="font-medium text-primary hover:underline" href="{{ route('payments.evidence.show', $attachment) }}" target="_blank">{{ $attachment->original_filename }}</a><div class="text-xs text-text-muted">{{ $attachment->detected_mime_type }} · {{ number_format($attachment->size_bytes / 1024, 1) }} KB</div>@else<span class="text-text-muted">{{ __('None') }}</span>@endif</td><td><x-status.badge :status="$attachment?->status->value ?? 'missing'" /></td><td>{{ $payment->creator->name }}</td></tr>
+                @empty
+                    <tr><td colspan="6"><x-state.empty :title="__('No protected payment evidence matches the selected filters.')" :description="__('Evidence appears here after an electronic payment is recorded.')" /></td></tr>
+                @endforelse
             </tbody></table>
-        </div>
+        </x-tables.table-shell>
         {{ $evidencePayments->links() }}
     </div>
 </x-layouts::app>

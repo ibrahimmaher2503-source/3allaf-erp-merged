@@ -13,14 +13,19 @@ use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Retail\Actions\RetailSaleAction;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
@@ -73,6 +78,34 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
         }
     }
 
+    public function test_a_scoped_user_with_suspended_sale_access_can_resume_another_cashiers_sale(): void
+    {
+        $scenario = $this->saleScenario();
+        $authorizedCashier = $this->userWith('pos-authorized-resumer', branchIds: [$scenario['branch']->id], storeIds: [$scenario['store']->id]);
+        $role = Role::query()->create(['code' => 'suspended-sale-resumer', 'name_ar' => 'مستأنف المعلق', 'name_en' => 'Suspended sale resumer', 'status' => 'active']);
+        $permissions = collect(['pos_sales.create', 'pos_sales.payment_create', 'suspended_sales.view'])->map(function (string $code): int {
+            [$module, $action] = explode('.', $code, 2);
+
+            return Permission::query()->firstOrCreate(['code' => $code], [
+                'module' => $module,
+                'action' => $action,
+                'sensitivity' => 'normal',
+                'status' => 'active',
+            ])->id;
+        });
+        $role->permissions()->sync($permissions->all());
+        $authorizedCashier->roles()->attach($role);
+
+        $this->actingAs($scenario['cashier']);
+        $suspended = app(RetailSaleAction::class)->create($scenario['cashier'], $scenario['store'], [['product_id' => $scenario['product']->id, 'quantity' => '1']], 'POS-SUSPEND-AUTHORIZED-001', true);
+
+        $this->actingAs($authorizedCashier->fresh());
+        $completed = app(RetailSaleAction::class)->finalizeSuspended($authorizedCashier->fresh(), $suspended, $this->cashTender($scenario['cash'], '15.00'));
+
+        self::assertSame('approved', $completed->status);
+        self::assertSame('4.000000', (string) StockBalance::query()->where('store_id', $scenario['store']->id)->value('on_hand'));
+    }
+
     public function test_checkout_requires_an_active_shift_before_creating_a_sale(): void
     {
         $scenario = $this->saleScenario(withShift: false);
@@ -110,9 +143,13 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
                 'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
                 'assigned_user_id' => $cashier->id, 'code' => 'POS-SUSPEND-DR', 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
             ]);
-            PosShift::query()->create([
+            $shift = PosShift::query()->create([
                 'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
                 'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+            ]);
+            DB::table('active_pos_shift_assignments')->insert([
+                'shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'cash_drawer_id' => $drawer->id,
+                'created_at' => now(), 'updated_at' => now(),
             ]);
         }
         $category = Category::query()->create(['code' => 'POS-SUSPEND-CAT', 'name_ar' => 'منتج', 'name_en' => 'Product', 'status' => 'active']);
@@ -126,6 +163,10 @@ final class RetailSuspendedAndBarcodeTest extends TestCase
         $cash = PaymentMethod::query()->create([
             'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
             'requires_evidence' => false, 'status' => 'active',
+        ]);
+        PosFinancialSettingVersion::query()->create([
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '0.05', 'value_type' => 'decimal', 'version' => 1, 'created_by' => $cashier->id,
         ]);
 
         return compact('branch', 'store', 'cashier', 'product', 'cash');

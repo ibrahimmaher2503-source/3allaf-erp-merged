@@ -4,6 +4,21 @@
  */
 
 /**
+ * Local-only browser fixture credentials. These are never valid production
+ * credentials and are intentionally shared by the local DemoSeeder actors.
+ */
+export const LOCAL_DEMO_PASSWORD = process.env.PLAYWRIGHT_LOCAL_PASSWORD ?? 'LocalDemoOnly!2026';
+
+export const LOCAL_BROWSER_ACTORS = Object.freeze({
+    administrator: { username: 'demo-admin', password: LOCAL_DEMO_PASSWORD },
+    support: { username: 'demo-support', password: LOCAL_DEMO_PASSWORD },
+    reviewer: { username: 'demo-reviewer', password: LOCAL_DEMO_PASSWORD },
+    branchScoped: { username: 'demo-branch-manager', password: LOCAL_DEMO_PASSWORD },
+    storeScoped: { username: 'demo-cashier', password: LOCAL_DEMO_PASSWORD },
+    restricted: { username: 'demo-no-access', password: LOCAL_DEMO_PASSWORD },
+});
+
+/**
  * Log in via the real login form (username + password), matching how a
  * production user authenticates. Waits for the post-login redirect.
  * @param {import('@playwright/test').Page} page

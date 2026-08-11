@@ -63,38 +63,105 @@ class CanonicalAuthorizationSeeder extends Seeder
             ['code' => 'drawers_payments_tax_numbering_printers.override', 'module' => 'drawers_payments_tax_numbering_printers', 'action' => 'override'],
             ['code' => 'pos_sales.apply_tax', 'module' => 'pos_sales', 'action' => 'apply_tax'],
             ['code' => 'pos_sales.apply_discount', 'module' => 'pos_sales', 'action' => 'apply_discount'],
+            ['code' => 'pos_sales.discount_approve', 'module' => 'pos_sales', 'action' => 'discount_approve'],
             ['code' => 'pos_sales.open_price', 'module' => 'pos_sales', 'action' => 'open_price'],
+            ['code' => 'pos_sales.open_price_approve', 'module' => 'pos_sales', 'action' => 'open_price_approve'],
             ['code' => 'pos_sales.payment_view', 'module' => 'pos_sales', 'action' => 'payment_view'],
             ['code' => 'pos_sales.payment_create', 'module' => 'pos_sales', 'action' => 'payment_create'],
             ['code' => 'pos_sales.payment_evidence_upload', 'module' => 'pos_sales', 'action' => 'payment_evidence_upload'],
             ['code' => 'pos_sales.payment_evidence_view', 'module' => 'pos_sales', 'action' => 'payment_evidence_view'],
+            ['code' => 'product_wallet.settle', 'module' => 'product_wallet', 'action' => 'settle'],
+            ['code' => 'product_wallet.adjust', 'module' => 'product_wallet', 'action' => 'adjust'],
+            ['code' => 'party_wallet.settle', 'module' => 'party_wallet', 'action' => 'settle'],
+            ['code' => 'party_wallet.adjust', 'module' => 'party_wallet', 'action' => 'adjust'],
         ] as $permission) {
             Permission::query()->updateOrCreate(['code' => $permission['code']], $permission + ['sensitivity' => 'sensitive', 'status' => 'active']);
         }
 
+        // US-019..US-021: the legacy broad readiness permission remains a
+        // view boundary, while mutations use explicit server-side abilities.
+        foreach ([
+            ['code' => 'gift_receipts.view', 'module' => 'gift_receipts', 'action' => 'view', 'sensitivity' => 'normal'],
+            ['code' => 'gift_receipts.issue', 'module' => 'gift_receipts', 'action' => 'issue', 'sensitivity' => 'sensitive'],
+            ['code' => 'gift_receipts.print', 'module' => 'gift_receipts', 'action' => 'print', 'sensitivity' => 'normal'],
+            ['code' => 'gift_receipts.reprint', 'module' => 'gift_receipts', 'action' => 'reprint', 'sensitivity' => 'sensitive'],
+            ['code' => 'gift_receipts.validate', 'module' => 'gift_receipts', 'action' => 'validate', 'sensitivity' => 'normal'],
+            ['code' => 'returns.view', 'module' => 'returns', 'action' => 'view', 'sensitivity' => 'normal'],
+            ['code' => 'returns.create', 'module' => 'returns', 'action' => 'create', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.submit', 'module' => 'returns', 'action' => 'submit', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.approve', 'module' => 'returns', 'action' => 'approve', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.complete', 'module' => 'returns', 'action' => 'complete', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.print', 'module' => 'returns', 'action' => 'print', 'sensitivity' => 'normal'],
+            ['code' => 'gift_cards.view', 'module' => 'gift_cards', 'action' => 'view', 'sensitivity' => 'normal'],
+            ['code' => 'gift_cards.print', 'module' => 'gift_cards', 'action' => 'print', 'sensitivity' => 'normal'],
+            ['code' => 'gift_cards.issue', 'module' => 'gift_cards', 'action' => 'issue', 'sensitivity' => 'sensitive'],
+            ['code' => 'gift_cards.redeem', 'module' => 'gift_cards', 'action' => 'redeem', 'sensitivity' => 'sensitive'],
+            ['code' => 'gift_cards.void', 'module' => 'gift_cards', 'action' => 'void', 'sensitivity' => 'sensitive'],
+            ['code' => 'gift_cards.expire', 'module' => 'gift_cards', 'action' => 'expire', 'sensitivity' => 'sensitive'],
+        ] as $permission) {
+            Permission::query()->updateOrCreate(['code' => $permission['code']], $permission + ['status' => 'active']);
+        }
+
+        foreach (['rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'rental_assets.status', 'rental_assets.cost_view', 'rental_assets.cost_edit', 'quotations.issue', 'quotations.share', 'dashboard_reports.edit', 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf'] as $code) {
+            [$module, $action] = explode('.', $code, 2);
+            Permission::query()->updateOrCreate(['code' => $code], ['module' => $module, 'action' => $action, 'sensitivity' => in_array($action, ['cost_view', 'cost_edit', 'edit'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
+        }
+
+        foreach ([
+            ['code' => 'customers.view', 'module' => 'customers_children', 'action' => 'customer_view', 'sensitivity' => 'normal'],
+            ['code' => 'customers.create', 'module' => 'customers_children', 'action' => 'customer_create', 'sensitivity' => 'normal'],
+            ['code' => 'customers.edit', 'module' => 'customers_children', 'action' => 'customer_edit', 'sensitivity' => 'normal'],
+            ['code' => 'customers.sensitive', 'module' => 'customers_children', 'action' => 'customer_sensitive', 'sensitivity' => 'sensitive'],
+            ['code' => 'customers.merge', 'module' => 'customers_children', 'action' => 'customer_merge', 'sensitivity' => 'sensitive'],
+            ['code' => 'customers.export', 'module' => 'customers_children', 'action' => 'customer_export', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.earn', 'module' => 'loyalty', 'action' => 'earn', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.redeem', 'module' => 'loyalty', 'action' => 'redeem', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.adjust', 'module' => 'loyalty', 'action' => 'adjust', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.approve', 'module' => 'loyalty', 'action' => 'approve', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.export', 'module' => 'loyalty', 'action' => 'export', 'sensitivity' => 'sensitive'],
+            ['code' => 'loyalty.expire', 'module' => 'loyalty', 'action' => 'expire', 'sensitivity' => 'sensitive'],
+        ] as $permission) {
+            Permission::query()->updateOrCreate(['code' => $permission['code']], $permission + ['status' => 'active']);
+        }
+
         $rolePermissions = [
             'system-administrator' => [
-                'company_settings.view', 'company_settings.create', 'company_settings.edit',
-                'branches_stores.view', 'branches_stores.create', 'branches_stores.edit',
+                'company_settings.view', 'company_settings.create', 'company_settings.edit', 'company_settings.approve', 'company_settings.logical_delete',
+                'branches_stores.view', 'branches_stores.create', 'branches_stores.edit', 'branches_stores.logical_delete',
                 'drawers_payments_tax_numbering_printers.view', 'drawers_payments_tax_numbering_printers.create', 'drawers_payments_tax_numbering_printers.edit',
-                'drawers_payments_tax_numbering_printers.override',
+                'drawers_payments_tax_numbering_printers.override', 'drawers_payments_tax_numbering_printers.logical_delete',
                 'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
-                'dashboard_reports.view', 'audit_logs.view', 'audit_logs.export', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view',
+                'dashboard_reports.view', 'audit_logs.view', 'audit_logs.export', 'product_wallet.view', 'party_wallet.view', 'party_wallet.settle', 'party_wallet.adjust', 'party_wallet.approve', 'party_wallet.export', 'party_bookings_invoices.view', 'party_bookings_invoices.create', 'party_bookings_invoices.edit', 'party_bookings_invoices.print', 'party_bookings_invoices.approve', 'party_bookings_invoices.reject', 'party_bookings_invoices.export', 'party_bookings_invoices.reverse', 'party_bookings_invoices.cancel', 'party_bookings_invoices.override', 'party_operating_orders_consumables.view', 'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit', 'party_operating_orders_consumables.print', 'party_operating_orders_consumables.approve', 'party_operating_orders_consumables.reject', 'party_operating_orders_consumables.export', 'party_operating_orders_consumables.reverse', 'party_operating_orders_consumables.cancel', 'party_operating_orders_consumables.override', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view',
                 'suppliers.view', 'suppliers.create', 'suppliers.edit',
                 'suppliers.preferred_change',
                 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_orders.approve',
                 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_invoices_supplier_returns.reverse', 'purchase_invoices_supplier_returns.cancel', 'purchase_invoices_supplier_returns.override',
                 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.approve_over_limit', 'purchase_returns.reject', 'purchase_returns.reverse', 'purchase_returns.cancel', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'transfers.view', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile',
-                'pos_sales.view', 'pos_sales.print', 'pos_sales.apply_tax', 'pos_sales.apply_discount', 'pos_sales.open_price', 'pos_sales.payment_view', 'pos_sales.payment_create', 'pos_sales.payment_evidence_upload', 'pos_sales.payment_evidence_view',
+                'pos_sales.view', 'pos_sales.print', 'pos_sales.apply_tax', 'pos_sales.apply_discount', 'pos_sales.discount_approve', 'pos_sales.open_price', 'pos_sales.open_price_approve', 'pos_sales.payment_view', 'pos_sales.payment_create', 'pos_sales.payment_evidence_upload', 'pos_sales.payment_evidence_view',
+                'customers.view', 'customers.create', 'customers.edit', 'customers.sensitive', 'customers.merge', 'customers.export', 'loyalty.view', 'loyalty.earn', 'loyalty.redeem', 'loyalty.adjust', 'loyalty.approve', 'loyalty.export', 'loyalty.expire', 'rental_assets.view', 'rental_assets.create', 'rental_assets.edit', 'rental_assets.print', 'rental_assets.approve', 'rental_assets.reject', 'rental_assets.export', 'rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'rental_assets.status', 'rental_assets.cost_view', 'rental_assets.cost_edit', 'quotations.view', 'quotations.create', 'quotations.edit', 'quotations.print', 'quotations.approve', 'quotations.export', 'quotations.cancel', 'quotations.issue', 'quotations.share', 'dashboard_reports.export', 'dashboard_reports.edit',
             ],
-            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'pos_sales.print', 'pos_sales.open_price', 'pos_sales.payment_view', 'pos_sales.payment_evidence_view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse', 'shifts_cash_movements.view', 'shifts_cash_movements.approve', 'shifts_cash_movements.reject', 'shifts_cash_movements.print'],
-            'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.apply_tax', 'pos_sales.apply_discount', 'pos_sales.payment_view', 'pos_sales.payment_create', 'pos_sales.payment_evidence_upload', 'pos_sales.payment_evidence_view', 'products_categories_brands.view', 'shifts_cash_movements.view', 'shifts_cash_movements.create', 'shifts_cash_movements.edit', 'shifts_cash_movements.submit', 'shifts_cash_movements.print'],
+            'branch-manager' => ['branches_stores.view', 'pos_sales.view', 'pos_sales.print', 'pos_sales.discount_approve', 'pos_sales.open_price', 'pos_sales.open_price_approve', 'pos_sales.payment_view', 'pos_sales.payment_evidence_view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse', 'inventory_stock_card.view', 'shifts_cash_movements.view', 'shifts_cash_movements.approve', 'shifts_cash_movements.reject', 'shifts_cash_movements.print', 'customers.view', 'customers.sensitive', 'customers.merge', 'customers.export', 'loyalty.view', 'loyalty.earn', 'loyalty.redeem', 'loyalty.adjust', 'loyalty.approve', 'loyalty.export', 'loyalty.expire', 'rental_assets.view', 'rental_assets.create', 'rental_assets.print', 'rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'quotations.view', 'quotations.create', 'quotations.edit', 'quotations.print', 'quotations.issue', 'quotations.share', 'dashboard_reports.view'],
+            'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.apply_tax', 'pos_sales.apply_discount', 'pos_sales.payment_view', 'pos_sales.payment_create', 'pos_sales.payment_evidence_upload', 'pos_sales.payment_evidence_view', 'products_categories_brands.view', 'inventory_stock_card.view', 'shifts_cash_movements.view', 'shifts_cash_movements.create', 'shifts_cash_movements.edit', 'shifts_cash_movements.submit', 'shifts_cash_movements.print', 'customers.view', 'customers.create', 'customers.edit', 'loyalty.view', 'loyalty.earn', 'loyalty.redeem', 'product_wallet.view', 'product_wallet.settle'],
             'purchasing-officer' => ['products_categories_brands.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change', 'purchase_orders.view', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.cancel', 'purchase_orders.print', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.print', 'purchase_returns.view', 'purchase_returns.create', 'purchase_returns.edit', 'purchase_returns.print'],
-            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.submit', 'inventory_stock_card.approve', 'inventory_stock_card.override', 'transfers.view', 'transfers.create', 'transfers.submit', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.reconcile'],
+            'warehouse-manager' => ['products_categories_brands.view', 'suppliers.view', 'purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.approve', 'purchase_returns.view', 'purchase_returns.approve', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.create', 'inventory_stock_card.edit', 'inventory_stock_card.submit', 'inventory_stock_card.approve', 'inventory_stock_card.override', 'inventory_stock_card.reverse', 'transfers.view', 'transfers.create', 'transfers.edit', 'transfers.submit', 'transfers.approve', 'transfers.dispatch', 'transfers.receive', 'transfers.difference', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.reconcile', 'party_operating_orders_consumables.view', 'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit', 'party_operating_orders_consumables.print', 'party_operating_orders_consumables.approve'],
             'pricing-officer' => ['products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.create', 'pricing_labels.edit', 'pricing_labels.submit', 'pricing_labels.approve'],
             'stock-counter' => ['products_categories_brands.view', 'inventory_stock_card.view', 'stock_counts.view', 'stock_counts.create', 'stock_counts.edit', 'stock_counts.submit'],
-            'accountant-reviewer' => ['shifts_cash_movements.view', 'shifts_cash_movements.export', 'dashboard_reports.view', 'audit_logs.view', 'pos_sales.view', 'pos_sales.payment_view', 'pos_sales.payment_evidence_view', 'product_wallet.view', 'party_wallet.view', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.export', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse'],
+            // Party-side customer/loyalty rules are downstream. Do not grant
+            // a Party Manager access to the TSK-027 retail loyalty ledger.
+            'party-manager' => ['customers.view', 'customers.create', 'customers.edit', 'customers.sensitive', 'party_bookings_invoices.view', 'party_bookings_invoices.create', 'party_bookings_invoices.edit', 'party_bookings_invoices.print', 'party_bookings_invoices.approve', 'party_bookings_invoices.cancel', 'party_operating_orders_consumables.view', 'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit', 'party_operating_orders_consumables.print', 'party_operating_orders_consumables.approve', 'party_operating_orders_consumables.cancel', 'party_wallet.view', 'party_wallet.settle', 'party_wallet.adjust', 'rental_assets.view', 'rental_assets.create', 'rental_assets.print', 'rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'quotations.view', 'quotations.create', 'quotations.edit', 'quotations.print', 'quotations.issue', 'quotations.share'],
+            'accountant-reviewer' => ['shifts_cash_movements.view', 'shifts_cash_movements.export', 'dashboard_reports.view', 'dashboard_reports.export', 'dashboard_reports.edit', 'audit_logs.view', 'pos_sales.view', 'pos_sales.payment_view', 'pos_sales.payment_evidence_view', 'product_wallet.view', 'product_wallet.export', 'product_wallet.approve', 'party_wallet.view', 'party_wallet.export', 'party_wallet.approve', 'party_bookings_invoices.view', 'party_bookings_invoices.print', 'party_bookings_invoices.approve', 'party_bookings_invoices.export', 'party_operating_orders_consumables.view', 'party_operating_orders_consumables.print', 'party_operating_orders_consumables.approve', 'party_operating_orders_consumables.export', 'returns_exchanges_gift_instruments.view', 'products_categories_brands.view', 'pricing_labels.view', 'pricing_labels.reject', 'pricing_labels.override', 'pricing_labels.print', 'pricing_labels.export', 'inventory_stock_card.view', 'inventory_stock_card.cost_view', 'inventory_stock_card.export', 'suppliers.view', 'purchase_orders.view', 'purchase_orders.print', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.view', 'purchase_invoices_supplier_returns.print', 'purchase_invoices_supplier_returns.approve', 'purchase_invoices_supplier_returns.export', 'purchase_returns.view', 'purchase_returns.print', 'purchase_returns.approve', 'purchase_returns.reverse', 'customers.view', 'customers.sensitive', 'customers.merge', 'customers.export', 'loyalty.view', 'loyalty.adjust', 'loyalty.approve', 'loyalty.export', 'loyalty.expire', 'rental_assets.view', 'rental_assets.print', 'rental_assets.export', 'rental_assets.cost_view', 'quotations.view', 'quotations.print', 'quotations.export'],
         ];
+
+        $rolePermissions['system-administrator'] = [...$rolePermissions['system-administrator'], 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf'];
+        $rolePermissions['accountant-reviewer'] = [...$rolePermissions['accountant-reviewer'], 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf'];
+
+        $instrumentViewer = ['gift_receipts.view', 'gift_receipts.print', 'gift_receipts.reprint', 'gift_receipts.validate', 'returns.view', 'returns.print', 'gift_cards.view', 'gift_cards.print'];
+        $cashierInstrumentPermissions = [...$instrumentViewer, 'gift_receipts.issue', 'returns.create', 'returns.submit', 'returns.complete', 'gift_cards.issue', 'gift_cards.redeem'];
+        $approverInstrumentPermissions = [...$instrumentViewer, 'gift_receipts.issue', 'returns.create', 'returns.submit', 'returns.approve', 'returns.complete', 'gift_cards.issue', 'gift_cards.redeem', 'gift_cards.void', 'gift_cards.expire'];
+        $rolePermissions['system-administrator'] = array_values(array_unique([...$rolePermissions['system-administrator'], ...$approverInstrumentPermissions]));
+        $rolePermissions['branch-manager'] = array_values(array_unique([...$rolePermissions['branch-manager'], ...$approverInstrumentPermissions]));
+        $rolePermissions['cashier'] = array_values(array_unique([...$rolePermissions['cashier'], ...$cashierInstrumentPermissions]));
+        $rolePermissions['accountant-reviewer'] = array_values(array_unique([...$rolePermissions['accountant-reviewer'], ...$instrumentViewer]));
 
         $effectiveRolePermissions = app()->environment('production') ? self::productionSafeRolePermissions() : $rolePermissions;
 
@@ -106,11 +173,11 @@ class CanonicalAuthorizationSeeder extends Seeder
 
         if (app()->environment('local')) {
             $demoUsers = [
-                'demo-admin' => ['Local Demo Administrator', 'demo.admin@toyjoy.local', 'system-administrator', true],
-                'demo-branch-manager' => ['Local Demo Branch Manager', 'demo.branch.manager@toyjoy.local', 'branch-manager', false],
-                'demo-cashier' => ['Local Demo Cashier', 'demo.cashier@toyjoy.local', 'cashier', false],
-                'demo-reviewer' => ['Local Demo Reviewer', 'demo.reviewer@toyjoy.local', 'accountant-reviewer', false],
-                'demo-no-access' => ['Local Demo No Access', 'demo.no.access@toyjoy.local', null, false],
+                'demo-admin' => ['System Administrator', 'demo.admin@toyjoy.local', 'system-administrator', true],
+                'demo-branch-manager' => ['Branch Manager', 'demo.branch.manager@toyjoy.local', 'branch-manager', false],
+                'demo-cashier' => ['Cashier', 'demo.cashier@toyjoy.local', 'cashier', false],
+                'demo-reviewer' => ['Accountant Reviewer', 'demo.reviewer@toyjoy.local', 'accountant-reviewer', false],
+                'demo-no-access' => ['User without access', 'demo.no.access@toyjoy.local', null, false],
             ];
 
             foreach ($demoUsers as $username => [$name, $email, $roleCode, $isSuperAdmin]) {

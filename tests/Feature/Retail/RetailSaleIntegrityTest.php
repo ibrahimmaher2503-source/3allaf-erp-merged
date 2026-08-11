@@ -18,12 +18,15 @@ use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Retail\Actions\RetailSaleAction;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Models\SuspendedSale;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -202,9 +205,13 @@ final class RetailSaleIntegrityTest extends TestCase
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
             'assigned_user_id' => $cashier->id, 'code' => 'POS-DR', 'name_ar' => 'Test', 'name_en' => 'Test', 'status' => 'active',
         ]);
-        PosShift::query()->create([
+        $shift = PosShift::query()->create([
             'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+        ]);
+        DB::table('active_pos_shift_assignments')->insert([
+            'shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'cash_drawer_id' => $drawer->id,
+            'created_at' => now(), 'updated_at' => now(),
         ]);
         $category = Category::query()->create(['code' => 'POS-CAT', 'name_ar' => 'Test', 'name_en' => 'Test', 'status' => 'active']);
         $product = Product::query()->create(['item_code' => 'POS-PROD', 'name_ar' => 'Test', 'name_en' => 'Test', 'category_id' => $category->id, 'status' => 'active']);
@@ -230,6 +237,11 @@ final class RetailSaleIntegrityTest extends TestCase
         $cash = PaymentMethod::query()->create([
             'code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash',
             'requires_evidence' => false, 'status' => 'active',
+        ]);
+
+        PosFinancialSettingVersion::query()->create([
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '0.05', 'value_type' => 'decimal', 'version' => 1, 'created_by' => $cashier->id,
         ]);
 
         return compact('cashier', 'store', 'product', 'cash');

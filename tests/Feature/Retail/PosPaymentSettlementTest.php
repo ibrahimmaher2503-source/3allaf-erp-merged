@@ -18,7 +18,9 @@ use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Retail\Actions\CapturePaymentAction;
+use App\Modules\Retail\Actions\GiftCardAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
+use App\Modules\Retail\Models\GiftCardLedger;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
@@ -118,6 +120,38 @@ final class PosPaymentSettlementTest extends TestCase
             $paid = bcadd($paid, (string) $payment->amount, 2);
         }
         self::assertSame((string) $sale->payable_total, $paid, 'Payment rows must sum to the payable amount (docs/48 §6).');
+    }
+
+    public function test_a_gift_card_tender_redeems_atomically_with_the_sale_and_is_source_linked(): void
+    {
+        $scenario = $this->scenario();
+        $this->actingAs($scenario['cashier']);
+        $giftMethod = PaymentMethod::query()->create([
+            'code' => 'gift_card', 'name_ar' => 'Gift Card', 'name_en' => 'Gift Card', 'type' => 'gift_card',
+            'requires_evidence' => false, 'status' => 'active',
+        ]);
+        $card = app(GiftCardAction::class)->issue(
+            $scenario['cashier'], '50.00', (int) $scenario['store']->branch_id, (int) $scenario['store']->id,
+            'manual', 'gift-pos-test', 'gift-pos-issue',
+        );
+
+        $sale = app(RetailSaleAction::class)->create(
+            $scenario['cashier'],
+            $scenario['store'],
+            [['product_id' => $scenario['product']->id, 'quantity' => '2']],
+            'PAY-GIFT-1',
+            false,
+            [['method' => $giftMethod, 'amount' => '30.00', 'gift_card' => $card]],
+        );
+
+        self::assertSame('approved', $sale->status);
+        self::assertSame('20.00', (string) $card->fresh()->balance);
+        $payment = SalePayment::query()->where('sale_id', $sale->id)->sole();
+        self::assertSame($card->id, (int) $payment->gift_card_id);
+        $redemption = GiftCardLedger::query()->where('gift_card_id', $card->id)->where('event_type', 'redeem')->sole();
+        self::assertSame(Sale::class, $redemption->source_type);
+        self::assertSame((string) $sale->id, $redemption->source_id);
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $scenario['store']->id)->value('on_hand'));
     }
 
     public function test_cash_overpayment_produces_change_without_inflating_the_paid_total(): void
@@ -343,9 +377,13 @@ final class PosPaymentSettlementTest extends TestCase
             'company_id' => $this->company()->id, 'branch_id' => $branch->id, 'store_id' => $store->id,
             'assigned_user_id' => $cashier->id, 'code' => 'PAY-DR', 'name_ar' => 'درج', 'name_en' => 'Drawer', 'status' => 'active',
         ]);
-        PosShift::query()->create([
+        $shift = PosShift::query()->create([
             'branch_id' => $branch->id, 'store_id' => $store->id, 'cash_drawer_id' => $drawer->id,
             'cashier_id' => $cashier->id, 'status' => 'open', 'opening_cash' => '0', 'opened_at' => now(),
+        ]);
+        DB::table('active_pos_shift_assignments')->insert([
+            'shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'cash_drawer_id' => $drawer->id,
+            'created_at' => now(), 'updated_at' => now(),
         ]);
         $category = Category::query()->create(['code' => 'PAY-CAT', 'name_ar' => 'فئة', 'name_en' => 'Category', 'status' => 'active']);
         $product = Product::query()->create(['item_code' => 'PAY-PROD', 'name_ar' => 'لعبة', 'name_en' => 'Toy', 'category_id' => $category->id, 'status' => 'active']);

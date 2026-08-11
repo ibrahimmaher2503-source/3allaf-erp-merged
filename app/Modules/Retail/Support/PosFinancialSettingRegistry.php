@@ -31,15 +31,15 @@ final class PosFinancialSettingRegistry
         return [
             self::CASH_ROUNDING_DENOMINATION => [
                 'title' => 'Cash rounding denomination',
-                'description' => 'POSF-02 — smallest cash denomination used to round the payable amount. When unset, every cash tender is blocked explicitly; no denomination is inferred.',
+                'description' => 'Smallest cash denomination used to round the payable amount. When unset, cash payment is blocked explicitly; no denomination is inferred.',
             ],
             self::DISCOUNT_APPROVAL_LIMIT => [
                 'title' => 'Discount approval limit (percent)',
-                'description' => 'Discount percentage above which an approval is required and bound to the invoice (docs/48 §4). Unset means no discount may exceed zero without approval.',
+                'description' => 'Discount percentage above which approval is required and linked to the invoice. When unset, discounts cannot exceed zero without approval.',
             ],
             self::OPEN_PRICE_APPROVAL_LIMIT => [
                 'title' => 'Open price approval limit (percent)',
-                'description' => 'Permitted deviation from the approved effective price before an approval is required (PRC-08).',
+                'description' => 'Permitted deviation from the approved effective price before approval is required.',
             ],
         ];
     }

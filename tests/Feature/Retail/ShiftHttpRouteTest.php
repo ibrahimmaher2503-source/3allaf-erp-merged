@@ -7,6 +7,7 @@ namespace Tests\Feature\Retail;
 use App\Models\User;
 use App\Modules\Platform\Actions\DecideApprovalSource;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
@@ -136,6 +137,69 @@ final class ShiftHttpRouteTest extends TestCase
         app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->findOrFail($shift->variance_approval_record_id));
 
         self::assertSame(ShiftState::Closed, $shift->fresh()->status);
+    }
+
+    public function test_a_closed_shift_has_permissioned_thermal_and_a4_print_outputs(): void
+    {
+        $s = $this->openedShift();
+        app(SubmitBlindShiftCloseAction::class)->execute($s['cashier'], $s['shift'], '80.00', [], 'HTTP-PRINT-1');
+        $shift = $s['shift']->fresh();
+        $manager = $this->userWith('http-print-manager', ['branch-manager'], branchIds: [$s['branch']->id], storeIds: [$s['store']->id]);
+
+        $this->actingAs($manager);
+        app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->findOrFail($shift->variance_approval_record_id));
+        $shift = $shift->fresh();
+
+        $this->actingAs($manager)->get(route('pos.shift.print.thermal', $shift))
+            ->assertOk()
+            ->assertViewIs('pages.pos.shift-print-thermal')
+            ->assertSee((string) $shift->closing_document_number)
+            ->assertSee('80.00')
+            ->assertSee('-20.00');
+
+        $this->actingAs($manager)->get(route('pos.shift.print.a4', $shift))
+            ->assertOk()
+            ->assertViewIs('pages.pos.shift-print-a4')
+            ->assertSee((string) $shift->closing_document_number)
+            ->assertSee('Expected')
+            ->assertSee('Actual')
+            ->assertSee('Variance');
+
+        self::assertSame(1, AuditLog::query()->where('event', 'shift_thermal_printed')->where('source_id', (string) $shift->id)->count());
+        self::assertSame(1, AuditLog::query()->where('event', 'shift_a4_printed')->where('source_id', (string) $shift->id)->count());
+
+        $this->actingAs($manager)->get(route('pos.shift.print.thermal', $shift))->assertOk();
+        self::assertTrue((bool) AuditLog::query()->where('event', 'shift_thermal_printed')->where('source_id', (string) $shift->id)->latest('id')->firstOrFail()->metadata['reprint']);
+    }
+
+    public function test_cashier_print_is_redacted_and_foreign_closed_shift_is_not_discoverable(): void
+    {
+        $s = $this->openedShift();
+        app(SubmitBlindShiftCloseAction::class)->execute($s['cashier'], $s['shift'], '80.00', [], 'HTTP-PRINT-2');
+        $shift = $s['shift']->fresh();
+        $manager = $this->userWith('http-redaction-manager', ['branch-manager'], branchIds: [$s['branch']->id], storeIds: [$s['store']->id]);
+
+        $this->actingAs($manager);
+        app(DecideApprovalSource::class)->approve(ApprovalRecord::query()->findOrFail($shift->variance_approval_record_id));
+        $shift = $shift->fresh();
+
+        $this->actingAs($s['cashier'])->get(route('pos.shift.print.thermal', $shift))
+            ->assertOk()
+            ->assertSee('80.00')
+            ->assertDontSee('100.00')
+            ->assertDontSee('-20.00');
+
+        $this->actingAs($s['cashier'])->get(route('pos.shift.print.a4', $shift))
+            ->assertOk()
+            ->assertSee('80.00')
+            ->assertDontSee('100.00')
+            ->assertDontSee('-20.00');
+
+        $otherBranch = $this->branch('HTTP-PRINT-OTHER-BR');
+        $otherStore = $this->store($otherBranch, 'HTTP-PRINT-OTHER-ST');
+        $foreignReviewer = $this->userWith('http-foreign-print-reviewer', ['branch-manager'], branchIds: [$otherBranch->id], storeIds: [$otherStore->id]);
+
+        $this->actingAs($foreignReviewer)->get(route('pos.shift.print.a4', $shift))->assertNotFound();
     }
 
     public function test_a_stale_lock_version_from_the_review_form_is_rejected(): void

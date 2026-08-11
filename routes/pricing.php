@@ -30,4 +30,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })
         ->middleware('can:pricing_labels.view')
         ->name('pricing.labels');
+
+    $router->livewire('pricing/{mode}', 'pricing::index')
+        ->whereIn('mode', ['workspace', 'versions', 'unpriced', 'history'])
+        ->middleware('can:pricing_labels.view')
+        ->name('pricing.focus');
 });

@@ -111,6 +111,36 @@ class AuditScreenTest extends TestCase
             ->assertDontSeeHtml($this->rowMarker($second));
     }
 
+    public function test_print_and_override_modes_filter_the_same_scoped_audit_store(): void
+    {
+        config(['audit.export_max_rows' => 20]);
+        $this->actingAs($this->administrator('tsk009-modes'));
+        $branch = $this->branch('MODE-BR');
+        AuditLog::query()->delete();
+        $printed = $this->event('sale_thermal_receipt_printed', $branch->id);
+        $ordinary = $this->event('sale_approved', $branch->id);
+        $override = app(RecordAuditEvent::class)->execute(
+            category: 'workflow', event: 'document_sequence_changed', branchId: $branch->id, metadata: ['override' => true],
+        );
+
+        Livewire::withQueryParams(['mode' => 'print'])->test('platform::system.audit-log')
+            ->assertSeeHtml($this->rowMarker($printed))->assertDontSeeHtml($this->rowMarker($ordinary));
+        Livewire::withQueryParams(['mode' => 'override'])->test('platform::system.audit-log')
+            ->assertSeeHtml($this->rowMarker($override))->assertDontSeeHtml($this->rowMarker($ordinary));
+
+        $printCsv = $this->get(route('admin.audit.export', ['mode' => 'print']))
+            ->assertOk()
+            ->streamedContent();
+        $this->assertStringContainsString($printed->event, $printCsv);
+        $this->assertStringNotContainsString($ordinary->event, $printCsv);
+
+        $overrideCsv = $this->get(route('admin.audit.export', ['mode' => 'override']))
+            ->assertOk()
+            ->streamedContent();
+        $this->assertStringContainsString($override->event, $overrideCsv);
+        $this->assertStringNotContainsString($ordinary->event, $overrideCsv);
+    }
+
     public function test_a_filter_cannot_broaden_the_visible_scope(): void
     {
         $this->actingAs($this->administrator('tsk009-broaden-setup'));

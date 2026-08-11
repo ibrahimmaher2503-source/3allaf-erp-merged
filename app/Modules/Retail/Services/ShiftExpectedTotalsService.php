@@ -9,6 +9,7 @@ use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
+use App\Modules\Retail\Models\RetailReturnSettlement;
 use App\Modules\Retail\Support\DecimalMoney;
 use Illuminate\Support\Facades\DB;
 
@@ -68,6 +69,29 @@ final class ShiftExpectedTotalsService
             }
 
             $expectedByMethod[$methodCode] = bcadd($expectedByMethod[$methodCode] ?? '0.00', $applied, 2);
+        }
+
+        // Completed refunds are immutable settlement rows linked to the source
+        // sale, so they reduce the same shift/method expectation as the
+        // original payment without mutating that payment.
+        $refundRows = RetailReturnSettlement::query()
+            ->join('retail_returns', 'retail_returns.id', '=', 'retail_return_settlements.retail_return_id')
+            ->join('sales', 'sales.id', '=', 'retail_returns.source_sale_id')
+            ->join('payment_methods', 'payment_methods.id', '=', 'retail_return_settlements.payment_method_id')
+            ->where('sales.shift_id', $shift->getKey())
+            ->where('retail_returns.status', 'completed')
+            ->where('retail_return_settlements.direction', 'refund')
+            ->groupBy('payment_methods.code', 'payment_methods.type')
+            ->select('payment_methods.code as method_code', 'payment_methods.type as method_type', DB::raw('SUM(retail_return_settlements.amount) as refunded'))
+            ->get();
+        foreach ($refundRows as $row) {
+            $refunded = $this->money((string) $row->getAttribute('refunded'));
+            if (PaymentMethodSemantics::isCashType((string) $row->getAttribute('method_type'))) {
+                $cashSales = bcsub($cashSales, $refunded, 2);
+            } else {
+                $methodCode = (string) $row->getAttribute('method_code');
+                $expectedByMethod[$methodCode] = bcsub($expectedByMethod[$methodCode] ?? '0.00', $refunded, 2);
+            }
         }
 
         $movementTotal = $this->money((string) CashMovement::query()->where('shift_id', $shift->getKey())->sum('amount'));

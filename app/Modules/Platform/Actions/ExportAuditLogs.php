@@ -76,6 +76,10 @@ final class ExportAuditLogs
         $search = trim((string) ($filters['search'] ?? ''));
 
         return $query
+            ->when(($filters['mode'] ?? 'all') === 'print', fn (Builder $query) => $query->where('event', 'like', '%print%'))
+            ->when(($filters['mode'] ?? 'all') === 'override', fn (Builder $query) => $query->where(function (Builder $mode): void {
+                $mode->where('event', 'like', '%override%')->orWhereJsonContains('metadata->override', true);
+            }))
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $term = '%'.$search.'%';
                 $query->where(fn (Builder $nested) => $nested->where('event', 'like', $term)->orWhere('source_type', 'like', $term)->orWhere('source_id', 'like', $term)->orWhere('request_id', 'like', $term)->orWhere('actor_name', 'like', $term));
