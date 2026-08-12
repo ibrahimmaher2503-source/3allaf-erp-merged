@@ -10,6 +10,7 @@
 - Truthful readiness checks for company, locations, users/scopes, operational settings, catalog, suppliers, prices, and opening inventory.
 - Optional Customer/Party creation only for genuine activity.
 - Company ownership enforced for new branches and stores.
+- Optional atomic/idempotent loading of the complete setup chain from a pinned, owner-approved private JSON artifact.
 
 ## Verification directive
 
@@ -19,4 +20,4 @@
 
 ## Remaining closure
 
-Enter owner-approved real data through the Production UI, use independent approvers for sensitive settings/prices/opening stock, rotate exposed credentials, complete backup/restore, and perform headed-browser UAT before release approval.
+Supply and reconcile the owner-approved real-data artifact or enter the same values through the Production UI, use independent approvers for sensitive settings/prices/opening stock, rotate exposed credentials, complete backup/restore, and perform headed-browser UAT before release approval.

@@ -68,6 +68,26 @@ Where a source is unavailable, the stage is blocked. Inventing plausible master 
 
 ## 5. Import Mechanics
 
+### 5.1 Owner-data Production seeder
+
+The repository provides an opt-in `ProductionSetupSeeder`, called by
+`ProductionSeeder` only when `PRODUCTION_SETUP_DATA_PATH` is configured. The
+JSON contract is documented by
+`database/seeders/production-setup.example.json` and covers the complete ordered
+setup chain. The source must be stored outside the public web root, must contain
+no `__REPLACE__` markers, and should be pinned with
+`PRODUCTION_SETUP_DATA_SHA256`. Additional user passwords are supplied through
+the deployment-owned `PRODUCTION_SETUP_USER_PASSWORDS` JSON map, never written
+into the source artifact.
+
+The entire authorization, administrator, and setup load is transactional.
+Natural codes, source references, and idempotency keys make repeat execution
+safe. Approved prices and opening inventory are not direct table loads: the
+seeder uses the normal submit/approve actions and rejects a shared maker and
+approver. Customer/Party sections remain optional and genuine-only. A missing
+source fact must be left blocked or represented by an empty optional array; it
+must never be replaced with plausible sample data.
+
 Reuse the staged-import pattern (`docs/42`, `ProductImportBatch`): upload, validate, stage, preview, approve, commit. Applies to products, barcodes, suppliers, prices, and opening stock.
 
 Rules:

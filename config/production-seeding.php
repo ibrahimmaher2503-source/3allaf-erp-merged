@@ -18,4 +18,21 @@ return [
         'email' => env('PRODUCTION_ADMIN_EMAIL'),
         'password' => env('PRODUCTION_ADMIN_PASSWORD'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Owner-approved setup data
+    |--------------------------------------------------------------------------
+    |
+    | Set this to an absolute path outside the public web root when genuine,
+    | reviewed Production setup data is ready. No operational records are
+    | invented when the value is empty. The optional SHA-256 value pins the
+    | exact approved artifact and causes seeding to fail if it changes.
+    |
+    */
+    'setup_data' => [
+        'path' => env('PRODUCTION_SETUP_DATA_PATH'),
+        'sha256' => env('PRODUCTION_SETUP_DATA_SHA256'),
+        'user_passwords' => json_decode((string) env('PRODUCTION_SETUP_USER_PASSWORDS', '{}'), true) ?: [],
+    ],
 ];

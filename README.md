@@ -41,10 +41,10 @@ The current prepared environment uses its local `.env` and the `toyjoy_local` My
 
 ### Production-safe initial data
 
-The default seeding path creates only the canonical role/permission catalog and
-the first system administrator. It never creates branches, stores, products,
-customers, stock, prices, bookings, sales, financial policy values, or other
-sample/transactional data.
+Without a setup-data path, the default seeding path creates only the canonical
+role/permission catalog and first system administrator. A second, opt-in stage
+can load every Production setup area from an owner-approved private JSON file;
+it never invents missing values or loads the example template.
 
 Supply the four `PRODUCTION_ADMIN_*` deployment values documented in
 `.env.example`, then run:
@@ -55,10 +55,38 @@ php artisan db:seed --force
 
 The seeder is transactional and idempotent. Missing or conflicting administrator
 identity values fail closed. Re-running it does not reset the existing
-administrator password. Remove `PRODUCTION_ADMIN_PASSWORD` from the runtime
-environment after seeding, rotate the password after first sign-in, and configure
-the approved MFA controls. Real operational master data must enter through the
-approved UI/import and reconciliation workflow in `docs/54`.
+administrator password.
+
+For a complete owner-data load, copy
+`database/seeders/production-setup.example.json` to a private path outside the
+web root, replace every `__REPLACE__` value, review it, calculate its SHA-256,
+and set:
+
+```dotenv
+PRODUCTION_SETUP_DATA_PATH=/absolute/private/production-setup.json
+PRODUCTION_SETUP_DATA_SHA256=<approved-file-sha256>
+PRODUCTION_SETUP_USER_PASSWORDS='{"MAKER":"<16+ characters>","APPROVER":"<16+ characters>"}'
+```
+
+Then clear cached configuration and run the normal seeder:
+
+```bash
+php artisan optimize:clear
+php artisan db:seed --force
+```
+
+The optional stage covers company, branches/stores, users/roles/scopes,
+payments/tax/numbering/printers, customer policy settings, catalog/variations,
+suppliers/SKUs, approved prices, controlled opening inventory, customers, and
+Party booking drafts. Price and opening-stock approval require different maker
+and approver usernames and run through the normal guarded actions. Keep customer
+and Party arrays empty unless genuine activity requires them. Remove seeding
+passwords from the runtime environment after the run, rotate initial passwords,
+configure MFA, and complete the reconciliation workflow in `docs/54`.
+After removing `PRODUCTION_ADMIN_PASSWORD` and
+`PRODUCTION_SETUP_USER_PASSWORDS` from the runtime environment, run
+`php artisan optimize:clear && php artisan optimize` so cached secrets are not
+retained.
 
 ## Delivery and Performance Guardrails
 

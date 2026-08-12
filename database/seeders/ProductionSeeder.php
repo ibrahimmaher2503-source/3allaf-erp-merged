@@ -17,6 +17,10 @@ final class ProductionSeeder extends Seeder
         DB::transaction(function (): void {
             $this->seedAuthorization();
             $this->seedBootstrapAdministrator();
+
+            if (filled(config('production-seeding.setup_data.path'))) {
+                $this->call(ProductionSetupSeeder::class);
+            }
         });
     }
 
