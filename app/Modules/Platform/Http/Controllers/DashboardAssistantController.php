@@ -93,8 +93,29 @@ final class DashboardAssistantController
             fn (string $permission): bool => Gate::allows($permission),
         ));
 
+        $guideLinks = array_values(array_filter(array_map(
+            function (string $screenId): ?array {
+                $guide = TutorialRegistry::find($screenId);
+
+                if ($guide === null || ! $this->canViewScreen($screenId)) {
+                    return null;
+                }
+
+                $routeName = $guide['route_names'][0];
+
+                return [
+                    'screen_id' => $screenId,
+                    'title' => $guide['title'],
+                    'href' => route('platform.help.screen', ['screenId' => $screenId]),
+                    'route_name' => $routeName,
+                    'is_readiness' => str_ends_with($routeName, '.readiness'),
+                ];
+            },
+            $flow['destination_screen_ids'],
+        )));
+
         return response()
-            ->view('platform.help.flow', ['flow' => $flow])
+            ->view('platform.help.flow', ['flow' => $flow, 'guideLinks' => $guideLinks])
             ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache');
     }

@@ -59,7 +59,7 @@ final class SavePurchaseInvoiceAction
 
             $normalizedLines = [];
             foreach ($lines as $index => $line) {
-                $product = Product::query()->findOrFail((int) ($line['product_id'] ?? 0));
+                $product = Product::query()->sellable()->findOrFail((int) ($line['product_id'] ?? 0));
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be invoiced.', ['name' => $product->name_en ?: $product->name_ar]));
                 }

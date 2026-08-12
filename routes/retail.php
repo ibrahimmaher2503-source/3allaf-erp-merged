@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
@@ -55,6 +56,43 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('pos/products/{product}/thumbnail/{attachment}', function (Request $request, Product $product, Attachment $attachment) {
+        abort_unless($request->user()?->can('pos_sales.view'), 403);
+        $authorized = $attachment->purpose === 'product_image'
+            && $attachment->source_type === Product::class
+            && $attachment->source_id === (string) $product->id
+            && $product->images()->where('attachment_id', $attachment->id)->exists();
+        abort_unless($authorized, 403);
+
+        $disk = \Illuminate\Support\Facades\Storage::disk($attachment->storage_disk);
+        abort_unless($disk->exists($attachment->storage_path), 404);
+        $source = $disk->path($attachment->storage_path);
+        $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
+        $cachePath = $cacheDirectory.DIRECTORY_SEPARATOR.$attachment->sha256.'-320.webp';
+
+        if (! is_file($cachePath) && function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
+            $bytes = file_get_contents($source);
+            $image = is_string($bytes) ? @imagecreatefromstring($bytes) : false;
+            if ($image !== false) {
+                $width = imagesx($image); $height = imagesy($image);
+                $scale = min(320 / max(1, $width), 320 / max(1, $height), 1);
+                $targetWidth = max(1, (int) round($width * $scale)); $targetHeight = max(1, (int) round($height * $scale));
+                $thumb = imagecreatetruecolor($targetWidth, $targetHeight);
+                imagealphablending($thumb, false); imagesavealpha($thumb, true);
+                imagecopyresampled($thumb, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+                if (! is_dir($cacheDirectory)) @mkdir($cacheDirectory, 0700, true);
+                if (is_dir($cacheDirectory)) @imagewebp($thumb, $cachePath, 82);
+                imagedestroy($thumb); imagedestroy($image);
+            }
+        }
+
+        $response = is_file($cachePath)
+            ? response()->file($cachePath, ['Content-Type' => 'image/webp'])
+            : response()->file($source, ['Content-Type' => $attachment->detected_mime_type ?: $attachment->mime_type]);
+
+        return $response->header('Cache-Control', 'private, max-age=86400, immutable')->header('X-Content-Type-Options', 'nosniff');
+    })->whereNumber('product')->middleware('can:pos_sales.view')->name('pos.products.thumbnail');
+
     Route::get('pos/returns-readiness', function (Request $request) {
         abort_unless($request->user()->is_super_admin || $request->user()->can('returns.view') || $request->user()->can('returns_exchanges_gift_instruments.view'), 403);
         return redirect()->route('returns.index');
@@ -567,11 +605,29 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $productIds = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->all();
         $cartProducts = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
         $productQuery = trim((string) $request->query('product_q', ''));
+        $categoryId = $request->integer('category') ?: null;
+        $availableCategories = Category::query()
+            ->active()
+            ->whereHas('products', fn ($query) => $query->active())
+            ->orderBy('sort_order')
+            ->orderBy('name_en')
+            ->limit(12)
+            ->get();
+        if ($categoryId !== null && ! $availableCategories->contains('id', $categoryId)) {
+            $categoryId = null;
+        }
         $availableProductsQuery = Product::query()
             ->active()
-            ->with(['barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('barcode')])
+            ->familiesAndSimple()
+            ->with([
+                'category:id,name_ar,name_en',
+                'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')->orderBy('barcode'),
+            ])
             ->orderBy('item_code')
             ->limit(24);
+        if ($categoryId !== null) {
+            $availableProductsQuery->where('category_id', $categoryId);
+        }
         if ($productQuery !== '') {
             $availableProductsQuery->where(function ($query) use ($productQuery): void {
                 $query->where('item_code', 'like', '%'.$productQuery.'%')
@@ -581,7 +637,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             });
         }
         $availableProducts = $availableProductsQuery->get();
-        $priceMap = $store === null ? collect() : $availableProducts->mapWithKeys(fn (Product $product): array => [$product->id => app(EffectivePriceResolver::class)->resolve($product->id, $store->id)]);
+        $stockByProduct = $store === null
+            ? collect()
+            : StockBalance::query()
+                ->where('store_id', $store->id)
+                ->whereIn('product_id', $availableProducts->pluck('id'))
+                ->get(['product_id', 'on_hand', 'reserved'])
+                ->keyBy('product_id');
+        $pricedProductIds = $availableProducts->pluck('id')->merge($productIds)->all();
+        $priceMap = $store === null
+            ? collect()
+            : app(EffectivePriceResolver::class)->resolveForStore($pricedProductIds, (int) $store->id);
         $otherStoreAvailability = collect();
         if ($productQuery !== '' && $store !== null) {
             $visibleOtherStoreIds = Store::query()
@@ -632,7 +698,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $cart[$cart->search(fn (array $candidate): bool => (int) ($candidate['product_id'] ?? 0) === (int) $cartLine['product_id'])] = $cartLine;
             }
             $product = $cartProducts->get((int) $cartLine['product_id']);
-            $price = $product && $store ? app(EffectivePriceResolver::class)->resolve($product->id, $store->id) : null;
+            $price = $product && $store ? $priceMap->get($product->id) : null;
             if ($product && $price) {
                 $previewLines[] = [
                     'product' => $product,
@@ -684,7 +750,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
             'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
             'cashDenomination', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
-            'productQuery', 'otherStoreAvailability',
+            'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
         ));
     })->middleware('can:pos_sales.view')->name('pos');
 
@@ -1048,23 +1114,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('pos/cart/add', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
-        $data = $request->validate(['product_id' => ['required', 'integer', 'exists:products,id'], 'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999']]);
-        /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
-        $sessionCart = $request->session()->get('pos.cart', []);
-        $cart = collect($sessionCart);
-        /** @var int $productId */
-        $productId = (int) $data['product_id'];
-        /** @var numeric-string $quantity */
-        $quantity = (string) $data['quantity'];
-        $key = $cart->search(fn (array $line): bool => (int) $line['product_id'] === $productId);
-        if ($key === false) {
-            $cart->push(['product_id' => $productId, 'quantity' => $quantity]);
-        } else {
-            /** @var numeric-string $existingQuantity */
-            $existingQuantity = $cart[$key]['quantity'];
-            $cart[$key]['quantity'] = bcadd($existingQuantity, $quantity, 6);
+        $data = $request->validate(['product_id' => ['required', 'integer'], 'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999']]);
+        try {
+            app(\App\Modules\Retail\Actions\PosCartAction::class)->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['cart' => $exception->getMessage()]);
         }
-        $request->session()->put('pos.cart', $cart->values()->all());
 
         return back()->with('success', __('Product added to cart.'));
     })->middleware('can:pos_sales.create')->name('pos.cart.add');
@@ -1074,8 +1129,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $data = $request->validate(['product_id' => ['required', 'integer']]);
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
         $sessionCart = $request->session()->get('pos.cart', []);
-        $cart = collect($sessionCart)->reject(fn (array $line): bool => (int) $line['product_id'] === (int) $data['product_id']);
-        $request->session()->put('pos.cart', $cart->values()->all());
+        app(\App\Modules\Retail\Actions\PosCartAction::class)->remove($request, (int) $data['product_id']);
 
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.remove');
@@ -1088,28 +1142,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'product_id' => ['required', 'integer'],
             'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999'],
         ]);
-        /** @var array<int, array<string, mixed>> $sessionCart */
-        $sessionCart = $request->session()->get('pos.cart', []);
-        $cart = collect($sessionCart);
-        $index = $cart->search(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === (int) $data['product_id']);
-        abort_if($index === false, 404);
-        $line = $cart[$index];
-        $before = ['quantity' => (string) ($line['quantity'] ?? '0')];
-        $line['quantity'] = (string) $data['quantity'];
-        $cart[$index] = $line;
-        $request->session()->put('pos.cart', $cart->values()->all());
-
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->first();
-        app(RecordAuditEvent::class)->execute(
-            category: 'retail',
-            event: 'pos_cart_quantity_updated',
-            explicitSourceId: 'cart:'.((int) $data['product_id']),
-            before: $before,
-            after: ['quantity' => $line['quantity']],
-            branchId: $store?->branch_id,
-            storeId: $store?->id,
-            metadata: ['product_id' => (int) $data['product_id'], 'actor_id' => $user->id],
-        );
+        try {
+            app(\App\Modules\Retail\Actions\PosCartAction::class)->quantity($request, $user, (int) $data['product_id'], (string) $data['quantity']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['cart' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Cart quantity updated.'));
     })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
@@ -1475,7 +1512,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ];
         }
         if ($tenders === []) {
-            return back()->withErrors(['payments' => __('Select at least one payment method.')]);
+            return back()->withInput()->withErrors(['payments' => __('Select at least one payment method.')]);
         }
 
         try {
@@ -1490,7 +1527,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $customer,
             );
         } catch (InvalidArgumentException|RuntimeException $e) {
-            return back()->withErrors(['payments' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['payments' => $e->getMessage()]);
         }
 
         $request->session()->forget('pos.cart');

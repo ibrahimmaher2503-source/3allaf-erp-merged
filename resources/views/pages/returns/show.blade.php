@@ -38,7 +38,7 @@
                     <tbody>
                         @foreach ($return->lines as $line)
                             <tr class="border-t border-zinc-100 dark:border-zinc-800">
-                                <td>{{ app()->getLocale() === 'ar' ? $line->product?->name_ar : $line->product?->name_en }}</td>
+                                <td><div>{{ app()->getLocale() === 'ar' ? $line->product?->name_ar : $line->product?->name_en }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
                                 <td>{{ $line->quantity }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->disposition)) }}</td>

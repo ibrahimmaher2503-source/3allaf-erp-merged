@@ -15,6 +15,7 @@
         ];
 
     $user = auth()->user();
+    $user?->loadMissing('uiPreference');
     $uiPreference = $user?->uiPreference;
     $uiPreferences = array_merge(
         $defaults,

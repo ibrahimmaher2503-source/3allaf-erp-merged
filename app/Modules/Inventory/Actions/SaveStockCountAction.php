@@ -50,7 +50,7 @@ final class SaveStockCountAction
             if (! $assigned->is_super_admin && ! Store::query()->visibleTo($assigned)->whereKey($store->id)->exists()) {
                 throw new InvalidArgumentException(__('The assigned counter is outside the selected store scope.'));
             }
-            $products = Product::query()->whereIn('id', $productIds)->where('status', 'active')->get()->keyBy('id');
+            $products = Product::query()->sellable()->whereIn('id', $productIds)->get()->keyBy('id');
             if ($products->count() !== count($productIds)) {
                 throw new InvalidArgumentException(__('Every selected count product must be active.'));
             }

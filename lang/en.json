@@ -782,6 +782,12 @@
     "Contact Email": "Contact Email",
     "Policy & Baseline Notes": "Policy & Baseline Notes",
     "Save Company Baseline": "Save Company Baseline",
+    "Review company baseline": "Review company baseline",
+    "Review these values before saving. Nothing is committed until you confirm.": "Review these values before saving. Nothing is committed until you confirm.",
+    "Back to edit": "Back to edit",
+    "Confirm and save": "Confirm and save",
+    "Currency code": "Currency code",
+    "Currency symbol": "Currency symbol",
     "Edit Payment Method": "Edit Payment Method",
     "Add New Payment Method Baseline": "Add New Payment Method Baseline",
     "Method Code": "Method Code",
@@ -1791,5 +1797,54 @@
     "Review controlled cutover, rollback, monitoring, support, training, and approval prerequisites without deploying or changing production.": "Review controlled cutover, rollback, monitoring, support, training, and approval prerequisites without deploying or changing production.",
     "No deployment, migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval is executed in this readiness boundary.": "No deployment, migration, cutover, rollback, production backup restore, monitoring activation, or go-live approval is executed in this readiness boundary.",
     "PENDING — owner and approval required": "PENDING — owner and approval required",
-    "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary.": "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary."
+    "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary.": "No production release ID, cutover approval, restore record, rollback rehearsal, monitoring activation, or client sign-off is available in this Local/Dev readiness boundary.",
+    "Manage shift": "Manage shift",
+    "Select source store": "Select source store",
+    "Select destination store": "Select destination store",
+    "Source and destination stores must be different.": "Source and destination stores must be different.",
+    "This transfer has no pending approval request. Submit it for approval before approving.": "This transfer has no pending approval request. Submit it for approval before approving."
+    ,"Product Options": "Product Options"
+    ,"Variations": "Variations"
+    ,"Option library": "Option library"
+    ,"New option group": "New option group"
+    ,"Arabic label": "Arabic label"
+    ,"English label": "English label"
+    ,"Optional swatch": "Optional swatch"
+    ,"Save group": "Save group"
+    ,"Save value": "Save value"
+    ,"Add value": "Add value"
+    ,"Product Master": "Product Master"
+    ,"No product options yet": "No product options yet"
+    ,"No values in this group": "No values in this group"
+    ,"Select 1 to 3 option groups": "Select 1 to 3 option groups"
+    ,"Maximum 100 child SKUs. Regeneration creates missing combinations only.": "Maximum 100 child SKUs. Regeneration creates missing combinations only."
+    ,"Immutable SKU": "Immutable SKU"
+    ,"Generate missing SKUs": "Generate missing SKUs"
+    ,"Variation media": "Variation media"
+    ,"Inactivate variation": "Inactivate variation"
+    ,"Scan or search by name, SKU, barcode, or option": "Scan or search by name, SKU, barcode, or option"
+    ,"Choose variation": "Choose variation"
+    ,"Select every option to resolve a SKU": "Select every option to resolve a SKU"
+    ,"Select an available, priced combination": "Select an available, priced combination"
+    ,"Add selected SKU to cart": "Add selected SKU to cart"
+    ,"In stock": "In stock"
+    ,"Out of stock": "Out of stock"
+    ,"No approved price": "No approved price"
+    ,"Each variation remains a separate SKU line.": "Each variation remains a separate SKU line."
+    ,"Clear cart": "Clear cart"
+    ,"Cart total": "Cart total"
+    ,"Card / electronic": "Card / electronic"
+    ,"Split payment": "Split payment"
+    ,"Gift Card identifier": "Gift Card identifier"
+    ,"Complete sale": "Complete sale"
+    ,"Hold sale": "Hold sale"
+    ,"Select an active simple product or a fully resolved variation SKU. Product families cannot be added.": "Select an active simple product or a fully resolved variation SKU. Product families cannot be added."
+    ,"The selected SKU has no approved effective price for this store.": "The selected SKU has no approved effective price for this store."
+    ,"The selected SKU does not have enough available stock.": "The selected SKU does not have enough available stock."
+    ,"One or more cart SKUs became inactive, unpriced, or invalid. The cart was preserved.": "One or more cart SKUs became inactive, unpriced, or invalid. The cart was preserved."
+    ,"A product family cannot generate more than 100 SKUs.": "A product family cannot generate more than 100 SKUs."
+    ,"A used, barcoded, priced, or stocked product cannot be converted. Create a new family instead.": "A used, barcoded, priced, or stocked product cannot be converted. Create a new family instead."
+    ,"Sale product lines": "Sale product lines"
+    ,"Arabic options": "Arabic options"
+    ,"English options": "English options"
 }

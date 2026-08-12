@@ -4,7 +4,7 @@
 
 The assistant does not create permissions. It filters registered actions and full guide/flow access through existing server Gates, preserves branch/store scope, and uses a safe fallback for missing or unauthorized guides. UI visibility is never the authorization boundary.
 
-`docs/04-roles-permissions.md` is the Canonical Authorization Matrix under DEC-038. `CanonicalAuthorizationSeeder` seeds all nine canonical roles and 276 canonical module/action permissions. `P`, `R`, and `N` cells are not silently granted. Future-module permissions remain catalog data until the corresponding module exists.
+`docs/04-roles-permissions.md` is the Canonical Authorization Matrix under DEC-038. `ProductionSeeder` seeds all nine canonical roles and the complete canonical module/action permission catalog. Only the conservative Production-safe grant map is synchronized; `P`, `R`, and `N` cells are not silently granted. Future-module permissions remain catalog data until the corresponding module and its Production grants are approved.
 
 ## Current Application Surfaces
 

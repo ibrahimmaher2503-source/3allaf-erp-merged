@@ -37,7 +37,7 @@ final class PosCheckoutRouteTest extends TestCase
     use PlatformFixtures;
     use RefreshDatabase;
 
-    public function test_the_pos_screen_renders_the_tender_fields_the_checkout_route_requires(): void
+    public function test_the_pos_screen_suppresses_tenders_until_the_cart_has_a_preview_then_renders_the_checkout_contract(): void
     {
         $scenario = $this->scenario();
         $this->actingAs($scenario['cashier']);
@@ -45,10 +45,18 @@ final class PosCheckoutRouteTest extends TestCase
         $response = $this->get(route('pos'));
 
         $response->assertOk();
-        // If these names ever drift from the route's validation rules, checkout
-        // silently starts rejecting every real submission.
-        $response->assertSee('payments[0][method_id]', escape: false);
-        $response->assertSee('payments[0][amount]', escape: false);
+        $response->assertDontSee('payments[0][method_id]', escape: false);
+        $response->assertSee(__('Payment options appear after the cart has an amount to settle.'));
+
+        $this->post(route('pos.cart.add'), ['product_id' => $scenario['product']->id, 'quantity' => '1'])
+            ->assertRedirect();
+
+        // Once there is an authoritative preview, the visible tender fields
+        // must still match the route validation contract.
+        $this->get(route('pos'))
+            ->assertOk()
+            ->assertSee('payments[0][method_id]', escape: false)
+            ->assertSee('payments[0][amount]', escape: false);
     }
 
     public function test_the_pos_product_search_matches_barcode_code_and_name_and_can_return_empty_results(): void
@@ -72,6 +80,49 @@ final class PosCheckoutRouteTest extends TestCase
         $this->get(route('pos', ['product_q' => 'does-not-exist']))
             ->assertOk()
             ->assertSee(__('No products available.'));
+    }
+
+    public function test_the_pos_can_filter_the_visible_catalog_by_an_authoritative_category(): void
+    {
+        $scenario = $this->scenario();
+        $category = Category::query()->create([
+            'code' => 'ROUTE-SECOND-CAT',
+            'name_ar' => 'فئة ثانية',
+            'name_en' => 'Second category',
+            'status' => 'active',
+        ]);
+        $product = Product::query()->create([
+            'item_code' => 'ROUTE-SECOND-PROD',
+            'name_ar' => 'لعبة ثانية',
+            'name_en' => 'Second toy',
+            'category_id' => $category->id,
+            'status' => 'active',
+        ]);
+        StockBalance::query()->create([
+            'product_id' => $product->id,
+            'store_id' => $scenario['store']->id,
+            'on_hand' => '5',
+            'reserved' => '0',
+            'in_transit' => '0',
+            'average_cost' => '10',
+            'total_value' => '50',
+            'version' => 1,
+        ]);
+        PriceLine::query()->create([
+            'price_version_id' => PriceVersion::query()->sole()->id,
+            'product_id' => $product->id,
+            'store_id' => $scenario['store']->id,
+            'branch_id' => $scenario['store']->branch_id,
+            'amount' => '15.000',
+            'active_key' => $product->id.':'.$scenario['store']->id,
+        ]);
+        $this->actingAs($scenario['cashier']);
+
+        $this->get(route('pos', ['category' => $category->id]))
+            ->assertOk()
+            ->assertSee('Second category')
+            ->assertSee('Second toy')
+            ->assertDontSee('ROUTE-PROD');
     }
 
     public function test_pos_search_shows_read_only_other_store_availability_without_selling_it(): void
@@ -122,7 +173,25 @@ final class PosCheckoutRouteTest extends TestCase
         ])->assertRedirect();
 
         self::assertSame('3', (string) session('pos.cart.0.quantity'));
-        $this->get(route('pos'))->assertOk()->assertSee(__('Qty').' 3', escape: false);
+        $this->get(route('pos'))
+            ->assertOk()
+            ->assertSee('name="quantity"', escape: false)
+            ->assertSee('value="3"', escape: false);
+    }
+
+    public function test_the_pos_explains_the_missing_shift_and_offers_the_cashier_the_open_shift_workflow(): void
+    {
+        $scenario = $this->scenario();
+        \Illuminate\Support\Facades\DB::table('active_pos_shift_assignments')->delete();
+        PosShift::query()->delete();
+        $this->actingAs($scenario['cashier']);
+
+        $this->get(route('pos'))
+            ->assertOk()
+            ->assertSee(__('Shift not open'))
+            ->assertSee(__('Open shift'))
+            ->assertSee(route('pos.shift'), escape: false)
+            ->assertDontSee(__('Not configured'));
     }
 
     public function test_checkout_over_http_settles_the_sale_and_records_the_tender(): void

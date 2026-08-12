@@ -30,7 +30,7 @@
                             @foreach ($selectedSale->lines as $line)
                                 <label class="flex items-start gap-3 rounded-md border border-zinc-100 p-3 text-sm dark:border-zinc-800">
                                     <input type="checkbox" name="sale_line_ids[]" value="{{ $line->id }}" class="mt-1 rounded border-zinc-300 text-teal-600" checked>
-                                    <span class="min-w-0"><span class="block font-medium">{{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }}</span><span class="block text-xs text-zinc-500">{{ $line->item_code }} &middot; {{ __('Qty') }} {{ $line->quantity }}</span></span>
+                                    <span class="min-w-0"><span class="block font-medium">{{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }}</span><span class="block text-xs text-zinc-500">{{ $line->item_code }} &middot; {{ __('Qty') }} {{ $line->quantity }}</span><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></span>
                                 </label>
                             @endforeach
                         </fieldset>

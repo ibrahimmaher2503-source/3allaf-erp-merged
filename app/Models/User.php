@@ -47,6 +47,9 @@ class User extends Authenticatable implements PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    /** @var array<string, true>|null */
+    protected ?array $activePermissionLookup = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -90,10 +93,29 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        return $this->roles()
-            ->where('status', 'active')
-            ->whereHas('permissions', fn ($query) => $query->where('code', $code)->where('status', 'active'))
-            ->exists();
+        return isset($this->activePermissionLookup()[$code]);
+    }
+
+    /** @return array<string, true> */
+    private function activePermissionLookup(): array
+    {
+        if ($this->activePermissionLookup !== null) {
+            return $this->activePermissionLookup;
+        }
+
+        $roles = $this->roles()
+            ->where('roles.status', 'active')
+            ->with([
+                'permissions' => fn (BelongsToMany $query) => $query
+                    ->where('permissions.status', 'active')
+                    ->select(['permissions.id', 'permissions.code']),
+            ])
+            ->get(['roles.id']);
+
+        return $this->activePermissionLookup = $roles
+            ->flatMap(fn (Role $role) => $role->permissions->pluck('code'))
+            ->mapWithKeys(fn (string $code): array => [$code => true])
+            ->all();
     }
 
     public function canAccessBranch(int $branchId): bool

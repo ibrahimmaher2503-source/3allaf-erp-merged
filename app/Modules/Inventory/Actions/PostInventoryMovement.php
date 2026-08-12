@@ -46,7 +46,10 @@ final class PostInventoryMovement
                 throw new InvalidArgumentException(__('Inventory movement quantity cannot be zero.'));
             }
 
-            $product = Product::query()->select(['id', 'fractional_quantity'])->findOrFail($productId);
+            $product = Product::query()->select(['id', 'fractional_quantity', 'has_variations', 'parent_product_id'])->findOrFail($productId);
+            if ($product->isFamily()) {
+                throw new InvalidArgumentException(__('A variation family cannot receive an inventory movement. Select a child SKU.'));
+            }
             $isFractional = bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0;
             if ($isFractional && ! $product->fractional_quantity) {
                 throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));

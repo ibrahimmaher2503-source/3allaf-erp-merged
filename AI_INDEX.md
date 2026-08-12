@@ -22,9 +22,13 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 
 No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
 
-## Current Routing Override — TSK-004B
+## Current Routing Override — TSK-045
 
-TSK-004B is the active shared Platform feature. TSK-012 remains completed for approved local scope and is not reopened. See `docs/40-contextual-page-guide-specification.md` and `.ai/CURRENT_TASK.md`.
+TSK-045 is the active owner-directed Catalog/POS follow-on. Its scope is explicit standard-product variation families, reusable bilingual option groups and values, protected variation media, sellable child SKUs, historical sale snapshots, and POS variation selection. Read `.ai/CURRENT_TASK.md`, the TSK-045 section in `TASKS.md`, `DEC-075` in `.ai/DECISIONS.md`, the MD-05 amendment in `docs/02-prd.md`, and UI-CAT-009/UI-POS-001 in `.ai/UI_SCREENS.md`. This task does not authorize automated test suites, Production readiness, UAT approval, or advancement of unrelated tasks.
+
+The earlier TSK-004B override below is historical and is superseded while TSK-045 is active.
+
+TSK-004B is the shared Platform feature described in `docs/40-contextual-page-guide-specification.md`.
 
 
 TSK-011 is the current closure-reviewed task in DM 2.1 and is Completed for approved local scope.
@@ -142,6 +146,7 @@ Abbreviations: `A` = architecture topics above; `D` = `docs/36-module-data-contr
 | 042 | DM 6.4 | 30, 31, 32, 34, 38, 39, 53, 56 | Release | D only for approved config records | relevant existing IDs | 38 | 39 |
 | 043 | DM 6.3 | 34, 38, 39 | Release | N/A | scenario-specific IDs only | 38 | 39 |
 | 044 | DM 6.4 | 30, 34, 38, 39, 53 | Release | N/A | production-smoke IDs only | 38 | 39 |
+| 045 | DM 2.1 / DM 3.1 follow-on | 18, 19, 23, 24, 25, 31, 35, 36, 37, 38, 56, 57 | Catalog/Pricing/Inventory/Purchasing/POS | D | UI-CAT-001-003,009; UI-POS-001,007 | 38 for labels/receipts | G |
 
 ### Canonical Derived Documents 41–57
 

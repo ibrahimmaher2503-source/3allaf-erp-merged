@@ -144,7 +144,7 @@ new #[Title('Pricing Workspace')] class extends Component
         ]);
 
         app(CreatePriceProposalAction::class)->execute(
-            product: Product::query()->findOrFail((int) $data['form']['product_id']),
+            product: Product::query()->sellable()->findOrFail((int) $data['form']['product_id']),
             store: Store::query()->findOrFail((int) $data['form']['store_id']),
             priceListCode: $data['form']['price_list_code'],
             priceListNameAr: $data['form']['price_list_name_ar'],
@@ -204,7 +204,7 @@ new #[Title('Pricing Workspace')] class extends Component
         /** @var User $user */
         $user = request()->user();
         $versions = $query->paginate(12);
-        $products = Product::query()->active()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
+        $products = Product::query()->sellable()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id']);
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
         $storeIds = $stores->pluck('id');
         $pricedProductIds = $storeIds->isEmpty() ? collect() : PriceLine::query()
@@ -220,7 +220,7 @@ new #[Title('Pricing Workspace')] class extends Component
             })
             ->pluck('product_id')
             ->unique();
-        $unpricedQuery = Product::query()->active()->whereNotIn('id', $pricedProductIds);
+        $unpricedQuery = Product::query()->sellable()->whereNotIn('id', $pricedProductIds);
         if ($this->search !== '') {
             $unpricedQuery->where(function ($query): void {
                 $query->where('item_code', 'like', '%'.$this->search.'%')

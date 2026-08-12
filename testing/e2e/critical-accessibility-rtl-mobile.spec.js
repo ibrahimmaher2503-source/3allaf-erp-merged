@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { login } from '../helpers/auth.js';
+import { LOCAL_BROWSER_ACTORS, login } from '../helpers/auth.js';
 
 /**
  * E2E-08 (RTL/LTR, accessibility, viewport) — real browser evidence, not a
@@ -56,7 +56,7 @@ test.describe('accessibility (axe-core, WCAG 2.1 A/AA) — desktop LTR', () => {
     });
 
     test('the POS screen has no critical/serious violations', async ({ page }) => {
-        await login(page, 'playwright-cashier', 'PlaywrightTest!2026');
+        await login(page, LOCAL_BROWSER_ACTORS.storeScoped.username, LOCAL_BROWSER_ACTORS.storeScoped.password);
         await page.goto('/pos');
         const results = await axeScan(page);
         assertNoSeriousViolations(results, 'pos (desktop, en)');
@@ -116,7 +116,7 @@ test.describe('mobile viewport (390x844)', () => {
     });
 
     test('the POS screen has no horizontal overflow and no critical/serious violations at 390px', async ({ page }) => {
-        await login(page, 'playwright-cashier', 'PlaywrightTest!2026');
+        await login(page, LOCAL_BROWSER_ACTORS.storeScoped.username, LOCAL_BROWSER_ACTORS.storeScoped.password);
         await page.goto('/pos');
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow, 'The POS screen must not overflow horizontally at 390px — cashiers use handheld devices').toBeLessThanOrEqual(1);

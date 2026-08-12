@@ -55,6 +55,10 @@ class SaveProductAction
 
                 $product = $id === null ? null : Product::query()->lockForUpdate()->findOrFail($id);
 
+                if ($product?->isVariant()) {
+                    throw new InvalidArgumentException(__('Variation descriptive fields are owned by the family. Open the family variation matrix to manage this SKU.'));
+                }
+
                 if ($product !== null && $product->item_code !== $itemCode) {
                     throw new ImmutableItemCodeChangeException(__('The internal item code is immutable after product creation.'));
                 }
@@ -134,6 +138,10 @@ class SaveProductAction
                         'lock_version' => $product->lock_version + 1,
                     ]);
                     $event = $previousType !== $productType ? 'change_product_type' : 'update_product_card';
+
+                    if ($product->has_variations) {
+                        $this->syncFamilyDescriptions($product);
+                    }
                 }
 
                 app(RecordAuditEvent::class)->execute(
@@ -219,5 +227,16 @@ class SaveProductAction
         }
 
         return (float) $value;
+    }
+
+    private function syncFamilyDescriptions(Product $family): void
+    {
+        $fields = $family->only([
+            'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number', 'unit_of_measure',
+            'category_id', 'brand_id', 'dimension_length', 'dimension_width', 'dimension_height', 'dimension_unit',
+            'weight', 'target_age', 'suitable_gender', 'character', 'key_points_ar', 'key_points_en', 'keywords_ar',
+            'keywords_en', 'fractional_quantity',
+        ]);
+        $family->variants()->update($fields);
     }
 }

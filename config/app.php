@@ -30,8 +30,6 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
-    'demo_auth' => (bool) env('DEMO_AUTH', false),
-
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

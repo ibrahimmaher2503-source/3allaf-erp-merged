@@ -18,6 +18,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:products_categories_brands.create')
         ->name('catalog.products.import');
 
+    $router->livewire('catalog/product-options', 'catalog::product-options')
+        ->middleware('can:products_categories_brands.view')
+        ->name('catalog.product-options');
+
     $router->get('catalog/products/import/{batch}/errors', function (ProductImportBatch $batch, DownloadProductImportErrorsAction $action) {
         return $action->execute($batch);
     })->whereNumber('batch')->middleware('can:products_categories_brands.export')->name('catalog.products.import.errors');

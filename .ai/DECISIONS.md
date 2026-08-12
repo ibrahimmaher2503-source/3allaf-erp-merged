@@ -249,3 +249,19 @@ The following remain owner/external gates: numeric return windows and cash/SoD l
 Date: 2026-08-10. Status: adopted for Local/Dev implementation; Production font/UAT verification remains open.
 
 US-031 requires a protected PDF artifact, while the repository had no PDF renderer dependency. Add the direct `dompdf/dompdf` package at the current `^3.1` compatibility line and render a dedicated report template with local-only resources. Keep PDF generation inside the existing queued export job, reuse the report snapshot filters/hash, and preserve the existing private storage, expiry, audit, and authorization boundaries. Do not load remote resources. Arabic font/shaping and physical output remain a required manual/UAT verification; this decision does not approve Production deployment or printer behavior.
+
+## DEC-075 - MD-05 explicit product-variation amendment
+
+Date: 2026-08-12. Status: owner-approved for TSK-045 Local/Dev implementation; Production/UAT/release remain unapproved.
+
+MD-05 continues to prohibit implicit variants from ordinary colour, size, character, and age fields. Explicitly configured standard-product families are now permitted to generate independent child Product SKUs through a reusable bilingual option library and controlled matrix. A family is descriptive and non-sellable. Each child owns immutable SKU/parent/signature identity plus its barcode, status, reorder setting, price, stock, supplier SKU relationship, and optional protected media. Existing simple products are not auto-converted or migrated; conversion is rejected after barcode, price, supplier, inventory, purchasing, quotation, label, or sale use. Used variants are preserved and logically inactivated.
+
+The TSK-045 verification directive is browser/manual plus non-test diagnostics only. PHPUnit, Pest, Playwright, Cypress, and other automated test creation/execution are not authorized. The isolated MariaDB verification schema is `toyjoy_tsk045_verify_20260812`. This decision does not approve Production configuration, UAT, physical devices/printing, release, commit, or push.
+
+## DEC-076 - Production-safe seeding replaces Demo/test seeders
+
+Date: 2026-08-12. Status: owner-directed repository hardening; operational Production inputs and release approval remain open.
+
+The owner directed removal of the existing Demo, browser-fixture, and test-data seeders and replacement with a single Production-safe seeding path. `DatabaseSeeder` now invokes only `ProductionSeeder`. It installs the complete canonical role/permission catalog, synchronizes only the conservative Production-safe grants already allowed by the authorization baseline, and creates or reuses one bootstrap system administrator from four required `PRODUCTION_ADMIN_*` deployment inputs. Missing, weak, or conflicting identity input fails the transaction; a repeat run does not reset the existing administrator password. The local Demo Auth route and its generated-data command were removed.
+
+The Production seeder must never fabricate company, branch, store, drawer, payment, tax, numbering, printer, catalog, supplier, price, stock, customer, wallet, booking, sale, return, asset, quotation, or report-job data. Those records require approved owner source artifacts and the staged migration/reconciliation workflow in `docs/54`. Removing Demo fixtures does not supply those external facts and therefore does not by itself approve Production configuration, UAT, backup/restore, deployment, or release.

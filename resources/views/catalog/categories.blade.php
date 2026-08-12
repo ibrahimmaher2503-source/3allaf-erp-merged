@@ -187,7 +187,7 @@ new #[Title('Category Masters')] class extends Component
         </div>
     </div>
 
-    <div wire:loading.flex role="status" aria-live="polite" class="catalog-loading"><flux:icon name="arrow-path" class="size-4 animate-spin" />{{ __('Loading hierarchy...') }}</div>
+    <div wire:loading.flex wire:target="search,statusFilter,gotoPage,previousPage,nextPage" role="status" aria-live="polite" class="catalog-loading"><flux:icon name="arrow-path" class="size-4 animate-spin" />{{ __('Loading hierarchy...') }}</div>
 
     @if ($categories->isEmpty())
         <flux:card class="space-y-3 p-10 text-center" data-guide="categories-empty">

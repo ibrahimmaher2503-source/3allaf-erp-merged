@@ -39,25 +39,26 @@ php artisan serve
 
 The current prepared environment uses its local `.env` and the `toyjoy_local` MySQL/MariaDB schema, with migrations, Composer dependencies, npm dependencies, and production assets prepared locally.
 
-### Local Demo Authentication Personas
+### Production-safe initial data
 
-In `local` environment with `DEMO_AUTH=true`, role-specific browser verification is available via `/__demo/auth` with an allowlisted persona (`as` parameter):
+The default seeding path creates only the canonical role/permission catalog and
+the first system administrator. It never creates branches, stores, products,
+customers, stock, prices, bookings, sales, financial policy values, or other
+sample/transactional data.
 
-- Admin (Default): `/__demo/auth` or `/__demo/auth?as=demo-admin`
-- Branch Manager: `/__demo/auth?as=demo-branch-manager`
-- Cashier: `/__demo/auth?as=demo-cashier`
-- Reviewer: `/__demo/auth?as=demo-reviewer`
-- No Access: `/__demo/auth?as=demo-no-access`
-
-Optional redirect parameter: `/__demo/auth?as=demo-cashier&redirect=/pos`
-
-To provision the local Demo walkthrough dataset, first set `DEMO_AUTH=true`, then run:
+Supply the four `PRODUCTION_ADMIN_*` deployment values documented in
+`.env.example`, then run:
 
 ```bash
-php artisan db:seed --class=DemoSeeder
+php artisan db:seed --force
 ```
 
-`DemoSeeder` is local-only and idempotent. It creates Demo identities, authorization scopes, master data, and PO walkthrough records; it never runs in production/staging and does not create real credentials or production data.
+The seeder is transactional and idempotent. Missing or conflicting administrator
+identity values fail closed. Re-running it does not reset the existing
+administrator password. Remove `PRODUCTION_ADMIN_PASSWORD` from the runtime
+environment after seeding, rotate the password after first sign-in, and configure
+the approved MFA controls. Real operational master data must enter through the
+approved UI/import and reconciliation workflow in `docs/54`.
 
 ## Delivery and Performance Guardrails
 

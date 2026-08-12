@@ -26,16 +26,12 @@ async function switchLocale(page, locale) {
 }
 
 test.describe('TSK-027 customer master and loyalty browser closure', () => {
-    test('administrator can create a bilingual customer and open the real loyalty ledger', async ({ page }) => {
+    test('Customers, Loyalty, and Wallets: Maintain a unique customer profile', async ({ page }) => {
         test.setTimeout(60_000);
         await login(page, LOCAL_BROWSER_ACTORS.administrator.username, LOCAL_BROWSER_ACTORS.administrator.password);
         await page.goto('/customers/create');
 
-        const createdPhone = {
-            chromium: '01002702799',
-            firefox: '01002702798',
-            webkit: '01002702797',
-        }[test.info().project.name];
+        const createdPhone = `010${String(Date.now()).slice(-8)}`;
         await page.getByLabel('Primary phone', { exact: true }).fill(createdPhone);
         await page.getByLabel('Arabic name', { exact: true }).fill('عميل متصفح TSK-027');
         await page.getByLabel('English name', { exact: true }).fill('TSK-027 Created Customer');
@@ -62,7 +58,7 @@ test.describe('TSK-027 customer master and loyalty browser closure', () => {
         await page.goto(`/pos?customer_q=${FIXTURE_PHONE}`);
         await expect(page.getByText(FIXTURE_PHONE, { exact: true })).toBeVisible();
         await page.getByRole('button', { name: 'Select', exact: true }).click();
-        await expect(page.getByText('TSK-027 Browser Customer', { exact: true })).toBeVisible();
+        await expect(page.getByText('Browser customer', { exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Clear customer', exact: true })).toBeVisible();
     });
 

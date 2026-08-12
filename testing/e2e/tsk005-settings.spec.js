@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AxeBuilder } from '@axe-core/playwright';
-import { login } from '../helpers/auth.js';
+import { LOCAL_BROWSER_ACTORS, login } from '../helpers/auth.js';
 
 async function setLocale(page, locale) {
     const token = await page.locator('input[name="_token"]').first().inputValue();
@@ -10,6 +10,28 @@ async function setLocale(page, locale) {
 
 test.describe('TSK-005 settings', () => {
     test.setTimeout(60_000);
+
+    test('Administration and Master Data: Preview company settings before saving', async ({ page }) => {
+        await login(page, LOCAL_BROWSER_ACTORS.administrator.username, LOCAL_BROWSER_ACTORS.administrator.password);
+        await page.goto('/admin/settings');
+        await setLocale(page, 'en');
+
+        await page.getByLabel('Company Code', { exact: true }).fill('TOY-JOY-PREVIEW');
+        await page.getByLabel('Tax Identification Number (TIN)', { exact: true }).fill('300000000000099');
+        await page.getByRole('button', { name: 'Save Company Baseline', exact: true }).click();
+
+        const preview = page.getByRole('dialog').filter({ hasText: 'Review company baseline' });
+        await expect(preview).toBeVisible();
+        await expect(preview.getByText('TOY-JOY-PREVIEW', { exact: true })).toBeVisible();
+        await expect(preview.getByText('300000000000099', { exact: true })).toBeVisible();
+        await preview.getByRole('button', { name: 'Confirm and save', exact: true }).click();
+        await expect(preview).not.toBeVisible();
+        await expect(page.getByText('Company settings saved successfully.', { exact: true })).toBeVisible();
+
+        await page.reload();
+        await expect(page.getByLabel('Company Code', { exact: true })).toHaveValue('TOY-JOY-PREVIEW');
+        await expect(page.getByLabel('Tax Identification Number (TIN)', { exact: true })).toHaveValue('300000000000099');
+    });
 
     test('administrator can inspect settings, effective tax fields and printer preview', async ({ page }) => {
         await login(page, 'playwright-admin', 'PlaywrightTest!2026');

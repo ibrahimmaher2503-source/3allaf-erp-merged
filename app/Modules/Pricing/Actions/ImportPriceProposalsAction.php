@@ -39,7 +39,7 @@ final class ImportPriceProposalsAction
                     throw ValidationException::withMessages(['importCsv' => __('Invalid import row :row. Expected item_code, store_code, amount, optional effective_from, source_reference.', ['row' => $index + 1])]);
                 }
 
-                $product = Product::query()->where('item_code', trim((string) $row[0]))->first();
+                $product = Product::query()->sellable()->where('item_code', trim((string) $row[0]))->first();
                 $store = Store::query()->where('code', trim((string) $row[1]))->first();
                 if ($product === null || $store === null) {
                     throw ValidationException::withMessages(['importCsv' => __('Import row :row references an unknown product or store.', ['row' => $index + 1])]);

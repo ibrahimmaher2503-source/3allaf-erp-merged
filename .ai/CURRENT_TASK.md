@@ -1,28 +1,23 @@
-# Current Task — TSK-027 Real Functional Closure
+# Current Task — TSK-045 Product Variations, Media, and POS Selection
 
-**Date:** 2026-08-10
-**Repository:** `C:\projects\toy-joy-phase-1-documentation`
-**Status:** Local/Dev functional implementation and focused verification complete; production/UAT/release remain open. TSK-028, TSK-029, and TSK-030 were not started.
+**Date:** 2026-08-12
+**Status:** Local/Dev implementation and isolated MariaDB migration/seed verification completed; required manual browser evidence remains open.
 
-## Scope completed
+## Scope
 
-- Customer master with bilingual identity/contact data, normalized unique phone, controlled duplicate/merge handling, branch/store scope, idempotency, and audited named mutations.
-- Consent snapshots and purpose-scoped child profiles with privacy filtering and immutable/append-only history boundaries.
-- Retail customer history and POS customer selection/registration; approved POS sale linkage now posts loyalty earn in the same transaction.
-- Immutable source-linked retail loyalty ledger with FIFO earn/redeem/expiry, reconciliation/allocation records, approval-backed adjustment approval/rejection, SoD, audit, idempotency, locking, and rollback behavior.
-- Real customer and loyalty screens, bounded customer/loyalty exports, direct HTTP route guards, and Local/Dev browser coverage.
+- Explicit bilingual option groups and values for standard-product variation families.
+- Non-sellable parent families with independent sellable child SKUs.
+- Protected family/child media fallback and POS-authorized thumbnails.
+- Isolated Livewire POS discovery, variation selection, and cart updates with guarded POST checkout.
+- Historical bilingual variation snapshots on sale lines and downstream documents.
 
-## Verification evidence
+## Verification directive
 
-- SQLite: `CustomerLoyaltyLifecycleTest`, 10 tests / 81 assertions.
-- MariaDB: `CustomerLoyaltyLifecycleTest`, 10 tests / 81 assertions.
-- MariaDB concurrency: 3 tests / 27 assertions, including duplicate customer creation and competing redemption.
-- Browser: 7 executed tests passed across Chromium, Firefox, and WebKit; 2 non-Chromium mobile/visual checks intentionally skipped because Chromium owns the stable visual/accessibility baseline.
-- Readiness regression: `MilestoneReadinessAuthorizationTest` passed 3 tests / 71 assertions; the legacy customer readiness route is authorization-protected and redirects to Customer Master instead of rendering a readiness-only screen.
-- Full classification is in `testing/results/TSK-027-48-TEST-MATRIX.md`.
+- Do not create or run PHPUnit, Pest, Playwright, Cypress, or any automated suite.
+- Use XAMPP MySQL/MariaDB only. The disposable verification database is `toyjoy_tsk045_verify_20260812`.
+- Permitted checks are PHP syntax, Pint check-only, PHPStan, Blade cache, Vite build, migration status, database integrity queries, and `git diff --check`.
+- Required visible headed Chromium scenarios and same-viewport Product Master/POS screenshots remain pending because no authorized interactive browser-control capability was available in this session.
 
-## Boundaries
+## Remaining closure
 
-- Exact legal consent wording/retention and final production loyalty values remain owner-controlled configuration.
-- Party history/rules, Product Wallet/Party Wallet, Gift Cards/Gift Receipts, and Returns/Exchanges remain downstream and were not implemented.
-- Human UAT, production role grants, infrastructure, backup/restore, physical devices, and release approval were not executed.
+Complete and record the manual browser scenario matrix, responsive Arabic RTL/English LTR review, keyboard/focus review, protected-media cases, transaction-consumer checks, and Product Master/POS screenshots. Do not claim UAT, Production readiness, Phase Gate completion, commit, or push without actual evidence.

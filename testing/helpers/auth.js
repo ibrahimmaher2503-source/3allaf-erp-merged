@@ -14,6 +14,7 @@ export const LOCAL_BROWSER_ACTORS = Object.freeze({
     support: { username: 'demo-support', password: LOCAL_DEMO_PASSWORD },
     reviewer: { username: 'demo-reviewer', password: LOCAL_DEMO_PASSWORD },
     branchScoped: { username: 'demo-branch-manager', password: LOCAL_DEMO_PASSWORD },
+    warehouseScoped: { username: 'demo-warehouse-manager', password: LOCAL_DEMO_PASSWORD },
     storeScoped: { username: 'demo-cashier', password: LOCAL_DEMO_PASSWORD },
     restricted: { username: 'demo-no-access', password: LOCAL_DEMO_PASSWORD },
 });
@@ -29,6 +30,8 @@ export async function login(page, username, password) {
     await page.goto('/login');
     await page.getByLabel('Username', { exact: true }).fill(username);
     await page.getByLabel('Password', { exact: true }).fill(password);
-    await page.getByRole('button', { name: 'Log in' }).click();
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'));
+    await Promise.all([
+        page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 60_000 }),
+        page.getByRole('button', { name: 'Log in' }).click({ noWaitAfter: true }),
+    ]);
 }

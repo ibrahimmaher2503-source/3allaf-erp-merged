@@ -31,7 +31,7 @@ final class RecordStockCountLineAction
                 throw new InvalidArgumentException(__('Only the assigned stock counter can record this count.'));
             }
             foreach ($countedQuantities as $productId => $value) {
-                $product = Product::query()->whereKey((int) $productId)->where('status', 'active')->firstOrFail();
+                $product = Product::query()->sellable()->whereKey((int) $productId)->firstOrFail();
                 $quantity = trim((string) $value);
                 if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity)) {
                     throw new InvalidArgumentException(__('Counted quantity must be a non-negative decimal with up to 6 places.'));

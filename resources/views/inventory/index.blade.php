@@ -51,7 +51,48 @@
 
         @unless($isBalancesFocus)
         @if($focus === 'transfer-create' || $transfer?->status === 'draft')
-            <section class="rounded-3xl border border-sky-200 bg-sky-50/50 p-5" aria-labelledby="transfer-editor-heading"><h2 id="transfer-editor-heading" class="text-xl font-bold">{{ $transfer ? $t('تعديل تحويل مسودة', 'Edit draft transfer') : $t('إنشاء تحويل مخزون', 'Create stock transfer') }}</h2><form class="mt-4 space-y-4" method="POST" action="{{ $transfer ? route('inventory.transfers.update', $transfer) : route('inventory.transfers.store') }}" onsubmit="this.querySelector('button[type=submit]').disabled=true">@csrf<div class="grid gap-3 sm:grid-cols-2"><div><label for="transfer-source" class="text-xs font-semibold">{{ $t('المتجر المصدر', 'Source store') }}</label><select id="transfer-source" name="source_store_id" class="{{ $field }}" required>@foreach($visibleStores as $store)<option value="{{ $store->id }}" @selected($transfer?->source_store_id === $store->id)>{{ $store->code }}</option>@endforeach</select></div><div><label for="transfer-destination" class="text-xs font-semibold">{{ $t('المتجر الوجهة', 'Destination store') }}</label><select id="transfer-destination" name="destination_store_id" class="{{ $field }}" required>@foreach($visibleStores as $store)<option value="{{ $store->id }}" @selected($transfer?->destination_store_id === $store->id)>{{ $store->code }}</option>@endforeach</select></div></div><div class="grid gap-3 sm:grid-cols-3"><div><label for="transfer-product" class="text-xs font-semibold">{{ $t('المنتج', 'Product') }}</label><select id="transfer-product" name="lines[0][product_id]" class="{{ $field }}" required>@foreach($products as $product)<option value="{{ $product->id }}" @selected($transfer?->lines?->first()?->product_id === $product->id)>{{ $product->item_code }} · {{ $isArabic ? $product->name_ar : $product->name_en }}</option>@endforeach</select></div><div><label for="transfer-quantity" class="text-xs font-semibold">{{ $t('الكمية المطلوبة', 'Requested quantity') }}</label><input id="transfer-quantity" name="lines[0][quantity_requested]" value="{{ $transfer?->lines?->first()?->quantity_requested }}" class="{{ $field }}" inputmode="decimal" required></div><div><label for="transfer-reason" class="text-xs font-semibold">{{ $t('السبب', 'Reason') }}</label><input id="transfer-reason" name="reason_code" value="{{ $transfer?->reason_code }}" class="{{ $field }}" required></div></div><button type="submit" class="{{ $button }} bg-sky-700 text-white">{{ $t('حفظ المسودة', 'Save draft') }}</button></form></section>
+            <section class="rounded-3xl border border-sky-200 bg-sky-50/50 p-5" aria-labelledby="transfer-editor-heading">
+                <h2 id="transfer-editor-heading" class="text-xl font-bold">{{ $transfer ? $t('تعديل تحويل مسودة', 'Edit draft transfer') : $t('إنشاء تحويل مخزون', 'Create stock transfer') }}</h2>
+                <form
+                    class="mt-4 space-y-4"
+                    method="POST"
+                    action="{{ $transfer ? route('inventory.transfers.update', $transfer) : route('inventory.transfers.store') }}"
+                    x-data="{ attempted: false, source: @js((string) old('source_store_id', $transfer?->source_store_id ?? '')), destination: @js((string) old('destination_store_id', $transfer?->destination_store_id ?? '')) }"
+                    x-on:submit="attempted = true; if (!source || !destination || source === destination) { $event.preventDefault(); $refs.destination?.focus(); } else { $el.querySelector('button[type=submit]').disabled = true; }"
+                >
+                    @csrf
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="transfer-source" class="text-xs font-semibold">{{ $t('المتجر المصدر', 'Source store') }}</label>
+                            <select id="transfer-source" name="source_store_id" class="{{ $field }}" x-model="source" x-on:invalid="attempted = true" :aria-invalid="attempted && !source ? 'true' : 'false'" aria-describedby="transfer-source-error" required>
+                                <option value="" disabled>{{ __('Select source store') }}</option>
+                                @foreach($visibleStores as $store)
+                                    <option value="{{ $store->id }}">{{ $store->code }}</option>
+                                @endforeach
+                            </select>
+                            <p id="transfer-source-error" class="mt-1 text-xs text-red-700" x-cloak x-show="attempted && !source">{{ __('Select source store') }}</p>
+                            @error('source_store_id')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="transfer-destination" class="text-xs font-semibold">{{ $t('المتجر الوجهة', 'Destination store') }}</label>
+                            <select id="transfer-destination" name="destination_store_id" class="{{ $field }}" x-ref="destination" x-model="destination" x-on:invalid="attempted = true" :aria-invalid="attempted && (!destination || source === destination) ? 'true' : 'false'" aria-describedby="transfer-destination-error" required>
+                                <option value="" disabled>{{ __('Select destination store') }}</option>
+                                @foreach($visibleStores as $store)
+                                    <option value="{{ $store->id }}">{{ $store->code }}</option>
+                                @endforeach
+                            </select>
+                            <p id="transfer-destination-error" class="mt-1 text-xs text-red-700" x-cloak x-show="attempted && (!destination || source === destination)" x-text="!destination ? @js(__('Select destination store')) : @js(__('Source and destination stores must be different.'))"></p>
+                            @error('destination_store_id')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        <div><label for="transfer-product" class="text-xs font-semibold">{{ $t('المنتج', 'Product') }}</label><select id="transfer-product" name="lines[0][product_id]" class="{{ $field }}" required>@foreach($products as $product)<option value="{{ $product->id }}" @selected((int) old('lines.0.product_id', $transfer?->lines?->first()?->product_id) === $product->id)>{{ $product->item_code }} · {{ $isArabic ? $product->name_ar : $product->name_en }}</option>@endforeach</select></div>
+                        <div><label for="transfer-quantity" class="text-xs font-semibold">{{ $t('الكمية المطلوبة', 'Requested quantity') }}</label><input id="transfer-quantity" name="lines[0][quantity_requested]" value="{{ old('lines.0.quantity_requested', $transfer?->lines?->first()?->quantity_requested) }}" class="{{ $field }}" inputmode="decimal" required></div>
+                        <div><label for="transfer-reason" class="text-xs font-semibold">{{ $t('السبب', 'Reason') }}</label><input id="transfer-reason" name="reason_code" value="{{ old('reason_code', $transfer?->reason_code) }}" class="{{ $field }}" required></div>
+                    </div>
+                    <button type="submit" x-on:click="attempted = true" class="{{ $button }} bg-sky-700 text-white">{{ $t('حفظ المسودة', 'Save draft') }}</button>
+                </form>
+            </section>
         @endif
 
         <section class="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="transfers-heading" data-guide="inventory-transfers"><div class="border-b border-zinc-200 px-5 py-4"><h2 id="transfers-heading" class="text-xl font-bold">{{ $t('التحويلات وفروق الاستلام', 'Transfers and receipt differences') }}</h2></div><div class="space-y-4 p-5">

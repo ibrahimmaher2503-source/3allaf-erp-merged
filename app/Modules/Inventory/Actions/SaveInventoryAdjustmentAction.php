@@ -57,8 +57,8 @@ final class SaveInventoryAdjustmentAction
 
             $normalizedLines = [];
             foreach (array_values($lines) as $line) {
-                $product = Product::query()->whereKey((int) ($line['product_id'] ?? 0))->firstOrFail();
-                if ($product->status !== 'active') {
+                $product = Product::query()->sellable()->whereKey((int) ($line['product_id'] ?? 0))->firstOrFail();
+                if (! $product->isSellable()) {
                     throw new InvalidArgumentException(__('Inactive products cannot be used in inventory documents.'));
                 }
                 $quantity = $this->decimal($line['quantity_delta'] ?? null);

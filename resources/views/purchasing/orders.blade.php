@@ -154,7 +154,7 @@ new #[Title('Purchase Orders')] class extends Component
     {
         $this->lineItems[$index]['product_id'] = $productId;
         if (! empty($productId)) {
-            $product = Product::query()->find((int) $productId);
+            $product = Product::query()->sellable()->find((int) $productId);
             if ($product && ! empty($product->cost_price)) {
                 $this->lineItems[$index]['unit_cost'] = (float) $product->cost_price;
             }
@@ -304,7 +304,7 @@ new #[Title('Purchase Orders')] class extends Component
         $orders = $query->latest('id')->paginate(15);
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
         $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
-        $products = Product::query()->where('status', 'active')->orderBy('name_ar')->get();
+        $products = Product::query()->sellable()->orderBy('name_ar')->get();
 
         $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product']);
         if ($user && ! $user->is_super_admin) {

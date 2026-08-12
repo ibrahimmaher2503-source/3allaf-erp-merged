@@ -237,7 +237,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'invoices' => $invoices,
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('name_en')->get(),
             'stores' => Store::query()->where('status', 'active')->orderBy('name_en')->get(),
-            'products' => Product::query()->where('status', 'active')->orderBy('item_code')->limit(1000)->get(),
+            'products' => Product::query()->sellable()->orderBy('item_code')->limit(1000)->get(),
         ]);
     }
 

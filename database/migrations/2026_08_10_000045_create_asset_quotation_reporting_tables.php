@@ -202,22 +202,6 @@ return new class extends Migration
             $table->index(['report_key', 'branch_id', 'store_id']);
         });
 
-        if (! Schema::hasTable('document_sequences')) {
-            return;
-        }
-
-        \Illuminate\Support\Facades\DB::table('document_sequences')->insertOrIgnore([
-            'document_type' => 'quotation',
-            'prefix' => 'QTN-',
-            'padding_length' => 6,
-            'next_value' => 1,
-            'reset_rule' => 'never',
-            'status' => 'active',
-            'lock_version' => 1,
-            'policy_notes' => 'Local/Dev quotation identity; quotation has no posting effect.',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
     }
 
     public function down(): void

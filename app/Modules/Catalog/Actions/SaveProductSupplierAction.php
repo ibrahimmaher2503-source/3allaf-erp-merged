@@ -31,6 +31,9 @@ class SaveProductSupplierAction
             $userId = Auth::id();
 
             $product = Product::query()->lockForUpdate()->findOrFail($productId);
+            if ($product->isFamily()) {
+                throw new InvalidArgumentException(__('Supplier SKU relationships belong to sellable child SKUs, not variation families.'));
+            }
             $supplier = Supplier::query()->lockForUpdate()->findOrFail($supplierId);
 
             if ($supplier->status !== 'active') {

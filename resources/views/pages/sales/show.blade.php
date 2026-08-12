@@ -26,9 +26,23 @@
         </div>
 
         <x-tables.data-panel :title="__('Sale lines')" :description="__('Products, quantities, prices, and discounts recorded on this sale.')">
-            <table class="data-table min-w-[980px] text-sm" aria-label="{{ __('Sale lines') }}"><thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="text-end">{{ __('Quantity') }}</th><th scope="col" class="text-end">{{ __('Original price') }}</th><th scope="col" class="text-end">{{ __('Selling price') }}</th><th scope="col" class="text-end">{{ __('Gross') }}</th><th scope="col" class="text-end">{{ __('Discount') }}</th><th scope="col" class="text-end">{{ __('Line net') }}</th><th scope="col">{{ __('Pricing context') }}</th></tr></thead><tbody>
-                @foreach ($sale->lines as $line)<tr><td><div class="font-medium">{{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div></td><td class="text-end tabular-nums">{{ $line->quantity }}</td><td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) ($line->reference_price ?? $line->unit_price))" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) $line->unit_price)" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$line->gross_amount" :currency="$sale->currency_code" /></td><td class="text-end"><x-money :amount="$line->discount_amount" :currency="$sale->currency_code" :muted="true" />@if ($line->discount_type)<div class="text-xs text-text-muted">{{ __(str_replace('_', ' ', ucfirst($line->discount_type))) }}</div>@endif</td><td class="text-end font-semibold"><x-money :amount="$line->net_amount" :currency="$sale->currency_code" /></td><td>@if ($line->is_open_price)<x-status.badge status="override" :label="__('Open price')" /><div class="mt-1 max-w-48 text-xs text-text-muted">{{ $line->open_price_reason }}</div>@else<span class="text-text-muted">{{ __('Approved price') }}</span>@endif</td></tr>@endforeach
-            </tbody></table>
+            <table class="data-table min-w-[980px] text-sm" aria-label="{{ __('Sale lines') }}">
+                <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="text-end">{{ __('Quantity') }}</th><th scope="col" class="text-end">{{ __('Original price') }}</th><th scope="col" class="text-end">{{ __('Selling price') }}</th><th scope="col" class="text-end">{{ __('Gross') }}</th><th scope="col" class="text-end">{{ __('Discount') }}</th><th scope="col" class="text-end">{{ __('Line total') }}</th><th scope="col">{{ __('Pricing context') }}</th></tr></thead>
+                <tbody>
+                    @foreach ($sale->lines as $line)
+                        <tr>
+                            <td><div class="font-medium">{{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>
+                            <td class="text-end tabular-nums">{{ $line->quantity }}</td>
+                            <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) ($line->reference_price ?? $line->unit_price))" :currency="$sale->currency_code" /></td>
+                            <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) $line->unit_price)" :currency="$sale->currency_code" /></td>
+                            <td class="text-end"><x-money :amount="$line->gross_amount" :currency="$sale->currency_code" /></td>
+                            <td class="text-end"><x-money :amount="$line->discount_amount" :currency="$sale->currency_code" :muted="true" />@if ($line->discount_type)<div class="text-xs text-text-muted">{{ __(str_replace('_', ' ', ucfirst($line->discount_type))) }}</div>@endif</td>
+                            <td class="text-end font-semibold"><x-money :amount="$line->net_amount" :currency="$sale->currency_code" /></td>
+                            <td>@if ($line->is_open_price)<x-status.badge status="override" :label="__('Open price')" /><div class="mt-1 max-w-48 text-xs text-text-muted">{{ $line->open_price_reason }}</div>@else<span class="text-text-muted">{{ __('Approved price') }}</span>@endif</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </x-tables.data-panel>
 
         <div class="grid gap-4 lg:grid-cols-2">

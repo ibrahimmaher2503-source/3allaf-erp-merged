@@ -18,6 +18,8 @@ new #[Title('System Settings')] class extends Component {
     // Active Tab
     public string $activeTab = 'company';
 
+    public bool $showCompanyPreview = false;
+
     // Company Form Data
     public array $companyForm = [
         'code' => '',
@@ -141,13 +143,37 @@ new #[Title('System Settings')] class extends Component {
     }
 
     /**
-     * Save company identity baseline.
+     * Validate and preview company identity before committing it.
+     */
+    public function previewCompany(): void
+    {
+        Gate::authorize('manage-settings');
+
+        $this->validate($this->companyRules());
+        $this->showCompanyPreview = true;
+    }
+
+    /**
+     * Save the company identity after explicit preview confirmation.
      */
     public function saveCompany(SaveLocalSettingsAction $action): void
     {
         Gate::authorize('manage-settings');
 
-        $validated = $this->validate([
+        $validated = $this->validate($this->companyRules());
+
+        $res = $action->execute(['company' => $validated['companyForm']]);
+
+        $this->companyForm = array_merge($this->companyForm, $res['company']->toArray());
+        $this->showCompanyPreview = false;
+
+        Flux::toast(variant: 'success', text: __('Company settings saved successfully.'));
+    }
+
+    /** @return array<string, array<int, string>> */
+    private function companyRules(): array
+    {
+        return [
             'companyForm.code' => ['required', 'string', 'max:20'],
             'companyForm.name_ar' => ['nullable', 'string', 'max:255'],
             'companyForm.name_en' => ['nullable', 'string', 'max:255'],
@@ -163,13 +189,7 @@ new #[Title('System Settings')] class extends Component {
             'companyForm.address' => ['nullable', 'string', 'max:500'],
             'companyForm.status' => ['required', 'string', 'in:active,inactive'],
             'companyForm.policy_notes' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $res = $action->execute(['company' => $validated['companyForm']]);
-
-        $this->companyForm = array_merge($this->companyForm, $res['company']->toArray());
-
-        Flux::toast(variant: 'success', text: __('Company settings saved successfully.'));
+        ];
     }
 
     /**
@@ -540,7 +560,7 @@ new #[Title('System Settings')] class extends Component {
     <!-- TAB 1: Company Identity -->
     @if ($activeTab === 'company')
         <div id="panel-company" role="tabpanel" aria-labelledby="tab-company" class="space-y-6">
-            <form wire:submit="saveCompany" class="space-y-6">
+            <form wire:submit="previewCompany" class="space-y-6">
                 <flux:card class="space-y-4" data-guide="settings-company-card">
                     <flux:heading size="lg">{{ __('Company Master Information') }}</flux:heading>
 
@@ -638,6 +658,69 @@ new #[Title('System Settings')] class extends Component {
                     </div>
                 </flux:card>
             </form>
+
+            <flux:modal
+                wire:model.self="showCompanyPreview"
+                aria-label="{{ __('Review company baseline') }}"
+                class="md:w-[min(96vw,46rem)]"
+            >
+                <div class="space-y-6">
+                    <div class="space-y-1">
+                        <flux:heading id="company-preview-title" size="lg">{{ __('Review company baseline') }}</flux:heading>
+                        <flux:subheading>{{ __('Review these values before saving. Nothing is committed until you confirm.') }}</flux:subheading>
+                    </div>
+
+                    <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                        @foreach ([
+                            __('Company Code') => $companyForm['code'],
+                            __('Legal Name') => $companyForm['legal_name'],
+                            __('Name (Arabic)') => $companyForm['name_ar'],
+                            __('Name (English)') => $companyForm['name_en'],
+                            __('Tax Identification Number (TIN)') => $companyForm['tax_number'],
+                            __('Commercial Registration (CR)') => $companyForm['commercial_registration'],
+                            __('Currency code') => $companyForm['currency_code'],
+                            __('Currency symbol') => $companyForm['currency_symbol'],
+                            __('Timezone') => $companyForm['timezone'],
+                            __('Default Application Locale') => strtoupper($companyForm['locale_default']),
+                            __('Contact Phone') => $companyForm['phone'],
+                            __('Contact Email') => $companyForm['email'],
+                        ] as $label => $value)
+                            <div class="min-w-0 border-b border-zinc-200 pb-3 dark:border-zinc-700">
+                                <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ $label }}</dt>
+                                <dd class="mt-1 break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100" dir="auto">
+                                    {{ filled($value) ? $value : __('Not provided') }}
+                                </dd>
+                            </div>
+                        @endforeach
+                    </dl>
+
+                    @if (filled($companyForm['address']) || filled($companyForm['policy_notes']))
+                        <dl class="space-y-4">
+                            @if (filled($companyForm['address']))
+                                <div>
+                                    <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ __('Address') }}</dt>
+                                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100" dir="auto">{{ $companyForm['address'] }}</dd>
+                                </div>
+                            @endif
+                            @if (filled($companyForm['policy_notes']))
+                                <div>
+                                    <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ __('Policy & Baseline Notes') }}</dt>
+                                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100" dir="auto">{{ $companyForm['policy_notes'] }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                    @endif
+
+                    <form wire:submit="saveCompany" class="flex flex-col-reverse gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700 sm:flex-row sm:justify-end">
+                        <flux:button type="button" variant="subtle" wire:click="$set('showCompanyPreview', false)">
+                            {{ __('Back to edit') }}
+                        </flux:button>
+                        <flux:button type="submit" variant="primary" icon="check" wire:loading.attr="disabled" wire:target="saveCompany">
+                            {{ __('Confirm and save') }}
+                        </flux:button>
+                    </form>
+                </div>
+            </flux:modal>
         </div>
     @endif
 

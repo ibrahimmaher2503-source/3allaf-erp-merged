@@ -100,7 +100,7 @@ After the cutover timestamp is set, any document with an effective date earlier 
 
 ## 8. Demo Data Interaction
 
-When `LocalDemoSeeder` has run, the Settings screens display a persistent demo banner and the Cutover wizard refuses to complete. Demo and cutover are mutually exclusive states.
+Production seeding does not create settings, policy values, master data, or a Demo marker. Cutover remains blocked until every required operational value is entered from an approved owner source and the readiness checks pass; synthetic or Demo rows must never be migrated into Production.
 
 ---
 

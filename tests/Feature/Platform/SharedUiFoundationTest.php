@@ -3,6 +3,8 @@
 namespace Tests\Feature\Platform;
 
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Support\TutorialRegistry;
+use App\Modules\Platform\Support\UserFlowRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
@@ -214,5 +216,39 @@ class SharedUiFoundationTest extends TestCase
         }
 
         $this->assertTrue(view()->exists('layouts.print'));
+    }
+
+    public function test_the_pos_setup_tutorial_is_bilingual_and_uses_registered_guides_only(): void
+    {
+        $flow = UserFlowRegistry::find('FLW-POS-SETUP');
+
+        $this->assertNotNull($flow);
+        $this->assertSame('Set Up and Run POS', $flow['title']['en']);
+        $this->assertSame('إعداد وتشغيل نقطة البيع', $flow['title']['ar']);
+        $this->assertGreaterThanOrEqual(20, count($flow['steps']));
+
+        $posGuide = TutorialRegistry::find('UI-RET-001');
+        $this->assertContains('FLW-POS-SETUP', $posGuide['flows']);
+        $this->assertContains('FLW-POS-01', $posGuide['flows']);
+
+        foreach ($flow['source_screen_ids'] as $screenId) {
+            $this->assertNotNull(TutorialRegistry::find($screenId), "POS setup flow references an unregistered guide [{$screenId}].");
+        }
+
+        $this->actingAs($this->administrator('tsk004-pos-setup-guide'));
+
+        $this->get(route('platform.help.flow', ['flowId' => 'FLW-POS-SETUP']))
+            ->assertOk()
+            ->assertSee('Set Up and Run POS')
+            ->assertSee('Sign in and verify your account')
+            ->assertSee('POS Financial Readiness')
+            ->assertSee(route('platform.help.screen', ['screenId' => 'UI-RET-001']), false);
+
+        $this->withSession(['locale' => 'ar'])
+            ->get(route('platform.help.flow', ['flowId' => 'FLW-POS-SETUP']))
+            ->assertOk()
+            ->assertSee('إعداد وتشغيل نقطة البيع')
+            ->assertSee('سجّل الدخول وتحقق من الحساب')
+            ->assertSee('dir="rtl"', false);
     }
 }

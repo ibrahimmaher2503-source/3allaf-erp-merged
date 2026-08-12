@@ -69,7 +69,7 @@ final class CreateQuotationAction
             if ($activity === 'retail' && $lineType !== 'product') throw ValidationException::withMessages(['lines' => __('Retail quotations accept product lines only.')]);
             if ($activity === 'party' && ! in_array($lineType, ['service', 'asset'], true)) throw ValidationException::withMessages(['lines' => __('Party quotations accept service or party-asset lines only.')]);
             if ($activity === 'retail' && ! filled($line['product_id'] ?? null)) throw ValidationException::withMessages(['lines' => __('Each retail quotation line must reference a product.')]);
-            if ($activity === 'retail' && ! Product::query()->whereKey((int) $line['product_id'])->where('status', 'active')->exists()) throw ValidationException::withMessages(['lines' => __('Each retail quotation product must be active.')]);
+            if ($activity === 'retail' && ! Product::query()->sellable()->whereKey((int) $line['product_id'])->exists()) throw ValidationException::withMessages(['lines' => __('Each retail quotation product must be an active sellable SKU.')]);
             $quantity = (float) ($line['quantity'] ?? 0); $price = (float) ($line['unit_price'] ?? -1);
             if ($quantity <= 0 || $price < 0) throw ValidationException::withMessages(['lines' => __('Quotation quantities and prices must be valid.')]);
             $result[] = ['line_type' => $lineType, 'product_id' => $line['product_id'] ?? null, 'description_ar' => trim((string) ($line['description_ar'] ?? '')), 'description_en' => trim((string) ($line['description_en'] ?? '')), 'quantity' => $quantity, 'unit_price' => $price, 'source_reference' => $line['source_reference'] ?? null];

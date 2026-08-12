@@ -38,6 +38,7 @@ use App\Modules\Retail\Models\GiftCardLedger;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Models\ShiftClosingSubmission;
 use BackedEnum;
@@ -90,7 +91,7 @@ final class ReportSnapshot
         }
         $customerId = $this->scopedIdFilter($filters['customer_id'] ?? null, Customer::query()->visibleTo($user), __('customer'));
         $supplierId = $this->scopedIdFilter($filters['supplier_id'] ?? null, Supplier::query()->where('status', 'active'), __('supplier'));
-        $productId = $this->scopedIdFilter($filters['product_id'] ?? null, Product::query()->where('status', 'active'), __('product'));
+        $productId = $this->scopedIdFilter($filters['product_id'] ?? null, Product::query()->sellable(), __('product'));
         $categoryId = $this->scopedIdFilter($filters['category_id'] ?? null, Category::query()->where('status', 'active'), __('category'));
         $paymentMethodId = $this->scopedIdFilter($filters['payment_method_id'] ?? null, PaymentMethod::query()->where('status', 'active'), __('payment method'));
         $documentStatus = $this->enumFilter($filters['document_status'] ?? null, ['approved', 'suspended', 'cancelled']);
@@ -178,7 +179,25 @@ final class ReportSnapshot
             ]);
         }
 
-        $stock = StockBalance::query()->whereIn('store_id', $storeIds);
+        $stock = StockBalance::query()
+            ->whereIn('store_id', $storeIds)
+            ->whereHas('product', function (Builder $product): void {
+                $product->where('status', 'active')->where(function (Builder $scope): void {
+                    $scope->where(function (Builder $simple): void {
+                        $simple->whereNull('parent_product_id')->where('has_variations', false);
+                    })->orWhere(function (Builder $variant): void {
+                        $variant->whereNotNull('parent_product_id')->whereHas('parent', function (Builder $family): void {
+                            $family->where('status', 'active')->where('has_variations', true);
+                        });
+                    });
+                });
+            });
+        if ($productId !== null) {
+            $stock->where('product_id', $productId);
+        }
+        if ($categoryId !== null) {
+            $stock->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $categoryId));
+        }
         $stockOnHand = 0.0;
         $stockReserved = 0.0;
         $stockAvailable = 0.0;
@@ -605,10 +624,44 @@ final class ReportSnapshot
                 'gross' => (float) $sale->subtotal, 'discount' => (float) $sale->discount_total,
                 'tax' => (float) $sale->tax_total, 'total' => (float) $sale->total,
             ]));
+
+            $saleLines = SaleLine::query()
+                ->whereIn('sale_id', $salesRows->pluck('id'))
+                ->when($filters['product_id'], fn (Builder $query, int $id): Builder => $query->where('product_id', $id))
+                ->when($filters['category_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $id)))
+                ->with('sale:id,document_number')
+                ->orderByDesc('sale_id')
+                ->orderBy('line_number')
+                ->limit(50)
+                ->get();
+            $section('sales_product_lines', __('Sale product lines'), [
+                'document' => __('Document'), 'sku' => __('SKU'), 'product' => __('Product'),
+                'options_ar' => __('Arabic options'), 'options_en' => __('English options'),
+                'quantity' => __('Quantity'), 'net' => __('Line total'),
+            ], $saleLines->map(fn (SaleLine $line): array => [
+                'document' => $line->sale?->document_number,
+                'sku' => $line->item_code,
+                'product' => app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en,
+                'options_ar' => $this->snapshotOptions($line->variant_snapshot, 'ar'),
+                'options_en' => $this->snapshotOptions($line->variant_snapshot, 'en'),
+                'quantity' => (float) $line->quantity,
+                'net' => (float) $line->net_amount,
+            ]));
         }
 
         if (in_array('inventory', $modules, true)) {
             $balances = StockBalance::query()->with(['product', 'store'])->whereIn('store_id', $storeIds)
+                ->whereHas('product', function (Builder $product): void {
+                    $product->where('status', 'active')->where(function (Builder $scope): void {
+                        $scope->where(function (Builder $simple): void {
+                            $simple->whereNull('parent_product_id')->where('has_variations', false);
+                        })->orWhere(function (Builder $variant): void {
+                            $variant->whereNotNull('parent_product_id')->whereHas('parent', function (Builder $family): void {
+                                $family->where('status', 'active')->where('has_variations', true);
+                            });
+                        });
+                    });
+                })
                 ->when($filters['product_id'], fn (Builder $query, int $id): Builder => $query->where('product_id', $id))
                 ->when($filters['category_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $id)))
                 ->orderBy('product_id')->limit(50)->get();
@@ -631,7 +684,19 @@ final class ReportSnapshot
             }));
 
             $movements = StockMovement::query()->with(['product', 'store'])->whereIn('store_id', $storeIds)->whereBetween('posted_at', [$from, $to])
+                ->whereHas('product', function (Builder $product): void {
+                    $product->where('status', 'active')->where(function (Builder $scope): void {
+                        $scope->where(function (Builder $simple): void {
+                            $simple->whereNull('parent_product_id')->where('has_variations', false);
+                        })->orWhere(function (Builder $variant): void {
+                            $variant->whereNotNull('parent_product_id')->whereHas('parent', function (Builder $family): void {
+                                $family->where('status', 'active')->where('has_variations', true);
+                            });
+                        });
+                    });
+                })
                 ->when($filters['product_id'], fn (Builder $query, int $id): Builder => $query->where('product_id', $id))
+                ->when($filters['category_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $id)))
                 ->latest('posted_at')->limit(50)->get();
             $movementColumns = ['posted_at' => __('Posted'), 'product' => __('Product'), 'store' => __('Store'), 'type' => __('Movement'), 'quantity' => __('Quantity'), 'source' => __('Source')];
             if ($canViewCost) {
@@ -671,7 +736,17 @@ final class ReportSnapshot
                 ->where('status', 'approved')->when($supplierId, fn (Builder $query, int $id): Builder => $query->where('supplier_id', $id))->latest('id')->limit(50)->get();
             $section('purchase_returns', __('Approved supplier returns'), ['document' => __('Document'), 'supplier' => __('Supplier'), 'store' => __('Store'), 'date' => __('Date'), 'total' => __('Total')], $returns->map(fn (PurchaseReturn $row): array => ['document' => $row->return_number, 'supplier' => $row->supplier?->name_en, 'store' => $row->store?->code, 'date' => $row->return_date?->toDateString(), 'total' => (float) $row->total_amount]));
 
-            $supplierPrices = ProductSupplier::query()->with(['product', 'supplier'])->when($supplierId, fn (Builder $query, int $id): Builder => $query->where('supplier_id', $id))->latest('last_purchase_date')->limit(50)->get();
+            $supplierPrices = ProductSupplier::query()->with(['product', 'supplier'])->whereHas('product', function (Builder $product): void {
+                $product->where('status', 'active')->where(function (Builder $scope): void {
+                    $scope->where(function (Builder $simple): void {
+                        $simple->whereNull('parent_product_id')->where('has_variations', false);
+                    })->orWhere(function (Builder $variant): void {
+                        $variant->whereNotNull('parent_product_id')->whereHas('parent', function (Builder $family): void {
+                            $family->where('status', 'active')->where('has_variations', true);
+                        });
+                    });
+                });
+            })->when($supplierId, fn (Builder $query, int $id): Builder => $query->where('supplier_id', $id))->latest('last_purchase_date')->limit(50)->get();
             $section('supplier_prices', __('Supplier and last purchase prices'), ['product' => __('Product'), 'supplier' => __('Supplier'), 'preferred' => __('Preferred'), 'last_price' => __('Last purchase price'), 'last_date' => __('Last purchase date')], $supplierPrices->map(fn (ProductSupplier $row): array => ['product' => $row->product?->item_code, 'supplier' => $row->supplier?->name_en, 'preferred' => $row->is_preferred ? __('Yes') : __('No'), 'last_price' => (float) $row->last_purchase_price, 'last_date' => $row->last_purchase_date?->toDateString()]));
         }
 
@@ -787,6 +862,25 @@ final class ReportSnapshot
     private function status(mixed $status): string
     {
         return $status instanceof BackedEnum ? (string) $status->value : (string) $status;
+    }
+
+    /** @param array<int, array<string, mixed>>|null $snapshot */
+    private function snapshotOptions(?array $snapshot, string $locale): string
+    {
+        if ($snapshot === null || $snapshot === []) {
+            return '';
+        }
+
+        $labels = [];
+        foreach ($snapshot as $choice) {
+            $group = (string) ($choice['group_'.$locale] ?? '');
+            $value = (string) ($choice['value_'.$locale] ?? '');
+            if ($group !== '' || $value !== '') {
+                $labels[] = trim($group).': '.trim($value);
+            }
+        }
+
+        return implode(' · ', $labels);
     }
 
     /** @param array<string, mixed> $snapshot */

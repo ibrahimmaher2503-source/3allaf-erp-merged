@@ -2,7 +2,7 @@
     <div class="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div><flux:heading size="xl">{{ __('Sales') }}</flux:heading><flux:text class="mt-1">{{ __('All scoped retail sale records, including draft and suspended operational states.') }}</flux:text></div>
-            <flux:button href="{{ route('pos') }}" variant="primary" icon="shopping-cart">{{ __('Open POS') }}</flux:button>
+            <flux:button href="{{ route('pos') }}" variant="primary" icon="shopping-cart" wire:navigate>{{ __('Open POS') }}</flux:button>
         </div>
 
         <form method="GET" class="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5 dark:border-zinc-800 dark:bg-zinc-900">
@@ -19,7 +19,7 @@
                 <tbody>
                     @forelse ($sales as $sale)
                         <tr>
-                            <td><a class="font-semibold text-primary hover:underline" href="{{ route('sales.show', $sale) }}">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</a><div class="text-xs text-text-muted">{{ $sale->created_at?->format('Y-m-d H:i') }}</div></td>
+                            <td><a class="font-semibold text-primary hover:underline" href="{{ route('sales.show', $sale) }}" wire:navigate>{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</a><div class="text-xs text-text-muted">{{ $sale->created_at?->format('Y-m-d H:i') }}</div></td>
                             <td><x-status.badge :status="$sale->status" /></td>
                             <td>{{ app()->getLocale() === 'ar' ? $sale->store->name_ar : $sale->store->name_en }}</td>
                             <td>{{ $sale->cashier->name }}</td>

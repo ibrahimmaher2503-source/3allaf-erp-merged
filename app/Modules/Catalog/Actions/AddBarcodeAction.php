@@ -24,6 +24,10 @@ class AddBarcodeAction
         return DB::transaction(function () use ($productId, $value): Barcode {
             $product = Product::query()->lockForUpdate()->findOrFail($productId);
 
+            if ($product->isFamily()) {
+                throw new InvalidArgumentException(__('A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.'));
+            }
+
             if (Barcode::query()->where('barcode', $value)->exists()) {
                 throw new InvalidArgumentException(__('This barcode is already assigned and cannot be silently reassigned.'));
             }
@@ -74,6 +78,10 @@ class AddBarcodeAction
             }
 
             $product = Product::query()->lockForUpdate()->findOrFail($productId);
+
+            if ($product->isFamily()) {
+                throw new InvalidArgumentException(__('A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.'));
+            }
             $sequence = BarcodeSequence::query()->where('supplier_code', $supplierCode)->lockForUpdate()->first();
             $serial = $sequence?->next_serial ?? 1;
 

@@ -143,11 +143,9 @@ class StoreAttachment
 
     private function validateScope(User $user, AttachmentSourceReference $source): void
     {
-        if ($source->branchId !== null && ! $user->canAccessBranch($source->branchId)) {
-            abort(403);
-        }
-
-        if ($source->storeId !== null && ! $user->canAccessStore($source->storeId)) {
+        $hasScope = ($source->branchId !== null && $user->canAccessBranch($source->branchId))
+            || ($source->storeId !== null && $user->canAccessStore($source->storeId));
+        if (($source->branchId !== null || $source->storeId !== null) && ! $hasScope) {
             abort(403);
         }
 

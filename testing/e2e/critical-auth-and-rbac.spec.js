@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { login } from '../helpers/auth.js';
+import { LOCAL_BROWSER_ACTORS, login } from '../helpers/auth.js';
 
 /**
  * Critical browser E2E smoke suite. Ties to E2E-03/E2E-04 (authentication and
@@ -46,6 +46,22 @@ test.describe('Critical auth and direct-route RBAC (E2E-03/E2E-04)', () => {
         await page.getByRole('button', { name: 'Log in' }).click();
 
         await expect(page).toHaveURL(/\/login/);
+    });
+
+    test('Authentication and Offline Synchronization: Reject invalid sign in credentials', async ({ page }) => {
+        await page.goto('/login');
+        await page.getByLabel('Username', { exact: true }).fill(LOCAL_BROWSER_ACTORS.administrator.username);
+        await page.getByLabel('Password', { exact: true }).fill('DefinitelyWrongPassword!');
+
+        const [response] = await Promise.all([
+            page.waitForResponse((candidate) => candidate.request().method() === 'POST' && new URL(candidate.url()).pathname === '/login'),
+            page.getByRole('button', { name: 'Log in' }).click({ noWaitAfter: true }),
+        ]);
+
+        expect(response.status()).toBe(302);
+        await expect(page).toHaveURL(/\/login/);
+        await expect(page.getByText('These credentials do not match our records.', { exact: true })).toBeVisible();
+        await expect(page.getByText('Unexpected system error (500)', { exact: true })).toHaveCount(0);
     });
 
     test('a cashier reaches POS but a direct URL to an administrator-only route is denied server-side', async ({ page }) => {

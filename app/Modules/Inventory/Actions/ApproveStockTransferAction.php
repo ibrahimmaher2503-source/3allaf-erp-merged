@@ -12,6 +12,7 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class ApproveStockTransferAction
@@ -37,7 +38,12 @@ final class ApproveStockTransferAction
                 ->where('requested_action', 'approve')
                 ->where('approval_state', ApprovalState::Pending->value)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+            if ($approval === null) {
+                throw ValidationException::withMessages([
+                    'approval' => __('This transfer has no pending approval request. Submit it for approval before approving.'),
+                ]);
+            }
             $before = $transfer->only(['status', 'lock_version']);
             $transfer->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
             app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Stock transfer approved.'));

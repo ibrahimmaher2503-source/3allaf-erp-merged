@@ -318,6 +318,9 @@ class StageProductImportAction
             $errors[] = __('The product status is not supported.');
         }
         $existingProduct = $itemCode === '' ? null : Product::query()->where('item_code', $itemCode)->first();
+        if ($existingProduct?->isFamily() || $existingProduct?->isVariant()) {
+            $errors[] = __('Product imports support simple products only. Variation families and child SKUs must be managed in the variation matrix.');
+        }
         if ($mode === 'create_only' && $existingProduct !== null) {
             $errors[] = __('The item code already exists; Create Only does not update existing products.');
         }

@@ -150,7 +150,7 @@ final class CreateStockTransferDraftAction
         $normalized = [];
         foreach ($lines as $line) {
             $productId = (int) ($line['product_id'] ?? 0);
-            $product = Product::query()->active()->find($productId);
+            $product = Product::query()->sellable()->find($productId);
             if ($product === null) {
                 throw new InvalidArgumentException(__('Every transfer line must reference an active product.'));
             }

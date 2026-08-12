@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -300,10 +301,23 @@ new #[Title('Product Masters')] class extends Component
             ])->all();
     }
 
+    // Keep modal and row actions fast, while bounding stale category/brand options
+    // after another catalog screen changes them and the user navigates back.
+    #[Computed(persist: true, seconds: 30)]
+    public function catalogLookups(): array
+    {
+        return [
+            'categories' => Category::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
+            'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
+            'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+        ];
+    }
+
     public function render()
     {
         $term = mb_strtolower(trim(Str::limit($this->search, 100, '')));
-        $query = Product::query()->with([
+        $query = Product::query()->familiesAndSimple()->with([
             'category:id,code,name_ar,name_en',
             'brand:id,code,name_ar,name_en',
             'barcodes' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('barcode'),
@@ -359,10 +373,7 @@ new #[Title('Product Masters')] class extends Component
 
         return view('catalog.products', [
             'products' => $products,
-            'categories' => Category::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
-            'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
-            'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
-            'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            ...$this->catalogLookups,
             'productTypes' => ['standard', 'composite', 'service'],
             'genderOptions' => ['unisex', 'female', 'male'],
         ]);
@@ -379,7 +390,7 @@ new #[Title('Product Masters')] class extends Component
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="products-filters">
             @can('products_categories_brands.create')
-                <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle">{{ __('Import') }}</flux:button>
+                <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Import') }}</flux:button>
                 <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
@@ -444,7 +455,7 @@ new #[Title('Product Masters')] class extends Component
         </div>
     </div>
 
-    <div wire:loading.flex role="status" aria-live="polite" class="catalog-loading">
+    <div wire:loading.flex wire:target="search,categoryFilter,brandFilter,statusFilter,productTypeFilter,colourFilter,ageFilter,genderFilter,characterFilter,gotoPage,previousPage,nextPage" role="status" aria-live="polite" class="catalog-loading">
         <flux:icon name="arrow-path" class="size-4 animate-spin" />
         {{ __('Loading catalog...') }}
     </div>
@@ -520,8 +531,8 @@ new #[Title('Product Masters')] class extends Component
                             <flux:table.cell class="whitespace-nowrap">
                                 @can('products_categories_brands.edit')
                                     <div class="catalog-actions">
-                                        <flux:button size="xs" variant="subtle" icon="eye" href="{{ route('catalog.products.show', ['product' => $product]) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}" />
-                                        <flux:button size="xs" variant="subtle" icon="arrow-top-right-on-square" href="{{ route('catalog.products.edit', ['product' => $product]) }}" title="{{ __('Full product card') }}" aria-label="{{ __('Full product card') }}" />
+                                        <flux:button size="xs" variant="subtle" icon="eye" href="{{ route('catalog.products.show', ['product' => $product]) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}" wire:navigate />
+                                        <flux:button size="xs" variant="subtle" icon="arrow-top-right-on-square" href="{{ route('catalog.products.edit', ['product' => $product]) }}" title="{{ __('Full product card') }}" aria-label="{{ __('Full product card') }}" wire:navigate />
                                         <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditProductModal({{ $product->id }})" title="{{ __('Edit identity') }}" aria-label="{{ __('Edit identity') }}" />
                                         <flux:button size="xs" variant="subtle" icon="tag" wire:click="openBarcodeModal({{ $product->id }})" title="{{ __('Manage barcodes') }}" aria-label="{{ __('Manage barcodes') }}" />
                                         <flux:button size="xs" variant="subtle" :icon="$product->status === 'active' ? 'pause' : 'play'" wire:click="toggleProductStatus({{ $product->id }})" title="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" />

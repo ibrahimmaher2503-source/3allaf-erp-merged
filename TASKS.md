@@ -703,6 +703,19 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 - **Manual Browser Verification:** Final production smoke journeys for each role/module/device/printer, data/ledger/report totals, alerts, backup, monitoring, support escalation and rollback readiness.
 - **Definition of Done:** Client sign-off; no unresolved critical defect; configuration/data/user/printer/backup approved; guidance, evidence, issue register, limitations/owners, recovery and release handoff complete.
 
+### TSK-045 — Implement Product Variations, Media Fallback, and POS Selection
+
+- **Task ID / Phase / Milestone / Status:** TSK-045; Phase 2/3 follow-on; DM 2.1 and DM 3.1; **Implemented for Local/Dev code and isolated MariaDB migration/seed verification on 2026-08-12; required headed browser scenarios, screenshots, UAT, and Production/release remain open.**
+- **Title / Purpose / Description:** Add explicit standard-product variation families without changing the meaning of ordinary descriptive colour/size fields. Families are non-sellable; child Products own immutable SKU/barcode identities, independent price/stock/status, optional protected media, and bilingual option selection.
+- **Traceability:** MD-02–MD-05 as amended by DEC-075; PRC-02–03; INV-01; POS-01–06; US-002,005,008,013,017–018; UI UI-CAT-001–003,009 and UI-POS-001,007.
+- **Dependencies / Required Inputs:** Existing Catalog, Attachment, Pricing, Inventory, Purchasing, Retail sale, and POS session-cart foundations. Production option vocabulary, real family/SKU master data, imagery, and UAT remain owner inputs.
+- **Database Entities:** extended `products`; `product_option_groups`, `product_option_values`, `product_family_option_groups`, `product_family_option_values`, `product_variant_values`; `sale_lines.variant_snapshot`; existing barcode/media/price/stock/supplier/document tables.
+- **Backend / Livewire / Blade Deliverables:** bilingual option lifecycle; locked idempotent 1–3 group / 100-SKU matrix; immutable canonical signatures; conversion guards; family-to-child descriptive synchronization; sellability scopes and transaction enforcement; variation snapshots; media fallback; private POS thumbnails; isolated POS Livewire product browser/cart/checkout summary with existing guarded POST checkout and fallback cart routes.
+- **UI / Flux / Alpine / Vite:** Product Options screen, product-editor variation matrix and child detail/media drawer, POS family cards and availability-aware variation drawer, child-SKU cart lines, bilingual RTL/LTR copy, bounded loading/empty/error/disabled states.
+- **Permissions / Validation / Audit / States / Print:** existing product/POS permissions; server family rejection; active-option reference guard; unique immutable SKU/barcode/signature; price/stock/status revalidation; audit option/matrix/inactivation/denied changes; sale snapshot available for historical receipt/return consumers.
+- **Verification actually completed:** PHP syntax on changed PHP/Volt files; Blade cache; named-route discovery; fresh migration and idempotent DemoSeeder on dedicated XAMPP MariaDB `toyjoy_tsk045_verify_20260812`; data-integrity queries confirming one family, four children, two values per child, two groups, and zero duplicate signatures. Automated tests were not created or run. Headed browser verification and screenshots were not executed because no authorized interactive browser-control capability was available in this session.
+- **Definition of Done remaining:** complete the plan's manual headed Chromium scenario matrix, same-viewport screenshots, responsive/keyboard/RTL/LTR checks, thumbnail/media authorization checks, and end-to-end suspend/checkout/receipt/return checks; resolve any defects; obtain UAT/Production/release approvals separately.
+
 ## Backlog Status Confirmation
 
 **Status snapshot:** 2026-08-08. The task-level statuses above are authoritative and classify work honestly as `Completed for approved Local/Dev scope`, `Implemented for approved Local/Dev scope`, or `In Progress`; they do not constitute UAT, Phase Gate, Production Readiness, Go-Live, or client sign-off.
@@ -720,7 +733,7 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 
 ### Overall counts
 
-- Total task records: **45** (TSK-001–044 plus TSK-004B).
+- Total task records: **46** (TSK-001–045 plus TSK-004B).
 - In Progress: **4** — TSK-001, TSK-004B, TSK-005, TSK-009.
 - Completed/implemented for approved Local/Dev scope: **41**.
 - Fully accepted UAT/Production/Go-Live tasks: **0**.

@@ -50,15 +50,16 @@ Step 4 is the one most often skipped. An unverified backup is not a backup.
 4. Deploy code to the release path
 5. Install dependencies with locked versions
 6. Run migrations
-7. Rebuild caches: config, route, view
-8. Build frontend assets
-9. Restart queue workers and scheduler
-10. Smoke checks (§7)
-11. Disable maintenance mode
-12. Post-deploy monitoring window
+7. On the first deployment only, inject the four `PRODUCTION_ADMIN_*` values and run `php artisan db:seed --force`; remove the password secret immediately afterward
+8. Rebuild caches: config, route, view
+9. Build frontend assets
+10. Restart queue workers and scheduler
+11. Smoke checks (§7)
+12. Disable maintenance mode
+13. Post-deploy monitoring window
 ```
 
-Queue workers must be restarted at step 9 — a running worker holds the previous release's code in memory and will process new jobs with old logic.
+The seed step installs only canonical authorization/reference data and the deployment-supplied initial administrator. It must not be used for branches, stores, products, customers, stock, prices, bookings, sales, or policy values; those follow the approved migration/reconciliation stages in `docs/54`. Queue workers must be restarted at step 10 — a running worker holds the previous release's code in memory and will process new jobs with old logic.
 
 ---
 

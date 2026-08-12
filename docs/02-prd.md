@@ -114,6 +114,8 @@ Product cards shall include Arabic and English names/descriptions, item/model nu
 
 Colour, size, character, and age are searchable/reportable attributes only in Phase 1; they are not independent variants or separate stock balances.
 
+Owner-approved amendment (TSK-045, 2026-08-12): ordinary colour, size, character, and age fields remain descriptive and never create implicit variants. A standard product may additionally be configured as an explicit variation family through the controlled bilingual option matrix. The family is non-sellable; each generated child Product is an independent immutable SKU/barcode/price/stock identity, and historical sales preserve the selected bilingual options as a line snapshot.
+
 ### MD-06
 
 A customer record shall use one unique phone number, consent fields, contact data, party-related children data and birthday dates, purchase/party history, Product Wallet, Party Wallet, loyalty balance, and gift-card activity.

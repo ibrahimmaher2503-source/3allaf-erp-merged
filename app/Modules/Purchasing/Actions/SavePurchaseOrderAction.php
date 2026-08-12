@@ -63,7 +63,7 @@ class SavePurchaseOrderAction
 
             foreach ($lines as $index => $line) {
                 $productId = (int) ($line['product_id'] ?? 0);
-                $product = Product::query()->findOrFail($productId);
+                $product = Product::query()->sellable()->findOrFail($productId);
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be ordered.', ['name' => $product->name_en ?: $product->name_ar]));
                 }

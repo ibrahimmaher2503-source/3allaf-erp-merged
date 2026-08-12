@@ -121,6 +121,8 @@
     }
 
     .app-sidebar [data-flux-sidebar-nav] {
+        flex: 1 1 0% !important;
+        min-height: 0;
         gap: 0.35rem !important;
     }
 
@@ -146,7 +148,7 @@
     }
 
     .app-sidebar [data-sidebar-expandable] > button span {
-        @apply text-[0.6875rem] font-semibold uppercase tracking-[0.08em];
+        @apply text-sm font-semibold normal-case tracking-normal;
     }
 
     .app-sidebar [data-sidebar-expandable] > [data-open] {
@@ -169,7 +171,7 @@
     }
 
     .app-sidebar [data-flux-sidebar-group-heading] {
-        @apply px-3 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-text-muted;
+        @apply px-3 text-sm font-semibold tracking-normal text-text-muted;
     }
 
     /*
@@ -194,6 +196,7 @@
 
     .app-sidebar [data-flux-sidebar-item] {
         @apply min-h-10 rounded-lg text-sm text-text-muted transition-all duration-200;
+        letter-spacing: normal;
     }
 
     .app-sidebar [data-flux-sidebar-item][data-current] {

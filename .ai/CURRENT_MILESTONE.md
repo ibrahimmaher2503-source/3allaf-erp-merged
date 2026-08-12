@@ -1,19 +1,19 @@
-# Active Milestone — TSK-027 Customer Profiles and Shared Retail Loyalty
+# Active Milestone — TSK-045 Product Variations and POS Selection
 
-**Date:** 2026-08-10
-**Current phase:** Phase 4
-**Current milestone:** DM 4.1 — Customers and Shared Loyalty
-**Status:** Local/Dev customer and retail-loyalty contract is actually implemented and focused-tested. Production/UAT/release gates remain open. Do not start TSK-028.
-
-**Evidence:** `TASKS.md` TSK-027, `testing/results/TSK-027-48-TEST-MATRIX.md`, SQLite/MariaDB lifecycle runs, MariaDB concurrency workers, direct route/RBAC checks, the 3-test readiness authorization regression, and Chromium/Firefox/WebKit browser execution.
+**Date:** 2026-08-12
+**Current phase:** Phase 2/3 follow-on
+**Current milestone:** DM 2.1 catalog extension with DM 3.1 POS integration
+**Status:** Local/Dev implementation and isolated MariaDB migration/seed integrity verification completed. Required headed browser scenarios, screenshots, UAT, Production configuration, and release gates remain open.
 
 ## Active boundaries
 
-- TSK-027 includes customer master, consent/privacy, child linkage, controlled merge/history, POS retail linkage, retail loyalty ledger, earn/redeem/expiry, approved adjustments, audit, idempotency, and scope enforcement.
-- TSK-028 Product Wallet/Party Wallet, TSK-029 Gift Cards/Gift Receipts, and TSK-030 Returns/Exchanges are explicitly out of scope.
-- Party-side customer history/loyalty consumers do not exist yet and remain downstream dependencies.
-- Production policy values, production-safe role grants, named UAT owners, infrastructure, backup/restore, devices, and go-live approval remain open.
+- Ordinary colour, size, character, and age fields remain descriptive and never generate implicit variants.
+- Explicit variation families are standard products only and are non-sellable; child Products are the transaction identities.
+- Existing simple products remain simple. Used/barcoded/priced/stocked products cannot be converted.
+- Excel variation import is deferred; simple-product import rejects family and child updates.
+- Automated test creation/execution is prohibited for TSK-045. Verification uses XAMPP MariaDB plus authorized non-test diagnostics and manual browser work.
+- No Production readiness, UAT acceptance, Phase Gate completion, commit, or push is inferred.
 
-## Historical records
+## Remaining milestone evidence
 
-Prior milestone records remain in repository history and are not active task instructions. The active task is TSK-027 only.
+Run and record the headed Chromium scenario matrix and same-viewport Product Master/POS screenshots, including responsive RTL/LTR, keyboard/focus, media authorization/fallback, all transaction consumers, cart persistence, suspend/resume, checkout, receipt, and return behavior.

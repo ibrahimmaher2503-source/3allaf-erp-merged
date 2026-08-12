@@ -115,7 +115,7 @@ new #[Title('Product Import')] class extends Component {
     data-guide="import-header"
 >
     <x-slot:actions>
-        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to products') }}</flux:button>
     </x-slot:actions>
 
     <flux:card class="space-y-5" data-guide="import-upload-section">

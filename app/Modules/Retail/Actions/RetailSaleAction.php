@@ -202,6 +202,7 @@ final class RetailSaleAction
                     'item_code' => $line['product']->item_code,
                     'name_ar' => $line['product']->name_ar,
                     'name_en' => $line['product']->name_en,
+                    'variant_snapshot' => $line['product']->variantSnapshot(),
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit_price'],
                     'reference_price' => $line['reference_price'],
@@ -339,6 +340,7 @@ final class RetailSaleAction
                     'item_code' => $line['product']->item_code,
                     'name_ar' => $line['product']->name_ar,
                     'name_en' => $line['product']->name_en,
+                    'variant_snapshot' => $line['product']->variantSnapshot(),
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit_price'],
                     'reference_price' => $line['reference_price'],
@@ -408,9 +410,9 @@ final class RetailSaleAction
             }
 
             $product = isset($requested['product_id'])
-                ? Product::query()->active()->find((int) $requested['product_id'])
+                ? Product::query()->sellable()->find((int) $requested['product_id'])
                 : Barcode::query()->active()->where('barcode', trim((string) ($requested['barcode'] ?? '')))->first()?->product;
-            if (! $product instanceof Product) {
+            if (! $product instanceof Product || ! $product->isSellable()) {
                 throw new InvalidArgumentException(__('Product was not found or is inactive.'));
             }
 

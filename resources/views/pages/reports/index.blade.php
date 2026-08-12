@@ -12,13 +12,13 @@
     ][$reportKey] ?? ['eyebrow' => __('Reports'), 'description' => __('Scoped, source-reconciled operational intelligence.'), 'icon' => 'document-chart-bar', 'tone' => 'primary'];
 
     $focusedReports = [
-        'sales' => ['route' => 'reports.sales', 'label' => __('Sales'), 'icon' => 'chart-bar-square'],
-        'customers' => ['route' => 'reports.customers', 'label' => __('Customers'), 'icon' => 'users'],
-        'cash' => ['route' => 'reports.cash', 'label' => __('Cash & shifts'), 'icon' => 'banknotes'],
-        'purchasing' => ['route' => 'reports.purchasing', 'label' => __('Purchasing'), 'icon' => 'truck'],
-        'inventory' => ['route' => 'reports.inventory', 'label' => __('Inventory'), 'icon' => 'cube'],
-        'parties' => ['route' => 'reports.parties', 'label' => __('Parties'), 'icon' => 'calendar-days'],
-        'assets' => ['route' => 'reports.assets', 'label' => __('Assets'), 'icon' => 'archive-box'],
+        'sales' => ['route' => 'reports.sales', 'permission' => 'pos_sales.view', 'label' => __('Sales'), 'icon' => 'chart-bar-square'],
+        'customers' => ['route' => 'reports.customers', 'permission' => 'customers.view', 'label' => __('Customers'), 'icon' => 'users'],
+        'cash' => ['route' => 'reports.cash', 'permission' => 'shifts_cash_movements.view', 'label' => __('Cash & shifts'), 'icon' => 'banknotes'],
+        'purchasing' => ['route' => 'reports.purchasing', 'permission' => 'purchase_orders.view', 'label' => __('Purchasing'), 'icon' => 'truck'],
+        'inventory' => ['route' => 'reports.inventory', 'permission' => 'inventory_stock_card.view', 'label' => __('Inventory'), 'icon' => 'cube'],
+        'parties' => ['route' => 'reports.parties', 'permission' => 'party_bookings_invoices.view', 'label' => __('Parties'), 'icon' => 'calendar-days'],
+        'assets' => ['route' => 'reports.assets', 'permission' => 'rental_assets.view', 'label' => __('Assets'), 'icon' => 'archive-box'],
     ];
 
     $kpiMeta = [
@@ -83,7 +83,7 @@
                         @endcan
                     @endforeach
                 @endif
-                <flux:button href="{{ route('exports.index') }}" size="sm" variant="subtle" icon="archive-box-arrow-down">{{ __('Export center') }}</flux:button>
+                <flux:button href="{{ route('exports.index') }}" size="sm" variant="subtle" icon="archive-box-arrow-down" wire:navigate>{{ __('Export center') }}</flux:button>
             </div>
         </x-slot:actions>
 
@@ -91,9 +91,9 @@
         @if ($errors->any()) <flux:callout variant="danger"><ul class="list-disc ps-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></flux:callout> @endif
 
         <nav class="flex gap-2 overflow-x-auto pb-1" aria-label="{{ __('Report categories') }}">
-            <a href="{{ route('reports.index') }}" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition {{ $reportKey === 'dashboard' ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-surface text-text-muted hover:border-primary/40 hover:text-text-primary' }}"><flux:icon name="squares-2x2" class="size-4" />{{ __('Overview') }}</a>
+            <a href="{{ route('reports.index') }}" wire:navigate class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition {{ $reportKey === 'dashboard' ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-surface text-text-muted hover:border-primary/40 hover:text-text-primary' }}"><flux:icon name="squares-2x2" class="size-4" />{{ __('Overview') }}</a>
             @foreach($focusedReports as $key => $item)
-                <a href="{{ route($item['route']) }}" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition {{ $reportKey === $key ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-surface text-text-muted hover:border-primary/40 hover:text-text-primary' }}"><flux:icon :name="$item['icon']" class="size-4" />{{ $item['label'] }}</a>
+                @can($item['permission'])<a href="{{ route($item['route']) }}" wire:navigate class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition {{ $reportKey === $key ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-surface text-text-muted hover:border-primary/40 hover:text-text-primary' }}"><flux:icon :name="$item['icon']" class="size-4" />{{ $item['label'] }}</a>@endcan
             @endforeach
         </nav>
 
@@ -108,7 +108,7 @@
                 <flux:select name="branch_id" label="{{ __('Branch') }}"><option value="">{{ __('All visible branches') }}</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string) $report['filters']['branch_id'] === (string) $branch->id)>{{ $branch->code }} · {{ $branch->name_en }}</option>@endforeach</flux:select>
                 <flux:select name="store_id" label="{{ __('Store') }}"><option value="">{{ __('All visible stores') }}</option>@foreach($stores as $store)<option value="{{ $store->id }}" @selected((string) $report['filters']['store_id'] === (string) $store->id)>{{ $store->code }} · {{ $store->name_en }}</option>@endforeach</flux:select>
                 @if($showFor(['sales', 'cash']))<flux:select name="user_id" label="{{ __('User / cashier') }}"><option value="">{{ __('All visible users') }}</option>@foreach($users as $user)<option value="{{ $user->id }}" @selected((string) $report['filters']['user_id'] === (string) $user->id)>{{ $user->name }}{{ $user->username ? ' · '.$user->username : '' }}</option>@endforeach</flux:select>@endif
-                @if($showFor(['sales', 'inventory']) && $products->isNotEmpty())<flux:select name="product_id" label="{{ __('Product') }}"><option value="">{{ __('All products') }}</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected((string) $report['filters']['product_id'] === (string) $product->id)>{{ $product->item_code }} · {{ $product->name_en }}</option>@endforeach</flux:select>@endif
+                @if($showFor(['sales', 'inventory']) && $products->isNotEmpty())<flux:select name="product_id" label="{{ __('Product') }}"><option value="">{{ __('All products') }}</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected((string) $report['filters']['product_id'] === (string) $product->id)>{{ $product->item_code }} · {{ app()->getLocale() === 'ar' ? ($product->parent?->name_ar ?? $product->name_ar) : ($product->parent?->name_en ?? $product->name_en) }}@if($product->isVariant()) · {{ $product->localizedVariationLabel() }}@endif</option>@endforeach</flux:select>@endif
                 @if($showFor(['sales', 'inventory']) && $categories->isNotEmpty())<flux:select name="category_id" label="{{ __('Category') }}"><option value="">{{ __('All categories') }}</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) $report['filters']['category_id'] === (string) $category->id)>{{ $category->code }} · {{ $category->name_en }}</option>@endforeach</flux:select>@endif
                 @if($showFor(['sales', 'cash']) && $paymentMethods->isNotEmpty())<flux:select name="payment_method_id" label="{{ __('Payment method') }}"><option value="">{{ __('All payment methods') }}</option>@foreach($paymentMethods as $method)<option value="{{ $method->id }}" @selected((string) $report['filters']['payment_method_id'] === (string) $method->id)>{{ $method->code }} · {{ $method->name_en }}</option>@endforeach</flux:select>@endif
                 @if($showFor(['sales', 'customers', 'parties']) && $customers->isNotEmpty())<flux:select name="customer_id" label="{{ __('Customer') }}"><option value="">{{ __('All customers') }}</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected((string) $report['filters']['customer_id'] === (string) $customer->id)>{{ $customer->name_en }}@if(isset($customer->phone_display)) · {{ $customer->phone_display }}@endif</option>@endforeach</flux:select>@endif

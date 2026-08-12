@@ -257,7 +257,7 @@ new #[Title('Product Card')] class extends Component {
     data-guide="product-form-header"
 >
     <x-slot:actions>
-        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to products') }}</flux:button>
     </x-slot:actions>
 
     @if (session('status'))
@@ -411,8 +411,12 @@ new #[Title('Product Card')] class extends Component {
         </flux:card>
 
         <div class="sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
-            <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle">{{ __('Cancel') }}</flux:button>
+            <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
             <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">{{ $isEditing ? __('Save product card') : __('Create product card') }}</flux:button>
         </div>
     </form>
+
+    @if ($isEditing && $product && ! $product->isVariant())
+        <livewire:catalog::product-variations :product="$product" :key="'product-variations-'.$product->id" />
+    @endif
 </x-app.page>

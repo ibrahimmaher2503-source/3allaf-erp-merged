@@ -37,9 +37,9 @@ new #[Title('Product Details')] class extends Component {
     data-guide="product-detail-header"
 >
     <x-slot:actions>
-        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Back to products') }}</flux:button>
+        <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to products') }}</flux:button>
         @if ($canEdit)
-            <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="primary" icon="pencil">{{ __('Edit product card') }}</flux:button>
+            <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="primary" icon="pencil" wire:navigate>{{ __('Edit product card') }}</flux:button>
         @endif
     </x-slot:actions>
 

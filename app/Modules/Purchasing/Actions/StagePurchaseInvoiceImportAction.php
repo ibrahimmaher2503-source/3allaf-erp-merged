@@ -76,7 +76,7 @@ final class StagePurchaseInvoiceImportAction
             $seenReferences = [];
             $suppliers = Supplier::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $stores = Store::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
-            $products = Product::query()->where('status', 'active')->pluck('id', 'item_code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $products = Product::query()->sellable()->pluck('id', 'item_code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $barcodes = Barcode::query()->active()->pluck('product_id', 'barcode')->mapWithKeys(fn ($id, $code) => [(string) $code => $id])->all();
 
             foreach ($reader->getSheetIterator() as $sheet) {

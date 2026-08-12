@@ -229,7 +229,7 @@ final class RetailReturnAction
         $exchange = Exchange::query()->create(['retail_return_id' => $return->id, 'exchange_number' => $this->number('retail_exchange', 'EX-'), 'status' => 'draft', 'replacement_value' => '0.00', 'difference_value' => '0.00', 'difference_direction' => 'none']);
         $replacement = '0.00';
         foreach ($requested as $index => $input) {
-            $product = Product::query()->whereKey((int) ($input['product_id'] ?? 0))->where('status', 'active')->first();
+            $product = Product::query()->sellable()->whereKey((int) ($input['product_id'] ?? 0))->first();
             $price = $product === null ? null : app(EffectivePriceResolver::class)->resolve((int) $product->id, $storeId);
             $quantity = (string) ($input['quantity'] ?? '0');
             if ($product === null || $price === null || ! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) throw ValidationException::withMessages(['exchange_lines.'.$index => __('The replacement product is not currently priced or the quantity is invalid.')]);

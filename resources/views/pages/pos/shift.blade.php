@@ -6,7 +6,7 @@
     deliberately passes no expected data at all, so there is nothing here to
     leak through HTML, a hidden field, or a preloaded response.
 --}}
-<x-layouts::pos :title="__('Cash Shift')">
+<x-layouts::pos :title="__('Cash Shift')" :store="$shift?->store" :shift="$shift">
     <div class="mx-auto w-full max-w-3xl p-4 sm:p-6">
         <flux:heading size="xl">{{ __('Cash Shift') }}</flux:heading>
 

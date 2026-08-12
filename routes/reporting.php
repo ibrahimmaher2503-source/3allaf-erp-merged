@@ -56,10 +56,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id')));
             });
         })->orderBy('name')->limit(200)->get(['id', 'name', 'username']);
-        $products = $user->can('pos_sales.view')
-            ? Product::query()->where('status', 'active')->orderBy('item_code')->limit(200)->get(['id', 'item_code', 'name_en'])
+        $products = ($user->can('pos_sales.view') || $user->can('inventory_stock_card.view'))
+            ? Product::query()->sellable()->with(['parent:id,name_ar,name_en', 'variantValues.group', 'variantValues.value'])->orderBy('item_code')->limit(200)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id'])
             : collect();
-        $categories = $user->can('products_categories_brands.view')
+        $categories = ($user->can('products_categories_brands.view') || $user->can('pos_sales.view') || $user->can('inventory_stock_card.view'))
             ? Category::query()->where('status', 'active')->orderBy('code')->limit(200)->get(['id', 'code', 'name_en'])
             : collect();
         $paymentMethods = $user->can('pos_sales.payment_view')

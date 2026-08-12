@@ -22,7 +22,7 @@ final class RetailTutorialFactory
                     ['pos.review', ['ar' => 'مراجعة المنتجات والسلة', 'en' => 'Review products and cart'], 'pos_sales.view'],
                     ['pos.checkout', ['ar' => 'تنفيذ checkout محلي مصرح', 'en' => 'Run an authorized local checkout'], 'pos_sales.create'],
                 ]),
-                ['TSK-023'], ['FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+                ['TSK-023'], ['FLW-POS-SETUP', 'FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
                 [
                     self::step('header', 'pos-header', ['ar' => 'حدود نقطة البيع', 'en' => 'POS boundary'], ['ar' => 'هذه شريحة Local/Dev online فقط؛ لا تعتبر اعتمادًا للسياسات المالية أو الأجهزة.', 'en' => 'This is a Local/Dev online slice; it does not approve financial or hardware policy.']),
                     self::step('products', 'pos-products-heading', ['ar' => 'اختر منتجًا مسعرًا', 'en' => 'Choose a priced product'], ['ar' => 'أضف منتجًا نشطًا له سعر ظاهر. يعيد الخادم التحقق من السعر والمخزون.', 'en' => 'Add an active product with a visible price. The server rechecks price and stock.']),
@@ -99,6 +99,9 @@ final class RetailTutorialFactory
             ),
             'UI-RET-005' => self::readiness('pos.financial-readiness', 'جاهزية الشؤون المالية لنقطة البيع', 'POS Financial Readiness', 'financial', 'TSK-024', 'POSF-01..04 and BLK-008'),
             'UI-RET-007' => self::readiness('pos.offline-readiness', 'جاهزية العمل دون اتصال', 'Offline Readiness', 'offline', 'TSK-026', 'OFF-01..05 and NFR-04'),
+            'UI-POS-003' => self::shiftOpening(),
+            'UI-POS-012' => self::posCashierWorkflow(),
+            'UI-POS-007' => self::receipt(),
             'UI-PTY-001' => self::readiness('party.readiness', 'جاهزية حجوزات الحفلات والفاتورة العاملة', 'Party Booking and Working Invoice Readiness', 'party', 'TSK-031', 'PTY-01..03'),
             'UI-RPT-001' => self::readiness('reports.readiness', 'جاهزية لوحات المعلومات وتقارير المطابقة', 'Dashboards and Reconciled Reports Readiness', 'reports', 'TSK-038', 'RPT-01..03'),
             'UI-RPT-002' => self::readiness('exports.audit.readiness', 'جاهزية مركز التصدير والتدقيق', 'Export Center and Audit Views Readiness', 'export-audit', 'TSK-040', 'RPT-03'),
@@ -288,6 +291,100 @@ final class RetailTutorialFactory
             'next_step' => ['ar' => 'راجع القيم المعلقة من Settings ثم عد إلى هذه الشاشة.', 'en' => 'Review pending values in Settings, then return to this screen.'],
             'faq' => ['ar' => 'هل توجد حركة تحويل بين Product وParty Wallet؟ لا.', 'en' => 'Is there a transfer between Product and Party Wallet? No.'],
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function posCashierWorkflow(): array
+    {
+        return self::definition(
+            ['pos', 'pos.shift', 'pos.suspended'],
+            ['ar' => 'دليل تشغيل نقطة البيع للكاشير', 'en' => 'POS Cashier Workflow Guide'],
+            ['ar' => 'يوضح هذا الدليل مسار البيع الكامل من تسجيل الدخول حتى إتمام الدفع ومراجعة الإيصال.', 'en' => 'Explains the complete cashier journey from sign-in through payment and receipt review.'],
+            ['ar' => 'استخدمه عند بدء الوردية أو تدريب كاشير جديد على شاشة نقطة البيع.', 'en' => 'Use it when starting a shift or training a cashier on the POS screen.'],
+            ['pos_sales.view'],
+            self::actions([
+                ['pos.open', ['ar' => 'فتح نقطة البيع', 'en' => 'Open POS'], 'pos_sales.view'],
+                ['shift.open', ['ar' => 'فتح الوردية', 'en' => 'Open the shift'], 'shifts_cash_movements.create'],
+                ['sale.complete', ['ar' => 'إتمام البيع', 'en' => 'Complete the sale'], 'pos_sales.create'],
+            ]),
+            ['US-017', 'US-018'], ['FLW-POS-SETUP', 'FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+            [
+                self::step('login', 'pos-login-step', ['ar' => '1. سجّل الدخول', 'en' => '1. Sign in'], ['ar' => 'افتح شاشة الدخول واستخدم حساب الكاشير المصرح به. لا تشارك كلمة المرور.', 'en' => 'Open the login screen and sign in with your authorized cashier account. Never share the password.']),
+                self::step('scope', 'pos-operational-context', ['ar' => '2. تحقّق من النطاق التشغيلي', 'en' => '2. Confirm operational scope'], ['ar' => 'تحقّق من الفرع والمتجر ودرج النقدية وحالة الوردية. إذا ظهر متجر غير مهيأ، اطلب من المسؤول تعيين نطاقك.', 'en' => 'Confirm branch, selling store, cash drawer, and shift status. If the store is unavailable, ask an administrator to assign your scope.']),
+                self::step('shift', 'pos-shift-open-action', ['ar' => '3. افتح الوردية', 'en' => '3. Open the shift'], ['ar' => 'اختر الدرج المعيّن وأدخل الرصيد الافتتاحي الفعلي قبل بدء أي بيع.', 'en' => 'Choose the assigned drawer and enter the actual opening float before starting a sale.']),
+                self::step('search', 'pos-products-heading', ['ar' => '4. ابحث عن المنتج', 'en' => '4. Find the product'], ['ar' => 'استخدم الاسم أو رمز الصنف أو الباركود. امسح الباركود في نفس حقل البحث.', 'en' => 'Search by name, item code, or barcode. Scan the barcode into the same search field.']),
+                self::step('add', 'pos-products-grid', ['ar' => '5. أضف المنتج', 'en' => '5. Add the product'], ['ar' => 'اضغط إضافة للمنتج ذي السعر المعتمد. المنتجات التي تحتاج خيارات تُراجع قبل الإضافة.', 'en' => 'Select Add for a product with an approved price. Review required options before adding configurable products.']),
+                self::step('cart', 'pos-cart-heading', ['ar' => '6. راجع السلة والكمية', 'en' => '6. Review cart and quantity'], ['ar' => 'تأكد من المنتج والكمية والسعر والإجمالي. استخدم ناقص وزائد أو أدخل الكمية مباشرة ثم حدّثها.', 'en' => 'Confirm product, quantity, price, and line total. Use minus/plus or enter a quantity directly and update it.']),
+                self::step('customer', 'pos-customer-context', ['ar' => '7. أضف العميل عند الحاجة', 'en' => '7. Add a customer when needed'], ['ar' => 'ابحث بالاسم أو الهاتف، أو أنشئ عميلاً جديداً من داخل البيع. فشل إنشاء العميل لا يمسح السلة.', 'en' => 'Search by name or phone, or create a customer without leaving the sale. A failed customer registration must not clear the cart.']),
+                self::step('payment', 'pos-summary-actions', ['ar' => '8. راجع الإجمالي والدفع', 'en' => '8. Review total and payment'], ['ar' => 'راجع الخصم والضريبة والإجمالي النهائي، ثم اختر وسيلة الدفع وأدخل المبلغ والدليل عند طلبه.', 'en' => 'Review discount, tax, and final total. Select the tender and enter the amount and evidence when required.']),
+                self::step('checkout', 'pos-payment-form', ['ar' => '9. أتمم البيع', 'en' => '9. Complete the sale'], ['ar' => 'اضغط إتمام البيع مرة واحدة. إذا ظهر مانع، اقرأ السبب وصحح الوردية أو الدفع أو المخزون قبل المحاولة.', 'en' => 'Submit the sale once. If blocked, read the reason and correct the shift, payment, or stock issue before retrying.']),
+                self::step('receipt', 'pos-header', ['ar' => '10. راجع المرجع والإيصال', 'en' => '10. Review reference and receipt'], ['ar' => 'بعد النجاح، احتفظ بمرجع البيع وافتح سجل المبيعات لمراجعة التفاصيل والطباعة المصرح بها.', 'en' => 'After success, retain the sale reference and open Sales to review details and authorized printing.']),
+            ],
+            [
+                self::field('cashier_account', ['ar' => 'حساب الكاشير', 'en' => 'Cashier account'], ['ar' => 'حساب مصرح ضمن نطاق الفرع والمتجر.', 'en' => 'An authorized account within branch and store scope.']),
+                self::field('opening_float', ['ar' => 'الرصيد الافتتاحي', 'en' => 'Opening float'], ['ar' => 'المبلغ الفعلي الموجود في الدرج عند فتح الوردية.', 'en' => 'The actual cash in the drawer when the shift opens.']),
+                self::field('payment_evidence', ['ar' => 'دليل الدفع', 'en' => 'Payment evidence'], ['ar' => 'مطلوب لبعض وسائل الدفع الإلكترونية فقط.', 'en' => 'Required only for electronic methods that require evidence.']),
+            ],
+            ['ar' => 'الخادم هو المصدر النهائي للسعر والمخزون والإجمالي والصلاحية.', 'en' => 'The server remains authoritative for price, stock, totals, and authorization.'],
+            ['ar' => 'لا تبدأ البيع إذا لم يظهر متجر البيع أو درج النقدية أو وردية نشطة.', 'en' => 'Do not start a sale when the selling store, drawer, or active shift is missing.'],
+            ['ar' => 'إذا تعطل إجراء، اقرأ رسالة المانع ثم صحح السبب من المسار المصرح.', 'en' => 'When an action is blocked, read the blocker and correct it through the authorized workflow.'],
+            ['ar' => 'بعد إتمام البيع، راجع سجل المبيعات وحركة المخزون وفق إجراءات الفرع.', 'en' => 'After completion, review the sales register and inventory movement according to branch procedure.'],
+            ['ar' => 'هل فتح الدليل يمنح صلاحية؟ لا، الصلاحيات والتحقق على الخادم.', 'en' => 'Does this guide grant permission? No. Authorization and validation remain server-side.'],
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private static function shiftOpening(): array
+    {
+        return self::definition(
+            ['pos.shift.open'],
+            ['ar' => 'دليل فتح وردية نقطة البيع', 'en' => 'POS Shift Opening Guide'],
+            ['ar' => 'يوضح فتح وردية على درج معيّن قبل بدء مبيعات الكاشير.', 'en' => 'Explains opening a shift on an assigned drawer before cashier sales begin.'],
+            ['ar' => 'استخدمه بعد تعيين الدرج وقبل بدء سلة البيع.', 'en' => 'Use it after drawer assignment and before starting a sales cart.'],
+            ['shifts_cash_movements.create'],
+            self::actions([
+                ['shift.open', ['ar' => 'فتح وردية', 'en' => 'Open a shift'], 'shifts_cash_movements.create'],
+            ]),
+            ['TSK-025'], ['FLW-POS-SETUP', 'FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+            [
+                self::step('context', 'pos-shift-context', ['ar' => 'تحقق من الدرج والنطاق', 'en' => 'Confirm drawer and scope'], ['ar' => 'اختر الدرج المعيّن لك ضمن الفرع والمتجر الصحيحين.', 'en' => 'Select the drawer assigned to you in the correct branch and store.']),
+                self::step('opening-float', 'pos-shift-opening-float', ['ar' => 'أدخل رصيد البداية', 'en' => 'Enter the opening float'], ['ar' => 'أدخل الرصيد الفعلي المطلوب للدرج قبل حفظ الوردية.', 'en' => 'Enter the actual opening float required for the drawer before saving the shift.']),
+                self::step('open', 'pos-shift-open-action', ['ar' => 'افتح وردية واحدة', 'en' => 'Open one shift'], ['ar' => 'لا تتجاوز تعارض وردية نشطة أو درج غير معيّن. صحح التعيين أو أغلق الوردية السابقة بالطريق المصرح.', 'en' => 'Do not bypass an active-shift conflict or an unassigned drawer. Correct the assignment or close the prior shift through the authorized path.']),
+            ],
+            [self::field('opening_float', ['ar' => 'رصيد البداية', 'en' => 'Opening float'], ['ar' => 'المبلغ الفعلي عند فتح الدرج.', 'en' => 'The actual amount in the drawer when the shift opens.'])],
+            ['ar' => 'فتح الوردية لا يمنح صلاحيات نقطة البيع أو يتجاوز نطاق المتجر.', 'en' => 'Opening a shift does not grant POS permissions or bypass store scope.'],
+            ['ar' => 'لا تبدأ بيعًا بلا وردية نشطة على الدرج المعيّن.', 'en' => 'Do not begin a sale without an active shift on the assigned drawer.'],
+            ['ar' => 'إذا لم يظهر درج، راجع التعيين والصلاحية والنطاق.', 'en' => 'If no drawer appears, review assignment, permission, and scope.'],
+            ['ar' => 'بعد الفتح، انتقل إلى نقطة البيع وتأكد من ظهور الوردية في السياق التشغيلي.', 'en' => 'After opening, go to POS and confirm that the shift appears in operational context.'],
+            ['ar' => 'هل يستطيع الكاشير فتح ورديتين على الدرج نفسه؟ لا.', 'en' => 'Can a cashier open two shifts on the same drawer? No.'],
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private static function receipt(): array
+    {
+        return self::definition(
+            ['sales.receipt.thermal'],
+            ['ar' => 'دليل إيصال البيع', 'en' => 'Sale Receipt Guide'],
+            ['ar' => 'يوضح مراجعة وطباعة إيصال بيع معتمد من المسار المصرح فقط.', 'en' => 'Explains reviewing and printing an approved sale receipt through the authorized path only.'],
+            ['ar' => 'استخدمه بعد اعتماد البيع ومراجعة مرجعه وتفاصيله.', 'en' => 'Use it after sale approval and after reviewing its reference and details.'],
+            ['pos_sales.print'],
+            self::actions([
+                ['receipt.print', ['ar' => 'طباعة الإيصال', 'en' => 'Print receipt'], 'pos_sales.print'],
+            ]),
+            ['TSK-023'], ['FLW-POS-SETUP', 'FLW-POS-01'], ['AC-UI-08', 'AC-UI-12'],
+            [
+                self::step('reference', 'sale-receipt-reference', ['ar' => 'تحقق من مرجع البيع', 'en' => 'Confirm the sale reference'], ['ar' => 'اطبع الإيصال الخاص بالبيع المعتمد الصحيح فقط.', 'en' => 'Print only the receipt for the correct approved sale.']),
+                self::step('contents', 'sale-receipt-contents', ['ar' => 'راجع محتوى الإيصال', 'en' => 'Review receipt contents'], ['ar' => 'راجع الخطوط والكميات والأسعار والإجمالي قبل تسليم الإيصال.', 'en' => 'Review lines, quantities, prices, and total before handing over the receipt.']),
+                self::step('print', 'sale-receipt-print-action', ['ar' => 'استخدم مسار الطباعة المصرح', 'en' => 'Use the authorized print path'], ['ar' => 'لا تستخدم رابطًا يدويًا أو مسارًا مخفيًا لتجاوز صلاحية الطباعة أو نطاق البيع.', 'en' => 'Do not use a manual link or hidden route to bypass print permission or sale scope.']),
+            ],
+            [self::field('sale_reference', ['ar' => 'مرجع البيع', 'en' => 'Sale reference'], ['ar' => 'الرقم الذي يربط الإيصال بالبيع المعتمد وسجل التدقيق.', 'en' => 'The number linking the receipt to the approved sale and audit trail.'])],
+            ['ar' => 'طباعة الإيصال لا تغيّر خطوط البيع أو المدفوعات أو المخزون.', 'en' => 'Printing a receipt does not change sale lines, payments, or inventory.'],
+            ['ar' => 'إعادة الطباعة تخضع للصلاحية والسياسة وسجل التدقيق.', 'en' => 'Reprinting is subject to permission, policy, and the audit trail.'],
+            ['ar' => 'إذا تعذر فتح الإيصال، راجع حالة البيع والصلاحية والنطاق بدل طلب رابط مباشر.', 'en' => 'If the receipt cannot open, review sale status, permission, and scope instead of requesting a direct link.'],
+            ['ar' => 'بعد الطباعة، احتفظ بمرجع البيع لمراجعة لاحقة عند الحاجة.', 'en' => 'After printing, retain the sale reference for later review when needed.'],
+            ['ar' => 'هل يمنح الدليل حق الطباعة؟ لا، يظل التحقق من الخادم هو المرجع.', 'en' => 'Does this guide grant print access? No, server authorization remains authoritative.'],
+        );
     }
 
     /** @return array<string, mixed> */

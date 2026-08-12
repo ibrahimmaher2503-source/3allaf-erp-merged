@@ -26,5 +26,16 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/scratch/
+/.claude/
+/.agents/
+/skills-lock.json
+/phpunit.*.sqlite.xml
+/storage/*.png
+/storage/framework/views-agentd/
+/testing/e2e/report/data/
+/testing/e2e/report/trace/
+/testing/e2e/results*/
+/artifacts/
 testsprite_tests/tmp/
 testsprite_tests/tmp/config.json
