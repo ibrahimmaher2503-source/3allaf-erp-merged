@@ -175,14 +175,14 @@ new #[Title('System Settings')] class extends Component {
     {
         return [
             'companyForm.code' => ['required', 'string', 'max:20'],
-            'companyForm.name_ar' => ['nullable', 'string', 'max:255'],
-            'companyForm.name_en' => ['nullable', 'string', 'max:255'],
+            'companyForm.name_ar' => ['required', 'string', 'max:255'],
+            'companyForm.name_en' => ['required', 'string', 'max:255'],
             'companyForm.legal_name' => ['nullable', 'string', 'max:255'],
             'companyForm.tax_number' => ['nullable', 'string', 'max:50'],
             'companyForm.commercial_registration' => ['nullable', 'string', 'max:50'],
             'companyForm.currency_code' => ['required', 'string', 'max:10'],
             'companyForm.currency_symbol' => ['required', 'string', 'max:10'],
-            'companyForm.timezone' => ['required', 'string', 'max:50'],
+            'companyForm.timezone' => ['required', 'timezone'],
             'companyForm.locale_default' => ['required', 'string', 'in:ar,en'],
             'companyForm.phone' => ['nullable', 'string', 'max:30'],
             'companyForm.email' => ['nullable', 'email', 'max:255'],
@@ -581,12 +581,14 @@ new #[Title('System Settings')] class extends Component {
                             wire:model="companyForm.name_ar"
                             :label="__('Name (Arabic)')"
                             placeholder="شركة لعبة وفرحة"
+                            required
                         />
 
                         <flux:input
                             wire:model="companyForm.name_en"
                             :label="__('Name (English)')"
                             placeholder="TOY & JOY Company"
+                            required
                         />
 
                         <flux:input
@@ -620,6 +622,7 @@ new #[Title('System Settings')] class extends Component {
                         />
 
                         <flux:select wire:model="companyForm.timezone" :label="__('Timezone')">
+                            <option value="Africa/Cairo">Africa/Cairo (GMT+2 / DST)</option>
                             <option value="UTC">UTC (Coordinated Universal Time)</option>
                             <option value="Asia/Riyadh">Asia/Riyadh (GMT+3)</option>
                         </flux:select>

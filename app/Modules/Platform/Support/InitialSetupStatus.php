@@ -5,14 +5,24 @@ declare(strict_types=1);
 namespace App\Modules\Platform\Support;
 
 use App\Models\User;
-use App\Modules\Customer\Models\CustomerPolicySettingVersion;
-use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Customer\Models\Customer;
+use App\Modules\Inventory\Models\InventoryAdjustment;
+use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\DocumentSequence;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Purchasing\Models\FinancialSettingVersion;
-use App\Modules\Purchasing\Models\SupplierReturnReason;
+use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Pricing\Enums\PriceVersionState;
+use App\Modules\Pricing\Models\PriceLine;
 use Illuminate\Database\Eloquent\Builder;
 
 final class InitialSetupStatus
@@ -30,190 +40,15 @@ final class InitialSetupStatus
     public function snapshot(): array
     {
         $steps = [
-            [
-                'key' => 'company',
-                'label' => (string) __('Company identity'),
-                'description' => (string) __('Add the company name, currency, timezone, and legal identity.'),
-                'route' => route('admin.settings'),
-                'complete' => $this->companyReady(),
-                'required' => true,
-            ],
-            [
-                'key' => 'branches-stores',
-                'label' => (string) __('Branches and stores'),
-                'description' => (string) __('Create at least one active branch and store before operational data is entered.'),
-                'route' => route('admin.branches'),
-                'complete' => $this->branchesAndStoresReady(),
-                'required' => true,
-            ],
-            [
-                'key' => 'supplier-return-reasons',
-                'label' => (string) __('Supplier return reasons'),
-                'description' => (string) __('Add the owner-provided bilingual reason catalog before creating supplier returns.'),
-                'route' => route('purchasing.returns.settings'),
-                'complete' => SupplierReturnReason::query()->where('is_active', true)->exists(),
-                'required' => true,
-            ],
-            [
-                'key' => 'financial-settings',
-                'label' => (string) __('Approved financial settings'),
-                'description' => (string) __('Approved numbering and print settings are required; approval limits remain optional until the owner decides them.'),
-                'route' => route('purchasing.returns.settings'),
-                'complete' => $this->financialSettingsReady(),
-                'required' => true,
-            ],
-            [
-                'key' => 'users-permissions',
-                'label' => (string) __('Users and permissions'),
-                'description' => (string) __('Review active roles and scope assignments for the opening team.'),
-                'route' => route('admin.authorization-baseline'),
-                'complete' => User::query()->whereHas('roles', static fn (Builder $query): Builder => $query->where('roles.status', 'active'))->exists(),
-                'required' => true,
-            ],
-            [
-                'key' => 'wallet-policies',
-                'label' => (string) __('Wallet policy values'),
-                'description' => (string) __('Review product and party wallet limits and policies.'),
-                'route' => route('admin.settings.customer-loyalty'),
-                'complete' => $this->walletPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'gift-instruments',
-                'label' => (string) __('Gift Card and Gift Receipt policies'),
-                'description' => (string) __('Review gift instrument eligibility, validity, holder, voiding, reprint, and format settings.'),
-                'route' => route('gift.receipts'),
-                'complete' => $this->giftPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'return-policies',
-                'label' => (string) __('Return and Exchange policies'),
-                'description' => (string) __('Review return source, time window, condition, approval, settlement, and print settings.'),
-                'route' => route('returns.readiness'),
-                'complete' => $this->returnPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'party-policies',
-                'label' => (string) __('Party booking and working invoice policies'),
-                'description' => (string) __('Review party stores, services, schedule, privacy, cancellation, pricing, and settlement settings.'),
-                'route' => route('party.readiness'),
-                'complete' => $this->partyPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'party-payment-policies',
-                'label' => (string) __('Party payment and balance policies'),
-                'description' => (string) __('Review party payment, evidence, receipt, balance, retry, and wallet settings.'),
-                'route' => route('party.payments.readiness'),
-                'complete' => $this->partyPaymentPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'party-operating-policies',
-                'label' => (string) __('Party operating-order and consumable policies'),
-                'description' => (string) __('Review party operating orders, consumables, issues, returns, reconciliation, approval, and print settings.'),
-                'route' => route('party.operating.readiness'),
-                'complete' => $this->partyOperatingPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'rental-asset-policies',
-                'label' => (string) __('Rental asset and calendar policies'),
-                'description' => (string) __('Review asset identity, availability, reservations, checkout, return, condition, approval, and print settings.'),
-                'route' => route('party.assets.readiness'),
-                'complete' => $this->rentalAssetPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'rental-asset-event-policies',
-                'label' => (string) __('Rental asset event and depreciation policies'),
-                'description' => (string) __('Review asset damage, loss, maintenance, assessment, responsibility, evidence, cost, and correction settings.'),
-                'route' => route('party.asset-events.readiness'),
-                'complete' => $this->rentalAssetEventPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'party-final-close-policies',
-                'label' => (string) __('Party final-close and settlement policies'),
-                'description' => (string) __('Review final invoice, payment reconciliation, credit, wallet settlement, receipt, approval, numbering, and print settings.'),
-                'route' => route('party.final-close.readiness'),
-                'complete' => $this->partyFinalClosePolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'quotation-policies',
-                'label' => (string) __('Quotation and proposal policies'),
-                'description' => (string) __('Review quotation activity, customer, validity, status, price, terms, approval, numbering, and sharing settings.'),
-                'route' => route('quotations.readiness'),
-                'complete' => $this->quotationPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'reporting-policies',
-                'label' => (string) __('Dashboard and reporting policies'),
-                'description' => (string) __('Review report sources, scope, filters, formulas, reconciliation, alerts, pagination, export, and freshness.'),
-                'route' => route('reports.readiness'),
-                'complete' => $this->reportPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'alert-policies',
-                'label' => (string) __('Operational alert and exception policies'),
-                'description' => (string) __('Review alert triggers, severity, ownership, scope, lifecycle, source links, notifications, and queue navigation.'),
-                'route' => route('alerts.readiness'),
-                'complete' => $this->alertPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'export-audit-policies',
-                'label' => (string) __('Export and audit policies'),
-                'description' => (string) __('Review export formats, limits, retention, privacy, audit export, and filters.'),
-                'route' => route('exports.audit.readiness'),
-                'complete' => $this->exportAuditPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'master-data-migration',
-                'label' => (string) __('Master-data import and cutover'),
-                'description' => (string) __('Prepare approved company, catalog, and stock data for import and reconciliation.'),
-                'route' => route('master-data.migration.readiness'),
-                'complete' => $this->masterDataMigrationPolicyValuesConfigured(),
-                'required' => false,
-            ],
-            [
-                'key' => 'operations-readiness',
-                'label' => (string) __('Operations and handover'),
-                'description' => (string) __('Review service health, backups, devices, support, training, and handover details.'),
-                'required' => false,
-                'route' => route('operations.readiness'),
-                'complete' => $this->operationsReadinessPolicyValuesConfigured(),
-            ],
-            [
-                'key' => 'uat-readiness',
-                'label' => (string) __('Validation review'),
-                'description' => (string) __('Review validation scenarios, evidence, issues, reconciliation, and sign-off.'),
-                'required' => false,
-                'route' => route('uat.readiness'),
-                'complete' => $this->uatReadinessPolicyValuesConfigured(),
-            ],
-            [
-                'key' => 'release-readiness',
-                'label' => (string) __('Release controls'),
-                'description' => (string) __('Review release approval, rollback, monitoring, support, and handover details.'),
-                'required' => false,
-                'route' => route('release.readiness'),
-                'complete' => $this->releaseReadinessPolicyValuesConfigured(),
-            ],
-            [
-                'key' => 'printers',
-                'label' => (string) __('Printer configuration'),
-                'description' => (string) __('Review the printer profile and verify device settings before use.'),
-                'route' => route('admin.settings'),
-                'complete' => PrinterConfiguration::query()->where('status', 'active')->exists(),
-                'required' => false,
-            ],
+            $this->step('company', __('Company settings'), __('Enter the approved bilingual identity, legal details, currency, timezone, and contact information.'), 'admin.settings', $this->companyReady()),
+            $this->step('branches-stores', __('Branches and stores'), __('Create active branches and stores, then assign the active selling store for each retail branch.'), 'admin.branches', $this->branchesAndStoresReady()),
+            $this->step('users-scopes', __('Users, roles, and scopes'), __('Create the opening team, assign roles, and scope every non-administrator to approved branches or stores.'), 'admin.authorization-baseline', $this->usersAndScopesReady()),
+            $this->step('operational-settings', __('Payments, tax, numbering, and printers'), __('Configure active payment methods, tax treatment, document sequences, and the approved printer profile.'), 'admin.settings', $this->operationalSettingsReady()),
+            $this->step('catalog', __('Categories, brands, products, and variations'), __('Build the approved catalog. Variation families remain non-sellable; every retained combination has its own child SKU.'), 'catalog.products', $this->catalogReady()),
+            $this->step('suppliers', __('Suppliers and supplier SKUs'), __('Create approved suppliers and connect each supplied sellable SKU to the supplier item code.'), 'suppliers.index', $this->suppliersReady()),
+            $this->step('prices', __('Approved selling prices'), __('Create, submit, and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', $this->pricesReady()),
+            $this->step('opening-inventory', __('Opening inventory'), __('Post owner-approved opening quantities and unit costs through controlled inventory adjustments. Never edit balances directly.'), 'inventory.adjustments.create', $this->openingInventoryReady()),
+            $this->step('customers-party', __('Customers and Party data'), __('Create customers and Party bookings only when genuine business activity requires them; never preload fabricated personal data.'), 'customers.index', $this->customerOrPartyDataExists(), false),
         ];
 
         $requiredSteps = array_filter($steps, static fn (array $step): bool => $step['required']);
@@ -221,16 +56,26 @@ final class InitialSetupStatus
         $requiredCount = count($requiredSteps);
 
         return [
-            'steps' => array_values(array_map(static function (array $step): array {
-                $step['status'] = $step['complete'] ? 'complete' : ($step['required'] ? 'required' : 'optional');
-
-                return $step;
-            }, $steps)),
+            'steps' => $steps,
             'completed_count' => $completedCount,
             'required_count' => $requiredCount,
-            'progress_percent' => (int) round(($completedCount / $requiredCount) * 100),
+            'progress_percent' => $requiredCount === 0 ? 100 : (int) round(($completedCount / $requiredCount) * 100),
             'needs_attention' => $completedCount < $requiredCount,
             'complete' => $completedCount === $requiredCount,
+        ];
+    }
+
+    /** @return array{key: string, label: string, description: string, route: string, complete: bool, required: bool, status: string} */
+    private function step(string $key, string $label, string $description, string $routeName, bool $complete, bool $required = true): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'description' => $description,
+            'route' => route($routeName),
+            'complete' => $complete,
+            'required' => $required,
+            'status' => $complete ? 'complete' : ($required ? 'required' : 'optional'),
         ];
     }
 
@@ -238,247 +83,106 @@ final class InitialSetupStatus
     {
         return Company::query()
             ->where('status', 'active')
-            ->whereNotNull('name_en')
-            ->where('name_en', '!=', '')
+            ->whereNotIn('code', ['', 'TBD'])
+            ->whereNotNull('name_ar')->where('name_ar', '!=', '')
+            ->whereNotNull('name_en')->where('name_en', '!=', '')
             ->whereNotIn('currency_code', ['', 'TBD'])
             ->whereNotIn('currency_symbol', ['', 'TBD'])
+            ->whereNotNull('timezone')->where('timezone', '!=', '')
             ->exists();
     }
 
     private function branchesAndStoresReady(): bool
     {
         return Branch::query()->where('status', 'active')->exists()
-            && Store::query()->where('status', 'active')->exists();
+            && Store::query()->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists()
+            && BranchSellingStore::query()->where('status', 'active')->where(function (Builder $query): void {
+                $query->whereNull('effective_from')->orWhere('effective_from', '<=', now());
+            })->where(function (Builder $query): void {
+                $query->whereNull('effective_to')->orWhere('effective_to', '>', now());
+            })->exists();
     }
 
-    private function walletPolicyValuesConfigured(): bool
+    private function usersAndScopesReady(): bool
     {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'wallet.%')
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
+        $administratorExists = User::query()
+            ->where('status', 'active')
+            ->where('is_super_admin', true)
+            ->whereHas('roles', fn (Builder $query): Builder => $query->where('roles.code', 'system-administrator')->where('roles.status', 'active'))
+            ->exists();
+
+        $unscopedOperatorExists = User::query()
+            ->where('status', 'active')
+            ->where('is_super_admin', false)
+            ->where(function (Builder $query): void {
+                $query->whereDoesntHave('roles', fn (Builder $role): Builder => $role->where('roles.status', 'active'))
+                    ->orWhere(function (Builder $scope): void {
+                        $scope->whereDoesntHave('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active'))
+                            ->whereDoesntHave('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active'));
+                    });
+            })->exists();
+
+        return $administratorExists && ! $unscopedOperatorExists;
+    }
+
+    private function operationalSettingsReady(): bool
+    {
+        return PaymentMethod::query()->where('status', 'active')->exists()
+            && TaxSetting::query()->where('status', 'active')->exists()
+            && DocumentSequence::query()->where('status', 'active')->exists()
+            && PrinterConfiguration::query()->where('status', 'active')->exists();
+    }
+
+    private function catalogReady(): bool
+    {
+        $brokenFamilyExists = Product::query()
+            ->whereNull('parent_product_id')
+            ->where('has_variations', true)
+            ->where('status', 'active')
+            ->whereDoesntHave('variants', fn (Builder $query): Builder => $query->where('status', 'active'))
+            ->exists();
+
+        return Category::query()->where('status', 'active')->exists()
+            && Brand::query()->where('status', 'active')->exists()
+            && Product::query()->sellable()->exists()
+            && ! $brokenFamilyExists;
+    }
+
+    private function suppliersReady(): bool
+    {
+        return Supplier::query()->where('status', 'active')->exists()
+            && ProductSupplier::query()
+                ->whereHas('supplier', fn (Builder $query): Builder => $query->where('status', 'active'))
+                ->whereHas('product', fn (Builder $query): Builder => $query->sellable())
+                ->whereNotNull('supplier_item_code')->where('supplier_item_code', '!=', '')
+                ->exists();
+    }
+
+    private function pricesReady(): bool
+    {
+        return PriceLine::query()
+            ->whereHas('version', function (Builder $query): void {
+                $query->where('state', PriceVersionState::Approved->value)
+                    ->where(fn (Builder $from): Builder => $from->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                    ->where(fn (Builder $to): Builder => $to->whereNull('effective_to')->orWhere('effective_to', '>', now()));
+            })
+            ->whereHas('product', fn (Builder $query): Builder => $query->sellable())
+            ->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))
             ->exists();
     }
 
-    private function giftPolicyValuesConfigured(): bool
+    private function openingInventoryReady(): bool
     {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'gift.%')
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
+        return InventoryAdjustment::query()
+            ->where('status', 'approved')
+            ->where('adjustment_type', 'entry')
+            ->whereIn('reason_code', ['opening_stock', 'opening_inventory'])
+            ->whereNull('reversal_of_id')
             ->exists();
     }
 
-    private function returnPolicyValuesConfigured(): bool
+    private function customerOrPartyDataExists(): bool
     {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'return.%')
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function partyPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'party.%')
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function partyPaymentPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'party.%')
-            ->whereIn('key', [
-                'party.payment_method',
-                'party.deposit',
-                'party.payment_evidence',
-                'party.payment_idempotency',
-                'party.overpayment',
-                'party.receipt',
-                'party.balance',
-                'party.wallet_settlement',
-                'party.payment_approval',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function partyOperatingPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'party.operating_order',
-                'party.operating_store',
-                'party.consumable_uom',
-                'party.issue_actuals',
-                'party.return_movement',
-                'party.stock_reconciliation',
-                'party.operating_approval',
-                'party.operating_idempotency',
-                'party.operating_print',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function rentalAssetPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'asset.identity',
-                'asset.separation',
-                'asset.availability',
-                'asset.reservation',
-                'asset.concurrency',
-                'asset.checkout',
-                'asset.return',
-                'asset.condition',
-                'asset.approval',
-                'asset.print',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function rentalAssetEventPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'asset.damage', 'asset.loss', 'asset.maintenance', 'asset.assessment', 'asset.responsibility',
-                'asset.evidence', 'asset.cost', 'asset.damage_approval', 'asset.depreciation', 'asset.correction',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function reportPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'report.source_lineage', 'report.scope', 'report.filters', 'report.kpi', 'report.reconciliation',
-                'report.alerts', 'report.pagination', 'report.export', 'report.precision', 'report.freshness',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function quotationPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'quotation.type', 'quotation.customer', 'quotation.validity', 'quotation.status', 'quotation.prices',
-                'quotation.terms', 'quotation.approval', 'quotation.numbering', 'quotation.print_share', 'quotation.conversion',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function partyFinalClosePolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'party.final_readiness', 'party.invoice_freeze', 'party.payment_reconcile', 'party.credit',
-                'party.wallet_settlement', 'party.final_receipt', 'party.final_approval', 'party.final_idempotency',
-                'party.final_numbering', 'party.final_print',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function alertPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'alert.trigger', 'alert.severity', 'alert.owner', 'alert.scope', 'alert.lifecycle',
-                'alert.source_link', 'alert.deduplication', 'alert.notification', 'alert.navigation',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->exists();
-    }
-
-    private function exportAuditPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'export.format', 'export.limits', 'export.retention', 'export.redaction',
-                'export.formula_safety', 'export.permission', 'export.audit', 'audit.filters',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->count() === 8;
-    }
-
-    private function masterDataMigrationPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'migration.source', 'migration.load_order', 'migration.create_only', 'migration.file_safety',
-                'migration.duplicate', 'migration.stage_validation', 'migration.reconciliation',
-                'migration.approval', 'migration.cutover',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->count() === 9;
-    }
-
-    private function operationsReadinessPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'operations.runtime', 'operations.secrets', 'operations.workers', 'operations.storage',
-                'operations.monitoring', 'operations.backup', 'operations.devices', 'operations.training',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->count() === 8;
-    }
-
-    private function uatReadinessPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', [
-                'uat.scenario_pack', 'uat.owners', 'uat.data_devices', 'uat.evidence',
-                'uat.defects', 'uat.reconciliation', 'uat.signoff',
-            ])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->count() === 7;
-    }
-
-    private function releaseReadinessPolicyValuesConfigured(): bool
-    {
-        return CustomerPolicySettingVersion::query()
-            ->whereIn('key', ['release.cutover', 'release.approval'])
-            ->whereNotNull('value')
-            ->where('value', '!=', '')
-            ->count() === 2;
-    }
-
-    private function financialSettingsReady(): bool
-    {
-        $requiredKeys = [
-            'purchasing.supplier_return.number_prefix',
-            'purchasing.supplier_return.print_title',
-            'purchasing.supplier_return.print_footer',
-        ];
-
-        return FinancialSettingVersion::query()
-            ->whereIn('key', $requiredKeys)
-            ->where('effective_from', '<=', now())
-            ->where(static fn (Builder $query): Builder => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->whereHas('approvalRecord', static fn (Builder $query): Builder => $query->where('approval_state', ApprovalState::Approved))
-            ->distinct('key')
-            ->count('key') === count($requiredKeys);
+        return Customer::query()->exists() || PartyBooking::query()->exists();
     }
 }

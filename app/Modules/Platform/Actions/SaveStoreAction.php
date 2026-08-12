@@ -2,7 +2,9 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -35,15 +37,29 @@ class SaveStoreAction
         }
 
         return DB::transaction(function () use ($data, $id, $type) {
+            $branchId = isset($data['branch_id']) && $data['branch_id'] !== '' ? (int) $data['branch_id'] : null;
+            $branch = $branchId === null ? null : Branch::query()->whereKey($branchId)->where('status', 'active')->first();
+            if ($branchId !== null && $branch === null) {
+                throw new InvalidArgumentException(__('Select an active branch for this store.'));
+            }
+
+            $company = $branch === null
+                ? Company::query()->where('status', 'active')->first()
+                : Company::query()->whereKey($branch->company_id)->where('status', 'active')->first();
+            if ($company === null) {
+                throw new InvalidArgumentException(__('Complete active Company Settings before creating stores.'));
+            }
+
             $attributes = [
-                'branch_id' => isset($data['branch_id']) && $data['branch_id'] !== '' ? (int) $data['branch_id'] : null,
+                'company_id' => $company->id,
+                'branch_id' => $branch?->id,
                 'code' => strtoupper(trim($data['code'])),
                 'type' => $type,
                 'name_ar' => trim($data['name_ar']),
                 'name_en' => trim($data['name_en']),
                 'status' => $data['status'] ?? 'active',
                 'allows_negative_stock' => (bool) ($data['allows_negative_stock'] ?? false),
-                'policy_notes' => $data['policy_notes'] ?? 'TBD: Production store and inventory policy pending owner decision (BLK-006 / DEC-021).',
+                'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
 
             if ($id) {

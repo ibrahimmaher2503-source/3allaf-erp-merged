@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\Company;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -19,7 +20,13 @@ class SaveBranchAction
         Gate::authorize($id ? 'branches_stores.edit' : 'branches_stores.create');
 
         return DB::transaction(function () use ($data, $id) {
+            $company = Company::query()->where('status', 'active')->first();
+            if ($company === null) {
+                throw new InvalidArgumentException(__('Complete active Company Settings before creating branches.'));
+            }
+
             $attributes = [
+                'company_id' => $company->id,
                 'code' => strtoupper(trim($data['code'])),
                 'name_ar' => trim($data['name_ar']),
                 'name_en' => trim($data['name_en']),
@@ -28,7 +35,7 @@ class SaveBranchAction
                 'address' => isset($data['address']) && $data['address'] !== '' ? trim($data['address']) : null,
                 'timezone' => $data['timezone'] ?? 'UTC',
                 'status' => $data['status'] ?? 'active',
-                'policy_notes' => $data['policy_notes'] ?? 'TBD: Production branch details pending owner approval (BLK-006).',
+                'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
 
             if ($id) {

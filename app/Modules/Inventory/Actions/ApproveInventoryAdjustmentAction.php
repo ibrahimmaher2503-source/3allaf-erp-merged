@@ -48,7 +48,7 @@ final class ApproveInventoryAdjustmentAction
             $poster = app(PostInventoryMovement::class);
             foreach ($adjustment->lines as $line) {
                 $beforeOnHand = (string) StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $adjustment->store_id)->lockForUpdate()->value('on_hand');
-                $poster->execute($line->product_id, $adjustment->store_id, (string) $line->quantity_delta, 'inventory_'.$adjustment->adjustment_type, (string) $line->unit_cost, 'DEMO-ADJUSTMENT:'.$adjustment->id.':'.$line->id, InventoryAdjustment::class, $adjustment->id, $line->id, $adjustment->allow_negative);
+                $poster->execute($line->product_id, $adjustment->store_id, (string) $line->quantity_delta, 'inventory_'.$adjustment->adjustment_type, (string) $line->unit_cost, 'inventory-adjustment:'.$adjustment->id.':'.$line->id, InventoryAdjustment::class, $adjustment->id, $line->id, $adjustment->allow_negative);
                 $afterOnHand = (string) StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $adjustment->store_id)->value('on_hand');
                 $line->update(['before_on_hand' => $beforeOnHand, 'after_on_hand' => $afterOnHand]);
             }

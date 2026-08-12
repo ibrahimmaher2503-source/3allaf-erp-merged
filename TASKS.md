@@ -755,3 +755,10 @@ This local/dev status does not advance the Phase 1 gate or claim UAT, production
 ### US-027 integration closure addendum — 2026-08-10
 
 The remaining US-028 dependency is now implemented locally. **TSK-033 / US-027: FULL local/dev** for Party operating order, authoritative rental-asset reservation, scoped checkout/return/inspection, source-linked completion, audit, and immutability. The earlier row is retained as historical status; this addendum is the current owner-directed classification. US-028 remains the authoritative asset reservation domain; no second reservation system was added.
+## TSK-046 — Production Setup UI Hardening
+
+- **Milestone:** DM 6.4 release/configuration follow-on.
+- **Status:** Implemented and MariaDB/UI-render verified locally; real Production data entry, independent approvals, headed-browser UAT, backup/restore, and release approval remain open.
+- **Scope:** Provide one ordered `/initial-setup` UI for company, locations, users/scopes, operational settings, catalog/variations, suppliers/SKUs, approved prices, controlled opening inventory, and optional genuine Customer/Party data. Ensure the System Administrator can access every guarded setup action without bypassing maker/checker rules.
+- **Acceptance:** Nine stages render in dependency order; stages 1–8 use truthful readiness checks; Customer/Party stays optional; active locations inherit the active company; the System Administrator role contains every active permission; opening stock is posted only through approved inventory adjustments; no synthetic Production business or personal data is seeded.
+- **Verification directive:** Do not create or run automated suites. Use XAMPP MariaDB, PHP syntax, Pint check-only, Blade/route caches, rendered UI contracts, data-integrity queries, and manual headed-browser verification when authorized tooling is available.

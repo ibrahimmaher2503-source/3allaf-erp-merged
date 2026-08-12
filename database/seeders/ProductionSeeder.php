@@ -175,7 +175,9 @@ final class ProductionSeeder extends Seeder
 
         foreach ($roles as $code => $_) {
             $role = Role::query()->where('code', $code)->firstOrFail();
-            $codes = $effectiveRolePermissions[$code] ?? [];
+            $codes = $code === 'system-administrator'
+                ? Permission::query()->where('status', 'active')->pluck('code')->all()
+                : ($effectiveRolePermissions[$code] ?? []);
             $role->permissions()->sync(Permission::query()->whereIn('code', $codes)->pluck('id')->all());
         }
 
@@ -242,11 +244,13 @@ final class ProductionSeeder extends Seeder
     }
 
     /**
-     * The only role→permission grants applied when `APP_ENV=production`.
+     * Production grants for operational roles other than System Administrator.
      *
      * docs/04-roles-permissions.md line 12: "P and R entries are not production
      * grants." This is exactly the TSK-008 Foundation scope DEC-038 froze as the
-     * approved-without-amendment Canonical Authorization Matrix. Every module
+     * approved-without-amendment Canonical Authorization Matrix. The bootstrap
+     * System Administrator receives every active permission so the owner can
+     * complete Production setup through guarded UI flows. Every other module
      * implemented since (TSK-014..TSK-022: suppliers, purchase orders/invoices/
      * returns, pricing, inventory, transfers, stock counts) was authorized
      * Local/Dev-only (DEC-051/052/054/058/059) and must not reach a Production
@@ -258,13 +262,7 @@ final class ProductionSeeder extends Seeder
     public static function productionSafeRolePermissions(): array
     {
         return [
-            'system-administrator' => [
-                'company_settings.view', 'company_settings.create', 'company_settings.edit',
-                'branches_stores.view', 'branches_stores.create', 'branches_stores.edit',
-                'drawers_payments_tax_numbering_printers.view', 'drawers_payments_tax_numbering_printers.create', 'drawers_payments_tax_numbering_printers.edit',
-                'users_roles_permissions.view', 'users_roles_permissions.create', 'users_roles_permissions.edit',
-                'dashboard_reports.view', 'audit_logs.view', 'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change',
-            ],
+            'system-administrator' => [],
             'branch-manager' => ['branches_stores.view', 'pos_sales.view'],
             'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print'],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],

@@ -147,6 +147,7 @@ Abbreviations: `A` = architecture topics above; `D` = `docs/36-module-data-contr
 | 043 | DM 6.3 | 34, 38, 39 | Release | N/A | scenario-specific IDs only | 38 | 39 |
 | 044 | DM 6.4 | 30, 34, 38, 39, 53 | Release | N/A | production-smoke IDs only | 38 | 39 |
 | 045 | DM 2.1 / DM 3.1 follow-on | 18, 19, 23, 24, 25, 31, 35, 36, 37, 38, 56, 57 | Catalog/Pricing/Inventory/Purchasing/POS | D | UI-CAT-001-003,009; UI-POS-001,007 | 38 for labels/receipts | G |
+| 046 | DM 6.4 follow-on | 04, 16, 30, 34, 36, 37, 53, 54, 57 | Platform/release and all setup dependencies | D for configured masters | existing setup/admin/catalog/pricing/inventory/customer/Party IDs | 38 where configured output applies | 39 |
 
 ### Canonical Derived Documents 41–57
 

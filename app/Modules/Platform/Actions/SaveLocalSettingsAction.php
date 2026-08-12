@@ -43,7 +43,7 @@ class SaveLocalSettingsAction
                 'email' => $data['company']['email'] ?? null,
                 'address' => $data['company']['address'] ?? null,
                 'status' => $data['company']['status'] ?? 'active',
-                'policy_notes' => $data['company']['policy_notes'] ?? 'TBD: Production company legal and currency policy pending owner decision.',
+                'policy_notes' => isset($data['company']['policy_notes']) && trim((string) $data['company']['policy_notes']) !== '' ? trim((string) $data['company']['policy_notes']) : null,
             ];
 
             $company = Company::first();

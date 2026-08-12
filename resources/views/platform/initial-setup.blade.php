@@ -30,7 +30,7 @@
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{{ __('Setup roadmap') }}</div>
                         <flux:heading size="lg" class="mt-2">{{ __('Configuration status') }}</flux:heading>
-                        <flux:text class="mt-1">{{ __('Six guided steps keep the opening data visible and traceable.') }}</flux:text>
+                        <flux:text class="mt-1">{{ __('Follow the Production setup stages in order. Each completed prerequisite unlocks safer operational data entry.') }}</flux:text>
                     </div>
                     <div class="text-start sm:text-end">
                         <div class="text-2xl font-semibold tracking-tight text-primary"><span dir="ltr">{{ $setup['completed_count'] }} / {{ $setup['required_count'] }}</span></div>
@@ -85,8 +85,7 @@
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach ($setup['steps'] as $index => $step)
-                    <article class="group relative flex h-full flex-col gap-5 overflow-hidden rounded-2xl border bg-surface p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-card sm:p-6 {{ $step['complete'] ? 'border-emerald-500/30' : ($step['required'] ? 'border-amber-500/35' : 'border-border') }}" data-guide="initial-setup-step-{{ $step['key'] }}">
-                        <div class="absolute inset-y-0 start-0 w-1 {{ $step['complete'] ? 'bg-emerald-500' : ($step['required'] ? 'bg-amber-500' : 'bg-zinc-400') }}"></div>
+                    <article class="group relative flex h-full flex-col gap-5 rounded-2xl border bg-surface p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-card sm:p-6 {{ $step['complete'] ? 'border-emerald-500/30' : ($step['required'] ? 'border-amber-500/35' : 'border-border') }}" data-guide="initial-setup-step-{{ $step['key'] }}">
                         <div class="flex items-start justify-between gap-4">
                             <div class="flex min-w-0 items-start gap-3">
                                 <span class="flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold {{ $step['complete'] ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : ($step['required'] ? 'bg-amber-500/12 text-amber-700 dark:text-amber-300' : 'bg-zinc-500/10 text-text-muted') }}">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
@@ -104,9 +103,16 @@
                                 <span class="size-2 rounded-full {{ $step['complete'] ? 'bg-emerald-500' : ($step['required'] ? 'bg-amber-500' : 'bg-zinc-400') }}"></span>
                                 {{ $step['complete'] ? __('Ready') : __('Needs attention') }}
                             </span>
-                            <flux:button :href="$step['route']" variant="{{ $step['complete'] ? 'subtle' : 'primary' }}" size="sm" icon="arrow-left" wire:navigate>
-                                {{ $step['complete'] ? __('Review step') : __('Open step') }}
-                            </flux:button>
+                            <div class="flex flex-wrap justify-end gap-2">
+                                @if ($step['key'] === 'customers-party')
+                                    <flux:button :href="route('parties.bookings.index')" variant="subtle" size="sm" wire:navigate>
+                                        {{ __('Party') }}
+                                    </flux:button>
+                                @endif
+                                <flux:button :href="$step['route']" variant="{{ $step['complete'] ? 'subtle' : 'primary' }}" size="sm" icon="arrow-left" wire:navigate>
+                                    {{ $step['complete'] ? __('Review step') : __('Open step') }}
+                                </flux:button>
+                            </div>
                         </div>
                     </article>
                 @endforeach
