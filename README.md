@@ -39,56 +39,28 @@ php artisan serve
 
 The current prepared environment uses its local `.env` and the `toyjoy_local` MySQL/MariaDB schema, with migrations, Composer dependencies, npm dependencies, and production assets prepared locally.
 
-### Production-safe initial data
+### Server baseline data
 
-Without a setup-data path, the default seeding path creates only the canonical
-role/permission catalog and first system administrator. A second, opt-in stage
-can load every Production setup area from an owner-approved private JSON file;
-it never invents missing values or loads the example template.
-
-Supply the four `PRODUCTION_ADMIN_*` deployment values documented in
-`.env.example`, then run:
+For a clean server installation, run:
 
 ```bash
+php artisan migrate --force
 php artisan db:seed --force
+php artisan optimize
 ```
 
-The seeder is transactional and idempotent. Missing or conflicting administrator
-identity values fail closed. Re-running it does not reset the existing
-administrator password.
+`DatabaseSeeder` is transactional and idempotent in every Laravel environment.
+It creates the authorization catalog, `admin` / `admin@instaparty.online`, a
+minimal Toy & Joy company, main branch, selling store, warehouse, cash drawer,
+cash/card methods, a zero-tax default, standard document sequences, and a
+browser-print profile. It does not create catalog, supplier, stock, customer,
+sale, invoice, payment, booking, or other transactional data. Re-running it
+never resets the existing administrator password or updates existing baseline
+records.
 
-For a complete owner-data load, copy
-`database/seeders/production-setup.example.json` to a private path outside the
-web root, replace every `__REPLACE__` value, review it, calculate its SHA-256,
-and set:
-
-```dotenv
-PRODUCTION_SETUP_DATA_PATH=/absolute/private/production-setup.json
-PRODUCTION_SETUP_DATA_SHA256=<approved-file-sha256>
-PRODUCTION_SETUP_USER_PASSWORDS='{"SYSTEM_ADMIN":"<16+ characters>","BRANCH_MANAGER":"<16+ characters>","CASHIER":"<16+ characters>","PURCHASING_OFFICER":"<16+ characters>","WAREHOUSE_MANAGER":"<16+ characters>","PRICING_OFFICER":"<16+ characters>","PARTY_MANAGER":"<16+ characters>","STOCK_COUNTER":"<16+ characters>","ACCOUNTANT_REVIEWER":"<16+ characters>"}'
-```
-
-Then clear cached configuration and run the normal seeder:
-
-```bash
-php artisan optimize:clear
-php artisan db:seed --force
-```
-
-The optional stage covers company, branches/stores, users/roles/scopes,
-payments/tax/numbering/printers, customer policy settings, catalog/variations,
-suppliers/SKUs, approved prices, controlled opening inventory, customers, and
-Party booking drafts. Price and opening-stock approval require different maker
-and approver usernames and run through the normal guarded actions. Keep customer
-and Party arrays empty unless genuine activity requires them. Remove seeding
-passwords from the runtime environment after the run, rotate initial passwords,
-configure MFA, and complete the reconciliation workflow in `docs/54`.
-
-The private artifact must provide active login accounts that collectively cover
-all nine canonical roles. Each account has a `password_key`; the corresponding
-16+ character secret belongs only in `PRODUCTION_SETUP_USER_PASSWORDS`, never
-in the JSON artifact or repository. Existing accounts keep their existing
-password on a repeat seed, so credential rotation remains an explicit action.
+The initial administrator password is `ToyJoy!Bootstrap2026`. Change it and
+enable MFA immediately after the first sign-in. The application does not yet
+enforce a first-login password-change screen.
 
 ### Local role accounts
 
@@ -101,12 +73,8 @@ php artisan db:seed --class=Database\\Seeders\\LocalAuthSeeder
 ```
 
 The local-only usernames and passwords are listed in `docs/54`; never use them
-in staging or Production. The default `DatabaseSeeder` remains Production-safe
-and does not call this seeder.
-After removing `PRODUCTION_ADMIN_PASSWORD` and
-`PRODUCTION_SETUP_USER_PASSWORDS` from the runtime environment, run
-`php artisan optimize:clear && php artisan optimize` so cached secrets are not
-retained.
+in staging or Production. The default `DatabaseSeeder` does not call this
+seeder.
 
 ## Delivery and Performance Guardrails
 

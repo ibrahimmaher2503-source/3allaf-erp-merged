@@ -293,3 +293,11 @@ The owner requires usable authentication credentials for all canonical roles. Th
 Date: 2026-08-13. Status: owner-directed local-development aid; not approved for staging or Production.
 
 The owner requested immediately usable credentials for every role. `LocalAuthSeeder` is therefore an explicit opt-in local-only seeder that installs the canonical authorization baseline and one active account per canonical role with documented public development credentials. It refuses any environment other than `local`, creates no business records, and is never called by `DatabaseSeeder`. Each rerun restores its known local passwords and one-role-per-account mappings. Production continues to require owner-controlled identities and secrets under DEC-076 through DEC-079.
+
+## DEC-081 - Simple idempotent server baseline seeding
+
+Date: 2026-08-13. Status: owner-directed implementation; supersedes DEC-076's required `PRODUCTION_ADMIN_*` inputs and DEC-078's automatic setup-import invocation for the normal installation path.
+
+`DatabaseSeeder` now works in every environment, including Production with Artisan `--force`, without any seed-related `.env` input, JSON file, or separate onboarding/import command. It creates only an idempotent baseline: all canonical roles and permissions, the fixed bootstrap System Administrator (`admin`, `admin@instaparty.online`), a default Toy & Joy company, MAIN branch, selling store, warehouse, cash drawer, cash/card methods, zero-rate tax, document sequences, and browser-print profile. The bootstrap password is compiled into the seeder for the first sign-in and must be changed immediately; reruns never reset it or overwrite existing baseline records.
+
+Normal baseline seeding must not create products, suppliers, prices, opening stock, customers, bookings, invoices, payments, sales, or other transactional data. Existing optional private-artifact infrastructure remains outside the default path and does not affect normal installation. Authorization, maker/checker, and immutable-transaction protections remain unchanged.

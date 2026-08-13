@@ -70,8 +70,8 @@ Where a source is unavailable, the stage is blocked. Inventing plausible master 
 
 ### 5.1 Owner-data Production seeder
 
-The repository provides an opt-in `ProductionSetupSeeder`, called by
-`ProductionSeeder` only when `PRODUCTION_SETUP_DATA_PATH` is configured. The
+The repository retains an opt-in `ProductionSetupSeeder` for a separately
+approved import only; it is not called by `DatabaseSeeder`. The
 JSON contract is documented by
 `database/seeders/production-setup.example.json` and covers the complete ordered
 setup chain. The source must be stored outside the public web root, must contain
@@ -110,7 +110,7 @@ Sign in with the username, not email. These values are intentionally public
 development credentials and must never be promoted, reused, or copied into a
 non-local environment.
 
-The entire authorization, administrator, and setup load is transactional.
+The optional setup load is transactional.
 Natural codes, source references, and idempotency keys make repeat execution
 safe. Approved prices and opening inventory are not direct table loads: the
 seeder uses the normal submit/approve actions and rejects a shared maker and

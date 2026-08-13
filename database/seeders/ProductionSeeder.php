@@ -3,8 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
+use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\DocumentSequence;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Role;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\TaxSetting;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -12,15 +21,19 @@ use LogicException;
 
 final class ProductionSeeder extends Seeder
 {
+    private const BOOTSTRAP_ADMIN = [
+        'name' => 'Toy & Joy Administrator',
+        'username' => 'admin',
+        'email' => 'admin@instaparty.online',
+        'password' => 'ToyJoy!Bootstrap2026',
+    ];
+
     public function run(): void
     {
         DB::transaction(function (): void {
             $this->seedAuthorization();
             $this->seedBootstrapAdministrator();
-
-            if (filled(config('production-seeding.setup_data.path'))) {
-                $this->call(ProductionSetupSeeder::class);
-            }
+            $this->seedOperationalBaseline();
         });
     }
 
@@ -189,61 +202,87 @@ final class ProductionSeeder extends Seeder
 
     private function seedBootstrapAdministrator(): void
     {
-        $name = trim((string) config('production-seeding.admin.name'));
-        $username = strtolower(trim((string) config('production-seeding.admin.username')));
-        $email = strtolower(trim((string) config('production-seeding.admin.email')));
-        $password = (string) config('production-seeding.admin.password');
-
-        if ($name === '' || $username === '' || $email === '' || $password === '') {
-            throw new LogicException('Production seeding requires PRODUCTION_ADMIN_NAME, PRODUCTION_ADMIN_USERNAME, PRODUCTION_ADMIN_EMAIL, and PRODUCTION_ADMIN_PASSWORD.');
-        }
-
-        if (! preg_match('/\A[a-z0-9][a-z0-9._-]{2,49}\z/', $username)) {
-            throw new LogicException('PRODUCTION_ADMIN_USERNAME must be 3-50 lowercase letters, numbers, dots, underscores, or hyphens.');
-        }
-
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new LogicException('PRODUCTION_ADMIN_EMAIL must be a valid email address.');
-        }
-
-        if (mb_strlen($password) < 16 || mb_strlen($password) > 255) {
-            throw new LogicException('PRODUCTION_ADMIN_PASSWORD must contain between 16 and 255 characters.');
-        }
-
-        $byUsername = User::query()->where('username', $username)->first();
-        $byEmail = User::query()->where('email', $email)->first();
-
-        if (($byUsername !== null && $byUsername->email !== $email)
-            || ($byEmail !== null && $byEmail->username !== $username)
-            || ($byUsername !== null && $byEmail !== null && $byUsername->id !== $byEmail->id)) {
-            throw new LogicException('The production administrator username or email belongs to another user. Seeding was rolled back.');
-        }
-
-        $administrator = $byUsername ?? $byEmail;
+        $administrator = User::query()
+            ->where('username', self::BOOTSTRAP_ADMIN['username'])
+            ->orWhere('email', self::BOOTSTRAP_ADMIN['email'])
+            ->first();
 
         if ($administrator === null) {
             $administrator = new User([
-                'name' => $name,
-                'username' => $username,
-                'email' => $email,
-                'password' => Hash::make($password),
+                'name' => self::BOOTSTRAP_ADMIN['name'],
+                'username' => self::BOOTSTRAP_ADMIN['username'],
+                'email' => self::BOOTSTRAP_ADMIN['email'],
+                'password' => Hash::make(self::BOOTSTRAP_ADMIN['password']),
                 'status' => 'active',
             ]);
             $administrator->forceFill([
                 'email_verified_at' => now(),
                 'is_super_admin' => true,
-            ]);
-            $administrator->save();
-        } else {
-            $administrator->forceFill([
-                'name' => $name,
-                'status' => 'active',
-                'is_super_admin' => true,
             ])->save();
+        } elseif ($administrator->username !== self::BOOTSTRAP_ADMIN['username'] || $administrator->email !== self::BOOTSTRAP_ADMIN['email']) {
+            throw new LogicException('The baseline administrator username or email belongs to another user. Seeding was rolled back.');
         }
 
         $administrator->roles()->syncWithoutDetaching([
             Role::query()->where('code', 'system-administrator')->firstOrFail()->id,
+        ]);
+    }
+
+    private function seedOperationalBaseline(): void
+    {
+        $company = Company::query()->firstOrCreate(['code' => 'TOY-JOY'], [
+            'name_ar' => 'توي آند جوي', 'name_en' => 'Toy & Joy', 'legal_name' => 'Toy & Joy',
+            'currency_code' => 'EGP', 'currency_symbol' => 'E£', 'timezone' => 'Africa/Cairo',
+            'locale_default' => 'ar', 'email' => 'admin@instaparty.online', 'status' => 'active',
+        ]);
+        $branch = Branch::query()->firstOrCreate(['code' => 'MAIN'], [
+            'company_id' => $company->id, 'name_ar' => 'الفرع الرئيسي', 'name_en' => 'Main Branch',
+            'timezone' => 'Africa/Cairo', 'status' => 'active',
+        ]);
+        $sellingStore = Store::query()->firstOrCreate(['code' => 'MAIN-SALES'], [
+            'company_id' => $company->id, 'branch_id' => $branch->id, 'type' => 'selling',
+            'name_ar' => 'متجر المبيعات الرئيسي', 'name_en' => 'Main Sales Store', 'status' => 'active',
+            'allows_negative_stock' => false,
+        ]);
+        Store::query()->firstOrCreate(['code' => 'MAIN-WAREHOUSE'], [
+            'company_id' => $company->id, 'branch_id' => $branch->id, 'type' => 'warehouse',
+            'name_ar' => 'المستودع الرئيسي', 'name_en' => 'Main Warehouse', 'status' => 'active',
+            'allows_negative_stock' => false,
+        ]);
+        BranchSellingStore::query()->firstOrCreate(['branch_id' => $branch->id, 'store_id' => $sellingStore->id], [
+            'status' => 'active', 'effective_from' => now(),
+        ]);
+        CashDrawer::query()->firstOrCreate(['branch_id' => $branch->id, 'code' => 'MAIN-01'], [
+            'company_id' => $company->id, 'store_id' => $sellingStore->id,
+            'name_ar' => 'درج النقدية الرئيسي', 'name_en' => 'Main Cash Drawer', 'status' => 'active',
+        ]);
+
+        foreach ([
+            ['code' => 'CASH', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'type' => 'cash', 'requires_evidence' => false, 'offline_eligible' => true],
+            ['code' => 'CARD', 'name_ar' => 'بطاقة', 'name_en' => 'Card', 'type' => 'card', 'requires_evidence' => false, 'offline_eligible' => false],
+        ] as $method) {
+            PaymentMethod::query()->firstOrCreate(['code' => $method['code']], $method + ['status' => 'active']);
+        }
+        TaxSetting::query()->firstOrCreate(['code' => 'ZERO'], [
+            'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero tax', 'rate' => '0.00',
+            'is_tax_inclusive' => false, 'status' => 'active',
+        ]);
+        foreach ([
+            'retail_sale' => 'SAL-', 'purchase_order' => 'PO-', 'purchase_invoice' => 'PIN-',
+            'supplier_return' => 'SR-', 'inventory_adjustment' => 'ADJ-', 'stock_transfer' => 'TRF-',
+            'stock_count' => 'CNT-', 'shift_close' => 'SHC-', 'gift_receipt' => 'GR-',
+            'party_booking' => 'PB-', 'party_invoice' => 'PI-', 'party_operating_order' => 'POO-',
+            'party_final_invoice' => 'PFI-', 'party_final_receipt' => 'PFR-',
+            'party_payment_receipt' => 'PPR-', 'quotation' => 'QT-',
+        ] as $documentType => $prefix) {
+            DocumentSequence::query()->firstOrCreate(['document_type' => $documentType], [
+                'prefix' => $prefix, 'padding_length' => 6, 'next_value' => 1,
+                'reset_rule' => 'never', 'status' => 'active', 'lock_version' => 1,
+            ]);
+        }
+        PrinterConfiguration::query()->firstOrCreate(['name' => 'DEFAULT-THERMAL'], [
+            'printer_type' => 'thermal', 'paper_size' => '80mm', 'template_name' => 'default_thermal',
+            'connection_type' => 'browser', 'is_default' => true, 'status' => 'active',
         ]);
     }
 

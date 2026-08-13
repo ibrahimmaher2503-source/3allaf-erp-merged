@@ -6,6 +6,8 @@
 **Authority:** NFR-04, NFR-01
 **Blockers:** BLK-001 (hosting, database, queue, scheduler, cache), BLK-002 (backup destination, RPO/RTO, restore owner, monitoring). Both recorded as retaining a specific gap for **the actual backup/restore capability and the setup/run/recovery deployment and rollback runbooks**.
 
+For the normal installation path, `DatabaseSeeder` creates the idempotent authorization catalog, bootstrap administrator, baseline company/location/cash configuration, and document sequences. It does not create products, customers, stock, prices, bookings, sales, or other transactions.
+
 ---
 
 ## 1. Purpose
@@ -50,7 +52,7 @@ Step 4 is the one most often skipped. An unverified backup is not a backup.
 4. Deploy code to the release path
 5. Install dependencies with locked versions
 6. Run migrations
-7. On the first deployment only, inject the four `PRODUCTION_ADMIN_*` values and run `php artisan db:seed --force`; remove the password secret immediately afterward
+7. Run `php artisan db:seed --force`; change the documented bootstrap administrator password and enroll MFA immediately after the first sign-in
 8. Rebuild caches: config, route, view
 9. Build frontend assets
 10. Restart queue workers and scheduler

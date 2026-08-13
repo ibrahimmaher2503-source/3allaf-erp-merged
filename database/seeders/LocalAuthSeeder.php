@@ -37,14 +37,6 @@ final class LocalAuthSeeder extends Seeder
 
         $administrator = self::ACCOUNTS['system-administrator'];
 
-        config()->set('production-seeding.admin', [
-            'name' => $administrator['name'],
-            'username' => 'local.system-administrator',
-            'email' => $administrator['email'],
-            'password' => $administrator['password'],
-        ]);
-        config()->set('production-seeding.setup_data.path', null);
-
         $this->call(ProductionSeeder::class);
 
         DB::transaction(function (): void {

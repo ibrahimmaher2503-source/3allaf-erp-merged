@@ -26,3 +26,9 @@
 - **Work completed:** Added the explicit, idempotent `LocalAuthSeeder` to create active local login accounts for all nine canonical roles. It delegates only the authorization baseline to the existing Production seeder, creates no business data, is not called by `DatabaseSeeder`, and rejects every environment other than `local`. Each rerun restores the documented local credentials and one role per account.
 - **Verification actually run:** PHP syntax and focused Pint check-only passed for both auth seeders; a static role-map comparison confirmed all nine canonical roles; `git diff --check` passed. No automated tests or browser checks were created or run. The live MariaDB seed remains blocked because XAMPP MariaDB is unavailable on port 3306.
 - **Remaining blocker / next action:** Start local XAMPP MariaDB, run `php artisan db:seed --class=Database\\Seeders\\LocalAuthSeeder`, and perform the authorized manual login/role check. Production data and credential paths remain governed by DEC-076 through DEC-079.
+
+## 2026-08-13 — Simple Server Baseline Seeder
+
+- Owner-directed simplification made `php artisan db:seed --force` the normal idempotent installation path in every environment. It no longer requires `PRODUCTION_ADMIN_*`, `PRODUCTION_SETUP_*`, or a JSON artifact.
+- The baseline installs the authorization catalog, fixed bootstrap administrator, default company, MAIN branch, selling store, warehouse, cash drawer, payment/tax defaults, document sequences, and browser-print profile; it adds no catalog, supplier, customer, stock, sale, invoice, payment, or Party transaction data.
+- Dedicated MariaDB verification on `toyjoy_testing` completed `migrate:fresh` under `testing`, then Production-mode `migrate --force` and two `db:seed --force` runs. Counts after the second seed were 9 roles, 400 permissions, 1 user, 1 company, 1 branch, 2 stores, 16 sequences, and zero sales/customers/stock movements. Focused PHPUnit and Pint checks passed.

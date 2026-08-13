@@ -10,13 +10,17 @@
 - Truthful readiness checks for company, locations, users/scopes, operational settings, catalog, suppliers, prices, and opening inventory.
 - Optional Customer/Party creation only for genuine activity.
 - Company ownership enforced for new branches and stores.
-- Optional atomic/idempotent loading of the complete setup chain from a pinned, owner-approved private JSON artifact.
+- A normal idempotent server baseline seeder that needs no seed-related `.env` values or JSON artifact; optional private-artifact infrastructure is outside the default path.
 
 ## Verification directive
 
 - Do not create or run PHPUnit, Pest, Playwright, Cypress, or another automated suite.
 - Use XAMPP MariaDB `toyjoy_production_seed_verify_20260812` for isolated verification.
 - Permitted checks include syntax, Pint, PHPStan, Blade/route caches, rendered UI/form contracts, integrity queries, and `git diff --check`.
+
+### Owner-authorized simple-seeder exception — 2026-08-13
+
+The owner explicitly authorized focused PHPUnit coverage and a disposable MariaDB run for the normal `DatabaseSeeder` baseline only. The approved database was `toyjoy_testing`; the scope covers fresh migration, two normal seed runs, required baseline records, password preservation, and absence of transactional demo data. This exception does not authorize unrelated automated suites or release approval.
 
 ## Remaining closure
 
