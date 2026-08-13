@@ -80,6 +80,36 @@ no `__REPLACE__` markers, and should be pinned with
 the deployment-owned `PRODUCTION_SETUP_USER_PASSWORDS` JSON map, never written
 into the source artifact.
 
+Every active canonical role must have at least one active user account after
+the setup load. The example artifact includes one role-specific account per
+role and matching password keys; replace all template identity values with
+approved staff identities and provide a unique 16+ character secret for every
+key in the deployment-owned password map. Do not commit passwords or reuse the
+bootstrap password. A repeat run deliberately preserves an existing password.
+
+### Local-only role accounts
+
+`LocalAuthSeeder` is an explicit local-development helper, not part of the
+default `DatabaseSeeder` and not a Production-data mechanism. It refuses every
+environment other than `APP_ENV=local`, creates no operational records, and
+creates/replaces the following known-local account passwords on each run:
+
+| Role | Username | Password |
+|---|---|---|
+| System Administrator | `local.system-administrator` | `ToyJoyLocal!Admin2026` |
+| Branch Manager | `local.branch-manager` | `ToyJoyLocal!Branch2026` |
+| Cashier | `local.cashier` | `ToyJoyLocal!Cashier2026` |
+| Purchasing Officer | `local.purchasing-officer` | `ToyJoyLocal!Purchase2026` |
+| Warehouse Manager | `local.warehouse-manager` | `ToyJoyLocal!Warehouse2026` |
+| Pricing Officer | `local.pricing-officer` | `ToyJoyLocal!Pricing2026` |
+| Party Manager | `local.party-manager` | `ToyJoyLocal!Party2026` |
+| Stock Counter | `local.stock-counter` | `ToyJoyLocal!Stock2026` |
+| Accountant / Reviewer | `local.accountant-reviewer` | `ToyJoyLocal!Accounts2026` |
+
+Sign in with the username, not email. These values are intentionally public
+development credentials and must never be promoted, reused, or copied into a
+non-local environment.
+
 The entire authorization, administrator, and setup load is transactional.
 Natural codes, source references, and idempotency keys make repeat execution
 safe. Approved prices and opening inventory are not direct table loads: the

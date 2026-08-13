@@ -63,3 +63,19 @@
 - **Verification actually run:** `git diff --cached --check` passed with only the repository's line-ending notice. The staged file list and diff statistics were reviewed, and a focused scan found none of the disposable MariaDB verification identities, phone values, or passwords in the staged patch. GitHub accepted the push from `1fe3636` through `a9fc558`.
 - **Remaining blockers / next action:** Genuine owner data, Production reconciliation, credential rotation, headed-browser UAT, backup/restore, and release approval remain open; publication does not satisfy those gates.
 - **Activity facts:** One implementation commit was created and pushed to `origin/master`. No automated tests or browser checks ran during the publication step. This appended publication record is being committed and pushed as the final documentation-only closure.
+
+## 2026-08-13 — TSK-046 Credentialed Role-Account Seeder Hardening
+
+- **Task:** Ensure the owner-data authentication seeding contract provides usable credential paths for all canonical roles without committing identities or passwords.
+- **Work completed:** Made `password_key` mandatory for each private-artifact user and made setup seeding fail if any active canonical role lacks an active assigned user. Expanded the blocked JSON template to nine role-specific accounts and documented the matching deployment-only password map, rotation, and repeat-seed behavior. Recorded DEC-079.
+- **Verification actually run:** PHP syntax, committed-template JSON parsing, private temporary-artifact JSON parsing, focused Pint check-only, and `git diff --check` passed. Automated tests and browser checks were neither created nor run. A planned XAMPP MariaDB exercise against the newly named disposable database `toyjoy_auth_seed_verify_20260813` was blocked because port 3306 refused connections; the local daemon was briefly started but did not open the port and was stopped.
+- **Remaining blockers / next action:** Restore local XAMPP MariaDB availability, run the disposable seed twice, and verify all nine password hashes, active roles, and login behavior. Owner-approved identities/passwords, scoped locations, MFA, credential rotation, reconciliation, UAT, backup/restore, and release approval remain required.
+- **Activity facts:** Repository code and documentation changed. No database rows were created, no automated tests or browser checks ran, and no commit or push occurred.
+
+## 2026-08-13 — Local Auth Seeder for Every Canonical Role
+
+- **Task:** Create local seed credentials for authentication as every canonical role.
+- **Work completed:** Added opt-in `LocalAuthSeeder`, which refuses non-local environments, initializes only the canonical authorization baseline, and creates/replaces nine active accounts—one for each canonical role—with documented local development usernames and passwords. It is deliberately excluded from the default Production-safe `DatabaseSeeder` and creates no operational, customer, or transaction records. Recorded DEC-080.
+- **Verification actually run:** PHP syntax and focused Pint check-only passed for `LocalAuthSeeder` and `ProductionSetupSeeder`; a static role-map check confirmed all nine canonical role codes; `git diff --check` passed. Automated tests and browser checks were not created or run. Live seeding/manual login verification remains blocked because the local XAMPP MariaDB service is not accepting connections on port 3306.
+- **Remaining blockers / next action:** Restore the local XAMPP MariaDB service and run the explicit local seeder followed by manual username/password login checks. Production remains restricted to owner-approved credentials and data.
+- **Activity facts:** Repository code and documentation changed. No database rows were created in this session. No automated tests or browser checks ran. No commit or push occurred.

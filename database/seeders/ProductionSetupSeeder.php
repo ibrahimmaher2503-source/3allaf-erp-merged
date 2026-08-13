@@ -165,7 +165,7 @@ final class ProductionSetupSeeder extends Seeder
     private function seedUsersAndScopes(): void
     {
         foreach ($this->rows('users') as $index => $row) {
-            $this->requireKeys($row, ['name', 'username', 'email', 'roles'], "users.$index");
+            $this->requireKeys($row, ['name', 'username', 'email', 'password_key', 'roles'], "users.$index");
             $username = strtolower(trim((string) $row['username']));
             $email = strtolower(trim((string) $row['email']));
             $user = User::query()->where('username', $username)->orWhere('email', $email)->first();
@@ -199,6 +199,17 @@ final class ProductionSetupSeeder extends Seeder
             foreach ($storeIds as $id) {
                 $user->storeScopes()->updateOrCreate(['store_id' => $id], ['status' => 'active']);
             }
+        }
+
+        $uncoveredRoles = Role::query()
+            ->where('status', 'active')
+            ->whereDoesntHave('users', fn ($query) => $query->where('users.status', 'active'))
+            ->orderBy('code')
+            ->pluck('code')
+            ->all();
+
+        if ($uncoveredRoles !== []) {
+            throw new LogicException('Production setup requires an active credentialed user for every active role. Missing: '.implode(', ', $uncoveredRoles).'.');
         }
     }
 

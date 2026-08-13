@@ -42,8 +42,88 @@
             "name": "__REPLACE__",
             "username": "__REPLACE__",
             "email": "__REPLACE__",
-            "password_key": "USER_1",
+            "password_key": "SYSTEM_ADMIN",
             "roles": ["system-administrator"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "BRANCH_MANAGER",
+            "roles": ["branch-manager"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "CASHIER",
+            "roles": ["cashier"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "PURCHASING_OFFICER",
+            "roles": ["purchasing-officer"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "WAREHOUSE_MANAGER",
+            "roles": ["warehouse-manager"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "PRICING_OFFICER",
+            "roles": ["pricing-officer"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "PARTY_MANAGER",
+            "roles": ["party-manager"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "STOCK_COUNTER",
+            "roles": ["stock-counter"],
+            "branch_scopes": ["__REPLACE__"],
+            "store_scopes": ["__REPLACE__"],
+            "status": "active"
+        },
+        {
+            "name": "__REPLACE__",
+            "username": "__REPLACE__",
+            "email": "__REPLACE__",
+            "password_key": "ACCOUNTANT_REVIEWER",
+            "roles": ["accountant-reviewer"],
             "branch_scopes": ["__REPLACE__"],
             "store_scopes": ["__REPLACE__"],
             "status": "active"

@@ -281,3 +281,15 @@ Date: 2026-08-12. Status: owner-directed implementation; real Production source 
 The owner requested seeders that cover the complete Production setup dataset. This amends DEC-076 without authorizing invented data: `ProductionSeeder` may invoke the opt-in `ProductionSetupSeeder` only when an explicit private `PRODUCTION_SETUP_DATA_PATH` is supplied. The versioned JSON contract covers company; branches/stores; users, roles, and scopes; payment, tax, numbering, printer, and Customer policy settings; catalog and explicit variations; suppliers and supplier SKUs; approved selling prices; controlled opening inventory; and optional genuine Customer/Party records. The file may be pinned by SHA-256, template markers fail closed, and deployment passwords stay outside the artifact.
 
 The complete load is atomic and idempotent. Approved prices and opening stock must pass through their existing guarded maker/checker actions with different actors; families remain non-sellable; customers retain consent policy snapshots; and Party data stays optional and draft-first. This mechanism does not approve fictional data, direct balance edits, approval bypass, Production release, UAT, backup/restore, or retention of bootstrap secrets after use.
+
+## DEC-079 - Credentialed canonical-role coverage in owner-data seeding
+
+Date: 2026-08-13. Status: owner-directed implementation; deployment identities and passwords remain owner-controlled.
+
+The owner requires usable authentication credentials for all canonical roles. The private Production setup artifact must therefore leave every active canonical role assigned to at least one active user. Each declared user requires a `password_key`, whose unique 16+ character password is supplied only through the deployment-owned `PRODUCTION_SETUP_USER_PASSWORDS` map. The repository's blocked template contains one account per role but no usable identity or password values. Re-seeding never resets an existing password; credential rotation and MFA enrollment remain explicit post-seed operations.
+
+## DEC-080 - Local-only canonical-role authentication seeder
+
+Date: 2026-08-13. Status: owner-directed local-development aid; not approved for staging or Production.
+
+The owner requested immediately usable credentials for every role. `LocalAuthSeeder` is therefore an explicit opt-in local-only seeder that installs the canonical authorization baseline and one active account per canonical role with documented public development credentials. It refuses any environment other than `local`, creates no business records, and is never called by `DatabaseSeeder`. Each rerun restores its known local passwords and one-role-per-account mappings. Production continues to require owner-controlled identities and secrets under DEC-076 through DEC-079.
