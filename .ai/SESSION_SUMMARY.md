@@ -79,3 +79,11 @@
 - **Verification actually run:** PHP syntax and focused Pint check-only passed for `LocalAuthSeeder` and `ProductionSetupSeeder`; a static role-map check confirmed all nine canonical role codes; `git diff --check` passed. Automated tests and browser checks were not created or run. Live seeding/manual login verification remains blocked because the local XAMPP MariaDB service is not accepting connections on port 3306.
 - **Remaining blockers / next action:** Restore the local XAMPP MariaDB service and run the explicit local seeder followed by manual username/password login checks. Production remains restricted to owner-approved credentials and data.
 - **Activity facts:** Repository code and documentation changed. No database rows were created in this session. No automated tests or browser checks ran. No commit or push occurred.
+
+## 2026-08-13 â€” Local Auth Seeder GitHub Publication
+
+- **Task:** Publish the local role-authentication seeder and associated owner-data credential coverage changes to the configured GitHub repository.
+- **Work completed:** Staged the nine intended seeding, configuration, documentation, decision, progress, and session-record files; committed them as `e1144d2` (`feat: add local role authentication seeder`); and pushed `master` to `origin`.
+- **Verification actually run:** Reviewed the staged paths and statistics; `git diff --cached --check` passed before commit. Automated tests and browser checks were not run under the active directive.
+- **Remaining blockers / next action:** Local XAMPP MariaDB remains unavailable on port 3306, so the explicit local seed and manual authentication walkthrough remain pending. Production credential/data, UAT, backup/restore, and release gates remain external.
+- **Activity facts:** One implementation commit was created and pushed to `origin/master`. This factual publication record is being committed and pushed as the final documentation-only closure.
