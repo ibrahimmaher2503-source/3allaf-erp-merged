@@ -95,3 +95,11 @@
 - **Verification actually run:** Wrote and executed `DatabaseSeederBaselineTest` (2 tests, 35 assertions) and `LocalAuthSeederSafetyTest` (3 tests, 7 assertions); both passed. Focused Pint and `git diff --check` passed. On dedicated MariaDB database `toyjoy_testing`, `migrate:fresh --force` completed under `APP_ENV=testing`; then `APP_ENV=production` `migrate --force` and two `db:seed --force` runs completed. The second-run counts were 9 roles, 400 permissions, 1 user, 1 company, 1 branch, 2 stores, 16 document sequences, and zero sales, customers, and stock movements. A direct `migrate:fresh --force` attempt in production was correctly rejected by the existing destructive-command guard; no Production data was touched.
 - **Remaining blockers / next action:** Change the compiled bootstrap password immediately after first sign-in, enroll MFA, enter real catalog/supplier/price/opening-stock data through approved controls, and complete UAT, backup/restore, and release gates. The application has no enforced first-login password-change screen.
 - **Activity facts:** Repository code, tests, configuration example, and documentation changed. No browser checks, commit, or push occurred in this session.
+
+## 2026-08-13 — Simple Server Baseline Seeder Publication
+
+- **Task:** Publish the owner-authorized simple server baseline seeding implementation.
+- **Work completed:** Committed and pushed the complete baseline-seeding implementation as `607f4a2` (`feat: simplify server baseline seeding`) to `origin/master`.
+- **Verification actually run:** Confirmed staged diff integrity with `git diff --cached --check` before commit; the focused PHPUnit, MariaDB, and Pint results are recorded in the preceding session entry.
+- **Remaining blockers / next action:** Change the compiled bootstrap password on first Production sign-in, enroll MFA, configure real operational master data, and complete UAT, backup/restore, and release gates.
+- **Activity facts:** No further code or test changes occurred during publication. One implementation commit was pushed to GitHub.
