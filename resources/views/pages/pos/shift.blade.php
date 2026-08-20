@@ -27,7 +27,7 @@
                         <input type="hidden" name="idempotency_key" value="{{ $openToken }}">
                         <flux:select name="cash_drawer_id" :label="__('Cash drawer')" required>
                             @foreach ($drawers as $drawer)
-                                <flux:select.option value="{{ $drawer->id }}">{{ $drawer->code }} — {{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }}</flux:select.option>
+                                <flux:select.option value="{{ $drawer->id }}">{{ $drawer->code }} — {{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }} · {{ $drawer->branch?->code }} → {{ $drawer->store?->code ?? __('No POS location') }}</flux:select.option>
                             @endforeach
                         </flux:select>
                         <flux:input type="number" step="0.01" min="0" name="opening_float" :label="__('Opening float')" value="0.00" required />
@@ -79,7 +79,7 @@
                     <x-status.badge :status="$shift->status->value" />
                 </div>
                 <dl class="mt-4 grid gap-2 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="font-semibold">{{ $shift->cashDrawer?->code }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ app()->getLocale() === 'ar' ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->toDayDateTimeString() }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>
                     @if ($shift->recount_count > 0)

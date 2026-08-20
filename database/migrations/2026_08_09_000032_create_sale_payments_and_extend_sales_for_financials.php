@@ -44,7 +44,8 @@ return new class extends Migration
             $table->boolean('tax_applicable')->default(false)->after('tax_total');
             $table->foreignId('tax_setting_id')->nullable()->after('tax_applicable')->constrained('tax_settings')->nullOnDelete();
             $table->decimal('tax_rate_snapshot', 5, 2)->nullable()->after('tax_setting_id');
-            $table->boolean('tax_inclusive_snapshot')->default(false)->after('tax_rate_snapshot');
+            $table->string('tax_treatment_snapshot')->nullable()->after('tax_rate_snapshot');
+            $table->boolean('tax_inclusive_snapshot')->default(false)->after('tax_treatment_snapshot');
             // Cash rounding adjusts the collected amount only (docs/48 §3 step 8).
             $table->decimal('cash_rounding_amount', 14, 2)->default(0)->after('change_total');
             $table->decimal('payable_total', 14, 2)->default(0)->after('cash_rounding_amount');
@@ -58,6 +59,7 @@ return new class extends Migration
             $table->dropColumn([
                 'tax_applicable',
                 'tax_rate_snapshot',
+                'tax_treatment_snapshot',
                 'tax_inclusive_snapshot',
                 'cash_rounding_amount',
                 'payable_total',

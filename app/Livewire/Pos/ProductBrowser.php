@@ -10,9 +10,9 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImage;
 use App\Modules\Inventory\Models\StockBalance;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\PosCartAction;
+use App\Modules\Retail\Support\PosContextResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -98,8 +98,14 @@ final class ProductBrowser extends Component
     public function addProduct(int $productId, PosCartAction $cart): void
     {
         Gate::authorize('pos_sales.create');
+        /** @var User $user */ $user = auth()->user();
+        $context = app(PosContextResolver::class)->resolve($user);
+        if (! $context->isReady()) {
+            $this->addError('selection', $context->disabledReason ?? __('POS is not ready for selling.'));
+
+            return;
+        }
         try {
-            /** @var User $user */ $user = auth()->user();
             $cart->add(request(), $user, $productId, $this->quantity);
             $this->dispatch('pos-cart-updated');
             $this->dispatch('notify', message: __('Product added to cart.'));
@@ -121,10 +127,11 @@ final class ProductBrowser extends Component
         $this->addProduct($this->selectedVariantId, $cart);
     }
 
-    public function render(EffectivePriceResolver $prices): View
+    public function render(EffectivePriceResolver $prices, PosContextResolver $contextResolver): View
     {
         /** @var User $user */ $user = auth()->user();
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->first();
+        $context = $contextResolver->resolve($user);
+        $store = $context->store;
         $query = Product::query()->active()->familiesAndSimple()->with(['category:id,name_ar,name_en', 'images.attachment'])->withCount(['variants as active_variants_count' => fn ($q) => $q->where('status', 'active')])->orderBy('item_code')->limit(24);
         if ($this->categoryId) {
             $query->where('category_id', $this->categoryId);
@@ -182,6 +189,6 @@ final class ProductBrowser extends Component
         }
         $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->limit(12)->get();
 
-        return view('livewire.pos.product-browser', compact('store', 'products', 'categories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
+        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
     }
 }

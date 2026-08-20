@@ -31,6 +31,7 @@ return [
     |
     */
     'setup_data' => [
+        'enabled' => filter_var(env('PRODUCTION_SETUP_SEEDING_ENABLED', false), FILTER_VALIDATE_BOOL),
         'path' => env('PRODUCTION_SETUP_DATA_PATH'),
         'sha256' => env('PRODUCTION_SETUP_DATA_SHA256'),
         'user_passwords' => json_decode((string) env('PRODUCTION_SETUP_USER_PASSWORDS', '{}'), true) ?: [],

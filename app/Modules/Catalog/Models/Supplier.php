@@ -25,6 +25,7 @@ class Supplier extends Model
         'payment_terms',
         'address',
         'status',
+        'supplier_group_id',
         'lock_version',
         'created_by',
         'updated_by',
@@ -37,6 +38,24 @@ class Supplier extends Model
     public function productSuppliers(): HasMany
     {
         return $this->hasMany(ProductSupplier::class);
+    }
+
+    /** @return BelongsTo<SupplierGroup, $this> */
+    public function supplierGroup(): BelongsTo
+    {
+        return $this->belongsTo(SupplierGroup::class, 'supplier_group_id');
+    }
+
+    /** @return HasMany<SupplierContact, $this> */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(SupplierContact::class);
+    }
+
+    /** @return HasMany<SupplierCommunicationDestination, $this> */
+    public function communicationDestinations(): HasMany
+    {
+        return $this->hasMany(SupplierCommunicationDestination::class);
     }
 
     public function products(): BelongsToMany

@@ -20,9 +20,9 @@ final class Customer extends Model
     private bool $namedMutation = false;
 
     protected $fillable = [
-        'public_id', 'phone_normalized', 'phone_display', 'name_ar', 'name_en', 'email',
+        'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email',
         'secondary_phone', 'address_ar', 'address_en', 'status', 'merged_into_id',
-        'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'idempotency_key', 'lock_version',
+        'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'customer_group_id', 'idempotency_key', 'lock_version',
     ];
 
     protected $casts = [
@@ -46,6 +46,12 @@ final class Customer extends Model
     public function mergedInto(): BelongsTo
     {
         return $this->belongsTo(self::class, 'merged_into_id');
+    }
+
+    /** @return BelongsTo<CustomerGroup, $this> */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class, 'customer_group_id');
     }
 
     /** @return BelongsTo<User, $this> */

@@ -6,10 +6,9 @@ namespace App\Livewire\Pos;
 
 use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
-use App\Modules\Platform\Models\Store;
-use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\PosCartSnapshot;
+use App\Modules\Retail\Support\PosContextResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -26,12 +25,13 @@ final class CheckoutPanel extends Component
     #[On('pos-cart-updated')]
     public function refreshCheckout(): void {}
 
-    public function render(PosCartSnapshot $snapshot): View
+    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver): View
     {
         /** @var User $user */ $user = auth()->user();
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->with(['branch', 'company'])->first();
-        $shift = $store ? PosShift::query()->open()->where('store_id', $store->id)->where('cashier_id', $user->id)->first() : null;
-        $data = $store ? $snapshot->build($store) : ['cart' => collect(), 'preview' => null, 'error' => __('No active selling store is assigned.')];
+        $context = $contextResolver->resolve($user);
+        $store = $context->store;
+        $shift = $context->shift;
+        $data = $snapshot->build($context);
         $methods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
         $cashMethod = $methods->first(fn (PaymentMethod $method): bool => $method->isCash());
         $electronicMethods = $methods->reject(fn (PaymentMethod $method): bool => $method->isCash() || (string) $method->type === 'gift_card')->values();
@@ -44,6 +44,6 @@ final class CheckoutPanel extends Component
         $rounding = $cashMethod && ($data['preview'] ?? null) ? app(PosCalculationService::class)->cashRoundingAdjustment($data['preview']['total']) : null;
         $total = ($data['preview'] ?? null) ? ($rounding === null ? $data['preview']['total'] : bcadd($data['preview']['total'], $rounding, 2)) : '0.00';
 
-        return view('livewire.pos.checkout-panel', array_merge($data, compact('store', 'shift', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'token', 'total')));
+        return view('livewire.pos.checkout-panel', array_merge($data, compact('context', 'store', 'shift', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'token', 'total')));
     }
 }

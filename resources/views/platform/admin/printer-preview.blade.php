@@ -34,12 +34,13 @@
             </div>
         </div>
         <dl class="grid grid-cols-2 gap-3 text-sm">
-            <dt class="font-semibold">{{ __('Template') }}</dt><dd>{{ $printer->template_name }}</dd>
+            <dt class="font-semibold">{{ __('Print template key') }}</dt><dd>{{ $printer->template_name }}</dd>
             <dt class="font-semibold">{{ __('Connection') }}</dt><dd>{{ $connectionType }}</dd>
+            <dt class="font-semibold">{{ __('Scope') }}</dt><dd>{{ $printer->store ? __('Location').': '.$printer->store->code : ($printer->branch ? __('Branch').': '.$printer->branch->code : __('Global workspace')) }}</dd>
             <dt class="font-semibold">{{ __('Status') }}</dt><dd>{{ __($printer->status) }}</dd>
         </dl>
         <div class="border border-dashed border-zinc-400 p-6 text-center text-sm text-zinc-600">
-            {{ __('This preview checks the printer setup only. No document or payment data is printed.') }}
+            {{ __('This preview checks the saved printer profile and its assigned template key only. No document, payment data, or hardware behavior is tested.') }}
         </div>
     </main>
 </body>

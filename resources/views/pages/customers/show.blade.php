@@ -41,22 +41,30 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <flux:heading id="customer-identity-heading" size="lg">{{ __('Identity and contact') }}</flux:heading>
-                                <flux:text class="mt-1 text-sm">{{ __('Changes use a named mutation, increment the version, and write an audit record.') }}</flux:text>
+                                <flux:text class="mt-1 text-sm">{{ __('Arabic first and last names are required. English names are optional and fall back to Arabic when omitted; changes are audited.') }}</flux:text>
                             </div>
                             <span class="font-mono text-xs text-slate-500" dir="ltr">{{ $customer->public_id }}</span>
                         </div>
                         <form method="POST" action="{{ route('customers.update', $customer) }}" class="mt-4 grid gap-4 sm:grid-cols-2">
                             @csrf
                             @method('PUT')
-                            <flux:input name="phone" :label="__('Primary phone')" :value="$customer->phone_display" required autocomplete="tel" />
-                            <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="$customer->secondary_phone" autocomplete="tel" />
-                            <flux:input name="name_ar" :label="__('Arabic name')" :value="$customer->name_ar" required dir="rtl" />
-                            <flux:input name="name_en" :label="__('English name')" :value="$customer->name_en" required dir="ltr" />
+                            <flux:input name="phone" :label="__('Primary phone')" :value="old('phone', $customer->phone_display)" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.')" dir="ltr" />
+                            <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="old('secondary_phone', $customer->secondary_phone)" autocomplete="tel" :placeholder="__('Optional Egyptian phone number')" dir="ltr" />
+                            <flux:input name="first_name_ar" :label="__('Arabic first name')" :value="old('first_name_ar', $customer->first_name_ar ?: \Illuminate\Support\Str::of($customer->name_ar)->before(' '))" required dir="rtl" />
+                            <flux:input name="last_name_ar" :label="__('Arabic last name')" :value="old('last_name_ar', $customer->last_name_ar ?: \Illuminate\Support\Str::of($customer->name_ar)->after(' '))" required dir="rtl" />
+                            <flux:input name="first_name_en" :label="__('English first name (optional)')" :value="old('first_name_en', $customer->first_name_en)" dir="ltr" />
+                            <flux:input name="last_name_en" :label="__('English last name (optional)')" :value="old('last_name_en', $customer->last_name_en)" dir="ltr" />
+                            <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
+                                <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
+                                @foreach ($groupOptions as $group)
+                                    <flux:select.option value="{{ $group->id }}" :selected="old('customer_group_id', $customer->customer_group_id) == $group->id">{{ $group->parent ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }} · {{ app()->getLocale() === 'ar' ? $group->name_en : $group->name_ar }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
                             @can('customers.sensitive')
-                                <flux:input name="email" :label="__('Email')" :value="$customer->email" type="email" autocomplete="email" />
+                                <flux:input name="email" :label="__('Email')" :value="old('email', $customer->email)" type="email" autocomplete="email" />
                                 <div></div>
-                                <flux:textarea name="address_ar" :label="__('Arabic address')" :value="$customer->address_ar" dir="rtl" />
-                                <flux:textarea name="address_en" :label="__('English address')" :value="$customer->address_en" dir="ltr" />
+                                <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar', $customer->address_ar)" dir="rtl" />
+                                <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en', $customer->address_en)" dir="ltr" />
                             @endcan
                             <div class="sm:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('Save customer changes') }}</flux:button></div>
                         </form>
@@ -65,9 +73,10 @@
                     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <flux:heading size="lg">{{ __('Identity and contact') }}</flux:heading>
                         <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-                            <div><dt class="text-xs font-semibold text-slate-500">{{ __('Arabic name') }}</dt><dd class="mt-1" dir="rtl">{{ $customer->name_ar }}</dd></div>
-                            <div><dt class="text-xs font-semibold text-slate-500">{{ __('English name') }}</dt><dd class="mt-1" dir="ltr">{{ $customer->name_en }}</dd></div>
+                            <div><dt class="text-xs font-semibold text-slate-500">{{ __('Arabic full name') }}</dt><dd class="mt-1" dir="rtl">{{ $customer->name_ar }}</dd></div>
+                            <div><dt class="text-xs font-semibold text-slate-500">{{ __('English full name') }}</dt><dd class="mt-1" dir="ltr">{{ $customer->name_en }}</dd></div>
                             <div><dt class="text-xs font-semibold text-slate-500">{{ __('Primary phone') }}</dt><dd class="mt-1 font-mono" dir="ltr">{{ $customer->phone_display }}</dd></div>
+                            <div><dt class="text-xs font-semibold text-slate-500">{{ __('Customer group') }}</dt><dd class="mt-1">{{ $customer->group ? (app()->getLocale() === 'ar' ? $customer->group->name_ar : $customer->group->name_en) : __('No group assigned') }}</dd></div>
                         </dl>
                     </section>
                 @endcan
@@ -98,7 +107,10 @@
                             <flux:heading size="lg">{{ __('Consent history') }}</flux:heading>
                             <div class="mt-4 space-y-3">
                                 @forelse ($consents as $consent)
-                                    <div class="rounded-xl border border-cyan-100 bg-white/80 p-3 text-sm dark:border-cyan-900 dark:bg-zinc-900/70"><div class="flex justify-between gap-3"><span class="font-semibold">{{ $consent->purpose }}</span><span class="font-bold">{{ __($consent->status) }}</span></div><div class="mt-1 text-xs text-slate-500">{{ $consent->wording_version }} · {{ optional($consent->captured_at)->format('Y-m-d H:i') }} · {{ $consent->source }}</div></div>
+                                    <div class="rounded-xl border border-cyan-100 bg-white/80 p-3 text-sm dark:border-cyan-900 dark:bg-zinc-900/70">
+                                        <div class="flex flex-wrap justify-between gap-3"><span class="font-semibold">{{ __('Purpose') }}: {{ $consent->purpose }}</span><span class="font-bold">{{ __('State') }}: {{ __($consent->status) }}</span></div>
+                                        <div class="mt-1 text-xs text-slate-500">{{ __('Captured') }}: {{ optional($consent->captured_at)->format('Y-m-d H:i') }} · {{ __('By') }}: {{ $consent->capturer?->name ?? __('Recorded user unavailable') }} · {{ __('Source') }}: {{ match ($consent->source) { 'profile_create' => __('Customer profile creation'), 'profile' => __('Customer profile'), 'pos' => __('Point of sale'), default => $consent->source } }} · {{ __('Wording') }}: {{ $consent->wording_version }}</div>
+                                    </div>
                                 @empty
                                     <x-state.empty :title="__('No consent history found.')" :description="__('A configured consent event is required for this profile.')" />
                                 @endforelse
@@ -106,8 +118,8 @@
                             <form method="POST" action="{{ route('customers.consents.store', $customer) }}" class="mt-5 grid gap-3 sm:grid-cols-3">
                                 @csrf
                                 <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                <flux:input name="purpose" :label="__('Purpose')" required />
-                                <flux:select name="status" :label="__('Status')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select>
+                                <flux:input name="purpose" :label="__('Configured consent purpose')" :description="__('Use a purpose listed in customer policy settings.')" required />
+                                <flux:select name="status" :label="__('Consent response')" :description="__('Granted, withdrawn, or denied.')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select>
                                 <div class="flex items-end"><flux:button type="submit" variant="subtle">{{ __('Record consent') }}</flux:button></div>
                             </form>
                         </div>
@@ -116,17 +128,22 @@
                             <flux:text class="mt-1 text-sm">{{ __('Purpose-scoped child data is kept separate and is never included in a normal customer export.') }}</flux:text>
                             <div class="mt-4 space-y-3">
                                 @forelse ($customer->children as $child)
-                                    <div class="rounded-xl border border-amber-100 bg-white/80 p-3 text-sm dark:border-amber-900 dark:bg-zinc-900/70"><div class="font-semibold">{{ app()->getLocale() === 'ar' ? $child->name_ar : $child->name_en }}</div><div class="mt-1 text-xs text-slate-500">{{ $child->purpose }} · {{ $child->birth_date?->format('Y-m-d') ?? __('Birth date not recorded') }}</div></div>
+                                    <div class="rounded-xl border border-amber-100 bg-white/80 p-3 text-sm dark:border-amber-900 dark:bg-zinc-900/70">
+                                        <div class="flex flex-wrap items-start justify-between gap-2"><div><div class="font-semibold">{{ app()->getLocale() === 'ar' || blank($child->name_en) ? $child->name_ar : $child->name_en }}</div>@if (filled($child->name_en))<div class="mt-1 text-xs text-slate-500" dir="ltr">{{ $child->name_en }}</div>@endif</div><x-status.badge :status="$child->status" /></div>
+                                        <div class="mt-2 text-xs text-slate-500">{{ $child->birth_date?->format('Y-m-d') ?? __('Birth date not recorded') }}</div>
+                                        @if ($child->status === 'active')
+                                            <details class="mt-3"><summary class="cursor-pointer text-xs font-semibold text-cyan-700">{{ __('Edit child profile') }}</summary><form method="POST" action="{{ route('customers.children.update', [$customer, $child]) }}" novalidate class="mt-3 grid gap-3 sm:grid-cols-2">@csrf @method('PATCH')<flux:input name="name_ar" :label="__('Arabic name')" :value="$child->name_ar" required dir="rtl" /><flux:input name="name_en" :label="__('English name (optional)')" :value="$child->name_en" dir="ltr" /><flux:input name="birth_date" :label="__('Birth date (optional)')" :value="$child->birth_date?->format('Y-m-d')" type="date" /><div class="flex items-end"><flux:button type="submit" variant="subtle">{{ __('Save child profile') }}</flux:button></div></form><form method="POST" action="{{ route('customers.children.deactivate', [$customer, $child]) }}" class="mt-2"><button type="submit" class="text-xs font-semibold text-rose-700" onclick="return confirm('{{ __('Deactivate this child profile?') }}')">{{ __('Deactivate child profile') }}</button></form></details>
+                                        @endif
+                                    </div>
                                 @empty
                                     <x-state.empty :title="__('No child profile recorded.')" :description="__('Child data remains optional and purpose-scoped.')" />
                                 @endforelse
                             </div>
-                            <form method="POST" action="{{ route('customers.children.store', $customer) }}" class="mt-5 grid gap-3 sm:grid-cols-2">
+                            <form method="POST" action="{{ route('customers.children.store', $customer) }}" novalidate class="mt-5 grid gap-3 sm:grid-cols-2">
                                 @csrf
                                 <flux:input name="name_ar" :label="__('Arabic name')" required dir="rtl" />
-                                <flux:input name="name_en" :label="__('English name')" required dir="ltr" />
-                                <flux:input name="birth_date" :label="__('Birth date')" type="date" />
-                                <flux:input name="purpose" :label="__('Purpose')" required />
+                                <flux:input name="name_en" :label="__('English name (optional)')" dir="ltr" />
+                                <flux:input name="birth_date" :label="__('Birth date (optional)')" type="date" />
                                 <div class="sm:col-span-2 flex justify-end"><flux:button type="submit" variant="subtle">{{ __('Add child profile') }}</flux:button></div>
                             </form>
                         </div>

@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Modules\Platform\Actions\SaveCashDrawerAction;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
 use Flux\Flux;
@@ -70,7 +71,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
         Gate::authorize('drawers_payments_tax_numbering_printers.create');
 
         $this->editingDrawerId = null;
-        $defaultBranchId = Branch::where('status', 'active')->first()?->id ?? '';
+        $defaultBranchId = Branch::visibleTo(auth()->user())->where('status', 'active')->first()?->id ?? '';
 
         $this->drawerForm = [
             'branch_id' => (string) $defaultBranchId,
@@ -112,7 +113,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
 
         $validated = $this->validate([
             'drawerForm.branch_id' => ['required', 'exists:branches,id'],
-            'drawerForm.store_id' => ['nullable', 'exists:stores,id'],
+            'drawerForm.store_id' => [Rule::requiredIf(($this->drawerForm['status'] ?? 'active') === 'active'), 'nullable', 'exists:stores,id'],
             'drawerForm.assigned_user_id' => ['nullable', 'exists:users,id'],
             'drawerForm.code' => [
                 'required',
@@ -178,7 +179,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="drawers-filters">
             @can('drawers_payments_tax_numbering_printers.create')
-                <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
+                <flux:button type="button" variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
@@ -232,8 +233,22 @@ new #[Title('Cash Drawer Masters')] class extends Component
         }
 
         $drawers = $query->orderBy('branch_id')->orderBy('code')->paginate(15);
-        $branches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('name_en')->get();
-        $allStores = Store::visibleTo(auth()->user())->where('status', 'active')->orderBy('name_en')->get();
+        $branches = Branch::visibleTo(auth()->user())->where('status', 'active')->with('activeSellingStoreMapping.store')->orderBy('name_en')->get();
+        // Resolve the dependent option from the current Livewire branch value,
+        // rather than relying on the eager-loaded branch collection surviving
+        // a reactive re-render.
+        $selectedBranchId = (int) ($drawerForm['branch_id'] ?? 0);
+        $selectedBranch = $branches->firstWhere('id', $selectedBranchId);
+        $selectedSellingStoreId = $selectedBranch !== null && $selectedBranchId > 0
+            ? BranchSellingStore::query()
+                ->where('branch_id', $selectedBranchId)
+                ->where('status', 'active')
+                ->latest('id')
+                ->value('store_id')
+            : null;
+        $sellingStores = $selectedSellingStoreId
+            ? Store::visibleTo(auth()->user())->whereKey($selectedSellingStoreId)->where('branch_id', $selectedBranch->id)->where('type', 'selling')->where('status', 'active')->orderBy('name_en')->get()
+            : collect();
         $users = User::orderBy('name')->get();
     @endphp
 
@@ -246,8 +261,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                         <tr>
                             <th class="px-4 py-3 text-start">{{ __('Code') }}</th>
                             <th class="px-4 py-3 text-start">{{ __('Drawer Name') }}</th>
-                            <th class="px-4 py-3 text-start">{{ __('Branch') }}</th>
-                            <th class="px-4 py-3 text-start">{{ __('Linked Store') }}</th>
+                            <th class="px-4 py-3 text-start">{{ __('Branch → POS selling location / stock source') }}</th>
                             <th class="px-4 py-3 text-start">{{ __('Assigned Cashier / User') }}</th>
                             <th class="px-4 py-3 text-start">{{ __('Status') }}</th>
                             <th class="px-4 py-3 text-end">{{ __('Actions') }}</th>
@@ -267,22 +281,15 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                 </td>
                                 <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                                     @if($drawer->branch)
-                                        <span class="inline-flex items-center gap-1 font-medium">
-                                            <flux:icon name="building-office-2" class="size-3.5 text-zinc-400" />
-                                            {{ app()->getLocale() === 'ar' ? $drawer->branch->name_ar : $drawer->branch->name_en }}
-                                        </span>
+                                        <div class="flex min-w-[15rem] items-start gap-1.5">
+                                            <flux:icon name="building-office-2" class="mt-0.5 size-3.5 shrink-0 text-zinc-400" />
+                                            <div class="min-w-0">
+                                                <div class="font-medium">{{ $drawer->branch->code }} — {{ app()->getLocale() === 'ar' ? $drawer->branch->name_ar : $drawer->branch->name_en }}</div>
+                                                <div class="text-xs text-zinc-500 dark:text-zinc-400">→ {{ $drawer->store?->code ?? __('No POS location') }}{{ $drawer->store ? ' — '.(app()->getLocale() === 'ar' ? $drawer->store->name_ar : $drawer->store->name_en) : '' }}</div>
+                                            </div>
+                                        </div>
                                     @else
                                         <span class="text-zinc-400 font-italic">{{ __('Unassigned') }}</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                                    @if($drawer->store)
-                                        <span class="inline-flex items-center gap-1 text-xs">
-                                            <flux:icon name="building-storefront" class="size-3.5 text-zinc-400" />
-                                            {{ app()->getLocale() === 'ar' ? $drawer->store->name_ar : $drawer->store->name_en }}
-                                        </span>
-                                    @else
-                                        <span class="text-zinc-400 text-xs">—</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
@@ -310,13 +317,13 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                             <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</flux:button>
                                             @if($drawer->status === 'active')
                                                 <flux:button size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')">{{ __('Maintenance') }}</flux:button>
-                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')">{{ __('Deactivate') }}</flux:button>
+                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" onclick='if (! window.confirm(@js(__('Deactivate cash drawer :name? It will be unavailable for new POS shifts and its history is preserved.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }'>{{ __('Deactivate') }}</flux:button>
                                             @else
                                                 <flux:button size="xs" variant="subtle" class="text-emerald-600 dark:text-emerald-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</flux:button>
                                             @endif
                                         @endcan
                                         @can('drawers_payments_tax_numbering_printers.logical_delete')
-                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }})" wire:confirm="{{ __('Are you sure you want to delete this cash drawer?') }}">{{ __('Delete') }}</flux:button>
+                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }})" onclick='if (! window.confirm(@js(__('Submit deletion request for cash drawer :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }'>{{ __('Delete') }}</flux:button>
                                         @endcan
                                     </div>
                                 </td>
@@ -335,7 +342,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 icon="inbox-stack"
             >
                 <x-slot:actions>
-                    <flux:button variant="primary" icon="plus" wire:click="openCreateDrawerModal">
+                    <flux:button type="button" variant="primary" icon="plus" wire:click="openCreateDrawerModal">
                         {{ __('Create Cash Drawer') }}
                     </flux:button>
                 </x-slot:actions>
@@ -344,13 +351,14 @@ new #[Title('Cash Drawer Masters')] class extends Component
     </div>
 
     <!-- Modal: Create / Edit Cash Drawer -->
-    <flux:modal wire:model="showDrawerModal" class="max-w-xl space-y-6">
+    @if ($showDrawerModal)
+    <flux:modal wire:model.self="showDrawerModal" class="max-w-xl space-y-6">
         <div>
             <flux:heading size="lg">
                 {{ $editingDrawerId ? __('Edit Cash Drawer') : __('Add Cash Drawer') }}
             </flux:heading>
             <flux:subheading>
-                {{ __('Configure cash drawer identifier, branch assignment, store, and default cashier.') }}
+                {{ __('Configure the drawer identifier and its required POS selling location / stock source for shifts.') }}
             </flux:subheading>
         </div>
 
@@ -407,15 +415,22 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 <flux:select
                     wire:key="cash-drawer-store-select-{{ $editingDrawerId ?? 'create' }}-{{ $drawerForm['branch_id'] ?: 'none' }}"
                     wire:model="drawerForm.store_id"
-                    :label="__('Linked Store (Optional)')"
+                    :label="__('POS selling location / stock source')"
+                    required
                 >
-                    <option value="">{{ __('None / Branch Level') }}</option>
-                    @foreach($allStores as $st)
-                        @if(! empty($drawerForm['branch_id']) && (int) $st->branch_id === (int) $drawerForm['branch_id'])
-                            <option value="{{ $st->id }}">{{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
-                        @endif
+                    <option value="">{{ __('Select POS selling location / stock source') }}</option>
+                    @foreach($sellingStores as $st)
+                        <option value="{{ $st->id }}">{{ $st->code }} — {{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }}</option>
                     @endforeach
                 </flux:select>
+
+                @if (! empty($drawerForm['branch_id']) && $sellingStores->isEmpty())
+                    <flux:callout class="md:col-span-2" variant="warning" icon="exclamation-triangle">
+                        {{ __('No active POS selling location / stock source is assigned to this branch. Configure the branch POS selling-location assignment first, then return here.') }}
+                    </flux:callout>
+                @else
+                    <flux:text class="md:col-span-2 -mt-2 text-xs text-zinc-500">{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</flux:text>
+                @endif
 
                 <flux:select
                     wire:model="drawerForm.assigned_user_id"
@@ -447,13 +462,14 @@ new #[Title('Cash Drawer Masters')] class extends Component
             />
 
             <div class="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                <flux:button variant="subtle" wire:click="$set('showDrawerModal', false)">
+                <flux:button type="button" variant="subtle" wire:click="$set('showDrawerModal', false)">
                     {{ __('Cancel') }}
                 </flux:button>
-                <flux:button type="submit" variant="primary">
-                    {{ $editingDrawerId ? __('Save Changes') : __('Create Cash Drawer') }}
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveDrawer">
+                    <span wire:loading.remove wire:target="saveDrawer">{{ $editingDrawerId ? __('Save Changes') : __('Create Cash Drawer') }}</span><span wire:loading wire:target="saveDrawer">{{ __('Saving...') }}</span>
                 </flux:button>
             </div>
         </form>
     </flux:modal>
+    @endif
 </x-app.page>

@@ -17,7 +17,7 @@
         'audit' => __('Audit'),
         'alert' => __('Alerts'),
     ];
-    $settingGroups = $settings->groupBy(fn (array $setting, string $key): string => \Illuminate\Support\Str::before($key, '.'));
+    $settingGroups = $settings->groupBy(fn (array $setting, string $key): string => \Illuminate\Support\Str::before($key, '.'), preserveKeys: true);
 @endphp
 
 <x-layouts::app :title="__('Customer Policy Settings')">
@@ -67,7 +67,6 @@
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <h2 class="font-semibold text-text-primary" data-guide="customer-settings-first-card-heading">{{ __($setting['title']) }}</h2>
-                                        <p class="mt-1 font-mono text-[11px] text-text-muted">{{ $key }}</p>
                                     </div>
                                     <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $record?->value ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-text-muted' }}">{{ $record?->value ? __('Configured locally') : __('Pending') }}</span>
                                 </div>

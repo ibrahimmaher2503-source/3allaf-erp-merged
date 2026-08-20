@@ -1,76 +1,12 @@
+@php
+    $setupSteps = collect($setup['steps'] ?? []);
+    $setupNext = $setupSteps->first(static fn (array $step): bool => $step['required'] && ! $step['complete']);
+@endphp
+
 <x-layouts::app :title="__('Dashboard')">
-    <x-app.page
-        :title="__('Operations workspace')"
-        :description="__('Monitor daily operations and open the workspaces available to your role.')"
-        :eyebrow="__('Operations')"
-        :badge="__('Operational overview')"
-        badge-color="primary"
-        max-width="7xl"
-        data-guide="dashboard-header"
-    >
-        @if (($setup['needs_attention'] ?? false) === true)
-            <section class="flex flex-col gap-5 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6" data-guide="dashboard-initial-setup">
-                <div>
-                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">{{ __('First launch setup') }}</div>
-                    <flux:heading class="mt-2" size="lg">{{ __('Complete initial setup') }}</flux:heading>
-                    <flux:text class="mt-1">{{ $setup['completed_count'] }} / {{ $setup['required_count'] }} {{ __('required steps completed') }}. {{ __('Enter owner-provided data before opening operations.') }}</flux:text>
-                </div>
-                <flux:button :href="route('initial-setup')" variant="primary" wire:navigate data-guide="dashboard-initial-setup-action">
-                    {{ __('Open setup dashboard') }}
-                </flux:button>
-            </section>
-        @endif
+    <x-app.page :title="__('Setup and operations workspace')" :description="__('Finish Setup / Master Data definitions before Daily Operations / Transactions.')" :eyebrow="__('Workspace')" :badge="__('Setup first')" badge-color="primary" max-width="7xl" data-guide="dashboard-header">
+        <section class="rounded-2xl border border-primary/20 bg-primary-soft/30 p-5 shadow-sm sm:p-6" data-guide="dashboard-initial-setup"><div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><div class="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{{ __('Setup / Master Data') }}</div><flux:heading class="mt-2" size="lg">{{ __('Initial setup progress') }}</flux:heading><flux:text class="mt-1"><span dir="ltr">{{ $setup['completed_count'] ?? 0 }} / {{ $setup['required_count'] ?? 0 }}</span> {{ __('required steps completed') }}. {{ __('Use the checklist to configure or review each persisted definition.') }}</flux:text></div><flux:button :href="route('initial-setup')" variant="primary" wire:navigate data-guide="dashboard-initial-setup-action">{{ __('Open setup checklist') }}</flux:button></div><div class="mt-5 grid gap-3 sm:grid-cols-3">@foreach ($setupSteps->filter(static fn (array $step): bool => $step['required'])->take(3) as $step)<div class="rounded-xl border border-border bg-surface/80 p-3"><div class="flex items-center justify-between gap-2"><span class="text-sm font-semibold">{{ $step['label'] }}</span><span class="text-xs font-medium {{ $step['status'] === 'completed' ? 'text-emerald-700 dark:text-emerald-300' : ($step['status'] === 'blocked' ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300') }}">{{ $step['status_label'] }}</span></div>@if ($step['route'] && $step['can_access'])<a class="mt-2 inline-flex text-xs font-semibold text-primary hover:underline" href="{{ $step['route'] }}" wire:navigate>{{ $step['cta_label'] }}</a>@endif</div>@endforeach</div></section>
 
-        <section aria-labelledby="foundation-heading" class="dashboard-status-card overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-card" data-guide="dashboard-foundation">
-            <div class="border-b border-border bg-surface-muted/35 px-5 py-5 sm:px-6">
-                <flux:heading id="foundation-heading" data-guide="dashboard-foundation-heading" size="lg">{{ __('Operational areas') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Use these areas to move from daily work to review and administration.') }}</flux:text>
-            </div>
-
-            {{--
-                Not a <dl>: the HTML5 <dl> content model requires every <div>
-                child to contain *only* dt/dd groups, and each row here is a
-                three-part label/description/status item, not a pure
-                term/definition pair — a status <span> alongside dt/dd fails
-                axe-core's `definition-list` rule (WCAG 1.3.1) regardless of
-                nesting depth. A plain list conveys "N items" to assistive
-                tech without forcing an ill-fitting semantic.
-            --}}
-            <ul class="divide-y divide-border" data-guide="dashboard-foundation-list">
-                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6" data-guide="dashboard-foundation-first-row">
-                    <div>
-                        <p class="font-semibold text-text-primary">{{ __('Daily operations') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Point of sale, sales history, shifts, and cash movements are available from the workspace.') }}</p>
-                    </div>
-                    <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
-                </li>
-
-                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
-                    <div>
-                        <p class="font-semibold text-text-primary">{{ __('Catalog and inventory') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Review products, prices, purchasing, stock balances, and movement history.') }}</p>
-                    </div>
-                    <span class="w-fit text-sm font-semibold text-primary">{{ __('Available') }}</span>
-                </li>
-
-                <li class="dashboard-status-row grid gap-2 px-5 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6">
-                    <div>
-                        <p class="font-semibold text-text-primary">{{ __('Administration and review') }}</p>
-                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Manage customers, permissions, approvals, reports, and system settings within your role.') }}</p>
-                    </div>
-                    <span class="w-fit text-sm font-semibold text-primary">{{ __('Configured') }}</span>
-                </li>
-            </ul>
-        </section>
-
-        <section class="dashboard-next-card flex flex-col gap-5 rounded-2xl border border-primary/15 bg-primary-soft/35 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6" data-guide="dashboard-setup-section">
-            <div>
-            <flux:heading data-guide="dashboard-setup-heading" size="lg">{{ __('Complete business setup') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Finish the owner-provided setup values before opening every operational workflow.') }}</flux:text>
-            </div>
-            <flux:button :href="route('profile.edit')" variant="primary" wire:navigate data-guide="dashboard-profile-action">
-                {{ __('Open account settings') }}
-            </flux:button>
-        </section>
+        <section aria-labelledby="operations-heading" class="overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-card" data-guide="dashboard-operations"><div class="border-b border-border bg-surface-muted/35 px-5 py-5 sm:px-6"><flux:heading id="operations-heading" size="lg">{{ __('Daily Operations / Transactions') }}</flux:heading><flux:text class="mt-1">{{ __('Sales, purchase orders, inventory movements, parties, settlements, and returns are operational workflows kept separate from setup definitions.') }}</flux:text></div><ul class="divide-y divide-border"><li class="grid gap-2 px-5 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"><div><p class="font-semibold text-text-primary">{{ __('Daily operations') }}</p><p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Open operational workspaces only when the relevant setup and permissions are ready.') }}</p></div><span class="w-fit text-sm font-semibold text-text-muted">{{ __('Separate workspace') }}</span></li><li class="grid gap-2 px-5 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-6"><div><p class="font-semibold text-text-primary">{{ __('Review and administration') }}</p><p class="mt-1 text-sm leading-6 text-text-muted">{{ __('Use approvals, reports, and administration according to your role and scope.') }}</p></div><span class="w-fit text-sm font-semibold text-text-muted">{{ __('Permission controlled') }}</span></li></ul></section>
     </x-app.page>
 </x-layouts::app>

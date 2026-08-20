@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Actions;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -59,7 +60,7 @@ final class CreateStockTransferDraftAction
     ): StockTransfer {
         return DB::transaction(function () use ($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $idempotencyKey): StockTransfer {
             $this->assertStores($sourceStoreId, $destinationStoreId);
-            $normalizedLines = $this->normalizeLines($lines);
+            $normalizedLines = $this->normalizeLines($lines, $sourceStoreId);
 
             $existing = StockTransfer::query()->with('lines')->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
@@ -121,7 +122,7 @@ final class CreateStockTransferDraftAction
             StockTransfer::query()->with('lines')->where('idempotency_key', $idempotencyKey)->firstOrFail(),
             $sourceStoreId,
             $destinationStoreId,
-            $this->normalizeLines($lines),
+            $this->normalizeLines($lines, $sourceStoreId),
             $reasonCode,
             $notes,
         );
@@ -141,7 +142,7 @@ final class CreateStockTransferDraftAction
      * @param  array<int, array{product_id: int, quantity_requested: string}>  $lines
      * @return array<int, array{product_id: int, quantity_requested: numeric-string, unit_cost: numeric-string}>
      */
-    private function normalizeLines(array $lines): array
+    private function normalizeLines(array $lines, int $sourceStoreId): array
     {
         if ($lines === []) {
             throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
@@ -166,10 +167,18 @@ final class CreateStockTransferDraftAction
                 throw new InvalidArgumentException(__('A transfer cannot contain the same product more than once.'));
             }
 
+            $sourceAverageCost = StockBalance::query()
+                ->where('product_id', $productId)
+                ->where('store_id', $sourceStoreId)
+                ->value('average_cost');
+
             $normalized[$productId] = [
                 'product_id' => $productId,
                 'quantity_requested' => $quantity,
-                'unit_cost' => $this->decimal($product->average_cost ?? '0'),
+                // A transfer moves the source location's current weighted
+                // average cost. Product-card cost is only a fallback for a
+                // pre-stock draft, not the cost of an existing balance.
+                'unit_cost' => $this->decimal($sourceAverageCost ?? $product->average_cost ?? '0'),
             ];
         }
 

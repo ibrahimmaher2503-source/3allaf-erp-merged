@@ -193,6 +193,11 @@ return new class extends Migration
         Schema::dropIfExists('exchange_lines');
         Schema::dropIfExists('exchanges');
         Schema::dropIfExists('retail_return_lines');
+
+        Schema::table('gift_receipts', function (Blueprint $table): void {
+            $table->dropForeign(['used_return_id']);
+        });
+
         Schema::dropIfExists('retail_returns');
         Schema::dropIfExists('gift_card_ledger');
         Schema::dropIfExists('gift_cards');

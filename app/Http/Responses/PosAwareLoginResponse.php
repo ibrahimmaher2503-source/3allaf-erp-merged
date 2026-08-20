@@ -21,6 +21,10 @@ final class PosAwareLoginResponse implements LoginResponseContract
             && ! $user->can('dashboard_reports.view')
             && $user->can('pos_sales.view')) {
             $fallback = route('pos');
+        } elseif ($user !== null
+            && ! $user->can('dashboard_reports.view')
+            && $user->can('party_bookings_invoices.view')) {
+            $fallback = route('parties.bookings.index');
         }
 
         return redirect()->intended($fallback);

@@ -10,6 +10,11 @@ use App\Modules\Assets\Models\AssetReservation;
 use App\Modules\Assets\Models\AssetReturn;
 use App\Modules\Assets\Models\RentalAsset;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
@@ -93,6 +98,13 @@ final class ReportSnapshot
         $supplierId = $this->scopedIdFilter($filters['supplier_id'] ?? null, Supplier::query()->where('status', 'active'), __('supplier'));
         $productId = $this->scopedIdFilter($filters['product_id'] ?? null, Product::query()->sellable(), __('product'));
         $categoryId = $this->scopedIdFilter($filters['category_id'] ?? null, Category::query()->where('status', 'active'), __('category'));
+        $brandId = $this->scopedIdFilter($filters['brand_id'] ?? null, Brand::query()->where('status', 'active'), __('brand'));
+        $ageLabelId = $this->scopedIdFilter($filters['age_label_id'] ?? null, AgeLabel::query()->where('status', 'active'), __('age'));
+        $characterId = $this->scopedIdFilter($filters['character_id'] ?? null, Character::query()->where('status', 'active'), __('character'));
+        $colourId = $this->scopedIdFilter($filters['colour_id'] ?? null, Colour::query()->where('status', 'active'), __('colour'));
+        $genderId = $this->scopedIdFilter($filters['gender_id'] ?? null, Gender::query()->where('status', 'active'), __('gender'));
+        $productType = $this->enumFilter($filters['product_type'] ?? null, ['standard', 'service', 'bundle', 'rental', 'party_consumable']);
+        $productStatus = $this->enumFilter($filters['product_status'] ?? null, ['active', 'inactive', 'archived']);
         $paymentMethodId = $this->scopedIdFilter($filters['payment_method_id'] ?? null, PaymentMethod::query()->where('status', 'active'), __('payment method'));
         $documentStatus = $this->enumFilter($filters['document_status'] ?? null, ['approved', 'suspended', 'cancelled']);
         $partyStatus = $this->enumFilter($filters['party_status'] ?? null, ['draft', 'confirmed', 'closed', 'cancelled']);
@@ -362,6 +374,8 @@ final class ReportSnapshot
             'customer_id' => $customerId,
             'product_id' => $productId,
             'category_id' => $categoryId,
+            'brand_id' => $brandId, 'age_label_id' => $ageLabelId, 'character_id' => $characterId,
+            'colour_id' => $colourId, 'gender_id' => $genderId, 'product_type' => $productType, 'product_status' => $productStatus,
             'payment_method_id' => $paymentMethodId,
             'document_status' => $documentStatus,
             'party_status' => $partyStatus,
@@ -664,6 +678,14 @@ final class ReportSnapshot
                 })
                 ->when($filters['product_id'], fn (Builder $query, int $id): Builder => $query->where('product_id', $id))
                 ->when($filters['category_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $id)))
+                ->when($filters['brand_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('brand_id', $id)))
+                ->when($filters['supplier_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product.suppliers', fn (Builder $supplier): Builder => $supplier->whereKey($id)))
+                ->when($filters['age_label_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('age_label_id', $id)))
+                ->when($filters['character_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('character_id', $id)))
+                ->when($filters['colour_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('colour_id', $id)))
+                ->when($filters['gender_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('gender_id', $id)))
+                ->when($filters['product_type'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('product_type', $value)))
+                ->when($filters['product_status'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('status', $value)))
                 ->orderBy('product_id')->limit(50)->get();
             $canViewCost = Gate::forUser($user)->allows('inventory_stock_card.cost_view');
             $balanceColumns = ['product' => __('Product'), 'store' => __('Store'), 'on_hand' => __('On hand'), 'reserved' => __('Reserved'), 'available' => __('Available'), 'in_transit' => __('In transit')];
@@ -697,6 +719,14 @@ final class ReportSnapshot
                 })
                 ->when($filters['product_id'], fn (Builder $query, int $id): Builder => $query->where('product_id', $id))
                 ->when($filters['category_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('category_id', $id)))
+                ->when($filters['brand_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('brand_id', $id)))
+                ->when($filters['supplier_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product.suppliers', fn (Builder $supplier): Builder => $supplier->whereKey($id)))
+                ->when($filters['age_label_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('age_label_id', $id)))
+                ->when($filters['character_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('character_id', $id)))
+                ->when($filters['colour_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('colour_id', $id)))
+                ->when($filters['gender_id'], fn (Builder $query, int $id): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('gender_id', $id)))
+                ->when($filters['product_type'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('product_type', $value)))
+                ->when($filters['product_status'], fn (Builder $query, string $value): Builder => $query->whereHas('product', fn (Builder $product): Builder => $product->where('status', $value)))
                 ->latest('posted_at')->limit(50)->get();
             $movementColumns = ['posted_at' => __('Posted'), 'product' => __('Product'), 'store' => __('Store'), 'type' => __('Movement'), 'quantity' => __('Quantity'), 'source' => __('Source')];
             if ($canViewCost) {

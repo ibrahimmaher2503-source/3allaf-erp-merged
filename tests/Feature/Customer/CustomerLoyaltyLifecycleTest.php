@@ -17,6 +17,7 @@ use App\Modules\Customer\Actions\RequestLoyaltyAdjustmentAction;
 use App\Modules\Customer\Actions\PostProductWalletEntryAction;
 use App\Modules\Customer\Actions\SaveCustomerChildAction;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Customer\Models\LoyaltyAdjustment;
 use App\Modules\Customer\Models\LoyaltyLedger;
 use App\Modules\Customer\Models\LoyaltyPointAllocation;
@@ -45,6 +46,7 @@ use LogicException;
 use Tests\Support\CustomerLoyaltyFixtures;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
+use Database\Seeders\ConsentQaPolicySeeder;
 
 final class CustomerLoyaltyLifecycleTest extends TestCase
 {
@@ -96,6 +98,28 @@ final class CustomerLoyaltyLifecycleTest extends TestCase
         } catch (InvalidArgumentException $exception) {
             self::assertStringContainsString('already exists', $exception->getMessage());
         }
+    }
+
+    public function test_consent_qa_policy_fixture_enables_deterministic_customer_creation(): void
+    {
+        CustomerPolicySettingVersion::query()->delete();
+        app(ConsentQaPolicySeeder::class)->run();
+
+        $customer = app(\App\Modules\Customer\Actions\CreateCustomerAction::class)->execute(
+            $this->administrator,
+            $this->store,
+            [
+                'idempotency_key' => 'consent-qa-customer-001',
+                'phone' => '01070000001',
+                'name_ar' => 'عميل اختبار الموافقة',
+                'name_en' => 'Consent QA Customer',
+                'consents' => [['purpose' => 'service_delivery', 'status' => 'granted', 'source' => 'qa_fixture']],
+            ],
+        );
+
+        self::assertSame('QA-CONSENT-V1', $customer->consents()->firstOrFail()->wording_version);
+        self::assertSame('service_delivery', $customer->consents()->firstOrFail()->purpose);
+        self::assertSame('child_profile', json_decode((string) CustomerPolicySettingVersion::query()->where('key', 'customer.children.purpose_scope')->latest('version')->value('value'), true)['purpose']);
     }
 
     public function test_direct_http_customer_and_pos_routes_enforce_scope_and_sensitive_rbac(): void

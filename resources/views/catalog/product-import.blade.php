@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Actions\StageProductImportAction;
 use App\Modules\Catalog\Models\ProductImportBatch;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Actions\RevokeAttachment;
 use App\Modules\Platform\Models\Attachment;
@@ -116,38 +117,80 @@ new #[Title('Product Import')] class extends Component {
 >
     <x-slot:actions>
         <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to products') }}</flux:button>
+        @can('products_categories_brands.create')
+            <flux:button href="{{ route('catalog.products.create') }}" variant="primary" icon="plus" wire:navigate>{{ __('Manual entry') }}</flux:button>
+        @endcan
     </x-slot:actions>
+
+    @php($productImportTemplate = "item_code,name_ar,name_en,category_code,brand_code,preferred_supplier_code,sale_price,average_cost,unit_of_measure,weight,dimension_length,dimension_width,dimension_height,dimension_unit,battery_required,battery_details,age_codes,character_codes,colour_codes,gender_codes\nSKU-001,Example product,Example product,CAT-001,,,,,piece,,,,,false,,,,")
+    <flux:callout variant="info" icon="information-circle" title="{{ __('Two ways to add products') }}">
+        <div class="space-y-3">
+            <p>{{ __('Manual entry is best for one product. Excel import is for a reviewed batch: upload, validate, review errors, then approve. Nothing is written to products during staging.') }}</p>
+            <div class="flex flex-wrap gap-2">
+                @can('products_categories_brands.create')
+                    <flux:button href="{{ route('catalog.products.create') }}" variant="subtle" icon="plus" wire:navigate>{{ __('Use manual entry') }}</flux:button>
+                @endcan
+                <flux:button href="data:text/csv;charset=utf-8,{{ rawurlencode($productImportTemplate) }}" download="products-import-template.csv" variant="subtle" icon="arrow-down-tray">{{ __('Download spreadsheet template') }}</flux:button>
+            </div>
+        </div>
+    </flux:callout>
+
+    @if (! Category::query()->active()->exists())
+        <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Import needs an active category') }}">
+            <div class="space-y-2">
+                <p>{{ __('Every imported row needs a category_code that matches an active category. Create the category hierarchy before staging a product batch.') }}</p>
+                @can('products_categories_brands.create')
+                    <flux:button href="{{ route('catalog.categories') }}" variant="subtle" icon="arrow-top-right-on-square" wire:navigate>{{ __('Configure categories') }}</flux:button>
+                @endcan
+            </div>
+        </flux:callout>
+    @endif
 
     <flux:card class="space-y-5" data-guide="import-upload-section">
         <div>
-            <flux:heading size="lg">{{ __('1. Upload and stage') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Required columns: item_code, name_ar, name_en, category_code. Formula cells are rejected.') }}</flux:text>
+            <flux:heading size="lg">{{ __('Excel import — 1. Upload and stage') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Required columns: item_code, name_ar, name_en, category_code. Optional active lookup codes include brand, preferred supplier, age_codes, character_codes, colour_codes, and gender_codes (comma-separated). Prices, dimensions, weight, and battery fields are validated before approval; formula cells are rejected.') }}</flux:text>
         </div>
 
         <form wire:submit="stage" class="grid gap-4 md:grid-cols-3">
             <div class="md:col-span-2 space-y-2">
                 <flux:label>{{ __('Excel or CSV file') }}</flux:label>
-                <flux:input type="file" wire:model="importFile" accept=".xlsx,.csv,.ods" />
+                <flux:input type="file" wire:model="importFile" accept=".xlsx,.csv,.ods" required />
                 @error('importFile') <flux:text class="text-red-600">{{ $message }}</flux:text> @enderror
             </div>
             <div class="space-y-2" data-guide="import-mode-select">
                 <flux:label>{{ __('Import mode') }}</flux:label>
                 <flux:select wire:model="mode">
                     <flux:select.option value="create_only">{{ __('Create Only') }}</flux:select.option>
-                    <flux:select.option value="update_existing">{{ __('Update Existing') }}</flux:select.option>
+                    @can('products_categories_brands.edit')
+                        <flux:select.option value="update_existing">{{ __('Update Existing') }}</flux:select.option>
+                    @else
+                        <flux:select.option value="update_existing" disabled>{{ __('Update Existing (edit permission required)') }}</flux:select.option>
+                    @endcan
                 </flux:select>
+                @cannot('products_categories_brands.edit')
+                    <flux:text class="text-xs text-text-muted">{{ __('Update Existing requires product edit permission. Create Only is available for your role.') }}</flux:text>
+                @endcannot
             </div>
             <div class="md:col-span-3 flex items-center justify-between gap-3">
                     <flux:text>{{ __('Nothing is saved until the import is confirmed.') }}</flux:text>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" data-guide="import-stage-button">{{ __('Stage file') }}</flux:button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="stage,importFile" data-guide="import-stage-button"><span wire:loading.remove wire:target="stage">{{ __('Stage file') }}</span><span wire:loading wire:target="stage">{{ __('Staging...') }}</span></flux:button>
             </div>
         </form>
     </flux:card>
 
     <flux:card data-guide="import-batches-section">
         <flux:heading size="lg">{{ __('2. Staged batches') }}</flux:heading>
-        <div class="mt-4 overflow-x-auto">
-            <flux:table aria-label="{{ __('Staged product imports') }}">
+        <div class="mt-4">
+            @if ($batches->isEmpty())
+                <x-state.empty :title="__('No staged product imports yet')" :description="__('No import batch exists in your authorized scope. Upload a spreadsheet above, or use Manual entry for one product.')" icon="arrow-up-tray">
+                    @can('products_categories_brands.create')
+                        <flux:button href="#import-upload-section" variant="primary" icon="arrow-up-tray">{{ __('Upload a spreadsheet') }}</flux:button>
+                    @endcan
+                </x-state.empty>
+            @else
+                <div class="overflow-x-auto">
+                <flux:table aria-label="{{ __('Staged product imports') }}">
                 <flux:table.columns>
                     <flux:table.column>{{ __('File') }}</flux:table.column>
                     <flux:table.column>{{ __('Mode') }}</flux:table.column>
@@ -156,7 +199,7 @@ new #[Title('Product Import')] class extends Component {
                     <flux:table.column>{{ __('Action') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
-                    @forelse ($batches as $batch)
+                    @foreach ($batches as $batch)
                         <flux:table.row :key="$batch->id">
                             <flux:table.cell>{{ $batch->original_filename }}</flux:table.cell>
                             <flux:table.cell>{{ $batch->mode === 'create_only' ? __('Create Only') : __('Update Existing') }}</flux:table.cell>
@@ -164,13 +207,13 @@ new #[Title('Product Import')] class extends Component {
                             <flux:table.cell>{{ $batch->valid_rows }} / {{ $batch->total_rows }} {{ __('valid') }}</flux:table.cell>
                             <flux:table.cell><flux:button size="sm" variant="subtle" wire:click="selectBatch({{ $batch->id }})">{{ __('Review') }}</flux:button></flux:table.cell>
                         </flux:table.row>
-                    @empty
-                        <flux:table.row><flux:table.cell colspan="5">{{ __('No staged imports yet.') }}</flux:table.cell></flux:table.row>
-                    @endforelse
+                    @endforeach
                 </flux:table.rows>
             </flux:table>
+                </div>
+                <div class="mt-4">{{ $batches->links() }}</div>
+            @endif
         </div>
-        <div class="mt-4">{{ $batches->links() }}</div>
     </flux:card>
 
     @if ($selectedBatch)
@@ -190,13 +233,19 @@ new #[Title('Product Import')] class extends Component {
                         @endif
                     @endcan
                     @if (in_array($selectedBatch->status, ['staging', 'ready_for_review'], true))
-                        <flux:button variant="danger" wire:click="cancelBatch">{{ __('Cancel batch') }}</flux:button>
+                        <flux:button variant="danger" wire:click="cancelBatch" wire:loading.attr="disabled" wire:target="cancelBatch">{{ __('Cancel batch') }}</flux:button>
                     @endif
                     @can('products_categories_brands.approve')
-                        <flux:button variant="primary" wire:click="approve" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->invalid_rows > 0" data-guide="import-approve-button">{{ __('Approve valid rows') }}</flux:button>
+                        <flux:button variant="primary" wire:click="approve" wire:loading.attr="disabled" wire:target="approve" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->invalid_rows > 0" data-guide="import-approve-button"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>
                     @endcan
                 </div>
             </div>
+
+            @cannot('products_categories_brands.approve')
+                @if ($selectedBatch->status === 'ready_for_review')
+                    <flux:callout variant="info" icon="lock-closed">{{ __('This batch is ready for review, but approval requires an authorized catalog approver.') }}</flux:callout>
+                @endif
+            @endcannot
 
             <div class="overflow-x-auto">
                 <flux:table aria-label="{{ __('Import row review') }}">

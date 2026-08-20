@@ -3,35 +3,69 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Assets\Models\AssetReservation;
 use App\Modules\Assets\Models\RentalAsset;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Models\Customer;
+use App\Modules\Party\Actions\CancelPartyBookingAction;
 use App\Modules\Party\Actions\CheckoutPartyRentalAssetAction;
 use App\Modules\Party\Actions\CompletePartyOperatingOrderAction;
 use App\Modules\Party\Actions\ConfirmPartyBookingAction;
 use App\Modules\Party\Actions\CreatePartyBookingAction;
 use App\Modules\Party\Actions\CreatePartyOperatingOrderAction;
 use App\Modules\Party\Actions\FinalizePartyInvoiceAction;
+use App\Modules\Party\Actions\InspectPartyRentalAssetAction;
 use App\Modules\Party\Actions\IssuePartyConsumableAction;
+use App\Modules\Party\Actions\RecordPartyConsumableActualAction;
 use App\Modules\Party\Actions\RecordPartyPaymentAction;
 use App\Modules\Party\Actions\ReleasePartyOperatingOrderAction;
+use App\Modules\Party\Actions\ReschedulePartyBookingAction;
 use App\Modules\Party\Actions\ReturnPartyConsumableAction;
 use App\Modules\Party\Actions\ReturnPartyRentalAssetAction;
-use App\Modules\Party\Actions\InspectPartyRentalAssetAction;
 use App\Modules\Party\Actions\SavePartyInvoiceAction;
 use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Party\Models\PartyConsumableIssue;
 use App\Modules\Party\Models\PartyInvoice;
 use App\Modules\Party\Models\PartyOperatingOrder;
 use App\Modules\Party\Models\PartyPayment;
-use App\Modules\Customer\Models\Customer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
 Route::prefix('parties')->name('parties.')->group(function (): void {
     $partyStores = static fn (User $user) => Store::query()->visibleTo($user)->where('type', 'party')->where('status', 'active')->orderBy('name_en');
+
+    Route::get('calendar', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $from = filled($validated['from'] ?? null)
+            ? CarbonImmutable::parse((string) $validated['from'])->startOfDay()
+            : now()->startOfDay()->toImmutable();
+        $to = filled($validated['to'] ?? null)
+            ? CarbonImmutable::parse((string) $validated['to'])->endOfDay()
+            : $from->addDays(6)->endOfDay();
+        abort_if($from->diffInDays($to) > 30, 422, __('Choose a calendar range of 31 days or fewer.'));
+
+        $reservations = AssetReservation::query()
+            ->with(['asset', 'store'])
+            ->whereHas('asset', fn ($query) => $query->visibleTo($user))
+            ->whereIn('status', ['reserved', 'fulfilled'])
+            ->where('starts_at', '<=', $to)
+            ->where('ends_at', '>=', $from)
+            ->orderBy('starts_at')
+            ->limit(200)
+            ->get();
+
+        return view('pages.party.calendar', compact('from', 'to', 'reservations'));
+    })->middleware('can:rental_assets.view')->name('calendar');
 
     Route::get('bookings', function (Request $request) {
         /** @var User $user */
@@ -50,8 +84,9 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $stores = $partyStores($user)->get();
         $customers = Customer::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->limit(300)->get();
         $assets = RentalAsset::query()->visibleTo($user)->with('store')->whereIn('status', ['available', 'reserved'])->whereHas('store', fn ($query) => $query->where('type', 'party')->where('status', 'active'))->orderBy('code')->limit(200)->get();
+        $products = Product::query()->sellable()->orderBy('name_en')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
 
-        return view('pages.party.bookings.create', compact('stores', 'customers', 'assets'));
+        return view('pages.party.bookings.create', compact('stores', 'customers', 'assets', 'products'));
     })->middleware('can:party_bookings_invoices.create')->name('bookings.create');
 
     Route::post('bookings', function (Request $request, CreatePartyBookingAction $action) use ($partyStores) {
@@ -80,7 +115,9 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
             'lines.*.resource_key' => ['nullable', 'string', 'max:190'],
         ]);
         $validated['lines'] = array_values(array_filter($validated['lines'], static fn (array $line): bool => filled($line['description'] ?? null) || filled($line['quantity'] ?? null) || filled($line['unit_price'] ?? null)));
-        if ($validated['lines'] === []) return back()->withInput()->withErrors(['lines' => __('At least one Party invoice line is required.')]);
+        if ($validated['lines'] === []) {
+            return back()->withInput()->withErrors(['lines' => __('At least one Party invoice line is required.')]);
+        }
         $store = $partyStores($user)->whereKey($validated['store_id'])->firstOrFail();
         $customer = Customer::query()->visibleTo($user)->whereKey($validated['customer_id'])->where('status', 'active')->firstOrFail();
         try {
@@ -113,6 +150,41 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         return back()->with('success', __('Party booking confirmed.'));
     })->middleware('can:party_bookings_invoices.approve')->name('bookings.confirm');
 
+    Route::post('bookings/{bookingId}/reschedule', function (Request $request, int $bookingId, ReschedulePartyBookingAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        $booking = PartyBooking::query()->visibleTo($user)->whereKey($bookingId)->firstOrFail();
+        $validated = $request->validate([
+            'party_date' => ['required', 'date'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i'],
+            'timezone' => ['required', 'timezone'],
+            'location' => ['required', 'string', 'max:190'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+        try {
+            $action->execute($user, $booking, $validated);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['booking' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', __('Party booking rescheduled. Confirm it again after reviewing the new schedule.'));
+    })->middleware('can:party_bookings_invoices.edit')->name('bookings.reschedule');
+
+    Route::post('bookings/{bookingId}/cancel', function (Request $request, int $bookingId, CancelPartyBookingAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        $booking = PartyBooking::query()->visibleTo($user)->whereKey($bookingId)->firstOrFail();
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        try {
+            $action->execute($user, $booking, $validated['reason']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['booking' => $exception->getMessage()]);
+        }
+
+        return to_route('parties.bookings.index')->with('success', __('Party booking cancelled.'));
+    })->middleware('can:party_bookings_invoices.cancel')->name('bookings.cancel');
+
     Route::get('invoices', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
@@ -142,14 +214,16 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $user = $request->user();
         $invoice = PartyInvoice::query()->visibleTo($user)->with(['booking.customer', 'booking.store', 'lines'])->whereKey($invoiceId)->firstOrFail();
         $assets = RentalAsset::query()->visibleTo($user)->with('store')->whereIn('status', ['available', 'reserved'])->whereHas('store', fn ($query) => $query->where('type', 'party')->where('status', 'active'))->orderBy('code')->limit(200)->get();
+        $products = Product::query()->sellable()->orderBy('name_en')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
 
-        return view('pages.party.invoices.show', compact('invoice', 'assets'));
+        return view('pages.party.invoices.show', compact('invoice', 'assets', 'products'));
     })->middleware('can:party_bookings_invoices.view')->name('invoices.show');
 
     Route::put('invoices/{invoiceId}', function (Request $request, int $invoiceId, SavePartyInvoiceAction $action) {
         /** @var User $user */
         $user = $request->user();
         $invoice = PartyInvoice::query()->visibleTo($user)->whereKey($invoiceId)->firstOrFail();
+        $request->merge(['lines' => array_values(array_filter((array) $request->input('lines', []), static fn (mixed $line): bool => is_array($line) && (filled($line['description'] ?? null) || filled($line['quantity'] ?? null) || filled($line['unit_price'] ?? null) || filled($line['product_id'] ?? null) || filled($line['asset_id'] ?? null))))]);
         $validated = $request->validate([
             'notes' => ['nullable', 'string', 'max:4000'],
             'reason' => ['nullable', 'string', 'max:1000'],
@@ -248,7 +322,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
     Route::post('orders/{orderId}/release', function (Request $request, int $orderId, ReleasePartyOperatingOrderAction $action) {
         /** @var User $user */
         $order = PartyOperatingOrder::query()->visibleTo($user = $request->user())->whereKey($orderId)->firstOrFail();
-        try { $action->execute($user, $order); } catch (InvalidArgumentException $exception) { return back()->withErrors(['order' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['order' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party operating order released.'));
     })->middleware('can:party_operating_orders_consumables.approve')->name('orders.release');
@@ -258,7 +336,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $order = PartyOperatingOrder::query()->visibleTo($user = $request->user())->with('lines')->whereKey($orderId)->firstOrFail();
         $validated = $request->validate(['line_id' => ['required', 'integer'], 'quantity' => ['required', 'numeric', 'gt:0'], 'idempotency_key' => ['required', 'string', 'max:190']]);
         $line = $order->lines()->whereKey($validated['line_id'])->firstOrFail();
-        try { $action->execute($user, $order, $line, (string) $validated['quantity'], $validated['idempotency_key']); } catch (InvalidArgumentException $exception) { return back()->withInput()->withErrors(['issue' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order, $line, (string) $validated['quantity'], $validated['idempotency_key']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['issue' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party consumable issued from the Party store.'));
     })->middleware('can:party_operating_orders_consumables.create')->name('orders.issue');
@@ -271,10 +353,29 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         abort_unless($issue instanceof PartyConsumableIssue, 404);
         $line = $order->lines->firstWhere('id', (int) $validated['line_id']);
         abort_unless($line !== null, 404);
-        try { $action->execute($user, $issue, $line, (string) $validated['quantity'], $validated['idempotency_key']); } catch (InvalidArgumentException $exception) { return back()->withInput()->withErrors(['return' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $issue, $line, (string) $validated['quantity'], $validated['idempotency_key']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['return' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Unused Party consumable returned to the Party store.'));
     })->middleware('can:party_operating_orders_consumables.create')->name('orders.return');
+
+    Route::post('orders/{orderId}/actuals', function (Request $request, int $orderId, RecordPartyConsumableActualAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        $order = PartyOperatingOrder::query()->visibleTo($user)->whereKey($orderId)->firstOrFail();
+        $validated = $request->validate(['line_id' => ['required', 'integer'], 'consumed_quantity' => ['required', 'numeric', 'min:0']]);
+        $line = $order->lines()->whereKey($validated['line_id'])->firstOrFail();
+        try {
+            $action->execute($user, $order, $line, (string) $validated['consumed_quantity']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['actual' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', __('Actual Party consumable quantity recorded.'));
+    })->middleware('can:party_operating_orders_consumables.edit')->name('orders.actuals');
 
     Route::post('orders/{orderId}/assets/{lineId}/checkout', function (Request $request, int $orderId, int $lineId, CheckoutPartyRentalAssetAction $action) {
         /** @var User $user */
@@ -282,7 +383,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $order = PartyOperatingOrder::query()->visibleTo($user)->whereKey($orderId)->firstOrFail();
         $line = $order->lines()->whereKey($lineId)->firstOrFail();
         $validated = $request->validate(['idempotency_key' => ['required', 'string', 'max:190']]);
-        try { $action->execute($user, $order, $line, $validated['idempotency_key']); } catch (InvalidArgumentException $exception) { return back()->withInput()->withErrors(['asset' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order, $line, $validated['idempotency_key']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party rental asset checked out through the asset reservation.'));
     })->middleware('can:party_operating_orders_consumables.create')->name('orders.assets.checkout');
@@ -293,7 +398,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $order = PartyOperatingOrder::query()->visibleTo($user)->whereKey($orderId)->firstOrFail();
         $line = $order->lines()->whereKey($lineId)->firstOrFail();
         $validated = $request->validate(['condition_after' => ['required', 'string', 'max:40'], 'idempotency_key' => ['required', 'string', 'max:190']]);
-        try { $action->execute($user, $order, $line, $validated['condition_after'], $validated['idempotency_key']); } catch (InvalidArgumentException $exception) { return back()->withInput()->withErrors(['asset' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order, $line, $validated['condition_after'], $validated['idempotency_key']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party rental asset returned for inspection.'));
     })->middleware('can:party_operating_orders_consumables.create')->name('orders.assets.return');
@@ -304,7 +413,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         $order = PartyOperatingOrder::query()->visibleTo($user)->whereKey($orderId)->firstOrFail();
         $line = $order->lines()->whereKey($lineId)->firstOrFail();
         $validated = $request->validate(['resulting_status' => ['required', Rule::in(['available', 'damaged', 'under_maintenance', 'lost'])], 'assessment' => ['required', 'string', 'max:2000']]);
-        try { $action->execute($user, $order, $line, $validated['resulting_status'], $validated['assessment']); } catch (InvalidArgumentException $exception) { return back()->withInput()->withErrors(['asset' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order, $line, $validated['resulting_status'], $validated['assessment']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party rental asset inspection recorded.'));
     })->middleware('can:party_operating_orders_consumables.create')->name('orders.assets.inspect');
@@ -312,7 +425,11 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
     Route::post('orders/{orderId}/complete', function (Request $request, int $orderId, CompletePartyOperatingOrderAction $action) {
         /** @var User $user */
         $order = PartyOperatingOrder::query()->visibleTo($user = $request->user())->whereKey($orderId)->firstOrFail();
-        try { $action->execute($user, $order); } catch (InvalidArgumentException $exception) { return back()->withErrors(['order' => $exception->getMessage()]); }
+        try {
+            $action->execute($user, $order);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['order' => $exception->getMessage()]);
+        }
 
         return back()->with('success', __('Party operating order completed.'));
     })->middleware('can:party_operating_orders_consumables.approve')->name('orders.complete');

@@ -27,32 +27,68 @@ class SaveCashDrawerAction
 
         try {
             return DB::transaction(function () use ($data, $id, &$blockedMutation) {
-                $branch = Branch::findOrFail($data['branch_id']);
+                $user = auth()->user();
+                $branch = Branch::query()
+                    ->visibleTo($user)
+                    ->where('status', 'active')
+                    ->find($data['branch_id']);
 
-                if ($branch->status !== 'active') {
-                    throw new InvalidArgumentException(__('Cannot assign cash drawer to an inactive branch.'));
+                if ($branch === null) {
+                    throw new InvalidArgumentException(__('The selected branch is an inactive branch, does not exist, or is outside your authorized scope.'));
                 }
 
+                $status = $data['status'] ?? 'active';
+                $store = null;
                 if (! empty($data['store_id'])) {
-                    $store = Store::findOrFail($data['store_id']);
-                    if ($store->branch_id && (int) $store->branch_id !== (int) $branch->id) {
+                    $store = Store::query()->findOrFail((int) $data['store_id']);
+                    if ((int) $store->branch_id !== (int) $branch->id) {
                         throw new InvalidArgumentException(__('Selected store does not belong to the chosen branch.'));
+                    }
+                    if ((int) $store->company_id !== (int) $branch->company_id) {
+                        throw new InvalidArgumentException(__('Selected store does not belong to the chosen company.'));
+                    }
+                    if (! $user->is_super_admin && ! $store->visibleTo($user)->whereKey($store->getKey())->exists()) {
+                        throw new InvalidArgumentException(__('The selected POS selling location is outside your authorized scope.'));
+                    }
+                }
+
+                if ($status === 'active') {
+                    if ($store === null) {
+                        throw new InvalidArgumentException(__('An active cash drawer requires a POS selling location / stock source. Assign the branch\'s active POS location before saving.'));
+                    }
+                    if ($store->status !== 'active' || $store->type !== 'selling') {
+                        throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
+                    }
+
+                    $mapping = $branch->activeSellingStoreMapping()->with('store')->first();
+                    if ($mapping?->store === null) {
+                        throw new InvalidArgumentException(__('This branch has no active POS selling location / stock source assignment. Configure the branch assignment before saving an active drawer.'));
+                    }
+                    if ((int) $mapping->store_id !== (int) $store->id) {
+                        throw new InvalidArgumentException(__('The POS selling location / stock source must match the branch\'s active POS location assignment.'));
                     }
                 }
 
                 $attributes = [
+                    // Company is derived from the authorized branch; callers cannot
+                    // create a cross-company drawer by submitting a foreign ID.
+                    'company_id' => $branch->company_id,
                     'branch_id' => $branch->id,
-                    'store_id' => ! empty($data['store_id']) ? (int) $data['store_id'] : null,
+                    'store_id' => $store?->id,
                     'assigned_user_id' => ! empty($data['assigned_user_id']) ? (int) $data['assigned_user_id'] : null,
                     'code' => strtoupper(trim($data['code'])),
                     'name_ar' => trim($data['name_ar']),
                     'name_en' => trim($data['name_en']),
-                    'status' => $data['status'] ?? 'active',
+                    'status' => $status,
                     'policy_notes' => $data['policy_notes'] ?? 'TBD: Production cash drawer baseline pending shift rules and owner approval (BLK-006).',
                 ];
 
                 if ($id) {
-                    $drawer = CashDrawer::query()->lockForUpdate()->findOrFail($id);
+                    $drawerQuery = CashDrawer::query()->lockForUpdate();
+                    if ($user !== null) {
+                        $drawerQuery->visibleTo($user);
+                    }
+                    $drawer = $drawerQuery->findOrFail($id);
 
                     $assignmentChanged = (int) $drawer->branch_id !== (int) $attributes['branch_id']
                         || (int) $drawer->store_id !== (int) $attributes['store_id'];
@@ -121,7 +157,11 @@ class SaveCashDrawerAction
 
         try {
             return DB::transaction(function () use ($id, $newStatus, &$blockedMutation) {
-                $drawer = CashDrawer::query()->lockForUpdate()->findOrFail($id);
+                $drawerQuery = CashDrawer::query()->lockForUpdate();
+                if (auth()->check()) {
+                    $drawerQuery->visibleTo(auth()->user());
+                }
+                $drawer = $drawerQuery->findOrFail($id);
                 $oldStatus = $drawer->status;
 
                 if ($newStatus !== 'active') {

@@ -17,11 +17,23 @@ use App\Modules\Retail\Models\Sale;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use LogicException;
 use Tests\TestCase;
 
 class DatabaseSeederBaselineTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_explicit_setup_seed_opt_in_invokes_the_fail_closed_production_setup_loader(): void
+    {
+        config()->set('production-seeding.setup_data.enabled', true);
+        config()->set('production-seeding.setup_data.path', 'C:\\does-not-exist\\owner-approved-setup.json');
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('PRODUCTION_SETUP_DATA_PATH must reference a readable JSON file.');
+
+        app(DatabaseSeeder::class)->run();
+    }
 
     public function test_the_normal_seeder_installs_a_usable_production_baseline_without_seed_environment_inputs(): void
     {

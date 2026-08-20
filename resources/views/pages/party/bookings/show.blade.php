@@ -3,7 +3,7 @@
         <x-page-header :title="$booking->booking_number" :description="__('Party booking and working invoice control center.')">
             <x-slot:actions>
                 <flux:button href="{{ route('parties.bookings.index') }}" variant="subtle">{{ __('All bookings') }}</flux:button>
-                <flux:button href="{{ route('parties.invoices.print', $booking->invoice->id) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print invoice') }}</flux:button>
+                @can('party_bookings_invoices.print')<flux:button href="{{ route('parties.invoices.print', $booking->invoice->id) }}" target="_blank" variant="subtle" icon="printer">{{ __('Print invoice') }}</flux:button>@endcan
             </x-slot:actions>
         </x-page-header>
         @if(session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
@@ -31,6 +31,38 @@
                 </div>
             </flux:card>
         </div>
+
+        @if(in_array($booking->status, ['draft', 'tentative', 'confirmed', 'rescheduled'], true))
+            <div class="grid gap-4 lg:grid-cols-2">
+                @can('party_bookings_invoices.edit')
+                    <flux:card>
+                        <flux:heading size="lg">{{ __('Reschedule booking') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Changing the schedule releases current reservations and requires confirmation again.') }}</flux:text>
+                        <form method="POST" action="{{ route('parties.bookings.reschedule', $booking->id) }}" class="mt-4 grid gap-3 sm:grid-cols-2">
+                            @csrf
+                            <flux:input name="party_date" type="date" :label="__('Party date')" :value="old('party_date', $booking->party_date?->format('Y-m-d'))" required />
+                            <flux:input name="timezone" :label="__('Timezone')" :value="old('timezone', $booking->timezone)" required />
+                            <flux:input name="start_time" type="time" :label="__('Start time')" :value="old('start_time', $booking->starts_at?->timezone($booking->timezone)->format('H:i'))" required />
+                            <flux:input name="end_time" type="time" :label="__('End time')" :value="old('end_time', $booking->ends_at?->timezone($booking->timezone)->format('H:i'))" required />
+                            <div class="sm:col-span-2"><flux:input name="location" :label="__('Location')" :value="old('location', $booking->location)" required /></div>
+                            <div class="sm:col-span-2"><flux:textarea name="reason" :label="__('Reschedule reason')" required>{{ old('reason') }}</flux:textarea></div>
+                            <div class="sm:col-span-2"><flux:button type="submit" variant="primary" class="w-full sm:w-auto">{{ __('Reschedule booking') }}</flux:button></div>
+                        </form>
+                    </flux:card>
+                @endcan
+                @can('party_bookings_invoices.cancel')
+                    <flux:card class="border-rose-300 bg-rose-50/60 dark:border-rose-900 dark:bg-rose-950/20">
+                        <flux:heading size="lg">{{ __('Cancel booking') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Cancellation locks the working invoice and releases reserved rental assets. It cannot proceed after payments or operations begin.') }}</flux:text>
+                        <form method="POST" action="{{ route('parties.bookings.cancel', $booking->id) }}" class="mt-4 space-y-3" onsubmit="return confirm('{{ __('Cancel this Party booking?') }}')">
+                            @csrf
+                            <flux:textarea name="reason" :label="__('Cancellation reason')" required>{{ old('reason') }}</flux:textarea>
+                            <flux:button type="submit" variant="danger">{{ __('Cancel booking') }}</flux:button>
+                        </form>
+                    </flux:card>
+                @endcan
+            </div>
+        @endif
 
         <flux:card>
             <div class="flex flex-wrap items-start justify-between gap-3"><div><flux:heading size="lg">{{ __('Working invoice') }}</flux:heading><flux:text class="mt-1">{{ $booking->invoice->invoice_number }} · {{ ucfirst(str_replace('_',' ',$booking->invoice->state)) }}</flux:text></div><div class="flex flex-wrap gap-2"><flux:button href="{{ route('parties.invoices.show', $booking->invoice->id) }}" variant="subtle">{{ __('Open invoice') }}</flux:button><flux:button href="{{ route('parties.invoices.payments', $booking->invoice->id) }}" variant="subtle">{{ __('Payments') }}</flux:button></div></div>

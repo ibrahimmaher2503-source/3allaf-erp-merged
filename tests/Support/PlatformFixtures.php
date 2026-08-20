@@ -121,8 +121,10 @@ trait PlatformFixtures
     protected function documentSequence(string $documentType, ?string $prefix = null): DocumentSequence
     {
         return DocumentSequence::query()->firstOrCreate(
-            ['document_type' => $documentType],
+            ['document_type' => $documentType, 'scope_key' => 'company'],
             [
+                'scope_type' => 'company',
+                'scope_id' => null,
                 'prefix' => $prefix ?? strtoupper(str_replace('_', '-', $documentType)).'-',
                 'padding_length' => 6,
                 'next_value' => 1,

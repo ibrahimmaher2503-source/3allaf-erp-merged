@@ -24,12 +24,12 @@ class SaveBranchSellingStoreMappingAction
             // Serialize mappings for a branch. Without a row lock, two
             // concurrent requests can both observe no active mapping (or the
             // same old mapping) and create multiple active rows.
-            $branch = Branch::query()->lockForUpdate()->findOrFail($branchId);
+            $branch = Branch::visibleTo($user)->lockForUpdate()->findOrFail($branchId);
             if ($branch->status !== 'active') {
                 throw new InvalidArgumentException(__('Branch must be active to map a POS selling store.'));
             }
 
-            $store = Store::findOrFail($storeId);
+            $store = Store::visibleTo($user)->findOrFail($storeId);
             if ($store->type !== 'selling') {
                 throw new InvalidArgumentException(__('Selected store must be of type Selling Store.'));
             }

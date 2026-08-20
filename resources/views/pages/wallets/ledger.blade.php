@@ -30,7 +30,24 @@
             </div>
         </div>
 
-        @if ($policyError)
+        @if ($policyError && $wallet === 'product')
+            <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm" role="status" data-guide="product-wallet-not-configured">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="max-w-3xl">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">{{ app()->getLocale() === 'ar' ? 'محفظة المنتجات' : 'Product Wallet' }}</p>
+                        <h2 class="mt-2 text-lg font-semibold text-amber-950">{{ app()->getLocale() === 'ar' ? 'محفظة المنتجات غير مُعدة بعد' : 'Product Wallet is not configured yet' }}</h2>
+                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->getLocale() === 'ar' ? 'تحتفظ محفظة المنتجات بأرصدة المنتجات الخاصة بالعملاء في دفتر مستقل مرتبط بالمصدر.' : 'Product Wallet holds customer product credits in a separate source-linked ledger.' }}</p>
+                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->getLocale() === 'ar' ? 'قبل الاستخدام: يجب إعداد سياسة محفظة المنتجات والعملة على مستوى الشركة. ويتطلب كل قيد مصدر بيع تجزئة معتمد.' : 'Before use, an authorized owner must configure the Product Wallet policy and company currency. Each entry also requires an approved retail source.' }}</p>
+                        <p class="mt-2 text-xs leading-5 text-amber-800">{{ $policyError }}</p>
+                    </div>
+                    @can('company_settings.view')
+                        <a href="{{ route('admin.settings.customer-loyalty') }}" class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm hover:border-amber-400">{{ app()->getLocale() === 'ar' ? 'إعداد سياسة المحفظة' : 'Configure wallet policy' }}</a>
+                    @else
+                        <span class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900">{{ app()->getLocale() === 'ar' ? 'يلزم مستخدم مخوّل للإعداد' : 'An authorized settings user is required' }}</span>
+                    @endcan
+                </div>
+            </section>
+        @elseif ($policyError)
             <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm" role="alert" data-guide="{{ $guidePrefix }}-policy-error">
                 <h2 class="text-lg font-semibold text-rose-950">{{ __('Wallet policy is not configured') }}</h2>
                 <p class="mt-2 text-sm leading-6 text-rose-900">{{ $policyError }}</p>
@@ -130,7 +147,17 @@
                 @if ($exportRoute)<a href="{{ $exportRoute }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-300">{{ __('Export visible statement') }}</a>@endif
             </div>
             @if ($entries->isEmpty())
-                <div class="mt-5" data-guide="{{ $guidePrefix }}-empty"><x-state.empty :title="__('No wallet entries yet')" :description="__('Wallet entries will appear after an approved source is recorded.')" /></div>
+                <div class="mt-5" data-guide="{{ $guidePrefix }}-empty">
+                    <x-state.empty :title="__('No wallet entries yet')" :description="__('Wallet entries will appear after an approved source is recorded.')">
+                        <x-slot:action>
+                            @if ($wallet === 'product')
+                                @can('company_settings.view')
+                                    <flux:button href="{{ route('admin.settings.customer-loyalty') }}" variant="subtle">{{ __('Review wallet policy') }}</flux:button>
+                                @endcan
+                            @endif
+                        </x-slot:action>
+                    </x-state.empty>
+                </div>
             @else
                 <x-tables.table-shell class="mt-5" label="{{ $walletLabel }} {{ __('ledger history') }}">
                     <table class="data-table min-w-[66rem] text-sm">

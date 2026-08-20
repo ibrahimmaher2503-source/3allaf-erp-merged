@@ -10,12 +10,16 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Retail\Support\PosContextResolver;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
 final class PosCartAction
 {
-    public function __construct(private readonly EffectivePriceResolver $prices) {}
+    public function __construct(
+        private readonly EffectivePriceResolver $prices,
+        private readonly PosContextResolver $contextResolver,
+    ) {}
 
     public function add(Request $request, User $user, int $productId, string $quantity): void
     {
@@ -89,8 +93,10 @@ final class PosCartAction
 
     private function store(User $user): Store
     {
-        return Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->first()
-            ?? throw new InvalidArgumentException(__('No active selling store is assigned to this cashier.'));
+        $context = $this->contextResolver->resolve($user);
+
+        return $context->store
+            ?? throw new InvalidArgumentException($context->disabledReason ?? __('POS is disabled until you open an assigned cashier shift.'));
     }
 
     private function assertQuantity(string $quantity): void

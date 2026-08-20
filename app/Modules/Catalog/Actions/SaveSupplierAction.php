@@ -4,6 +4,8 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Models\SupplierGroup;
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +15,7 @@ use InvalidArgumentException;
 class SaveSupplierAction
 {
     /** @param array<string, mixed> $data */
-    public function execute(array $data, ?int $id = null, ?int $expectedVersion = null): Supplier
+    public function execute(array $data, ?int $id = null, ?int $expectedVersion = null, ?int $companyId = null): Supplier
     {
         Gate::authorize($id ? 'suppliers.edit' : 'suppliers.create');
 
@@ -36,17 +38,27 @@ class SaveSupplierAction
                 }
             }
 
+            $supplierGroupId = filled($data['supplier_group_id'] ?? null) ? (int) $data['supplier_group_id'] : null;
+            $supplierGroup = $supplierGroupId === null
+                ? null
+                : SupplierGroup::query()->when($companyId !== null, fn ($query) => $query->forCompany($companyId))
+                    ->active()->lockForUpdate()->find($supplierGroupId);
+            if ($supplierGroupId !== null && $supplierGroup === null) {
+                throw new InvalidArgumentException(__('The selected supplier group is not available in the active company.'));
+            }
+
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
                 'name_ar' => trim((string) $data['name_ar']),
                 'name_en' => trim((string) ($data['name_en'] ?? '')),
                 'contact_name' => ! empty($data['contact_name']) ? trim((string) $data['contact_name']) : null,
                 'email' => ! empty($data['email']) ? trim((string) $data['email']) : null,
-                'phone' => ! empty($data['phone']) ? trim((string) $data['phone']) : null,
+                'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
                 'tax_number' => ! empty($data['tax_number']) ? trim((string) $data['tax_number']) : null,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
                 'address' => ! empty($data['address']) ? trim((string) $data['address']) : null,
                 'status' => $status,
+                'supplier_group_id' => $supplierGroup?->id,
                 'updated_by' => $userId,
             ];
 
@@ -57,7 +69,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'lock_version']);
+                $before = $supplier->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -70,7 +82,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

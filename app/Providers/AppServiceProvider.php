@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
 use App\Modules\Platform\Policies\AuditLogPolicy;
+use App\Modules\Platform\Support\TranslationOverrideLoader;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
@@ -16,9 +17,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Livewire\Livewire;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +30,13 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, PosAwareLoginResponse::class);
+
+        // The framework registers this provider lazily; register it before replacing
+        // its loader binding so resolving `translator` cannot restore FileLoader later.
+        $this->app->register(TranslationServiceProvider::class);
+        $this->app->forgetInstance('translation.loader');
+        $this->app->forgetInstance('translator');
+        $this->app->singleton('translation.loader', fn ($app) => new TranslationOverrideLoader($app['files'], [base_path('vendor/laravel/framework/src/Illuminate/Translation/lang'), $app['path.lang']]));
     }
 
     /**
@@ -45,7 +54,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ApprovalRecord::class, ApprovalRecordPolicy::class);
 
         Gate::before(function (?User $user, string $ability): ?bool {
-            if ($user?->is_super_admin) {
+            if ($user?->status !== 'active') {
+                return false;
+            }
+
+            if ($user->is_super_admin) {
                 return true;
             }
 
@@ -63,7 +76,7 @@ class AppServiceProvider extends ServiceProvider
             'dashboard_reports.export', 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf', 'dashboard_reports.edit',
             'rental_assets.view', 'rental_assets.create', 'rental_assets.edit', 'rental_assets.print', 'rental_assets.approve', 'rental_assets.reject', 'rental_assets.export', 'rental_assets.cancel', 'rental_assets.override', 'rental_assets.reserve', 'rental_assets.checkout', 'rental_assets.return', 'rental_assets.inspect', 'rental_assets.status', 'rental_assets.cost_view', 'rental_assets.cost_edit',
             'quotations.view', 'quotations.create', 'quotations.edit', 'quotations.print', 'quotations.approve', 'quotations.export', 'quotations.cancel', 'quotations.issue', 'quotations.share',
-            'customers.view', 'customers.create', 'customers.edit', 'customers.sensitive', 'customers.merge', 'customers.export',
+            'customers.view', 'customers.create', 'customers.edit', 'customers.sensitive', 'customers.merge', 'customers.export', 'customers.import.approve',
             'loyalty.view', 'loyalty.earn', 'loyalty.redeem', 'loyalty.adjust', 'loyalty.approve', 'loyalty.export', 'loyalty.expire',
             'products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit',
             'products_categories_brands.logical_delete', 'products_categories_brands.print', 'products_categories_brands.approve',

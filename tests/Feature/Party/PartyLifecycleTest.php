@@ -7,9 +7,9 @@ namespace Tests\Feature\Party;
 use App\Models\User;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\ProductWalletLedger;
-use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
 use App\Modules\Customer\Support\PartyWalletBalance;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
@@ -20,14 +20,17 @@ use App\Modules\Party\Actions\CreatePartyOperatingOrderAction;
 use App\Modules\Party\Actions\FinalizePartyInvoiceAction;
 use App\Modules\Party\Actions\IssuePartyConsumableAction;
 use App\Modules\Party\Actions\RecordPartyPaymentAction;
-use App\Modules\Party\Actions\ReturnPartyConsumableAction;
 use App\Modules\Party\Actions\ReleasePartyOperatingOrderAction;
+use App\Modules\Party\Actions\ReturnPartyConsumableAction;
 use App\Modules\Party\Actions\SavePartyInvoiceAction;
 use App\Modules\Party\Models\PartyBooking;
-use App\Modules\Party\Models\PartyInvoice;
 use App\Modules\Party\Models\PartyPayment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
+use App\Modules\Platform\Models\Store;
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -39,8 +42,16 @@ use Tests\TestCase;
 final class PartyLifecycleTest extends TestCase
 {
     use CustomerLoyaltyFixtures;
-    use PlatformFixtures;
     use DatabaseTransactions;
+    use PlatformFixtures;
+
+    protected function seedCanonicalAuthorization(): void
+    {
+        $this->seed(ProductionSeeder::class);
+
+        $partyManager = Role::query()->where('code', 'party-manager')->firstOrFail();
+        $partyManager->permissions()->sync(Permission::query()->where('status', 'active')->pluck('id')->all());
+    }
 
     public function test_party_booking_creates_party_only_working_invoice_and_blocks_retail_lines(): void
     {
@@ -157,6 +168,181 @@ final class PartyLifecycleTest extends TestCase
         app(IssuePartyConsumableAction::class)->execute($scenario['manager'], $order->fresh(), $line->fresh(), '1.000000', 'PARTY-ISSUE-AFTER-COMPLETE');
     }
 
+    public function test_fully_consumed_party_stock_can_be_recorded_and_the_order_can_complete_without_a_return(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer'], [
+            'lines' => [['line_type' => 'consumable', 'description' => 'Cups', 'quantity' => '5', 'unit_price' => '0.00', 'product_id' => $scenario['product']->id]],
+        ]);
+        $this->actingAs($scenario['manager']);
+        app(ConfirmPartyBookingAction::class)->execute($scenario['manager'], $booking);
+        $order = app(CreatePartyOperatingOrderAction::class)->execute($scenario['manager'], $booking->fresh(), $booking->fresh()->invoice, 'PARTY-ACTUAL-ORDER');
+        app(ReleasePartyOperatingOrderAction::class)->execute($scenario['manager'], $order);
+        $line = $order->fresh('lines')->lines->sole();
+        app(IssuePartyConsumableAction::class)->execute($scenario['manager'], $order, $line, '5.000000', 'PARTY-ACTUAL-ISSUE');
+
+        $this->post('/parties/orders/'.$order->id.'/actuals', [
+            'line_id' => $line->id,
+            'consumed_quantity' => '5.000000',
+        ])->assertRedirect();
+
+        self::assertSame('5.000000', (string) $line->fresh()->consumed_quantity);
+        self::assertSame('completed', app(CompletePartyOperatingOrderAction::class)->execute($scenario['manager'], $order->fresh('lines'))->status);
+    }
+
+    public function test_draft_booking_cannot_bypass_confirmation_and_operations_during_final_close(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer']);
+        $this->actingAs($scenario['manager']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('confirmed');
+
+        app(FinalizePartyInvoiceAction::class)->execute($scenario['manager'], $booking->invoice, 'PARTY-DRAFT-CLOSE');
+    }
+
+    public function test_confirmed_booking_can_be_rescheduled_with_history_and_must_be_reconfirmed(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer']);
+        $this->actingAs($scenario['manager']);
+        app(ConfirmPartyBookingAction::class)->execute($scenario['manager'], $booking);
+        $newDate = now()->addDays(9)->toDateString();
+
+        $this->post('/parties/bookings/'.$booking->id.'/reschedule', [
+            'party_date' => $newDate,
+            'start_time' => '10:00',
+            'end_time' => '13:00',
+            'timezone' => 'UTC',
+            'location' => 'Garden room',
+            'reason' => 'Customer requested a new date.',
+        ])->assertRedirect();
+
+        $booking->refresh();
+        self::assertSame('rescheduled', $booking->status);
+        self::assertSame($newDate, $booking->party_date->toDateString());
+        self::assertSame('Customer requested a new date.', $booking->change_reason);
+        self::assertNull($booking->confirmed_at);
+    }
+
+    public function test_draft_booking_can_be_cancelled_with_a_reason_and_its_invoice_is_locked(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer']);
+        $this->actingAs($scenario['manager']);
+
+        $this->post('/parties/bookings/'.$booking->id.'/cancel', [
+            'reason' => 'Customer cancelled before confirmation.',
+        ])->assertRedirect();
+
+        self::assertSame('cancelled', $booking->fresh()->status);
+        self::assertSame('cancelled', $booking->invoice->fresh()->state);
+    }
+
+    public function test_party_lifecycle_controls_are_available_from_the_relevant_ui(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer'], [
+            'lines' => [['line_type' => 'consumable', 'description' => 'Cups', 'quantity' => '5', 'unit_price' => '0.00', 'product_id' => $scenario['product']->id]],
+        ]);
+
+        $this->get(route('parties.bookings.show', $booking))
+            ->assertOk()
+            ->assertSee(route('parties.bookings.reschedule', $booking), false)
+            ->assertSee(route('parties.bookings.cancel', $booking), false);
+
+        app(ConfirmPartyBookingAction::class)->execute($scenario['manager'], $booking);
+        $order = app(CreatePartyOperatingOrderAction::class)->execute($scenario['manager'], $booking->fresh(), $booking->fresh()->invoice, 'PARTY-UI-ORDER');
+        app(ReleasePartyOperatingOrderAction::class)->execute($scenario['manager'], $order);
+        $line = $order->fresh('lines')->lines->sole();
+        app(IssuePartyConsumableAction::class)->execute($scenario['manager'], $order, $line, '5.000000', 'PARTY-UI-ISSUE');
+
+        $this->get(route('parties.orders.show', $order))
+            ->assertOk()
+            ->assertSee(route('parties.orders.actuals', $order), false)
+            ->assertSee('Record actual consumption');
+    }
+
+    public function test_party_booking_and_invoice_forms_offer_catalog_products_instead_of_raw_ids(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer'], [
+            'lines' => [['line_type' => 'consumable', 'description' => 'Cups', 'quantity' => '2', 'unit_price' => '10.00', 'product_id' => $scenario['product']->id]],
+        ]);
+
+        $this->get(route('parties.bookings.create'))
+            ->assertOk()
+            ->assertSee($scenario['product']->item_code)
+            ->assertSee($scenario['product']->name_en)
+            ->assertDontSee('Product ID for consumable');
+        $this->get(route('parties.invoices.show', $booking->invoice))
+            ->assertOk()
+            ->assertSee($scenario['product']->item_code)
+            ->assertSee($scenario['product']->name_en)
+            ->assertSee('Add another Party line')
+            ->assertSee('name="lines[1][description]"', false)
+            ->assertDontSee('Consumable product ID');
+    }
+
+    public function test_party_lines_accept_only_active_catalog_products_on_consumables(): void
+    {
+        $scenario = $this->scenario();
+
+        try {
+            $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer'], [
+                'lines' => [['line_type' => 'consumable', 'description' => 'Unknown cups', 'quantity' => '2', 'unit_price' => '10.00', 'product_id' => PHP_INT_MAX]],
+            ]);
+            self::fail('An unknown product must not be accepted by a Party consumable line.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('active catalog product', $exception->getMessage());
+        }
+
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer']);
+        try {
+            app(SavePartyInvoiceAction::class)->execute($scenario['manager'], $booking->invoice, [
+                'lines' => [['line_type' => 'service', 'description' => 'Party host', 'quantity' => '1', 'unit_price' => '10.00', 'product_id' => $scenario['product']->id]],
+            ]);
+            self::fail('A non-consumable Party line must not retain a catalog product.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('Only consumable', $exception->getMessage());
+        }
+    }
+
+    public function test_view_only_party_user_does_not_receive_mutating_or_print_controls(): void
+    {
+        $scenario = $this->scenario();
+        $booking = $this->createBooking($scenario['manager'], $scenario['partyStore'], $scenario['customer']);
+        $role = Role::query()->create([
+            'code' => 'party-viewer-'.Str::lower(Str::random(6)),
+            'name_ar' => 'Party viewer',
+            'name_en' => 'Party viewer',
+            'status' => 'active',
+        ]);
+        $role->permissions()->sync([
+            Permission::query()->where('code', 'party_bookings_invoices.view')->value('id'),
+        ]);
+        $viewer = $this->userWith('party-viewer-'.Str::random(6), [$role->code], branchIds: [$scenario['partyStore']->branch_id], storeIds: [$scenario['partyStore']->id]);
+        $this->actingAs($viewer);
+
+        $this->get(route('parties.bookings.index'))
+            ->assertOk()
+            ->assertDontSee(route('parties.bookings.create'), false);
+        $this->get(route('parties.bookings.show', $booking))
+            ->assertOk()
+            ->assertDontSee(route('parties.bookings.reschedule', $booking), false)
+            ->assertDontSee(route('parties.bookings.cancel', $booking), false)
+            ->assertDontSee(route('parties.invoices.print', $booking->invoice), false);
+        $this->get(route('parties.invoices.show', $booking->invoice))
+            ->assertOk()
+            ->assertDontSee('action="'.route('parties.invoices.update', $booking->invoice).'"', false)
+            ->assertDontSee(route('parties.invoices.settle', $booking->invoice), false)
+            ->assertDontSee(route('parties.invoices.print', $booking->invoice), false);
+        $this->get(route('parties.invoices.payments', $booking->invoice))
+            ->assertOk()
+            ->assertDontSee('action="'.route('parties.invoices.payments.store', $booking->invoice).'"', false);
+    }
+
     public function test_party_movement_idempotency_keys_cannot_be_reused_with_different_quantities(): void
     {
         $scenario = $this->scenario();
@@ -228,7 +414,7 @@ final class PartyLifecycleTest extends TestCase
         self::assertSame(0, ProductWalletLedger::query()->where('customer_id', $scenario['customer']->id)->count());
     }
 
-    /** @return array{manager: User, partyStore: \App\Modules\Platform\Models\Store, customer: Customer, product: Product, partyStockBalance: \App\Modules\Inventory\Models\StockBalance, cash: PaymentMethod} */
+    /** @return array{manager: User, partyStore: Store, customer: Customer, product: Product, partyStockBalance: StockBalance, cash: PaymentMethod} */
     private function scenario(): array
     {
         $this->seedCanonicalAuthorization();
@@ -254,7 +440,7 @@ final class PartyLifecycleTest extends TestCase
         return compact('manager', 'partyStore', 'customer', 'product', 'partyStockBalance', 'cash');
     }
 
-    private function createBooking(User $manager, \App\Modules\Platform\Models\Store $store, Customer $customer, array $overrides = []): PartyBooking
+    private function createBooking(User $manager, Store $store, Customer $customer, array $overrides = []): PartyBooking
     {
         $this->actingAs($manager);
         $start = now()->addDays(5)->setTime(14, 0);

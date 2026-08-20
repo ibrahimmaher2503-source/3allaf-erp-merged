@@ -24,14 +24,15 @@ final class SaveCustomerChildAction
         abort_unless(Customer::query()->visibleFrom($actor, (int) $store->branch_id, (int) $store->id)->whereKey($customer->id)->exists(), 404);
         abort_unless($customer->status === 'active', 404);
 
-        $purpose = trim((string) ($data['purpose'] ?? ''));
-        if (! in_array($purpose, CustomerPolicy::childPurposes()['value'], true)) {
+        $allowedPurposes = CustomerPolicy::childPurposes()['value'];
+        $purpose = trim((string) ($data['purpose'] ?? '')) ?: (string) ($allowedPurposes[0] ?? '');
+        if (! in_array($purpose, $allowedPurposes, true)) {
             throw new InvalidArgumentException(__('This child-data purpose is not allowed by the configured policy.'));
         }
         $nameAr = trim((string) ($data['name_ar'] ?? ''));
-        $nameEn = trim((string) ($data['name_en'] ?? ''));
-        if ($nameAr === '' || $nameEn === '') {
-            throw new InvalidArgumentException(__('Child Arabic and English names are required.'));
+        $nameEn = filled($data['name_en'] ?? null) ? trim((string) $data['name_en']) : null;
+        if ($nameAr === '') {
+            throw new InvalidArgumentException(__('Child Arabic name is required.'));
         }
         $consent = CustomerPolicy::consentSnapshot();
 
@@ -76,6 +77,34 @@ final class SaveCustomerChildAction
                 source: $saved,
                 before: $before,
                 after: $saved->only(['customer_id', 'name_ar', 'name_en', 'birth_date', 'purpose', 'consent_status', 'lock_version']),
+                branchId: (int) $store->branch_id,
+                storeId: (int) $store->id,
+                metadata: ['actor_id' => $actor->id, 'purpose_scoped' => true],
+            );
+
+            return $saved;
+        });
+    }
+
+    public function deactivate(User $actor, Customer $customer, Store $store, CustomerChild $child): CustomerChild
+    {
+        Gate::forUser($actor)->authorize('customers.sensitive');
+        abort_unless($store->status === 'active' && $actor->canAccessStore((int) $store->id), 403);
+        abort_unless((int) $child->customer_id === (int) $customer->id, 404);
+        abort_unless(Customer::query()->visibleFrom($actor, (int) $store->branch_id, (int) $store->id)->whereKey($customer->id)->exists(), 404);
+
+        return DB::transaction(function () use ($actor, $customer, $store, $child): CustomerChild {
+            $locked = CustomerChild::query()->where('customer_id', $customer->id)->lockForUpdate()->findOrFail($child->id);
+            $before = $locked->only(['status', 'lock_version']);
+            $locked->mutateProfile(['status' => 'inactive', 'updated_by' => $actor->id, 'lock_version' => ((int) $locked->lock_version) + 1]);
+            $saved = $locked->fresh();
+
+            app(RecordAuditEvent::class)->execute(
+                category: 'customer_value',
+                event: 'customer_child_deactivated',
+                source: $saved,
+                before: $before,
+                after: $saved->only(['customer_id', 'status', 'lock_version']),
                 branchId: (int) $store->branch_id,
                 storeId: (int) $store->id,
                 metadata: ['actor_id' => $actor->id, 'purpose_scoped' => true],

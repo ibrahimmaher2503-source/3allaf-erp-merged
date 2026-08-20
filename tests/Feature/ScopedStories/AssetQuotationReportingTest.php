@@ -13,6 +13,12 @@ use App\Modules\Assets\Actions\ReserveAssetAction;
 use App\Modules\Assets\Actions\ReturnAssetAction;
 use App\Modules\Assets\Models\AssetEvent;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerScope;
@@ -22,6 +28,8 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Quotation\Actions\CreateQuotationAction;
 use App\Modules\Quotation\Actions\UpdateQuotationAction;
 use App\Modules\Quotation\Models\Quotation;
@@ -32,6 +40,7 @@ use App\Modules\Reporting\Queries\ReportSnapshot;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -59,6 +68,13 @@ final class AssetQuotationReportingTest extends TestCase
         config(['database.connections.mysql.strict' => false]);
         DB::purge('mysql');
         DB::connection('mysql')->statement("SET SESSION sql_mode = ''");
+    }
+
+    protected function seedCanonicalAuthorization(): void
+    {
+        $this->seed(ProductionSeeder::class);
+        $administrator = Role::query()->where('code', 'system-administrator')->firstOrFail();
+        $administrator->permissions()->sync(Permission::query()->where('status', 'active')->pluck('id')->all());
     }
 
     public function test_asset_reservation_checkout_return_and_inspection_preserve_history(): void
@@ -190,6 +206,14 @@ final class AssetQuotationReportingTest extends TestCase
         $this->assertSame('150.00', (string) $updated->total);
         $this->assertSame($before['stock'], StockMovement::query()->count());
         $this->assertSame(1, AuditLog::query()->where('event', 'quotation_updated')->count());
+
+        $this->get(route('quotations.index'))
+            ->assertOk()
+            ->assertSee($customer->name_en)
+            ->assertSee($store->code)
+            ->assertSee($product->item_code)
+            ->assertDontSee('Customer ID (optional)')
+            ->assertDontSee('Store ID');
     }
 
     public function test_report_snapshot_and_export_reconcile_and_foreign_download_is_denied(): void
@@ -453,6 +477,28 @@ final class AssetQuotationReportingTest extends TestCase
         ]);
 
         $this->assertSame('inventory', $job->report_key);
+    }
+
+    public function test_inventory_report_normalizes_product_attribute_filters(): void
+    {
+        $owner = $this->administrator('stories-report-product-filters');
+        $supplier = Supplier::query()->create(['code' => 'QA-SUP-1', 'name_ar' => 'مورد اختبار', 'name_en' => 'QA Supplier', 'status' => 'active']);
+        $brand = Brand::factory()->create();
+        $age = AgeLabel::query()->create(['code' => 'QA-AGE', 'name_ar' => 'عمر', 'name_en' => 'QA Age', 'status' => 'active']);
+        $character = Character::query()->create(['code' => 'QA-CHAR', 'name_ar' => 'شخصية', 'name_en' => 'QA Character', 'status' => 'active']);
+        $colour = Colour::query()->create(['code' => 'QA-COL', 'name_ar' => 'لون', 'name_en' => 'QA Colour', 'status' => 'active']);
+        $gender = Gender::query()->create(['code' => 'QA-GEN', 'name_ar' => 'جنس', 'name_en' => 'QA Gender', 'status' => 'active']);
+        $report = app(ReportSnapshot::class)->execute($owner, [
+            'module' => 'inventory', 'product_type' => 'standard', 'product_status' => 'active',
+            'brand_id' => $brand->id, 'supplier_id' => $supplier->id, 'age_label_id' => $age->id, 'character_id' => $character->id,
+            'colour_id' => $colour->id, 'gender_id' => $gender->id,
+        ]);
+
+        $this->assertSame('standard', $report['filters']['product_type']);
+        $this->assertSame('active', $report['filters']['product_status']);
+        $this->assertSame($brand->id, $report['filters']['brand_id']);
+        $this->assertSame($age->id, $report['filters']['age_label_id']);
+        $this->assertLessThanOrEqual(50, collect($report['detail_sections'])->sum(fn (array $section): int => count($section['rows'])));
     }
 
     public function test_focused_reports_expose_bounded_source_reconciled_visual_series(): void

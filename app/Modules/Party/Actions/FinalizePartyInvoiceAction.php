@@ -21,17 +21,33 @@ final class FinalizePartyInvoiceAction
     {
         Gate::forUser($actor)->authorize('party_bookings_invoices.approve');
         $idempotencyKey = trim($idempotencyKey);
-        if ($idempotencyKey === '') throw new InvalidArgumentException(__('A final-close idempotency key is required.'));
+        if ($idempotencyKey === '') {
+            throw new InvalidArgumentException(__('A final-close idempotency key is required.'));
+        }
 
         return DB::transaction(function () use ($actor, $invoice, $idempotencyKey): PartyInvoice {
             $invoice = PartyInvoice::query()->with(['booking', 'lines'])->lockForUpdate()->findOrFail($invoice->id);
             if ($invoice->state === 'final') {
-                if ((string) $invoice->final_close_idempotency_key !== $idempotencyKey) throw new InvalidArgumentException(__('This Party invoice was already finalized by another request.'));
+                if ((string) $invoice->final_close_idempotency_key !== $idempotencyKey) {
+                    throw new InvalidArgumentException(__('This Party invoice was already finalized by another request.'));
+                }
+
                 return $invoice;
             }
-            if (in_array($invoice->state, ['cancelled', 'corrected_by_reference'], true)) throw new InvalidArgumentException(__('This Party invoice cannot be finalized from its current state.'));
+            if (in_array($invoice->state, ['cancelled', 'corrected_by_reference'], true)) {
+                throw new InvalidArgumentException(__('This Party invoice cannot be finalized from its current state.'));
+            }
+            if (! in_array($invoice->booking->status, ['confirmed', 'completed_pending_settlement'], true)) {
+                throw new InvalidArgumentException(__('The Party booking must be confirmed before final close.'));
+            }
             $openOrder = $invoice->booking->operatingOrders()->whereNotIn('status', ['completed', 'cancelled'])->exists();
-            if ($openOrder) throw new InvalidArgumentException(__('The Party operating order must be completed before final close.'));
+            if ($openOrder) {
+                throw new InvalidArgumentException(__('The Party operating order must be completed before final close.'));
+            }
+            $requiresOperation = $invoice->lines()->whereIn('line_type', ['consumable', 'rental_asset'])->exists();
+            if ($requiresOperation && ! $invoice->booking->operatingOrders()->where('status', 'completed')->exists()) {
+                throw new InvalidArgumentException(__('Party consumables and rental assets require a completed operating order before final close.'));
+            }
             $total = bcadd((string) $invoice->lines()->sum('line_total'), '0', 4);
             $paid = bcadd((string) $invoice->payments()->where('status', 'approved')->sum('amount'), '0', 4);
             $remaining = bcsub($total, $paid, 4);
@@ -52,6 +68,7 @@ final class FinalizePartyInvoiceAction
             $invoice->update(['state' => 'final']);
             $invoice->booking->update(['status' => 'closed', 'closed_at' => now(), 'closed_by' => $actor->id, 'updated_by' => $actor->id, 'lock_version' => $invoice->booking->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('party', 'party_final_settlement_completed', $invoice, $before, $invoice->only(['state', 'total_amount', 'paid_amount', 'wallet_applied_amount', 'balance_due', 'final_invoice_number', 'final_receipt_number']), (int) $invoice->booking->branch_id, (int) $invoice->booking->store_id, metadata: ['wallet' => 'party_only', 'idempotency_key' => $idempotencyKey, 'receipt_number' => $finalReceiptNumber]);
+
             return $invoice->fresh(['booking', 'lines', 'payments']);
         }, 5);
     }

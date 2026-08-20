@@ -21,12 +21,11 @@ final class DocumentSequenceConcurrencyTest extends ConcurrencyTestCase
         $this->seedCanonicalAuthorization();
         $admin = $this->administrator('conc-num-admin-'.Str::random(6));
 
-        // Reset to a known, deterministic starting point. document_type is
-        // globally unique, so re-running this suite against the same
-        // persistent database must upsert, not insert.
+        // Reset to a known, deterministic company-scoped fixture. Re-running
+        // this suite against the same persistent database must upsert, not insert.
         $sequence = DocumentSequence::query()->firstOrCreate(
-            ['document_type' => 'purchase_order'],
-            ['prefix' => 'RACE-PO-', 'padding_length' => 5, 'suffix' => null, 'next_value' => 1, 'reset_rule' => 'never', 'status' => 'active', 'lock_version' => 1, 'policy_notes' => 'Concurrency race fixture.'],
+            ['document_type' => 'purchase_order', 'scope_key' => 'company'],
+            ['scope_type' => 'company', 'scope_id' => null, 'prefix' => 'RACE-PO-', 'padding_length' => 5, 'suffix' => null, 'next_value' => 1, 'reset_rule' => 'never', 'status' => 'active', 'lock_version' => 1, 'policy_notes' => 'Concurrency race fixture.'],
         );
         if (! $sequence->wasRecentlyCreated) {
             $sequence->update(['prefix' => 'RACE-PO-', 'padding_length' => 5, 'suffix' => null, 'reset_rule' => 'never', 'status' => 'active', 'policy_notes' => 'Concurrency race fixture.']);
@@ -52,7 +51,7 @@ final class DocumentSequenceConcurrencyTest extends ConcurrencyTestCase
         }
         self::assertSame($expected, $numbers, 'Allocated numbers must be exactly the gapless sequence 1..N, proving no lost update and no double-allocation under real concurrency.');
 
-        $sequence = DocumentSequence::query()->where('document_type', 'purchase_order')->firstOrFail();
+        $sequence = DocumentSequence::query()->where('document_type', 'purchase_order')->where('scope_key', 'company')->firstOrFail();
         self::assertSame($workerCount + 1, $sequence->next_value, 'next_value must have advanced by exactly the number of concurrent allocations.');
     }
 }

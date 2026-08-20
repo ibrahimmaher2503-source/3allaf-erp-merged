@@ -10,7 +10,6 @@ use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Backup\BackupDestination\BackupDestination;
 
 $router = app('router');
 
@@ -27,46 +26,42 @@ $router->post('locale', function (Request $request) {
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->post('ui/preferences', [DashboardAssistantController::class, 'preferences'])->name('platform.ui-preferences');
     $router->post('ui/tutorial-progress', [DashboardAssistantController::class, 'tutorialProgress'])->name('platform.tutorial-progress');
+    $router->livewire('notifications', 'platform::system.notifications')->name('notifications.index');
     $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', TutorialRegistry::screenIds())->name('platform.help.screen');
     $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
     $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
+    $router->livewire('admin/translations', 'platform::admin.translation-editor')->middleware('can:company_settings.edit')->name('admin.translations');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
+    foreach ([
+        'admin/company' => 'company',
+        'admin/payment-methods' => 'payments',
+        'admin/tax-settings' => 'tax',
+        'admin/document-sequences' => 'sequences',
+        'admin/printers' => 'printers',
+    ] as $legacyPath => $tab) {
+        $router->get($legacyPath, fn () => redirect()->route('admin.settings', ['tab' => $tab]))
+            ->middleware('can:company_settings.view')
+            ->name('admin.settings.compatibility.'.$tab);
+    }
     $router->get('admin/settings/printers/{printer}/preview', function (PrinterConfiguration $printer) {
         abort_unless(auth()->user()?->can('company_settings.view'), 403);
+
+        $printer = PrinterConfiguration::visibleTo(auth()->user())->findOrFail($printer->id)->load(['branch', 'store']);
 
         return view('platform.admin.printer-preview', compact('printer'));
     })->name('admin.settings.printer-preview');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');
     $router->livewire('admin/stores', 'platform::admin.stores')->middleware('can:branches_stores.view')->name('admin.stores');
     $router->livewire('admin/cash-drawers', 'platform::admin.drawers')->middleware('can:drawers_payments_tax_numbering_printers.view')->name('admin.cash-drawers');
+    // Keep the historical URL usable while the canonical route remains guarded.
+    $router->get('admin/drawers', fn () => redirect()->route('admin.cash-drawers'))
+        ->middleware('can:drawers_payments_tax_numbering_printers.view')
+        ->name('admin.drawers.compatibility');
     $router->livewire('admin/authorization-baseline', 'platform::admin.authorization-baseline')->middleware('can:users_roles_permissions.view')->name('admin.authorization-baseline');
 
     $router->livewire('admin/system/health', 'platform::system.health')->middleware('can:audit_logs.view')->name('system.health');
-    $router->get('admin/system/backups', function () {
-        $name = (string) config('backup.backup.name', config('app.name'));
-        $disks = array_values(array_filter((array) config('backup.backup.destination.disks', []), static fn (mixed $disk): bool => is_string($disk)));
-        $destinations = array_map(function (string $disk) use ($name): array {
-            $destination = BackupDestination::create($disk, $name);
-            $newest = $destination->newestBackup();
-
-            return [
-                'disk' => $disk,
-                'reachable' => $destination->isReachable(),
-                'backup_count' => $destination->backups()->count(),
-                'newest' => $newest?->date()?->toIso8601String(),
-                'size_bytes' => $destination->usedStorage(),
-                'connection_error' => $destination->connectionError() === null ? null : 'unavailable',
-            ];
-        }, $disks);
-
-        return response()->json([
-            'name' => $name,
-            'verify_backup' => (bool) config('backup.backup.verify_backup'),
-            'encrypted' => filled(config('backup.backup.password')),
-            'destinations' => $destinations,
-        ]);
-    })->middleware('can:audit_logs.view')->name('system.backups');
+    $router->livewire('admin/system/backups', 'platform::system.backups')->middleware('can:audit_logs.view')->name('system.backups');
     $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:audit_logs.view')->name('admin.audit');
     $router->get('admin/audit/export', function (Request $request) {
         $filters = $request->validate([

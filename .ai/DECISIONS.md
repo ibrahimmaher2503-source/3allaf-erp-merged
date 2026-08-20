@@ -301,3 +301,53 @@ Date: 2026-08-13. Status: owner-directed implementation; supersedes DEC-076's re
 `DatabaseSeeder` now works in every environment, including Production with Artisan `--force`, without any seed-related `.env` input, JSON file, or separate onboarding/import command. It creates only an idempotent baseline: all canonical roles and permissions, the fixed bootstrap System Administrator (`admin`, `admin@instaparty.online`), a default Toy & Joy company, MAIN branch, selling store, warehouse, cash drawer, cash/card methods, zero-rate tax, document sequences, and browser-print profile. The bootstrap password is compiled into the seeder for the first sign-in and must be changed immediately; reruns never reset it or overwrite existing baseline records.
 
 Normal baseline seeding must not create products, suppliers, prices, opening stock, customers, bookings, invoices, payments, sales, or other transactional data. Existing optional private-artifact infrastructure remains outside the default path and does not affect normal installation. Authorization, maker/checker, and immutable-transaction protections remain unchanged.
+
+## DEC-082 - Owner-authorized Party workflow completion verification
+
+Date: 2026-08-14. Status: implemented and verified for the existing Local/Dev Party slices; Production/UAT gates remain open.
+
+The owner authorized focused PHPUnit, authenticated local browser control, and the isolated MariaDB database `toyjoy_party_completion_20260814` to complete and verify Party bookings, working invoices, payments/final settlement, operating orders and consumable reconciliation, rental-asset handling, Party Wallet, and Party quotations. This exception supersedes the active automated-test prohibition only for that named scope.
+
+Party booking and invoice screens select active catalog products instead of accepting raw product IDs. Party quotations remain non-posting and keep retail product lines separate from Party service/rental-asset lines. Final Party invoice closure requires a confirmed/completed booking, completed operations where operational lines exist, and no open operating order. Reschedule/cancel operations preserve immutable history and release affected reservations. Server authorization remains authoritative and UI controls reflect the corresponding Party, wallet, quotation, print, and rental-asset permissions. No Production permission ratification, Production mutation, human UAT acceptance, or release approval is inferred.
+
+## DEC-083 - Owner-authorized local ERP workflow demo seeding
+
+Date: 2026-08-15. Status: implemented and verified on isolated MariaDB; Production remains baseline-only.
+
+The owner explicitly authorized a small deterministic dataset that makes the implemented procurement, inventory, customer/loyalty, and POS flows usable immediately after `php artisan db:seed`. `DatabaseSeeder` continues to install the universal Production baseline first, but invokes `DemoErpSeeder` only when `APP_ENV` is `local` or `testing`; Production remains governed by DEC-081 and receives no synthetic operational or transaction records.
+
+## DEC-084 - Owner-authorized Phase 1 audit remediation and verification
+
+Date: 2026-08-18. Status: active bounded remediation authorization.
+
+The owner authorizes a repair pass for every remediable finding in `docs/06-user-flows-ui-audit-2026-08-18.md`, plus focused PHPUnit/feature/integration/concurrency checks and headed local Chromium verification necessary to prove the repaired behavior. All database activity is limited to the disposable XAMPP MariaDB schema `toyjoy_phase1_remediation_20260818`; no Production data, credentials, permissions, or destinations may be used or inferred.
+
+The exception permits purpose-built disposable actors and non-owner business fixtures only where they are necessary to exercise a documented authorization, scope, audit, lifecycle, or recovery scenario. It does not permit fabrication of owner business data, physical printer verification, external backup-destination verification, Production/UAT acceptance, release approval, commits, or pushes. Unavailable owner inputs must stay explicitly blocked with owner and required evidence.
+
+The local/testing dataset creates a clearly labelled `DEMO` branch, DEMO selling/warehouse stores, one product/supplier/customer, approved price, Purchase Order, approved Purchase Invoice receipt, approved supplier return, received inter-store transfer, open POS shift, and paid retail sale. All transactional rows go through existing actions and stable idempotency identities. The separate internal approver account exists only to preserve maker/checker separation; it has a generated non-disclosed password and is not a demo login path. The real application has no chart-of-accounts, journal-entry, bank/treasury, receivable/payable, or supplier-payment module, so no artificial accounting documents are seeded.
+
+## DEC-085 - Client feedback remediation cycle and task-gated verification
+
+Date: 2026-08-19. Status: active owner-authorized remediation cycle.
+
+The owner supplied `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md` as the primary source for a task-by-task setup remediation cycle. Work is ordered through `docs/client-feedback-remediation-checklist.md`; only one main `CR` task may be active, Luna performs read-heavy discovery, Terra implements and tests only after Sol confirms the root cause, and Sol alone closes a task after independent review.
+
+For this named cycle, the owner explicitly requires focused backend/feature/integration/concurrency tests and visible headed Chromium/Playwright verification for user-facing workflows. This is a current exception to the general deferred-testing directive. Tests and fixtures must use only the dedicated disposable XAMPP MariaDB schema `toyjoy_client_feedback_20260819`; SQLite and Production data are prohibited. The authorization includes deterministic non-owner fixtures needed to reproduce setup, scope, authorization, audit, and persistence behavior, but does not authorize Production access or mutation, fabricated owner business data, physical printer claims, external service actions, human UAT acceptance, release approval, commits, or pushes.
+
+## DEC-086 - Owner-authorized expanded master-request remediation planning
+
+**Date:** 2026-08-19. **Status:** Active owner authorization; implementation and verification incomplete.
+
+The owner directed completion of every remediable note in `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, including requirements 0–72, their acceptance/test obligations, and the document's P0/P1/P2 priority order. This supersedes DEC-085's narrow single-queue sequencing as the implementation-planning boundary. The simplified `CLIENT FIX QUEUE` remains the factual progress ledger and must not be rewritten to imply that unchecked work is complete.
+
+The authorized planning waves are: Wave 0/P0 setup blockers and integrity foundations; Wave 1/P1 setup architecture and business configuration; Wave 2/P1 customer/supplier/category master data; and Wave 3/P2 plus cross-cutting localization, scope, audit, authorization, concurrency, regression, evidence, and final-deliverable closure. Independent work may be coordinated in parallel by multiple agents; shared-file edits require coordination. The expansion does not authorize unrelated product work, silent requirement changes, or claims of completion from static inspection.
+
+The following remain unresolved owner/business decisions or external gates and must not be invented during remediation: Store versus Warehouse domain terminology/model boundary (DEC-021); offline POS enablement, limits, devices, security, and rollout (DEC-018); final tax/payment/proof semantics and legal treatment of zero-rated, exempt, and out-of-scope cases; warehouse physical-versus-virtual taxonomy and deletion/archive policy; document-sequence reset/scope/override/version rules where the master request conflicts with the local company-wide baseline; global-versus-branch scope and inheritance for taxes, payments, printers, sequences, and other masters; customer purpose/classification, duplicate/consent/retention, child-profile, and grouping policy values; supplier payment-term and order-recipient fallback rules; printer hardware/network, approved templates, and physical-output evidence; and real owner master data, human UAT, backup/restore destinations, Production access, and release approval.
+
+Local implementation may use existing repository boundaries and clearly labelled disposable fixtures only where needed for a reproducible scenario. No Production mutation, fabricated owner data, physical-device claim, UAT acceptance, release approval, commit, or push is inferred from this decision.
+
+## DEC-087 - Runtime translation override boundary
+
+Date: 2026-08-20. Status: implemented for Local/Dev verification.
+
+Administrators with `company_settings.edit` may override only keys collected from shipped `lang/ar.json`, `lang/en.json`, and their PHP groups. Overrides are database rows applied by the Laravel translation loader at request load time; they never modify language files. A matching base value deletes the override, placeholders must remain intact, and every actual change is audited.

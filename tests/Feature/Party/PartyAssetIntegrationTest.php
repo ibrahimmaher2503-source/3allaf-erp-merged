@@ -7,20 +7,27 @@ namespace Tests\Feature\Party;
 use App\Modules\Assets\Actions\CreateAssetAction;
 use App\Modules\Assets\Models\AssetCheckout;
 use App\Modules\Assets\Models\AssetEvent;
-use App\Modules\Assets\Models\AssetReturn;
 use App\Modules\Assets\Models\AssetReservation;
+use App\Modules\Assets\Models\AssetReturn;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Party\Actions\CheckoutPartyRentalAssetAction;
+use App\Modules\Party\Actions\CompletePartyOperatingOrderAction;
 use App\Modules\Party\Actions\ConfirmPartyBookingAction;
 use App\Modules\Party\Actions\CreatePartyBookingAction;
 use App\Modules\Party\Actions\CreatePartyOperatingOrderAction;
+use App\Modules\Party\Actions\InspectPartyRentalAssetAction;
 use App\Modules\Party\Actions\ReleasePartyOperatingOrderAction;
-use App\Modules\Party\Actions\CompletePartyOperatingOrderAction;
+use App\Modules\Party\Actions\ReturnPartyRentalAssetAction;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Tests\Support\CustomerLoyaltyFixtures;
 use Tests\Support\PlatformFixtures;
 use Tests\TestCase;
-use InvalidArgumentException;
 
 /** @group party @group us-027 @group assets */
 final class PartyAssetIntegrationTest extends TestCase
@@ -38,8 +45,15 @@ final class PartyAssetIntegrationTest extends TestCase
     protected function beforeRefreshingDatabase(): void
     {
         config(['database.connections.mysql.strict' => false]);
-        \Illuminate\Support\Facades\DB::purge('mysql');
-        \Illuminate\Support\Facades\DB::connection('mysql')->statement("SET SESSION sql_mode = ''");
+        DB::purge('mysql');
+        DB::connection('mysql')->statement("SET SESSION sql_mode = ''");
+    }
+
+    protected function seedCanonicalAuthorization(): void
+    {
+        $this->seed(ProductionSeeder::class);
+        $partyManager = Role::query()->where('code', 'party-manager')->firstOrFail();
+        $partyManager->permissions()->sync(Permission::query()->where('status', 'active')->pluck('id')->all());
     }
 
     public function test_confirming_a_party_booking_reserves_its_selected_asset_through_us028(): void
@@ -81,6 +95,36 @@ final class PartyAssetIntegrationTest extends TestCase
         self::assertSame($fixture['partyStore']->id, $reservation->store_id);
     }
 
+    public function test_rescheduled_party_asset_is_re_reserved_for_the_new_interval_on_reconfirmation(): void
+    {
+        $fixture = $this->fixture();
+        $asset = app(CreateAssetAction::class)->execute($fixture['manager'], [
+            'code' => 'PARTY-ASSET-RESCHEDULE', 'name_ar' => 'Asset', 'name_en' => 'Rescheduled asset',
+            'branch_id' => $fixture['branch']->id, 'store_id' => $fixture['partyStore']->id, 'condition' => 'good',
+        ]);
+        $start = now()->addDays(14)->setTime(14, 0);
+        $booking = app(CreatePartyBookingAction::class)->execute($fixture['manager'], $fixture['partyStore'], [
+            'customer_id' => $fixture['customer']->id, 'party_date' => $start->toDateString(),
+            'start_time' => '14:00', 'end_time' => '17:00', 'timezone' => 'UTC', 'location' => 'Party room',
+            'primary_contact' => '01012345678', 'idempotency_key' => 'PARTY-ASSET-RESCHEDULE-'.Str::uuid(),
+            'lines' => [['line_type' => 'rental_asset', 'asset_id' => $asset->id, 'description' => 'Party asset', 'quantity' => '1', 'unit_price' => '0.0000']],
+        ]);
+        app(ConfirmPartyBookingAction::class)->execute($fixture['manager'], $booking);
+        $firstReservation = AssetReservation::query()->where('source_id', (string) $booking->id)->sole();
+        $newDate = $start->copy()->addDays(3)->toDateString();
+
+        $this->actingAs($fixture['manager'])->post(route('parties.bookings.reschedule', $booking), [
+            'party_date' => $newDate, 'start_time' => '10:00', 'end_time' => '13:00',
+            'timezone' => 'UTC', 'location' => 'Garden room', 'reason' => 'Customer moved the event.',
+        ])->assertRedirect();
+        app(ConfirmPartyBookingAction::class)->execute($fixture['manager'], $booking->fresh());
+
+        $activeReservation = AssetReservation::query()->where('source_id', (string) $booking->id)->where('status', 'reserved')->sole();
+        self::assertNotSame($firstReservation->id, $activeReservation->id);
+        self::assertSame($newDate, $activeReservation->starts_at->toDateString());
+        self::assertSame($activeReservation->id, $booking->fresh()->invoice->lines->sole()->asset_reservation_id);
+    }
+
     public function test_asset_workspace_modes_are_addressable_and_semantically_focused(): void
     {
         $fixture = $this->fixture();
@@ -116,11 +160,19 @@ final class PartyAssetIntegrationTest extends TestCase
         app(ReleasePartyOperatingOrderAction::class)->execute($fixture['manager'], $order);
         $line = $order->fresh('lines')->lines->sole();
 
-        $checkout = app(\App\Modules\Party\Actions\CheckoutPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line, 'PARTY-ASSET-CHECKOUT-'.Str::uuid());
+        $partyManager = Role::query()->where('code', 'party-manager')->firstOrFail();
+        $checkoutPermission = Permission::query()->where('code', 'rental_assets.checkout')->firstOrFail();
+        $partyManager->permissions()->detach($checkoutPermission->id);
+        $this->actingAs($fixture['manager']->fresh())->get(route('parties.orders.show', $order))
+            ->assertOk()
+            ->assertDontSee('Check out through asset system');
+        $partyManager->permissions()->attach($checkoutPermission->id);
+
+        $checkout = app(CheckoutPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line, 'PARTY-ASSET-CHECKOUT-'.Str::uuid());
         self::assertInstanceOf(AssetCheckout::class, $checkout);
-        $return = app(\App\Modules\Party\Actions\ReturnPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line->fresh(), 'good', 'PARTY-ASSET-RETURN-'.Str::uuid());
+        $return = app(ReturnPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line->fresh(), 'good', 'PARTY-ASSET-RETURN-'.Str::uuid());
         self::assertInstanceOf(AssetReturn::class, $return);
-        $inspection = app(\App\Modules\Party\Actions\InspectPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line->fresh(), 'available', 'Returned in good condition.');
+        $inspection = app(InspectPartyRentalAssetAction::class)->execute($fixture['manager'], $order->fresh(), $line->fresh(), 'available', 'Returned in good condition.');
         self::assertInstanceOf(AssetEvent::class, $inspection);
         $completed = app(CompletePartyOperatingOrderAction::class)->execute($fixture['manager'], $order->fresh('lines'));
 
@@ -130,6 +182,13 @@ final class PartyAssetIntegrationTest extends TestCase
         self::assertSame($checkout->id, $line->fresh()->asset_checkout_id);
         self::assertSame($return->id, $line->fresh()->asset_return_id);
         self::assertSame($inspection->id, $line->fresh()->asset_inspection_event_id);
+
+        $this->actingAs($fixture['manager'])->get(route('party.assets.print', $asset))
+            ->assertOk()
+            ->assertSee('Checkout history')
+            ->assertSee('Return history')
+            ->assertSee((string) $checkout->id)
+            ->assertSee((string) $return->id);
     }
 
     public function test_free_text_asset_codes_cannot_bypass_the_authoritative_reservation_selection(): void

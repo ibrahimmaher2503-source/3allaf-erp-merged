@@ -6,6 +6,10 @@ use App\Modules\Catalog\Exceptions\ImmutableItemCodeChangeException;
 use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\DB;
@@ -77,6 +81,10 @@ class SaveProductAction
                     'name_en' => $nameEn,
                     'description_ar' => $this->nullableString($data['description_ar'] ?? null),
                     'description_en' => $this->nullableString($data['description_en'] ?? null),
+                    'short_description_ar' => $this->nullableString($data['short_description_ar'] ?? null), 'short_description_en' => $this->nullableString($data['short_description_en'] ?? null),
+                    'full_description_ar' => $this->nullableString($data['full_description_ar'] ?? null), 'full_description_en' => $this->nullableString($data['full_description_en'] ?? null),
+                    'meta_title_ar' => $this->nullableString($data['meta_title_ar'] ?? null), 'meta_title_en' => $this->nullableString($data['meta_title_en'] ?? null), 'meta_description_ar' => $this->nullableString($data['meta_description_ar'] ?? null), 'meta_description_en' => $this->nullableString($data['meta_description_en'] ?? null),
+                    'seo_slug' => $this->nullableSlug($data['seo_slug'] ?? null, $id), 'publish_visibility' => $this->nullableString($data['publish_visibility'] ?? null), 'sort_order' => ($data['sort_order'] ?? null) === null || ($data['sort_order'] ?? '') === '' ? null : max(0, (int) $data['sort_order']),
                     'model_number' => $this->nullableString($data['model_number'] ?? null),
                     'product_type' => $productType,
                     'unit_of_measure' => $this->nullableString($data['unit_of_measure'] ?? null),
@@ -90,15 +98,22 @@ class SaveProductAction
                     'dimension_unit' => $this->nullableString($data['dimension_unit'] ?? null),
                     'weight' => $this->nullableNumeric($data['weight'] ?? null),
                     'target_age' => $this->nullableString($data['target_age'] ?? null),
+                    'age_label_id' => $this->nullableLookupId($data['age_label_id'] ?? null, AgeLabel::class),
                     'suitable_gender' => $this->nullableString($data['suitable_gender'] ?? null),
+                    'gender_id' => $this->nullableLookupId($data['gender_id'] ?? null, Gender::class),
                     'colour' => $this->nullableString($data['colour'] ?? null),
+                    'colour_id' => $this->nullableLookupId($data['colour_id'] ?? null, Colour::class),
                     'size' => $this->nullableString($data['size'] ?? null),
                     'character' => $this->nullableString($data['character'] ?? null),
+                    'character_id' => $this->nullableLookupId($data['character_id'] ?? null, Character::class),
                     'key_points_ar' => $this->nullableString($data['key_points_ar'] ?? null),
                     'key_points_en' => $this->nullableString($data['key_points_en'] ?? null),
                     'keywords_ar' => $this->nullableString($data['keywords_ar'] ?? null),
                     'keywords_en' => $this->nullableString($data['keywords_en'] ?? null),
                     'fractional_quantity' => (bool) ($data['fractional_quantity'] ?? false),
+                    'sale_price' => $this->nullableNumeric($data['sale_price'] ?? null),
+                    'battery_required' => (bool) ($data['battery_required'] ?? false),
+                    'battery_details' => $this->nullableString($data['battery_details'] ?? null),
                 ];
 
                 // DEC-038 has no catalog cost-field grant. Keep the field available in the
@@ -113,9 +128,9 @@ class SaveProductAction
 
                 if ($product !== null) {
                     foreach ([
-                        'description_ar', 'description_en', 'model_number', 'unit_of_measure', 'average_cost',
+                        'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details',
                         'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
-                        'dimension_unit', 'weight', 'target_age', 'suitable_gender', 'colour', 'size', 'character',
+                        'dimension_unit', 'weight', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
                         'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',
                     ] as $optionalField) {
                         if (! array_key_exists($optionalField, $data)) {
@@ -142,6 +157,16 @@ class SaveProductAction
                     if ($product->has_variations) {
                         $this->syncFamilyDescriptions($product);
                     }
+                }
+
+                foreach ([['age_label_ids', 'ages'], ['character_ids', 'characters'], ['colour_ids', 'colours'], ['gender_ids', 'genders']] as [$input, $relation]) {
+                    if (array_key_exists($input, $data)) {
+                        $product->{$relation}()->sync(array_values(array_filter(array_map('intval', (array) $data[$input]))));
+                    }
+                }
+                if (! empty($data['preferred_supplier_id'])) {
+                    $product->productSuppliers()->update(['is_preferred' => false]);
+                    $product->productSuppliers()->updateOrCreate(['supplier_id' => (int) $data['preferred_supplier_id']], ['is_preferred' => true]);
                 }
 
                 app(RecordAuditEvent::class)->execute(
@@ -216,6 +241,8 @@ class SaveProductAction
         return $value === '' ? null : $value;
     }
 
+    private function nullableSlug(mixed $value, ?int $id): ?string { $slug = trim((string) ($value ?? '')); if ($slug === '') return null; $query = Product::query()->where('seo_slug', $slug); if ($id !== null) $query->where('id', '<>', $id); if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || $query->exists()) throw new InvalidArgumentException(__('The SEO slug must be lowercase, URL-safe, and unique.')); return $slug; }
+
     private function nullableNumeric(mixed $value): float|int|null
     {
         if ($value === null || $value === '') {
@@ -229,6 +256,14 @@ class SaveProductAction
         return (float) $value;
     }
 
+    private function nullableLookupId(mixed $value, string $model): ?int
+    {
+        if ($value === null || $value === '') return null;
+        $lookup = $model::query()->whereKey((int) $value)->where('status', 'active')->first();
+        if ($lookup === null) throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
+        return (int) $lookup->id;
+    }
+
     private function syncFamilyDescriptions(Product $family): void
     {
         $fields = $family->only([
@@ -240,3 +275,5 @@ class SaveProductAction
         $family->variants()->update($fields);
     }
 }
+
+

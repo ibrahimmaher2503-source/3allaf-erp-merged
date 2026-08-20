@@ -185,6 +185,7 @@ final class RetailSaleAction
                 'tax_applicable' => $tax !== null,
                 'tax_setting_id' => $tax?->id,
                 'tax_rate_snapshot' => $tax?->rate,
+                'tax_treatment_snapshot' => $tax?->treatment,
                 'tax_inclusive_snapshot' => (bool) ($tax?->is_tax_inclusive ?? false),
                 'total' => $totals['total'],
                 'paid_total' => '0.00',
@@ -327,6 +328,7 @@ final class RetailSaleAction
                 'tax_applicable' => $tax !== null,
                 'tax_setting_id' => $tax?->id,
                 'tax_rate_snapshot' => $tax?->rate,
+                'tax_treatment_snapshot' => $tax?->treatment,
                 'tax_inclusive_snapshot' => (bool) ($tax?->is_tax_inclusive ?? false),
                 'total' => $totals['total'],
                 'cash_rounding_amount' => $rounding,
@@ -769,18 +771,18 @@ final class RetailSaleAction
         }
         abort_unless($cashier->can('pos_sales.apply_tax'), 403);
 
-        $settings = TaxSetting::query()
+        $setting = TaxSetting::query()
             ->where('status', 'active')
+            ->where('is_default', true)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->orderByDesc('effective_from')
-            ->get();
+            ->first();
 
-        if ($settings->count() !== 1 || blank($settings->first()?->rate)) {
-            throw new InvalidArgumentException(__('Tax was enabled, but exactly one effective tax policy with a configured rate is required.'));
+        if ($setting === null || $setting->rate === null) {
+            throw new InvalidArgumentException(__('Tax was enabled, but one effective company default tax rule with an explicit rate is required.'));
         }
 
-        return $settings->first();
+        return $setting;
     }
 
     /** @param array<int, array<string, mixed>> $tenders @return array<int, array<string, mixed>> */

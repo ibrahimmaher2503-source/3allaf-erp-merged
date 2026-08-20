@@ -1,6 +1,10 @@
-<x-layouts::auth :title="__('Register')">
+<x-layouts::auth :title="__('Create user account')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+        <x-auth-header :title="__('Create your user account')" :description="__('Create the sign-in account you will use to access the workspace.')" />
+
+        <flux:callout variant="info" icon="information-circle">
+            {{ __('This creates an authentication account only. Company identity, roles, and business setup are completed separately after sign-in.') }}
+        </flux:callout>
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -20,6 +24,17 @@
             />
 
             <!-- Email Address -->
+            <flux:input
+                name="username"
+                :label="__('Username')"
+                :value="old('username')"
+                type="text"
+                required
+                autocomplete="username"
+                :placeholder="__('Username')"
+                :description="__('Use this username to sign in. It does not assign roles or business access.')"
+            />
+
             <flux:input
                 name="email"
                 :label="__('Email address')"

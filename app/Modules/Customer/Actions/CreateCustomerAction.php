@@ -6,6 +6,7 @@ namespace App\Modules\Customer\Actions;
 
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerScope;
 use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\PhoneNormalizer;
@@ -26,10 +27,13 @@ final class CreateCustomerAction
 
         CustomerPolicy::phoneNormalization();
         $phone = PhoneNormalizer::normalize((string) ($data['phone'] ?? ''));
-        $nameAr = trim((string) ($data['name_ar'] ?? ''));
-        $nameEn = trim((string) ($data['name_en'] ?? ''));
-        if ($nameAr === '' || $nameEn === '') {
-            throw new InvalidArgumentException(__('Customer Arabic and English names are required.'));
+        $secondaryPhone = filled($data['secondary_phone'] ?? null)
+            ? PhoneNormalizer::normalize((string) $data['secondary_phone'])
+            : null;
+        [$firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn] = self::normaliseNames($data);
+        $email = filled($data['email'] ?? null) ? strtolower(trim((string) $data['email'])) : null;
+        if ($firstNameAr === '' || $lastNameAr === '') {
+            throw new InvalidArgumentException(__('Customer Arabic first and last names are required.'));
         }
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
         if ($idempotencyKey === '') {
@@ -40,8 +44,10 @@ final class CreateCustomerAction
             throw new InvalidArgumentException(__('At least one customer consent record is required.'));
         }
 
+        $customerGroupId = filled($data['customer_group_id'] ?? null) ? (int) $data['customer_group_id'] : null;
+
         try {
-            return DB::transaction(function () use ($actor, $store, $data, $phone, $nameAr, $nameEn, $idempotencyKey, $consents): Customer {
+            return DB::transaction(function () use ($actor, $store, $data, $phone, $secondaryPhone, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $email, $idempotencyKey, $consents, $customerGroupId): Customer {
                 $existingByKey = Customer::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
                 if ($existingByKey !== null) {
                     if ($existingByKey->phone_normalized !== $phone || $existingByKey->name_ar !== $nameAr || $existingByKey->name_en !== $nameEn) {
@@ -56,13 +62,28 @@ final class CreateCustomerAction
                     throw new InvalidArgumentException(__('A customer already exists for this phone number. Review the existing profile instead of creating a duplicate.'));
                 }
 
+                if ($email !== null && Customer::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                    throw new InvalidArgumentException(__('A customer already exists for this email address. Review the existing profile instead of creating a duplicate.'));
+                }
+
+                $customerGroup = $customerGroupId === null
+                    ? null
+                    : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->lockForUpdate()->find($customerGroupId);
+                if ($customerGroupId !== null && $customerGroup === null) {
+                    throw new InvalidArgumentException(__('The selected customer group is not available in this company.'));
+                }
+
                 $customer = Customer::query()->create([
                     'phone_normalized' => $phone,
                     'phone_display' => trim((string) $data['phone']),
+                    'first_name_ar' => $firstNameAr,
+                    'last_name_ar' => $lastNameAr,
+                    'first_name_en' => $firstNameEn !== '' ? $firstNameEn : null,
+                    'last_name_en' => $lastNameEn !== '' ? $lastNameEn : null,
                     'name_ar' => $nameAr,
                     'name_en' => $nameEn,
-                    'email' => filled($data['email'] ?? null) ? trim((string) $data['email']) : null,
-                    'secondary_phone' => filled($data['secondary_phone'] ?? null) ? trim((string) $data['secondary_phone']) : null,
+                    'email' => $email,
+                    'secondary_phone' => $secondaryPhone,
                     'address_ar' => filled($data['address_ar'] ?? null) ? trim((string) $data['address_ar']) : null,
                     'address_en' => filled($data['address_en'] ?? null) ? trim((string) $data['address_en']) : null,
                     'status' => 'active',
@@ -70,6 +91,7 @@ final class CreateCustomerAction
                     'updated_by' => $actor->id,
                     'created_branch_id' => $store->branch_id,
                     'created_store_id' => $store->id,
+                    'customer_group_id' => $customerGroup?->id,
                     'idempotency_key' => $idempotencyKey,
                     'lock_version' => 1,
                 ]);
@@ -85,7 +107,7 @@ final class CreateCustomerAction
                     category: 'customer_value',
                     event: 'customer_created',
                     source: $customer,
-                    after: $customer->only(['public_id', 'phone_normalized', 'name_ar', 'name_en', 'email', 'status', 'lock_version']),
+                    after: $customer->only(['public_id', 'phone_normalized', 'name_ar', 'name_en', 'email', 'customer_group_id', 'status', 'lock_version']),
                     branchId: (int) $store->branch_id,
                     storeId: (int) $store->id,
                     metadata: ['idempotency_key' => $idempotencyKey, 'purpose_scoped' => true, 'actor_id' => $actor->id],
@@ -136,5 +158,25 @@ final class CreateCustomerAction
 
             throw $exception;
         }
+    }
+
+    /** @param array<string, mixed> $data @return array{0:string,1:string,2:string,3:string,4:string,5:string} */
+    private static function normaliseNames(array $data): array
+    {
+        $legacyAr = trim((string) ($data['name_ar'] ?? ''));
+        $legacyEn = trim((string) ($data['name_en'] ?? ''));
+        $firstAr = trim((string) ($data['first_name_ar'] ?? ''));
+        $lastAr = trim((string) ($data['last_name_ar'] ?? ''));
+        if ($firstAr === '' && $lastAr === '' && $legacyAr !== '') {
+            [$firstAr, $lastAr] = array_pad(preg_split('/\s+/u', $legacyAr, 2) ?: [$legacyAr], 2, '');
+        }
+        $firstEn = trim((string) ($data['first_name_en'] ?? ''));
+        $lastEn = trim((string) ($data['last_name_en'] ?? ''));
+        if ($firstEn === '' && $lastEn === '' && $legacyEn !== '') {
+            [$firstEn, $lastEn] = array_pad(preg_split('/\s+/u', $legacyEn, 2) ?: [$legacyEn], 2, '');
+        }
+        $nameAr = trim($firstAr.' '.$lastAr);
+        $englishFull = trim($firstEn.' '.$lastEn);
+        return [$firstAr, $lastAr, $firstEn, $lastEn, $nameAr, $englishFull !== '' ? $englishFull : $nameAr];
     }
 }

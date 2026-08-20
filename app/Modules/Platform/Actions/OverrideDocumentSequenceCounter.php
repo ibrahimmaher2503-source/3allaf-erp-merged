@@ -20,7 +20,7 @@ final class OverrideDocumentSequenceCounter
         }
 
         return DB::transaction(function () use ($sequence, $nextValue, $expectedLockVersion, $reason): DocumentSequence {
-            $sequence = DocumentSequence::query()->lockForUpdate()->findOrFail($sequence->id);
+            $sequence = DocumentSequence::visibleTo(auth()->user())->lockForUpdate()->findOrFail($sequence->id);
             if ($sequence->lock_version !== $expectedLockVersion) {
                 throw ValidationException::withMessages(['sequenceOverride.next_value' => __('The sequence changed in another session. Reload before overriding it.')]);
             }

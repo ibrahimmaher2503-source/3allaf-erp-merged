@@ -4,10 +4,15 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
 use App\Modules\Catalog\Models\ProductImportRow;
+use App\Modules\Catalog\Models\Gender;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\LinkAttachmentToSource;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Data\AttachmentSourceReference;
@@ -15,6 +20,7 @@ use App\Modules\Platform\Models\Attachment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
@@ -28,6 +34,10 @@ class StageProductImportAction
         'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
         'product_type', 'unit_of_measure', 'category_code', 'brand_code', 'status', 'colour', 'size',
         'character', 'fractional_quantity', 'keywords_ar', 'keywords_en', 'key_points_ar', 'key_points_en',
+        'preferred_supplier_code', 'average_cost', 'sale_price', 'dimension_length', 'dimension_width',
+        'dimension_height', 'dimension_unit', 'weight', 'battery_required', 'battery_details', 'target_age',
+        'age_code', 'age_codes', 'character_code', 'character_codes', 'colour_code', 'colour_codes',
+        'gender_code', 'gender_codes',
     ];
 
     /** @return array<int, string> */
@@ -176,6 +186,13 @@ class StageProductImportAction
             $invalidRows = 0;
             $categoryCodes = Category::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $brandCodes = Brand::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $supplierCodes = Supplier::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $lookupCodes = [
+                'age' => AgeLabel::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
+                'character' => Character::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
+                'colour' => Colour::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
+                'gender' => Gender::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
+            ];
 
             foreach ($batch->rows()->orderBy('row_number')->lockForUpdate()->get() as $row) {
                 $raw = [];
@@ -187,7 +204,7 @@ class StageProductImportAction
                     $raw,
                     $batch->mode,
                     $categoryCodes,
-                    $brandCodes,
+                    $brandCodes, $supplierCodes, $lookupCodes,
                     $seenCodes,
                     $this->formulaErrorsFromRow($row),
                 );
@@ -220,11 +237,14 @@ class StageProductImportAction
     public function approve(ProductImportBatch $batch, SaveProductAction $saveProduct): ProductImportBatch
     {
         Gate::authorize('products_categories_brands.approve');
-        abort_unless($batch->created_by === auth()->id(), 404);
 
         return DB::transaction(function () use ($batch, $saveProduct): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
-            abort_unless($batch->created_by === auth()->id(), 404);
+            if ($batch->created_by === auth()->id()) {
+                throw ValidationException::withMessages([
+                    'approval' => __('The requester cannot approve their own import batch.'),
+                ]);
+            }
             if ($batch->status !== 'ready_for_review' || $batch->invalid_rows > 0) {
                 throw new InvalidArgumentException(__('Only a ready import with no rejected rows can be approved.'));
             }
@@ -280,8 +300,8 @@ class StageProductImportAction
         return [];
     }
 
-    /** @param array<string, mixed> $raw @param array<string, int> $categoryCodes @param array<string, int> $brandCodes @param array<string, bool> $seenCodes @param array<int, string> $initialErrors */
-    private function mapRow(array $raw, string $mode, array $categoryCodes, array $brandCodes, array &$seenCodes, array $initialErrors): array
+    /** @param array<string, mixed> $raw @param array<string, int> $categoryCodes @param array<string, int> $brandCodes @param array<string, int> $supplierCodes @param array<string, array<string, int>> $lookupCodes @param array<string, bool> $seenCodes @param array<int, string> $initialErrors */
+    private function mapRow(array $raw, string $mode, array $categoryCodes, array $brandCodes, array $supplierCodes, array $lookupCodes, array &$seenCodes, array $initialErrors): array
     {
         $errors = $initialErrors;
         $itemCode = strtoupper(trim((string) ($raw['item_code'] ?? '')));
@@ -311,6 +331,8 @@ class StageProductImportAction
         if ($brandCode !== '' && ! isset($brandCodes[$brandCode])) {
             $errors[] = __('The brand code is missing or inactive.');
         }
+        $supplierCode = strtoupper(trim((string) ($raw['preferred_supplier_code'] ?? '')));
+        if ($supplierCode !== '' && ! isset($supplierCodes[$supplierCode])) $errors[] = __('The preferred supplier code is missing or inactive.');
         if (! in_array($type, ['standard', 'composite', 'service'], true)) {
             $errors[] = __('The product type is not supported.');
         }
@@ -339,16 +361,42 @@ class StageProductImportAction
             'unit_of_measure' => $this->nullableString($raw['unit_of_measure'] ?? null),
             'category_id' => $categoryCodes[$categoryCode] ?? null,
             'brand_id' => $brandCodes[$brandCode] ?? null,
+            'preferred_supplier_id' => $supplierCodes[$supplierCode] ?? null,
             'status' => $status,
             'colour' => $this->nullableString($raw['colour'] ?? null),
             'size' => $this->nullableString($raw['size'] ?? null),
             'character' => $this->nullableString($raw['character'] ?? null),
             'fractional_quantity' => $this->booleanValue($raw['fractional_quantity'] ?? false),
+            'average_cost' => $this->numericValue($raw['average_cost'] ?? null, $errors, 'average cost'),
+            'sale_price' => $this->numericValue($raw['sale_price'] ?? null, $errors, 'sale price'),
+            'dimension_length' => $this->numericValue($raw['dimension_length'] ?? null, $errors, 'dimension length'),
+            'dimension_width' => $this->numericValue($raw['dimension_width'] ?? null, $errors, 'dimension width'),
+            'dimension_height' => $this->numericValue($raw['dimension_height'] ?? null, $errors, 'dimension height'),
+            'dimension_unit' => $this->nullableString($raw['dimension_unit'] ?? null),
+            'weight' => $this->numericValue($raw['weight'] ?? null, $errors, 'weight'),
+            'battery_required' => $this->booleanValue($raw['battery_required'] ?? false),
+            'battery_details' => $this->nullableString($raw['battery_details'] ?? null),
             'keywords_ar' => $this->nullableString($raw['keywords_ar'] ?? null),
             'keywords_en' => $this->nullableString($raw['keywords_en'] ?? null),
             'key_points_ar' => $this->nullableString($raw['key_points_ar'] ?? null),
             'key_points_en' => $this->nullableString($raw['key_points_en'] ?? null),
         ];
+
+        foreach (['age' => 'age_label_ids', 'character' => 'character_ids', 'colour' => 'colour_ids', 'gender' => 'gender_ids'] as $kind => $field) {
+            $value = $raw[$kind.'_codes'] ?? $raw[$kind.'_code'] ?? null;
+            if ($value === null || trim((string) $value) === '') continue;
+            $ids = [];
+            foreach (preg_split('/[,;|]/', (string) $value) ?: [] as $code) {
+                $code = strtoupper(trim($code));
+                if ($code !== '' && isset($lookupCodes[$kind][$code])) $ids[] = $lookupCodes[$kind][$code];
+                elseif ($code !== '') $errors[] = __('The :kind code is missing or inactive.', ['kind' => $kind]);
+            }
+            $data[$field] = array_values(array_unique($ids));
+            if ($kind === 'age') $data['age_label_id'] = $ids[0] ?? null;
+            if ($kind === 'character') $data['character_id'] = $ids[0] ?? null;
+            if ($kind === 'colour') $data['colour_id'] = $ids[0] ?? null;
+            if ($kind === 'gender') $data['gender_id'] = $ids[0] ?? null;
+        }
 
         return ['data' => $data, 'errors' => array_values(array_unique($errors))];
     }
@@ -422,6 +470,13 @@ class StageProductImportAction
     private function booleanValue(mixed $value): bool
     {
         return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'y', 'نعم'], true);
+    }
+
+    private function numericValue(mixed $value, array &$errors, string $label): float|int|null
+    {
+        if ($value === null || trim((string) $value) === '') return null;
+        if (! is_numeric($value) || (float) $value < 0) { $errors[] = __('The :field must be zero or greater.', ['field' => $label]); return null; }
+        return (float) $value;
     }
 
     /** @param array<int, ProductImportRow> $rows */

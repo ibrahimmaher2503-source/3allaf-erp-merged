@@ -6,6 +6,7 @@ namespace App\Modules\Party\Actions;
 
 use App\Models\User;
 use App\Modules\Assets\Models\RentalAsset;
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerChild;
 use App\Modules\Party\Models\PartyBooking;
@@ -18,7 +19,6 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class CreatePartyBookingAction
@@ -42,13 +42,18 @@ final class CreatePartyBookingAction
         $normalized = $this->normalize($data, $store);
         $payloadHash = hash('sha256', json_encode($normalized, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
-        if ($idempotencyKey === '') throw new InvalidArgumentException(__('A Party booking idempotency key is required.'));
+        if ($idempotencyKey === '') {
+            throw new InvalidArgumentException(__('A Party booking idempotency key is required.'));
+        }
 
         try {
             return DB::transaction(function () use ($actor, $store, $customer, $child, $normalized, $payloadHash, $idempotencyKey): PartyBooking {
                 $existing = PartyBooking::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
                 if ($existing !== null) {
-                    if (! hash_equals((string) $existing->payload_hash, $payloadHash)) throw new InvalidArgumentException(__('This Party booking idempotency key was already used with different data.'));
+                    if (! hash_equals((string) $existing->payload_hash, $payloadHash)) {
+                        throw new InvalidArgumentException(__('This Party booking idempotency key was already used with different data.'));
+                    }
+
                     return $existing->load('invoice.lines');
                 }
 
@@ -92,7 +97,9 @@ final class CreatePartyBookingAction
             }, 5);
         } catch (UniqueConstraintViolationException $exception) {
             $existing = PartyBooking::query()->where('idempotency_key', $idempotencyKey)->first();
-            if ($existing !== null && hash_equals((string) $existing->payload_hash, $payloadHash)) return $existing->load('invoice.lines');
+            if ($existing !== null && hash_equals((string) $existing->payload_hash, $payloadHash)) {
+                return $existing->load('invoice.lines');
+            }
             throw $exception;
         }
     }
@@ -106,14 +113,18 @@ final class CreatePartyBookingAction
         $end = trim((string) ($data['end_time'] ?? ''));
         $location = trim((string) ($data['location'] ?? ''));
         $contact = trim((string) ($data['primary_contact'] ?? ''));
-        if ($date === '' || $start === '' || $end === '' || $location === '' || $contact === '') throw new InvalidArgumentException(__('Party date, time, location, and primary contact are required.'));
+        if ($date === '' || $start === '' || $end === '' || $location === '' || $contact === '') {
+            throw new InvalidArgumentException(__('Party date, time, location, and primary contact are required.'));
+        }
         try {
             $startsAt = Carbon::createFromFormat('Y-m-d H:i', $date.' '.$start, $timezone);
             $endsAt = Carbon::createFromFormat('Y-m-d H:i', $date.' '.$end, $timezone);
         } catch (\Throwable) {
             throw new InvalidArgumentException(__('Party date and time must be valid.'));
         }
-        if ($startsAt === false || $endsAt === false || $endsAt->lessThanOrEqualTo($startsAt)) throw new InvalidArgumentException(__('Party end time must be after the start time.'));
+        if ($startsAt === false || $endsAt === false || $endsAt->lessThanOrEqualTo($startsAt)) {
+            throw new InvalidArgumentException(__('Party end time must be after the start time.'));
+        }
         $lines = $this->normalizeLines($data['lines'] ?? []);
 
         return [
@@ -134,32 +145,60 @@ final class CreatePartyBookingAction
     /** @param mixed $raw @return list<array<string, mixed>> */
     private function normalizeLines(mixed $raw): array
     {
-        if (! is_array($raw) || $raw === []) throw new InvalidArgumentException(__('At least one Party service or planned line is required.'));
+        if (! is_array($raw) || $raw === []) {
+            throw new InvalidArgumentException(__('At least one Party service or planned line is required.'));
+        }
         $allowed = ['service', 'consumable', 'rental_asset', 'other'];
         $lines = [];
         foreach (array_values($raw) as $line) {
-            if (! is_array($line)) throw new InvalidArgumentException(__('Each Party invoice line must be a structured Party line.'));
+            if (! is_array($line)) {
+                throw new InvalidArgumentException(__('Each Party invoice line must be a structured Party line.'));
+            }
             $type = trim((string) ($line['line_type'] ?? ''));
-            if (! in_array($type, $allowed, true)) throw new InvalidArgumentException(__('Retail lines cannot be added to a Party invoice.'));
+            if (! in_array($type, $allowed, true)) {
+                throw new InvalidArgumentException(__('Retail lines cannot be added to a Party invoice.'));
+            }
             $quantity = trim((string) ($line['quantity'] ?? ''));
             $price = trim((string) ($line['unit_price'] ?? ''));
-            if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) throw new InvalidArgumentException(__('Party line quantity must be positive.'));
-            if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $price)) throw new InvalidArgumentException(__('Party line price must be a non-negative decimal.'));
-            if ($type === 'consumable' && ! filled($line['product_id'] ?? null)) throw new InvalidArgumentException(__('A consumable Party line requires a product source.'));
+            if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) {
+                throw new InvalidArgumentException(__('Party line quantity must be positive.'));
+            }
+            if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $price)) {
+                throw new InvalidArgumentException(__('Party line price must be a non-negative decimal.'));
+            }
+            $productId = filled($line['product_id'] ?? null) ? (int) $line['product_id'] : null;
+            if ($type === 'consumable' && $productId === null) {
+                throw new InvalidArgumentException(__('A consumable Party line requires a product source.'));
+            }
+            if ($type === 'consumable' && ! Product::query()->sellable()->whereKey($productId)->exists()) {
+                throw new InvalidArgumentException(__('A consumable Party line requires an active catalog product.'));
+            }
+            if ($type !== 'consumable' && $productId !== null) {
+                throw new InvalidArgumentException(__('Only consumable Party lines may select a catalog product.'));
+            }
             $rentalAssetId = filled($line['asset_id'] ?? null) ? (int) $line['asset_id'] : null;
-            if ($type === 'rental_asset' && $rentalAssetId === null) throw new InvalidArgumentException(__('A rental Party line must select an actual rental asset.'));
-            if ($type !== 'rental_asset' && $rentalAssetId !== null) throw new InvalidArgumentException(__('Only rental asset Party lines may select a rental asset.'));
+            if ($type === 'rental_asset' && $rentalAssetId === null) {
+                throw new InvalidArgumentException(__('A rental Party line must select an actual rental asset.'));
+            }
+            if ($type !== 'rental_asset' && $rentalAssetId !== null) {
+                throw new InvalidArgumentException(__('Only rental asset Party lines may select a rental asset.'));
+            }
             $description = trim((string) ($line['description'] ?? $line['description_en'] ?? $line['description_ar'] ?? ''));
-            if ($description === '') throw new InvalidArgumentException(__('Every Party line requires a description.'));
-            $lines[] = ['line_type' => $type, 'product_id' => filled($line['product_id'] ?? null) ? (int) $line['product_id'] : null, 'rental_asset_id' => $rentalAssetId, 'description_ar' => trim((string) ($line['description_ar'] ?? $description)), 'description_en' => trim((string) ($line['description_en'] ?? $description)), 'quantity' => bcadd($quantity, '0', 6), 'unit_price' => bcadd($price, '0', 4), 'resource_key' => filled($line['resource_key'] ?? null) ? trim((string) $line['resource_key']) : null, 'source_reference' => filled($line['source_reference'] ?? null) ? trim((string) $line['source_reference']) : null];
+            if ($description === '') {
+                throw new InvalidArgumentException(__('Every Party line requires a description.'));
+            }
+            $lines[] = ['line_type' => $type, 'product_id' => $productId, 'rental_asset_id' => $rentalAssetId, 'description_ar' => trim((string) ($line['description_ar'] ?? $description)), 'description_en' => trim((string) ($line['description_en'] ?? $description)), 'quantity' => bcadd($quantity, '0', 6), 'unit_price' => bcadd($price, '0', 4), 'resource_key' => filled($line['resource_key'] ?? null) ? trim((string) $line['resource_key']) : null, 'source_reference' => filled($line['source_reference'] ?? null) ? trim((string) $line['source_reference']) : null];
         }
+
         return $lines;
     }
 
     /** @param list<array<string, mixed>> $lines */
     private function writeLines(PartyInvoice $invoice, array $lines): void
     {
-        foreach ($lines as $index => $line) PartyInvoiceLine::query()->create(['party_invoice_id' => $invoice->id, 'line_number' => $index + 1, ...$line, 'discount_amount' => '0.0000', 'tax_amount' => '0.0000', 'line_total' => bcmul((string) $line['quantity'], (string) $line['unit_price'], 4)]);
+        foreach ($lines as $index => $line) {
+            PartyInvoiceLine::query()->create(['party_invoice_id' => $invoice->id, 'line_number' => $index + 1, ...$line, 'discount_amount' => '0.0000', 'tax_amount' => '0.0000', 'line_total' => bcmul((string) $line['quantity'], (string) $line['unit_price'], 4)]);
+        }
     }
 
     private function recalculate(PartyInvoice $invoice): void
@@ -173,14 +212,19 @@ final class CreatePartyBookingAction
     {
         $resourceKeys = (array) $normalized['resource_keys'];
         foreach ($normalized['lines'] as &$line) {
-            if ($line['line_type'] !== 'rental_asset') continue;
+            if ($line['line_type'] !== 'rental_asset') {
+                continue;
+            }
             $asset = RentalAsset::query()->visibleTo($actor)->whereKey((int) $line['rental_asset_id'])->where('branch_id', $store->branch_id)->where('store_id', $store->id)->whereIn('status', ['available', 'reserved'])->first();
-            if ($asset === null) throw new InvalidArgumentException(__('The selected rental asset is not available in this Party store or scope.'));
+            if ($asset === null) {
+                throw new InvalidArgumentException(__('The selected rental asset is not available in this Party store or scope.'));
+            }
             $line['resource_key'] = $asset->code;
             $resourceKeys[] = $asset->code;
         }
         unset($line);
         $normalized['resource_keys'] = array_values(array_unique(array_filter(array_map('strval', $resourceKeys))));
+
         return $normalized;
     }
 
@@ -192,7 +236,9 @@ final class CreatePartyBookingAction
         foreach ($candidates as $candidate) {
             $sameLocation = mb_strtolower(trim((string) $candidate->location)) === mb_strtolower($location);
             $sameResource = array_intersect($resourceKeys, array_map('strval', (array) $candidate->resource_keys)) !== [];
-            if ($sameLocation || $sameResource) throw new InvalidArgumentException(__('The Party schedule conflicts with an existing booking or resource reservation.'));
+            if ($sameLocation || $sameResource) {
+                throw new InvalidArgumentException(__('The Party schedule conflicts with an existing booking or resource reservation.'));
+            }
         }
     }
 }

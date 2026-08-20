@@ -3,55 +3,66 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Customer\Models\Customer;
-use App\Modules\Customer\Support\CustomerPolicy;
-use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
+use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Actions\ApprovePartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\ApproveProductWalletAdjustmentAction;
 use App\Modules\Customer\Actions\RejectPartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\RejectProductWalletAdjustmentAction;
+use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletLedger;
-use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\CustomerPolicySettingRegistry;
 use App\Modules\Customer\Support\WalletPolicy;
 use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Platform\Actions\DeliverAttachment;
+use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\RequestApproval;
+use App\Modules\Platform\Actions\StoreAttachment;
+use App\Modules\Platform\Data\ApprovalRequestData;
+use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
-use App\Modules\Platform\Actions\DeliverAttachment;
-use App\Modules\Platform\Actions\RequestApproval;
-use App\Modules\Platform\Data\ApprovalRequestData;
-use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Actions\StoreAttachment;
-use App\Modules\Platform\Data\AttachmentSourceReference;
-use App\Modules\Platform\Models\Attachment;
-use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\OpenPricePolicy;
-use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Actions\EnrollOfflineDeviceAction;
 use App\Modules\Retail\Actions\OpenShiftAction;
+use App\Modules\Retail\Actions\PosCartAction;
+use App\Modules\Retail\Actions\QueueOfflineTransactionAction;
 use App\Modules\Retail\Actions\RecordCashMovementAction;
+use App\Modules\Retail\Actions\ResolveOfflineConflictAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
-use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
+use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
+use App\Modules\Retail\Actions\SyncOfflineTransactionsAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\OfflineConflict;
+use App\Modules\Retail\Models\OfflineDevice;
+use App\Modules\Retail\Models\OfflineTransaction;
+use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
-use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Services\DiscountPolicy;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
+use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -64,7 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             && $product->images()->where('attachment_id', $attachment->id)->exists();
         abort_unless($authorized, 403);
 
-        $disk = \Illuminate\Support\Facades\Storage::disk($attachment->storage_disk);
+        $disk = Storage::disk($attachment->storage_disk);
         abort_unless($disk->exists($attachment->storage_path), 404);
         $source = $disk->path($attachment->storage_path);
         $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
@@ -74,15 +85,23 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $bytes = file_get_contents($source);
             $image = is_string($bytes) ? @imagecreatefromstring($bytes) : false;
             if ($image !== false) {
-                $width = imagesx($image); $height = imagesy($image);
+                $width = imagesx($image);
+                $height = imagesy($image);
                 $scale = min(320 / max(1, $width), 320 / max(1, $height), 1);
-                $targetWidth = max(1, (int) round($width * $scale)); $targetHeight = max(1, (int) round($height * $scale));
+                $targetWidth = max(1, (int) round($width * $scale));
+                $targetHeight = max(1, (int) round($height * $scale));
                 $thumb = imagecreatetruecolor($targetWidth, $targetHeight);
-                imagealphablending($thumb, false); imagesavealpha($thumb, true);
+                imagealphablending($thumb, false);
+                imagesavealpha($thumb, true);
                 imagecopyresampled($thumb, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
-                if (! is_dir($cacheDirectory)) @mkdir($cacheDirectory, 0700, true);
-                if (is_dir($cacheDirectory)) @imagewebp($thumb, $cachePath, 82);
-                imagedestroy($thumb); imagedestroy($image);
+                if (! is_dir($cacheDirectory)) {
+                    @mkdir($cacheDirectory, 0700, true);
+                }
+                if (is_dir($cacheDirectory)) {
+                    @imagewebp($thumb, $cachePath, 82);
+                }
+                imagedestroy($thumb);
+                imagedestroy($image);
             }
         }
 
@@ -95,6 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('pos/returns-readiness', function (Request $request) {
         abort_unless($request->user()->is_super_admin || $request->user()->can('returns.view') || $request->user()->can('returns_exchanges_gift_instruments.view'), 403);
+
         return redirect()->route('returns.index');
     })->name('returns.readiness');
 
@@ -422,6 +442,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $pendingAdjustments = $user->can('product_wallet.approve')
             ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'product_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'product_wallet.approve')->latest('id')->limit(20)->get()
             : collect();
+
         return view('pages.wallets.ledger', [
             'title' => __('Product Wallet'), 'description' => __('Retail-only customer balance derived from a separate immutable, source-linked ledger.'),
             'wallet' => 'product', 'customer' => null, 'ledgerTable' => 'product_wallet_ledger', 'entries' => $entries,
@@ -462,6 +483,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $pendingAdjustments = $user->can('party_wallet.approve')
             ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'party_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'party_wallet.approve')->latest('id')->limit(20)->get()
             : collect();
+
         return view('pages.wallets.ledger', [
             'title' => __('Party Wallet'), 'description' => __('Party-only customer balance derived from a separate immutable, source-linked ledger.'),
             'wallet' => 'party', 'customer' => null, 'ledgerTable' => 'party_wallet_ledger', 'entries' => $entries,
@@ -564,12 +586,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', __('Party Wallet adjustment rejected and audited.'));
     })->middleware('can:party_wallet.approve')->name('wallets.party.adjustments.reject');
 
-    Route::get('pos', function (Request $request) {
+    Route::get('pos', function (Request $request, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->with('company')->orderBy('id')->first();
-        $shift = $store !== null ? PosShift::query()->open()->where('store_id', $store->id)->where('cashier_id', $user->id)->with('cashDrawer')->latest('opened_at')->first() : null;
+        $context = $contextResolver->resolve($user);
+        $store = $context->store;
+        $shift = $context->shift;
         $selectedCustomer = null;
         $customerSearchResults = collect();
         $customerQuery = trim((string) $request->query('customer_q', ''));
@@ -747,7 +770,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
 
         return view('pages.pos.index', compact(
-            'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
+            'context', 'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
             'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
             'cashDenomination', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
             'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
@@ -1034,10 +1057,153 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     })->middleware('can:shifts_cash_movements.print')->name('pos.shift.print.a4');
 
     Route::get('pos/offline-readiness', function (Request $request) {
-        abort_unless($request->user()?->can('pos_sales.view'), 403);
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('pos_sales.view'), 403);
 
-        return view('pages.pos.offline-readiness');
+        $enabled = ! app()->isProduction() && (bool) config('offline.enabled');
+        $devices = OfflineDevice::query()
+            ->where('user_id', $user->id)
+            ->where('revoked_at', null)
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get(['id', 'name', 'branch_id', 'store_id', 'shift_id', 'policy_version', 'schema_version', 'expires_at']);
+        $queuedCount = OfflineTransaction::query()->where('user_id', $user->id)->where('state', 'queued')->count();
+        $conflictCount = OfflineTransaction::query()->where('user_id', $user->id)->where('state', 'conflict')->count();
+        $shifts = PosShift::query()->visibleTo($user)->open()->with(['store', 'cashDrawer'])->orderByDesc('opened_at')->limit(10)->get();
+
+        return view('pages.pos.offline-readiness', compact('enabled', 'devices', 'queuedCount', 'conflictCount', 'shifts'));
     })->middleware('can:pos_sales.view')->name('pos.offline-readiness');
+
+    Route::post('pos/offline/devices', function (Request $request, EnrollOfflineDeviceAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.create'), 403);
+        $validated = $request->validate([
+            'shift_id' => ['required', 'integer', 'exists:pos_shifts,id'],
+            'name' => ['required', 'string', 'max:100'],
+            'token' => ['required', 'string', 'min:20', 'max:255'],
+        ]);
+
+        try {
+            $action->execute($user, PosShift::query()->findOrFail($validated['shift_id']), $validated['name'], $validated['token']);
+        } catch (InvalidArgumentException|LogicException $exception) {
+            return back()->withErrors(['offline' => $exception->getMessage()]);
+        }
+
+        return to_route('pos.offline-readiness')->with('success', __('Offline device enrolled. Keep its token only on the enrolled browser.'));
+    })->middleware('can:offline_queue_conflicts.create')->name('pos.offline.devices.store');
+
+    Route::get('pos/offline/queue', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.view'), 403);
+        $devices = OfflineDevice::query()->where('user_id', $user->id)->whereNull('revoked_at')
+            ->orderByDesc('updated_at')->limit(10)->get(['id', 'name', 'policy_version', 'schema_version', 'expires_at']);
+        $transactions = OfflineTransaction::query()->where('user_id', $user->id)
+            ->with('device:id,name')->latest('captured_at')->paginate(25);
+
+        return view('pages.pos.offline-queue', compact('devices', 'transactions'));
+    })->middleware('can:offline_queue_conflicts.view')->name('pos.offline.queue');
+
+    Route::post('pos/offline/queue', function (Request $request, QueueOfflineTransactionAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.submit'), 403);
+        $validated = $request->validate([
+            'offline_device_id' => ['required', 'integer', 'exists:offline_devices,id'],
+            'token' => ['required', 'string', 'max:255'],
+            'payload' => ['required', 'array'],
+        ]);
+        $device = OfflineDevice::query()->findOrFail($validated['offline_device_id']);
+        abort_unless((int) $device->user_id === (int) $user->id, 403);
+
+        try {
+            $action->execute($user, $device, $validated['token'], $validated['payload']);
+        } catch (InvalidArgumentException|LogicException $exception) {
+            return to_route('pos.offline.queue')->withErrors(['offline' => $exception->getMessage()]);
+        }
+
+        return to_route('pos.offline.queue')->with('success', __('Offline transaction queued provisionally. No sale document has been created.'));
+    })->middleware('can:offline_queue_conflicts.submit')->name('pos.offline.queue.store');
+
+    Route::post('pos/offline/sync', function (Request $request, SyncOfflineTransactionsAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.submit'), 403);
+        $validated = $request->validate([
+            'offline_device_id' => ['required', 'integer', 'exists:offline_devices,id'],
+            'token' => ['required', 'string', 'max:255'],
+        ]);
+        $device = OfflineDevice::query()->findOrFail($validated['offline_device_id']);
+        abort_unless((int) $device->user_id === (int) $user->id, 403);
+
+        try {
+            $result = $action->execute($user, $device, $validated['token']);
+        } catch (InvalidArgumentException|LogicException $exception) {
+            return to_route('pos.offline.queue')->withErrors(['offline' => $exception->getMessage()]);
+        }
+
+        return to_route('pos.offline.queue')->with('success', __('Sync completed: :accepted accepted, :conflicted require review.', $result));
+    })->middleware('can:offline_queue_conflicts.submit')->name('pos.offline.sync');
+
+    Route::get('offline/conflicts', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
+        $query = OfflineTransaction::query()->where('offline_transactions.state', 'conflict');
+        if (! $user->is_super_admin) {
+            $branchIds = $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
+            $storeIds = $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
+            $query->where(function ($scope) use ($branchIds, $storeIds): void {
+                $scope->whereIn('offline_transactions.branch_id', $branchIds)->orWhereIn('offline_transactions.store_id', $storeIds);
+            });
+        }
+        $transactions = $query->select('offline_transactions.*')
+            ->selectSub(
+                Branch::query()->select('code')->whereColumn('branches.id', 'offline_transactions.branch_id'),
+                'offline_branch_code',
+            )
+            ->selectSub(Store::query()->select('code')->whereColumn('stores.id', 'offline_transactions.store_id'), 'offline_store_code')
+            ->selectSub(OfflineDevice::query()->select('name')->whereColumn('offline_devices.id', 'offline_transactions.offline_device_id'), 'offline_device_name')
+            ->latest('offline_transactions.synced_at')->paginate(25);
+
+        return view('pages.pos.offline-conflicts', compact('transactions'));
+    })->middleware('can:offline_queue_conflicts.approve')->name('offline.conflicts.index');
+
+    Route::get('offline/conflicts/{transaction}', function (Request $request, OfflineTransaction $transaction) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
+        abort_unless($user->canAccessBranch((int) $transaction->branch_id) && $user->canAccessStore((int) $transaction->store_id), 404);
+        $transaction->load(['device:id,name', 'branch:id,code', 'store:id,code']);
+        $conflicts = OfflineConflict::query()->where('offline_transaction_id', $transaction->id)->latest()->get();
+
+        return view('pages.pos.offline-conflict-show', compact('transaction', 'conflicts'));
+    })->middleware('can:offline_queue_conflicts.approve')->name('offline.conflicts.show');
+
+    Route::post('offline/conflicts/{transaction}/resolve', function (Request $request, OfflineTransaction $transaction, ResolveOfflineConflictAction $action) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
+        abort_unless($user->canAccessBranch((int) $transaction->branch_id) && $user->canAccessStore((int) $transaction->store_id), 404);
+        $validator = Validator::make($request->all(), [
+            'disposition' => ['required', Rule::in(['reject'])],
+            'reason' => ['required', 'string', 'min:8', 'max:2000'],
+        ]);
+        if ($validator->fails()) {
+            return to_route('offline.conflicts.show', $transaction)->withErrors($validator)->withInput();
+        }
+        $validated = $validator->validated();
+
+        try {
+            $action->execute($user, $transaction, $validated['disposition'], $validated['reason']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['offline' => $exception->getMessage()]);
+        }
+
+        return to_route('offline.conflicts.index')->with('success', __('Offline conflict disposition was recorded in the audit trail.'));
+    })->middleware('can:offline_queue_conflicts.approve')->name('offline.conflicts.resolve');
 
     Route::get('customers/loyalty-readiness', function (Request $request) {
         abort_unless($request->user()?->can('customers.view'), 403);
@@ -1116,7 +1282,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $data = $request->validate(['product_id' => ['required', 'integer'], 'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999']]);
         try {
-            app(\App\Modules\Retail\Actions\PosCartAction::class)->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
+            app(PosCartAction::class)->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
         } catch (InvalidArgumentException $exception) {
             return back()->withErrors(['cart' => $exception->getMessage()]);
         }
@@ -1129,7 +1295,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $data = $request->validate(['product_id' => ['required', 'integer']]);
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
         $sessionCart = $request->session()->get('pos.cart', []);
-        app(\App\Modules\Retail\Actions\PosCartAction::class)->remove($request, (int) $data['product_id']);
+        app(PosCartAction::class)->remove($request, (int) $data['product_id']);
 
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.remove');
@@ -1143,7 +1309,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999'],
         ]);
         try {
-            app(\App\Modules\Retail\Actions\PosCartAction::class)->quantity($request, $user, (int) $data['product_id'], (string) $data['quantity']);
+            app(PosCartAction::class)->quantity($request, $user, (int) $data['product_id'], (string) $data['quantity']);
         } catch (InvalidArgumentException $exception) {
             return back()->withErrors(['cart' => $exception->getMessage()]);
         }
@@ -1151,7 +1317,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', __('Cart quantity updated.'));
     })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
 
-    Route::post('pos/cart/discount', function (Request $request, DiscountPolicy $policy) {
+    Route::post('pos/cart/discount', function (Request $request, DiscountPolicy $policy, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.apply_discount'), 403);
@@ -1173,7 +1339,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             return back()->withErrors(['discount' => __('The discount changed in another request. Review the current value and try again.')]);
         }
 
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $context = $contextResolver->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return back()->withErrors(['discount' => $context->disabledReason]);
+        }
+        $store = $context->store;
         $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
         abort_if($price === null, 422, __('The product has no effective price.'));
         $unitPrice = (string) ($line['open_price_amount'] ?? $price->amount);
@@ -1271,7 +1441,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             : ($existingType === null ? __('Discount applied.') : __('The previous discount was replaced.')));
     })->middleware('can:pos_sales.apply_discount')->name('pos.cart.discount');
 
-    Route::post('pos/cart/open-price', function (Request $request, OpenPricePolicy $policy) {
+    Route::post('pos/cart/open-price', function (Request $request, OpenPricePolicy $policy, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.open_price'), 403);
@@ -1292,7 +1462,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             return back()->withErrors(['open_price' => __('The open price changed in another request. Review it and try again.')]);
         }
 
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $context = $contextResolver->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return back()->withErrors(['open_price' => $context->disabledReason]);
+        }
+        $store = $context->store;
         $price = app(EffectivePriceResolver::class)->resolve((int) $line['product_id'], $store->id);
         abort_if($price === null || ! $price->open_price_allowed, 422, __('Open price is not enabled for this product.'));
         $reference = DecimalMoney::normalize((string) ($price->reference_amount ?? $price->amount), 4);
@@ -1372,11 +1546,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             : __('Open price applied to the basket line.'));
     })->middleware('can:pos_sales.open_price')->name('pos.cart.open-price');
 
-    Route::post('pos/cart/tax', function (Request $request) {
+    Route::post('pos/cart/tax', function (Request $request, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.apply_tax'), 403);
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $context = $contextResolver->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return back()->withErrors(['tax' => $context->disabledReason]);
+        }
+        $store = $context->store;
         $data = $request->validate(['tax_applicable' => ['required', 'boolean']]);
         $applicable = (bool) $data['tax_applicable'];
         $setting = null;
@@ -1415,11 +1593,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back();
     })->middleware('can:pos_sales.create')->name('pos.cart.clear');
 
-    Route::post('pos/suspend', function (Request $request, RetailSaleAction $action) {
+    Route::post('pos/suspend', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $context = $contextResolver->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return back()->withErrors(['cart' => $context->disabledReason]);
+        }
+        $store = $context->store;
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $cart */
         $cart = $request->session()->get('pos.cart', []);
         $token = (string) $request->session()->get('pos.checkout_token', Str::uuid());
@@ -1441,11 +1623,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return redirect()->route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->getAttribute('resume_code')]));
     })->middleware('can:pos_sales.create')->name('pos.suspend');
 
-    Route::post('pos/checkout', function (Request $request, RetailSaleAction $action) {
+    Route::post('pos/checkout', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->firstOrFail();
+        $context = $contextResolver->resolve($user);
+        if (! $context->isReady() || $context->store === null) {
+            return back()->withInput()->withErrors(['payments' => $context->disabledReason]);
+        }
+        $store = $context->store;
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $cart */
         $cart = $request->session()->get('pos.cart', []);
 

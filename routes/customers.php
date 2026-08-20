@@ -9,6 +9,7 @@ use App\Modules\Customer\Actions\PostProductWalletEntryAction;
 use App\Modules\Customer\Actions\RequestPartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\RequestProductWalletAdjustmentAction;
 use App\Modules\Customer\Actions\CreateCustomerAction;
+use App\Modules\Customer\Actions\CreateCustomerGroupAction;
 use App\Modules\Customer\Actions\ExpireLoyaltyAction;
 use App\Modules\Customer\Actions\MergeCustomersAction;
 use App\Modules\Customer\Actions\RecordCustomerConsentAction;
@@ -17,7 +18,10 @@ use App\Modules\Customer\Actions\RejectLoyaltyAdjustmentAction;
 use App\Modules\Customer\Actions\RequestLoyaltyAdjustmentAction;
 use App\Modules\Customer\Actions\SaveCustomerChildAction;
 use App\Modules\Customer\Actions\UpdateCustomerAction;
+use App\Modules\Customer\Actions\UpdateCustomerGroupAction;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerChild;
+use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerConsent;
 use App\Modules\Customer\Models\LoyaltyAdjustment;
 use App\Modules\Customer\Models\LoyaltyLedger;
@@ -28,6 +32,7 @@ use App\Modules\Customer\Models\ProductWalletLedger;
 use App\Modules\Customer\Support\PartyWalletBalance;
 use App\Modules\Customer\Support\ProductWalletBalance;
 use App\Modules\Customer\Support\CustomerPolicy;
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Customer\Support\WalletPolicy;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
@@ -38,13 +43,106 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Modules\Customer\Models\CustomerImportBatch;
+use App\Modules\Customer\Actions\StageCustomerImportAction;
+use Illuminate\Support\Facades\DB;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     $sellingStore = static function (User $user): Store {
         return Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->orderBy('id')->firstOrFail();
     };
 
-    Route::get('customers', function (Request $request) {
+    Route::get('customers/import', function (Request $request) {
+        abort_unless($request->user()->can('customers.create'), 403);
+        return view('pages.customers.import', ['batches' => CustomerImportBatch::where('created_by', $request->user()->id)->latest()->paginate(10)]);
+    })->middleware('can:customers.create')->name('customers.import');
+    Route::get('customers/import/template', function (Request $request) {
+        abort_unless($request->user()->can('customers.create'), 403);
+        $base = tempnam(sys_get_temp_dir(), 'customer-template-');
+        $path = $base.'.xlsx';
+        @unlink($base);
+        $writer = new \OpenSpout\Writer\XLSX\Writer;
+        $writer->openToFile($path);
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(StageCustomerImportAction::FIELDS));
+        $writer->close();
+
+        return response()->download($path, 'customers-import-template.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    })->middleware('can:customers.create')->name('customers.import.template');
+    Route::post('customers/import', function (Request $request, StageCustomerImportAction $action) use ($sellingStore) {
+        $user = $request->user(); abort_unless($user->can('customers.create'), 403);
+        $data = $request->validate(['import_file'=>['required','file','mimes:xlsx,csv,ods','max:10240'],'mode'=>['required',Rule::in(['create_only','update_existing'])]]);
+        if ($data['mode']==='update_existing') abort_unless($user->can('customers.edit'),403);
+        try {$rows=StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());} catch (InvalidArgumentException $exception) { throw ValidationException::withMessages(['import_file'=>$exception->getMessage()]); }
+        $batch=$action->stage($rows,$request->file('import_file')->getClientOriginalName(),$data['mode'],$user->id,$sellingStore($user));
+        return to_route('customers.import')->with('success', __('Customer file staged. Review errors before approval.'))->with('batch_id',$batch->id);
+    })->middleware('can:customers.create')->name('customers.import.stage');
+    Route::post('customers/import/{batch}/approve', function (Request $request, CustomerImportBatch $batch, CreateCustomerAction $creator, UpdateCustomerAction $updater) {
+        $user=$request->user(); abort_unless($user->can('customers.import.approve'),403); abort_unless($batch->status==='ready_for_review' && $batch->invalid_rows===0,422);
+        abort_if((int)$batch->created_by===(int)$user->id,422,__('The requester cannot approve their own import batch.'));
+        $store=Store::query()->visibleTo($user)->where('type','selling')->where('status','active')->orderBy('id')->firstOrFail(); DB::transaction(function()use($batch,$creator,$updater,$user,$store){foreach($batch->rows()->where('status','valid')->lockForUpdate()->get() as $row){$d=$row->mapped_data;$data=['first_name_ar'=>$d['first_name_ar'],'last_name_ar'=>$d['last_name_ar'],'first_name_en'=>$d['first_name_en'],'last_name_en'=>$d['last_name_en'],'phone'=>$d['phone'],'email'=>$d['email'],'customer_group_id'=>$d['customer_group_id']??null];if($batch->mode==='update_existing'){$customer=$updater->execute($user,Customer::query()->whereKey($d['customer_id'])->where('phone_normalized',PhoneNormalizer::normalize($d['phone']))->firstOrFail(),$store,$data);$status='updated';}else{$customer=$creator->execute($user,$store,$data+['consents'=>[['purpose'=>$d['consent_purpose'],'status'=>$d['consent_status'],'source'=>'customer_import']],'idempotency_key'=>'customer-import:'.$batch->id.':'.$row->id]);$status='created';}$row->update(['status'=>$status,'customer_id'=>$customer->id]);}$batch->update(['status'=>'completed','approved_at'=>now()]);});
+        return to_route('customers.import')->with('success',__('Customer import approved and written.'));
+    })->middleware('can:customers.import.approve')->name('customers.import.approve');
+    Route::get('customers/groups', function (Request $request) use ($sellingStore) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('customers.view'), 403);
+        $store = $sellingStore($user);
+        $term = trim((string) $request->string('q'));
+        $groups = CustomerGroup::query()
+            ->forCompany((int) $store->company_id)
+            ->with('parent:id,name_ar,name_en')
+            ->withCount(['customers as active_customers_count' => fn ($query) => $query->where('status', 'active')])
+            ->when($term !== '', fn ($query) => $query->where(fn ($scope) => $scope->where('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%')))
+            ->orderBy('parent_id')->orderBy('name_ar')
+            ->paginate(20)
+            ->withQueryString();
+        $parentOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
+
+        return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store'));
+    })->middleware('can:customers.view')->name('customers.groups.index');
+
+    Route::post('customers/groups', function (Request $request, CreateCustomerGroupAction $action) use ($sellingStore) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('customers.edit'), 403);
+        $validated = $request->validate([
+            'name_ar' => ['required', 'string', 'max:190'],
+            'name_en' => ['required', 'string', 'max:190'],
+            'parent_id' => ['nullable', 'integer'],
+        ]);
+        try {
+            $action->execute($user, $sellingStore($user), $validated);
+        } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
+            return back()->withInput()->withErrors(['group' => $exception->getMessage()]);
+        }
+
+        return to_route('customers.groups.index')->with('success', __('Customer group created.'));
+    })->middleware('can:customers.edit')->name('customers.groups.store');
+
+    Route::put('customers/groups/{groupId}', function (Request $request, int $groupId, UpdateCustomerGroupAction $action) use ($sellingStore) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('customers.edit'), 403);
+        $store = $sellingStore($user);
+        $group = CustomerGroup::query()->forCompany((int) $store->company_id)->whereKey($groupId)->firstOrFail();
+        $validated = $request->validate([
+            'name_ar' => ['required', 'string', 'max:190'],
+            'name_en' => ['required', 'string', 'max:190'],
+            'parent_id' => ['nullable', 'integer'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+        ]);
+        try {
+            $action->execute($user, $group, $store, $validated);
+        } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
+            return back()->withInput()->withErrors(['group' => $exception->getMessage()]);
+        }
+
+        return to_route('customers.groups.index')->with('success', __('Customer group updated.'));
+    })->middleware('can:customers.edit')->name('customers.groups.update');
+
+    Route::get('customers', function (Request $request) use ($sellingStore) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('customers.view'), 403);
@@ -52,7 +150,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless(in_array($mode, ['master', 'history', 'loyalty'], true), 404);
         abort_if($mode === 'loyalty' && ! $user->can('loyalty.view'), 403);
 
-        $query = Customer::query()->visibleTo($user)->active()->with(['scopes.store', 'scopes.branch'])->withCount(['consents', 'children']);
+        $store = $sellingStore($user);
+        $query = Customer::query()->visibleTo($user)->active()->with(['scopes.store', 'scopes.branch', 'group.parent'])->withCount(['consents', 'children']);
         $term = trim((string) $request->string('q'));
         if ($term !== '') {
             $digits = preg_replace('/[^0-9]+/', '', $term);
@@ -65,9 +164,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             });
         }
         $query->when($request->filled('status'), fn ($builder) => $builder->where('status', (string) $request->string('status')));
+        $groupId = $request->integer('group_id') ?: null;
+        $query->when($groupId !== null, fn ($builder) => $builder->where('customer_group_id', $groupId));
         $customers = $query->latest('id')->paginate(20)->withQueryString();
+        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
-        return view('pages.customers.index', ['customers' => $customers, 'term' => $term, 'mode' => $mode]);
+        return view('pages.customers.index', ['customers' => $customers, 'term' => $term, 'mode' => $mode, 'groupId' => $groupId, 'groupOptions' => $groupOptions]);
     })->middleware('can:customers.view')->name('customers.index');
 
     Route::get('customers/export', function (Request $request) use ($sellingStore) {
@@ -106,15 +208,21 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $store = $sellingStore($user);
         $consentPurposes = [];
         $childPurposes = [];
-        $policyError = null;
+        $consentPolicyError = null;
+        $childPolicyError = null;
         try {
             $consentPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
+        } catch (InvalidArgumentException $exception) {
+            $consentPolicyError = $exception->getMessage();
+        }
+        try {
             $childPurposes = CustomerPolicy::childPurposes()['value'];
         } catch (InvalidArgumentException $exception) {
-            $policyError = $exception->getMessage();
+            $childPolicyError = $exception->getMessage();
         }
+        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
-        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'policyError'));
+        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'consentPolicyError', 'childPolicyError', 'groupOptions'));
     })->middleware('can:customers.create')->name('customers.create');
 
     Route::post('customers', function (Request $request, CreateCustomerAction $action) use ($sellingStore) {
@@ -123,13 +231,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('customers.create'), 403);
         $validated = $request->validate([
             'idempotency_key' => ['required', 'uuid'],
-            'phone' => ['required', 'string', 'max:64'],
-            'name_ar' => ['required', 'string', 'max:190'],
-            'name_en' => ['required', 'string', 'max:190'],
+            'phone' => ['required', 'string', 'max:64', PhoneNormalizer::validationRule()],
+            'first_name_ar' => ['required_without_all:name_ar,name_en', 'nullable', 'string', 'max:190'],
+            'last_name_ar' => ['required_without_all:name_ar,name_en', 'nullable', 'string', 'max:190'],
+            'first_name_en' => ['nullable', 'string', 'max:190'],
+            'last_name_en' => ['nullable', 'string', 'max:190'],
+            'name_ar' => ['nullable', 'string', 'max:190'],
+            'name_en' => ['nullable', 'string', 'max:190'],
             'email' => ['nullable', 'email', 'max:190'],
-            'secondary_phone' => ['nullable', 'string', 'max:64'],
+            'secondary_phone' => ['nullable', 'string', 'max:64', PhoneNormalizer::validationRule()],
             'address_ar' => ['nullable', 'string', 'max:4000'],
             'address_en' => ['nullable', 'string', 'max:4000'],
+            'customer_group_id' => ['nullable', 'integer'],
             'consent_purpose' => ['required', 'string', 'max:80'],
             'consent_status' => ['required', Rule::in(['granted', 'withdrawn', 'denied'])],
             'child_name_ar' => ['nullable', 'string', 'max:190'],
@@ -146,8 +259,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ]]
             : [];
 
+        $store = $sellingStore($user);
         try {
-            $customer = $action->execute($user, $sellingStore($user), $validated + [
+            $customer = $action->execute($user, $store, $validated + [
                 'consents' => [[
                     'purpose' => $validated['consent_purpose'],
                     'status' => $validated['consent_status'],
@@ -156,7 +270,21 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'children' => $child,
             ]);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
-            return back()->withInput()->withErrors(['customer' => $exception->getMessage()]);
+            $normalizedPhone = PhoneNormalizer::normalize((string) ($validated['phone'] ?? ''));
+            $candidate = Customer::query()
+                ->visibleFrom($user, (int) $store->branch_id, (int) $store->id)
+                ->where('status', 'active')
+                ->where(function ($query) use ($normalizedPhone, $validated): void {
+                    $query->where('phone_normalized', $normalizedPhone);
+                    if (filled($validated['email'] ?? null)) {
+                        $query->orWhereRaw('LOWER(email) = ?', [strtolower(trim((string) $validated['email']))]);
+                    }
+                })
+                ->first(['id', 'name_ar', 'name_en', 'phone_display']);
+
+            return back()->withInput()
+                ->withErrors(['customer' => $exception->getMessage()])
+                ->with('duplicate_candidate', $candidate?->toArray());
         }
 
         return to_route('customers.show', $customer)->with('success', __('Customer profile created.'));
@@ -172,8 +300,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $historyIds = Customer::query()->where(fn ($query) => $query->whereKey($customer->id)->orWhere('merged_into_id', $customer->id))->pluck('id');
         $consents = collect();
         if ($user->can('customers.sensitive')) {
-            $consents = CustomerConsent::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->latest('id')->get();
-            $customer->load(['children' => fn ($query) => $query->visibleTo($user)->where('status', 'active')->latest('id')]);
+            $consents = CustomerConsent::query()->visibleTo($user)->with('capturer')->whereIn('customer_id', $historyIds)->latest('id')->get();
+            $customer->load(['children' => fn ($query) => $query->visibleTo($user)->latest('id')]);
         }
         $sales = Sale::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->approved()->with('store')->latest('approved_at')->paginate(10, ['*'], 'sales_page')->withQueryString();
         $balance = (int) LoyaltyLedger::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->sum('points');
@@ -181,8 +309,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $adjustments = $user->can('loyalty.view') ? LoyaltyAdjustment::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->latest('id')->limit(10)->get() : collect();
         $productWalletBalance = $user->can('product_wallet.view') ? app(ProductWalletBalance::class)->forCustomer($customer, $user) : null;
         $partyWalletBalance = $user->can('party_wallet.view') ? app(PartyWalletBalance::class)->forCustomer($customer, $user) : null;
+        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
-        return view('pages.customers.show', compact('customer', 'store', 'sales', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance'));
+        return view('pages.customers.show', compact('customer', 'store', 'sales', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions'));
     })->middleware('can:customers.view')->name('customers.show');
 
     Route::put('customers/{customerId}', function (Request $request, int $customerId, UpdateCustomerAction $action) use ($sellingStore) {
@@ -190,13 +319,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('customers.edit'), 403);
         $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:64'],
-            'name_ar' => ['required', 'string', 'max:190'],
-            'name_en' => ['required', 'string', 'max:190'],
+            'phone' => ['required', 'string', 'max:64', PhoneNormalizer::validationRule()],
+            'first_name_ar' => ['required_without_all:name_ar,name_en', 'nullable', 'string', 'max:190'],
+            'last_name_ar' => ['required_without_all:name_ar,name_en', 'nullable', 'string', 'max:190'],
+            'first_name_en' => ['nullable', 'string', 'max:190'],
+            'last_name_en' => ['nullable', 'string', 'max:190'],
+            'name_ar' => ['nullable', 'string', 'max:190'],
+            'name_en' => ['nullable', 'string', 'max:190'],
             'email' => ['nullable', 'email', 'max:190'],
-            'secondary_phone' => ['nullable', 'string', 'max:64'],
+            'secondary_phone' => ['nullable', 'string', 'max:64', PhoneNormalizer::validationRule()],
             'address_ar' => ['nullable', 'string', 'max:4000'],
             'address_en' => ['nullable', 'string', 'max:4000'],
+            'customer_group_id' => ['nullable', 'integer'],
         ]);
         $store = $sellingStore($user);
         $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
@@ -228,7 +362,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('customers.sensitive'), 403);
-        $validated = $request->validate(['name_ar' => ['required', 'string', 'max:190'], 'name_en' => ['required', 'string', 'max:190'], 'birth_date' => ['nullable', 'date'], 'purpose' => ['required', 'string', 'max:80']]);
+        $validated = $request->validate(['name_ar' => ['required', 'string', 'max:190'], 'name_en' => ['nullable', 'string', 'max:190'], 'birth_date' => ['nullable', 'date'], 'purpose' => ['nullable', 'string', 'max:80']]);
         $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated);
@@ -238,6 +372,33 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return back()->with('success', __('Child profile recorded.'));
     })->middleware('can:customers.sensitive')->name('customers.children.store');
+
+    Route::patch('customers/{customerId}/children/{childId}', function (Request $request, int $customerId, int $childId, SaveCustomerChildAction $action) use ($sellingStore) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('customers.sensitive'), 403);
+        $validated = $request->validate(['name_ar' => ['required', 'string', 'max:190'], 'name_en' => ['nullable', 'string', 'max:190'], 'birth_date' => ['nullable', 'date'], 'purpose' => ['nullable', 'string', 'max:80']]);
+        $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
+        $child = CustomerChild::query()->visibleTo($user)->where('customer_id', $customer->id)->whereKey($childId)->firstOrFail();
+        try {
+            $action->execute($user, $customer, $sellingStore($user), $validated, $child);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['child' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', __('Child profile updated.'));
+    })->middleware('can:customers.sensitive')->name('customers.children.update');
+
+    Route::post('customers/{customerId}/children/{childId}/deactivate', function (Request $request, int $customerId, int $childId, SaveCustomerChildAction $action) use ($sellingStore) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('customers.sensitive'), 403);
+        $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
+        $child = CustomerChild::query()->visibleTo($user)->where('customer_id', $customer->id)->whereKey($childId)->where('status', 'active')->firstOrFail();
+        $action->deactivate($user, $customer, $sellingStore($user), $child);
+
+        return back()->with('success', __('Child profile deactivated.'));
+    })->middleware('can:customers.sensitive')->name('customers.children.deactivate');
 
     Route::post('customers/{customerId}/merge', function (Request $request, int $customerId, MergeCustomersAction $action) use ($sellingStore) {
         /** @var User $user */
@@ -566,7 +727,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('pos_sales.create') && $user->can('customers.create'), 403);
         $validated = $request->validate([
-            'idempotency_key' => ['required', 'uuid'], 'phone' => ['required', 'string', 'max:64'],
+            'idempotency_key' => ['required', 'uuid'], 'phone' => ['required', 'string', 'max:64', PhoneNormalizer::validationRule()],
             'name_ar' => ['required', 'string', 'max:190'], 'name_en' => ['required', 'string', 'max:190'],
             'consent_purpose' => ['required', 'string', 'max:80'],
         ]);

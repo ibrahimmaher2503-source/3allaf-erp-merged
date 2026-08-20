@@ -29,6 +29,14 @@ Every task is executable/reviewable, delivers a visible result, and begins `Not 
 
 Reuse Laravel, Flux UI, and a single approved mature package where appropriate. Do not build authentication, permissions, audit, Excel, PDF, barcode, backup, media/upload, data table, pagination, filter/sort, picker, searchable select, modal/drawer, toast/alert, chart, sidebar, breadcrumbs, form controls, loading, or empty state from scratch when an approved capability exists. Package names/versions are not approved until the actual Laravel project is inspected. Automated tests are currently deferred; no task creates or runs automated tests.
 
+## Client Feedback Remediation — 2026-08-20 status sync
+
+The owner-expanded scope is tracked in `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md` and `docs/client-feedback-remediation-checklist.md`, not as a new Phase task. The client-fix queue is **15 DONE / 0 ACTIVE (CF-01–CF-15)**. The expanded ledger is **8/15 locally implemented + verified / 7 open**.
+
+Latest local evidence includes structured customer names/children/duplicate email, supplier/PO payment terms, Global/Branch/Location printer scope, payment/tax and sequence acceptance, migration rollback/forward plus stable authorization seeding, owner-decision CTAs, Arabic RTL and English LTR browser batches, §66 **15 tests / 118 assertions PASS**, and multi-branch **20 tests / 104 assertions PASS**. Focused customer/child and supplier/PO QA verified local persistence/reload paths.
+
+Owner policy/value approval, genuine owner data, warehouse taxonomy and inheritance provenance, physical printers/devices, Production, UAT, release approval, and final requirement-by-requirement closure remain open. This status sync does not change authoritative Phase Gates or Go-Live claims.
+
 ## Status Accuracy (2026-08-09)
 
 Task statuses below were re-verified against **actual production code** — migrations, module classes, and routes — not against previous status text. The full classification, per-task evidence, and dependency analysis live in `testing/results/IMPLEMENTATION-GAP-MATRIX.md`.

@@ -1,7 +1,7 @@
 <x-layouts::app :title="__('Party bookings')">
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
         <x-page-header :title="__('Party bookings')" :description="__('Schedule Party services and keep the working invoice separate from retail.')">
-            <x-slot:actions><flux:button href="{{ route('parties.bookings.create') }}" variant="primary" icon="plus">{{ __('New Party booking') }}</flux:button><flux:button href="{{ route('parties.orders.index') }}" variant="subtle">{{ __('Operating orders') }}</flux:button></x-slot:actions>
+            <x-slot:actions>@can('party_bookings_invoices.create')<flux:button href="{{ route('parties.bookings.create') }}" variant="primary" icon="plus">{{ __('New Party booking') }}</flux:button>@endcan @can('rental_assets.view')<flux:button href="{{ route('parties.calendar') }}" variant="subtle" icon="calendar-days">{{ __('Party calendar') }}</flux:button>@endcan @can('party_operating_orders_consumables.view')<flux:button href="{{ route('parties.orders.index') }}" variant="subtle">{{ __('Operating orders') }}</flux:button>@endcan</x-slot:actions>
         </x-page-header>
         @if(session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif

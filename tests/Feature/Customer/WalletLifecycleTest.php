@@ -5,20 +5,22 @@ declare(strict_types=1);
 namespace Tests\Feature\Customer;
 
 use App\Models\User;
+use App\Modules\Customer\Actions\ApprovePartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\ApproveProductWalletAdjustmentAction;
 use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
 use App\Modules\Customer\Actions\PostProductWalletEntryAction;
 use App\Modules\Customer\Actions\RejectProductWalletAdjustmentAction;
+use App\Modules\Customer\Actions\RequestPartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\RequestProductWalletAdjustmentAction;
-use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Actions\SaveCustomerPolicySettingAction;
+use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletLedger;
 use App\Modules\Customer\Support\ProductWalletBalance;
-use App\Modules\Customer\Support\WalletPolicy;
 use App\Modules\Platform\Enums\ApprovalState;
-use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -41,6 +43,11 @@ final class WalletLifecycleTest extends TestCase
     private User $operator;
 
     private User $reviewer;
+
+    protected function seedCanonicalAuthorization(): void
+    {
+        $this->seed(ProductionSeeder::class);
+    }
 
     protected function setUp(): void
     {
@@ -78,10 +85,10 @@ final class WalletLifecycleTest extends TestCase
         app(PostPartyWalletEntryAction::class)->credit($this->administrator, $customer, $this->store, '12.5000', 'party_invoice', 'PTY-INV-1', 'TSK028-PARTY-CREDIT');
 
         self::assertSame('20.0000', app(ProductWalletBalance::class)->forCustomer($customer, $this->operator));
-        self::assertSame('12.5000', bcadd((string) \App\Modules\Customer\Models\PartyWalletLedger::query()->where('customer_id', $customer->id)->sum('amount'), '0', 4));
+        self::assertSame('12.5000', bcadd((string) PartyWalletLedger::query()->where('customer_id', $customer->id)->sum('amount'), '0', 4));
         self::assertSame(1, $productCredit->balance_before === '0.0000' ? 1 : 0);
         self::assertSame(2, ProductWalletLedger::query()->where('customer_id', $customer->id)->count());
-        self::assertSame(1, \App\Modules\Customer\Models\PartyWalletLedger::query()->where('customer_id', $customer->id)->count());
+        self::assertSame(1, PartyWalletLedger::query()->where('customer_id', $customer->id)->count());
 
         $this->expectException(InvalidArgumentException::class);
         app(PostProductWalletEntryAction::class)->debit($this->operator, $customer, $this->store, '2000.0000', $sale::class, (string) $sale->id, 'TSK028-INSUFFICIENT');
@@ -171,7 +178,7 @@ final class WalletLifecycleTest extends TestCase
         $this->actingAs($this->operator);
         app(PostProductWalletEntryAction::class)->credit($this->operator, $customer, $this->store, '100.0000', $sale::class, (string) $sale->id, 'TSK028-ROLLBACK-INITIAL');
         $this->actingAs($this->administrator);
-        app(\App\Modules\Customer\Actions\SaveCustomerPolicySettingAction::class)->execute('wallet.product.credit_limit', '100.0000', 'Rollback test only.');
+        app(SaveCustomerPolicySettingAction::class)->execute('wallet.product.credit_limit', '100.0000', 'Rollback test only.');
         $requester = $this->walletUser('tsk028-rollback-maker', ['customers.view', 'product_wallet.adjust'], $this->store->branch_id, $this->store->id);
         $this->actingAs($requester);
         $adjustment = app(RequestProductWalletAdjustmentAction::class)->execute($requester, $customer, $this->store, 'adjustment', '10.0000', 'manual_adjustment', 'CASE-ROLLBACK', 'Over the configured limit.', 'TSK028-ROLLBACK-ADJUST');
@@ -207,6 +214,31 @@ final class WalletLifecycleTest extends TestCase
         $this->get(route('customers.product-wallet', $customer))->assertNotFound();
         $this->get(route('wallets.party'))->assertForbidden();
         self::assertFalse($foreignUser->can('product_wallet.approve'));
+    }
+
+    public function test_party_wallet_adjustment_is_visible_in_ui_and_posts_only_after_separate_approval(): void
+    {
+        $this->configureWalletPolicies($this->administrator);
+        $customer = $this->createTestCustomer($this->administrator, $this->store);
+        $requester = $this->walletUser('tsk028-party-maker', ['customers.view', 'party_wallet.view', 'party_wallet.adjust'], $this->store->branch_id, $this->store->id);
+        $approver = $this->walletUser('tsk028-party-approver', ['customers.view', 'party_wallet.view', 'party_wallet.approve'], $this->store->branch_id, $this->store->id);
+
+        $this->actingAs($requester);
+        $this->get(route('customers.party-wallet', $customer))
+            ->assertOk()
+            ->assertSee('Request sensitive adjustment')
+            ->assertSee(route('customers.party-wallet.adjustments.store', $customer), false);
+        $adjustment = app(RequestPartyWalletAdjustmentAction::class)->execute(
+            $requester, $customer, $this->store, 'adjustment', '25.0000',
+            'party_invoice', 'PI-PARTY-WALLET', 'Approved Party correction.', 'PARTY-WALLET-ADJUSTMENT-TEST',
+        );
+        self::assertDatabaseCount('party_wallet_ledger', 0);
+
+        $this->actingAs($approver);
+        $entry = app(ApprovePartyWalletAdjustmentAction::class)->execute($approver, $adjustment->approvalRecord, $this->store);
+        self::assertSame('25.0000', (string) $entry->balance_after);
+        self::assertSame('approved', $adjustment->fresh()->status);
+        $this->get(route('customers.party-wallet', $customer))->assertOk()->assertSee('25.0000');
     }
 
     private function walletUser(string $username, array $permissions, int $branchId, int $storeId): User

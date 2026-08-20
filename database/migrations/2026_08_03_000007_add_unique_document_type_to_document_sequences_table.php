@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('document_sequences', function (Blueprint $table): void {
-            $table->unique('document_type', 'document_sequences_document_type_unique');
-        });
+        // Superseded by the scoped composite key in
+        // 2026_08_19_000002_add_cf13_cf14_contracts.php. Keeping this
+        // historical migration as a no-op lets fresh databases build the
+        // correct scope-aware uniqueness contract without a transient
+        // document-type-only constraint.
     }
 
     public function down(): void
     {
-        Schema::table('document_sequences', function (Blueprint $table): void {
-            $table->dropUnique('document_sequences_document_type_unique');
-        });
+        // No schema change is performed by this compatibility migration.
     }
 };

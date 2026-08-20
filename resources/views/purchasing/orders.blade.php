@@ -44,6 +44,10 @@ new #[Title('Purchase Orders')] class extends Component
 
     public array $lineItems = [];
 
+    public bool $paymentTermsManuallyEdited = false;
+
+    public bool $syncingPaymentTerms = false;
+
     public bool $showDetailModal = false;
 
     public ?int $viewingOrderId = null;
@@ -83,6 +87,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->resetValidation();
         $this->editingOrderId = null;
+        $this->paymentTermsManuallyEdited = false;
         $this->orderForm = [
             'supplier_id' => '',
             'store_id' => '',
@@ -111,6 +116,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->resetValidation();
         $this->editingOrderId = $order->id;
+        $this->paymentTermsManuallyEdited = true;
         $this->orderForm = [
             'supplier_id' => (string) $order->supplier_id,
             'store_id' => $order->store_id ? (string) $order->store_id : '',
@@ -136,6 +142,27 @@ new #[Title('Purchase Orders')] class extends Component
         }
 
         $this->showFormModal = true;
+    }
+
+    public function updatedOrderFormSupplierId($supplierId): void
+    {
+        if ($this->editingOrderId !== null || $this->paymentTermsManuallyEdited || ! filled($supplierId)) {
+            return;
+        }
+
+        $terms = Supplier::query()->whereKey((int) $supplierId)->value('payment_terms');
+        if (filled($terms)) {
+            $this->syncingPaymentTerms = true;
+            $this->orderForm['payment_terms'] = (string) $terms;
+            $this->syncingPaymentTerms = false;
+        }
+    }
+
+    public function updatedOrderFormPaymentTerms(): void
+    {
+        if ($this->editingOrderId === null && ! $this->syncingPaymentTerms) {
+            $this->paymentTermsManuallyEdited = true;
+        }
     }
 
     public function addLine(): void
@@ -503,7 +530,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         <form wire:submit.prevent="saveOrder" class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <flux:select wire:model="orderForm.supplier_id" :label="__('Supplier') . ' *'">
+                <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
                     <option value="">{{ __('Select Supplier') }}</option>
                     @foreach ($suppliers as $sup)
                         <option value="{{ $sup->id }}">{{ app()->getLocale() === 'ar' ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
@@ -522,7 +549,10 @@ new #[Title('Purchase Orders')] class extends Component
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <flux:input wire:model="orderForm.payment_terms" :label="__('Payment Terms')" :placeholder="__('e.g. Net 30 days')" />
+                <div>
+                    <flux:input wire:model.live="orderForm.payment_terms" :label="__('Payment Terms')" :placeholder="__('e.g. Net 30 days')" />
+                    <p class="mt-1 text-xs text-zinc-500">{{ __('Selecting a supplier fills its saved default. You may replace it explicitly for this draft; later supplier changes will not overwrite your edit.') }}</p>
+                </div>
                 <flux:input wire:model="orderForm.notes" :label="__('Order Notes')" :placeholder="__('Internal procurement reference notes...')" />
             </div>
 

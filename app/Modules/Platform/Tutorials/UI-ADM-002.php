@@ -103,12 +103,12 @@ return [
                 'key' => 'step-5',
                 'selector' => '[data-guide="settings-save-button"]',
                 'title' => [
-                    'ar' => 'حفظ البيانات الأساسية للشركة',
-                    'en' => 'Save Company Baseline Action',
+                    'ar' => 'مراجعة تغييرات الشركة',
+                    'en' => 'Review Company Changes',
                 ],
                 'body' => [
-                    'ar' => 'اعتماد وتدقيق تغييرات بيانات الشركة وكتابتها في سجل التدقيق.',
-                    'en' => 'Save company identity updates and record an audited configuration event.',
+                    'ar' => 'راجع تغييرات هوية الشركة ثم أكّد الحفظ المسجل في سجل التدقيق.',
+                    'en' => 'Review company identity changes before confirming the audited save.',
                 ],
             ],
         ],
@@ -210,12 +210,12 @@ return [
             'key' => 'step-5',
             'selector' => '[data-guide="settings-save-button"]',
             'title' => [
-                'ar' => 'حفظ البيانات الأساسية للشركة',
-                'en' => 'Save Company Baseline Action',
+                'ar' => 'مراجعة تغييرات الشركة',
+                'en' => 'Review Company Changes',
             ],
             'body' => [
-                'ar' => 'اعتماد وتدقيق تغييرات بيانات الشركة وكتابتها في سجل التدقيق.',
-                'en' => 'Save company identity updates and record an audited configuration event.',
+                'ar' => 'راجع تغييرات هوية الشركة ثم أكّد الحفظ المسجل في سجل التدقيق.',
+                'en' => 'Review company identity changes before confirming the audited save.',
             ],
         ],
     ],

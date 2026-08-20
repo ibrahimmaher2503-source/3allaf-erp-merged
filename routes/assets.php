@@ -46,12 +46,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->limit(100)
             ->get();
         $historyEvents = $mode === 'history'
-            ? AssetEvent::query()->with(['asset', 'store', 'responsibleUser'])
+            ? AssetEvent::query()->with(['asset', 'store', 'responsibleUser', 'approvalRecord'])
                 ->whereHas('asset', fn ($query) => $query->visibleTo($user))
                 ->latest('id')->paginate(30, ['*'], 'history_page')->withQueryString()
             : null;
         $branches = Branch::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
+
         return view('pages.party.assets', compact('mode', 'assets', 'branches', 'stores', 'calendarReservations', 'calendarStart', 'calendarEnd', 'historyEvents'));
     })->middleware('can:rental_assets.view')->name('party.assets.index');
 
@@ -59,6 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */ $user = $request->user();
         $data = $request->validate(['code' => ['required', 'string', 'max:120'], 'name_ar' => ['required', 'string', 'max:190'], 'name_en' => ['required', 'string', 'max:190'], 'category' => ['nullable', 'string', 'max:120'], 'branch_id' => ['required', 'integer'], 'store_id' => ['required', 'integer'], 'location' => ['nullable', 'string', 'max:190'], 'condition' => ['required', Rule::in(['good', 'fair', 'poor'])], 'cost_value' => ['nullable', 'numeric', 'min:0'], 'cost_currency' => ['nullable', 'string', 'size:3']]);
         $asset = $action->execute($user, $data);
+
         return to_route('party.assets.index')->with('success', __('Rental asset created.'));
     })->middleware('can:rental_assets.create')->name('party.assets.store');
 
@@ -67,44 +69,67 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
         $data = $request->validate(['starts_at' => ['required', 'date'], 'ends_at' => ['required', 'date', 'after:starts_at'], 'timezone' => ['required', 'timezone'], 'source_reference' => ['nullable', 'string', 'max:190'], 'idempotency_key' => ['required', 'uuid']]);
         $action->execute($user, $asset, $data);
+
         return back()->with('success', __('Asset reservation created.'));
     })->middleware('can:rental_assets.reserve')->name('party.assets.reserve');
 
     Route::post('party/assets/{asset}/checkout', function (Request $request, RentalAsset $asset, CheckoutAssetAction $action) {
-        /** @var User $user */ $user = $request->user(); $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
+        /** @var User $user */ $user = $request->user();
+        $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
         $data = $request->validate(['reservation_id' => ['required', 'integer'], 'source_reference' => ['required', 'string', 'max:190'], 'location_after' => ['nullable', 'string', 'max:190'], 'notes' => ['nullable', 'string', 'max:2000'], 'idempotency_key' => ['required', 'uuid']]);
-        $reservation = AssetReservation::query()->whereKey($data['reservation_id'])->where('asset_id', $asset->id)->firstOrFail(); $action->execute($user, $asset, $reservation, $data);
+        $reservation = AssetReservation::query()->whereKey($data['reservation_id'])->where('asset_id', $asset->id)->firstOrFail();
+        $action->execute($user, $asset, $reservation, $data);
+
         return back()->with('success', __('Asset checked out.'));
     })->middleware('can:rental_assets.checkout')->name('party.assets.checkout');
 
     Route::post('party/assets/{asset}/return', function (Request $request, RentalAsset $asset, ReturnAssetAction $action) {
-        /** @var User $user */ $user = $request->user(); $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
+        /** @var User $user */ $user = $request->user();
+        $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
         $data = $request->validate(['checkout_id' => ['required', 'integer'], 'location_after' => ['nullable', 'string', 'max:190'], 'condition_after' => ['required', 'string', 'max:40'], 'notes' => ['nullable', 'string', 'max:2000'], 'idempotency_key' => ['required', 'uuid']]);
-        $checkout = $asset->checkouts()->whereKey($data['checkout_id'])->firstOrFail(); $action->execute($user, $asset, $checkout, $data);
+        $checkout = $asset->checkouts()->whereKey($data['checkout_id'])->firstOrFail();
+        $action->execute($user, $asset, $checkout, $data);
+
         return back()->with('success', __('Asset returned for inspection.'));
     })->middleware('can:rental_assets.return')->name('party.assets.return');
 
     Route::post('party/assets/{asset}/inspect', function (Request $request, RentalAsset $asset, InspectAssetAction $action) {
-        /** @var User $user */ $user = $request->user(); $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
+        /** @var User $user */ $user = $request->user();
+        $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
         $data = $request->validate(['return_id' => ['required', 'integer'], 'resulting_status' => ['required', Rule::in(['available', 'damaged', 'under_maintenance', 'lost'])], 'assessment' => ['required', 'string', 'max:2000']]);
-        $return = $asset->returns()->whereKey($data['return_id'])->firstOrFail(); $action->execute($user, $asset, $return, $data['resulting_status'], $data['assessment']);
+        $return = $asset->returns()->whereKey($data['return_id'])->firstOrFail();
+        $action->execute($user, $asset, $return, $data['resulting_status'], $data['assessment']);
+
         return back()->with('success', __('Asset inspection recorded.'));
     })->middleware('can:rental_assets.inspect')->name('party.assets.inspect');
 
     Route::post('party/assets/{asset}/events', function (Request $request, RentalAsset $asset, CreateAssetEventAction $action) {
-        /** @var User $user */ $user = $request->user(); $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
+        /** @var User $user */ $user = $request->user();
+        $asset = RentalAsset::query()->visibleTo($user)->whereKey($asset->id)->firstOrFail();
         $data = $request->validate(['event_type' => ['required', Rule::in(['damage', 'loss', 'maintenance', 'depreciation'])], 'assessment' => ['required', 'string', 'max:4000'], 'party_reference' => ['nullable', 'string', 'max:190'], 'resulting_status' => ['nullable', Rule::in(['damaged', 'lost', 'under_maintenance', 'available', 'retired'])], 'cost_value' => ['nullable', 'numeric', 'min:0'], 'idempotency_key' => ['required', 'uuid']]);
-        $action->execute($user, $asset, $data); return back()->with('success', __('Asset event submitted for approval.'));
+        $action->execute($user, $asset, $data);
+
+        return back()->with('success', __('Asset event submitted for approval.'));
     })->middleware('can:rental_assets.create')->name('party.assets.events.store');
 
     Route::post('party/asset-events/{event}/approve', function (Request $request, AssetEvent $event, ApproveAssetEventAction $action) {
-        /** @var User $user */ $user = $request->user(); $event = AssetEvent::query()->whereKey($event->id)->where(function ($q) use ($user): void { if (! $user->is_super_admin) $q->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id')); })->firstOrFail();
-        $action->execute($user, $event); return back()->with('success', __('Asset event approved.'));
+        /** @var User $user */ $user = $request->user();
+        $event = AssetEvent::query()->whereKey($event->id)->where(function ($q) use ($user): void {
+            if (! $user->is_super_admin) {
+                $q->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id'));
+            }
+        })->firstOrFail();
+        $action->execute($user, $event);
+
+        return back()->with('success', __('Asset event approved.'));
     })->middleware('can:rental_assets.approve')->name('party.asset-events.approve');
 
     Route::get('party/assets/{asset}/print', function (Request $request, RentalAsset $asset) {
-        /** @var User $user */ $user = $request->user(); abort_unless($user->can('rental_assets.print'), 403); $asset = RentalAsset::query()->visibleTo($user)->with(['branch', 'store', 'reservations', 'checkouts', 'returns', 'events'])->whereKey($asset->id)->firstOrFail();
+        /** @var User $user */ $user = $request->user();
+        abort_unless($user->can('rental_assets.print'), 403);
+        $asset = RentalAsset::query()->visibleTo($user)->with(['branch', 'store', 'reservations', 'checkouts', 'returns', 'events'])->whereKey($asset->id)->firstOrFail();
         app(RecordAuditEvent::class)->execute('assets', 'asset_printed', $asset, branchId: $asset->branch_id, storeId: $asset->store_id, metadata: ['format' => 'a4']);
+
         return view('pages.party.asset-print', compact('asset'));
     })->middleware('can:rental_assets.print')->name('party.assets.print');
 });

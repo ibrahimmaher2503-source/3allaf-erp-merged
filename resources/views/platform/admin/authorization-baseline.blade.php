@@ -26,6 +26,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
     public array $userForm = [
         'name' => '',
+        'username' => '',
         'email' => '',
         'password' => '',
         'status' => 'active',
@@ -57,6 +58,7 @@ new #[Title('Authorization Baseline')] class extends Component
         $this->authorizationModalOpen = true;
         $this->userForm = [
             'name' => $user->name,
+            'username' => $user->username,
             'email' => $user->email,
             'password' => '',
             'status' => $user->status ?: 'active',
@@ -71,7 +73,7 @@ new #[Title('Authorization Baseline')] class extends Component
         Gate::authorize('users_roles_permissions.create');
         $this->editingUserId = null;
         $this->authorizationModalOpen = true;
-        $this->userForm = ['name' => '', 'email' => '', 'password' => '', 'status' => 'active'];
+        $this->userForm = ['name' => '', 'username' => '', 'email' => '', 'password' => '', 'status' => 'active'];
         $this->roleIds = [];
         $this->branchIds = [];
         $this->storeIds = [];
@@ -85,6 +87,7 @@ new #[Title('Authorization Baseline')] class extends Component
         $validated = $this->validate([
             'editingUserId' => ['nullable', 'exists:users,id'],
             'userForm.name' => ['required', 'string', 'max:255'],
+            'userForm.username' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._-]*$/', Rule::unique('users', 'username')->ignore($this->editingUserId)],
             'userForm.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingUserId)],
             'userForm.password' => [$this->editingUserId === null ? 'required' : 'nullable', 'string', 'min:8', 'max:255'],
             'userForm.status' => ['required', Rule::in(['active', 'inactive'])],
@@ -114,7 +117,7 @@ new #[Title('Authorization Baseline')] class extends Component
         $this->roleIds = [];
         $this->branchIds = [];
         $this->storeIds = [];
-        $this->userForm = ['name' => '', 'email' => '', 'password' => '', 'status' => 'active'];
+        $this->userForm = ['name' => '', 'username' => '', 'email' => '', 'password' => '', 'status' => 'active'];
     }
 
     public function render(): mixed
@@ -124,6 +127,7 @@ new #[Title('Authorization Baseline')] class extends Component
                 ->with('roles:id,name_ar,name_en')
                 ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                     $query->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('username', 'like', '%'.$this->search.'%')
                         ->orWhere('email', 'like', '%'.$this->search.'%');
                 }))
                 ->latest()
@@ -139,8 +143,8 @@ new #[Title('Authorization Baseline')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="__('Authorization Baseline')"
-    :description="__('Manage approved roles and branch or store scopes.')"
+    :title="__('User access and permissions')"
+    :description="__('Manage sign-in accounts, approved roles, and branch or store access.')"
     max-width="7xl"
     class="space-y-5"
     data-guide="auth-header"
@@ -151,7 +155,7 @@ new #[Title('Authorization Baseline')] class extends Component
             <div class="max-w-3xl space-y-1">
                  <p class="text-xs font-semibold uppercase tracking-[0.08em] text-primary">{{ __('Access management') }}</p>
                 <flux:heading id="authorization-overview-title" size="lg" class="text-text-primary">{{ __('Current access is role-based and scope-aware') }}</flux:heading>
-                <flux:text class="text-text-muted">{{ __('Assignment changes are audited. Sensitive approvals and limits are enforced where their modules exist.') }}</flux:text>
+                <flux:text class="text-text-muted">{{ __('Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately.') }}</flux:text>
             </div>
             <x-status.badge status="active" :label="__('Current scope enforced')" class="shrink-0" />
         </div>
@@ -234,6 +238,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="userForm.name" :label="__('Name')" required />
+                <flux:input wire:model="userForm.username" :label="__('Username')" autocomplete="username" required />
                 <flux:input wire:model="userForm.email" :label="__('Email')" type="email" required />
                 <flux:input wire:model="userForm.password" :label="$editingUserId === null ? __('Password') : __('New password (optional)')" type="password" :required="$editingUserId === null" autocomplete="new-password" />
                 <flux:select wire:model="userForm.status" :label="__('Status')">

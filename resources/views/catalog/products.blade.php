@@ -301,9 +301,7 @@ new #[Title('Product Masters')] class extends Component
             ])->all();
     }
 
-    // Keep modal and row actions fast, while bounding stale category/brand options
-    // after another catalog screen changes them and the user navigates back.
-    #[Computed(persist: true, seconds: 30)]
+    #[Computed]
     public function catalogLookups(): array
     {
         return [
@@ -390,8 +388,10 @@ new #[Title('Product Masters')] class extends Component
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="products-filters">
             @can('products_categories_brands.create')
-                <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Import') }}</flux:button>
-                <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Add Product') }}</flux:button>
+                <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
+                <flux:modal.trigger name="product-identity-editor">
+                    <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Manual entry') }}</flux:button>
+                </flux:modal.trigger>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
@@ -399,6 +399,17 @@ new #[Title('Product Masters')] class extends Component
     <flux:callout class="catalog-scope-note" variant="info" icon="information-circle" title="{{ __('Product catalog') }}">
         {{ __('Item codes remain immutable and independent from barcodes. Product details and images are managed here; stock, pricing, and purchasing records are managed in their respective workspaces.') }}
     </flux:callout>
+
+    @if ($activeCategories->isEmpty())
+        <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Product entry needs an active category') }}">
+            <div class="space-y-2">
+                <p>{{ __('Products must be assigned to an active category. Create the category hierarchy first; catalog users with category create permission can configure it.') }}</p>
+                @can('products_categories_brands.create')
+                    <flux:button href="{{ route('catalog.categories') }}" variant="subtle" icon="arrow-top-right-on-square" wire:navigate>{{ __('Configure categories') }}</flux:button>
+                @endcan
+            </div>
+        </flux:callout>
+    @endif
 
     @if ($errors->any())
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Catalog action could not be completed') }}">
@@ -460,14 +471,31 @@ new #[Title('Product Masters')] class extends Component
         {{ __('Loading catalog...') }}
     </div>
 
+    @php($hasProductFilters = trim($search) !== '' || $categoryFilter !== 'all' || $brandFilter !== 'all' || $statusFilter !== 'all' || $productTypeFilter !== 'all' || trim($colourFilter) !== '' || trim($ageFilter) !== '' || $genderFilter !== 'all' || trim($characterFilter) !== '')
     @if ($products->isEmpty())
         <flux:card class="space-y-3 p-10 text-center" data-guide="products-empty">
             <flux:icon name="cube" class="mx-auto size-12 text-zinc-400" />
-            <flux:heading size="lg">{{ __('No products found') }}</flux:heading>
-            <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('Create a local identity record or adjust the search and filters. No inventory or pricing data is created here.') }}</flux:text>
-            @can('products_categories_brands.create')
-                <flux:button class="mx-auto" icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Create first product') }}</flux:button>
-            @endcan
+            @if ($hasProductFilters)
+                <flux:heading size="lg">{{ __('No products match these filters') }}</flux:heading>
+                <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('No product matches the current search or filters. Clear them to see the full catalog, or add a new product.') }}</flux:text>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <flux:button href="{{ route('catalog.products') }}" icon="arrow-path" variant="subtle" wire:navigate>{{ __('Clear filters') }}</flux:button>
+                    @can('products_categories_brands.create')
+                        <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
+                    @endcan
+                </div>
+            @else
+                <flux:heading size="lg">{{ __('No products found') }}</flux:heading>
+                <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('No product master records exist in your authorized scope yet. Create one manually or use the reviewed Excel import flow.') }}</flux:text>
+                @can('products_categories_brands.create')
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
+                        <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
+                    </div>
+                @else
+                    <flux:text class="text-sm text-text-muted">{{ __('You can view product masters, but you do not have permission to create or import records.') }}</flux:text>
+                @endcan
+            @endif
         </flux:card>
     @else
         <div class="catalog-table-frame" data-guide="products-table">
@@ -549,14 +577,14 @@ new #[Title('Product Masters')] class extends Component
         <div data-guide="products-pagination">{{ $products->links() }}</div>
     @endif
 
-    <flux:modal wire:model="showProductModal" class="max-w-2xl">
+    <flux:modal name="product-identity-editor" wire:model="showProductModal" class="max-w-2xl">
         <div class="catalog-modal-section space-y-1">
-            <flux:heading size="lg">{{ $editingProductId ? __('Edit product identity') : __('Create product identity') }}</flux:heading>
+            <flux:heading level="2" size="lg">{{ $editingProductId ? __('Edit product identity') : __('Create product identity') }}</flux:heading>
             <flux:subheading>{{ __('This quick editor preserves the identity slice. Use the full product-card editor for descriptions, types, attributes, and protected media.') }}</flux:subheading>
         </div>
         <form wire:submit="saveProduct" novalidate class="space-y-4">
             <div>
-                <flux:input wire:model="productForm.item_code" :label="__('Immutable item code')" :disabled="$editingProductId !== null" required />
+                <flux:input autofocus wire:model="productForm.item_code" :label="__('Immutable item code')" :disabled="$editingProductId !== null" required />
                 <flux:text class="mt-1 text-xs text-text-muted">{{ __('This identity value cannot be changed after the product is created.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
@@ -569,18 +597,24 @@ new #[Title('Product Masters')] class extends Component
                 <flux:select.option value="service">{{ __('Service') }}</flux:select.option>
             </flux:select>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:select wire:model="productForm.category_id" :label="__('Category')" required>
-                    <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
-                    @foreach ($activeCategories as $category)
-                        <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:select wire:model="productForm.brand_id" :label="__('Brand')">
-                    <flux:select.option value="">{{ __('No brand') }}</flux:select.option>
-                    @foreach ($activeBrands as $brand)
-                        <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ app()->getLocale() === 'ar' ? $brand->name_ar : $brand->name_en }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+            <flux:select wire:model="productForm.category_id" :label="__('Category')" required>
+                <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
+                @foreach ($activeCategories as $category)
+                    <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            @if ($activeCategories->isEmpty())
+                <flux:callout variant="warning" icon="exclamation-triangle">{{ __('No active categories exist yet. Configure a category before saving this product.') }} <a class="font-medium underline" href="{{ route('catalog.categories') }}" wire:navigate>{{ __('Configure categories') }}</a></flux:callout>
+            @endif
+            <flux:select wire:model="productForm.brand_id" :label="__('Brand')">
+                <flux:select.option value="">{{ __('No brand') }}</flux:select.option>
+                @foreach ($activeBrands as $brand)
+                    <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ app()->getLocale() === 'ar' ? $brand->name_ar : $brand->name_en }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            @if ($activeBrands->isEmpty())
+                <flux:text class="text-xs text-text-muted">{{ __('No active brands exist. Brand is optional; configure one only if this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ __('Configure brands') }}</a></flux:text>
+            @endif
             </div>
             <flux:select wire:model="productForm.status" :label="__('Status')" required>
                 <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
@@ -588,7 +622,8 @@ new #[Title('Product Masters')] class extends Component
             </flux:select>
             <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
                 <flux:button type="button" variant="subtle" wire:click="$set('showProductModal', false)">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveProduct">{{ __('Save product') }}</flux:button>
+                <flux:text wire:dirty class="me-auto self-center text-xs text-text-muted">{{ __('Unsaved changes') }}</flux:text>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveProduct">{{ __('Save product') }} <span wire:loading wire:target="saveProduct">{{ __('Saving...') }}</span></flux:button>
             </div>
         </form>
     </flux:modal>

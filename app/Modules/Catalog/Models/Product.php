@@ -28,6 +28,7 @@ class Product extends Model
         'name_en',
         'description_ar',
         'description_en',
+        'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order',
         'model_number',
         'product_type',
         'has_variations',
@@ -40,6 +41,7 @@ class Product extends Model
         'status',
         'barcode_mode',
         'average_cost',
+        'sale_price',
         'reorder_threshold',
         'dimension_length',
         'dimension_width',
@@ -47,21 +49,27 @@ class Product extends Model
         'dimension_unit',
         'weight',
         'target_age',
+        'age_label_id',
         'suitable_gender',
+        'gender_id',
         'colour',
+        'colour_id',
         'size',
         'character',
+        'character_id',
         'key_points_ar',
         'key_points_en',
         'keywords_ar',
         'keywords_en',
         'fractional_quantity',
-        'lock_version',
+        'lock_version', 'battery_required', 'battery_details',
     ];
 
     protected $casts = [
         'lock_version' => 'integer',
         'average_cost' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'battery_required' => 'boolean',
         'reorder_threshold' => 'decimal:3',
         'dimension_length' => 'decimal:3',
         'dimension_width' => 'decimal:3',
@@ -70,12 +78,22 @@ class Product extends Model
         'fractional_quantity' => 'boolean',
         'has_variations' => 'boolean',
         'variant_sort_order' => 'integer',
+        'sort_order' => 'integer',
     ];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function ageLabel(): BelongsTo { return $this->belongsTo(AgeLabel::class); }
+    public function gender(): BelongsTo { return $this->belongsTo(Gender::class); }
+    public function colourLookup(): BelongsTo { return $this->belongsTo(Colour::class, 'colour_id'); }
+    public function characterLookup(): BelongsTo { return $this->belongsTo(Character::class, 'character_id'); }
+    public function ages(): BelongsToMany { return $this->belongsToMany(AgeLabel::class, 'product_ages'); }
+    public function characters(): BelongsToMany { return $this->belongsToMany(Character::class, 'product_characters'); }
+    public function colours(): BelongsToMany { return $this->belongsToMany(Colour::class, 'product_colours'); }
+    public function genders(): BelongsToMany { return $this->belongsToMany(Gender::class, 'product_genders'); }
 
     public function brand(): BelongsTo
     {

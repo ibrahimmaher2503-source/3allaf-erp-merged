@@ -3,11 +3,11 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 
 class SaveStoreAction
@@ -21,6 +21,60 @@ class SaveStoreAction
         'party',
         'damaged',
         'transit',
+    ];
+
+    /**
+     * Locked store-dependency policy for archive and hard-delete operations.
+     * Every operational or history-bearing store reference must be listed here
+     * before those irreversible/history-bearing paths can proceed. Approval
+     * records are intentionally excluded from archive checks because the
+     * archive request itself is a preserved approval-history reference; hard
+     * delete includes them.
+     *
+     * @var array<int, array{table: string, column: string, label: string}>
+     */
+    private const DEPENDENCY_POLICY = [
+        ['table' => 'branch_selling_stores', 'column' => 'store_id', 'label' => 'POS branch mappings'],
+        ['table' => 'cash_drawers', 'column' => 'store_id', 'label' => 'cash drawers'],
+        ['table' => 'user_store_scopes', 'column' => 'store_id', 'label' => 'user store scopes'],
+        ['table' => 'attachments', 'column' => 'store_id', 'label' => 'attachments'],
+        ['table' => 'approval_records', 'column' => 'store_id', 'label' => 'approval history'],
+        ['table' => 'purchase_orders', 'column' => 'store_id', 'label' => 'purchase orders'],
+        ['table' => 'purchase_invoices', 'column' => 'store_id', 'label' => 'purchase invoices'],
+        ['table' => 'purchase_returns', 'column' => 'store_id', 'label' => 'purchase returns'],
+        ['table' => 'stock_movements', 'column' => 'store_id', 'label' => 'stock movements'],
+        ['table' => 'stock_balances', 'column' => 'store_id', 'label' => 'stock balances'],
+        ['table' => 'stock_period_snapshots', 'column' => 'store_id', 'label' => 'stock history snapshots'],
+        ['table' => 'price_lines', 'column' => 'store_id', 'label' => 'price lines'],
+        ['table' => 'label_queues', 'column' => 'store_id', 'label' => 'label queues'],
+        ['table' => 'stock_transfers', 'column' => 'source_store_id', 'label' => 'outbound stock transfers'],
+        ['table' => 'stock_transfers', 'column' => 'destination_store_id', 'label' => 'inbound stock transfers'],
+        ['table' => 'inventory_adjustments', 'column' => 'store_id', 'label' => 'inventory adjustments'],
+        ['table' => 'stock_counts', 'column' => 'store_id', 'label' => 'stock counts'],
+        ['table' => 'pos_shifts', 'column' => 'store_id', 'label' => 'POS shifts'],
+        ['table' => 'sales', 'column' => 'store_id', 'label' => 'sales'],
+        ['table' => 'cash_movements', 'column' => 'store_id', 'label' => 'cash movements'],
+        ['table' => 'customer_scopes', 'column' => 'store_id', 'label' => 'customer scopes'],
+        ['table' => 'customer_merge_events', 'column' => 'store_id', 'label' => 'customer merge history'],
+        ['table' => 'customer_consents', 'column' => 'store_id', 'label' => 'customer consent history'],
+        ['table' => 'loyalty_adjustments', 'column' => 'store_id', 'label' => 'loyalty adjustments'],
+        ['table' => 'loyalty_ledger', 'column' => 'store_id', 'label' => 'loyalty ledger history'],
+        ['table' => 'gift_receipts', 'column' => 'store_id', 'label' => 'gift receipts'],
+        ['table' => 'gift_cards', 'column' => 'store_id', 'label' => 'gift cards'],
+        ['table' => 'retail_returns', 'column' => 'store_id', 'label' => 'retail returns'],
+        ['table' => 'rental_assets', 'column' => 'store_id', 'label' => 'rental assets'],
+        ['table' => 'asset_reservations', 'column' => 'store_id', 'label' => 'asset reservations'],
+        ['table' => 'asset_checkouts', 'column' => 'store_id', 'label' => 'asset checkouts'],
+        ['table' => 'asset_returns', 'column' => 'store_id', 'label' => 'asset returns'],
+        ['table' => 'asset_events', 'column' => 'store_id', 'label' => 'asset event history'],
+        ['table' => 'quotations', 'column' => 'store_id', 'label' => 'quotations'],
+        ['table' => 'party_bookings', 'column' => 'store_id', 'label' => 'service bookings'],
+        ['table' => 'party_payments', 'column' => 'store_id', 'label' => 'service payments'],
+        ['table' => 'party_operating_orders', 'column' => 'store_id', 'label' => 'service operating orders'],
+        ['table' => 'party_consumable_issues', 'column' => 'store_id', 'label' => 'consumable issues'],
+        ['table' => 'party_consumable_returns', 'column' => 'store_id', 'label' => 'consumable returns'],
+        ['table' => 'offline_devices', 'column' => 'store_id', 'label' => 'offline POS devices'],
+        ['table' => 'offline_transactions', 'column' => 'store_id', 'label' => 'offline POS transactions'],
     ];
 
     /**
@@ -38,7 +92,13 @@ class SaveStoreAction
 
         return DB::transaction(function () use ($data, $id, $type) {
             $branchId = isset($data['branch_id']) && $data['branch_id'] !== '' ? (int) $data['branch_id'] : null;
-            $branch = $branchId === null ? null : Branch::query()->whereKey($branchId)->where('status', 'active')->first();
+            $branchQuery = Branch::query()
+                ->where('status', 'active')
+                ->whereHas('company', fn ($query) => $query->where('status', 'active'));
+            if (auth()->check()) {
+                $branchQuery->visibleTo(auth()->user());
+            }
+            $branch = $branchId === null ? null : $branchQuery->whereKey($branchId)->first();
             if ($branchId !== null && $branch === null) {
                 throw new InvalidArgumentException(__('Select an active branch for this store.'));
             }
@@ -63,13 +123,16 @@ class SaveStoreAction
             ];
 
             if ($id) {
-                $store = Store::findOrFail($id);
+                $storeQuery = Store::query();
+                if (auth()->check()) {
+                    $storeQuery->visibleTo(auth()->user());
+                }
+                $store = $storeQuery->findOrFail($id);
 
-                // If deactivating, guard against active selling store mapping
+                // A status=inactive mutation is the approval-backed archive
+                // path, never a silent edit-form bypass.
                 if ($attributes['status'] === 'inactive' && $store->status === 'active') {
-                    if (BranchSellingStore::where('store_id', $store->id)->where('status', 'active')->exists()) {
-                        throw new InvalidArgumentException(__('Cannot deactivate store while it is actively mapped to a branch as POS selling store.'));
-                    }
+                    throw new InvalidArgumentException(__('Use Request archive for the approval-backed inactive transition.'));
                 }
 
                 $oldData = $store->toArray();
@@ -109,13 +172,15 @@ class SaveStoreAction
         Gate::authorize('branches_stores.edit');
 
         return DB::transaction(function () use ($id) {
-            $store = Store::findOrFail($id);
+            $storeQuery = Store::query();
+            if (auth()->check()) {
+                $storeQuery->visibleTo(auth()->user());
+            }
+            $store = $storeQuery->findOrFail($id);
             $newStatus = $store->status === 'active' ? 'inactive' : 'active';
 
             if ($newStatus === 'inactive') {
-                if (BranchSellingStore::where('store_id', $store->id)->where('status', 'active')->exists()) {
-                    throw new InvalidArgumentException(__('Cannot deactivate store while it is actively mapped to a branch as POS selling store.'));
-                }
+                $this->assertDeactivationSafe($store->id, true);
             }
 
             $oldStatus = $store->status;
@@ -135,8 +200,98 @@ class SaveStoreAction
         });
     }
 
+    /** @return list<array{table: string, column: string, label: string, count: int}> */
+    public function dependencyReport(int|Store $store, bool $lock = false, bool $includeApprovalHistory = false): array
+    {
+        $storeId = $store instanceof Store ? $store->id : $store;
+        $dependencies = [];
+
+        foreach (self::DEPENDENCY_POLICY as $policy) {
+            if (! $includeApprovalHistory && $policy['table'] === 'approval_records') {
+                continue;
+            }
+            if (! Schema::hasTable($policy['table']) || ! Schema::hasColumn($policy['table'], $policy['column'])) {
+                continue;
+            }
+
+            $query = DB::table($policy['table'])->where($policy['column'], $storeId);
+            if ($lock) {
+                $query->lockForUpdate();
+            }
+            $count = $query->select('id')->get()->count();
+            if ($count > 0) {
+                $dependencies[] = [...$policy, 'count' => $count];
+            }
+        }
+
+        return $dependencies;
+    }
+
     /**
-     * Delete store record safely if no selling mappings exist.
+     * Enforce the same dependency policy for every store lifecycle path.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function assertStoreDependencyFree(int|Store $store, string $operation, bool $lock = true, bool $includeApprovalHistory = false): void
+    {
+        $storeId = $store instanceof Store ? $store->id : $store;
+        if ($lock) {
+            Store::query()->lockForUpdate()->findOrFail($storeId);
+        }
+
+        $dependencies = $this->dependencyReport($storeId, $lock, $includeApprovalHistory);
+        if ($dependencies === []) {
+            return;
+        }
+
+        $activeMapping = collect($dependencies)->first(fn (array $dependency): bool => $dependency['table'] === 'branch_selling_stores');
+        if ($activeMapping !== null && DB::table('branch_selling_stores')
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->exists()) {
+            throw new InvalidArgumentException(__('Cannot :operation this location because it is actively mapped to a POS branch. Unmap the POS branch first.', ['operation' => $operation]));
+        }
+
+        $summary = collect($dependencies)
+            ->map(fn (array $dependency): string => $dependency['count'].' '.$dependency['label'])
+            ->implode(', ');
+
+        throw new InvalidArgumentException(__('Cannot :operation this location because these records still reference it: :dependencies. Resolve the listed dependencies first. Historical records are preserved; they are not deleted.', [
+            'operation' => $operation,
+            'dependencies' => $summary,
+        ]));
+    }
+
+    /**
+     * Reversible deactivation only stops directly unsafe active operations.
+     * Historical/ordinary dependency rows remain valid on an inactive store.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function assertDeactivationSafe(int|Store $store, bool $lock = true): void
+    {
+        $storeId = $store instanceof Store ? $store->id : $store;
+        if ($lock) {
+            Store::query()->lockForUpdate()->findOrFail($storeId);
+        }
+
+        if (Schema::hasTable('branch_selling_stores') && DB::table('branch_selling_stores')
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->exists()) {
+            throw new InvalidArgumentException(__('Cannot deactivate this location while it is actively mapped to a POS branch. Unmap POS first.'));
+        }
+
+        if (Schema::hasTable('pos_shifts') && DB::table('pos_shifts')
+            ->where('store_id', $storeId)
+            ->whereIn('status', ['open', 'closing_submitted', 'variance_review'])
+            ->exists()) {
+            throw new InvalidArgumentException(__('Cannot deactivate this location while a POS shift is still active. Close the shift first.'));
+        }
+    }
+
+    /**
+     * Delete store record safely if no dependency exists.
      */
     public function delete(int $id): void
     {
@@ -144,9 +299,7 @@ class SaveStoreAction
         DB::transaction(function () use ($id) {
             $store = Store::findOrFail($id);
 
-            if ($store->sellingStoreMappings()->exists()) {
-                throw new InvalidArgumentException(__('Cannot delete store with active or historical branch mapping records. Deactivate the record instead.'));
-            }
+            $this->assertStoreDependencyFree($store->id, 'permanently delete', true, true);
 
             $oldData = $store->toArray();
             $store->delete();
@@ -171,9 +324,7 @@ class SaveStoreAction
 
         DB::transaction(function () use ($id): void {
             $store = Store::query()->lockForUpdate()->findOrFail($id);
-            if ($store->sellingStoreMappings()->exists()) {
-                throw new InvalidArgumentException(__('Cannot delete store while it has active or historical branch mappings.'));
-            }
+            $this->assertStoreDependencyFree($store->id, 'archive', true);
 
             $before = $store->getAttributes();
             $store->update(['status' => 'inactive']);

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Livewire\Pos;
 
 use App\Models\User;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Support\PosCartSnapshot;
+use App\Modules\Retail\Support\PosContextResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
@@ -48,12 +48,13 @@ final class Cart extends Component
         $this->dispatch('pos-cart-updated');
     }
 
-    public function render(PosCartSnapshot $snapshot): View
+    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver): View
     {
         /** @var User $user */ $user = auth()->user();
-        $store = Store::query()->visibleTo($user)->where('type', 'selling')->where('status', 'active')->with('branch')->first();
-        $data = $store ? $snapshot->build($store) : ['cart' => collect(), 'lines' => [], 'preview' => null, 'error' => __('No active selling store is assigned.')];
+        $context = $contextResolver->resolve($user);
+        $store = $context->store;
+        $data = $snapshot->build($context);
 
-        return view('livewire.pos.cart', [...$data, 'store' => $store]);
+        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context]);
     }
 }

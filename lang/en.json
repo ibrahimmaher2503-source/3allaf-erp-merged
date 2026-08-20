@@ -34,7 +34,6 @@
     "Choose a priced active product. Barcode scanner input can use the same field later.": "Choose a priced active product. Barcode scanner input can use the same field later.",
     "available": "available",
     "Add": "Add",
-    "No approved price": "No approved price",
     "Cart": "Cart",
     "Items are re-priced and stock-checked on the server before posting.": "Items are re-priced and stock-checked on the server before posting.",
     "Clear": "Clear",
@@ -382,10 +381,7 @@
     "No approval requests found": "No approval requests found",
     "No requests match your permissions, scope, and filters.": "No requests match your permissions, scope, and filters.",
     "UUID, source, action, or reason": "UUID, source, action, or reason",
-    "All states": "All states",
     "All source types": "All source types",
-    "All visible branches": "All visible branches",
-    "All visible stores": "All visible stores",
     "Requested action": "Requested action",
     "Open source": "Open source",
     "Approval evidence": "Approval evidence",
@@ -456,11 +452,8 @@
     "Required": "Required",
     "Optional": "Optional",
     "Needs attention": "Needs attention",
-    "Ready": "Ready",
     "Open step": "Open step",
     "Open setup dashboard": "Open setup dashboard",
-    "Company identity": "Company identity",
-    "Branches and stores": "Branches and stores",
     "Supplier return reasons": "Supplier return reasons",
     "Approved financial settings": "Approved financial settings",
     "Users and permissions": "Users and permissions",
@@ -497,6 +490,10 @@
     "Code": "Code",
     "Email": "Email",
     "Phone": "Phone",
+    "Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.": "Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.",
+    "Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.": "Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.",
+    "e.g. 01012345678 or +20 1012345678": "e.g. 01012345678 or +20 1012345678",
+    "Optional Egyptian phone number": "Optional Egyptian phone number",
     "Address": "Address",
     "User": "User",
     "Users": "Users",
@@ -903,6 +900,25 @@
     "Branch Name (AR / EN)": "Branch Name (AR / EN)",
     "Time zone": "Time zone",
     "POS Selling Store": "POS Selling Store",
+    "POS selling & stock location": "POS selling & stock location",
+    "POS selling location": "POS selling location",
+    "POS selling location / stock source": "POS selling location / stock source",
+    "Stock source": "Stock source",
+    "Same as POS selling location": "Same as POS selling location",
+    "Assign POS selling & stock location": "Assign POS selling & stock location",
+    "Branch source": "Branch source",
+    "POS selling location and stock source": "POS selling location and stock source",
+    "The selected POS selling location is also the stock source for sales. The cashier shift must use this exact location.": "The selected POS selling location is also the stock source for sales. The cashier shift must use this exact location.",
+    "Stock source: same POS selling location": "Stock source: same POS selling location",
+    "Needs assignment": "Needs assignment",
+    "Assign a POS selling location before opening a shift.": "Assign a POS selling location before opening a shift.",
+    "No active POS selling locations are available for this branch.": "No active POS selling locations are available for this branch.",
+    "Create an active selling location for this branch first; it will also be the stock source for POS sales.": "Create an active selling location for this branch first; it will also be the stock source for POS sales.",
+    "Create selling location": "Create selling location",
+    "Only active selling locations belonging to this branch are shown. The shift, selling location, and stock source must match.": "Only active selling locations belonging to this branch are shown. The shift, selling location, and stock source must match.",
+    "Select an active POS selling location...": "Select an active POS selling location...",
+    "POS is disabled because :branch has no active POS selling & stock location assignment. Configure the branch assignment before opening a shift.": "POS is disabled because :branch has no active POS selling & stock location assignment. Configure the branch assignment before opening a shift.",
+    "POS is disabled because the active shift uses :shift_store, while :branch is assigned to :assigned_store as its POS selling & stock location. Open a shift from the assigned location.": "POS is disabled because the active shift uses :shift_store, while :branch is assigned to :assigned_store as its POS selling & stock location. Open a shift from the assigned location.",
     "Unmapped": "Unmapped",
     "Map POS Store": "Map POS Store",
     "Mapping History": "Mapping History",
@@ -954,7 +970,7 @@
     "Store Name (AR / EN)": "Store Name (AR / EN)",
     "Mapped POS Branch": "Mapped POS Branch",
     "Negative Stock": "Negative Stock",
-    "Warehouse": "Main Warehouse",
+    "Warehouse": "Warehouse",
     "Damaged": "Damaged & Defective Stock",
     "In-Transit": "Stock in Transit",
     "Central / Unassigned": "Central / Unassigned",
@@ -1092,7 +1108,6 @@
     "Manage": "Manage",
     "Activate": "Activate",
     "Deactivate": "Deactivate",
-    "Completed": "Completed",
     "Failed": "Failed",
     "Draft": "Draft",
     "Closed": "Closed",
@@ -1140,6 +1155,7 @@
     "Use Flux controls, concise help text, and validation close to the field.": "Use Flux controls, concise help text, and validation close to the field.",
     "Display name": "Display name",
     "Enter a sample value": "Enter a sample value",
+    "Enter a valid phone number using 7 to 20 digits.": "Enter a valid phone number using 7 to 20 digits.",
     "Input is retained during a server update.": "Input is retained during a server update.",
     "Current status": "Current status",
     "Use a select for a finite approved value set.": "Use a select for a finite approved value set.",
@@ -1191,7 +1207,6 @@
     "Confirmation pattern": "Confirmation pattern",
     "Use a dialog only when a consequential action needs an explicit confirmation.": "Use a dialog only when a consequential action needs an explicit confirmation.",
     "Catalog": "Catalog",
-    "Categories": "Categories",
     "Brands": "Brands",
     "Product Masters": "Product Masters",
     "Category Masters": "Category Masters",
@@ -1295,7 +1310,6 @@
     "Parent category": "Parent category",
     "Product created successfully.": "Product created successfully.",
     "Product identity updated successfully.": "Product identity updated successfully.",
-    "Product masters": "Product masters",
     "Product status updated successfully.": "Product status updated successfully.",
     "Root": "Root",
     "Root and child categories are supported. Self-parenting, descendant cycles, inactive parents for active children, and deactivation with active product or child dependencies are blocked on the server.": "Root and child categories are supported. Self-parenting, descendant cycles, inactive parents for active children, and deactivation with active product or child dependencies are blocked on the server.",
@@ -1868,4 +1882,205 @@
     ,"Sale product lines": "Sale product lines"
     ,"Arabic options": "Arabic options"
     ,"English options": "English options"
+    ,"Maintain the legal and contact identity used across the business.": "Maintain the legal and contact identity used across the business."
+    ,"Define how staff recognize, approve, and reconcile customer payments.": "Define how staff recognize, approve, and reconcile customer payments."
+    ,"Set the approved tax treatment used when prices and invoices are calculated.": "Set the approved tax treatment used when prices and invoices are calculated."
+    ,"Control document prefixes, counters, and reset rules without changing posted history.": "Control document prefixes, counters, and reset rules without changing posted history."
+    ,"Printers & Print Profiles": "Printers & Print Profiles"
+    ,"Manage printer profiles and the existing print-template key selected for each profile.": "Manage printer profiles and the existing print-template key selected for each profile."
+    ,"Configuration Change History": "Configuration Change History"
+    ,"Read the history of business-configuration changes; this section does not edit settings.": "Read the history of business-configuration changes; this section does not edit settings."
+    ,"Tax Rules": "Tax Rules"
+    ,"Document Numbering": "Document Numbering"
+    ,"Purchase invoice settings": "Purchase invoice settings"
+    ,"Add Payment Method": "Add Payment Method"
+    ,"Choose the business name customers and staff will recognize. The method type is the accounting classification; it does not rename the method.": "Choose the business name customers and staff will recognize. The method type is the accounting classification; it does not rename the method."
+    ,"Underlying payment type": "Underlying payment type"
+    ,"Card or POS terminal": "Card or POS terminal"
+    ,"Other / manual record": "Other / manual record"
+    ,"Electronic wallet / manual transfer": "Electronic wallet / manual transfer"
+    ,"Gift card": "Gift card"
+    ,"Requires payment evidence": "Requires payment evidence"
+    ,"When enabled, staff must attach or reference payment evidence before this payment can be approved.": "When enabled, staff must attach or reference payment evidence before this payment can be approved."
+    ,"Available for approved offline POS transactions": "Available for approved offline POS transactions"
+    ,"Use only when this method is permitted by the approved offline POS policy. This setting does not approve a device or change offline limits.": "Use only when this method is permitted by the approved offline POS policy. This setting does not approve a device or change offline limits."
+    ,"Business note (optional)": "Business note (optional)"
+    ,"Record the business rule or approval reference staff need to understand this method.": "Record the business rule or approval reference staff need to understand this method."
+    ,"Underlying type": "Underlying type"
+    ,"Payment evidence": "Payment evidence"
+    ,"Offline POS use": "Offline POS use"
+    ,"Not required": "Not required"
+    ,"Allowed by policy": "Allowed by policy"
+    ,"Not allowed": "Not allowed"
+    ,"Only cash or electronic-wallet methods can be approved for offline POS use.": "Only cash or electronic-wallet methods can be approved for offline POS use."
+    ,"Edit Printer Profile": "Edit Printer Profile"
+    ,"Add Printer Profile": "Add Printer Profile"
+    ,"A printer profile describes where a document is sent. The print template key describes the layout selected for that profile; this workspace does not edit template layouts.": "A printer profile describes where a document is sent. The print template key describes the layout selected for that profile; this workspace does not edit template layouts."
+    ,"Print template key": "Print template key"
+    ,"Use the existing approved template key compatible with this paper size. This is a relationship to a template, not a printer name.": "Use the existing approved template key compatible with this paper size. This is a relationship to a template, not a printer name."
+    ,"Default printer profile": "Default printer profile"
+    ,"The default is used when an authorized print workflow does not choose another compatible profile. It does not test or install hardware.": "The default is used when an authorized print workflow does not choose another compatible profile. It does not test or install hardware."
+    ,"Update Printer Profile": "Update Printer Profile"
+    ,"Save Printer Profile": "Save Printer Profile"
+    ,"Printer profiles and assigned templates": "Printer profiles and assigned templates"
+    ,"Keep printer identity, default selection, and the assigned print-template key visible together so staff can choose the right output without confusing a printer with a layout.": "Keep printer identity, default selection, and the assigned print-template key visible together so staff can choose the right output without confusing a printer with a layout."
+    ,"Printer type": "Printer type"
+    ,"Preview setup": "Preview setup"
+    ,"No printer profiles configured": "No printer profiles configured"
+    ,"Create an active printer profile, choose its compatible print-template key, and mark one profile as default before using a print workflow.": "Create an active printer profile, choose its compatible print-template key, and mark one profile as default before using a print workflow."
+    ,"Read-only history of changes made to business settings. Use the tabs above to edit configuration.": "Read-only history of changes made to business settings. Use the tabs above to edit configuration."
+    ,"This preview checks the saved printer profile and its assigned template key only. No document, payment data, or hardware behavior is tested.": "This preview checks the saved printer profile and its assigned template key only. No document, payment data, or hardware behavior is tested."
+    ,"Printer and template selection": "Printer and template selection"
+    ,"A printer profile describes the destination. A print template key describes the layout. Each queued label keeps its branch/store, printer profile, and template key together so an authorized print workflow can use the saved default or an explicitly selected compatible profile.": "A printer profile describes the destination. A print template key describes the layout. Each queued label keeps its branch/store, printer profile, and template key together so an authorized print workflow can use the saved default or an explicitly selected compatible profile."
+    ,"No active printer profiles available": "No active printer profiles available"
+    ,"Create an active printer profile and choose its compatible print-template key before preparing label output.": "Create an active printer profile and choose its compatible print-template key before preparing label output."
+    ,"Configure printer profiles": "Configure printer profiles"
+    ,"Label queue readiness": "Label queue readiness"
+    ,"Review the saved output context before an authorized print action. This screen does not test hardware.": "Review the saved output context before an authorized print action. This screen does not test hardware."
+    ,"queued jobs": "queued jobs"
+    ,"No label jobs are queued yet": "No label jobs are queued yet"
+    ,"Approve a price and return here to prepare a label job. A job is not created just because a printer profile exists.": "Approve a price and return here to prepare a label job. A job is not created just because a printer profile exists."
+    ,"Branch / store": "Branch / store"
+    ,"Printer profile": "Printer profile"
+    ,"Unknown product": "Unknown product"
+    ,"Product name unavailable": "Product name unavailable"
+    ,"Store unavailable": "Store unavailable"
+    ,"Not assigned": "Not assigned"
+    ,"Company identity": "Company identity"
+    ,"Branches and stores": "Branches and stores"
+    ,"Warehouses": "Warehouses"
+    ,"Cash drawers": "Cash drawers"
+    ,"Payment methods": "Payment methods"
+    ,"Taxes": "Taxes"
+    ,"Document sequences": "Document sequences"
+    ,"Printers": "Printers"
+    ,"Print templates": "Print templates"
+    ,"Customer groups": "Customer groups"
+    ,"Supplier groups": "Supplier groups"
+    ,"Categories": "Categories"
+    ,"Product masters": "Product masters"
+    ,"Opening configuration": "Opening configuration"
+    ,"Initial setup progress": "Initial setup progress"
+    ,"Setup / master data": "Setup / master data"
+    ,"Setup / Master Data": "Setup / Master Data"
+    ,"Daily Operations / Transactions": "Daily Operations / Transactions"
+    ,"Daily operations": "Daily operations"
+    ,"Setup and operations workspace": "Setup and operations workspace"
+    ,"Setup first": "Setup first"
+    ,"Open setup checklist": "Open setup checklist"
+    ,"Required complete": "Required complete"
+    ,"Next action": "Next action"
+    ,"Not started": "Not started"
+    ,"Incomplete": "Incomplete"
+    ,"Ready": "Ready"
+    ,"Blocked": "Blocked"
+    ,"Completed": "Completed"
+    ,"Review": "Review"
+    ,"Configure": "Configure"
+    ,"Permission required": "Permission required"
+    ,"No configuration surface": "No configuration surface"
+    ,"Definitions first, transactions later": "Definitions first, transactions later"
+    ,"Readiness is not approval": "Readiness is not approval"
+    ,"Persisted data meets the current readiness rule.": "Persisted data meets the current readiness rule."
+    ,"No matching persisted records were found yet.": "No matching persisted records were found yet."
+    ,"Some persisted records exist, but the readiness rule is not satisfied.": "Some persisted records exist, but the readiness rule is not satisfied."
+    ,"A customer-group data model and authorized configuration surface are not available yet.": "A customer-group data model and authorized configuration surface are not available yet."
+    ,"A supplier-group data model and authorized configuration surface are not available yet.": "A supplier-group data model and authorized configuration surface are not available yet."
+    ,"Complete Company identity before configuring branches and stores.": "Complete Company identity before configuring branches and stores."
+    ,"Complete active branches and stores before configuring warehouses.": "Complete active branches and stores before configuring warehouses."
+    ,"Complete active branches and stores before assigning cash drawers.": "Complete active branches and stores before assigning cash drawers."
+    ,"Create at least one active category before product masters.": "Create at least one active category before product masters."
+    ,"Complete active branches, stores, categories, and product masters before opening configuration.": "Complete active branches, stores, categories, and product masters before opening configuration."
+    ,"Complete product masters before approving selling prices.": "Complete product masters before approving selling prices."
+    ,"Review and configure local business settings.": "Review and configure local business settings."
+    ,"Local configuration": "Local configuration"
+    ,"Configuration workspace": "Configuration workspace"
+    ,"These values describe this workspace. They do not approve a policy or change operational limits.": "These values describe this workspace. They do not approve a policy or change operational limits."
+    ,"Company identity and contact details.": "Company identity and contact details."
+    ,"Payment names, evidence, and offline eligibility.": "Payment names, evidence, and offline eligibility."
+    ,"Tax treatment and price display defaults.": "Tax treatment and price display defaults."
+    ,"Prefixes, counters, and reset timing.": "Prefixes, counters, and reset timing."
+    ,"Printer destinations and assigned layouts.": "Printer destinations and assigned layouts."
+    ,"Read-only history of local setting changes.": "Read-only history of local setting changes."
+    ,"Business configuration note (optional)": "Business configuration note (optional)"
+    ,"A local note for this workspace; it is not an approval or policy decision.": "A local note for this workspace; it is not an approval or policy decision."
+    ,"A short local note to explain this payment method.": "A short local note to explain this payment method."
+    ,"No payment methods are configured yet. Add one using the form above.": "No payment methods are configured yet. Add one using the form above."
+    ,"Tax inclusive means the displayed price already includes the tax amount.": "Tax inclusive means the displayed price already includes the tax amount."
+    ,"No tax rules are configured yet. Add one using the form above.": "No tax rules are configured yet. Add one using the form above."
+    ,"Text placed before the padded number.": "Text placed before the padded number."
+    ,"Text placed after the padded number.": "Text placed after the padded number."
+    ,"Number of digits reserved for the counter.": "Number of digits reserved for the counter."
+    ,"Current next number (read-only)": "Current next number (read-only)"
+    ,"Initial next number": "Initial next number"
+    ,"Operations allocate this value. Use the separate override only when authorized.": "Operations allocate this value. Use the separate override only when authorized."
+    ,"When the counter starts again; posted documents are never renumbered.": "When the counter starts again; posted documents are never renumbered."
+    ,"Never — continuous": "Never — continuous"
+    ,"Daily — restart each day": "Daily — restart each day"
+    ,"Monthly — restart each month": "Monthly — restart each month"
+    ,"Yearly — restart each year": "Yearly — restart each year"
+    ,"Number pattern preview": "Number pattern preview"
+    ,"Preview only; no document number is reserved here.": "Preview only; no document number is reserved here."
+    ,"Sequence override": "Sequence override"
+    ,"Separate authorized action for correcting the next number. It requires a reason and is recorded in history.": "Separate authorized action for correcting the next number. It requires a reason and is recorded in history."
+    ,"Submit sequence override": "Submit sequence override"
+    ,"No document sequences are configured yet. Add one using the form above.": "No document sequences are configured yet. Add one using the form above."
+    ,"Read-only history. Edit settings from the tabs above.": "Read-only history. Edit settings from the tabs above."
+    ,"Configuration area": "Configuration area"
+    ,"Field/key": "Field/key"
+    ,"Previous value": "Previous value"
+    ,"New value": "New value"
+    ,"Branch/company scope": "Branch/company scope"
+    ,"Global/company": "Global/company"
+    ,"No reason recorded": "No reason recorded"
+    ,"Not recorded": "Not recorded"
+    ,"Local setting changes will appear here. This history is read-only.": "Local setting changes will appear here. This history is read-only."
+    ,"Create user account": "Create user account"
+    ,"Create your user account": "Create your user account"
+    ,"Create the sign-in account you will use to access the workspace.": "Create the sign-in account you will use to access the workspace."
+    ,"This creates an authentication account only. Company identity, roles, and business setup are completed separately after sign-in.": "This creates an authentication account only. Company identity, roles, and business setup are completed separately after sign-in."
+    ,"Use this username to sign in. It does not assign roles or business access.": "Use this username to sign in. It does not assign roles or business access."
+    ,"User access and permissions": "User access and permissions"
+    ,"Manage sign-in accounts, approved roles, and branch or store access.": "Manage sign-in accounts, approved roles, and branch or store access."
+    ,"Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately.": "Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately."
+    ,"These values describe this workspace. They are local setup information; they do not approve a business policy or change operational limits.": "These values describe this workspace. They are local setup information; they do not approve a business policy or change operational limits."
+    ,"Use this note for local context only; approval remains a separate decision.": "Use this note for local context only; approval remains a separate decision."
+    ,"How document numbers are built": "How document numbers are built"
+    ,"Each number is prefix + padded counter + suffix. Reset Rule starts a new counter period; it never renumbers posted documents. The current counter is read-only. Sequence Override is a separate authorized correction and requires a reason.": "Each number is prefix + padded counter + suffix. Reset Rule starts a new counter period; it never renumbers posted documents. The current counter is read-only. Sequence Override is a separate authorized correction and requires a reason."
+    ,"Text placed before the padded number, for example SALE-000001.": "Text placed before the padded number, for example SALE-000001."
+    ,"Text placed after the padded number, for example -2026.": "Text placed after the padded number, for example -2026."
+    ,"Separate authorized action for correcting the next number. It is not a document revision or a business-facing V1; it requires a reason and is recorded in history.": "Separate authorized action for correcting the next number. It is not a document revision or a business-facing V1; it requires a reason and is recorded in history."
+    ,"Physical and inventory-routing locations": "Physical and inventory-routing locations"
+    ,"Warehouse is the physical inventory role. Damaged & Defective Stock and Stock in Transit are existing inventory-routing labels.": "Warehouse is the physical inventory role. Damaged & Defective Stock and Stock in Transit are existing inventory-routing labels."
+    ,"The current location model does not record whether a routing location is system-controlled or virtual. Confirm the owner policy before manual use; this screen keeps the existing types and storage rules.": "The current location model does not record whether a routing location is system-controlled or virtual. Confirm the owner policy before manual use; this screen keeps the existing types and storage rules."
+    ,"Warehouse — physical inventory": "Warehouse — physical inventory"
+    ,"Damaged & Defective Stock — inventory routing": "Damaged & Defective Stock — inventory routing"
+    ,"Stock in Transit — inventory routing": "Stock in Transit — inventory routing"
+    ,"Physical inventory role: use Warehouse for a warehouse managed by the business.": "Physical inventory role: use Warehouse for a warehouse managed by the business."
+    ,"Inventory-routing location: the current model does not mark this type as system-controlled or virtual. Confirm the owner policy before manual use.": "Inventory-routing location: the current model does not mark this type as system-controlled or virtual. Confirm the owner policy before manual use."
+    ,"Operational location: this type represents a selling or service context, not a physical warehouse role.": "Operational location: this type represents a selling or service context, not a physical warehouse role."
+    ,"Archive and delete are dependency-checked. Inventory, stock movements, transactions, POS links, open counts, transfers, drawers, and historical references can block the action; the exact dependency category is shown in the error.": "Archive and delete are dependency-checked. Inventory, stock movements, transactions, POS links, open counts, transfers, drawers, and historical references can block the action; the exact dependency category is shown in the error."
+    ,"Deactivate is the reversible option for stopping active use while retaining history.": "Deactivate is the reversible option for stopping active use while retaining history."
+    ,"Cannot :operation this location because it is actively mapped to a POS branch. Unmap the POS branch first.": "Cannot :operation this location because it is actively mapped to a POS branch. Unmap the POS branch first."
+    ,"Cannot :operation this location because these records still reference it: :dependencies. Resolve the listed dependencies first. Historical records are preserved; they are not deleted.": "Cannot :operation this location because these records still reference it: :dependencies. Resolve the listed dependencies first. Historical records are preserved; they are not deleted."
+    ,"Translation editor": "Translation editor"
+    ,"Change approved Arabic and English system wording without editing language files.": "Change approved Arabic and English system wording without editing language files."
+    ,"System translations": "System translations"
+    ,"Search a known translation key, update both languages, or reset to the shipped wording.": "Search a known translation key, update both languages, or reset to the shipped wording."
+    ,"Key or text": "Key or text"
+    ,"Translation file": "Translation file"
+    ,"All files": "All files"
+    ,"JSON translations": "JSON translations"
+    ,"Rows per page": "Rows per page"
+    ,"Loading translations…": "Loading translations…"
+    ,"No translations found": "No translations found"
+    ,"Try another search or translation file.": "Try another search or translation file."
+    ,"Edit translation": "Edit translation"
+    ,"Reset to base": "Reset to base"
+    ,"Translation changes saved.": "Translation changes saved."
+    ,"Select a system translation key.": "Select a system translation key."
+    ,"Keep the same placeholders as the base translation.": "Keep the same placeholders as the base translation."
+    ,"A translation value is required.": "A translation value is required."
+    ,"Custom": "Custom"
+    ,"Reset both Arabic and English values to the shipped wording?": "Reset both Arabic and English values to the shipped wording?"
 }

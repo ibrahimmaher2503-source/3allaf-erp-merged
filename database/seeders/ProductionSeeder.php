@@ -35,6 +35,23 @@ final class ProductionSeeder extends Seeder
             $this->seedBootstrapAdministrator();
             $this->seedOperationalBaseline();
         });
+
+        if (config('production-seeding.setup_data.enabled') === true) {
+            $this->call(ProductionSetupSeeder::class);
+        }
+    }
+
+    /**
+     * Installs only the canonical roles, permissions, and role grants.
+     *
+     * Compatibility seeders and isolated fixtures must not receive the
+     * bootstrap administrator or operational baseline as a side effect.
+     */
+    public function seedAuthorizationOnly(): void
+    {
+        DB::transaction(function (): void {
+            $this->seedAuthorization();
+        });
     }
 
     private function seedAuthorization(): void
@@ -264,8 +281,8 @@ final class ProductionSeeder extends Seeder
             PaymentMethod::query()->firstOrCreate(['code' => $method['code']], $method + ['status' => 'active']);
         }
         TaxSetting::query()->firstOrCreate(['code' => 'ZERO'], [
-            'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero tax', 'rate' => '0.00',
-            'is_tax_inclusive' => false, 'status' => 'active',
+            'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero Rated', 'rate' => '0.00',
+            'treatment' => 'zero_rated', 'is_default' => true, 'is_tax_inclusive' => true, 'status' => 'active',
         ]);
         foreach ([
             'retail_sale' => 'SAL-', 'purchase_order' => 'PO-', 'purchase_invoice' => 'PIN-',
@@ -275,7 +292,8 @@ final class ProductionSeeder extends Seeder
             'party_final_invoice' => 'PFI-', 'party_final_receipt' => 'PFR-',
             'party_payment_receipt' => 'PPR-', 'quotation' => 'QT-',
         ] as $documentType => $prefix) {
-            DocumentSequence::query()->firstOrCreate(['document_type' => $documentType], [
+            DocumentSequence::query()->firstOrCreate(['document_type' => $documentType, 'scope_key' => 'company'], [
+                'scope_type' => 'company', 'scope_id' => null,
                 'prefix' => $prefix, 'padding_length' => 6, 'next_value' => 1,
                 'reset_rule' => 'never', 'status' => 'active', 'lock_version' => 1,
             ]);

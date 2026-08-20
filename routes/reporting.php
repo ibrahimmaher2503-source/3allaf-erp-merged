@@ -7,6 +7,11 @@ use App\Modules\Assets\Models\RentalAsset;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -43,6 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'date_from', 'date_to', 'branch_id', 'store_id', 'user_id', 'module',
             'supplier_id', 'customer_id', 'product_id', 'category_id', 'payment_method_id',
             'document_status', 'party_status',
+            'product_type', 'product_status', 'brand_id', 'age_label_id', 'character_id', 'colour_id', 'gender_id',
         ]);
         if ($focusedModule !== null) {
             $filters['module'] = $focusedModule;
@@ -75,11 +81,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $suppliers = $user->can('suppliers.view') || $user->can('purchase_orders.view')
             ? Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'code', 'name_en'])
             : collect();
+        $brands = Brand::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
+        $ages = AgeLabel::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
+        $characters = Character::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
+        $colours = Colour::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
+        $genders = Gender::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
 
         $reportKey = $focusedModule ?? 'dashboard';
         $reportTitle = $focusedModule === null ? __('Dashboard & KPI reports') : $reportTitles[$focusedModule];
 
-        return view('pages.reports.index', compact('report', 'reportKey', 'reportTitle', 'branches', 'stores', 'users', 'products', 'categories', 'paymentMethods', 'customers', 'suppliers'));
+        return view('pages.reports.index', compact('report', 'reportKey', 'reportTitle', 'branches', 'stores', 'users', 'products', 'categories', 'paymentMethods', 'customers', 'suppliers', 'brands', 'ages', 'characters', 'colours', 'genders'));
     };
 
     Route::get('reports', fn (Request $request, ReportSnapshot $snapshot) => $renderReport($request, $snapshot))
@@ -109,6 +120,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'category_id' => ['nullable', 'integer'], 'payment_method_id' => ['nullable', 'integer'],
             'document_status' => ['nullable', 'string', 'in:approved,suspended,cancelled'],
             'party_status' => ['nullable', 'string', 'in:draft,confirmed,closed,cancelled'],
+            'product_type' => ['nullable', 'string', 'in:standard,service,bundle,rental,party_consumable'], 'product_status' => ['nullable', 'string', 'in:active,inactive,archived'],
+            'brand_id' => ['nullable', 'integer'], 'age_label_id' => ['nullable', 'integer'], 'character_id' => ['nullable', 'integer'], 'colour_id' => ['nullable', 'integer'], 'gender_id' => ['nullable', 'integer'],
             'format' => ['required', 'string', 'in:xlsx,pdf'],
         ]);
         $job = $action->execute($user, $filters, $filters['format']);

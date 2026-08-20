@@ -4,7 +4,10 @@ namespace Tests\Feature\Platform;
 
 use App\Modules\Platform\Actions\SaveCashDrawerAction;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -49,7 +52,7 @@ class CashDrawerMasterTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk007-lifecycle'));
         $branch = $this->branch('DRW-BR');
-        $store = $this->store($branch, 'DRW-SELL');
+        $store = $this->sellingStore($branch, 'DRW-SELL');
         $action = app(SaveCashDrawerAction::class);
 
         $drawer = $action->execute([
@@ -90,36 +93,41 @@ class CashDrawerMasterTest extends TestCase
         $this->actingAs($this->administrator('tsk007-unique'));
         $branch = $this->branch('UNQ-BR');
         $other = $this->branch('UNQ-BR-2');
+        $branchStore = $this->sellingStore($branch, 'UNQ-SELL-1');
+        $otherStore = $this->sellingStore($other, 'UNQ-SELL-2');
         $action = app(SaveCashDrawerAction::class);
 
-        $payload = fn (int $branchId) => [
+        $payload = fn (int $branchId, int $storeId) => [
             'branch_id' => $branchId,
+            'store_id' => $storeId,
             'code' => 'POS-1',
             'name_ar' => 'درج',
             'name_en' => 'Drawer',
         ];
 
-        $action->execute($payload($branch->id));
+        $action->execute($payload($branch->id, $branchStore->id));
 
         // The same code is allowed in a different branch by design.
-        $action->execute($payload($other->id));
+        $action->execute($payload($other->id, $otherStore->id));
         $this->assertSame(2, CashDrawer::query()->where('code', 'POS-1')->count());
 
         $this->expectException(QueryException::class);
-        $action->execute($payload($branch->id));
+        $action->execute($payload($branch->id, $branchStore->id));
     }
 
     public function test_the_drawer_form_rejects_a_duplicate_code_in_the_same_branch(): void
     {
         $this->actingAs($this->administrator('tsk007-form-unique'));
         $branch = $this->branch('FRM-BR');
+        $store = $this->sellingStore($branch, 'FRM-SELL');
         app(SaveCashDrawerAction::class)->execute([
-            'branch_id' => $branch->id, 'code' => 'POS-9', 'name_ar' => 'درج', 'name_en' => 'Drawer',
+            'branch_id' => $branch->id, 'store_id' => $store->id, 'code' => 'POS-9', 'name_ar' => 'درج', 'name_en' => 'Drawer',
         ]);
 
         Livewire::test('platform::admin.drawers')
             ->call('openCreateDrawerModal')
             ->set('drawerForm.branch_id', $branch->id)
+            ->set('drawerForm.store_id', $store->id)
             ->set('drawerForm.code', 'POS-9')
             ->set('drawerForm.name_ar', 'درج')
             ->set('drawerForm.name_en', 'Drawer')
@@ -135,7 +143,7 @@ class CashDrawerMasterTest extends TestCase
 
         $branch = $this->branch('X-BR-1');
         $otherBranch = $this->branch('X-BR-2');
-        $foreignStore = $this->store($otherBranch, 'X-SELL-2');
+        $foreignStore = $this->sellingStore($otherBranch, 'X-SELL-2');
         $auditBefore = AuditLog::query()->count();
 
         try {
@@ -176,8 +184,9 @@ class CashDrawerMasterTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk007-status'));
         $branch = $this->branch('ST-BR');
+        $store = $this->sellingStore($branch, 'ST-SELL');
         $drawer = app(SaveCashDrawerAction::class)->execute([
-            'branch_id' => $branch->id, 'code' => 'ST-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
+            'branch_id' => $branch->id, 'store_id' => $store->id, 'code' => 'ST-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
         ]);
 
         try {
@@ -197,8 +206,9 @@ class CashDrawerMasterTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk007-deny-setup'));
         $branch = $this->branch('DNY-BR');
+        $store = $this->sellingStore($branch, 'DNY-SELL');
         $drawer = app(SaveCashDrawerAction::class)->execute([
-            'branch_id' => $branch->id, 'code' => 'DNY-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
+            'branch_id' => $branch->id, 'store_id' => $store->id, 'code' => 'DNY-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
         ]);
         $auditBefore = AuditLog::query()->count();
 
@@ -228,8 +238,10 @@ class CashDrawerMasterTest extends TestCase
         $visible = $this->branch('VIS-BR');
         $hidden = $this->branch('HID-BR');
         $action = app(SaveCashDrawerAction::class);
-        $action->execute(['branch_id' => $visible->id, 'code' => 'VIS-1', 'name_ar' => 'درج', 'name_en' => 'Visible Drawer']);
-        $action->execute(['branch_id' => $hidden->id, 'code' => 'HID-1', 'name_ar' => 'درج', 'name_en' => 'Hidden Drawer']);
+        $visibleStore = $this->sellingStore($visible, 'VIS-SELL');
+        $hiddenStore = $this->sellingStore($hidden, 'HID-SELL');
+        $action->execute(['branch_id' => $visible->id, 'store_id' => $visibleStore->id, 'code' => 'VIS-1', 'name_ar' => 'درج', 'name_en' => 'Visible Drawer']);
+        $action->execute(['branch_id' => $hidden->id, 'store_id' => $hiddenStore->id, 'code' => 'HID-1', 'name_ar' => 'درج', 'name_en' => 'Hidden Drawer']);
 
         Livewire::test('platform::admin.drawers')
             ->assertSee('VIS-1')
@@ -242,9 +254,9 @@ class CashDrawerMasterTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk007-shift'));
         $branch = $this->branch('SHF-BR');
-        $store = $this->store($branch, 'SHF-SELL');
+        $store = $this->sellingStore($branch, 'SHF-SELL');
         $destinationBranch = $this->branch('SHF-DST');
-        $destinationStore = $this->store($destinationBranch, 'SHF-DST-SELL');
+        $destinationStore = $this->sellingStore($destinationBranch, 'SHF-DST-SELL');
         $drawer = app(SaveCashDrawerAction::class)->execute([
             'store_id' => $store->id,
             'branch_id' => $branch->id, 'code' => 'SHF-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
@@ -324,8 +336,9 @@ class CashDrawerMasterTest extends TestCase
     {
         $this->actingAs($this->administrator('tsk007-delete'));
         $branch = $this->branch('DEL-BR');
+        $store = $this->sellingStore($branch, 'DEL-SELL');
         $drawer = app(SaveCashDrawerAction::class)->execute([
-            'branch_id' => $branch->id, 'code' => 'DEL-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
+            'branch_id' => $branch->id, 'store_id' => $store->id, 'code' => 'DEL-1', 'name_ar' => 'درج', 'name_en' => 'Drawer',
         ]);
 
         app(SaveCashDrawerAction::class)->delete($drawer->id);
@@ -336,5 +349,18 @@ class CashDrawerMasterTest extends TestCase
         $this->assertSame('DEL-1', $event->before_values['code']);
         $this->assertSame(['deleted' => true], $event->after_values);
         $this->assertSame($drawer->id, $event->metadata['deleted_source_id']);
+    }
+
+    private function sellingStore(Branch $branch, string $code): Store
+    {
+        $store = $this->store($branch, $code);
+        BranchSellingStore::query()->create([
+            'branch_id' => $branch->id,
+            'store_id' => $store->id,
+            'effective_from' => now()->subMinute(),
+            'status' => 'active',
+        ]);
+
+        return $store;
     }
 }

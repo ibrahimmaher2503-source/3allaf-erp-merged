@@ -36,7 +36,7 @@ class SaveCategoryAction
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
                 'name_ar' => trim((string) $data['name_ar']),
-                'name_en' => trim((string) $data['name_en']),
+                'name_en' => trim((string) ($data['name_en'] ?? '')),
                 'parent_id' => $parentId,
                 'status' => $status,
                 'sort_order' => (int) ($data['sort_order'] ?? 0),

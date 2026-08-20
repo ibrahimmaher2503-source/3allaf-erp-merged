@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use Illuminate\Support\Facades\DB;
@@ -25,22 +26,25 @@ class SaveBranchAction
                 throw new InvalidArgumentException(__('Complete active Company Settings before creating branches.'));
             }
 
+            $branchQuery = Branch::query();
+            if (auth()->check()) {
+                $branchQuery->visibleTo(auth()->user());
+            }
+            $branch = $id ? $branchQuery->findOrFail($id) : null;
             $attributes = [
                 'company_id' => $company->id,
                 'code' => strtoupper(trim($data['code'])),
                 'name_ar' => trim($data['name_ar']),
                 'name_en' => trim($data['name_en']),
-                'phone' => isset($data['phone']) && $data['phone'] !== '' ? trim($data['phone']) : null,
+                'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
                 'email' => isset($data['email']) && $data['email'] !== '' ? trim($data['email']) : null,
                 'address' => isset($data['address']) && $data['address'] !== '' ? trim($data['address']) : null,
-                'timezone' => $data['timezone'] ?? 'UTC',
+                'timezone' => $data['timezone'] ?? $branch?->timezone ?? $company->timezone ?? 'UTC',
                 'status' => $data['status'] ?? 'active',
                 'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
 
             if ($id) {
-                $branch = Branch::findOrFail($id);
-
                 if ($attributes['status'] === 'inactive' && $branch->status === 'active') {
                     if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
                         throw new InvalidArgumentException(__('Cannot deactivate branch while it has active stores or an active selling store mapping.'));
@@ -83,7 +87,11 @@ class SaveBranchAction
         Gate::authorize('branches_stores.edit');
 
         return DB::transaction(function () use ($id) {
-            $branch = Branch::findOrFail($id);
+            $branchQuery = Branch::query();
+            if (auth()->check()) {
+                $branchQuery->visibleTo(auth()->user());
+            }
+            $branch = $branchQuery->findOrFail($id);
             $newStatus = $branch->status === 'active' ? 'inactive' : 'active';
 
             if ($newStatus === 'inactive') {

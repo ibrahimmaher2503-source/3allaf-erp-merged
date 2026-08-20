@@ -3,9 +3,12 @@
 use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
+use App\Modules\Catalog\Actions\StageSupplierImportAction;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\Attachment;
 use Illuminate\Support\Facades\Gate;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\Common\Creator\WriterFactory;
 
 $router = app('router');
 
@@ -21,6 +24,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('catalog/product-options', 'catalog::product-options')
         ->middleware('can:products_categories_brands.view')
         ->name('catalog.product-options');
+
+    $router->view('catalog/lookups', 'catalog.lookups')
+        ->middleware('can:products_categories_brands.view')
+        ->name('catalog.lookups');
 
     $router->get('catalog/products/import/{batch}/errors', function (ProductImportBatch $batch, DownloadProductImportErrorsAction $action) {
         return $action->execute($batch);
@@ -84,6 +91,23 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('catalog/suppliers', 'catalog::suppliers')
         ->middleware('can:suppliers.view')
         ->name('catalog.suppliers');
+
+    $router->livewire('catalog/suppliers/import', 'catalog::supplier-import')
+        ->middleware('can:suppliers.create')->name('catalog.suppliers.import');
+    $router->get('catalog/suppliers/import/template', function () {
+        $path = tempnam(storage_path('app'), 'supplier-import-').'.xlsx'; $writer = WriterFactory::createFromFile($path); $writer->openToFile($path); $writer->addRow(Row::fromValues(StageSupplierImportAction::templateHeaders())); $writer->close();
+        return response()->download($path, 'supplier-import-template.xlsx')->deleteFileAfterSend(true);
+    })->middleware('can:suppliers.create')->name('catalog.suppliers.import.template');
+
+    $router->livewire('catalog/reference-import', 'catalog::reference-import')
+        ->middleware('can:products_categories_brands.create')
+        ->name('catalog.reference-import');
+    $router->get('catalog/reference-import/template/{type}', function (string $type) {
+        abort_unless(in_array($type, ['category', 'brand', 'age', 'character', 'colour', 'gender'], true), 404);
+
+        $path = tempnam(storage_path('app'), "{$type}-import-").'.xlsx'; $writer = WriterFactory::createFromFile($path); $writer->openToFile($path); $writer->addRow(Row::fromValues(\App\Modules\Catalog\Actions\StageCatalogReferenceImportAction::templateHeaders($type))); $writer->close();
+        return response()->download($path, "{$type}-import-template.xlsx")->deleteFileAfterSend(true);
+    })->middleware('can:products_categories_brands.create')->name('catalog.reference-import.template');
 
     $router->livewire('suppliers', 'catalog::suppliers')
         ->middleware('can:suppliers.view')

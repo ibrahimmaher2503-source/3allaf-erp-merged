@@ -44,6 +44,19 @@ class Branch extends Model
         return $this->hasMany(Store::class);
     }
 
+    /**
+     * Active warehouse locations directly belonging to this branch.
+     *
+     * Store remains the technical model; this relationship gives branch
+     * directories an authoritative Warehouse-facing count.
+     */
+    public function warehouses(): HasMany
+    {
+        return $this->hasMany(Store::class)
+            ->where('stores.type', 'warehouse')
+            ->where('stores.status', 'active');
+    }
+
     public function sellingStoreMappings(): HasMany
     {
         return $this->hasMany(BranchSellingStore::class);
@@ -51,9 +64,10 @@ class Branch extends Model
 
     public function activeSellingStoreMapping(): HasOne
     {
-        return $this->hasOne(BranchSellingStore::class)
-            ->where('status', 'active')
-            ->latestOfMany();
+        return $this->hasOne(BranchSellingStore::class)->ofMany(
+            ['id' => 'max'],
+            fn (Builder $query): Builder => $query->where('status', 'active'),
+        );
     }
 
     public function cashDrawers(): HasMany

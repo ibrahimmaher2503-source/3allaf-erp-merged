@@ -22,15 +22,17 @@
             </flux:sidebar.header>
 
             @php
-                $salesActive = request()->routeIs('pos*')
+                // Keep offline POS and control screens out of Sales. A broad `pos*`
+                // match made two parents active and could restore the wrong scroll state.
+                $salesActive = request()->routeIs('pos')
                     || request()->routeIs('pos.shift*')
+                    || request()->routeIs('pos.suspended*')
                     || request()->routeIs('returns.*')
                     || request()->routeIs('gift.*')
                     || request()->routeIs('sales.*')
                     || request()->routeIs('quotations.readiness');
                 $customersActive = request()->routeIs('customers.*')
-                    || request()->routeIs('wallets.product')
-                    || request()->routeIs('sales.*');
+                    || request()->routeIs('wallets.product');
                 $catalogActive = request()->routeIs('catalog.products*') || request()->routeIs('catalog.product-options') || request()->routeIs('catalog.categories') || request()->routeIs('catalog.brands');
                 $suppliersActive = request()->routeIs('catalog.suppliers*') || request()->routeIs('suppliers.*') || request()->routeIs('purchasing.history.suppliers');
                 $purchasingActive = request()->routeIs('purchasing.*') && ! request()->routeIs('purchasing.history.suppliers');
@@ -40,6 +42,7 @@
                 $rentalAssetsActive = request()->routeIs('party.assets.*') || request()->routeIs('party.asset-events.*');
                 $reportsActive = request()->routeIs('reports.*') || request()->routeIs('exports.*');
                 $administrationActive = request()->routeIs('admin.settings*')
+                    || request()->routeIs('admin.translations')
                     || request()->routeIs('admin.branches')
                     || request()->routeIs('admin.stores')
                     || request()->routeIs('admin.cash-drawers')
@@ -50,7 +53,8 @@
                     || request()->routeIs('admin.approvals*')
                     || request()->routeIs('system.*')
                     || request()->routeIs('operations.readiness')
-                    || request()->routeIs('pos.offline-readiness');
+                    || request()->routeIs('pos.offline-*')
+                    || request()->routeIs('offline.conflicts.*');
             @endphp
 
             <nav aria-label="{{ __('Workspace') }}" class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pe-1" data-flux-sidebar-nav>
@@ -58,13 +62,12 @@
                     <flux:sidebar.group :heading="__('Workspace')" class="sidebar-nav-group sidebar-nav-workspace">
                         <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
                         <flux:sidebar.item icon="bell-alert" :href="route('alerts.index')" :current="request()->routeIs('alerts.*')" wire:navigate>{{ __('Operational alerts') }}</flux:sidebar.item>
-                        <flux:sidebar.item icon="chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>{{ __('Reports') }}</flux:sidebar.item>
                     </flux:sidebar.group>
                 @endcan
 
                 @canany(['pos_sales.view', 'pos_sales.payment_view', 'pos_sales.payment_evidence_view', 'shifts_cash_movements.view', 'returns_exchanges_gift_instruments.view', 'dashboard_reports.view'])
                     <flux:sidebar.group
-                        :heading="__('Sales')"
+                        :heading="__('Daily Operations / Transactions')"
                         icon="shopping-cart"
                         expandable
                         :expanded="$salesActive"
@@ -99,7 +102,7 @@
 
                 @canany(['pos_sales.view', 'customers.view', 'loyalty.view', 'product_wallet.view'])
                     <flux:sidebar.group
-                        :heading="__('Customers')"
+                        :heading="__('Customer master & history')"
                         icon="user-group"
                         expandable
                         :expanded="$customersActive"
@@ -123,7 +126,7 @@
 
                 @can('products_categories_brands.view')
                     <flux:sidebar.group
-                        :heading="__('Catalog')"
+                        :heading="__('Catalog master data')"
                         icon="cube"
                         expandable
                         :expanded="$catalogActive"
@@ -152,7 +155,7 @@
 
                 @canany(['suppliers.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view'])
                     <flux:sidebar.group
-                        :heading="__('Suppliers')"
+                        :heading="__('Supplier master data')"
                         icon="truck"
                         expandable
                         :expanded="$suppliersActive"
@@ -172,7 +175,7 @@
 
                 @canany(['purchase_orders.view', 'purchase_invoices_supplier_returns.view', 'purchase_returns.view'])
                     <flux:sidebar.group
-                        :heading="__('Purchasing')"
+                        :heading="__('Purchasing operations')"
                         icon="truck"
                         expandable
                         :expanded="$purchasingActive"
@@ -198,7 +201,7 @@
 
                 @can('pricing_labels.view')
                     <flux:sidebar.group
-                        :heading="__('Pricing')"
+                        :heading="__('Pricing master data')"
                         icon="banknotes"
                         expandable
                         :expanded="$pricingActive"
@@ -219,7 +222,7 @@
 
                 @canany(['inventory_stock_card.view', 'transfers.view'])
                     <flux:sidebar.group
-                        :heading="__('Inventory')"
+                        :heading="__('Inventory operations')"
                         icon="archive-box"
                         expandable
                         :expanded="$inventoryActive"
@@ -239,7 +242,7 @@
 
                 @canany(['party_bookings_invoices.view', 'party_wallet.view'])
                     <flux:sidebar.group
-                        :heading="__('Parties')"
+                        :heading="__('Party operations')"
                         icon="cake"
                         expandable
                         :expanded="$partyActive"
@@ -248,6 +251,7 @@
                     >
                         @can('party_bookings_invoices.view')
                             <flux:sidebar.item icon="cake" :href="route('parties.bookings.index')" :current="request()->routeIs('parties.bookings.*')" wire:navigate>{{ __('Party bookings') }}</flux:sidebar.item>
+                            @can('rental_assets.view')<flux:sidebar.item icon="calendar-days" :href="route('parties.calendar')" :current="request()->routeIs('parties.calendar')" wire:navigate>{{ __('Party calendar') }}</flux:sidebar.item>@endcan
                             <flux:sidebar.item icon="document-text" :href="route('parties.invoices.index', ['mode' => 'working'])" :current="request()->routeIs('parties.invoices.index') && request('mode', 'working') === 'working'" wire:navigate>{{ __('Working invoice') }}</flux:sidebar.item>
                             <flux:sidebar.item icon="banknotes" :href="route('parties.invoices.index', ['mode' => 'payments'])" :current="request()->routeIs('parties.invoices.payments*') || (request()->routeIs('parties.invoices.index') && request('mode') === 'payments')" wire:navigate>{{ __('Party payments') }}</flux:sidebar.item>
                             <flux:sidebar.item icon="clipboard-document-list" :href="route('parties.orders.index')" :current="request()->routeIs('parties.orders.*')" wire:navigate>{{ __('Operating orders & consumables') }}</flux:sidebar.item>
@@ -312,21 +316,25 @@
 
                 @canany(['company_settings.view', 'branches_stores.view', 'drawers_payments_tax_numbering_printers.view', 'users_roles_permissions.view'])
                     <flux:sidebar.group
-                        :heading="__('Administration')"
+                        :heading="__('Setup / Master Data')"
                         icon="cog-6-tooth"
                         expandable
                         :expanded="$administrationActive"
                         data-sidebar-expandable
+                        data-sidebar-section="administration"
                         class="sidebar-nav-group"
                     >
                         @can('company_settings.view')
-                            <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
-                                {{ __('System Settings') }}
+                            <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings', ['tab' => 'company'])" :current="request()->routeIs('admin.settings*')" :aria-current="request()->routeIs('admin.settings*') ? 'page' : null" data-settings-entry="canonical" wire:navigate>
+                                {{ __('System setup workspace') }}
                             </flux:sidebar.item>
                         @endcan
                         @can('company_settings.edit')
                             <flux:sidebar.item icon="clipboard-document-check" :href="route('initial-setup')" :current="request()->routeIs('initial-setup')" wire:navigate>
                                 {{ __('Initial setup') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="language" :href="route('admin.translations')" :current="request()->routeIs('admin.translations')" wire:navigate>
+                                {{ __('Translation editor') }}
                             </flux:sidebar.item>
                         @endcan
                         @can('company_settings.view')
@@ -349,7 +357,7 @@
                             </flux:sidebar.item>
                         @endcan
                         @can('company_settings.view')
-                            <flux:sidebar.item icon="banknotes" :href="route('purchasing.invoices.settings')" :current="request()->routeIs('purchasing.invoices.settings')" wire:navigate>{{ __('Taxes & payment settings') }}</flux:sidebar.item>
+                            <flux:sidebar.item icon="banknotes" :href="route('purchasing.invoices.settings')" :current="request()->routeIs('purchasing.invoices.settings')" wire:navigate>{{ __('Purchase invoice settings') }}</flux:sidebar.item>
                             <flux:sidebar.item icon="arrow-path" :href="route('purchasing.returns.settings')" :current="request()->routeIs('purchasing.returns.settings')" wire:navigate>{{ __('Returns settings') }}</flux:sidebar.item>
                         @endcan
                     </flux:sidebar.group>
@@ -375,6 +383,12 @@
                         @endcan
                         @can('pos_sales.view')
                             <flux:sidebar.item icon="signal-slash" :href="route('pos.offline-readiness')" :current="request()->routeIs('pos.offline-readiness')" wire:navigate>{{ __('Offline POS & sync') }}</flux:sidebar.item>
+                        @endcan
+                        @can('offline_queue_conflicts.view')
+                            <flux:sidebar.item icon="arrow-path" :href="route('pos.offline.queue')" :current="request()->routeIs('pos.offline.queue')" wire:navigate>{{ __('offline.queue_title') }}</flux:sidebar.item>
+                        @endcan
+                        @can('offline_queue_conflicts.approve')
+                            <flux:sidebar.item icon="exclamation-triangle" :href="route('offline.conflicts.index')" :current="request()->routeIs('offline.conflicts.*')" wire:navigate>{{ __('offline.conflict_title') }}</flux:sidebar.item>
                         @endcan
                         @can('audit_logs.view')
                             <flux:sidebar.item icon="arrow-path" :href="route('operations.readiness')" :current="request()->routeIs('operations.readiness')" wire:navigate>{{ __('Failed operations & handover readiness') }}</flux:sidebar.item>
