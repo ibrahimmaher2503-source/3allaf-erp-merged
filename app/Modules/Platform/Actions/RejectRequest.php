@@ -28,7 +28,7 @@ class RejectRequest
             expectedSourceVersion: $sourceVersion,
             expectedSourceHash: $sourceHash,
             authorize: function (ApprovalRecord $locked) use ($approver): mixed {
-                if ($locked->requester_id === $approver->id) {
+                if ($locked->requester_id === $approver->id && ! $approver->canBypassApproval()) {
                     throw ValidationException::withMessages(['approver' => __('A requester cannot reject their own request.')]);
                 }
 

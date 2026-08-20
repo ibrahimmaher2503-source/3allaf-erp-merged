@@ -249,7 +249,7 @@ class StageProductImportAction
 
         return DB::transaction(function () use ($batch, $saveProduct): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
-            if ($batch->created_by === auth()->id()) {
+            if ($batch->created_by === auth()->id() && ! auth()->user()?->canBypassApproval()) {
                 throw ValidationException::withMessages([
                     'approval' => __('The requester cannot approve their own import batch.'),
                 ]);

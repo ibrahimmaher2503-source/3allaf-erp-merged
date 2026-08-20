@@ -30,7 +30,7 @@ final class RejectLoyaltyAdjustmentAction
             $approval = ApprovalRecord::query()->lockForUpdate()->findOrFail($approval->id);
             Gate::forUser($reviewer)->authorize('decide', $approval);
             $adjustment = LoyaltyAdjustment::query()->lockForUpdate()->findOrFail((int) $approval->source_id);
-            if ((int) $adjustment->requested_by === (int) $reviewer->id) {
+            if ((int) $adjustment->requested_by === (int) $reviewer->id && ! $reviewer->canBypassApproval()) {
                 throw ValidationException::withMessages(['approver' => __('The requester cannot reject the same loyalty adjustment.')]);
             }
 

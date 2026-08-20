@@ -67,7 +67,7 @@ class StageCatalogReferenceImportAction
 
     public function approve(CatalogReferenceImportBatch $batch): CatalogReferenceImportBatch
     {
-        Gate::authorize('products_categories_brands.approve'); if ($batch->created_by === auth()->id()) throw ValidationException::withMessages(['approval' => __('The requester cannot approve their own import batch.')]);
+        Gate::authorize('products_categories_brands.approve'); if ($batch->created_by === auth()->id() && ! auth()->user()?->canBypassApproval()) throw ValidationException::withMessages(['approval' => __('The requester cannot approve their own import batch.')]);
         return DB::transaction(function () use ($batch): CatalogReferenceImportBatch {
             $batch = CatalogReferenceImportBatch::query()->lockForUpdate()->findOrFail($batch->id); if ($batch->status !== 'ready_for_review' || $batch->invalid_rows > 0) throw new InvalidArgumentException(__('Only a ready import with no rejected rows can be approved.'));
             $model = $this->model($batch->type); $rows = $batch->rows()->where('status', 'valid')->orderBy('row_number')->lockForUpdate()->get();
