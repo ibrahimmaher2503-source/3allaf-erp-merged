@@ -825,7 +825,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.pos.shift', [
             'shift' => $shift,
             'closedShifts' => $closedShifts,
-            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(),
+            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->with(['branch', 'store'])->orderBy('code')->get(),
             'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
             'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,

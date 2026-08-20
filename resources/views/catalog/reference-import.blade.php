@@ -3,7 +3,7 @@
 use App\Modules\Catalog\Actions\StageCatalogReferenceImportAction;
 use App\Modules\Catalog\Models\CatalogReferenceImportBatch;
 use Flux\Flux;
-use Livewire\Attributes\Title;
+use Livewire\Attributes\{Title, Url};
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -12,6 +12,7 @@ new #[Title('Catalog reference import')] class extends Component {
     public mixed $importFile = null;
     public string $type = 'category';
     public string $mode = 'create_only';
+    #[Url(as: 'batch')]
     public ?int $selectedBatchId = null;
 
     public function stage(StageCatalogReferenceImportAction $action): void
@@ -23,7 +24,17 @@ new #[Title('Catalog reference import')] class extends Component {
     }
     public function validateBatch(StageCatalogReferenceImportAction $action): void { $action->validate(CatalogReferenceImportBatch::query()->findOrFail($this->selectedBatchId)); Flux::toast(variant: 'success', text: __('Rows validated.')); }
     public function approve(StageCatalogReferenceImportAction $action): void { $action->approve(CatalogReferenceImportBatch::query()->findOrFail($this->selectedBatchId)); Flux::toast(variant: 'success', text: __('Import approved.')); }
-    public function render() { return view('catalog.reference-import', ['batches' => CatalogReferenceImportBatch::query()->latest()->paginate(10), 'selectedBatch' => $this->selectedBatchId ? CatalogReferenceImportBatch::query()->with('rows')->find($this->selectedBatchId) : null]); }
+    public function render() {
+        $canReview = auth()->user()->can('products_categories_brands.approve');
+        $visible = CatalogReferenceImportBatch::query()->where(function ($query) use ($canReview): void {
+            $query->where('created_by', auth()->id());
+            if ($canReview) $query->orWhere('status', 'ready_for_review');
+        });
+        $selectedBatch = $this->selectedBatchId ? (clone $visible)->with('rows')->find($this->selectedBatchId) : null;
+        abort_if($this->selectedBatchId !== null && $selectedBatch === null, 404);
+
+        return view('catalog.reference-import', ['batches' => $visible->latest()->paginate(10), 'selectedBatch' => $selectedBatch]);
+    }
 }; ?>
 
 <x-app.page :title="__('Catalog reference import')" :description="__('Stage bilingual master data, review validation, then approve from a different account.')" max-width="7xl" class="space-y-6">

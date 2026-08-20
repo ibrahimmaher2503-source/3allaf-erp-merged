@@ -19,7 +19,7 @@ final class RejectOpenPriceAction
         if ($record->source_type !== 'pos_open_price' || $record->requested_action !== 'approve_open_price') {
             throw ValidationException::withMessages(['approval' => __('This is not a POS open-price approval request.')]);
         }
-        if ($record->requester_id === $approver->id) {
+        if ($record->requester_id === $approver->id && ! $approver->canBypassApproval()) {
             throw ValidationException::withMessages(['approval' => __('The cashier who requested the open price cannot reject it.')]);
         }
         $reason = trim($reason);

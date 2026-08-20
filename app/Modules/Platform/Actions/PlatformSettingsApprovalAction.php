@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Data\ApprovalRequestData;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
@@ -27,15 +28,32 @@ final class PlatformSettingsApprovalAction
             default => throw ValidationException::withMessages(['resource' => __('This platform setting is not approval-enabled.')]),
         };
         Gate::authorize($requestPermission);
+        /** @var User $requester */
+        $requester = auth()->user() ?? throw new \LogicException('An authenticated requester is required.');
 
         if ($resource === 'document_sequence') {
             $branchId = ($proposed['scope_type'] ?? 'company') === 'branch'
-                ? ((int) ($proposed['scope_id'] ?? 0) ?: null)
+                ? Branch::visibleTo($requester)
+                    ->whereKey((int) ($proposed['scope_id'] ?? 0))
+                    ->where('status', 'active')
+                    ->firstOrFail()
+                    ->id
                 : null;
         } elseif ($resource === 'document_sequence_override') {
-            $branchId = DocumentSequence::query()
+            $sequence = DocumentSequence::visibleTo($requester)
                 ->whereKey((int) ($proposed['sequence_id'] ?? $id ?? 0))
-                ->value('scope_id');
+                ->firstOrFail();
+            $branchId = $sequence->scope_type === 'branch'
+                ? Branch::visibleTo($requester)
+                    ->whereKey($sequence->scope_id)
+                    ->where('status', 'active')
+                    ->firstOrFail()
+                    ->id
+                : null;
+        }
+
+        if (in_array($resource, ['branch_delete', 'store_delete', 'store_archive', 'cash_drawer_delete'], true)) {
+            [$branchId, $storeId] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId);
         }
 
         if (in_array($resource, ['store_delete', 'store_archive'], true)) {
@@ -49,7 +67,7 @@ final class PlatformSettingsApprovalAction
         $payload = ['resource' => $resource, 'id' => $id, 'proposed' => $proposed, 'before' => $before];
         $sourceHash = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
 
-        return app(RequestApproval::class)->execute(new ApprovalRequestData(
+        $approval = app(RequestApproval::class)->execute(new ApprovalRequestData(
             sourceType: 'platform_settings',
             sourceId: $sourceId,
             sourceVersion: $id === null ? 'new' : (string) $id,
@@ -64,6 +82,12 @@ final class PlatformSettingsApprovalAction
             idempotencyKey: 'platform-settings-'.$sourceHash,
             decisionPermission: 'company_settings.approve',
         ));
+
+        if ($requester instanceof User && $requester->canBypassApproval()) {
+            $this->approve($approval);
+        }
+
+        return $approval->fresh();
     }
 
     public function approve(ApprovalRecord $record): void
@@ -82,7 +106,7 @@ final class PlatformSettingsApprovalAction
                 // row are locked, immediately before the approval transition.
                 app(SaveStoreAction::class)->assertStoreDependencyFree($id, 'archive', true);
             }
-            app(ApproveRequest::class)->execute($record, $record->source_version, $record->source_hash, __('Platform master change approved.'));
+            $approved = app(ApproveRequest::class)->execute($record, $record->source_version, $record->source_hash, __('Platform master change approved.'));
             $id = isset($context['id']) && $context['id'] !== null ? (int) $context['id'] : null;
             $proposed = is_array($context['proposed'] ?? null) ? $context['proposed'] : [];
 
@@ -90,12 +114,34 @@ final class PlatformSettingsApprovalAction
                 'tax_setting' => app(SaveLocalSettingsAction::class)->saveTaxSetting($proposed, $id),
                 'document_sequence' => app(SaveLocalSettingsAction::class)->saveDocumentSequence($proposed, $id),
                 'document_sequence_override' => $this->applySequenceOverride($proposed),
-                'branch_delete' => app(SaveBranchAction::class)->logicalDeleteAfterApproval($id),
-                'store_delete', 'store_archive' => app(SaveStoreAction::class)->logicalDeleteAfterApproval($id),
-                'cash_drawer_delete' => app(SaveCashDrawerAction::class)->logicalDeleteAfterApproval($id),
+                'branch_delete' => app(SaveBranchAction::class)->applyApprovedLogicalDelete($id, $approved),
+                'store_delete', 'store_archive' => app(SaveStoreAction::class)->applyApprovedLogicalDelete($id, $approved),
+                'cash_drawer_delete' => app(SaveCashDrawerAction::class)->applyApprovedLogicalDelete($id, $approved),
                 default => throw ValidationException::withMessages(['approval' => __('This platform setting approval source is not supported.')]),
             };
         });
+    }
+
+    /** @return array{0: int, 1: int|null} */
+    private function masterDeleteScope(string $resource, ?int $id, User $requester, ?int $branchId, ?int $storeId): array
+    {
+        if ($id === null) {
+            throw ValidationException::withMessages(['source' => __('An existing platform master is required for deletion approval.')]);
+        }
+
+        $target = match ($resource) {
+            'branch_delete' => Branch::visibleTo($requester)->findOrFail($id),
+            'store_delete', 'store_archive' => Store::visibleTo($requester)->findOrFail($id),
+            'cash_drawer_delete' => CashDrawer::visibleTo($requester)->findOrFail($id),
+        };
+        $expectedBranchId = $resource === 'branch_delete' ? $target->id : $target->branch_id;
+        $expectedStoreId = $resource === 'store_delete' || $resource === 'store_archive' ? $target->id : $target->store_id;
+
+        if ($branchId !== $expectedBranchId || $storeId !== $expectedStoreId) {
+            throw ValidationException::withMessages(['scope' => __('Approval scope must match the platform master being changed.')]);
+        }
+
+        return [$expectedBranchId, $expectedStoreId];
     }
 
     public function reject(ApprovalRecord $record, string $reason): void

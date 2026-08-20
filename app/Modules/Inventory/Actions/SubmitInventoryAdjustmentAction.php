@@ -22,7 +22,7 @@ final class SubmitInventoryAdjustmentAction
     {
         Gate::authorize('inventory_stock_card.submit');
 
-        return DB::transaction(function () use ($id): InventoryAdjustment {
+        $submitted = DB::transaction(function () use ($id): InventoryAdjustment {
             $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->execute($adjustment->store_id);
             if ($adjustment->status !== 'draft') {
@@ -51,5 +51,11 @@ final class SubmitInventoryAdjustmentAction
 
             return $adjustment->fresh(['store', 'lines.product']);
         });
+
+        if (Auth::user()?->canBypassApproval()) {
+            return app(ApproveInventoryAdjustmentAction::class)->execute($submitted->id);
+        }
+
+        return $submitted;
     }
 }

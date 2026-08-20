@@ -1,16 +1,26 @@
 # Project Progress
 
+## 2026-08-20 — Current evidence-boundary correction
+
+- Current CF queue: **12 DONE / 3 PARTIAL / 0 ACTIVE**. CF-08, CF-13, and CF-14 are PARTIAL; earlier `DONE`/closure language in historical entries is superseded, not erased.
+- Expanded status: **8 groups with Local/Dev slices and requirement-level PARTIAL evidence / 7 open**. This is not a Master-complete, owner-approval, UAT, Production, release, commit, or push claim.
+- P0 tax/readiness: payment/tax **14 tests / 63 assertions** is focused local evidence only; final values, legal treatment, override acceptance, and owner approval remain open. Persisted readiness/CTA surfaces are evidenced, but complete real-source readiness criteria and owner/UAT acceptance remain open.
+- Destructive UX: post-fix TDD was RED for malformed `onclick` then GREEN at **2 tests / 22 assertions**. Category/Supplier native dialogs explicitly dismissed and Store archive Cancel/no approval passed. Drawer explicit cancel was pre-empted by bridge auto-dismissal, the Branch control was outside the visible surface, and Store Deactivate confirmation plus independent approval remain open.
+- Translation overrides: latest focused evidence is **5 tests / 31 assertions**; browser coverage is not fully run. Runtime bilingual rendering is currently correct in reached checks, while the full bilingual strategy, screenshots/traces, owner UAT, Production, and release remain open.
+- P0 forged scope paths: master delete/archive/`openEdit` RED accepted **6 foreign final IDs** and disclosed a foreign drawer; GREEN `BranchStoreDrawerMutationScopeTest` passed **7/31** on `toyjoy_scope_delete_p0_20260820`. Sequence foreign create/override RED then focused GREEN passed **4/8** on `toyjoy_p0_sequence_scope_20260820`; its full class was **10/11** because of an unrelated existing printer-list assertion failure, so no full-class green is claimed. The wider multi-branch/owner/UAT boundary remains open.
+- P0 maker/checker execution: RED was **3 tests / 3 assertions**—an independent approver received `AuthorizationException` while foreign/mismatched scope targets were accepted. GREEN `PlatformMasterApprovalExecutionTest` passed **3/16** on `toyjoy_approval_execution_20260820` at `127.0.0.1:3307`; canonical target-derived scope and approved internal execution now apply, while direct actions remain gated/scoped. §62 remains PARTIAL and the wider multi-branch/owner/UAT boundary remains open.
+
 ## 2026-08-20 — Expanded Master local evidence consolidation
 
-- Expanded status is now **8/15 locally implemented + verified / 7 open**; the client-fix queue remains **15 DONE / 0 ACTIVE**. No Master-complete, owner-approval, UAT, Production, physical-device, release, commit, or push claim is made.
+- Historical status record, superseded by the current evidence-boundary correction above: it previously described **8/15 locally implemented + verified / 7 open** and **15 DONE / 0 ACTIVE**. No Master-complete, owner-approval, UAT, Production, physical-device, release, commit, or push claim is made.
 - Customer/master data evidence covers structured Arabic first/last names with optional English and legacy snapshots, multiple child profiles/edit/deactivate/IDOR, normalized phone and case-insensitive duplicate email/no-auto-merge, category/customer/supplier hierarchy and scope, supplier contacts/destinations/recipient resolution, and supplier-default plus explicit-override purchase-order terms. Authenticated QA covered customer/child and supplier/PO persistence/reload.
 - Settings evidence: payment/tax **14 tests / 63 assertions**; sequences **5 tests / 28 assertions** plus **3/16**; settings audit/authorization **6/38**. Scoped printers support Global/Branch/Location and safe Location → Branch → Global runtime resolution; physical printer/output acceptance remains external.
 - Cross-cutting evidence: multi-branch **20 tests / 104 assertions PASS**; §66 minimum scenarios **15 tests / 118 assertions PASS**. Arabic RTL and English LTR desktop/mobile browser batches passed the affected setup/master/settings/forms surfaces without error pages, console warnings/errors, or horizontal overflow.
 - Migration/seeder safety passed 75 migrations forward, corrected final-batch rollback, second forward migration, and two stable `CanonicalAuthorizationSeeder` runs with 9 roles, 400 permissions, 411 role-permission links, and zero companies. Owner-decision cards/CTAs expose unresolved policies without storing fictitious approval.
 
-## 2026-08-20 — Batch B closure, browser matrix, and MariaDB recovery
+## 2026-08-20 — Batch B closure, browser matrix, and MariaDB recovery (historical status, superseded)
 
-- Closed CF-13 and CF-14 for the evidenced disposable Local/Dev scope. Serial MariaDB 3307 verification passed **5/5 tests and 25 assertions**. Product-import evidence covered staged mapping, independent reviewer approval, and requester self-approval rejection; the §49 supplier order-recipient resolver passed **2 tests / 5 assertions**.
+- Historical record: CF-13 and CF-14 were described as closed for a disposable Local/Dev scope after **5/5 tests and 25 assertions**. Their current status is PARTIAL; product-import and §49 evidence remains recorded but does not close the full requirements.
 - Authenticated headed-browser checks passed all six Settings tabs in Arabic RTL at 390px with no horizontal overflow or console errors. The settings 500/Blade parse/Livewire root/Alpine dirty-state chain was fixed and rechecked. Supplier, branch, store, and customer-group empty-submit validation, cash-drawer modal opening, and POS 375px mobile no-overflow checks passed.
 - Recovered the local XAMPP MariaDB listener after preserving an exact copy at `C:\xampp\mysql\data-recovery-copy-20260820-004101`. Read-only forced-recovery checks found **121/121** tables quick-check readable and **121/121** table-count queries readable. The corrupt active directory is preserved at `C:\xampp\mysql\data-corrupt-active-20260820-004101`; a clean datadir was restored, the `toyjoy_local` dump loaded 121 tables, and four pending migrations completed on port 3306.
 - Historical Batch B checkpoint: queue reached **15 DONE / 0 ACTIVE** while all 15 expanded groups were still unchecked. The later expanded evidence consolidation above supersedes that ledger count; Production, physical hardware, owner data, UAT, release, commit, and push remain open.
@@ -206,10 +216,10 @@
 - Focused verification passed **2 tests / 31 assertions**, Arabic JSON parsing, PHP lint, Blade view cache, and targeted `git diff --check`.
 - The isolated port-8001 server was stopped and the disposable QA database was dropped after verification. No Production or `toyjoy_local` data, commit, or push was involved.
 
-## 2026-08-20 — Translation override Local/Dev slice
+## 2026-08-20 — Translation override Local/Dev slice (historical initial focused run)
 
 - Added the permission-gated `UI-ADM-014` editor for audited database-backed Arabic/English translation overrides, including JSON/PHP catalog validation, placeholder protection, reset-to-base deletion, responsive list/editor states, and the loader guard for pre-migration or unavailable database access.
-- Focused MariaDB verification used only `toyjoy_translation_overrides_20260820` on `127.0.0.1:3307` and passed **3 tests / 24 assertions** after correcting deferred-loader replacement and duplicate JSON/PHP key shadowing. Browser/UAT/Production/commit/push are not claimed.
+- Initial focused MariaDB verification used only `toyjoy_translation_overrides_20260820` on `127.0.0.1:3307` and passed **3 tests / 24 assertions** after correcting deferred-loader replacement and duplicate JSON/PHP key shadowing. Latest focused evidence is recorded above as **5 tests / 31 assertions**; browser coverage is not fully run.
 
 ## 2026-08-20 — Translation editor browser verification
 
@@ -222,3 +232,15 @@
 - An authenticated Local System Administrator check on the isolated port-8003 UI confirmed visible Delete controls on Branches and Cash Drawers plus Request archive controls for Warehouse and selling-POS locations. The Branch submission confirmation stated that deletion was sent for independent approval; no final approval or hard delete was executed.
 - Disposable `QA-DELETE-*` branch, POS, mapped-POS, and drawer fixtures were created through existing actions on `toyjoy_client_feedback_20260819` at port 3307. They remained active after the UI check. A direct 3307 query did not find the approval record implied by the browser toast, so persistent approval state is not claimed until the server/database target mismatch is resolved.
 - No application code, automated suite, commit, or push was added. Port 8003 remains running and the browser is left on Cash Drawers.
+
+## 2026-08-20 — POS shift drawer-context repair
+
+- Fixed the `/pos/shift` error caused by rendering `CashDrawer::branch` and `CashDrawer::store` without loading those relations. Active drawers now eager-load both relations before the Blade view renders them.
+- Focused RED/ GREEN evidence on `toyjoy_client_feedback_20260819` is recorded in `.ai/TEST_RESULTS.md`: the original lazy-loading 500 reproduced, then **1 test / 2 assertions** passed, with authenticated browser verification at port 8003.
+- This is a local bug repair only; no data mutation, UAT, Production, commit, or push is claimed.
+
+## 2026-08-20 — Purchasing Arabic UI remediation
+
+- Replaced the generic invoice-readiness boundary with the route’s existing owner-decision groups and blockers, presented as a readable Arabic RTL readiness screen.
+- Corrected mixed Arabic/English supplier-return copy and made displayed product, supplier, and reason labels locale-aware. Focused GREEN: **2 tests / 6 assertions** on `toyjoy_client_feedback_20260819`; PHP lint, JSON parsing, and `git diff --check` passed.
+- Fresh headed browser verification remains unclaimed because the local Browser Use session could not recover from an earlier connection-error tab. No UAT, Production action, commit, or push occurred.

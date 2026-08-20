@@ -40,7 +40,7 @@ class ApprovePurchaseOrderAction
                 throw new InvalidArgumentException(__('Only submitted purchase orders can be approved.'));
             }
 
-            if ($order->submitted_by !== null && $order->submitted_by === $approverId) {
+            if ($order->submitted_by !== null && $order->submitted_by === $approverId && ! Auth::user()?->canBypassApproval()) {
                 throw ValidationException::withMessages([
                     'approver' => __('A requester cannot approve their own purchase order.'),
                 ]);

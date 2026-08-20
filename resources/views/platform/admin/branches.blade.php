@@ -206,9 +206,9 @@ new #[Title('Branch Management')] class extends Component
         Gate::authorize('branches_stores.logical_delete');
 
         try {
-            $branch = Branch::query()->findOrFail($id);
+            $branch = Branch::visibleTo(auth()->user())->findOrFail($id);
             $approvalAction->request('branch_delete', $branch->id, ['deleted' => true], $branch->getAttributes(), $branch->id);
-            Flux::toast(variant: 'success', text: __('Branch deletion submitted for independent approval.'));
+            Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Branch deletion submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -315,20 +315,68 @@ new #[Title('Branch Management')] class extends Component
     data-guide="branches-header"
 >
     <x-slot:actions>
-        <x-tables.resource-toolbar filter-target="branches-filters">
-            @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
-            @endcan
-        </x-tables.resource-toolbar>
+        <div class="flex flex-wrap items-center gap-2" data-guide="branches-workspace-navigation">
+            <flux:button size="sm" href="{{ route('admin.branches', ['section' => 'branch-masters']) }}" :variant="$section === 'branch-masters' ? 'primary' : 'subtle'">{{ __('Branch masters') }}</flux:button>
+            <flux:button size="sm" href="{{ route('admin.branches', ['section' => 'selling-store-mapping']) }}" :variant="$section === 'selling-store-mapping' ? 'primary' : 'subtle'">{{ __('POS selling-location linkage') }}</flux:button>
+            @if ($section === 'branch-masters')
+                <div data-guide="branch-masters-actions">
+                    <x-tables.resource-toolbar filter-target="branches-filters">
+                        @can('branches_stores.create')
+                            <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal" data-guide="branches-add-action">{{ __('Add Branch') }}</flux:button>
+                        @endcan
+                    </x-tables.resource-toolbar>
+                </div>
+            @endif
+        </div>
     </x-slot:actions>
 
     @if ($section === 'selling-store-mapping')
-        <flux:callout variant="info" icon="arrows-right-left" title="{{ __('POS selling-location linkage') }}" data-branch-section="selling-store-mapping">
-            {{ __('Map each retail branch to its active selling store here. This setup step does not open a cashier shift or start a transaction.') }}
-        </flux:callout>
+        <section data-branch-section="selling-store-mapping" data-guide="selling-store-mapping-workspace" class="space-y-4">
+            <flux:callout variant="info" icon="arrows-right-left" title="{{ __('POS selling-location linkage') }}">
+                {{ __('Map each retail branch to its active selling store here. This setup step does not open a cashier shift or start a transaction.') }}
+            </flux:callout>
+
+            <flux:card class="space-y-4">
+                <flux:heading size="lg">{{ __('POS selling-location linkage') }}</flux:heading>
+                <flux:subheading>{{ __('Each applicable retail branch needs exactly one current, valid selling-store mapping.') }}</flux:subheading>
+                <flux:table data-guide="selling-store-mapping-table">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Branch') }}</flux:table.column>
+                        <flux:table.column>{{ __('POS selling location / stock source') }}</flux:table.column>
+                        <flux:table.column>{{ __('Mapping status') }}</flux:table.column>
+                        <flux:table.column class="text-end">{{ __('Actions') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse ($branches as $branch)
+                            <flux:table.row :key="$branch->id">
+                                <flux:table.cell><span class="font-mono font-medium">{{ $branch->code }}</span> · {{ app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if ($branch->activeSellingStoreMapping && $branch->activeSellingStoreMapping->store)
+                                        <span class="font-mono">{{ $branch->activeSellingStoreMapping->store->code }}</span> · {{ app()->getLocale() === 'ar' ? $branch->activeSellingStoreMapping->store->name_ar : $branch->activeSellingStoreMapping->store->name_en }}
+                                    @else
+                                        <span class="text-zinc-500">{{ __('No active selling-store mapping') }}</span>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge size="sm" :color="$branch->activeSellingStoreMapping ? 'green' : 'amber'">{{ $branch->activeSellingStoreMapping ? __('Mapped') : __('Needs assignment') }}</flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell class="text-end">
+                                    @can('branches_stores.edit')
+                                        <flux:button size="sm" variant="subtle" icon="arrows-right-left" wire:click="openMappingModal({{ $branch->id }})">{{ __('Assign POS selling & stock location') }}</flux:button>
+                                    @endcan
+                                    <flux:button size="xs" variant="subtle" icon="clock" wire:click="openHistoryModal({{ $branch->id }})" title="{{ __('Mapping History') }}" />
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row><flux:table.cell colspan="4" class="text-center py-4">{{ __('No branches are available for POS selling-location linkage.') }}</flux:table.cell></flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+                {{ $branches->links() }}
+            </flux:card>
+        </section>
     @else
-        <div class="sr-only" data-branch-section="branch-masters"></div>
-    @endif
+    <section data-branch-section="branch-masters" data-guide="branch-masters-workspace" class="space-y-4">
 
     <!-- Filters & Controls -->
     <flux:card id="branches-filters" class="scroll-mt-24 space-y-4" data-guide="branches-filters">
@@ -374,7 +422,7 @@ new #[Title('Branch Management')] class extends Component
             </x-slot:actions>
         </x-tables.bulk-actions>
         <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700" aria-label="{{ __('Branch directory table') }}">
-            <flux:table data-guide="branches-table" class="min-w-[80rem]">
+            <flux:table data-guide="branch-masters-table" class="min-w-[80rem]">
             <flux:table.columns>
                 <flux:table.column class="min-w-16"><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                 <flux:table.column sortable class="min-w-28 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
@@ -382,7 +430,6 @@ new #[Title('Branch Management')] class extends Component
                 <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Phone') }}</flux:table.column>
                 <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Timezone') }}</flux:table.column>
                 <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Warehouses') }}</flux:table.column>
-                <flux:table.column class="min-w-72">{{ __('POS selling & stock location') }}</flux:table.column>
                 <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
                 <flux:table.column class="min-w-44 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
             </flux:table.columns>
@@ -427,28 +474,6 @@ new #[Title('Branch Management')] class extends Component
                         </flux:table.cell>
 
                         <flux:table.cell>
-                            @if ($branch->activeSellingStoreMapping && $branch->activeSellingStoreMapping->store)
-                                <div class="min-w-0 space-y-1">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <flux:badge size="sm" variant="solid" color="emerald">{{ __('Active') }}</flux:badge>
-                                        <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-200">{{ $branch->code }} → {{ $branch->activeSellingStoreMapping->store->code }}</span>
-                                    </div>
-                                    <div class="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                        {{ app()->getLocale() === 'ar' ? $branch->activeSellingStoreMapping->store->name_ar : $branch->activeSellingStoreMapping->store->name_en }}
-                                    </div>
-                                    <div class="text-[11px] text-zinc-500">
-                                        {{ __('Stock source: same POS selling location') }} · {{ __('Effective') }} {{ $branch->activeSellingStoreMapping->effective_from?->format('Y-m-d') ?? __('Not dated') }}
-                                    </div>
-                                </div>
-                            @else
-                                <div class="space-y-1">
-                                    <flux:badge size="sm" variant="outline" color="amber">{{ __('Needs assignment') }}</flux:badge>
-                                    <p class="text-xs text-zinc-500">{{ __('Assign a POS selling location before opening a shift.') }}</p>
-                                </div>
-                            @endif
-                        </flux:table.cell>
-
-                        <flux:table.cell>
                             @if ($branch->status === 'active')
                                 <flux:badge size="sm" color="emerald" inset="top" class="font-medium">{{ __('Active') }}</flux:badge>
                             @else
@@ -459,19 +484,17 @@ new #[Title('Branch Management')] class extends Component
                         <flux:table.cell class="text-end space-x-1 rtl:space-x-reverse">
                             @can('branches_stores.edit')
                                 <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})" title="{{ __('Edit') }}" />
-                                <flux:button size="sm" variant="subtle" icon="arrows-right-left" wire:click="openMappingModal({{ $branch->id }})" title="{{ __('Assign POS selling & stock location') }}">{{ __('Assign POS selling & stock location') }}</flux:button>
                             @endcan
-                            <flux:button size="xs" variant="subtle" icon="clock" wire:click="openHistoryModal({{ $branch->id }})" title="{{ __('Mapping History') }}" />
 
                             @can('branches_stores.edit')
                                 @if ($branch->status === 'active')
-                                    <flux:button size="xs" variant="subtle" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" onclick='if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }' title="{{ __('Deactivate') }}" />
+                                <flux:button size="xs" variant="subtle" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }" title="{{ __('Deactivate') }}" />
                                 @else
                                     <flux:button size="xs" variant="subtle" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})" title="{{ __('Activate') }}" />
                                 @endif
                             @endcan
                             @can('branches_stores.logical_delete')
-                                <flux:button size="xs" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" onclick='if (! window.confirm(@js(__('Submit deletion request for branch :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }' title="{{ __('Delete') }}" />
+                                <flux:button size="xs" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for branch :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }" title="{{ __('Delete') }}" />
                             @endcan
                         </flux:table.cell>
                     </flux:table.row>
@@ -492,7 +515,7 @@ new #[Title('Branch Management')] class extends Component
             <flux:subheading>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</flux:subheading>
         </div>
 
-        <form wire:submit="saveBranch" novalidate class="space-y-4">
+        <form wire:submit="saveBranch" novalidate class="space-y-4" data-guide="branch-master-form">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <flux:input
                     wire:model="branchForm.code"
@@ -575,8 +598,11 @@ new #[Title('Branch Management')] class extends Component
             </div>
         </form>
     </flux:modal>
+    </section>
+    @endif
 
     <!-- Assign POS selling & stock location Modal -->
+    @if ($section === 'selling-store-mapping')
     <flux:modal wire:model="showMappingModal" class="md:w-[42rem] space-y-6">
         <div>
             <flux:heading size="lg">{{ __('Assign POS selling & stock location') }}</flux:heading>
@@ -619,8 +645,8 @@ new #[Title('Branch Management')] class extends Component
 
             <flux:textarea
                 wire:model="mappingApprovalNotes"
-                :label="__('Approval / Reason Notes')"
-                placeholder="{{ __('Enter context or manager approval reason for store mapping change...') }}"
+                :label="__('Change notes (optional)')"
+                placeholder="{{ __('Add context for this direct selling-store mapping change.') }}"
                 rows="3"
             />
 
@@ -676,4 +702,5 @@ new #[Title('Branch Management')] class extends Component
             <flux:button variant="subtle" wire:click="$set('showHistoryModal', false)">{{ __('Close') }}</flux:button>
         </div>
     </flux:modal>
+    @endif
 </x-app.page>

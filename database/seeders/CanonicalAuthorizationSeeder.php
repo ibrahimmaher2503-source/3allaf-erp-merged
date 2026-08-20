@@ -11,7 +11,7 @@ final class CanonicalAuthorizationSeeder extends Seeder
 {
     public function run(): void
     {
-        app(ProductionSeeder::class)->seedAuthorizationOnly();
+        app(ProductionSeeder::class)->seedCanonicalAuthorizationAndBootstrapAdministrator();
     }
 
     /** @return array<string, list<string>> */

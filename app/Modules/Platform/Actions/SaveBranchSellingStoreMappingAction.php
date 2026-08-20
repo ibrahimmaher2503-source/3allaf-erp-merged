@@ -69,7 +69,9 @@ class SaveBranchSellingStoreMappingAction
                 'effective_from' => $now,
                 'effective_to' => null,
                 'status' => 'active',
-                'approval_notes' => $approvalNotes ?: 'TBD: Reversible local selling store mapping update.',
+                // The historical column name is retained, but this is a direct audited edit,
+                // not an approval workflow. Archive/delete remains approval-backed elsewhere.
+                'approval_notes' => $approvalNotes,
                 'created_by' => $user?->id,
             ]);
 

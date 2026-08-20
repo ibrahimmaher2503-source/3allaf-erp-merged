@@ -1010,3 +1010,67 @@ ormalizes_product_attribute_filters against 	oyjoy_product_reports_qa_20260820 o
 - Task: Align the focused catalog-reference import test CSV fixtures with the current exact staged-import template headers.
 - Work completed: Added the required `sort_order` header and a valid `0` value to the category Create Only and brand Update Existing fixture rows. No production action code changed.
 - Verification: The parent RED was 3 tests / 3 assertions with two expected exact-header errors. GREEN on disposable MariaDB `toyjoy_ui_qa_20260820` at `127.0.0.1:3307` passed **3 tests / 9 assertions** with `--do-not-cache-result --testdox`; PHP lint and scoped `git diff --check` passed. No browser check, migration, commit, or push occurred.
+
+### 2026-08-20 — Customer import application-shell correction
+
+- Task: Fix the authenticated customer import page rendering as a raw content fragment in local browser QA.
+- Work completed: Wrapped `pages.customers.import` in the existing canonical application layout, retaining the import form, permission gates, routes, and staging logic. No translation entry was required because the existing Arabic strings already render.
+- Verification: RED on disposable MariaDB `toyjoy_ui_qa_20260820` at `127.0.0.1:3307` was **9 tests / 12 assertions, 1 expected failure** because the response lacked the HTML document, RTL direction, and sidebar. After a local compiled-view clear, GREEN passed **9 tests / 15 assertions** with `--do-not-cache-result --testdox`. PHP lint passed for the focused test and Blade source; scoped `git diff --check` passed. No browser session, migration, commit, or push occurred.
+
+### 2026-08-20 — Excel-import/UI QA documentation synchronization
+
+- **Task:** Factual evidence synchronization only for the Master traceability appendix and client-feedback checklist.
+- **Work completed:** Recorded focused disposable-MariaDB results: supplier import GREEN **4/14**; catalog-reference import RED **3/3** with two intended header failures then GREEN **3/9**; customer import GREEN **8/10**; product editor/report GREEN **2/11**; Initial Setup GREEN **14/9,985**; and customer import shell/RTL correction GREEN **9/15**. Recorded successful application of migration `000093` to `toyjoy_ui_qa_20260820` on `127.0.0.1:3307` after removal of only two empty partial tables from the earlier failed run.
+- **Browser evidence recorded:** Authenticated Administrator rendered supplier/reference/customer/product imports, product creation, reports, and inventory reports with no 500, console warning/error, or desktop overflow; supplier/reference/product import and product creation had no horizontal overflow at CSS 375. File-chooser automation did not emit a chooser, so no actual browser upload, stage, approval, persistence, or template-download event is claimed.
+- **Code/tests/browser/commits/pushes:** Documentation and this factual session entry changed only; no application code, test, configuration, migration, database, browser, commit, or push action was performed by this synchronization step. Owner/UAT/Production/physical-device/release boundaries remain open.
+
+### 2026-08-20 — Client-feedback evidence-boundary documentation correction
+
+- **Task:** Documentation/state-only correction of overclaims in the client-feedback ledger and current `.ai` state. No production, language-file, test, database, or application-code change was made.
+- **Current status:** CF-08, CF-13, and CF-14 are **PARTIAL**; the queue is **12 DONE / 3 PARTIAL / 0 ACTIVE**. The expanded ledger has **8 groups with Local/Dev slices and requirement-level PARTIAL evidence, plus 7 open groups**. Earlier closure wording is retained as historical and explicitly superseded.
+- **P0 tax/readiness boundary:** payment/tax **14 tests / 63 assertions** is focused local evidence only; final values, legal treatment, override acceptance, and owner approval remain open. Persisted readiness/CTA surfaces are evidenced, but complete real-source readiness criteria and owner/UAT acceptance remain open.
+- **Destructive UX evidence:** post-fix TDD was RED for malformed `onclick` then GREEN at **2 tests / 22 assertions**. Category and Supplier native Arabic dialogs explicitly dismissed; Store archive modal `Cancel` passed without approval. The Drawer dialog emitted but the browser bridge auto-dismissed before explicit cancel, the Branch button was outside the visible surface, and Store Deactivate confirmation plus an independent approval decision remain open.
+- **Translation boundary:** translation overrides now cite the latest focused **5 tests / 31 assertions**. Runtime bilingual rendering is currently correct in reached checks, but browser coverage is not fully run; the full bilingual strategy, screenshots/traces, owner UAT, Production, and release remain open.
+- **Verification actually run:** documentation-only markdown/table structural check and scoped `git diff --check` were run after this entry. No automated test suite, browser check, database operation, commit, or push was run by this correction.
+
+### 2026-08-20 — Client-feedback language and documentation status sync
+
+- **Task:** Restore the full shipped English Egyptian-phone guidance and align only the stale client-feedback routing/status documentation.
+- **Work completed:** Restored the complete `lang/en.json` phone-guidance value; synchronized `TASKS.md` to **12 DONE / 3 PARTIAL / 0 ACTIVE** and **8 Local/Dev slices with requirement-level PARTIAL evidence / 7 open** while preserving the prior 15-DONE wording as historical; replaced the stale TSK-045 routing override with the expanded client-feedback source; and marked checklist row 72 structural/diff checks passed.
+- **Verification actually run:** `lang/en.json` JSON parse passed; raw case-sensitive key scan found **0** duplicate keys; the restored guidance value was read back exactly; checklist row 72 retained its 10-column structure; and scoped `git diff --check` passed. No automated test suite, browser check, database operation, application-code change, commit, or push was run by this synchronization step.
+- **Remaining blockers / next action:** CF-08, CF-13, and CF-14 remain PARTIAL; seven expanded groups and owner/UAT/Production/release closure evidence remain open.
+
+### 2026-08-20 — POS shift cash-drawer relation repair
+
+- **Task:** Repair the authenticated `/pos/shift` 500 reported as `LazyLoadingViolationException` for `CashDrawer::branch`.
+- **Work completed:** Added `PosShiftDrawerRelationsTest` and changed only the active cash-drawer query in `routes/retail.php` to eager-load `branch` and `store`, matching the relations rendered by `pages/pos/shift`.
+- **Verification actually run:** RED on disposable MariaDB `toyjoy_client_feedback_20260819` at `127.0.0.1:3307` reproduced HTTP 500 and the exact `CashDrawer::branch` lazy-loading exception. GREEN passed **1 test / 2 assertions**; PHP lint and scoped `git diff --check` passed. A visible authenticated local browser pass at `http://127.0.0.1:8003/pos/shift` displayed `MAIN-01 → MAIN-SALES` without an error page.
+- **State:** No business data was written, no UAT, Production action, commit, or push occurred. Local port 8003 remains running for user browsing.
+
+### 2026-08-20 — P0 forged scope-path evidence synchronization
+
+- **Task:** Documentation/state-only synchronization after the completed local P0 scope fixes. No application, language-file, database, browser, or test action was performed by this synchronization step.
+- **Work completed:** Recorded the master delete/archive/`openEdit` RED that accepted **6 foreign final IDs** and disclosed a foreign drawer, followed by GREEN `BranchStoreDrawerMutationScopeTest` **7 tests / 31 assertions** on `toyjoy_scope_delete_p0_20260820`. Recorded sequence foreign create/override RED followed by focused GREEN **4 tests / 8 assertions** on `toyjoy_p0_sequence_scope_20260820`.
+- **Verification actually recorded:** The sequence full class was **10/11** because of an unrelated existing printer-list assertion failure; it is explicitly not claimed green. PHP lint, Pint, and `git diff --check` passed for the completed P0 fixes. This state-only update then ran a Markdown table-structure check and `git diff --check`.
+- **Boundary / next action:** P0 forged paths are fixed locally, but the broader multi-branch review, owner decisions, UAT, Production, release, commit, and push remain open. CF-08, CF-13, and CF-14 remain PARTIAL.
+
+### 2026-08-20 — P0 maker/checker evidence synchronization
+
+- **Task:** Documentation/state-only evidence update for the completed local maker/checker approval-execution fix. No application, language-file, database, browser, or test action was performed by this synchronization step.
+- **Work completed:** Recorded RED **3 tests / 3 assertions**: an independent approver received `AuthorizationException` while foreign/mismatched scope targets were accepted. Recorded GREEN `PlatformMasterApprovalExecutionTest` **3 tests / 16 assertions** on `toyjoy_approval_execution_20260820` at `127.0.0.1:3307`.
+- **Verification actually recorded:** Canonical target-derived scope and approved internal execution now apply; direct actions remain gated/scoped. PHP lint, Pint, and `git diff --check` passed for the completed fix. This state-only update then ran a Markdown table-structure check and `git diff --check`.
+- **Boundary / next action:** §62 remains PARTIAL. Wider multi-branch review, owner decisions, UAT, Production, release, commit, and push remain open.
+
+### 2026-08-20 — Access and supplier-master UI remediation
+
+- **Task:** Restore direct branch/store edits for authorized administrators, expose supplier-group management, and implement the missing Roles and Role Permissions UI.
+- **Work completed:** Added guarded `/admin/roles` and `/admin/roles/{role}/permissions` Livewire pages, local-role create/edit, audit-backed active non-sensitive permission mapping, reviewer/view-only inspection, and canonical-role/sensitive-grant mutation guards. The existing Authorization Baseline remains user assignment and links to Roles; the sidebar exposes Roles and Supplier Groups. Supplier Masters now links directly to its existing Supplier Groups workspace. Selling-store mapping now correctly says direct change notes rather than approval notes; regular branch/store edits remained direct and archive/logical-delete approval paths were preserved.
+- **Verification actually run:** On disposable MariaDB `toyjoy_client_feedback_20260819` at `127.0.0.1:3307`, initial RED was 3 tests/0 passed/2 assertions (roles route 404 and missing discovery controls). Final focused PHPUnit `AccessMasterManagementTest` passed **8 tests / 39 assertions**, covering routes, view-only denial, local role/audit persistence, canonical/sensitive protections, supplier-group validation/persistence/audit, direct branch/store and selling-store-mapping updates without approval records, and direct-edit denial for a scoped branch/store viewer. PHP syntax and the two registered role routes passed. `view:cache` was started but did not complete in the bounded wait, so it is not claimed passed.
+- **Browser / state boundary:** Created QA-only administrator/viewer records only in the named disposable schema and started a temporary local server. The in-app browser first reached `localhost:8000` before the server listened; after safe server repair, Browser Use blocked follow-up local navigation under its URL policy. No headed RTL/LTR, desktop/390px, or browser-persistence pass is claimed. The temporary server was stopped; no migration, Production operation, commit, or push occurred. `UI-AUTH-007` is updated factually but remains open only for the blocked visual verification.
+
+### 2026-08-20 — Purchasing readiness and supplier-return Arabic remediation
+
+- **Task:** Translate and improve `/purchasing/invoices/readiness` and make `/purchasing/returns` fully Arabic in Arabic locale.
+- **Work completed:** The readiness Blade view now presents its already-supplied decision groups and blockers instead of a generic unavailable-state panel. Supplier Returns received corrected Arabic copy for displayed states, empty state, prerequisites, form labels, warnings, and transition labels; Arabic locale now prefers Arabic product, supplier, and return-reason labels.
+- **Verification actually run:** RED first failed **2 tests / 4 assertions** on disposable MariaDB `toyjoy_client_feedback_20260819` at `127.0.0.1:3307`; GREEN `PurchasingArabicUiTest` passed **2 tests / 6 assertions**. PHP lint passed for both changed Blade files; Arabic and English JSON parsed via `ConvertFrom-Json -AsHashTable`; `git diff --check` passed with only existing line-ending warnings. Browser navigation first hit `ERR_CONNECTION_REFUSED` and then was blocked by Browser Use URL policy from the generated error tab, so no fresh visual browser pass is claimed.
+- **State:** No migration, business data mutation, UAT, Production action, commit, or push occurred. The broad bilingual-UX closure remains open outside these two addressed screens.

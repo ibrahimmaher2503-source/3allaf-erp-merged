@@ -10,6 +10,7 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -18,6 +19,7 @@ new #[Title('Product Import')] class extends Component {
 
     public mixed $importFile = null;
     public string $mode = 'create_only';
+    #[Url(as: 'batch')]
     public ?int $selectedBatchId = null;
 
     public function mount(): void
@@ -88,14 +90,27 @@ new #[Title('Product Import')] class extends Component {
 
     public function render()
     {
+        $canReview = Gate::allows('products_categories_brands.approve');
         $batches = ProductImportBatch::query()
-            ->where('created_by', auth()->id())
+            ->where(function ($query) use ($canReview): void {
+                $query->where('created_by', auth()->id());
+                if ($canReview) {
+                    $query->orWhere('status', 'ready_for_review');
+                }
+            })
             ->latest()
             ->paginate(10, pageName: 'imports');
 
         $selectedBatch = $this->selectedBatchId
-            ? ProductImportBatch::query()->where('created_by', auth()->id())->with(['rows' => fn ($query) => $query->orderBy('row_number')->limit(50)])->find($this->selectedBatchId)
+            ? ProductImportBatch::query()->where(function ($query) use ($canReview): void {
+                $query->where('created_by', auth()->id());
+                if ($canReview) {
+                    $query->orWhere('status', 'ready_for_review');
+                }
+            })->with(['rows' => fn ($query) => $query->orderBy('row_number')->limit(50)])->find($this->selectedBatchId)
             : null;
+
+        abort_if($this->selectedBatchId !== null && $selectedBatch === null, 404);
 
         $sourceAttachment = $selectedBatch === null ? null : Attachment::query()
             ->where('source_type', ProductImportBatch::class)

@@ -135,7 +135,7 @@ final class ReviewShiftVarianceAction
     /** Maker/checker remains mandatory while the zero-variance rule is owner-blocked. */
     private function assertNotOwnShift(User $reviewer, PosShift $shift): void
     {
-        if ((int) $shift->getAttribute('cashier_id') !== $reviewer->id) {
+        if ((int) $shift->getAttribute('cashier_id') !== $reviewer->id || $reviewer->canBypassApproval()) {
             return;
         }
 

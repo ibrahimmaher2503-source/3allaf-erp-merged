@@ -54,6 +54,15 @@ final class ProductionSeeder extends Seeder
         });
     }
 
+    /** Install the reusable authorization baseline with its bootstrap owner. */
+    public function seedCanonicalAuthorizationAndBootstrapAdministrator(): void
+    {
+        DB::transaction(function (): void {
+            $this->seedAuthorization();
+            $this->seedBootstrapAdministrator();
+        });
+    }
+
     private function seedAuthorization(): void
     {
         $roles = [

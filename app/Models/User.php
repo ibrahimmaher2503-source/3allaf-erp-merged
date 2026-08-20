@@ -12,6 +12,7 @@ use App\Modules\Platform\Models\UserUiPreference;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -63,6 +64,20 @@ class User extends Authenticatable implements PasskeyUser
             'status' => 'string',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * A disabled account is never privileged, even when the immutable
+     * database flag records its former Super Admin designation.
+     */
+    protected function isSuperAdmin(): Attribute
+    {
+        return Attribute::get(fn (mixed $value): bool => (bool) $value && $this->status === 'active');
+    }
+
+    public function canBypassApproval(): bool
+    {
+        return $this->is_super_admin;
     }
 
     /**

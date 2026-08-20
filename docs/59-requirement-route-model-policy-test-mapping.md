@@ -34,3 +34,10 @@
 ## Source boundaries
 
 This appendix intentionally points to existing route/model/policy surfaces and recorded evidence; it does not infer missing routes, models, policies, tests, or approvals. Where a requirement is marked `Owner decision`, `Partial`, or externally bounded in the compact matrix, that status remains unchanged.
+
+## 2026-08-20 — Excel-import/UI QA evidence update
+
+- Focused disposable-MariaDB results: supplier staged import **4 tests / 14 assertions**; catalog-reference staged import RED **3/3** (two intended exact-header errors) then GREEN **3/9**; customer staged import **8/10**; product editor/report rendering **2/11**; Initial Setup **14/9,985**. The customer import shell/RTL correction separately passed **9/15** after an expected RED.
+- Migration `2026_08_20_000093_create_catalog_reference_import_tables` was applied successfully to disposable `toyjoy_ui_qa_20260820` on MariaDB port 3307 after removing only the two empty partial tables left by the earlier failed attempt; its MariaDB identifier names are now within the limit.
+- Authenticated Administrator UI rendered supplier, catalog-reference, customer, and product import screens, product creation, reports, and inventory reports without HTTP 500, console warnings/errors, or desktop overflow. Supplier/reference/product import and product creation also had no horizontal overflow at CSS 375.
+- Browser file-chooser automation did not emit a chooser, so no actual UI file selection, stage submission, approval, imported-data persistence, or template-download event is claimed. Owner data, UAT, Production, physical devices, release, commit, and push remain external.

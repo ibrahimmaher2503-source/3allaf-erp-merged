@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use Illuminate\Support\Facades\DB;
@@ -123,7 +124,11 @@ class SaveBranchAction
     {
         Gate::authorize('branches_stores.logical_delete');
         DB::transaction(function () use ($id) {
-            $branch = Branch::findOrFail($id);
+            $branchQuery = Branch::query();
+            if (auth()->check()) {
+                $branchQuery->visibleTo(auth()->user());
+            }
+            $branch = $branchQuery->findOrFail($id);
 
             if ($branch->stores()->exists() || $branch->sellingStoreMappings()->exists()) {
                 throw new InvalidArgumentException(__('Cannot delete branch with existing stores or mapping history. Deactivate the record instead.'));
@@ -149,8 +154,24 @@ class SaveBranchAction
     {
         Gate::authorize('branches_stores.logical_delete');
 
-        DB::transaction(function () use ($id): void {
-            $branch = Branch::query()->lockForUpdate()->findOrFail($id);
+        $this->logicalDelete($id, true);
+    }
+
+    /** Apply the exact branch deletion already authorized by a terminal approval record. */
+    public function applyApprovedLogicalDelete(int $id, ApprovalRecord $approval): void
+    {
+        $this->assertApprovedDelete($id, $approval);
+        $this->logicalDelete($id, false);
+    }
+
+    private function logicalDelete(int $id, bool $scopeToAuthenticatedUser): void
+    {
+        DB::transaction(function () use ($id, $scopeToAuthenticatedUser): void {
+            $branchQuery = Branch::query()->lockForUpdate();
+            if ($scopeToAuthenticatedUser && auth()->check()) {
+                $branchQuery->visibleTo(auth()->user());
+            }
+            $branch = $branchQuery->findOrFail($id);
             if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
                 throw new InvalidArgumentException(__('Cannot delete branch while it has active stores or an active selling store mapping.'));
             }
@@ -167,5 +188,17 @@ class SaveBranchAction
                 metadata: ['logical_delete' => true, 'approval_required' => true],
             );
         });
+    }
+
+    private function assertApprovedDelete(int $id, ApprovalRecord $approval): void
+    {
+        $context = $approval->limit_context ?? [];
+        if ($approval->approval_state->value !== 'approved'
+            || $approval->source_type !== 'platform_settings'
+            || (int) $approval->approver_id !== (int) auth()->id()
+            || ($context['resource'] ?? null) !== 'branch_delete'
+            || (int) ($context['id'] ?? 0) !== $id) {
+            throw new InvalidArgumentException(__('A matching approved branch deletion is required.'));
+        }
     }
 }

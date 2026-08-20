@@ -38,7 +38,7 @@ final class ApprovePurchaseInvoiceAction
             if ($invoice->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be approved.'));
             }
-            if ($invoice->created_by === Auth::id()) {
+            if ($invoice->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
             $this->assertStoreScope($invoice->store_id);

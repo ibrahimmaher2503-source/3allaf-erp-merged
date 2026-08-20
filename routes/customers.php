@@ -53,9 +53,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     };
 
     Route::get('customers/import', function (Request $request) {
-        abort_unless($request->user()->can('customers.create'), 403);
-        return view('pages.customers.import', ['batches' => CustomerImportBatch::where('created_by', $request->user()->id)->latest()->paginate(10)]);
-    })->middleware('can:customers.create')->name('customers.import');
+        $user = $request->user();
+        $canReview = $user->can('customers.import.approve');
+        abort_unless($user->can('customers.create') || $canReview, 403);
+        $batches = CustomerImportBatch::query()->where(function ($query) use ($user, $canReview): void {
+            $query->where('created_by', $user->id);
+            if ($canReview) $query->orWhere('status', 'ready_for_review');
+        });
+        if ($request->integer('batch') > 0 && ! (clone $batches)->whereKey($request->integer('batch'))->exists()) abort(404);
+
+        return view('pages.customers.import', ['batches' => $batches->latest()->paginate(10)]);
+    })->name('customers.import');
     Route::get('customers/import/template', function (Request $request) {
         abort_unless($request->user()->can('customers.create'), 403);
         $base = tempnam(sys_get_temp_dir(), 'customer-template-');

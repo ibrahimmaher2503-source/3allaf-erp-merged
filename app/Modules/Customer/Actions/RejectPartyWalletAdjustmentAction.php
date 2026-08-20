@@ -28,7 +28,7 @@ final class RejectPartyWalletAdjustmentAction
             $approval = ApprovalRecord::query()->lockForUpdate()->findOrFail($approval->id);
             Gate::forUser($approver)->authorize('decide', $approval);
             $adjustment = PartyWalletAdjustment::query()->lockForUpdate()->findOrFail((int) $approval->source_id);
-            if ((int) $adjustment->requested_by === (int) $approver->id) {
+            if ((int) $adjustment->requested_by === (int) $approver->id && ! $approver->canBypassApproval()) {
                 throw ValidationException::withMessages(['approval' => __('The requester cannot reject the same Party Wallet adjustment.')]);
             }
             app(ApprovalRecordTransition::class)->execute(

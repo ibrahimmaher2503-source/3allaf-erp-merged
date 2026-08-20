@@ -59,6 +59,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ->middleware('can:drawers_payments_tax_numbering_printers.view')
         ->name('admin.drawers.compatibility');
     $router->livewire('admin/authorization-baseline', 'platform::admin.authorization-baseline')->middleware('can:users_roles_permissions.view')->name('admin.authorization-baseline');
+    $router->livewire('admin/roles', 'platform::admin.roles')->middleware('can:users_roles_permissions.view')->name('admin.roles');
+    $router->livewire('admin/roles/{role}/permissions', 'platform::admin.role-permissions')->whereNumber('role')->middleware('can:users_roles_permissions.view')->name('admin.role-permissions');
 
     $router->livewire('admin/system/health', 'platform::system.health')->middleware('can:audit_logs.view')->name('system.health');
     $router->livewire('admin/system/backups', 'platform::system.backups')->middleware('can:audit_logs.view')->name('system.backups');

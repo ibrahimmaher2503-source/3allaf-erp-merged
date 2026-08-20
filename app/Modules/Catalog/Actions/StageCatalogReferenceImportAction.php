@@ -3,7 +3,7 @@
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Models\{AgeLabel, Brand, CatalogReferenceImportBatch, CatalogReferenceImportRow, Category, Character, Colour, Gender};
-use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Actions\{NotifyImportReviewers, RecordAuditEvent};
 use Illuminate\Support\Facades\{DB, Gate, Storage};
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -58,7 +58,10 @@ class StageCatalogReferenceImportAction
                 if ($batch->type === 'category' && filled($data['parent_code'] ?? null)) { $parent = strtoupper(trim((string) $data['parent_code'])); if ($parent === $code || (! Category::query()->where('code', $parent)->exists() && ! isset($sheetCodes[$parent]))) $errors[] = __('Parent category code does not exist in this batch or catalog.'); }
                 $errors = array_values(array_unique($errors)); $row->update(['errors' => $errors, 'status' => $errors ? 'invalid' : 'valid']); $errors ? $invalid++ : $valid++;
             }
-            $batch->update(['valid_rows' => $valid, 'invalid_rows' => $invalid, 'status' => 'ready_for_review']); return $batch->fresh();
+            $batch->update(['valid_rows' => $valid, 'invalid_rows' => $invalid, 'status' => 'ready_for_review']);
+            app(NotifyImportReviewers::class)->execute($batch->created_by, 'products_categories_brands.approve', 'catalog_reference', $batch->original_filename, 'catalog.reference-import', $batch->id);
+
+            return $batch->fresh();
         });
     }
 

@@ -502,6 +502,9 @@ new #[Title('Supplier Masters')] class extends Component
                 >
                     {{ __('Add supplier') }}
                 </flux:button>
+                <flux:button icon="folder-open" variant="subtle" :href="route('catalog.suppliers', ['section' => 'supplier-groups'])" wire:navigate>
+                    {{ __('Manage supplier groups') }}
+                </flux:button>
             @elseif ($canCreate && $section === 'supplier-groups')
                 <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal" data-guide="supplier-groups-add-action">
                     {{ __('Add supplier group') }}
@@ -567,6 +570,7 @@ new #[Title('Supplier Masters')] class extends Component
             <section class="space-y-5" data-guide="supplier-masters-workspace">
                 <flux:callout variant="info" icon="information-circle" title="{{ __('Supplier masters') }}">
                     {{ __('Maintain supplier identities, contacts, terms, and product links here. Use Supplier group setup to change the hierarchy.') }}
+                    <a class="ms-2 font-medium text-primary hover:underline" href="{{ route('catalog.suppliers', ['section' => 'supplier-groups']) }}" wire:navigate>{{ __('Manage supplier groups') }}</a>
                 </flux:callout>
         <flux:card id="suppliers-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -686,7 +690,7 @@ new #[Title('Supplier Masters')] class extends Component
                                             variant="subtle"
                                             icon="arrow-path"
                                             wire:click="toggleSupplierStatus({{ $supplier->id }})"
-                                            onclick='if (! window.confirm(@js(__('Change supplier :name to :status? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' || blank($supplier->name_en) ? $supplier->name_ar : $supplier->name_en, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }'
+                                            onclick="if (! window.confirm(@js(__('Change supplier :name to :status? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' || blank($supplier->name_en) ? $supplier->name_ar : $supplier->name_en, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }"
                                             title="{{ $supplier->status === 'active' ? __('Deactivate supplier') : __('Activate supplier') }}"
                                         />
                                     @endif

@@ -38,7 +38,7 @@ final class RejectPurchaseReturnAction
             if ($return->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted supplier returns can be rejected.'));
             }
-            if ($return->created_by === Auth::id()) {
+            if ($return->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The supplier return creator cannot reject the same return.'));
             }
             $approval = ApprovalRecord::query()

@@ -45,7 +45,7 @@ final class ReversePurchaseReturnAction
             if ($return->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved supplier returns can be reversed.'));
             }
-            if ($return->approved_by === Auth::id() || $return->created_by === Auth::id()) {
+            if (($return->approved_by === Auth::id() || $return->created_by === Auth::id()) && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The creator or original approver cannot reverse this supplier return.'));
             }
             $reversalMovementIds = [];

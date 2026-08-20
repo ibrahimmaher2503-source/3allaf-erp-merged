@@ -33,7 +33,7 @@ class ApproveRequest
 
     private function assertSeparation(ApprovalRecord $record, User $approver): void
     {
-        if ($record->requester_id === $approver->id) {
+        if ($record->requester_id === $approver->id && ! $approver->canBypassApproval()) {
             throw ValidationException::withMessages(['approver' => __('A requester cannot approve their own request.')]);
         }
     }

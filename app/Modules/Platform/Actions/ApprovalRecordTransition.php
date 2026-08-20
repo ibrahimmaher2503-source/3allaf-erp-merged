@@ -4,6 +4,7 @@ namespace App\Modules\Platform\Actions;
 
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -53,6 +54,7 @@ class ApprovalRecordTransition
                     'source_type' => $record->source_type,
                     'source_id' => $record->source_id,
                     'requested_action' => $record->requested_action,
+                    ...((Auth::user()?->canBypassApproval() ?? false) ? ['super_admin_bypass' => true] : []),
                 ],
                 requestId: $record->request_id,
             );

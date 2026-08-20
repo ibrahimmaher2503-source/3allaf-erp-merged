@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
@@ -297,7 +298,11 @@ class SaveStoreAction
     {
         Gate::authorize('branches_stores.logical_delete');
         DB::transaction(function () use ($id) {
-            $store = Store::findOrFail($id);
+            $storeQuery = Store::query();
+            if (auth()->check()) {
+                $storeQuery->visibleTo(auth()->user());
+            }
+            $store = $storeQuery->findOrFail($id);
 
             $this->assertStoreDependencyFree($store->id, 'permanently delete', true, true);
 
@@ -322,8 +327,24 @@ class SaveStoreAction
     {
         Gate::authorize('branches_stores.logical_delete');
 
-        DB::transaction(function () use ($id): void {
-            $store = Store::query()->lockForUpdate()->findOrFail($id);
+        $this->logicalDelete($id, true);
+    }
+
+    /** Apply the exact store deletion already authorized by a terminal approval record. */
+    public function applyApprovedLogicalDelete(int $id, ApprovalRecord $approval): void
+    {
+        $this->assertApprovedDelete($id, $approval);
+        $this->logicalDelete($id, false);
+    }
+
+    private function logicalDelete(int $id, bool $scopeToAuthenticatedUser): void
+    {
+        DB::transaction(function () use ($id, $scopeToAuthenticatedUser): void {
+            $storeQuery = Store::query()->lockForUpdate();
+            if ($scopeToAuthenticatedUser && auth()->check()) {
+                $storeQuery->visibleTo(auth()->user());
+            }
+            $store = $storeQuery->findOrFail($id);
             $this->assertStoreDependencyFree($store->id, 'archive', true);
 
             $before = $store->getAttributes();
@@ -339,5 +360,17 @@ class SaveStoreAction
                 metadata: ['logical_delete' => true, 'approval_required' => true],
             );
         });
+    }
+
+    private function assertApprovedDelete(int $id, ApprovalRecord $approval): void
+    {
+        $context = $approval->limit_context ?? [];
+        if ($approval->approval_state->value !== 'approved'
+            || $approval->source_type !== 'platform_settings'
+            || (int) $approval->approver_id !== (int) auth()->id()
+            || ! in_array($context['resource'] ?? null, ['store_delete', 'store_archive'], true)
+            || (int) ($context['id'] ?? 0) !== $id) {
+            throw new InvalidArgumentException(__('A matching approved store deletion is required.'));
+        }
     }
 }

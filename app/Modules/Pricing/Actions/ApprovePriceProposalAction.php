@@ -30,7 +30,7 @@ final class ApprovePriceProposalAction
             }
             /** @var ApprovalRecord $approvalRecord */
             $approvalRecord = $version->approvalRecord;
-            if ($approvalRecord->requester_id === $approver->id) {
+            if ($approvalRecord->requester_id === $approver->id && ! $approver->canBypassApproval()) {
                 throw ValidationException::withMessages(['approval' => __('The proposer cannot approve the same price version.')]);
             }
             /** @var PriceLine $line */

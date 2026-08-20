@@ -14,6 +14,7 @@ use App\Modules\Catalog\Models\ProductImportRow;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\LinkAttachmentToSource;
+use App\Modules\Platform\Actions\NotifyImportReviewers;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Models\Attachment;
@@ -228,6 +229,14 @@ class StageProductImportAction
                 event: 'map_product_import_columns',
                 source: $batch,
                 after: $batch->only(['id', 'mode', 'headers', 'column_mapping', 'total_rows', 'valid_rows', 'invalid_rows', 'status']),
+            );
+            app(NotifyImportReviewers::class)->execute(
+                $batch->created_by,
+                'products_categories_brands.approve',
+                'product',
+                $batch->original_filename,
+                'catalog.products.import',
+                $batch->id,
             );
 
             return $batch->fresh();

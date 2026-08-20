@@ -32,7 +32,7 @@ final class ApproveInventoryAdjustmentAction
             if ($adjustment->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted adjustments can be approved.'));
             }
-            if ($adjustment->created_by === Auth::id()) {
+            if ($adjustment->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The adjustment creator cannot approve the same adjustment.'));
             }
             if ($adjustment->allow_negative) {

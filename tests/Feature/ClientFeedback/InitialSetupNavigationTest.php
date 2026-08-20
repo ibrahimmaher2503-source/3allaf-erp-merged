@@ -12,6 +12,7 @@ use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Support\PlatformFixtures;
@@ -88,7 +89,35 @@ final class InitialSetupNavigationTest extends TestCase
             ->assertSee('Opening inventory entry');
     }
 
-    public function test_print_template_assignments_link_to_printer_profiles_without_opening_the_edit_form(): void
+    public function test_branch_master_and_selling_store_mapping_workspaces_are_mutually_exclusive(): void
+    {
+        $this->seedCanonicalAuthorization();
+        $this->actingAs($this->administrator());
+
+        $this->get(route('admin.branches', ['section' => 'selling-store-mapping']))
+            ->assertOk()
+            ->assertSee('data-branch-section="selling-store-mapping"', false)
+            ->assertSee('data-guide="selling-store-mapping-workspace"', false)
+            ->assertSee('data-guide="selling-store-mapping-table"', false)
+            ->assertSee(route('admin.branches', ['section' => 'branch-masters']), false)
+            ->assertDontSee('data-guide="branch-masters-workspace"', false)
+            ->assertDontSee('data-guide="branch-masters-table"', false)
+            ->assertDontSee('data-guide="branch-masters-actions"', false)
+            ->assertDontSee('data-guide="branch-master-form"', false);
+
+        $this->get(route('admin.branches'))
+            ->assertOk()
+            ->assertSee('data-branch-section="branch-masters"', false)
+            ->assertSee('data-guide="branch-masters-workspace"', false)
+            ->assertSee('data-guide="branch-masters-table"', false)
+            ->assertSee('data-guide="branch-masters-actions"', false)
+            ->assertSee('data-guide="branch-master-form"', false)
+            ->assertSee(route('admin.branches', ['section' => 'selling-store-mapping']), false)
+            ->assertDontSee('data-guide="selling-store-mapping-workspace"', false)
+            ->assertDontSee('data-guide="selling-store-mapping-table"', false);
+    }
+
+    public function test_print_template_assignments_offer_only_the_top_level_printer_profile_management_link(): void
     {
         $this->seedCanonicalAuthorization();
         $this->actingAs($this->administrator());
@@ -101,11 +130,13 @@ final class InitialSetupNavigationTest extends TestCase
             'status' => 'active',
         ]);
 
-        $profileFormHref = e(route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']).'#printer-profile-form');
+        $printerProfilesRoute = e(route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']));
 
         $this->get(route('admin.settings', ['tab' => 'printers', 'section' => 'print-templates']))
             ->assertOk()
-            ->assertSee('href="'.$profileFormHref.'"', false)
+            ->assertSee('Manage printer profiles')
+            ->assertSee('href="'.$printerProfilesRoute.'"', false)
+            ->assertDontSee('Edit profile')
             ->assertDontSee('wire:click="editPrinter(', false);
     }
 
@@ -206,6 +237,23 @@ final class InitialSetupNavigationTest extends TestCase
 
         self::assertFalse($this->setupStep('branches-stores')['complete']);
         self::assertFalse($this->setupStep('pos-selling-location')['complete']);
+    }
+
+    public function test_pos_readiness_is_incomplete_when_no_active_selling_branch_is_applicable(): void
+    {
+        $this->seedCanonicalAuthorization();
+        $this->actingAs($this->administrator());
+
+        Store::query()->where('type', 'selling')->update(['status' => 'inactive']);
+        $warehouseOnlyBranch = $this->branch('POS-NO-SELLING');
+        $this->store($warehouseOnlyBranch, 'POS-NO-SELLING-WAREHOUSE', 'warehouse');
+
+        $step = $this->setupStep('pos-selling-location');
+
+        self::assertFalse(BranchSellingStore::query()
+            ->whereHas('branch.stores', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))
+            ->exists());
+        self::assertFalse($step['complete']);
     }
 
     public function test_branches_and_stores_readiness_uses_the_same_one_current_selling_mapping_rule_as_pos(): void

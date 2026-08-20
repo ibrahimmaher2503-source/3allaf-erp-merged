@@ -238,7 +238,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             $storeAction->assertStoreDependencyFree($store->id, 'archive', false);
             $approvalAction->request('store_archive', $store->id, ['status' => 'inactive'], $store->getAttributes(), $store->branch_id, $store->id);
             $this->showArchiveModal = false;
-            Flux::toast(variant: 'success', text: __('Archive request submitted for independent approval.'));
+            Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Archive request submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -714,8 +714,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
             <flux:textarea
                 wire:model="mappingApprovalNotes"
-                :label="__('Approval / Reason Notes')"
-                placeholder="{{ __('Enter context or manager approval reason for store mapping change...') }}"
+                :label="__('Change notes (optional)')"
+                placeholder="{{ __('Add context for this direct selling-store mapping change.') }}"
                 rows="3"
             />
 

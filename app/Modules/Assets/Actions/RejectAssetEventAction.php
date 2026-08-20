@@ -21,7 +21,7 @@ final class RejectAssetEventAction
         DB::transaction(function () use ($user, $event, $reason): void {
             $locked = AssetEvent::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             $approval = $locked->approvalRecord()->lockForUpdate()->firstOrFail();
-            if ($approval->requester_id === $user->id) throw ValidationException::withMessages(['approval' => __('The requester and approver must be different users.')]);
+            if ($approval->requester_id === $user->id && ! $user->canBypassApproval()) throw ValidationException::withMessages(['approval' => __('The requester and approver must be different users.')]);
             $approval->transitionTo(ApprovalState::Rejected, ['approver_id' => $user->id, 'decided_at' => now(), 'decision_note' => $reason]);
             $locked->transition(['status' => 'rejected', 'lock_version' => $locked->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('assets', 'asset_event_rejected', $locked, before: ['status' => 'submitted'], after: ['status' => 'rejected'], branchId: $locked->branch_id, storeId: $locked->store_id, reasonText: $reason, metadata: ['approval_record_id' => $approval->id]);

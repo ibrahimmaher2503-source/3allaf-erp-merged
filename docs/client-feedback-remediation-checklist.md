@@ -5,13 +5,13 @@
 - [x] CF-01–CF-05 — Earlier client-fix queue closures — **DONE** (historical evidence is preserved in `.ai/PROGRESS.md` and `.ai/SESSION_SUMMARY.md`).
 - [x] CF-06 — POS linkage to branch and selling warehouse — **DONE**.
 - [x] CF-07 — Cash drawer association — **DONE**.
-- [ ] CF-08 — Archive safety — **PARTIAL**: core archive request and approval-inbox pending state are locally verified; an independent approval decision was not exercised.
+- [ ] CF-08 — Archive safety — **PARTIAL**: post-fix TDD was RED for malformed `onclick` then GREEN at **2 tests / 22 assertions**. Category and Supplier native Arabic dialogs explicitly dismissed; Store archive modal `Cancel` passed without approval. The Drawer dialog emitted but the browser bridge auto-dismissed before explicit cancel, the Branch button was outside the visible surface, and Store Deactivate confirmation plus an independent approval decision remain open.
 - [x] CF-09 — Egyptian phone UX — **DONE**.
 - [x] CF-10 — Sidebar active state — **DONE**.
 - [x] CF-11 — Settings navigation clarity — **DONE**.
 - [x] CF-12 — Payment-method setup meanings — **DONE (local evidence only)**.
-- [ ] CF-13 — **PARTIAL (local settings slice; owner boundary remains open)**.
-- [ ] CF-14 — **PARTIAL (local settings slice; owner boundary remains open)**.
+- [ ] CF-13 — **PARTIAL**: local settings evidence exists; full requirement closure, owner decision evidence, UAT, and release evidence remain open.
+- [ ] CF-14 — **PARTIAL**: local settings evidence exists; full requirement closure, owner decision evidence, UAT, and release evidence remain open.
 - [x] CF-15 — Printer/template UX — **DONE**.
 
 ## EXPANDED MASTER-REQUEST AUTHORIZATION — 2026-08-19
@@ -20,24 +20,26 @@ The owner directed completion of **all remediable notes** in `docs/Master Change
 
 ### Wave 0 / P0 — setup blockers
 
+Eight expanded groups below have recorded Local/Dev slices. They are **requirement-level PARTIAL**, not closed master-request groups; the other seven groups remain open.
+
 - [ ] Initial-setup-only goal, mandatory discovery, requirement classification, and complete route/model/policy/test mapping (master §§0–1).
-- [x] Canonical settings and company identity persistence/audit/dirty-state behavior (master §§2–3) — **LOCALLY IMPLEMENTED + VERIFIED**.
+- [x] Canonical settings and company identity persistence/audit/dirty-state behavior (master §§2–3) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL**.
 - [ ] Branch source of truth, six-branch creation, terminology, branch→warehouse→POS→drawer relationships, branch dropdowns, counts, POS linkage, drawer context, and safe warehouse archive/delete (master §§4–13).
 - [ ] Phone normalization/error handling, actionable validation, prerequisite/empty states, and sidebar/navigation corrections (master §§34, 50–57).
 
 ### Wave 1 / P1 — setup architecture and business configuration
 
 - [ ] Timezone inheritance and multi-branch setup checklist/readiness (master §§14–16, 53–55).
-- [x] Manual/Excel staged master-data workflows and account/setup terminology (master §§17–19) — **LOCALLY IMPLEMENTED + VERIFIED**.
-- [x] Payment methods, payment evidence, offline wording, tax/zero-tax/override rules (master §§20–25) — **LOCALLY IMPLEMENTED + VERIFIED; OWNER VALUES/APPROVAL REMAIN OPEN**.
-- [x] Daily/scoped document sequences, preview, override safety, and version terminology (master §§26–30) — **LOCALLY IMPLEMENTED + VERIFIED; OWNER NUMBERING VALUES REMAIN OPEN**.
-- [x] Printers, templates, assignment, runtime selection, and configuration-history UX (master §§31–33) — **LOCALLY IMPLEMENTED + VERIFIED; PHYSICAL HARDWARE/UAT REMAIN OPEN**.
+- [x] Manual/Excel staged master-data workflows and account/setup terminology (master §§17–19) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL**.
+- [x] Payment methods, payment evidence, offline wording, tax/zero-tax/override rules (master §§20–25) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL; OWNER VALUES/APPROVAL REMAIN OPEN**.
+- [x] Daily/scoped document sequences, preview, override safety, and version terminology (master §§26–30) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL; OWNER NUMBERING VALUES REMAIN OPEN**.
+- [x] Printers, templates, assignment, runtime selection, and configuration-history UX (master §§31–33) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL; PHYSICAL HARDWARE/UAT REMAIN OPEN**.
 
 ### Wave 2 / P1 — master data
 
-- [x] Category optional English name and hierarchical ordering (master §§36–37) — **LOCALLY IMPLEMENTED + VERIFIED**.
-- [x] Customer registration prerequisite, name/duplicate/consent UX, grouping, child profiles, loyalty CTA, and Product Wallet state (master §§38–45) — **LOCALLY IMPLEMENTED + VERIFIED; OWNER POLICY/DATA REMAIN OPEN**.
-- [x] Supplier groups, structured contacts, communication destinations, payment terms, and order-recipient resolution (master §§46–49) — **LOCALLY IMPLEMENTED + VERIFIED; OWNER POLICY/DATA REMAIN OPEN**.
+- [x] Category optional English name and hierarchical ordering (master §§36–37) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL**.
+- [x] Customer registration prerequisite, name/duplicate/consent UX, grouping, child profiles, loyalty CTA, and Product Wallet state (master §§38–45) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL; OWNER POLICY/DATA REMAIN OPEN**.
+- [x] Supplier groups, structured contacts, communication destinations, payment terms, and order-recipient resolution (master §§46–49) — **LOCAL SLICE EVIDENCED; REQUIREMENT-LEVEL PARTIAL; OWNER POLICY/DATA REMAIN OPEN**.
 
 ### Wave 3 / P2 + cross-cutting closure
 
@@ -45,7 +47,7 @@ The owner directed completion of **all remediable notes** in `docs/Master Change
 - [ ] Multi-branch scope/inheritance audit, authorization, auditability, concurrency, migration safety, deterministic fixtures, and existing-regression rechecks (master §§54–55, 61–70).
 - [ ] Requirement-by-requirement remediation matrix, before/after summary, real blockers, test/browser evidence, affected-story status, and final verdict (master §§64–72).
 
-Parallel work is permitted for independent files/workstreams; shared-file edits must be coordinated. Authorization alone did not close any item; the eight checked expanded groups above are now supported by local implementation and verification evidence. No checkmark represents owner approval, physical-device acceptance, UAT, Production, release, commit, or push.
+Parallel work is permitted for independent files/workstreams; shared-file edits must be coordinated. Authorization alone did not close any item; the eight checked expanded groups above have local-slice evidence but remain requirement-level PARTIAL, while seven groups remain open. No checkmark represents owner approval, physical-device acceptance, UAT, Production, release, commit, or push.
 
 ## 2026-08-19 — Wave 1/2 local implementation checkpoint (static-only)
 
@@ -86,9 +88,9 @@ This is a historical static-only implementation record. Later focused database/b
 
 - Batch A CF-09/10/11/12/15 is **DONE**. Changed phone save/invalid-retention/detail UX, sidebar active state/settings navigation/theme layout, payment-method setup clarity, and printer/template UX. Focused backend result **2/2, 12 assertions** (wrapper exit anomaly recorded); static gates passed. UI evidence: CF-09 customer phone save, invalid retained input, and detail observed; CF-10/11 active settings link/theme layout visually verified; CF-12 payment UI clear, with temporary test stopped only at a `role=switch` selector defect; CF-15 headed Chromium **PASS** with zero console/page/request failures. **Sol: PASS. Next:** CF-13/14 as the active high-risk settings batch.
 
-## 2026-08-19 — CF-08 archive safety closure; Batch A activation
+## 2026-08-19 — CF-08 archive safety closure; Batch A activation (historical status, superseded)
 
-- CF-08 is **DONE**: backend focused **1/1 test, 9 assertions**; core headed archive modal/cancel/submit/pending UI verified after assets were fixed. Later automation stopped on an approval-inbox heading locator only, so the full spec is not claimed green. **Sol: PASS** based on the client archive scenario. **Next:** Batch A — CF-09, CF-10, CF-11, CF-12, CF-15; CF-13/14 remain queued.
+- Historical record: CF-08 was recorded **DONE** with backend focused **1/1 test, 9 assertions** and core archive UI evidence. This status is superseded by the current **PARTIAL** evidence boundary above; the full scenario and independent approval decision were not completed.
 
 ## 2026-08-19 — CF-07 cash drawer association closure
 
@@ -123,7 +125,7 @@ This is the earlier static-only record for Master Change Request Requirements **
 ## 2026-08-20 — Browser verification attempt blocked by local MySQL
 
 The requested full browser pass was initially blocked because the local `.env` required MySQL/MariaDB at `127.0.0.1:3306` while no listener was available. This historical attempt is superseded by the recovery and authenticated Batch B evidence above.
-- Queue is **12 local DONE / 3 PARTIAL / 0 ACTIVE** (CF-01–CF-15). Expanded groups are **8 locally implemented + verified / 7 open**. The matrix below separates local verification from owner approval, physical-device acceptance, UAT, Production, and release.
+- Queue is **12 DONE / 3 PARTIAL / 0 ACTIVE** (CF-01–CF-15). Expanded groups are **8 with Local/Dev slices and requirement-level PARTIAL evidence / 7 open**. The matrix below separates local verification from owner approval, physical-device acceptance, UAT, Production, and release.
 
 ## 2026-08-20 — Final local evidence consolidation
 
@@ -138,9 +140,16 @@ The requested full browser pass was initially blocked because the local `.env` r
 ## 2026-08-20 — Current in-app re-verification boundary
 
 - Real in-app Chromium was exercised against disposable MariaDB `toyjoy_ui_reverify_20260820` on port `3307`.
-- CF-08 core archive request and approval-inbox pending state passed; no independent approval decision was exercised. CF-12 passed locally. The six settings tabs passed structurally, and Product, Page Guide, Appearance, and POS passed their recheck.
-- Arabic mixed copy **failed**. No console or network errors were observed. This run does not claim screenshots or headed-browser visibility evidence.
-- This current boundary supersedes earlier CF-08/CF-13/CF-14 `DONE` or `PASS` wording in this historical ledger: CF-08 is **PARTIAL**, CF-13/CF-14 are **PARTIAL**, and CF-12 remains **DONE (local evidence only)**.
+- CF-08 current evidence is limited to the post-fix **2 tests / 22 assertions** and the dialog outcomes recorded in the queue: Category/Supplier explicit native-dialog dismiss PASS; Store archive Cancel/no approval PASS; Drawer explicit cancel was not observed because the bridge auto-dismissed; Branch control was not visible; Store Deactivate confirmation and an independent approval decision were not exercised. CF-12 remains locally evidenced.
+- Runtime translation now renders correctly in the reached checks; this is not a complete bilingual strategy or owner-UAT result. Full browser story coverage and screenshots/traces remain open.
+- This current boundary supersedes earlier CF-08/CF-13/CF-14 `DONE` or `PASS` wording in this historical ledger: CF-08, CF-13, and CF-14 are **PARTIAL**, and CF-12 remains **DONE (local evidence only)**.
+
+## 2026-08-20 — P0 forged scope-path evidence
+
+- **Master mutations:** RED showed that master delete/archive/`openEdit` accepted **6 foreign final IDs** and disclosed a foreign cash drawer. GREEN: `BranchStoreDrawerMutationScopeTest` passed **7 tests / 31 assertions** on disposable MariaDB `toyjoy_scope_delete_p0_20260820`.
+- **Sequence mutations:** RED showed foreign create/override access; the focused GREEN passed **4 tests / 8 assertions** on disposable MariaDB `toyjoy_p0_sequence_scope_20260820`. The broader class result was **10/11** because of an unrelated existing printer-list assertion failure; it is not claimed green as a full-class result.
+- **Maker/checker execution:** RED was **3 tests / 3 assertions**: an independent approver received `AuthorizationException`, while foreign and mismatched scope targets were accepted. GREEN `PlatformMasterApprovalExecutionTest` passed **3 tests / 16 assertions** on disposable MariaDB `toyjoy_approval_execution_20260820` at `127.0.0.1:3307`, using canonical target-derived scope and approved internal execution; direct actions remain gated and scoped.
+- These are P0 local scope fixes only. They do not close the remaining multi-branch review, owner decisions, UAT, Production, release, commit, or push boundaries.
 
 ## Compact remediation matrix — Master §§0–72 (2026-08-20)
 
@@ -172,8 +181,8 @@ This is the Master-request matrix required by §72. Every result is limited to r
 | 21 | Supplier payment terms | Missing requirement | Defaults and authorized PO override needed | `routes/catalog.php`; `routes/purchasing.php` | Existing supplier/PO fields | Default/override authorization | Supplier/PO terms UI | Supplier/PO QA | PASS local slice; owner values open |
 | 22 | Payment evidence wording/enforcement | UX/business rule | Meaning unclear without server rule | `routes/settings.php` | None separately recorded | Payment enforcement boundary | Evidence help text | Payment/settings evidence | PASS local slice; owner policy open |
 | 23 | Offline POS wording | Naming/business rule | Internal eligibility language unclear | Settings/POS mapped surfaces | None | Allowlist/enforcement boundary | Business-facing offline copy | Focused payment/POS checks | PASS local slice; owner limits open |
-| 24 | Tax defaults and override | Business/data integrity | Precedence and override controls required | `routes/settings.php` | Existing tax settings | `PosCalculationService`; audit/auth | Tax calculation settings | Payment/tax 14/63 | PASS local slice; owner values open |
-| 25 | Distinguish zero tax | Business/accounting rule | Different tax treatments could collapse | `routes/settings.php` | Existing tax treatment data | Calculation boundary | Zero/exempt/out-of-scope copy | Tax/calculation tests | PASS local slice; owner approval open |
+| 24 | Tax defaults and override | Business/data integrity | Precedence and override controls required | `routes/settings.php` | Existing tax settings | `PosCalculationService`; audit/auth | Tax calculation settings | Payment/tax 14/63 | PARTIAL — focused calculation/settings evidence; final tax values, legal treatment, override acceptance, and owner approval remain open |
+| 25 | Distinguish zero tax | Business/accounting rule | Different tax treatments could collapse | `routes/settings.php` | Existing tax treatment data | Calculation boundary | Zero/exempt/out-of-scope copy | Tax/calculation tests | PARTIAL — local distinction coverage exists; final classification/legal treatment and owner approval remain open |
 | 26 | Daily sequence reset | Missing requirement | Daily boundary absent | `routes/settings.php` | Existing sequence records | Sequence reset logic | Reset rule UI | Sequence 5/28 | PASS local slice |
 | 27 | Sequence scope | Data integrity requirement | Scope could create duplicates | `routes/settings.php` | Existing counters/scopes | Uniqueness and scope boundary | Scope selection | Sequence focused checks | PASS local slice |
 | 28 | Prefix/suffix preview | UX problem | Numbering terms were unexplained | `routes/settings.php` | None | Existing sequence preview | Prefix/suffix/padding preview | Settings UI evidence | PASS local slice |
@@ -201,24 +210,31 @@ This is the Master-request matrix required by §72. Every result is limited to r
 | 50 | Egyptian phone error | Validation/localization | Input normalization/error UX needed | `routes/customers.php` | Existing customer phones | Phone normalizer | Retained localized error UI | CF-09 evidence | PASS local slice |
 | 51 | Actionable validation | UX/validation problem | Errors/prerequisites were not actionable | Master-data mapped routes | None | Server validation boundary | Inline errors/retained input | Arabic/English checks | PASS local slice |
 | 52 | Dependency UX | Missing prerequisite UX | Empty prerequisites needed a route forward | Setup/master-data mapped routes | None | Permission-aware CTA boundary | Explanation/Configure paths | Browser batches | PASS local slice |
-| 53 | Prevent fake ready states | UX/data integrity problem | Readiness could derive from page availability | Setup/settings mapped surfaces | Persisted business records | Readiness rules | Real status cards | Setup/browser evidence | PASS local slice |
+| 53 | Prevent fake ready states | UX/data integrity problem | Readiness could derive from page availability | Setup/settings mapped surfaces | Persisted business records | Readiness rules | Real status cards | Setup/browser evidence | PARTIAL — persisted readiness/CTA slice evidenced; complete real-source criteria and owner/UAT acceptance remain open |
 | 54 | Multi-branch readiness | Architecture/authorization | Scope needed consistent enforcement | Branch/store/location/settings routes | Existing scoped records | Company/branch/location scope queries | Scope map/context | Multi-branch 20/104 | PASS local slice |
 | 55 | Configuration inheritance pattern | Architecture/owner decision | No provenance/source marker | Branch/settings mapped surfaces | No provenance migration recorded | Source-marker boundary | Matching-value explanation | No independent acceptance | Owner decision |
 | 56 | Empty states | UX problem | No-record/prerequisite states needed guidance | Master-data mapped routes | None | Existing permission boundary | Empty/CTA states | Bilingual browser batches | PASS local slice |
-| 57 | Destructive-action UX | UX/data integrity problem | Confirmation/dependency/history needed | `routes/locations.php` | Existing archive/history state | Archive/deactivate boundary | Confirmation/dependency wording | Current CF-08 core pass | PARTIAL — independent approval not exercised |
+| 57 | Destructive-action UX | UX/data integrity problem | Confirmation/dependency/history needed | `routes/locations.php` | Existing archive/history state | Archive/deactivate boundary | Confirmation/dependency wording | Post-fix RED malformed `onclick`, then GREEN 2/22; targeted dialogs | PARTIAL — Category/Supplier explicit native-dialog dismiss PASS and Store archive Cancel/no approval PASS; Drawer bridge auto-dismissed before explicit cancel, Branch control was off visible surface, and Store Deactivate confirmation plus independent approval remain open |
 | 58 | Help for business terms | UX/naming problem | Terms lacked contextual explanation | Settings/setup/master mapped surfaces | None | None separately recorded | Contextual help | Bilingual review; Arabic issue noted | PARTIAL — mixed Arabic copy failed |
 | 59 | UI consistency | UI problem | Inconsistent list/form/action patterns | Master-data mapped routes | None | Existing route boundaries | Consistent list/form/detail actions | Browser batches | PASS local slice |
-| 60 | Dirty-state save feedback | UX/data integrity problem | Save state/duplicate submit feedback needed | Settings and mapped forms | None | Dirty/duplicate-submit boundary | Loading/disabled/unsaved UI | Focused browser checks | PASS local slice |
+| 60 | Dirty-state save feedback | UX/data integrity problem | Save state/duplicate submit feedback needed | Settings and mapped forms | None | Dirty/duplicate-submit boundary | Loading/disabled/unsaved UI | Focused local checks | PARTIAL — affected local settings/form slice evidenced; complete mapped-form and full-story unsaved/duplicate-submit coverage remain open |
 | 61 | Audit requirements | Authorization/audit requirement | Changes needed traceability | Settings/customer/supplier/purchasing routes | Existing audit records | Actor/scope/reason boundary | Read-only audit presentation | Settings audit 6/38 | PASS local slice |
-| 62 | Authorization | Authorization requirement | Object/company scope needed enforcement | Mapped settings/customer/supplier/PO routes | None | Policies/gates/scope filters | Permission-aware controls | Focused authorization checks | PASS local slice |
+| 62 | Authorization | Authorization requirement | Object/company scope needed enforcement | Mapped settings/customer/supplier/PO routes | None | Policies/gates/scope filters | Permission-aware controls | P0 scope-delete 7/31; sequence scope 4/8; approval execution 3/16; full sequence class 10/11 (unrelated existing printer-list failure) | PARTIAL — forged master/sequence paths and maker/checker execution are fixed locally; broader multi-branch review, owner decisions, UAT, Production, and release remain open |
 | 63 | Concurrent update safety | Data integrity requirement | Races/stale writes could corrupt records | Settings/scoped mapped routes | Existing counters/relations | Transactions, locks, uniqueness | Safe error feedback | Focused MariaDB verification | PASS local slice |
-| 64 | Recheck existing UI regressions | Regression requirement | Known Product/POS/Guide/Appearance defects | Product, POS, Page Guide, Appearance surfaces | None | Existing route/domain actions | In-app surface rechecks | Current Chromium recheck | PASS local slice |
-| 65 | Test strategy | Verification requirement | Required local database/UI coverage | This checklist; mapped test surfaces | Disposable MariaDB only | Existing focused test infrastructure | In-app Chromium recheck | Recorded focused tests; current Chromium | PARTIAL — Arabic mixed copy failed; no screenshot claim |
+| 64 | Recheck existing UI regressions | Regression requirement | Known Product/POS/Guide/Appearance defects | Product, POS, Page Guide, Appearance surfaces | None | Existing route/domain actions | In-app surface rechecks | Four surface rechecks | PARTIAL — Product, POS, Page Guide, and Appearance were rechecked; full user-story coverage and screenshots/traces remain open |
+| 65 | Test strategy | Verification requirement | Required local database/UI coverage | This checklist; mapped test surfaces | Disposable MariaDB only | Existing focused test infrastructure | In-app Chromium recheck | Recorded focused tests; limited current browser evidence | PARTIAL — runtime bilingual rendering is currently correct in reached checks; complete test strategy, full browser run, and screenshots/traces remain open |
 | 66 | Minimum E2E scenarios | Verification requirement | Critical setup journeys needed evidence | Mapped company/branch/etc. surfaces | Disposable MariaDB scenario data | Existing domain actions | Recorded scenario flows | 15 tests / 118 assertions | PASS local automated slice |
-| 67 | UX review | UX requirement | Owner clarity required across affected screens | Setup/master/settings mapped surfaces | None | Existing CTA boundaries | Grouping/help/empty states | Current Chromium recheck | PARTIAL — Arabic mixed copy failed |
+| 67 | UX review | UX requirement | Owner clarity required across affected screens | Setup/master/settings mapped surfaces | None | Existing CTA boundaries | Grouping/help/empty states | Limited current browser evidence | PARTIAL — runtime bilingual rendering is currently correct in reached checks; full bilingual strategy, owner UAT, and screenshots/traces remain open |
 | 68 | Do not invent business behavior | Business-rule governance | Unknown semantics require explicit decisions | Setup/settings mapped surfaces | No fictitious data recorded | Owner-decision boundary | Decision cards/CTAs | Owner-decision smoke | PASS local slice; owner decisions open |
 | 69 | Migration safety | Data integrity requirement | Safe forward/rollback ordering required | Migration execution paths | 75 recorded migrations | Migration ordering boundary | None | Recorded forward/rollback/forward | PASS local slice |
 | 70 | Seeders/demo data | Fixture requirement | Complete deterministic setup coverage incomplete | Seeder execution paths | Deterministic disposable fixtures | `CanonicalAuthorizationSeeder` boundary | None | Two stable seeder runs | PARTIAL — fixture coverage open |
 | 71 | Definition of done | Closure requirement | Coherent journey/risk evidence incomplete | This checklist; `docs/59-…mapping.md` | None | Evidence ledger boundary | Documented local slices | Recorded evidence only | PARTIAL — full journey/UAT open |
-| 72 | Final deliverable | Documentation/closure requirement | Final owner/UAT/release verdict unavailable | This checklist; `docs/59-…mapping.md` | None | No new implementation claim | Matrix and evidence summary | `git diff --check` passed for this update | PARTIAL — owner approval/UAT/Production open |
-| Translation overrides | Local/Dev cross-cutting localization | Owner needs safe wording correction without source-file edits | `/admin/translations` | Shipped ar/en JSON and PHP language files | Catalog + Laravel FileLoader + audited action | UI-ADM-014 bilingual inline editor | Focused MariaDB feature coverage; browser not run | Implemented; UAT/Production open |
+| 72 | Final deliverable | Documentation/closure requirement | Final owner/UAT/release verdict unavailable | This checklist; `docs/59-…mapping.md` | None | No new implementation claim | Matrix and evidence summary | Documentation structural check and scoped `git diff --check` passed for this update | PARTIAL — requirement matrix is current, but complete evidence, owner verdict, UAT, Production, and release closure remain open |
+| Translation overrides | Local/Dev cross-cutting localization | Localization/control boundary | Owner needs safe wording correction without source-file edits | `/admin/translations`; mapped translation components | Existing `translation_overrides` table | Catalog + Laravel FileLoader + audited action | UI-ADM-014 bilingual inline editor | Focused MariaDB **5 tests / 31 assertions**; browser not fully run | PARTIAL — Local/Dev feature evidence only; full browser, UAT, Production, and release closure remain open |
+
+## 2026-08-20 — Excel-import/UI QA evidence update
+
+- Disposable MariaDB focused GREEN evidence: supplier import **4 tests / 14 assertions**; catalog-reference import RED **3/3** (two intended exact-header errors) then GREEN **3/9**; customer import **8/10**; product editor/report **2/11**; Initial Setup **14/9,985**. The customer import application-shell/RTL correction separately passed **9/15** after its expected RED.
+- Migration `000093` was applied successfully to `toyjoy_ui_qa_20260820` on MariaDB `127.0.0.1:3307` after removing only the two empty partial import tables left by the prior failed migration; the repaired short identifiers satisfy MariaDB limits.
+- Authenticated Administrator browser render checks passed for supplier/reference/customer/product imports, product creation, reports, and inventory reports: no 500 response, console warning/error, or desktop overflow. At CSS 375, supplier/reference/product import and product creation had no horizontal overflow.
+- The browser’s file-chooser automation did not emit a chooser. Therefore this checkpoint does **not** claim UI file selection, staging, approval, imported-row persistence, or template-download events. It does not change the matrix status or claim owner/UAT/Production/physical-device/release/commit/push completion.

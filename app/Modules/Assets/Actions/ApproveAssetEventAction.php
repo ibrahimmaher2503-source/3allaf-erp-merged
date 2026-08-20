@@ -21,7 +21,7 @@ final class ApproveAssetEventAction
         DB::transaction(function () use ($user, $event): void {
             $lockedEvent = AssetEvent::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
             $approval = $lockedEvent->approvalRecord()->lockForUpdate()->firstOrFail();
-            if ($approval->requester_id === $user->id) throw ValidationException::withMessages(['approval' => __('The requester and approver must be different users.')]);
+            if ($approval->requester_id === $user->id && ! $user->canBypassApproval()) throw ValidationException::withMessages(['approval' => __('The requester and approver must be different users.')]);
             if ($approval->approval_state !== ApprovalState::Pending || $lockedEvent->status !== 'submitted') throw ValidationException::withMessages(['approval' => __('This asset event is no longer pending.')]);
             $asset = RentalAsset::query()->whereKey($lockedEvent->asset_id)->lockForUpdate()->firstOrFail();
             $before = $asset->only(['status', 'condition']);

@@ -39,7 +39,7 @@ final class ApprovePurchaseReturnAction
             if ($return->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted supplier returns can be approved.'));
             }
-            if ($return->created_by === Auth::id()) {
+            if ($return->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The supplier return creator cannot approve the same return.'));
             }
             if ($return->reason === null || ! $return->reason->is_active) {

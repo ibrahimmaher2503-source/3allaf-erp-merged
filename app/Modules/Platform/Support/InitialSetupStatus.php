@@ -124,7 +124,8 @@ final class InitialSetupStatus
             ->groupBy('branch_id')
             ->pluck('mappings', 'branch_id');
 
-        return $retailBranchIds->count() === $currentMappingCounts->count()
+        return $retailBranchIds->isNotEmpty()
+            && $retailBranchIds->count() === $currentMappingCounts->count()
             && $currentMappingCounts->every(static fn (int|string $count): bool => (int) $count === 1);
     }
     private function cashDrawersReady(): bool { return CashDrawer::query()->where('status', 'active')->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))->exists(); }

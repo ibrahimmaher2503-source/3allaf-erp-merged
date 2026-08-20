@@ -22,11 +22,11 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 
 No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
 
-## Current Routing Override — TSK-045
+## Current Routing Override — Client Feedback Remediation (Expanded Master Request)
 
-TSK-045 is the active owner-directed Catalog/POS follow-on. Its scope is explicit standard-product variation families, reusable bilingual option groups and values, protected variation media, sellable child SKUs, historical sale snapshots, and POS variation selection. Read `.ai/CURRENT_TASK.md`, the TSK-045 section in `TASKS.md`, `DEC-075` in `.ai/DECISIONS.md`, the MD-05 amendment in `docs/02-prd.md`, and UI-CAT-009/UI-POS-001 in `.ai/UI_SCREENS.md`. This task does not authorize automated test suites, Production readiness, UAT approval, or advancement of unrelated tasks.
+The active owner-directed work is the expanded client-feedback remediation request. Read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, the Client Feedback Remediation status-sync section in `TASKS.md`, `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, `docs/client-feedback-remediation-checklist.md`, and DEC-085/DEC-086 in `.ai/DECISIONS.md`. Route only the requirement, acceptance, screen, blocker, and evidence entries needed by the active remediation slice. The simplified CF queue is the factual status ledger; it does not narrow the expanded request. TSK-045 remains historical local implementation traceability and is not the active routing override.
 
-The earlier TSK-004B override below is historical and is superseded while TSK-045 is active.
+The earlier TSK-004B override below is historical and is superseded while the expanded client-feedback remediation request is active.
 
 TSK-004B is the shared Platform feature described in `docs/40-contextual-page-guide-specification.md`.
 

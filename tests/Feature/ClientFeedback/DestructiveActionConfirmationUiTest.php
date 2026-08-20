@@ -7,6 +7,8 @@ namespace Tests\Feature\ClientFeedback;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\CashDrawer;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Livewire\Livewire;
 use Tests\Support\PlatformFixtures;
@@ -14,8 +16,8 @@ use Tests\TestCase;
 
 final class DestructiveActionConfirmationUiTest extends TestCase
 {
-    use PlatformFixtures;
     use DatabaseTransactions;
+    use PlatformFixtures;
 
     protected function setUp(): void
     {
@@ -26,6 +28,8 @@ final class DestructiveActionConfirmationUiTest extends TestCase
 
     public function test_destructive_actions_render_an_inline_native_confirmation_guard(): void
     {
+        app()->setLocale('ar');
+
         $branch = $this->branch('CONFIRM-UI');
         $store = $this->store($branch, 'CONFIRM-STORE', 'warehouse');
 
@@ -70,7 +74,7 @@ final class DestructiveActionConfirmationUiTest extends TestCase
         $this->assertNativeConfirmationGuard(
             Livewire::test('platform::admin.drawers')->html(),
             'CONFIRM-DRAWER',
-            'toggleDrawerStatus('.$drawer->id.', &#039;inactive&#039;)',
+            "toggleDrawerStatus({$drawer->id}, 'inactive')",
         );
     }
 
@@ -98,10 +102,28 @@ final class DestructiveActionConfirmationUiTest extends TestCase
 
     private function assertNativeConfirmationGuard(string $html, string $fixtureCode, string $wireAction): void
     {
-        self::assertMatchesRegularExpression(
-            '/'.preg_quote($fixtureCode, '/').'.*?wire:click="'.preg_quote($wireAction, '/').'".*?onclick="[^\"]*window\\.confirm/s',
-            $html,
-        );
+        $document = new DOMDocument;
+        $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new DOMXPath($document);
+
+        foreach ($xpath->query('//*[@*[name() = "wire:click"]]') as $element) {
+            if ($element->getAttribute('wire:click') !== $wireAction) {
+                continue;
+            }
+
+            $row = $xpath->query('ancestor::tr[1]', $element)->item(0);
+
+            self::assertNotNull($row);
+            self::assertStringContainsString($fixtureCode, $row->textContent);
+            self::assertMatchesRegularExpression(
+                '/^if \(! window\.confirm\(.+\)\) \{.*return false; \}$/s',
+                $element->getAttribute('onclick'),
+            );
+
+            return;
+        }
+
+        self::fail('The rendered destructive action was not found for '.$fixtureCode.'.');
     }
 
     private function assertArchiveWasNotSubmitted(int $storeId): void

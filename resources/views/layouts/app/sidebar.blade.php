@@ -46,6 +46,7 @@
                     || request()->routeIs('admin.branches')
                     || request()->routeIs('admin.stores')
                     || request()->routeIs('admin.cash-drawers')
+                    || request()->routeIs('admin.roles*')
                     || request()->routeIs('initial-setup')
                     || request()->routeIs('purchasing.invoices.settings')
                     || request()->routeIs('purchasing.returns.settings');
@@ -166,6 +167,7 @@
                             <flux:sidebar.item icon="truck" :href="route('catalog.suppliers')" :current="request()->routeIs('catalog.suppliers*') || request()->routeIs('suppliers.*')" wire:navigate>
                                 {{ __('Suppliers') }}
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="folder-open" :href="route('catalog.suppliers', ['section' => 'supplier-groups'])" :current="request()->routeIs('catalog.suppliers') && request('section') === 'supplier-groups'" wire:navigate>{{ __('Supplier groups') }}</flux:sidebar.item>
                         @endcan
                         @can('purchase_invoices_supplier_returns.view')
                             <flux:sidebar.item icon="receipt-percent" :href="route('purchasing.history.suppliers')" :current="request()->routeIs('purchasing.history.suppliers')" wire:navigate>{{ __('Supplier invoices & cost history') }}</flux:sidebar.item>
@@ -355,6 +357,7 @@
                             <flux:sidebar.item icon="shield-check" :href="route('admin.authorization-baseline')" :current="request()->routeIs('admin.authorization-baseline')" wire:navigate>
                                 {{ __('Users, roles & permissions') }}
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="key" :href="route('admin.roles')" :current="request()->routeIs('admin.roles*')" wire:navigate>{{ __('Roles & permission matrix') }}</flux:sidebar.item>
                         @endcan
                         @can('company_settings.view')
                             <flux:sidebar.item icon="banknotes" :href="route('purchasing.invoices.settings')" :current="request()->routeIs('purchasing.invoices.settings')" wire:navigate>{{ __('Purchase invoice settings') }}</flux:sidebar.item>

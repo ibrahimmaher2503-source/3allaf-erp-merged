@@ -149,6 +149,9 @@ new #[Title('Authorization Baseline')] class extends Component
     class="space-y-5"
     data-guide="auth-header"
 >
+    <x-slot:actions>
+        <flux:button variant="subtle" icon="shield-check" :href="route('admin.roles')" wire:navigate>{{ __('Manage roles') }}</flux:button>
+    </x-slot:actions>
 
     <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-5 sm:px-6" aria-labelledby="authorization-overview-title" data-guide="auth-overview">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

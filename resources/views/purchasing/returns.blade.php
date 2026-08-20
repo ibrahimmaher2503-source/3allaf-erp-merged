@@ -87,7 +87,7 @@ new #[Title('Supplier Returns')] class extends Component
         $this->selectedReturnId = $return->id;
         $this->selectedInvoiceId = $return->purchase_invoice_id;
         $this->selectedReasonId = $return->reason_id;
-        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => $line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id])->values()->all();
+        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
         $this->showFormModal = true;
     }
 
@@ -118,7 +118,7 @@ new #[Title('Supplier Returns')] class extends Component
                     'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
                     'unit_cost' => (string) $line->unit_cost,
                     'available' => $available,
-                    'product' => $line->product?->name_en ?: $line->product?->name_ar ?: ('#'.$line->product_id),
+                    'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
                 ];
             })->filter()->values()->all();
     }
@@ -333,7 +333,7 @@ new #[Title('Supplier Returns')] class extends Component
                     <flux:table.row :key="$return->id">
                         <flux:table.cell><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
                         <flux:table.cell>{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
-                        <flux:table.cell>{{ $return->supplier?->name_en ?: $return->supplier?->name_ar }}</flux:table.cell>
+                        <flux:table.cell>{{ app()->getLocale() === 'ar' ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
                         <flux:table.cell>{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
                         <flux:table.cell>{{ $return->total_amount }}</flux:table.cell>
                         <flux:table.cell><x-status.badge :status="$return->status" /></flux:table.cell>
@@ -376,7 +376,7 @@ new #[Title('Supplier Returns')] class extends Component
     @if ($showTransitionModal)
         <flux:modal wire:model.self="showTransitionModal" class="md:w-[min(96vw,600px)]">
             <form wire:submit="executeTransition" class="space-y-5">
-                <flux:heading size="lg">{{ ucfirst($transitionAction) }} supplier return</flux:heading>
+                <flux:heading size="lg">{{ match ($transitionAction) { 'cancel' => __('Cancel supplier return'), 'reject' => __('Reject supplier return'), 'reverse' => __('Reverse supplier return') } }}</flux:heading>
                 <flux:callout variant="warning">{{ __('This transition is audited and cannot be undone from this screen. A reason is required.') }}</flux:callout>
                 <flux:textarea wire:model="transitionReason" :label="__('Reason')" required rows="4" />
                 <div class="flex justify-end gap-2">
@@ -397,13 +397,13 @@ new #[Title('Supplier Returns')] class extends Component
                 <flux:select wire:model.live="selectedInvoiceId" :label="__('Approved purchase invoice')">
                     <flux:select.option value="">{{ __('Select approved invoice') }}</flux:select.option>
                     @foreach ($sourceInvoices as $invoice)
-                        <flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }} — {{ $invoice->supplier?->name_en ?: $invoice->supplier?->name_ar }}</flux:select.option>
+                        <flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }} — {{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>
                     @foreach ($reasons as $reason)
-                        <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ $reason->label_en }}</flux:select.option>
+                        <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ app()->getLocale() === 'ar' ? ($reason->label_ar ?: $reason->label_en) : ($reason->label_en ?: $reason->label_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 @if ($returnLines !== [])

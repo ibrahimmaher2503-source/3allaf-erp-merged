@@ -91,7 +91,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.edit');
 
-        $drawer = CashDrawer::findOrFail($id);
+        $drawer = CashDrawer::visibleTo(auth()->user())->findOrFail($id);
         $this->editingDrawerId = $drawer->id;
         $this->drawerForm = [
             'branch_id' => (string) $drawer->branch_id,
@@ -155,9 +155,9 @@ new #[Title('Cash Drawer Masters')] class extends Component
         Gate::authorize('drawers_payments_tax_numbering_printers.logical_delete');
 
         try {
-            $drawer = CashDrawer::query()->findOrFail($id);
+            $drawer = CashDrawer::visibleTo(auth()->user())->findOrFail($id);
             $approvalAction->request('cash_drawer_delete', $drawer->id, ['deleted' => true], $drawer->getAttributes(), $drawer->branch_id, $drawer->store_id);
-            Flux::toast(variant: 'success', text: __('Cash drawer deletion submitted for independent approval.'));
+            Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Cash drawer deletion submitted for independent approval.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
         }
@@ -317,13 +317,13 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                             <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</flux:button>
                                             @if($drawer->status === 'active')
                                                 <flux:button size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')">{{ __('Maintenance') }}</flux:button>
-                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" onclick='if (! window.confirm(@js(__('Deactivate cash drawer :name? It will be unavailable for new POS shifts and its history is preserved.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }'>{{ __('Deactivate') }}</flux:button>
+                                                <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" onclick="if (! window.confirm(@js(__('Deactivate cash drawer :name? It will be unavailable for new POS shifts and its history is preserved.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Deactivate') }}</flux:button>
                                             @else
                                                 <flux:button size="xs" variant="subtle" class="text-emerald-600 dark:text-emerald-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</flux:button>
                                             @endif
                                         @endcan
                                         @can('drawers_payments_tax_numbering_printers.logical_delete')
-                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }})" onclick='if (! window.confirm(@js(__('Submit deletion request for cash drawer :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }'>{{ __('Delete') }}</flux:button>
+                                            <flux:button size="xs" variant="subtle" class="text-red-700 dark:text-red-300" wire:click="deleteDrawer({{ $drawer->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for cash drawer :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Delete') }}</flux:button>
                                         @endcan
                                     </div>
                                 </td>

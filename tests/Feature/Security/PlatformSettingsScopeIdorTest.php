@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Security;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveBranchSellingStoreMappingAction;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Models\ApprovalRecord;
@@ -171,6 +172,57 @@ final class PlatformSettingsScopeIdorTest extends TestCase
             ->assertHasNoErrors();
 
         self::assertSame($branchA->id, ApprovalRecord::query()->sole()->branch_id);
+    }
+
+    public function test_a_scoped_settings_actor_cannot_submit_a_document_sequence_approval_for_a_foreign_branch(): void
+    {
+        [$actor, , $branchB] = $this->scopedActorAndBranches();
+        $this->actingAs($actor);
+
+        Livewire::test('platform::admin.settings')
+            ->set('documentSequenceForm', [
+                'id' => null,
+                'document_type' => 'foreign-scope-approval',
+                'scope_type' => 'branch',
+                'scope_id' => $branchB->id,
+                'prefix' => 'FORGED-',
+                'suffix' => '',
+                'padding_length' => 4,
+                'next_value' => 1,
+                'reset_rule' => 'never',
+                'status' => 'active',
+                'policy_notes' => 'Attempted foreign branch approval.',
+            ])
+            ->call('saveDocumentSequence')
+            ->assertHasErrors('documentSequenceForm.scope_id');
+
+        self::assertSame(0, ApprovalRecord::query()->count());
+    }
+
+    public function test_a_scoped_settings_actor_cannot_request_a_foreign_branch_sequence_override_approval(): void
+    {
+        [$actor, , $branchB] = $this->scopedActorAndBranches();
+        $foreignSequence = $this->sequence($branchB, 'foreign-override-approval');
+        $this->actingAs($actor);
+
+        try {
+            app(PlatformSettingsApprovalAction::class)->request(
+                resource: 'document_sequence_override',
+                id: $foreignSequence->id,
+                proposed: [
+                    'sequence_id' => $foreignSequence->id,
+                    'next_value' => 9,
+                    'expected_lock_version' => $foreignSequence->lock_version,
+                    'reason' => 'Attempted foreign branch override approval.',
+                ],
+                before: $foreignSequence->only(['document_type', 'next_value', 'lock_version']),
+            );
+            self::fail('A scoped actor requested approval for a foreign branch sequence override.');
+        } catch (ModelNotFoundException) {
+            self::addToAssertionCount(1);
+        }
+
+        self::assertSame(0, ApprovalRecord::query()->count());
     }
 
     /** @return array{0: User, 1: Branch, 2: Branch} */

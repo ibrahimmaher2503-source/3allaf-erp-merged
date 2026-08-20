@@ -361,7 +361,7 @@ new #[Title('System Settings')] class extends Component
 
         $this->resetTaxSettingForm();
 
-        Flux::toast(variant: 'success', text: __('Tax setting submitted for independent approval.'));
+        Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Tax setting submitted for independent approval.'));
     }
 
     public function editTaxSetting(int $id): void
@@ -420,6 +420,12 @@ new #[Title('System Settings')] class extends Component
                 'integer',
                 Rule::requiredIf(fn (): bool => ($this->documentSequenceForm['scope_type'] ?? 'company') === 'branch'),
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('status', 'active')),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (($this->documentSequenceForm['scope_type'] ?? 'company') === 'branch'
+                        && ! Branch::visibleTo(auth()->user())->whereKey($value)->where('status', 'active')->exists()) {
+                        $fail(__('The selected branch is not active or does not exist.'));
+                    }
+                },
             ],
             'documentSequenceForm.prefix' => ['nullable', 'string', 'max:20'],
             'documentSequenceForm.suffix' => ['nullable', 'string', 'max:20'],
@@ -441,7 +447,7 @@ new #[Title('System Settings')] class extends Component
 
         $this->resetDocumentSequenceForm();
 
-        Flux::toast(variant: 'success', text: __('Document sequence submitted for independent approval.'));
+        Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Document sequence submitted for independent approval.'));
     }
 
     public function editDocumentSequence(int $id): void
@@ -475,7 +481,7 @@ new #[Title('System Settings')] class extends Component
             before: $sequence->only(['document_type', 'next_value', 'lock_version']),
             reason: $validated['sequenceOverride']['reason'],
         );
-        Flux::toast(variant: 'success', text: __('Sequence counter override submitted for independent approval.'));
+        Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Sequence counter override submitted for independent approval.'));
     }
 
     public function resetDocumentSequenceForm(): void
@@ -1630,8 +1636,15 @@ new #[Title('System Settings')] class extends Component
 
             <?php if ($printerSection === 'print-templates'): ?>
             <flux:card id="print-templates" class="scroll-mt-24 space-y-4">
-                <flux:heading size="lg">{{ __('Print-template assignments') }}</flux:heading>
-                <flux:subheading>{{ __('Review the template key assigned to each printer profile. Template layout design and physical printer testing remain outside this workspace.') }}</flux:subheading>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <flux:heading size="lg">{{ __('Print-template assignments') }}</flux:heading>
+                        <flux:subheading>{{ __('Review the template key assigned to each printer profile. Template layout design and physical printer testing remain outside this workspace.') }}</flux:subheading>
+                    </div>
+                    <flux:button size="sm" variant="subtle" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}">
+                        {{ __('Manage printer profiles') }}
+                    </flux:button>
+                </div>
 
                 <flux:table aria-label="{{ __('Configured Printer Profiles') }}">
                     <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store'])->orderBy('name')->limit(100)->get(); ?>
@@ -1645,7 +1658,6 @@ new #[Title('System Settings')] class extends Component
                         <flux:table.column>{{ __('Connection') }}</flux:table.column>
                         <flux:table.column>{{ __('Default') }}</flux:table.column>
                         <flux:table.column>{{ __('Status') }}</flux:table.column>
-                        <flux:table.column>{{ __('Actions') }}</flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -1680,19 +1692,11 @@ new #[Title('System Settings')] class extends Component
                                         <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
                                     <?php endif; ?>
                                 </flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:button size="xs" variant="subtle" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}#printer-profile-form">
-                                        {{ __('Edit profile') }}
-                                    </flux:button>
-                                    <flux:button size="xs" variant="subtle" href="{{ route('admin.settings.printer-preview', $printer) }}" target="_blank">
-                                        {{ __('Preview setup') }}
-                                    </flux:button>
-                                </flux:table.cell>
                             </flux:table.row>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <flux:table.row>
-                                <flux:table.cell colspan="9" class="text-center py-4">
+                                <flux:table.cell colspan="8" class="text-center py-4">
                                     <x-state.empty
                                         :title="__('No printer profiles configured')"
                                         :description="__('Create an active printer profile, choose its compatible print-template key, and mark one profile as default before using a print workflow.')"

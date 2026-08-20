@@ -1,9 +1,11 @@
-<x-layouts::app :title="__('Purchase invoices')">
+@php($locale = app()->getLocale())
+
+<x-layouts::app :title="__('Purchase invoice readiness')">
     <x-app.page
-        :title="__('Purchase invoices')"
-        :description="__('Review purchase invoices and receiving when the related workflow is available.')"
+        :title="__('Purchase invoice readiness')"
+        :description="__('Review the decisions and blockers that must be resolved before enabling purchase invoice and receiving workflows.')"
         max-width="6xl"
-        class="purchasing-screen"
+        class="space-y-6 purchasing-screen"
     >
         <x-slot:actions>
             @can('company_settings.view')
@@ -16,13 +18,47 @@
             </flux:button>
         </x-slot:actions>
 
-        <x-state.capability-boundary
-            :title="__('Purchase invoices')"
-            :description="__('Purchase invoice and receiving workflows are not available in this workspace yet.')"
-            :boundary="__('Invoice and receiving records will appear here when available.')"
-            :empty-title="__('No purchase invoices are available yet.')"
-            :empty="__('Return to purchase orders to review existing procurement records.')"
-            guide-prefix="purchase-invoices"
-        />
+        <flux:callout variant="warning" icon="exclamation-triangle">
+            <flux:heading size="sm">{{ __('Pending prerequisites') }}</flux:heading>
+            <flux:text>{{ __('These owner decisions and data prerequisites must be completed before purchase invoice and receiving workflows can be enabled.') }}</flux:text>
+        </flux:callout>
+
+        <section aria-labelledby="invoice-readiness-decisions">
+            <div class="mb-4">
+                <flux:heading id="invoice-readiness-decisions" size="lg">{{ __('Required decisions before operation') }}</flux:heading>
+                <flux:text>{{ __('Decision groups and blockers show the work still needed before invoice and receiving operations are enabled.') }}</flux:text>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach ($decisionGroups as $group)
+                    <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+                        <div class="flex items-start justify-between gap-3">
+                            <flux:heading size="base">{{ $group['title'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:heading>
+                            <flux:badge color="zinc">{{ $group['items'] }}</flux:badge>
+                        </div>
+                        <flux:text size="sm" class="mt-2">{{ __('Decision items') }}</flux:text>
+                        <p class="mt-3 font-mono text-xs text-zinc-500">{{ $group['reference'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section aria-labelledby="invoice-readiness-blockers">
+            <div class="mb-4">
+                <flux:heading id="invoice-readiness-blockers" size="lg">{{ __('Current blockers') }}</flux:heading>
+            </div>
+            <div class="space-y-3">
+                @foreach ($blockers as $blocker)
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+                        <div class="flex items-start gap-3">
+                            <flux:badge color="amber">{{ $blocker['key'] }}</flux:badge>
+                            <div>
+                                <flux:heading size="sm">{{ $blocker['title'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:heading>
+                                <flux:text class="mt-1">{{ $blocker['detail'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:text>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
     </x-app.page>
 </x-layouts::app>

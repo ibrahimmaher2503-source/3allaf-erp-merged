@@ -34,7 +34,7 @@ final class ApproveDiscountAction
         if ($record->source_type !== 'pos_discount' || $record->requested_action !== 'approve_discount') {
             throw ValidationException::withMessages(['approval' => __('This is not a POS discount approval request.')]);
         }
-        if ((int) $record->requester_id === (int) $approver->id) {
+        if ((int) $record->requester_id === (int) $approver->id && ! $approver->canBypassApproval()) {
             throw ValidationException::withMessages(['approval' => __('The cashier who requested the discount cannot approve it.')]);
         }
         if ($record->expires_at !== null && $record->expires_at->isPast()) {

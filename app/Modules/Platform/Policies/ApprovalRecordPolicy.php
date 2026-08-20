@@ -24,7 +24,7 @@ class ApprovalRecordPolicy
     public function decide(User $user, ApprovalRecord $record): bool
     {
         return ! $record->approval_state->isTerminal()
-            && $record->requester_id !== $user->id
+            && ($record->requester_id !== $user->id || $user->canBypassApproval())
             && $this->hasScope($user, $record)
             && ($user->is_super_admin || $user->hasPermission($record->decisionPermission()));
     }

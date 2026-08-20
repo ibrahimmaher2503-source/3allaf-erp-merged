@@ -1,11 +1,18 @@
 # Test Results
 
-## 2026-08-20 — Translation override Local/Dev verification
+## 2026-08-20 — Access, role, supplier-group, and branch/store remediation
+
+- **Database boundary:** only the disposable MariaDB schema `toyjoy_client_feedback_20260819` at `127.0.0.1:3307` was used; SQLite, port 3306, Production, and `C:\xampp\mysql\data` were not touched. The named `mysqld` listener/schema were verified before testing.
+- **TDD RED → GREEN:** the initial `AccessMasterManagementTest` run was RED at **3 tests, 0 passed, 2 assertions**: `/admin/roles` returned 404 and the Access/Supplier pages lacked the expected discovery controls. After the smallest implementation, the focused result is **8 tests / 39 assertions PASS**. It covers guarded role routes, view-only mutation denial, local role creation, permission persistence/audit, canonical and sensitive-grant guards, supplier-group visibility/validation/persistence/audit, direct branch/store and selling-store-mapping updates with no approval records, and direct-edit denial for a scoped branch/store viewer.
+- **Static:** PHP syntax passed for the new action and focused test; route discovery reports the two guarded routes. `view:cache` was started but did not complete before the bounded wait was stopped, so no Blade-cache pass is claimed.
+- **Browser limitation:** a local Laravel server was started only against the named disposable schema and temporary QA administrator/viewer data were prepared there. The in-app browser's first navigation to `localhost:8000` occurred before the server was listening; after the server was safely started (then also retried on the original port), Browser Use blocked subsequent local navigation by URL policy. Therefore no headed visual, RTL/LTR, desktop, 390px, or browser-persistence result is claimed. The temporary server was stopped afterward.
+
+## 2026-08-20 — Translation override Local/Dev verification (latest focused evidence)
 
 - **Database boundary:** only disposable MariaDB `toyjoy_translation_overrides_20260820` on `127.0.0.1:3307` (root, blank password); no SQLite or Production connection.
-- **TDD:** the first focused run was RED before feature execution because concurrent migration activity reached an existing `product_suppliers` table. A serial fresh migration then completed **81 migrations**. A later verification exposed that Laravel's deferred provider restored the default loader, and the next run exposed a JSON key shadowing a same-named PHP-group key; both causes were corrected. Final focused result after bilingual atomic-save coverage: **3 tests / 24 assertions PASS** in 84.883 seconds, covering route authorization, JSON and effective PHP-group overrides, reset/audit behavior, unknown-key rejection, placeholder preservation, and rollback of a partially invalid bilingual save.
+- **TDD:** the first focused run was RED before feature execution because concurrent migration activity reached an existing `product_suppliers` table. A serial fresh migration then completed **81 migrations**. Later verification exposed deferred-loader replacement and JSON/PHP key shadowing; both causes were corrected. The latest focused result after bilingual atomic-save coverage is **5 tests / 31 assertions PASS**, covering route authorization, JSON and effective PHP-group overrides, reset/audit behavior, unknown-key rejection, placeholder preservation, and rollback of a partially invalid bilingual save.
 - **Static:** PHP lint passed for the seven changed PHP files; `admin.translations` route discovery returned one guarded Livewire route; Arabic and English JSON parsed successfully. `view:cache` was started but its completion output was not captured, so no Blade-cache pass is claimed. Full `git diff --check` still reports pre-existing unrelated whitespace in `SESSION_SUMMARY.md` and `SaveProductAction.php`; the targeted changed-file diff check passed.
-- **Not run:** browser automation, UAT, physical-device checks, Production actions, commit, and push.
+- **Not fully run:** browser coverage. UAT, physical-device checks, Production actions, commit, and push were not run.
 
 ## 2026-08-20 — Expanded Master final local evidence checkpoint
 
@@ -221,3 +228,31 @@ The older blocked/incomplete Batch B entries later in this file are historical r
 - Browser evidence: `/admin/branches` exposed the permission-gated Delete action and its confirmation path; submitting it displayed `تم إرسال حذف الفرع لاعتماد مستقل.`. `/admin/stores` exposed Request archive on both the selling POS location (`MAIN-SALES`) and warehouse (`MAIN-WAREHOUSE`), and `/admin/cash-drawers` exposed Delete. The browser was left open on Cash Drawers. No hard-delete confirmation or approval decision was performed.
 - Data-integrity observation: the QA fixture rows (`QA-DELETE-BR-ONLY`, `QA-DELETE-POS`, `QA-DELETE-POS-FREE`, `QA-DELETE-POS-MAPPED`, and `QA-DELETE-DRAWER`) remained active in the named 3307 database. A direct query of that named database immediately afterward found no matching pending approval row, despite the browser success toast; this database/session-target discrepancy is recorded rather than treating the toast as proof of persistence.
 - No automated test suite, code change, UAT, Production action, commit, or push occurred. The port-8003 server remains running.
+
+## 2026-08-20 — POS shift drawer-context lazy-loading repair
+
+- Scope: authenticated `GET /pos/shift` rendered active cash-drawer branch/store context while Laravel lazy loading is disabled.
+- RED: focused `PosShiftDrawerRelationsTest` against disposable MariaDB `127.0.0.1:3307/toyjoy_client_feedback_20260819` failed as expected with `LazyLoadingViolationException` for `CashDrawer::branch` and HTTP 500.
+- GREEN: the focused test passed **1 test / 2 assertions** after eager-loading `branch` and `store` for active drawers. PHP lint passed for the route and test, and scoped `git diff --check` passed.
+- Visible browser: authenticated Local System Administrator opened `/pos/shift` at `http://127.0.0.1:8003`; the Arabic page displayed its cash-drawer selector, including `MAIN-01 — ... MAIN → MAIN-SALES`, with no error page. No business data was written, no UAT, Production action, commit, or push occurred.
+
+## 2026-08-20 — P0 forged scope-path focused verification
+
+- Master delete/archive/`openEdit` RED accepted **6 foreign final IDs** and disclosed a foreign cash drawer. GREEN `BranchStoreDrawerMutationScopeTest` passed **7 tests / 31 assertions** on disposable MariaDB `toyjoy_scope_delete_p0_20260820`.
+- Sequence foreign create/override was RED, then the focused GREEN passed **4 tests / 8 assertions** on disposable MariaDB `toyjoy_p0_sequence_scope_20260820`.
+- The full sequence class result was **10/11**, with an unrelated existing printer-list assertion failure. It is recorded as non-green; no full-class pass is claimed.
+- PHP lint, Pint, and `git diff --check` passed for the completed P0 fixes. No browser check, UAT, Production action, commit, or push is claimed by this evidence.
+
+## 2026-08-20 — P0 maker/checker approval-execution verification
+
+- RED: **3 tests / 3 assertions**. An independent approver received `AuthorizationException`; foreign and mismatched scope targets were accepted.
+- GREEN: `PlatformMasterApprovalExecutionTest` passed **3 tests / 16 assertions** on disposable MariaDB `toyjoy_approval_execution_20260820` at `127.0.0.1:3307`.
+- The repair derives scope canonically from the approval target and permits only approved internal execution; direct actions remain gated and scoped. PHP lint, Pint, and `git diff --check` passed.
+- No browser check, UAT, Production action, commit, or push is claimed.
+
+## 2026-08-20 — Purchasing readiness and supplier-return Arabic remediation
+
+- **Scope:** `GET /purchasing/invoices/readiness` and Livewire `/purchasing/returns`, against disposable MariaDB `toyjoy_client_feedback_20260819` at `127.0.0.1:3307`.
+- **RED:** `PurchasingArabicUiTest` first failed **2 tests / 4 assertions**: the readiness view discarded its route-supplied decision groups, and the supplier-return empty state rendered the mixed string `لا المورد returns yet.`. A title-only assertion was intentionally removed because the existing Livewire title already rendered Arabic with whitespace around the tag.
+- **GREEN:** focused `PurchasingArabicUiTest` passed **2 tests / 6 assertions** after rendering the existing readiness decision/blocker data, correcting the related Arabic translation keys, and preferring Arabic product, supplier, and reason labels in Arabic locale. PHP lint passed for both affected Blade files, both JSON catalogs parsed with PowerShell `ConvertFrom-Json -AsHashTable`, and `git diff --check` passed (only pre-existing CRLF normalization warnings).
+- **Browser boundary:** Browser Use initially received `ERR_CONNECTION_REFUSED`; after local-server recovery, the in-app browser session was on its generated error page and its URL policy blocked retry navigation. No fresh headed browser pass is claimed. No migration, business-data write, UAT, Production action, commit, or push occurred.
