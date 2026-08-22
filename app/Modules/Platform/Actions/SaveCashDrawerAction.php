@@ -2,7 +2,6 @@
 
 namespace App\Modules\Platform\Actions;
 
-use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
@@ -256,87 +255,5 @@ class SaveCashDrawerAction
             ],
             explicitSourceId: (string) $context['drawer_id'],
         );
-    }
-
-    /**
-     * Delete a cash drawer record safely if no dependencies exist, with audit logging.
-     */
-    public function delete(int $id): void
-    {
-        Gate::authorize('drawers_payments_tax_numbering_printers.logical_delete');
-        DB::transaction(function () use ($id) {
-            $drawerQuery = CashDrawer::query();
-            if (auth()->check()) {
-                $drawerQuery->visibleTo(auth()->user());
-            }
-            $drawer = $drawerQuery->findOrFail($id);
-
-            // Safe guard check against active shift/session dependencies (TBD until DM 3.3)
-
-            $oldData = $drawer->toArray();
-            $drawer->delete();
-
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_cash_drawer',
-                source: $drawer,
-                before: $oldData,
-                after: ['deleted' => true],
-                branchId: $drawer->branch_id,
-                storeId: $drawer->store_id,
-                metadata: ['deleted_source_id' => $id],
-            );
-        });
-    }
-
-    /** Apply an approved logical delete while preserving scoped approval history. */
-    public function logicalDeleteAfterApproval(int $id): void
-    {
-        Gate::authorize('drawers_payments_tax_numbering_printers.logical_delete');
-
-        $this->logicalDelete($id, true);
-    }
-
-    /** Apply the exact cash-drawer deletion already authorized by a terminal approval record. */
-    public function applyApprovedLogicalDelete(int $id, ApprovalRecord $approval): void
-    {
-        $this->assertApprovedDelete($id, $approval);
-        $this->logicalDelete($id, false);
-    }
-
-    private function logicalDelete(int $id, bool $scopeToAuthenticatedUser): void
-    {
-        DB::transaction(function () use ($id, $scopeToAuthenticatedUser): void {
-            $drawerQuery = CashDrawer::query()->lockForUpdate();
-            if ($scopeToAuthenticatedUser && auth()->check()) {
-                $drawerQuery->visibleTo(auth()->user());
-            }
-            $drawer = $drawerQuery->findOrFail($id);
-            $this->assertNoActiveShift($drawer);
-            $before = $drawer->getAttributes();
-            $drawer->update(['status' => 'inactive']);
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_cash_drawer',
-                source: $drawer,
-                before: $before,
-                after: ['deleted' => true, 'status' => 'inactive'],
-                branchId: $drawer->branch_id,
-                storeId: $drawer->store_id,
-                metadata: ['logical_delete' => true, 'approval_required' => true],
-            );
-        });
-    }
-
-    private function assertApprovedDelete(int $id, ApprovalRecord $approval): void
-    {
-        $context = $approval->limit_context ?? [];
-        if ($approval->approval_state->value !== 'approved'
-            || $approval->source_type !== 'platform_settings'
-            || (int) $approval->approver_id !== (int) auth()->id()
-            || ($context['resource'] ?? null) !== 'cash_drawer_delete'
-            || (int) ($context['id'] ?? 0) !== $id) {
-            throw new InvalidArgumentException(__('A matching approved cash drawer deletion is required.'));
-        }
     }
 }

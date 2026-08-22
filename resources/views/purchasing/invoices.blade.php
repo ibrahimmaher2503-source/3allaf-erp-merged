@@ -358,7 +358,15 @@ new #[Title('Purchase Invoices')] class extends Component
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
-                    <flux:table.row><flux:table.cell colspan="7">{{ __('No purchase invoices yet.') }}</flux:table.cell></flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="7">
+                            <div class="flex flex-col items-center gap-2 py-10 text-center">
+                                <flux:icon name="document-text" class="size-8 text-text-muted" />
+                                <flux:heading size="sm">{{ __('No purchase invoices yet.') }}</flux:heading>
+                                <flux:text>{{ __('Create a draft invoice to begin reviewing purchases.') }}</flux:text>
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>

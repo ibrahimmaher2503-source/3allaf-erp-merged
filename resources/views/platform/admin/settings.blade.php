@@ -10,13 +10,11 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\TaxSetting;
-use App\Modules\Retail\Models\OfflineDevice;
 use Flux\Flux;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -49,7 +47,7 @@ new #[Title('System Settings')] class extends Component
         'commercial_registration' => '',
         'currency_code' => '',
         'currency_symbol' => '',
-        'timezone' => 'UTC',
+        'timezone' => 'Africa/Cairo',
         'locale_default' => 'ar',
         'phone' => '',
         'email' => '',
@@ -196,6 +194,7 @@ new #[Title('System Settings')] class extends Component
         if ($company) {
             $this->companyId = $company->id;
             $this->companyForm = array_merge($this->companyForm, $company->toArray());
+            $this->companyForm['timezone'] = $this->companyForm['timezone'] ?: 'Africa/Cairo';
         }
 
         // No business defaults are seeded here. Payment, tax, numbering, and printer
@@ -572,7 +571,7 @@ new #[Title('System Settings')] class extends Component
 
 <x-app.page
     :title="__('System Settings')"
-    :description="__('Review and configure local business settings.')"
+    :description="__('Review and configure business settings.')"
     max-width="7xl"
     class="settings-screen space-y-6"
     data-guide="settings-header"
@@ -583,110 +582,11 @@ new #[Title('System Settings')] class extends Component
 >
     <x-slot:actions>
         <flux:badge size="sm" color="zinc" icon="adjustments-horizontal">
-            {{ __('Local configuration') }}
+            {{ __('Configuration') }}
         </flux:badge>
     </x-slot:actions>
 
-    <div class="settings-screen__content" x-data="{ dirty: $wire.entangle('companyDirty') }">
-
-    <flux:callout variant="info" icon="information-circle" title="{{ __('Configuration workspace') }}">
-        {{ __('These values describe this workspace. They are local setup information; they do not approve a business policy or change operational limits.') }}
-    </flux:callout>
-
-    <?php
-        $scopeCompany = Company::query()->where('status', 'active')->first();
-        $scopeBranches = Branch::visibleTo(auth()->user())
-            ->with('activeSellingStoreMapping.store')
-            ->orderBy('code')
-            ->limit(50)
-            ->get();
-        $scopeBranchIds = $scopeBranches->modelKeys();
-        $scopeDevices = Schema::hasTable('offline_devices')
-            ? OfflineDevice::query()
-                ->with(['branch', 'store', 'user'])
-                ->whereIn('branch_id', $scopeBranchIds)
-                ->whereNull('revoked_at')
-                ->latest('id')
-                ->limit(50)
-                ->get()
-            : collect();
-        $scopeCompanyTimezone = $scopeCompany?->timezone;
-    ?>
-
-    <flux:card class="space-y-5" data-guide="settings-scope-map">
-        <div>
-            <flux:heading size="lg">{{ __('company.scope_title') }}</flux:heading>
-            <flux:subheading>{{ __('company.scope_help') }}</flux:subheading>
-        </div>
-
-        <div class="grid gap-3 md:grid-cols-3">
-            <div class="rounded-xl border border-border bg-surface-muted p-4">
-                <div class="text-xs font-semibold uppercase tracking-wide text-text-muted">{{ __('company.company_scope') }}</div>
-                <?php if ($scopeCompany): ?>
-                    <div class="mt-2 font-semibold text-text-primary">{{ app()->getLocale() === 'ar' ? $scopeCompany->name_ar : $scopeCompany->name_en }}</div>
-                    <div class="mt-1 font-mono text-xs text-text-muted">{{ $scopeCompany->code }}</div>
-                    <div class="mt-3 text-xs text-text-muted">{{ __('company.scope_records', ['count' => 1]) }}</div>
-                <?php else: ?>
-                    <div class="mt-2 text-sm text-text-muted">{{ __('company.no_company') }}</div>
-                <?php endif; ?>
-            </div>
-
-            <div class="rounded-xl border border-border bg-surface-muted p-4">
-                <div class="text-xs font-semibold uppercase tracking-wide text-text-muted">{{ __('company.branch_scope') }}</div>
-                <div class="mt-2 font-semibold text-text-primary">{{ $scopeBranches->count() }}</div>
-                <div class="mt-1 text-xs text-text-muted">{{ __('company.scope_records', ['count' => $scopeBranches->count()]) }}</div>
-                <div class="mt-3 space-y-1 text-xs text-text-muted">
-                    <?php $scopeBranchPreview = $scopeBranches->take(3); if ($scopeBranchPreview->isNotEmpty()): foreach ($scopeBranchPreview as $scopeBranch): ?>
-                        <div class="flex items-center justify-between gap-2"><span class="font-mono">{{ $scopeBranch->code }}</span><span class="truncate">{{ app()->getLocale() === 'ar' ? $scopeBranch->name_ar : $scopeBranch->name_en }}</span></div>
-                    <?php endforeach; else: ?>
-                        <span>{{ __('No Branches Configured') }}</span>
-                    <?php endif; ?>
-                    <?php if ($scopeBranches->count() > 3): ?>
-                        <div>+{{ $scopeBranches->count() - 3 }} {{ __('company.more_records') }}</div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="rounded-xl border border-border bg-surface-muted p-4">
-                <div class="text-xs font-semibold uppercase tracking-wide text-text-muted">{{ __('company.device_scope') }}</div>
-                <div class="mt-2 font-semibold text-text-primary">{{ $scopeDevices->count() }}</div>
-                <div class="mt-1 text-xs text-text-muted">{{ __('company.scope_records', ['count' => $scopeDevices->count()]) }}</div>
-                <?php if ($scopeDevices->isEmpty()): ?>
-                    <div class="mt-3 text-xs text-text-muted">{{ __('company.no_devices') }}</div>
-                <?php else: ?>
-                    <div class="mt-3 space-y-1 text-xs text-text-muted">
-                        <?php foreach ($scopeDevices->take(3) as $scopeDevice): ?>
-                            <div class="flex items-center justify-between gap-2"><span class="truncate font-medium text-text-primary">{{ $scopeDevice->name }}</span><span class="shrink-0 font-mono">{{ $scopeDevice->branch?->code ?? '—' }} / {{ $scopeDevice->store?->code ?? '—' }}</span></div>
-                        <?php endforeach; ?>
-                        <?php if ($scopeDevices->count() > 3): ?>
-                            <div>+{{ $scopeDevices->count() - 3 }} {{ __('company.more_records') }}</div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <?php $scopePrinters = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store'])->orderBy('name')->limit(100)->get(); ?>
-        <div class="overflow-x-auto rounded-xl border border-border">
-            <table class="min-w-full text-start text-sm">
-                <thead class="border-b border-border bg-surface-muted text-xs font-semibold text-text-muted">
-                    <tr>
-                        <th class="px-4 py-3">{{ __('Configuration area') }}</th>
-                        <th class="px-4 py-3">{{ __('Recorded scope') }}</th>
-                        <th class="px-4 py-3">{{ __('Current data') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Timezone') }}</td><td class="px-4 py-3"><flux:badge size="sm" color="zinc">{{ __('company.company_scope') }}</flux:badge> + <flux:badge size="sm" color="blue">{{ __('company.branch_scope') }}</flux:badge></td><td class="px-4 py-3 text-xs">{{ __('company.company_default') }}: <span class="font-mono">{{ $scopeCompanyTimezone ?: '—' }}</span>; {{ __('company.branch_value') }} {{ __('is shown on the Branch Masters screen.') }}</td></tr>
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Branches / stores / cash drawers') }}</td><td class="px-4 py-3"><flux:badge size="sm" color="blue">{{ __('company.branch_scope') }}</flux:badge></td><td class="px-4 py-3 text-xs">{{ $scopeBranches->count() }} {{ __('branch records visible in this scope') }}</td></tr>
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Offline devices') }}</td><td class="px-4 py-3"><flux:badge size="sm" color="purple">{{ __('company.device_scope') }}</flux:badge></td><td class="px-4 py-3 text-xs">{{ $scopeDevices->isEmpty() ? __('company.no_devices') : __('company.device_bound_to', ['branch' => $scopeDevices->first()->branch?->code ?? '—', 'store' => $scopeDevices->first()->store?->code ?? '—']) }}</td></tr>
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Printers') }}</td><td class="px-4 py-3"><div class="flex flex-wrap gap-1"><flux:badge size="sm" color="zinc">{{ __('Global workspace') }}</flux:badge><flux:badge size="sm" color="blue">{{ __('Branch') }}</flux:badge><flux:badge size="sm" color="purple">{{ __('Location') }}</flux:badge></div></td><td class="px-4 py-3 text-xs">{{ $scopePrinters->count() }} {{ __('printer profiles; each saved profile shows its explicit scope on the Printers tab.') }}</td></tr>
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Payment methods / tax rules') }}</td><td class="px-4 py-3"><flux:badge size="sm" color="zinc">{{ __('company.company_scope') }}</flux:badge></td><td class="px-4 py-3 text-xs">{{ __('company.scope_not_recorded') }}</td></tr>
-                    <tr><td class="px-4 py-3 font-medium">{{ __('Document numbering') }}</td><td class="px-4 py-3"><flux:badge size="sm" color="zinc">{{ __('Company-wide (shared)') }}</flux:badge> / <flux:badge size="sm" color="blue">{{ __('Branch-specific') }}</flux:badge></td><td class="px-4 py-3 text-xs">{{ __('The saved sequence scope is displayed on the Document Numbering tab.') }}</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </flux:card>
+    <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
 
     <?php if ($errors->any()): ?>
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
@@ -707,7 +607,7 @@ new #[Title('System Settings')] class extends Component
             'tax' => [__('Tax rules'), __('Tax treatment and price display defaults.')],
             'sequences' => [__('Document numbering'), __('Prefixes, counters, and reset timing.')],
             'printers' => [__('Printers & Print Profiles'), __('Printer destinations and assigned layouts.')],
-            'audit' => [__('Configuration Change History'), __('Read-only history of local setting changes.')],
+            'audit' => [__('Configuration Change History'), __('Read-only history of setting changes.')],
         ][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
     ?>
 
@@ -867,12 +767,6 @@ new #[Title('System Settings')] class extends Component
                             required
                         />
 
-                        <flux:select wire:model="companyForm.timezone" :label="__('Timezone')">
-                            <option value="Africa/Cairo">{{ __('Africa/Cairo (GMT+2 / DST)') }}</option>
-                            <option value="UTC">UTC (Coordinated Universal Time)</option>
-                            <option value="Asia/Riyadh">Asia/Riyadh (GMT+3)</option>
-                        </flux:select>
-
                         <flux:select wire:model="companyForm.locale_default" :label="__('Default Application Locale')">
                             <option value="ar">العربية (Arabic - RTL)</option>
                             <option value="en">{{ __('English (LTR)') }}</option>
@@ -882,7 +776,6 @@ new #[Title('System Settings')] class extends Component
                             wire:model="companyForm.phone"
                             :label="__('Contact Phone')"
                             :placeholder="__('e.g. 01012345678 or +20 1012345678')"
-                            :description="__('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.')"
                             dir="ltr"
                         />
 
@@ -896,12 +789,6 @@ new #[Title('System Settings')] class extends Component
                     <flux:input
                         wire:model="companyForm.address"
                         :label="__('Address')"
-                    />
-
-                        <flux:input
-                            wire:model="companyForm.policy_notes"
-                            :label="__('Business configuration note (optional)')"
-                            :description="__('A local note for this workspace; it is not an approval or policy decision.')"
                     />
 
                     <div class="flex justify-end">
@@ -941,7 +828,6 @@ new #[Title('System Settings')] class extends Component
                             __('Commercial Registration (CR)') => $companyForm['commercial_registration'],
                             __('Currency code') => $companyForm['currency_code'],
                             __('Currency symbol') => $companyForm['currency_symbol'],
-                            __('Timezone') => $companyForm['timezone'],
                             __('Default Application Locale') => strtoupper($companyForm['locale_default']),
                             __('Contact Phone') => $companyForm['phone'],
                             __('Contact Email') => $companyForm['email'],
@@ -958,18 +844,12 @@ new #[Title('System Settings')] class extends Component
                         <?php endforeach; ?>
                     </dl>
 
-                    <?php if (filled($companyForm['address']) || filled($companyForm['policy_notes'])): ?>
+                    <?php if (filled($companyForm['address'])): ?>
                         <dl class="space-y-4">
                             <?php if (filled($companyForm['address'])): ?>
                                 <div>
                                     <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ __('Address') }}</dt>
                                     <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100" dir="auto">{{ $companyForm['address'] }}</dd>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (filled($companyForm['policy_notes'])): ?>
-                                <div>
-                                    <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ __('Business configuration note (optional)') }}</dt>
-                                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100" dir="auto">{{ $companyForm['policy_notes'] }}</dd>
                                 </div>
                             <?php endif; ?>
                         </dl>
@@ -1049,15 +929,8 @@ new #[Title('System Settings')] class extends Component
                                 wire:model="paymentMethodForm.offline_eligible"
                                 :label="__('Available for approved offline POS transactions')"
                             />
-                            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Use only when this method is permitted by the approved offline POS policy. This setting does not approve a device or change offline limits.') }}</p>
                         </div>
                     </div>
-
-                    <flux:input
-                        wire:model="paymentMethodForm.policy_notes"
-                        :label="__('Business configuration note (optional)')"
-                        :description="__('A short local note to explain this payment method.')"
-                    />
 
                     <div class="flex items-center justify-end gap-3">
                         <?php if ($paymentMethodForm['id']): ?>
@@ -1075,21 +948,23 @@ new #[Title('System Settings')] class extends Component
 
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Configured Payment Methods') }}</flux:heading>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Review saved methods below. Add a new method using the form above.') }}</p>
 
-                <flux:table aria-label="{{ __('Configured Payment Methods') }}">
-                    <?php $paymentMethods = PaymentMethod::query()->orderBy('code')->limit(100)->get(); ?>
+                <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
+                    <flux:table class="min-w-[880px]" aria-label="{{ __('Configured Payment Methods') }}">
+                        <?php $paymentMethods = PaymentMethod::query()->orderBy('code')->limit(100)->get(); ?>
 
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Code') }}</flux:table.column>
-                        <flux:table.column>{{ __('Name (AR/EN)') }}</flux:table.column>
-                        <flux:table.column>{{ __('Underlying type') }}</flux:table.column>
-                        <flux:table.column>{{ __('Payment evidence') }}</flux:table.column>
-                        <flux:table.column>{{ __('Offline POS use') }}</flux:table.column>
-                        <flux:table.column>{{ __('Status') }}</flux:table.column>
-                        <flux:table.column>{{ __('Actions') }}</flux:table.column>
-                    </flux:table.columns>
+                        <flux:table.columns>
+                            <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
+                            <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Name (AR/EN)') }}</span></flux:table.column>
+                            <flux:table.column class="min-w-36"><span class="block whitespace-normal leading-tight">{{ __('Underlying type') }}</span></flux:table.column>
+                            <flux:table.column class="min-w-36"><span class="block whitespace-normal leading-tight">{{ __('Payment evidence') }}</span></flux:table.column>
+                            <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Offline POS use') }}</span></flux:table.column>
+                            <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
+                            <flux:table.column class="min-w-24 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
+                        </flux:table.columns>
 
-                    <flux:table.rows>
+                        <flux:table.rows>
                         <?php if ($paymentMethods->isNotEmpty()): ?>
                             <?php foreach ($paymentMethods as $method): ?>
                             <flux:table.row key="method-{{ $method->id }}">
@@ -1151,8 +1026,9 @@ new #[Title('System Settings')] class extends Component
                                 </flux:table.cell>
                             </flux:table.row>
                         <?php endif; ?>
-                    </flux:table.rows>
-                </flux:table>
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
             </flux:card>
         </div>
     <?php endif; ?>
@@ -1196,7 +1072,6 @@ new #[Title('System Settings')] class extends Component
                         <flux:input
                             wire:model="taxSettingForm.rate"
                             :label="__('Tax Rate (%)')"
-                            :description="__('Zero Rated, Exempt, and Out of Scope must be 0.00%.')"
                             placeholder="15.00"
                             type="number"
                             step="0.01"
@@ -1227,13 +1102,6 @@ new #[Title('System Settings')] class extends Component
                         />
                     </div>
                     <flux:text class="text-sm text-text-muted">{{ __('Tax inclusive means the displayed price already includes the tax amount.') }}</flux:text>
-                    <flux:text class="text-sm text-text-muted">{{ __('The company default is the only tax rule currently derived for POS. Product, Category, and Invoice overrides are deferred and are not supported in this setup slice.') }}</flux:text>
-
-                    <flux:input
-                        wire:model="taxSettingForm.policy_notes"
-                        :label="__('Business configuration note (optional)')"
-                        :description="__('Use this note for local context only; approval remains a separate decision.')"
-                    />
 
                     <div class="flex items-center justify-end gap-3">
                         <?php if ($taxSettingForm['id']): ?>
@@ -1332,23 +1200,23 @@ new #[Title('System Settings')] class extends Component
         <div id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="space-y-6">
             <flux:card class="space-y-4">
                 <flux:heading size="lg">
-                    {{ $documentSequenceForm['id'] ? __('Edit Document Sequence') : __('Add Document Sequence') }}
+                    {{ $documentSequenceForm['id'] ? __('Edit document-numbering rule') : __('Add document-numbering rule') }}
                 </flux:heading>
 
-                <flux:callout variant="info" icon="information-circle" title="{{ __('How document numbers are built') }}">
-                    {{ __('Each number is prefix + padded counter + suffix. Reset Rule starts a new counter period; it never renumbers posted documents. The current counter is read-only. Sequence Override is a separate authorized correction and requires a reason.') }}
+                <flux:callout variant="info" icon="information-circle" title="{{ __('How numbering works') }}">
+                    {{ __('A number is prefix + padded counter + suffix. Reset cycle starts a new period; existing documents keep their numbers.') }}
                 </flux:callout>
 
                 <form wire:submit="saveDocumentSequence" class="space-y-4">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <flux:input
                             wire:model="documentSequenceForm.document_type"
-                            :label="__('Document Type')"
+                            :label="__('Document type')"
                             placeholder="sale / purchase_order / party_invoice"
                             required
                         />
 
-                        <flux:select wire:model="documentSequenceForm.scope_type" :label="__('Numbering scope')" required>
+                        <flux:select wire:model="documentSequenceForm.scope_type" :label="__('Scope for this document type')" required>
                             <option value="company">{{ __('Company-wide (shared)') }}</option>
                             <option value="branch">{{ __('Branch-specific') }}</option>
                         </flux:select>
@@ -1365,36 +1233,36 @@ new #[Title('System Settings')] class extends Component
 
                         <flux:input
                             wire:model="documentSequenceForm.prefix"
-                            :label="__('Prefix')"
-                            :description="__('Text placed before the padded number, for example SALE-000001.')"
+                            :label="__('Prefix (before the number)')"
+                            :description="__('Text added before the padded counter, for example SALE-000001.')"
                             placeholder="SALE- / INV-"
                         />
 
                         <flux:input
                             wire:model="documentSequenceForm.suffix"
-                            :label="__('Suffix')"
-                            :description="__('Text placed after the padded number, for example -2026.')"
+                            :label="__('Suffix (after the number)')"
+                            :description="__('Text added after the padded counter, for example -2026.')"
                         />
 
                         <flux:input
                             wire:model="documentSequenceForm.padding_length"
-                            :label="__('Padding Length')"
-                            :description="__('Number of digits reserved for the counter.')"
+                            :label="__('Counter digits (padding)')"
+                            :description="__('How many digits the counter uses; 6 turns 42 into 000042.')"
                             type="number"
                             required
                         />
 
                         <flux:input
                             wire:model="documentSequenceForm.next_value"
-                            :label="$documentSequenceForm['id'] ? __('Current next number (read-only)') : __('Initial next number')"
+                            :label="$documentSequenceForm['id'] ? __('Current next number (read-only)') : __('First number to use')"
                             type="number"
                             :readonly="(bool) $documentSequenceForm['id']"
-                            :description="$documentSequenceForm['id'] ? __('Operations allocate this value. Use the separate override only when authorized.') : __('Starting value for this new sequence.')"
+                            :description="$documentSequenceForm['id'] ? __('Shown for information while editing. Use the separate authorized correction below to change it.') : __('First number allocated by this sequence.')"
                             :required="! $documentSequenceForm['id']"
                         />
 
-                        <flux:select wire:model="documentSequenceForm.reset_rule" :label="__('Reset Rule')" :description="__('When the counter starts again; posted documents are never renumbered.')">
-                            <option value="never">{{ __('Never — continuous') }}</option>
+                        <flux:select wire:model="documentSequenceForm.reset_rule" :label="__('Reset cycle')" :description="__('When to start the counter again. Existing documents keep their numbers.')">
+                            <option value="never">{{ __('Never — keep counting') }}</option>
                             <option value="daily">{{ __('Daily — restart each day') }}</option>
                             <option value="monthly">{{ __('Monthly — restart each month') }}</option>
                             <option value="yearly">{{ __('Yearly — restart each year') }}</option>
@@ -1408,9 +1276,9 @@ new #[Title('System Settings')] class extends Component
                             .(string) ($documentSequenceForm['suffix'] ?? '');
                     ?>
                     <div class="rounded-lg border border-border-subtle bg-surface-muted p-4" data-sequence-preview>
-                        <flux:heading size="sm">{{ __('Number pattern preview') }}</flux:heading>
+                        <flux:heading size="sm">{{ __('Example number') }}</flux:heading>
                         <flux:text class="mt-1 font-mono text-lg font-semibold text-primary">{{ $previewNumber }}</flux:text>
-                        <flux:text class="mt-1 text-sm text-text-muted">{{ __('Preview only; no document number is reserved here.') }}</flux:text>
+                        <flux:text class="mt-1 text-sm text-text-muted">{{ __('Example only — saving does not reserve a number.') }}</flux:text>
                     </div>
 
                     <flux:input
@@ -1435,31 +1303,31 @@ new #[Title('System Settings')] class extends Component
                     <?php if (Gate::allows('drawers_payments_tax_numbering_printers.override')): ?>
                         <form wire:submit="overrideSequenceCounter" class="space-y-4 border-t border-border-subtle pt-5" aria-labelledby="sequence-override-heading">
                             <div>
-                                <flux:heading id="sequence-override-heading" size="md">{{ __('Sequence override') }}</flux:heading>
-                                <flux:text class="mt-1 text-text-muted">{{ __('Separate authorized action for correcting the next number. It is not a document revision or a business-facing V1; it requires a reason and is recorded in history.') }}</flux:text>
+                                <flux:heading id="sequence-override-heading" size="md">{{ __('Authorized counter correction') }}</flux:heading>
+                                <flux:text class="mt-1 text-text-muted">{{ __('Use this separate action to change the current counter. Enter a reason; the change is audited.') }}</flux:text>
                             </div>
                             <div class="grid gap-4 md:grid-cols-2">
-                                <flux:input wire:model="sequenceOverride.next_value" type="number" min="1" :label="__('New next value')" required />
-                                <flux:textarea wire:model="sequenceOverride.reason" :label="__('Override reason')" required />
+                                <flux:input wire:model="sequenceOverride.next_value" type="number" min="1" :label="__('Replacement next number')" required />
+                                <flux:textarea wire:model="sequenceOverride.reason" :label="__('Reason for correction')" required />
                             </div>
-                            <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Change this document counter? The action is permanent and audited.') }}">{{ __('Submit sequence override') }}</flux:button></div>
+                            <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Change this document counter? The action is permanent and audited.') }}">{{ __('Submit counter correction') }}</flux:button></div>
                         </form>
                     <?php endif; ?>
                 <?php endif; ?>
             </flux:card>
 
             <flux:card class="space-y-4">
-                <flux:heading size="lg">{{ __('Configured Document Sequences') }}</flux:heading>
+                <flux:heading size="lg">{{ __('Document-numbering rules') }}</flux:heading>
 
-                <flux:table aria-label="{{ __('Configured Document Sequences') }}">
+                <flux:table aria-label="{{ __('Document-numbering rules') }}">
                     <?php $documentSequences = DocumentSequence::visibleTo(auth()->user())->with('scopeBranch')->orderBy('document_type')->orderBy('scope_key')->limit(100)->get(); ?>
 
                     <flux:table.columns>
-                        <flux:table.column>{{ __('Type') }}</flux:table.column>
-                        <flux:table.column>{{ __('Scope') }}</flux:table.column>
-                        <flux:table.column>{{ __('Pattern Example') }}</flux:table.column>
-                        <flux:table.column>{{ __('Current next number (read-only)') }}</flux:table.column>
-                        <flux:table.column>{{ __('Reset Rule') }}</flux:table.column>
+                        <flux:table.column>{{ __('Document type') }}</flux:table.column>
+                        <flux:table.column>{{ __('Numbering scope') }}</flux:table.column>
+                        <flux:table.column>{{ __('Example number') }}</flux:table.column>
+                        <flux:table.column>{{ __('Current next number') }}</flux:table.column>
+                        <flux:table.column>{{ __('Reset cycle') }}</flux:table.column>
                         <flux:table.column>{{ __('Status') }}</flux:table.column>
                         <flux:table.column>{{ __('Actions') }}</flux:table.column>
                     </flux:table.columns>
@@ -1616,7 +1484,7 @@ new #[Title('System Settings')] class extends Component
                     <flux:input
                         wire:model="printerForm.notes"
                         :label="__('Business configuration note (optional)')"
-                        :description="__('Use this note for local context only; approval remains a separate decision.')"
+                        :description="__('Use this note for context only; approval remains a separate decision.')"
                     />
 
                     <div class="flex items-center justify-end gap-3">
@@ -1726,17 +1594,18 @@ new #[Title('System Settings')] class extends Component
                     </flux:badge>
                 </div>
 
-                <flux:table aria-label="{{ __('Settings Audit Trail') }}">
+                <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
+                <flux:table class="min-w-[120rem]" aria-label="{{ __('Settings Audit Trail') }}">
                     <flux:table.columns>
-                        <flux:table.column>{{ __('Timestamp') }}</flux:table.column>
-                        <flux:table.column>{{ __('Correlation ID') }}</flux:table.column>
-                        <flux:table.column>{{ __('User') }}</flux:table.column>
-                        <flux:table.column>{{ __('Configuration area') }}</flux:table.column>
-                        <flux:table.column>{{ __('Field/key') }}</flux:table.column>
-                        <flux:table.column>{{ __('Previous value') }}</flux:table.column>
-                        <flux:table.column>{{ __('New value') }}</flux:table.column>
-                        <flux:table.column>{{ __('Reason') }}</flux:table.column>
-                        <flux:table.column>{{ __('Branch/company scope') }}</flux:table.column>
+                        <flux:table.column class="min-w-40 whitespace-nowrap">{{ __('Timestamp') }}</flux:table.column>
+                        <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Correlation ID') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-36"><span class="block whitespace-normal leading-tight">{{ __('User') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-48"><span class="block whitespace-normal leading-tight">{{ __('Configuration area') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-48"><span class="block whitespace-normal leading-tight">{{ __('Field/key') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-72"><span class="block whitespace-normal leading-tight">{{ __('Previous value') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-72"><span class="block whitespace-normal leading-tight">{{ __('New value') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-52"><span class="block whitespace-normal leading-tight">{{ __('Reason') }}</span></flux:table.column>
+                        <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Branch/company scope') }}</span></flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -1774,16 +1643,16 @@ new #[Title('System Settings')] class extends Component
                                 $beforeText = json_encode($before, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                                 $afterText = json_encode($after, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                             ?>
-                            <flux:table.row key="log-{{ $log->id }}">
-                                <flux:table.cell class="font-mono text-xs">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
-                                <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id ?: __('Not recorded') }}</flux:table.cell>
-                                <flux:table.cell class="font-medium text-xs">{{ $log->actor_name ?? __('System') }}</flux:table.cell>
-                                <flux:table.cell><flux:badge size="sm" class="bg-primary-soft text-primary">{{ $area }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $log->event }}</div></flux:table.cell>
-                                <flux:table.cell class="max-w-48 text-xs" title="{{ implode(', ', $fields) }}">{{ implode(', ', $fields) ?: __('Not recorded') }}</flux:table.cell>
-                                <flux:table.cell class="max-w-56 truncate font-mono text-xs" title="{{ $beforeText }}">{{ $beforeText ?: __('Not recorded') }}</flux:table.cell>
-                                <flux:table.cell class="max-w-56 truncate font-mono text-xs" title="{{ $afterText }}">{{ $afterText ?: __('Not recorded') }}</flux:table.cell>
-                                <flux:table.cell class="max-w-40 text-xs" title="{{ $reason }}">{{ $reason ?: __('No reason recorded') }}</flux:table.cell>
-                                <flux:table.cell class="text-xs">{{ $scope }}</flux:table.cell>
+                            <flux:table.row key="log-{{ $log->id }}" class="align-top">
+                                <flux:table.cell class="align-top whitespace-nowrap font-mono text-xs" dir="ltr">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-56 whitespace-normal break-all font-mono text-xs leading-relaxed" dir="ltr" title="{{ $log->request_id }}">{{ $log->request_id ?: __('Not recorded') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-36 whitespace-normal break-words text-xs leading-relaxed">{{ $log->actor_name ?? __('System') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-48 whitespace-normal text-xs leading-relaxed"><flux:badge size="sm" class="bg-primary-soft text-primary">{{ $area }}</flux:badge><div class="mt-1 break-words text-xs leading-relaxed text-text-muted">{{ $log->event }}</div></flux:table.cell>
+                                <flux:table.cell class="align-top min-w-48 whitespace-normal break-words text-xs leading-relaxed" title="{{ implode(', ', $fields) }}">{{ implode(', ', $fields) ?: __('Not recorded') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-72 max-w-80 whitespace-normal break-all font-mono text-xs leading-relaxed" dir="ltr" title="{{ $beforeText }}">{{ $beforeText ?: __('Not recorded') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-72 max-w-80 whitespace-normal break-all font-mono text-xs leading-relaxed" dir="ltr" title="{{ $afterText }}">{{ $afterText ?: __('Not recorded') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-52 whitespace-normal break-words text-xs leading-relaxed" title="{{ $reason }}">{{ $reason ?: __('No reason recorded') }}</flux:table.cell>
+                                <flux:table.cell class="align-top min-w-40 whitespace-normal break-words text-xs leading-relaxed">{{ $scope }}</flux:table.cell>
                             </flux:table.row>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -1791,7 +1660,7 @@ new #[Title('System Settings')] class extends Component
                                 <flux:table.cell colspan="9" class="text-center py-4">
                                     <x-state.empty
                                         :title="__('No Audit Logs Recorded')"
-                                        :description="__('Local setting changes will appear here. This history is read-only.')"
+                                        :description="__('Setting changes will appear here. This history is read-only.')"
                                         icon="shield-check"
                                     />
                                 </flux:table.cell>
@@ -1799,6 +1668,7 @@ new #[Title('System Settings')] class extends Component
                         <?php endif; ?>
                     </flux:table.rows>
                 </flux:table>
+                </div>
             </flux:card>
         </div>
     <?php endif; ?>

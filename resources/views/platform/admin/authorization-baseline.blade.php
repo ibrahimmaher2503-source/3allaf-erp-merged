@@ -3,11 +3,8 @@
 use App\Models\User;
 use App\Modules\Platform\Actions\SaveUserAction;
 use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Platform\Models\UserBranchScope;
-use App\Modules\Platform\Models\UserStoreScope;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
@@ -133,8 +130,6 @@ new #[Title('Authorization Baseline')] class extends Component
                 ->latest()
                 ->paginate(15),
             'roleCount' => Role::query()->where('status', 'active')->count(),
-            'permissionCount' => Permission::query()->count(),
-            'scopeAssignmentCount' => UserBranchScope::query()->count() + UserStoreScope::query()->count(),
             'roles' => $this->authorizationModalOpen ? Role::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
             'branches' => $this->authorizationModalOpen ? Branch::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
             'stores' => $this->authorizationModalOpen ? Store::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en', 'branch_id']) : [],
@@ -153,22 +148,9 @@ new #[Title('Authorization Baseline')] class extends Component
         <flux:button variant="subtle" icon="shield-check" :href="route('admin.roles')" wire:navigate>{{ __('Manage roles') }}</flux:button>
     </x-slot:actions>
 
-    <section class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-5 sm:px-6" aria-labelledby="authorization-overview-title" data-guide="auth-overview">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="max-w-3xl space-y-1">
-                 <p class="text-xs font-semibold uppercase tracking-[0.08em] text-primary">{{ __('Access management') }}</p>
-                <flux:heading id="authorization-overview-title" size="lg" class="text-text-primary">{{ __('Current access is role-based and scope-aware') }}</flux:heading>
-                <flux:text class="text-text-muted">{{ __('Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately.') }}</flux:text>
-            </div>
-            <x-status.badge status="active" :label="__('Current scope enforced')" class="shrink-0" />
-        </div>
-    </section>
-
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2">
         <div data-guide="auth-users-card"><x-cards.stat-card :label="__('Users')" :value="$users->total()" :description="__('Searchable inventory')" icon="users" /></div>
         <div data-guide="auth-roles-card"><x-cards.stat-card :label="__('Roles')" :value="$roleCount" :description="__('Configured roles')" icon="shield-check" tone="info" /></div>
-        <div data-guide="auth-permissions-card"><x-cards.stat-card :label="__('Permissions')" :value="$permissionCount" :description="__('Available permissions')" icon="key" tone="success" /></div>
-        <div data-guide="auth-scopes-card"><x-cards.stat-card :label="__('Scope assignments')" :value="$scopeAssignmentCount" :description="__('Branch and store access')" icon="map-pin" tone="warning" /></div>
     </div>
 
     @if ($errors->any())
@@ -176,6 +158,11 @@ new #[Title('Authorization Baseline')] class extends Component
             {{ __('Review the highlighted values. No partial authorization change was performed.') }}
         </flux:callout>
     @endif
+
+    <div wire:loading.flex wire:target="editAuthorization" role="status" aria-live="polite" class="items-center gap-2 text-sm text-text-muted">
+        <flux:icon name="arrow-path" class="size-4 animate-spin" />
+        {{ __('Opening authorization…') }}
+    </div>
 
     <x-tables.data-panel :title="__('Users')" :description="__('Review current access before opening an authorized assignment.')" data-guide="auth-users-table">
         <x-slot:toolbar>
@@ -221,7 +208,10 @@ new #[Title('Authorization Baseline')] class extends Component
                             <td class="px-3 py-3"><x-status.badge :status="$user->email_verified_at ? 'active' : 'pending'" :label="$user->email_verified_at ? __('Verified') : __('Not verified')" /></td>
                             <td class="px-3 py-3 text-end">
                                 @can('users_roles_permissions.edit')
-                                    <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="editAuthorization({{ $user->id }})" data-guide="auth-users-manage-action">{{ __('Manage') }}</flux:button>
+                                    <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="editAuthorization({{ $user->id }})" wire:loading.attr="disabled" wire:loading.attr="aria-busy" wire:loading.class="cursor-wait opacity-60" wire:target="editAuthorization" data-guide="auth-users-manage-action">
+                                        <span wire:loading.remove wire:target="editAuthorization">{{ __('Manage') }}</span>
+                                        <span wire:loading wire:target="editAuthorization">{{ __('Opening authorization…') }}</span>
+                                    </flux:button>
                                 @endcan
                             </td>
                         </tr>
@@ -237,7 +227,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
     <flux:modal wire:model="authorizationModalOpen" class="max-w-2xl">
         <form wire:submit="saveAuthorization" class="space-y-5">
-            <div class="flex items-start justify-between gap-3"><div><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('Assign only approved roles and approved branch or store scope.') }}</flux:text></div><flux:button type="button" icon="x-mark" variant="subtle" size="sm" wire:click="closeAuthorization" aria-label="{{ __('Close') }}" /></div>
+            <div><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('Assign only approved roles and approved branch or store scope.') }}</flux:text></div>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="userForm.name" :label="__('Name')" required />
@@ -251,11 +241,23 @@ new #[Title('Authorization Baseline')] class extends Component
             </div>
 
             <div class="grid gap-5 md:grid-cols-3">
-                <flux:checkbox.group wire:model="roleIds" :label="__('Roles')" class="space-y-2">
-                    @foreach ($roles as $role)
-                        <flux:checkbox value="{{ $role->id }}" :label="app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en" />
-                    @endforeach
-                </flux:checkbox.group>
+                <div x-data="{ roleSearch: '' }" class="space-y-2">
+                    <details class="rounded-lg border border-border bg-surface-muted/20">
+                        <summary class="cursor-pointer list-none px-3 py-2.5 font-semibold text-text-primary">{{ __('Roles') }}</summary>
+                        <div class="space-y-3 border-t border-border p-3">
+                            <flux:input x-model="roleSearch" :label="__('Search roles')" :placeholder="__('Search roles')" />
+                            <flux:checkbox.group wire:model="roleIds" class="max-h-52 space-y-2 overflow-y-auto">
+                                @foreach ($roles as $role)
+                                    @php($roleLabel = app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en)
+                                    <div x-show="roleSearch.trim() === '' || $el.dataset.roleLabel.includes(roleSearch.trim().toLowerCase())" data-role-label="{{ mb_strtolower($roleLabel) }}">
+                                        <flux:checkbox value="{{ $role->id }}" :label="$roleLabel" />
+                                    </div>
+                                @endforeach
+                            </flux:checkbox.group>
+                            <p x-show="roleSearch.trim() !== '' && ![...$el.parentElement.querySelectorAll('[data-role-label]')].some(role => role.dataset.roleLabel.includes(roleSearch.trim().toLowerCase()))" class="text-sm text-text-muted">{{ __('No roles found') }}</p>
+                        </div>
+                    </details>
+                </div>
                 <flux:checkbox.group wire:model="branchIds" :label="__('Branch scopes')" class="space-y-2">
                     @foreach ($branches as $branch)
                         <flux:checkbox value="{{ $branch->id }}" :label="app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en" />

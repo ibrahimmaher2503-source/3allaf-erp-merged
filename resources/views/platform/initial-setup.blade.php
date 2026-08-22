@@ -20,24 +20,6 @@
             @if ($nextStep)<div class="flex flex-col justify-between gap-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 shadow-sm sm:p-6" data-guide="initial-setup-next-step"><div><div class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800 dark:text-amber-200">{{ __('Next action') }}</div><flux:heading size="base" class="mt-3">{{ $nextStep['label'] }}</flux:heading><flux:text class="mt-1">{{ $nextStep['reason'] }}</flux:text></div>@if ($nextStep['route'] && $nextStep['can_access'])<flux:button :href="$nextStep['route']" data-setup-route="{{ $nextStep['route_name'] }}" variant="primary" icon="arrow-left" wire:navigate>{{ $nextStep['cta_label'] }}</flux:button>@endif</div>@else<flux:callout variant="success" icon="check-circle" title="{{ __('All required setup steps are complete') }}">{{ __('Review the saved definitions before opening daily operations.') }}</flux:callout>@endif
         </section>
         <flux:callout variant="info" icon="information-circle" title="{{ __('Definitions first, transactions later') }}">{{ __('Use Setup / Master Data for company, branch, catalog, and policy definitions. Daily Operations / Transactions remains separate for sales, purchase orders, inventory movements, parties, settlements, and returns.') }}</flux:callout>
-        <section aria-labelledby="owner-decisions-heading" data-guide="initial-setup-owner-decisions">
-            <div class="mb-4"><div class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">{{ __('Owner decisions') }}</div><flux:heading id="owner-decisions-heading" size="lg" class="mt-2">{{ __('Open decisions with an entry or review surface') }}</flux:heading><flux:text class="mt-1 max-w-4xl text-sm leading-6">{{ __('Each card stays pending until the owner confirms the policy. Use the linked screen to enter or review the decision; this page never records an approval by itself.') }}</flux:text></div>
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                @foreach ($setup['owner_decisions'] as $decision)
-                    <article class="flex h-full flex-col gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 shadow-sm sm:p-6" data-owner-decision="{{ $decision['key'] }}">
-                        <div class="flex items-start justify-between gap-3"><flux:heading size="base" class="min-w-0">{{ $decision['title'] }}</flux:heading><flux:badge size="sm" color="amber" class="shrink-0">{{ $decision['status_label'] }}</flux:badge></div>
-                        <flux:text class="text-sm leading-6 text-text-muted">{{ $decision['description'] }}</flux:text>
-                        <div class="mt-auto border-t border-amber-500/20 pt-4">
-                            @if ($decision['can_access'])
-                                <flux:button :href="$decision['route']" data-setup-route="{{ $decision['route_name'] }}" variant="subtle" size="sm" icon="arrow-left" wire:navigate>{{ $decision['cta_label'] }}</flux:button>
-                            @else
-                                <span class="text-xs font-medium text-text-muted">{{ __('Permission required') }}</span>
-                            @endif
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-        </section>
         <section aria-label="{{ __('Initial setup steps') }}" data-guide="initial-setup-steps"><div class="mb-4"><div class="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{{ __('Owner checklist') }}</div><flux:heading size="lg" class="mt-2">{{ __('Initial setup steps') }}</flux:heading><flux:text class="mt-1 max-w-4xl text-sm leading-6">{{ __('Follow the sections in order. Each action opens the internal screen that owns the data, and returning here refreshes the readiness status.') }}</flux:text></div>
             @php($stepNumber = 0)
             @foreach ($stepGroups as $groupKey => $group)

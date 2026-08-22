@@ -37,6 +37,7 @@
     "Cart": "Cart",
     "Items are re-priced and stock-checked on the server before posting.": "Items are re-priced and stock-checked on the server before posting.",
     "Clear": "Clear",
+    "Clear search": "Clear search",
     "Product": "Product",
     "Quantity": "Quantity",
     "Unit price": "Unit price",
@@ -348,6 +349,7 @@
     "Switch to Arabic": "العربية (RTL)",
     "Authorization Baseline": "Authorization Baseline",
     "User Inventory": "User Inventory",
+    "Opening authorization…": "Opening authorization…",
     "Roles Master": "Roles Master",
     "Permissions Catalog": "Permissions Catalog",
     "Branch & Store Scopes": "Branch & Store Scopes",
@@ -432,7 +434,28 @@
     "No demo values": "No demo values",
     "Review step": "Review step",
     "Back to dashboard": "Back to dashboard",
-    "Submit pending financial setting": "Submit pending financial setting",
+     "Submit pending financial setting": "Submit pending financial setting",
+     "What this page controls": "What this page controls",
+     "Add the reasons that appear when a supplier return is created, then submit numbering and approval settings for review. New financial values stay pending until they are approved.": "Add the reasons that appear when a supplier return is created, then submit numbering and approval settings for review. New financial values stay pending until they are approved.",
+     "Configure supplier-return reasons, print text, and approval limits. New values remain pending until separately approved.": "Configure supplier-return reasons, print text, and approval limits. New values remain pending until separately approved.",
+     "Add the reasons shown when creating a supplier return, then submit print text or an approval limit for review.": "Add the reasons shown when creating a supplier return, then submit print text or an approval limit for review.",
+     "These bilingual reasons help the team choose a clear cause when returning goods to a supplier.": "These bilingual reasons help the team choose a clear cause when returning goods to a supplier.",
+     "Add a return reason": "Add a return reason",
+     "Numbering and approval settings": "Numbering and approval settings",
+     "Print and approval settings": "Print and approval settings",
+     "Document numbers are managed from the central document-numbering settings. This page only controls supplier-return print text and approval limit.": "Document numbers are managed from the central document-numbering settings. This page only controls supplier-return print text and approval limit.",
+     "Open document numbering": "Open document numbering",
+     "Choose one setting, enter its value, and send it for separate review. It will not affect live returns before approval.": "Choose one setting, enter its value, and send it for separate review. It will not affect live returns before approval.",
+     "Setting type": "Setting type",
+     "Review note (optional)": "Review note (optional)",
+     "Send for review": "Send for review",
+     "Saved return reasons": "Saved return reasons",
+     "Only active reasons can be selected on a new supplier return.": "Only active reasons can be selected on a new supplier return.",
+     "Setting review history": "Setting review history",
+     "Submitted values appear here with their version and approval status.": "Submitted values appear here with their version and approval status.",
+     "Setting": "Setting",
+     "Text": "Text",
+     "Other setting": "Other setting",
     "Owner input is saved as pending. It becomes active only after a separate approved financial version exists.": "Owner input is saved as pending. It becomes active only after a separate approved financial version exists.",
     "Setting key": "Setting key",
     "Value type": "Value type",
@@ -491,7 +514,7 @@
     "Email": "Email",
     "Phone": "Phone",
     "Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.": "Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.",
-    "Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.": "Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.",
+    "Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.": "",
     "e.g. 01012345678 or +20 1012345678": "e.g. 01012345678 or +20 1012345678",
     "Optional Egyptian phone number": "Optional Egyptian phone number",
     "Address": "Address",
@@ -898,14 +921,21 @@
     "No local branch records found. Click below to add a local branch for testing, or wait for official master data (BLK-006).": "No local branch records found. Click below to add a local branch for testing, or wait for official master data (BLK-006).",
     "Create Local Branch": "Create Local Branch",
     "Branch Name (AR / EN)": "Branch Name (AR / EN)",
+    "Branch only": "Branch",
     "Time zone": "Time zone",
     "POS Selling Store": "POS Selling Store",
     "POS selling & stock location": "POS selling & stock location",
+    "Link selling stores to branches": "Link selling stores to branches",
     "POS selling location": "POS selling location",
     "POS selling location / stock source": "POS selling location / stock source",
     "Stock source": "Stock source",
     "Same as POS selling location": "Same as POS selling location",
     "Assign POS selling & stock location": "Assign POS selling & stock location",
+    "Each applicable retail branch needs exactly one current, valid selling-store mapping.": "Each applicable retail branch needs exactly one current, valid selling-store mapping.",
+    "Mapping status": "Mapping status",
+    "No active selling-store mapping": "No active selling-store mapping",
+    "Mapped": "Mapped",
+    "No branches are available for POS selling-location linkage.": "No branches are available for POS selling-location linkage.",
     "Branch source": "Branch source",
     "POS selling location and stock source": "POS selling location and stock source",
     "The selected POS selling location is also the stock source for sales. The cashier shift must use this exact location.": "The selected POS selling location is also the stock source for sales. The cashier shift must use this exact location.",
@@ -1106,6 +1136,7 @@
     "Next": "Next",
     "Refresh": "Refresh",
     "Manage": "Manage",
+    "Manage roles": "Manage roles",
     "Activate": "Activate",
     "Deactivate": "Deactivate",
     "Failed": "Failed",
@@ -1908,6 +1939,7 @@
     ,"Record the business rule or approval reference staff need to understand this method.": "Record the business rule or approval reference staff need to understand this method."
     ,"Underlying type": "Underlying type"
     ,"Payment evidence": "Payment evidence"
+    ,"Review saved methods below. Add a new method using the form above.": "Review saved methods below. Add a new method using the form above."
     ,"Offline POS use": "Offline POS use"
     ,"Not required": "Not required"
     ,"Allowed by policy": "Allowed by policy"
@@ -1992,8 +2024,8 @@
     ,"Create at least one active category before product masters.": "Create at least one active category before product masters."
     ,"Complete active branches, stores, categories, and product masters before opening configuration.": "Complete active branches, stores, categories, and product masters before opening configuration."
     ,"Complete product masters before approving selling prices.": "Complete product masters before approving selling prices."
-    ,"Review and configure local business settings.": "Review and configure local business settings."
-    ,"Local configuration": "Local configuration"
+    ,"Review and configure business settings.": "Review and configure business settings."
+    ,"Configuration": "Configuration"
     ,"Configuration workspace": "Configuration workspace"
     ,"These values describe this workspace. They do not approve a policy or change operational limits.": "These values describe this workspace. They do not approve a policy or change operational limits."
     ,"Company identity and contact details.": "Company identity and contact details."
@@ -2001,7 +2033,7 @@
     ,"Tax treatment and price display defaults.": "Tax treatment and price display defaults."
     ,"Prefixes, counters, and reset timing.": "Prefixes, counters, and reset timing."
     ,"Printer destinations and assigned layouts.": "Printer destinations and assigned layouts."
-    ,"Read-only history of local setting changes.": "Read-only history of local setting changes."
+    ,"Read-only history of setting changes.": "Read-only history of setting changes."
     ,"Business configuration note (optional)": "Business configuration note (optional)"
     ,"A local note for this workspace; it is not an approval or policy decision.": "A local note for this workspace; it is not an approval or policy decision."
     ,"A short local note to explain this payment method.": "A short local note to explain this payment method."
@@ -2034,7 +2066,7 @@
     ,"Global/company": "Global/company"
     ,"No reason recorded": "No reason recorded"
     ,"Not recorded": "Not recorded"
-    ,"Local setting changes will appear here. This history is read-only.": "Local setting changes will appear here. This history is read-only."
+    ,"Setting changes will appear here. This history is read-only.": "Setting changes will appear here. This history is read-only."
     ,"Create user account": "Create user account"
     ,"Create your user account": "Create your user account"
     ,"Create the sign-in account you will use to access the workspace.": "Create the sign-in account you will use to access the workspace."
@@ -2044,7 +2076,7 @@
     ,"Manage sign-in accounts, approved roles, and branch or store access.": "Manage sign-in accounts, approved roles, and branch or store access."
     ,"Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately.": "Assignment changes are audited. This screen manages access only; business policies and operating limits are configured separately."
     ,"These values describe this workspace. They are local setup information; they do not approve a business policy or change operational limits.": "These values describe this workspace. They are local setup information; they do not approve a business policy or change operational limits."
-    ,"Use this note for local context only; approval remains a separate decision.": "Use this note for local context only; approval remains a separate decision."
+    ,"Use this note for context only; approval remains a separate decision.": "Use this note for context only; approval remains a separate decision."
     ,"How document numbers are built": "How document numbers are built"
     ,"Each number is prefix + padded counter + suffix. Reset Rule starts a new counter period; it never renumbers posted documents. The current counter is read-only. Sequence Override is a separate authorized correction and requires a reason.": "Each number is prefix + padded counter + suffix. Reset Rule starts a new counter period; it never renumbers posted documents. The current counter is read-only. Sequence Override is a separate authorized correction and requires a reason."
     ,"Text placed before the padded number, for example SALE-000001.": "Text placed before the padded number, for example SALE-000001."
@@ -2128,8 +2160,9 @@
     ,"Canonical roles are managed by the approved authorization baseline and cannot be edited here.": "Canonical roles are managed by the approved authorization baseline and cannot be edited here."
     ,"Canonical role permissions are read-only in this screen.": "Canonical role permissions are read-only in this screen."
     ,"Each selected permission must be active and available.": "Each selected permission must be active and available."
-    ,"Purchase invoice readiness": "Purchase invoice readiness"
-    ,"Review the decisions and blockers that must be resolved before enabling purchase invoice and receiving workflows.": "Review the decisions and blockers that must be resolved before enabling purchase invoice and receiving workflows."
+     ,"Purchase invoice readiness": "Purchase invoice readiness"
+     ,"Review the decisions and blockers that must be resolved before enabling purchase invoice and receiving workflows.": "Review the decisions and blockers that must be resolved before enabling purchase invoice and receiving workflows."
+     ,"Back to purchase orders": "Back to purchase orders"
     ,"Pending prerequisites": "Pending prerequisites"
     ,"These owner decisions and data prerequisites must be completed before purchase invoice and receiving workflows can be enabled.": "These owner decisions and data prerequisites must be completed before purchase invoice and receiving workflows can be enabled."
     ,"Required decisions before operation": "Required decisions before operation"
@@ -2140,4 +2173,41 @@
     ,"Reject supplier return": "Reject supplier return"
     ,"Reverse supplier return": "Reverse supplier return"
     ,"Super Admin action completed without separate approval.": "Super Admin action completed without separate approval."
+    ,"Apply sensitive adjustment": "Apply sensitive adjustment"
+    ,"Super Admin adjustments are applied immediately and recorded in the approval history.": "Super Admin adjustments are applied immediately and recorded in the approval history."
+    ,"Apply immediately": "Apply immediately"
+    ,"Add document-numbering rule": "Add document-numbering rule"
+    ,"Edit document-numbering rule": "Edit document-numbering rule"
+    ,"How numbering works": "How numbering works"
+    ,"A number is prefix + padded counter + suffix. Reset cycle starts a new period; existing documents keep their numbers.": "A number is prefix + padded counter + suffix. Reset cycle starts a new period; existing documents keep their numbers."
+    ,"Document type": "Document type"
+    ,"Scope for this document type": "Scope for this document type"
+    ,"Prefix (before the number)": "Prefix (before the number)"
+    ,"Text added before the padded counter, for example SALE-000001.": "Text added before the padded counter, for example SALE-000001."
+    ,"Suffix (after the number)": "Suffix (after the number)"
+    ,"Text added after the padded counter, for example -2026.": "Text added after the padded counter, for example -2026."
+    ,"Counter digits (padding)": "Counter digits (padding)"
+    ,"How many digits the counter uses; 6 turns 42 into 000042.": "How many digits the counter uses; 6 turns 42 into 000042."
+    ,"First number to use": "First number to use"
+    ,"Shown for information while editing. Use the separate authorized correction below to change it.": "Shown for information while editing. Use the separate authorized correction below to change it."
+    ,"First number allocated by this sequence.": "First number allocated by this sequence."
+    ,"Reset cycle": "Reset cycle"
+    ,"When to start the counter again. Existing documents keep their numbers.": "When to start the counter again. Existing documents keep their numbers."
+    ,"Never — keep counting": "Never — keep counting"
+    ,"Example number": "Example number"
+    ,"Example only — saving does not reserve a number.": "Example only — saving does not reserve a number."
+    ,"Authorized counter correction": "Authorized counter correction"
+    ,"Use this separate action to change the current counter. Enter a reason; the change is audited.": "Use this separate action to change the current counter. Enter a reason; the change is audited."
+    ,"Replacement next number": "Replacement next number"
+    ,"Reason for correction": "Reason for correction"
+    ,"Submit counter correction": "Submit counter correction"
+    ,"Document-numbering rules": "Document-numbering rules"
+    ,"Numbering scope": "Numbering scope"
+    ,"Current next number": "Current next number"
+    ,"Create a supplier return from an approved purchase invoice.": "Create a supplier return from an approved purchase invoice."
+    ,"Create a draft invoice to begin reviewing purchases.": "Create a draft invoice to begin reviewing purchases."
+    ,"Save draft": "Save draft"
+    ,"Select supplier": "Select supplier"
+    ,"Select product": "Select product"
+    ,"Unit cost": "Unit cost"
 }

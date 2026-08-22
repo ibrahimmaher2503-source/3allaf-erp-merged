@@ -36,7 +36,6 @@
                             <flux:badge color="zinc">{{ $group['items'] }}</flux:badge>
                         </div>
                         <flux:text size="sm" class="mt-2">{{ __('Decision items') }}</flux:text>
-                        <p class="mt-3 font-mono text-xs text-zinc-500">{{ $group['reference'] }}</p>
                     </div>
                 @endforeach
             </div>
@@ -50,7 +49,6 @@
                 @foreach ($blockers as $blocker)
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
                         <div class="flex items-start gap-3">
-                            <flux:badge color="amber">{{ $blocker['key'] }}</flux:badge>
                             <div>
                                 <flux:heading size="sm">{{ $blocker['title'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:heading>
                                 <flux:text class="mt-1">{{ $blocker['detail'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:text>

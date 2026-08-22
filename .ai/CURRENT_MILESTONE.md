@@ -36,8 +36,9 @@
 
 - Master delete/archive/`openEdit` RED accepted **6 foreign final IDs** and disclosed a foreign drawer; GREEN `BranchStoreDrawerMutationScopeTest` passed **7 tests / 31 assertions** on `toyjoy_scope_delete_p0_20260820`.
 - Sequence foreign create/override RED then focused GREEN passed **4 tests / 8 assertions** on `toyjoy_p0_sequence_scope_20260820`. The full class was **10/11** due to an unrelated existing printer-list assertion failure and is not claimed green.
-- Maker/checker execution RED was **3 tests / 3 assertions**: an independent approver received `AuthorizationException`, while foreign/mismatched scope targets were accepted. GREEN `PlatformMasterApprovalExecutionTest` passed **3/16** on `toyjoy_approval_execution_20260820` at `127.0.0.1:3307`; canonical target-derived scope and approved internal execution now apply, while direct actions remain gated/scoped.
-- This fixes the named P0 forged paths locally only; the broader multi-branch review, owner decisions, UAT, Production, release, commit, and push boundary is unchanged.
+- Master approval RED covered metadata/direct delete/sequence mismatch/reject/inactive-reactivation/idempotency. Final GREEN `PlatformMasterApprovalExecutionTest` passed **11/106** on disposable MariaDB `127.0.0.1:3307`.
+- Non-master RED covered forged/empty snapshots, stale target, approval-only reviewer, scope move, and terminal replay. Final GREEN `PlatformSettingsApprovalExecutionTest` passed **6/46**; generic terminal replay passed **1/4** and focused store-mapping modal scope passed **1/5**. `PlatformSettingsScopeIdorTest` reached **10/11** with only an unrelated printer rendered-text failure, so it is not a full-class green.
+- Sol's scoped code gate found no remaining P0/P1. CF-08 destructive UI remains **2/22** with recorded partial browser evidence. §62 and the broader multi-branch/current-UI/owner/UAT/Production/release boundary remain PARTIAL.
 
 ## Expanded priority waves
 

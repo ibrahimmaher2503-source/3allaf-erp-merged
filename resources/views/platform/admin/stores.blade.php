@@ -8,7 +8,6 @@ use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
-use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -18,7 +17,7 @@ use Livewire\WithPagination;
 
 new #[Title('Store & Inventory Mapping Masters')] class extends Component
 {
-    use WithBulkSelection, WithPagination;
+    use WithPagination;
 
     public string $search = '';
 
@@ -148,7 +147,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             'storeForm.allows_negative_stock' => ['boolean'],
             'storeForm.policy_notes' => ['nullable', 'string'],
         ], [], [
-            'storeForm.code' => app()->getLocale() === 'ar' ? 'رمز الموقع' : __('Location Code'),
+            'storeForm.code' => app()->getLocale() === 'ar' ? 'رمز المخزن' : __('Location Code'),
             'storeForm.name_ar' => app()->getLocale() === 'ar' ? 'اسم الموقع بالعربية' : __('Arabic Name'),
             'storeForm.name_en' => app()->getLocale() === 'ar' ? 'اسم الموقع بالإنجليزية' : __('English Name'),
             'storeForm.status' => app()->getLocale() === 'ar' ? 'حالة الموقع' : __('Status'),
@@ -172,21 +171,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             Flux::toast(variant: 'success', text: __('Store status updated successfully.'));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
-        }
-    }
-
-    public function bulkToggleStoreStatus(SaveStoreAction $action): void
-    {
-        Gate::authorize('branches_stores.edit');
-
-        try {
-            $count = $this->forEachBulkSelected(function (int $id) use ($action): void {
-                $action->toggleStatus($id);
-            });
-            $this->clearBulkSelection();
-            Flux::toast(variant: 'success', text: __('Store status updated for :count records.', ['count' => $count]));
-        } catch (Exception $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
         }
     }
 
@@ -248,7 +232,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     {
         Gate::authorize('branches_stores.edit');
 
-        $store = Store::findOrFail($storeId);
+        $store = Store::visibleTo(auth()->user())->findOrFail($storeId);
         if ($store->type !== 'selling') {
             Flux::toast(variant: 'danger', text: __('Only stores of type Selling Store can be mapped to branches for POS operations.'));
 
@@ -261,11 +245,16 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             return;
         }
 
-        $activeMapping = BranchSellingStore::where('store_id', $store->id)->where('status', 'active')->first();
+        $activeMapping = BranchSellingStore::query()
+            ->where('store_id', $store->id)
+            ->where('status', 'active')
+            ->whereIn('branch_id', Branch::visibleTo(auth()->user())->select('id'))
+            ->first();
 
         $this->mappingStoreId = $store->id;
         $this->mappingStoreName = app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en;
-        $this->selectedBranchId = $activeMapping?->branch_id ?? $store->branch_id;
+        $this->selectedBranchId = $activeMapping?->branch_id
+            ?? Branch::visibleTo(auth()->user())->whereKey($store->branch_id)->value('id');
         $this->mappingApprovalNotes = '';
         $this->resetValidation();
         $this->showStoreMappingModal = true;
@@ -342,36 +331,27 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="__('Location Masters & Branch Mapping')"
-    :description="__('Manage physical and logical locations, including Warehouses and genuine POS selling stores, with their branch context.')"
+    :title="__('Warehouse Masters & Branch Mapping')"
+    :description="__('Manage warehouses and selling stores, including physical inventory and POS operations, with their branch context.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="stores-header"
 >
     <x-slot:actions>
-        <x-tables.resource-toolbar filter-target="stores-filters">
+        <x-tables.resource-toolbar>
             @can('branches_stores.create')
-                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add location') }}</flux:button>
+                <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal" data-guide="stores-add-action">{{ __('Add warehouse') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
     <!-- Filters & Search -->
-    <flux:card id="stores-filters" class="scroll-mt-24 space-y-4" data-guide="stores-filters">
-        <flux:callout icon="information-circle" variant="info">
-            <strong>{{ __('Physical and inventory-routing locations') }}</strong>
-            <div class="mt-1">
-                {{ __('Warehouse is the physical inventory role. Damaged & Defective Stock and Stock in Transit are existing inventory-routing labels.') }}
-            </div>
-            <div class="mt-1">
-                {{ __('The current location model does not record whether a routing location is system-controlled or virtual. Confirm the owner policy before manual use; this screen keeps the existing types and storage rules.') }}
-            </div>
-        </flux:callout>
-        <div class="grid gap-4 sm:grid-cols-4">
+    <flux:card id="stores-filters" class="scroll-mt-24 space-y-4 p-4 sm:p-5" data-guide="stores-filters">
+        <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <flux:input
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
-                placeholder="{{ __('Search code or name...') }}"
+                placeholder="{{ __('Search warehouse code or name...') }}"
                 size="sm"
             />
 
@@ -385,8 +365,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endforeach
             </flux:select>
 
-            <flux:select wire:model.live="typeFilter" size="sm" :label="__('Location Type')">
-                <flux:select.option value="all">{{ __('All Location Types') }}</flux:select.option>
+            <flux:select wire:model.live="typeFilter" size="sm" :label="__('Warehouse Type')">
+                <flux:select.option value="all">{{ __('All Warehouse Types') }}</flux:select.option>
                 <flux:select.option value="selling">{{ __('Point of Sale (POS)') }}</flux:select.option>
                 <flux:select.option value="warehouse">{{ __('Warehouse — physical inventory') }}</flux:select.option>
                 <flux:select.option value="party">{{ __('Service Center') }}</flux:select.option>
@@ -409,36 +389,28 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             <div class="flex justify-center">
                 <flux:icon icon="building-storefront" class="size-12 text-zinc-400" />
             </div>
-            <flux:heading level="3" size="lg">{{ __('No Locations Configured') }}</flux:heading>
+            <flux:heading level="3" size="lg">{{ __('No Warehouses Configured') }}</flux:heading>
             <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('Add a location to make it available for sales, inventory, or service operations.') }}
+                {{ __('Add a warehouse to make it available for inventory or selling-store operations.') }}
             </flux:text>
             <div class="pt-2">
                 @can('branches_stores.create')
-                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Add location') }}</flux:button>
+                    <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Add warehouse') }}</flux:button>
                 @endcan
             </div>
         </flux:card>
     @else
-        <x-tables.bulk-actions :page-ids="$stores->pluck('id')->all()" :selected-ids="$selectedIds" :selected-count="count($selectedIds)" :page-count="$stores->count()">
-            <x-slot:actions>
-                @can('branches_stores.edit')
-                    <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleStoreStatus" wire:confirm="{{ __('Toggle status for the selected stores?') }}">{{ __('Toggle status') }}</flux:button>
-                @endcan
-            </x-slot:actions>
-        </x-tables.bulk-actions>
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700" aria-label="{{ __('Location and warehouse table') }}">
+        <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700" aria-label="{{ __('Warehouse list') }}">
             <flux:table data-guide="stores-table" class="min-w-[90rem]">
             <flux:table.columns>
-                <flux:table.column class="min-w-16"><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                 <flux:table.column sortable class="min-w-24 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
-                <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Location Name (AR / EN)') }}</span></flux:table.column>
+                <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Warehouse Name (AR / EN)') }}</span></flux:table.column>
                 <flux:table.column class="min-w-36 whitespace-nowrap">{{ __('Type') }}</flux:table.column>
                 <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Branch Context') }}</span></flux:table.column>
                 <flux:table.column class="min-w-48"><span class="block whitespace-normal leading-tight">{{ __('Mapped POS Branch') }}</span></flux:table.column>
                 <flux:table.column class="min-w-44"><span class="block whitespace-normal leading-tight">{{ __('Negative Stock') }}</span></flux:table.column>
                 <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
-                <flux:table.column class="min-w-40 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
+                <flux:table.column class="w-64 min-w-64 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -448,7 +420,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 $isPendingArchive = in_array($st->id, $pendingArchiveStoreIds, true);
 ?>
                     <flux:table.row :key="$st->id">
-                        <flux:table.cell><input type="checkbox" value="{{ $st->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select store :code', ['code' => $st->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell>
                         <flux:table.cell class="font-mono font-medium">
                             {{ $st->code }}
                         </flux:table.cell>
@@ -530,25 +501,27 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             @endif
                         </flux:table.cell>
 
-                        <flux:table.cell class="text-end space-x-1 rtl:space-x-reverse">
-                            @can('branches_stores.edit')
-                                <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" title="{{ __('Edit') }}" />
-                                @if ($st->type === 'selling' && $st->status === 'active')
-                                    <flux:button size="xs" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})" title="{{ __('Map to Branch') }}" />
-                                @endif
-                                @if ($st->status === 'active' && ! $isPendingArchive)
-                                    <flux:button size="xs" variant="subtle" icon="pause" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Deactivate') }}" title="{{ __('Deactivate') }}">{{ __('Deactivate') }}</flux:button>
-                                @else
-                                    @if ($st->status !== 'active')
-                                        <flux:button size="xs" variant="subtle" icon="play" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Activate') }}" title="{{ __('Activate') }}">{{ __('Activate') }}</flux:button>
+                        <flux:table.cell class="w-64 min-w-64 align-top text-end">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                @can('branches_stores.edit')
+                                    <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
+                                    @if ($st->type === 'selling' && $st->status === 'active')
+                                        <flux:button size="xs" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})" aria-label="{{ __('Map to Branch') }}" title="{{ __('Map to Branch') }}" />
                                     @endif
-                                @endif
-                            @endcan
-                            @can('branches_stores.logical_delete')
-                                @if ($st->status === 'active' && ! $isPendingArchive)
-                                    <flux:button size="xs" variant="subtle" icon="archive-box" wire:click="openArchiveModal({{ $st->id }})" aria-label="{{ __('Request archive') }}" title="{{ __('Request archive') }}">{{ __('Request archive') }}</flux:button>
-                                @endif
-                            @endcan
+                                    @if ($st->status === 'active' && ! $isPendingArchive)
+                                        <flux:button size="xs" variant="subtle" icon="pause" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Deactivate') }}" title="{{ __('Deactivate') }}">{{ __('Deactivate') }}</flux:button>
+                                    @else
+                                        @if ($st->status !== 'active')
+                                            <flux:button size="xs" variant="subtle" icon="play" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Activate') }}" title="{{ __('Activate') }}">{{ __('Activate') }}</flux:button>
+                                        @endif
+                                    @endif
+                                @endcan
+                                @can('branches_stores.logical_delete')
+                                    @if ($st->status === 'active' && ! $isPendingArchive)
+                                        <flux:button size="xs" variant="subtle" icon="archive-box" class="whitespace-nowrap" wire:click="openArchiveModal({{ $st->id }})" aria-label="{{ __('Request archive') }}" title="{{ __('Request archive') }}">{{ __('Request archive') }}</flux:button>
+                                    @endif
+                                @endcan
+                            </div>
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach
@@ -564,7 +537,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     <!-- Create / Edit Store Modal -->
     <flux:modal wire:model="showStoreModal" class="md:w-160 space-y-6">
         <div>
-            <flux:heading size="lg">{{ $editingStoreId ? __('Edit Location Master') : __('Create Location Master') }}</flux:heading>
+            <flux:heading size="lg">{{ $editingStoreId ? __('Edit Warehouse') : __('Create Warehouse') }}</flux:heading>
             <flux:subheading>{{ __('Define a location code, location type, bilingual names, branch context, and negative stock policy.') }}</flux:subheading>
         </div>
 
@@ -581,17 +554,14 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <flux:input
                     wire:model="storeForm.code"
-                    :label="__('Location Code')"
+                    :label="__('Warehouse Code')"
                     placeholder="STR-01"
                     required
                 />
 
-                <flux:select wire:model="storeForm.type" :label="__('Location Type')" required>
+                <flux:select wire:model="storeForm.type" :label="__('Warehouse Type')" required>
                     <flux:select.option value="selling">{{ __('Point of Sale (POS)') }}</flux:select.option>
                     <flux:select.option value="warehouse">{{ __('Warehouse — physical inventory') }}</flux:select.option>
-                    <flux:select.option value="party">{{ __('Service Center') }}</flux:select.option>
-                    <flux:select.option value="damaged">{{ __('Damaged & Defective Stock — inventory routing') }}</flux:select.option>
-                    <flux:select.option value="transit">{{ __('Stock in Transit — inventory routing') }}</flux:select.option>
                 </flux:select>
 
                 @if (! $editingStoreId)
@@ -606,33 +576,21 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endif
             </div>
 
-            <flux:callout icon="information-circle" variant="info">
-                @if ($storeForm['type'] === 'warehouse')
-                    {{ __('Physical inventory role: use Warehouse for a warehouse managed by the business.') }}
-                @elseif (in_array($storeForm['type'], ['damaged', 'transit'], true))
-                    {{ __('Inventory-routing location: the current model does not mark this type as system-controlled or virtual. Confirm the owner policy before manual use.') }}
-                @else
-                    {{ __('Operational location: this type represents a selling or service context, not a physical warehouse role.') }}
-                @endif
-            </flux:callout>
-
-            <div class="space-y-4">
-                <flux:select wire:model="storeForm.branch_id" :label="__('Branch / Location Context (Optional)')" class="w-full" data-testid="store-branch-context-selector">
-                    <flux:select.option value="">{{ __('Central / No Direct Branch') }}</flux:select.option>
-                    @foreach ($activeBranchesList as $b)
-                        <flux:select.option :value="$b->id">
-                            {{ $b->code }} - {{ app()->getLocale() === 'ar' ? $b->name_ar : $b->name_en }}
-                        </flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <div class="flex items-center">
-                    <flux:checkbox
-                        wire:model="storeForm.allows_negative_stock"
-                        :label="__('Allow negative stock')"
-                    />
-                </div>
+            <div class="flex items-center">
+                <flux:checkbox
+                    wire:model="storeForm.allows_negative_stock"
+                    :label="__('Allow negative stock')"
+                />
             </div>
+
+            <flux:select wire:model="storeForm.branch_id" :label="__('Branch only')" class="w-full" data-testid="store-branch-context-selector">
+                <flux:select.option value="">{{ __('Central / No Direct Branch') }}</flux:select.option>
+                @foreach ($activeBranchesList as $b)
+                    <flux:select.option :value="$b->id">
+                        {{ $b->code }} - {{ app()->getLocale() === 'ar' ? $b->name_ar : $b->name_en }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <flux:input
@@ -650,15 +608,9 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 />
             </div>
 
-            <flux:textarea
-                wire:model="storeForm.policy_notes"
-                :label="__('Notes')"
-                rows="2"
-            />
-
             <div class="flex justify-end gap-3 pt-4">
                 <flux:button variant="subtle" wire:click="$set('showStoreModal', false)">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveStore"><span wire:loading.remove wire:target="saveStore">{{ __('Save Location') }}</span><span wire:loading wire:target="saveStore">{{ __('Saving...') }}</span></flux:button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveStore"><span wire:loading.remove wire:target="saveStore">{{ __('Save Warehouse') }}</span><span wire:loading wire:target="saveStore">{{ __('Saving...') }}</span></flux:button>
             </div>
         </form>
     </flux:modal>
@@ -671,9 +623,9 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         </div>
 
         <dl class="grid gap-3 rounded-xl border border-border-subtle bg-zinc-50 p-4 text-sm dark:bg-zinc-900 sm:grid-cols-2">
-            <div><dt class="text-text-muted">{{ __('Location code') }}</dt><dd class="font-mono font-medium">{{ $archiveStoreContext['code'] ?? '—' }}</dd></div>
-            <div><dt class="text-text-muted">{{ __('Location name') }}</dt><dd class="font-medium">{{ $archiveStoreContext['name'] ?? '—' }}</dd></div>
-            <div><dt class="text-text-muted">{{ __('Location type') }}</dt><dd>{{ $archiveStoreContext['type'] ?? '—' }}</dd></div>
+            <div><dt class="text-text-muted">{{ __('Warehouse code') }}</dt><dd class="font-mono font-medium">{{ $archiveStoreContext['code'] ?? '—' }}</dd></div>
+            <div><dt class="text-text-muted">{{ __('Warehouse name') }}</dt><dd class="font-medium">{{ $archiveStoreContext['name'] ?? '—' }}</dd></div>
+            <div><dt class="text-text-muted">{{ __('Warehouse type') }}</dt><dd>{{ $archiveStoreContext['type'] ?? '—' }}</dd></div>
             <div><dt class="text-text-muted">{{ __('Branch context') }}</dt><dd>{{ $archiveStoreContext['branch'] ?? '—' }}</dd></div>
         </dl>
 

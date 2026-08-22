@@ -21,6 +21,7 @@ new #[Title('Translation editor')] class extends Component {
     public string $translationKey = '';
     public array $values = ['ar' => '', 'en' => ''];
     public bool $saved = false;
+    public bool $editorOpen = false;
 
     public function mount(): void
     {
@@ -30,6 +31,7 @@ new #[Title('Translation editor')] class extends Component {
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedGroupFilter(): void { $this->resetPage(); }
     public function updatedPerPage(): void { $this->perPage = in_array($this->perPage, [20, 25], true) ? $this->perPage : 20; $this->resetPage(); }
+    public function clearSearch(): void { $this->search = ''; $this->resetPage(); }
 
     public function edit(string $group, string $key): void
     {
@@ -42,6 +44,7 @@ new #[Title('Translation editor')] class extends Component {
         $this->translationKey = $key;
         $this->values = ['ar' => $overrides['ar'] ?? $entry['ar'], 'en' => $overrides['en'] ?? $entry['en']];
         $this->saved = false;
+        $this->editorOpen = true;
         $this->resetValidation();
     }
 
@@ -104,9 +107,7 @@ new #[Title('Translation editor')] class extends Component {
         $groups = $catalog->pluck('group')->unique()->sort()->values();
         $search = mb_strtolower(trim($this->search));
         $overrides = TranslationOverride::query()->get()->keyBy(fn (TranslationOverride $override) => $override->locale.'|'.$override->group.'|'.$override->translation_key);
-        $entries = $catalog->filter(fn (array $entry) => ($this->groupFilter === '' || $entry['group'] === $this->groupFilter)
-            && ($search === '' || str_contains(mb_strtolower($entry['key'].' '.$entry['ar'].' '.$entry['en']), $search)))
-            ->sortBy(fn (array $entry) => $entry['group'].'|'.$entry['key'])->map(function (array $entry) use ($overrides): array {
+        $entries = $catalog->map(function (array $entry) use ($overrides): array {
                 $ar = $overrides['ar|'.$entry['group'].'|'.$entry['key']] ?? null;
                 $en = $overrides['en|'.$entry['group'].'|'.$entry['key']] ?? null;
                 $entry['display_ar'] = $ar?->value ?? $entry['ar'];
@@ -114,7 +115,11 @@ new #[Title('Translation editor')] class extends Component {
                 $entry['custom'] = $ar !== null || $en !== null;
 
                 return $entry;
-            })->values();
+            })
+            ->filter(fn (array $entry) => ($this->groupFilter === '' || $entry['group'] === $this->groupFilter)
+                && ($search === '' || str_contains(mb_strtolower($entry['group'].' '.$entry['key'].' '.$entry['display_ar'].' '.$entry['display_en']), $search)))
+            ->sortBy(fn (array $entry) => $entry['group'].'|'.$entry['key'])
+            ->values();
         $page = $this->getPage();
         $rows = new LengthAwarePaginator($entries->forPage($page, $this->perPage), $entries->count(), $this->perPage, $page);
 
@@ -126,33 +131,42 @@ new #[Title('Translation editor')] class extends Component {
     <x-tables.data-panel :title="__('System translations')" :description="__('Search a known translation key, update both languages, or reset to the shipped wording.')">
         <x-slot:toolbar>
             <div class="grid gap-3 md:grid-cols-3">
-                <flux:input wire:model.live.debounce.300ms="search" :label="__('Search')" icon="magnifying-glass" :placeholder="__('Key or text')" />
+                <div class="flex items-end gap-2">
+                    <flux:input class="min-w-0 flex-1" wire:model.live.debounce.300ms="search" :label="__('Search')" icon="magnifying-glass" :placeholder="__('Key or text')" />
+                    @if ($search !== '')
+                        <flux:button type="button" size="sm" variant="subtle" wire:click="clearSearch" aria-label="{{ __('Clear search') }}">{{ __('Clear') }}</flux:button>
+                    @endif
+                </div>
                 <flux:select wire:model.live="groupFilter" :label="__('Translation file')"><option value="">{{ __('All files') }}</option>@foreach($groups as $group)<option value="{{ $group }}">{{ $group === '*' ? __('JSON translations') : $group }}</option>@endforeach</flux:select>
                 <flux:select wire:model.live="perPage" :label="__('Rows per page')"><option value="20">20</option><option value="25">25</option></flux:select>
             </div>
         </x-slot:toolbar>
 
-        @if ($saved)<flux:callout variant="success" icon="check-circle" wire:loading.remove>{{ __('Translation changes saved.') }}</flux:callout>@endif
         <div wire:loading class="py-3 text-sm text-text-muted">{{ __('Loading translations…') }}</div>
         @if ($rows->isEmpty())
             <x-state.empty :title="__('No translations found')" :description="__('Try another search or translation file.')" icon="language" />
         @else
-            <div class="hidden md:block"><flux:table><flux:table.columns><flux:table.column>{{ __('File') }}</flux:table.column><flux:table.column>{{ __('Key') }}</flux:table.column><flux:table.column>{{ __('Arabic') }}</flux:table.column><flux:table.column>{{ __('English') }}</flux:table.column><flux:table.column>{{ __('Actions') }}</flux:table.column></flux:table.columns><flux:table.rows>
-                @foreach($rows as $entry)<flux:table.row key="translation-{{ md5($entry['group'].'|'.$entry['key']) }}"><flux:table.cell>{{ $entry['group'] }}</flux:table.cell><flux:table.cell class="font-mono text-xs">{{ $entry['key'] }} @if($entry['custom'])<flux:badge size="sm">{{ __('Custom') }}</flux:badge>@endif</flux:table.cell><flux:table.cell>{{ $entry['display_ar'] }}</flux:table.cell><flux:table.cell>{{ $entry['display_en'] }}</flux:table.cell><flux:table.cell class="flex gap-2"><flux:button size="xs" wire:click="edit(@js($entry['group']), @js($entry['key']))">{{ __('Edit') }}</flux:button><flux:button size="xs" variant="subtle" wire:click="resetOverride(@js($entry['group']), @js($entry['key']))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}">{{ __('Reset') }}</flux:button></flux:table.cell></flux:table.row>@endforeach
+            <div class="hidden overflow-x-auto rounded-xl border border-border md:block"><flux:table class="min-w-[72rem]"><flux:table.columns><flux:table.column class="min-w-28">{{ __('File') }}</flux:table.column><flux:table.column class="min-w-64">{{ __('Key') }}</flux:table.column><flux:table.column class="min-w-72">{{ __('Arabic') }}</flux:table.column><flux:table.column class="min-w-72">{{ __('English') }}</flux:table.column><flux:table.column class="min-w-44 text-end">{{ __('Actions') }}</flux:table.column></flux:table.columns><flux:table.rows>
+                @foreach($rows as $entry)<flux:table.row :key="'translation-'.md5($entry['group'].'|'.$entry['key'])"><flux:table.cell class="align-top whitespace-nowrap">{{ $entry['group'] }}</flux:table.cell><flux:table.cell class="align-top whitespace-normal font-mono text-xs">{{ $entry['key'] }} @if($entry['custom'])<flux:badge size="sm">{{ __('Custom') }}</flux:badge>@endif</flux:table.cell><flux:table.cell class="align-top whitespace-normal" dir="rtl">{{ $entry['display_ar'] }}</flux:table.cell><flux:table.cell class="align-top whitespace-normal" dir="ltr">{{ $entry['display_en'] }}</flux:table.cell><flux:table.cell class="align-top text-end"><div class="flex flex-wrap justify-end gap-2"><flux:button size="xs" wire:click="edit(@js($entry['group']), @js($entry['key']))">{{ __('Edit') }}</flux:button><flux:button size="xs" variant="subtle" wire:click="resetOverride(@js($entry['group']), @js($entry['key']))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}">{{ __('Reset') }}</flux:button></div></flux:table.cell></flux:table.row>@endforeach
             </flux:table.rows></flux:table></div>
             <div class="space-y-3 md:hidden">@foreach($rows as $entry)<x-cards.section-card :title="$entry['key']"><p class="text-xs text-text-muted">{{ $entry['group'] }} @if($entry['custom']) · {{ __('Custom') }} @endif</p><p dir="rtl">{{ $entry['display_ar'] }}</p><p dir="ltr">{{ $entry['display_en'] }}</p><div class="mt-3 flex gap-2"><flux:button size="sm" wire:click="edit(@js($entry['group']), @js($entry['key']))">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" wire:click="resetOverride(@js($entry['group']), @js($entry['key']))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}">{{ __('Reset') }}</flux:button></div></x-cards.section-card>@endforeach</div>
         @endif
         <x-slot:footer>{{ $rows->links() }}</x-slot:footer>
     </x-tables.data-panel>
 
-    @if($translationKey !== '')
-        <x-cards.section-card :title="__('Edit translation')" :description="$editingGroup.' · '.$translationKey" class="space-y-4">
+    <flux:modal wire:model="editorOpen" class="md:max-w-2xl">
+        @if($translationKey !== '')
+        <div class="space-y-1">
+            <flux:heading size="lg">{{ __('Edit translation') }}</flux:heading>
+            <flux:text class="text-text-muted break-words">{{ $editingGroup }} · {{ $translationKey }}</flux:text>
+        </div>
+            @if ($saved)<flux:callout variant="success" icon="check-circle" wire:loading.remove>{{ __('Translation changes saved.') }}</flux:callout>@endif
             <flux:textarea wire:model.blur="values.ar" dir="rtl" :label="__('Arabic')" :invalid="$errors->has('values.ar')" />
             @error('values.ar')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
             <flux:textarea wire:model.blur="values.en" dir="ltr" :label="__('English')" :invalid="$errors->has('values.en')" />
             @error('values.en')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
             @error('translationKey')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
-            <div class="flex flex-wrap gap-3"><flux:button wire:click="save" wire:loading.attr="disabled" wire:dirty.attr="data-dirty">{{ __('Save') }}</flux:button><flux:button variant="subtle" wire:click="resetOverride(@js($editingGroup), @js($translationKey))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}" wire:loading.attr="disabled">{{ __('Reset to base') }}</flux:button></div>
-        </x-cards.section-card>
-    @endif
+            <div class="flex flex-wrap justify-end gap-3 border-t border-border pt-4"><flux:button variant="subtle" wire:click="$set('editorOpen', false)">{{ __('Cancel') }}</flux:button><flux:button wire:click="save" wire:loading.attr="disabled" wire:dirty.attr="data-dirty">{{ __('Save') }}</flux:button><flux:button variant="subtle" wire:click="resetOverride(@js($editingGroup), @js($translationKey))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}" wire:loading.attr="disabled">{{ __('Reset to base') }}</flux:button></div>
+        @endif
+    </flux:modal>
 </x-app.page>

@@ -1062,6 +1062,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.view'), 403);
 
         $enabled = ! app()->isProduction() && (bool) config('offline.enabled');
+        if (! $enabled) {
+            return to_route('pos');
+        }
+
         $devices = OfflineDevice::query()
             ->where('user_id', $user->id)
             ->where('revoked_at', null)

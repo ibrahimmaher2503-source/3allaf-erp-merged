@@ -384,9 +384,11 @@
                             <flux:sidebar.item icon="printer" :href="route('admin.audit', ['mode' => 'print'])" :current="request()->routeIs('admin.audit') && request('mode') === 'print'" wire:navigate>{{ __('Print log') }}</flux:sidebar.item>
                             <flux:sidebar.item icon="server" :href="route('system.health')" :current="request()->routeIs('system.health')" wire:navigate>{{ __('Service status & system health') }}</flux:sidebar.item>
                         @endcan
+                        @if (! app()->isProduction() && config('offline.enabled'))
                         @can('pos_sales.view')
                             <flux:sidebar.item icon="signal-slash" :href="route('pos.offline-readiness')" :current="request()->routeIs('pos.offline-readiness')" wire:navigate>{{ __('Offline POS & sync') }}</flux:sidebar.item>
                         @endcan
+                        @endif
                         @can('offline_queue_conflicts.view')
                             <flux:sidebar.item icon="arrow-path" :href="route('pos.offline.queue')" :current="request()->routeIs('pos.offline.queue')" wire:navigate>{{ __('offline.queue_title') }}</flux:sidebar.item>
                         @endcan

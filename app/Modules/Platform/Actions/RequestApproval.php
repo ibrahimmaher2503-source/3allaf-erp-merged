@@ -42,7 +42,11 @@ class RequestApproval
                     }
                 }
 
-                if (ApprovalRecord::query()->where('pending_key', $data->pendingKey())->lockForUpdate()->exists()) {
+                $pending = ApprovalRecord::query()->where('pending_key', $data->pendingKey())->lockForUpdate()->first();
+                if ($pending !== null && $data->idempotencyKey !== null && $this->isSameRequest($pending, $data, $requester)) {
+                    return $pending;
+                }
+                if ($pending !== null) {
                     throw ValidationException::withMessages(['source' => __('A pending approval already exists for this action.')]);
                 }
 

@@ -3,7 +3,10 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Enums\TaxTreatment;
+use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -11,6 +14,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -146,9 +150,23 @@ class SaveLocalSettingsAction
     public function saveTaxSetting(array $data, ?int $id = null): TaxSetting
     {
         Gate::authorize('company_settings.edit');
-        $correlationId = Context::get('request_id') ?? (string) Str::uuid();
 
-        return DB::transaction(function () use ($data, $id) {
+        return $this->persistTaxSetting($data, $id);
+    }
+
+    public function applyApprovedTaxSetting(ApprovalRecord $approval): TaxSetting
+    {
+        return DB::transaction(function () use ($approval): TaxSetting {
+            [$data, $id, $metadata] = $this->approvedEffect($approval, 'tax_setting', ['create_tax_setting', 'update_tax_setting']);
+
+            return $this->persistTaxSetting($data, $id, $metadata);
+        });
+    }
+
+    /** @param array<string, mixed> $data @param array<string, mixed> $metadata */
+    private function persistTaxSetting(array $data, ?int $id = null, array $metadata = []): TaxSetting
+    {
+        return DB::transaction(function () use ($data, $id, $metadata) {
             $treatment = (string) ($data['treatment'] ?? TaxTreatment::Standard->value);
             if (! in_array($treatment, TaxTreatment::values(), true)) {
                 throw ValidationException::withMessages(['taxSettingForm.treatment' => __('The selected tax treatment is not supported.')]);
@@ -214,7 +232,7 @@ class SaveLocalSettingsAction
                 $action = 'create_tax_setting';
             }
 
-            app(RecordAuditEvent::class)->execute('master_data', $action, $tax, $before, $tax->getAttributes());
+            app(RecordAuditEvent::class)->execute('master_data', $action, $tax, $before, $tax->getAttributes(), metadata: $metadata);
 
             return $tax;
         });
@@ -273,10 +291,25 @@ class SaveLocalSettingsAction
     public function saveDocumentSequence(array $data, ?int $id = null): DocumentSequence
     {
         Gate::authorize('company_settings.edit');
-        $correlationId = Context::get('request_id') ?? (string) Str::uuid();
+
+        return $this->persistDocumentSequence($data, $id);
+    }
+
+    public function applyApprovedDocumentSequence(ApprovalRecord $approval): DocumentSequence
+    {
+        return DB::transaction(function () use ($approval): DocumentSequence {
+            [$data, $id, $metadata] = $this->approvedEffect($approval, 'document_sequence', ['create_document_sequence', 'update_document_sequence']);
+
+            return $this->persistDocumentSequence($data, $id, $metadata);
+        });
+    }
+
+    /** @param array<string, mixed> $data @param array<string, mixed> $metadata */
+    private function persistDocumentSequence(array $data, ?int $id = null, array $metadata = []): DocumentSequence
+    {
         $user = auth()->user();
 
-        return DB::transaction(function () use ($data, $id, $user) {
+        return DB::transaction(function () use ($data, $id, $metadata, $user) {
             $scopeType = strtolower(trim((string) ($data['scope_type'] ?? 'company')));
             $scopeId = $scopeType === 'branch' && filled($data['scope_id'] ?? null) ? (int) $data['scope_id'] : null;
             if (! in_array($scopeType, ['company', 'branch'], true) || ($scopeType === 'branch' && $scopeId === null) || ($scopeType === 'company' && $scopeId !== null)) {
@@ -319,10 +352,56 @@ class SaveLocalSettingsAction
                 $action = 'create_document_sequence';
             }
 
-            app(RecordAuditEvent::class)->execute('master_data', $action, $seq, $before, $seq->getAttributes(), branchId: $seq->scope_id);
+            app(RecordAuditEvent::class)->execute('master_data', $action, $seq, $before, $seq->getAttributes(), branchId: $seq->scope_id, metadata: $metadata);
 
             return $seq;
         });
+    }
+
+    /** @param list<string> $effectEvents @return array{0: array<string, mixed>, 1: int|null, 2: array<string, int>} */
+    private function approvedEffect(ApprovalRecord $approval, string $resource, array $effectEvents): array
+    {
+        $approval = ApprovalRecord::query()->lockForUpdate()->findOrFail($approval->id);
+        $actor = Auth::user();
+        $context = $approval->limit_context ?? [];
+        $id = isset($context['id']) && $context['id'] !== null ? (int) $context['id'] : null;
+        $proposed = $context['proposed'] ?? null;
+        $before = $context['before'] ?? null;
+        $expectedHash = hash('sha256', json_encode($context, JSON_THROW_ON_ERROR));
+        $expectedSourceId = $resource.':'.($id === null ? 'new:'.substr($expectedHash, 0, 16) : $id);
+        $target = $id === null
+            ? null
+            : ($resource === 'tax_setting'
+                ? TaxSetting::query()->lockForUpdate()->findOrFail($id)
+                : DocumentSequence::query()->lockForUpdate()->findOrFail($id));
+        $canonicalBefore = $target?->getAttributes();
+        if ($canonicalBefore !== null) {
+            unset($canonicalBefore['created_at'], $canonicalBefore['updated_at']);
+        }
+        $scopeMatches = $resource !== 'document_sequence' || $target === null || (is_array($proposed) && (
+            strtolower(trim((string) ($proposed['scope_type'] ?? ''))) === $target->scope_type
+            && (($target->scope_type === 'branch' && filled($proposed['scope_id'] ?? null) ? (int) $proposed['scope_id'] : null) === $target->scope_id)
+        ));
+
+        if ($actor === null
+            || $approval->approval_state !== ApprovalState::Approved
+            || $approval->approver_id !== $actor->id
+            || $approval->source_type !== 'platform_settings'
+            || $approval->requested_action !== $resource
+            || $approval->source_id !== $expectedSourceId
+            || $approval->source_version !== ($id === null ? 'new' : (string) $id)
+            || $approval->source_hash !== $expectedHash
+            || ! is_array($proposed)
+            || $before !== $canonicalBefore
+            || ! $scopeMatches
+            || $approval->request_permission !== 'company_settings.edit'
+            || $approval->decision_permission !== 'company_settings.approve'
+            || ! Gate::forUser($actor)->allows('company_settings.approve')
+            || AuditLog::query()->whereIn('event', $effectEvents)->whereJsonContains('metadata->approval_record_id', $approval->id)->exists()) {
+            throw ValidationException::withMessages(['approval' => __('The approved platform setting effect is not available.')]);
+        }
+
+        return [$proposed, $id, ['approval_record_id' => $approval->id, 'requester_id' => $approval->requester_id]];
     }
 
     /**

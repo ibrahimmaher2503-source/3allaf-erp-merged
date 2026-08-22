@@ -2,7 +2,6 @@
 
 namespace App\Modules\Platform\Actions;
 
-use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
@@ -92,14 +91,21 @@ class SaveStoreAction
         }
 
         return DB::transaction(function () use ($data, $id, $type) {
-            $branchId = isset($data['branch_id']) && $data['branch_id'] !== '' ? (int) $data['branch_id'] : null;
+            $storeQuery = Store::query();
+            if (auth()->check()) {
+                $storeQuery->visibleTo(auth()->user());
+            }
+            $existingStore = $id ? $storeQuery->findOrFail($id) : null;
+            $branchId = isset($data['branch_id']) && $data['branch_id'] !== ''
+                ? (int) $data['branch_id']
+                : $existingStore?->branch_id;
             $branchQuery = Branch::query()
                 ->where('status', 'active')
                 ->whereHas('company', fn ($query) => $query->where('status', 'active'));
             if (auth()->check()) {
                 $branchQuery->visibleTo(auth()->user());
             }
-            $branch = $branchId === null ? null : $branchQuery->whereKey($branchId)->first();
+            $branch = $branchId === null ? null : $branchQuery->whereKey($branchId)->lockForUpdate()->first();
             if ($branchId !== null && $branch === null) {
                 throw new InvalidArgumentException(__('Select an active branch for this store.'));
             }
@@ -124,11 +130,7 @@ class SaveStoreAction
             ];
 
             if ($id) {
-                $storeQuery = Store::query();
-                if (auth()->check()) {
-                    $storeQuery->visibleTo(auth()->user());
-                }
-                $store = $storeQuery->findOrFail($id);
+                $store = $storeQuery->lockForUpdate()->findOrFail($id);
 
                 // A status=inactive mutation is the approval-backed archive
                 // path, never a silent edit-form bypass.
@@ -182,6 +184,16 @@ class SaveStoreAction
 
             if ($newStatus === 'inactive') {
                 $this->assertDeactivationSafe($store->id, true);
+            } elseif ($store->branch_id !== null) {
+                $branchQuery = Branch::query();
+                if (auth()->check()) {
+                    $branchQuery->visibleTo(auth()->user());
+                }
+                $branch = $branchQuery->lockForUpdate()->find($store->branch_id);
+                if ($branch === null || $branch->status !== 'active') {
+                    throw new InvalidArgumentException(__('Select an active branch for this store.'));
+                }
+                $store = $storeQuery->lockForUpdate()->findOrFail($id);
             }
 
             $oldStatus = $store->status;
@@ -288,89 +300,6 @@ class SaveStoreAction
             ->whereIn('status', ['open', 'closing_submitted', 'variance_review'])
             ->exists()) {
             throw new InvalidArgumentException(__('Cannot deactivate this location while a POS shift is still active. Close the shift first.'));
-        }
-    }
-
-    /**
-     * Delete store record safely if no dependency exists.
-     */
-    public function delete(int $id): void
-    {
-        Gate::authorize('branches_stores.logical_delete');
-        DB::transaction(function () use ($id) {
-            $storeQuery = Store::query();
-            if (auth()->check()) {
-                $storeQuery->visibleTo(auth()->user());
-            }
-            $store = $storeQuery->findOrFail($id);
-
-            $this->assertStoreDependencyFree($store->id, 'permanently delete', true, true);
-
-            $oldData = $store->toArray();
-            $store->delete();
-
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_store',
-                source: $store,
-                before: $oldData,
-                after: ['deleted' => true],
-                branchId: $store->branch_id,
-                storeId: $id,
-                metadata: ['deleted_source_id' => $id],
-            );
-        });
-    }
-
-    /** Apply an approved logical delete while preserving approval foreign keys and master history. */
-    public function logicalDeleteAfterApproval(int $id): void
-    {
-        Gate::authorize('branches_stores.logical_delete');
-
-        $this->logicalDelete($id, true);
-    }
-
-    /** Apply the exact store deletion already authorized by a terminal approval record. */
-    public function applyApprovedLogicalDelete(int $id, ApprovalRecord $approval): void
-    {
-        $this->assertApprovedDelete($id, $approval);
-        $this->logicalDelete($id, false);
-    }
-
-    private function logicalDelete(int $id, bool $scopeToAuthenticatedUser): void
-    {
-        DB::transaction(function () use ($id, $scopeToAuthenticatedUser): void {
-            $storeQuery = Store::query()->lockForUpdate();
-            if ($scopeToAuthenticatedUser && auth()->check()) {
-                $storeQuery->visibleTo(auth()->user());
-            }
-            $store = $storeQuery->findOrFail($id);
-            $this->assertStoreDependencyFree($store->id, 'archive', true);
-
-            $before = $store->getAttributes();
-            $store->update(['status' => 'inactive']);
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_store',
-                source: $store,
-                before: $before,
-                after: ['deleted' => true, 'status' => 'inactive'],
-                branchId: $store->branch_id,
-                storeId: $store->id,
-                metadata: ['logical_delete' => true, 'approval_required' => true],
-            );
-        });
-    }
-
-    private function assertApprovedDelete(int $id, ApprovalRecord $approval): void
-    {
-        $context = $approval->limit_context ?? [];
-        if ($approval->approval_state->value !== 'approved'
-            || $approval->source_type !== 'platform_settings'
-            || (int) $approval->approver_id !== (int) auth()->id()
-            || ! in_array($context['resource'] ?? null, ['store_delete', 'store_archive'], true)
-            || (int) ($context['id'] ?? 0) !== $id) {
-            throw new InvalidArgumentException(__('A matching approved store deletion is required.'));
         }
     }
 }

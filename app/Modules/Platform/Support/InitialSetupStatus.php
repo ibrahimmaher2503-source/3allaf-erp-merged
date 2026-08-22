@@ -34,7 +34,8 @@ final class InitialSetupStatus
     public function snapshot(): array
     {
         $companyReady = $this->companyReady();
-        $branchesReady = $this->branchesAndStoresReady();
+        $branchesReady = $this->branchesReady();
+        $branchStoreSetupReady = $this->branchesAndStoresReady();
         $catalogReady = $this->catalogReady();
         $activeCompanyId = (int) Company::query()->where('status', 'active')->value('id');
         $activeCustomerGroups = CustomerGroup::query()->forCompany($activeCompanyId)->active();
@@ -44,8 +45,8 @@ final class InitialSetupStatus
 
         $steps = [
             $this->step('company', __('Company identity'), __('Use the approved bilingual identity, legal details, currency, timezone, and contact information.'), 'admin.settings', 'company_settings.view', $companyReady, Company::query()->count(), routeParameters: ['tab' => 'company'], destinationKey: 'company-identity'),
-            $this->step('branches-stores', __('Branches and stores'), __('Create active branches and stores, then assign an active selling store for each retail branch.'), 'admin.branches', 'branches_stores.view', $branchesReady, Branch::query()->count() + Store::query()->count()),
-            $this->step('warehouses', __('Warehouses'), __('Maintain at least one active warehouse store linked to an active branch.'), 'admin.stores', 'branches_stores.view', $this->warehousesReady(), Store::query()->where('type', 'warehouse')->count()),
+            $this->step('branches-stores', __('Branches'), __('Create active branches and complete their basic details.'), 'admin.branches', 'branches_stores.view', $branchesReady, Branch::query()->count()),
+            $this->step('warehouses', __('Stock stores'), __('Add at least one active stock store linked to an active branch.'), 'admin.stores', 'branches_stores.view', $this->warehousesReady(), Store::query()->where('type', 'warehouse')->count()),
             $this->step('pos-selling-location', __('POS selling-location linkage'), __('Map each retail branch to its active selling store before opening a cashier shift. Opening a shift remains an operational action, not a setup requirement.'), 'admin.branches', 'branches_stores.view', $this->posSellingLocationReady(), BranchSellingStore::query()->where('status', 'active')->count(), routeParameters: ['section' => 'selling-store-mapping'], destinationKey: 'selling-store-mapping'),
             $this->step('cash-drawers', __('Cash drawers'), __('Assign active cash drawers to the stores that will receive controlled payments.'), 'admin.cash-drawers', 'drawers_payments_tax_numbering_printers.view', $this->cashDrawersReady(), CashDrawer::query()->count()),
             $this->step('users-scopes', __('Users, roles, and scopes'), __('Create the opening team, assign roles, and scope every non-administrator to approved branches or stores.'), 'admin.authorization-baseline', 'users_roles_permissions.view', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
@@ -61,10 +62,10 @@ final class InitialSetupStatus
             $this->step('party-readiness', __('Party readiness and policies'), __('Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.'), 'party.readiness', 'party_bookings_invoices.view', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.'), required: false),
             $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
             $this->step('suppliers', __('Suppliers and supplier SKUs'), __('Create approved suppliers and connect each supplied sellable SKU to its supplier item code.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
-            $this->step('product-masters', __('Product masters'), __('Build active sellable products, including unbranded products, and valid variation families from the approved catalog. Supplier SKU linkage follows on its own supplier step.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create at least one active category before product masters.')),
+            $this->step('product-masters', __('Product masters'), __('Build active sellable products, including unbranded products, and valid variation families from the approved catalog. Supplier SKU linkage follows on its own supplier step.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding products.')),
             $this->step('product-import', __('Product import (optional)'), __('Manual product entry is sufficient. Use the reviewed import workspace only when a validated source file is available.'), 'catalog.products.import', 'products_categories_brands.create', true, 0, __('Manual entry is sufficient; import is optional and never a setup prerequisite.'), false),
             $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
-            $this->step('opening-configuration', __('Opening inventory'), __('Start an opening-stock entry through the controlled adjustment form. Choose the approved opening reason; balances are never edited directly. Production zero-start path remains subject to owner approval.'), 'inventory.adjustments.create', 'inventory_stock_card.create', $this->openingInventoryReady(), InventoryAdjustment::query()->where('adjustment_type', 'entry')->count(), $branchesReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
+            $this->step('opening-configuration', __('Opening inventory'), __('Record the quantity already in each stock store when you start using the system. Use the opening-stock adjustment; never edit balances directly.'), 'inventory.adjustments.create', 'inventory_stock_card.create', $this->openingInventoryReady(), InventoryAdjustment::query()->where('adjustment_type', 'entry')->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
         $required = array_values(array_filter($steps, static fn (array $step): bool => $step['required']));
@@ -98,6 +99,11 @@ final class InitialSetupStatus
             && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping();
     }
 
+    private function branchesReady(): bool
+    {
+        return Branch::query()->where('status', 'active')->exists();
+    }
+
     private function warehousesReady(): bool { return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists(); }
     private function posSellingLocationReady(): bool
     {
@@ -128,7 +134,22 @@ final class InitialSetupStatus
             && $retailBranchIds->count() === $currentMappingCounts->count()
             && $currentMappingCounts->every(static fn (int|string $count): bool => (int) $count === 1);
     }
-    private function cashDrawersReady(): bool { return CashDrawer::query()->where('status', 'active')->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))->exists(); }
+    private function cashDrawersReady(): bool
+    {
+        return CashDrawer::query()
+            ->where('status', 'active')
+            ->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))
+            ->whereHas('store', fn (Builder $query): Builder => $query
+                ->where('status', 'active')
+                ->where('type', 'selling')
+                ->whereColumn('stores.branch_id', 'cash_drawers.branch_id'))
+            ->whereHas('branch.sellingStoreMappings', fn (Builder $query): Builder => $query
+                ->where('status', 'active')
+                ->where(fn (Builder $dates): Builder => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                ->where(fn (Builder $dates): Builder => $dates->whereNull('effective_to')->orWhere('effective_to', '>', now()))
+                ->whereColumn('branch_selling_stores.store_id', 'cash_drawers.store_id'))
+            ->exists();
+    }
     private function paymentMethodsReady(): bool { return PaymentMethod::query()->where('status', 'active')->exists(); }
     private function taxesReady(): bool { return TaxSetting::query()->where('status', 'active')->exists(); }
     private function documentSequencesReady(): bool { return DocumentSequence::query()->where('status', 'active')->exists(); }

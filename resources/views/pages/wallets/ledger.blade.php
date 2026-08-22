@@ -99,10 +99,11 @@
         @endif
 
         @if ($customer !== null && ! $policyError && $canAdjust)
+            @php($superAdminDirectAction = auth()->user()?->canBypassApproval())
             <section class="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm" data-guide="{{ $guidePrefix }}-adjustment">
                 <div>
-                    <h2 class="text-lg font-semibold text-violet-950">{{ __('Request sensitive adjustment') }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-violet-900">{{ __('A correction requires a separate approval before it changes the balance.') }}</p>
+                    <h2 class="text-lg font-semibold text-violet-950">{{ $superAdminDirectAction ? __('Apply sensitive adjustment') : __('Request sensitive adjustment') }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-violet-900">{{ $superAdminDirectAction ? __('Super Admin adjustments are applied immediately and recorded in the approval history.') : __('A correction requires a separate approval before it changes the balance.') }}</p>
                 </div>
                 <form method="POST" action="{{ $adjustmentRoute }}" class="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @csrf
@@ -117,7 +118,7 @@
                     <flux:input name="target_ledger_id" :label="__('Correction target ID')" type="number" min="1" dir="ltr" />
                     <flux:input name="source_reference" :label="__('Source reference')" />
                     <flux:input name="reason" :label="__('Reason')" required />
-                    <div class="flex items-end"><flux:button class="w-full" type="submit" variant="primary">{{ __('Submit for approval') }}</flux:button></div>
+                    <div class="flex items-end"><flux:button class="w-full" type="submit" variant="primary">{{ $superAdminDirectAction ? __('Apply immediately') : __('Submit for approval') }}</flux:button></div>
                 </form>
             </section>
         @endif

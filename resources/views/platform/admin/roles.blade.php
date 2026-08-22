@@ -114,18 +114,18 @@ new #[Title('Roles')] class extends Component
         @if ($roles->isEmpty())
             <x-state.empty :title="__('No roles found')" :description="__('Change the filter or add a permitted local role.')" icon="shield-check" />
         @else
-            <div class="overflow-x-auto">
-                <table class="data-table min-w-[48rem] w-full text-sm">
-                    <thead><tr><th class="px-3 py-2.5 text-start">{{ __('Code') }}</th><th class="px-3 py-2.5 text-start">{{ __('Role') }}</th><th class="px-3 py-2.5 text-start">{{ __('Assignments') }}</th><th class="px-3 py-2.5 text-start">{{ __('Status') }}</th><th class="px-3 py-2.5 text-end">{{ __('Actions') }}</th></tr></thead>
+            <div class="overflow-x-auto rounded-xl border border-border">
+                <table class="data-table min-w-[56rem] w-full text-sm">
+                    <thead><tr><th class="min-w-32 whitespace-nowrap px-3 py-2.5 text-start">{{ __('Code') }}</th><th class="min-w-48 px-3 py-2.5 text-start">{{ __('Role') }}</th><th class="min-w-48 px-3 py-2.5 text-start">{{ __('Assignments') }}</th><th class="min-w-40 px-3 py-2.5 text-start">{{ __('Status') }}</th><th class="min-w-44 whitespace-nowrap px-3 py-2.5 text-end">{{ __('Actions') }}</th></tr></thead>
                     <tbody>
                         @foreach ($roles as $role)
                             @php($canonical = SaveRoleAction::isCanonical($role))
                             <tr class="data-table-row">
-                                <td class="px-3 py-3 font-mono text-xs">{{ $role->code }}</td>
-                                <td class="px-3 py-3"><div class="font-medium">{{ app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $role->name_en : $role->name_ar }}</div></td>
-                                <td class="px-3 py-3 text-text-muted">{{ __(':users users · :permissions permissions', ['users' => $role->users_count, 'permissions' => $role->permissions_count]) }}</td>
-                                <td class="px-3 py-3"><x-status.badge :status="$role->status" :label="$role->status === 'active' ? __('Active') : __('Inactive')" /> @if ($canonical)<flux:badge size="sm" variant="outline">{{ __('Canonical role') }}</flux:badge>@endif</td>
-                                <td class="px-3 py-3 text-end"><div class="inline-flex gap-1"><flux:button size="xs" variant="subtle" icon="key" :href="route('admin.role-permissions', $role)" wire:navigate>{{ __('Permissions') }}</flux:button>@if (! $canonical) @can('users_roles_permissions.edit')<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditRole({{ $role->id }})">{{ __('Edit') }}</flux:button>@endcan @endif</div></td>
+                                <td class="px-3 py-3 align-top font-mono text-xs">{{ $role->code }}</td>
+                                <td class="px-3 py-3 align-top"><div class="font-medium">{{ app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $role->name_en : $role->name_ar }}</div></td>
+                                <td class="px-3 py-3 align-top text-text-muted whitespace-normal">{{ __(':users users · :permissions permissions', ['users' => $role->users_count, 'permissions' => $role->permissions_count]) }}</td>
+                                <td class="px-3 py-3 align-top"><div class="flex flex-wrap items-center gap-1"><x-status.badge :status="$role->status" :label="$role->status === 'active' ? __('Active') : __('Inactive')" /> @if ($canonical)<flux:badge size="sm" variant="outline">{{ __('Canonical role') }}</flux:badge>@endif</div></td>
+                                <td class="px-3 py-3 align-top text-end"><div class="flex flex-wrap justify-end gap-1"> <flux:button size="xs" variant="subtle" icon="key" :href="route('admin.role-permissions', $role)" wire:navigate>{{ __('Permissions') }}</flux:button>@if (! $canonical) @can('users_roles_permissions.edit')<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditRole({{ $role->id }})">{{ __('Edit') }}</flux:button>@endcan @endif</div></td>
                             </tr>
                         @endforeach
                     </tbody>

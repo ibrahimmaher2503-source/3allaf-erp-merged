@@ -41,3 +41,9 @@ This appendix intentionally points to existing route/model/policy surfaces and r
 - Migration `2026_08_20_000093_create_catalog_reference_import_tables` was applied successfully to disposable `toyjoy_ui_qa_20260820` on MariaDB port 3307 after removing only the two empty partial tables left by the earlier failed attempt; its MariaDB identifier names are now within the limit.
 - Authenticated Administrator UI rendered supplier, catalog-reference, customer, and product import screens, product creation, reports, and inventory reports without HTTP 500, console warnings/errors, or desktop overflow. Supplier/reference/product import and product creation also had no horizontal overflow at CSS 375.
 - Browser file-chooser automation did not emit a chooser, so no actual UI file selection, stage submission, approval, imported-data persistence, or template-download event is claimed. Owner data, UAT, Production, physical devices, release, commit, and push remain external.
+
+## 2026-08-20 — Import-review notification mapping update
+
+- Product, supplier, customer, and catalog-reference readiness transitions now use native Laravel database notifications. Each alert stores its file, batch type, and direct review route; recipients are active users authorized for that exact review permission, excluding the requester.
+- Focused MariaDB RED was **2/2 failed** because no alerts were delivered and the notification page rendered empty. GREEN passed **2 tests / 18 assertions** on `toyjoy_client_feedback_20260819` at `127.0.0.1:3307`: all four readiness transitions, Administrator delivery, requester/unauthorized exclusion, alert rendering, and authorization-scoped product review access.
+- This evidence does not claim browser file selection/upload, human UAT, Production, external delivery, release, commit, or push.

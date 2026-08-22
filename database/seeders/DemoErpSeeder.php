@@ -128,6 +128,8 @@ final class DemoErpSeeder extends Seeder
                 'allows_negative_stock' => false,
                 'policy_notes' => 'DEMO: POS demonstration location.',
             ]);
+        } else {
+            $salesStore->forceFill(['status' => 'active', 'allows_negative_stock' => false])->save();
         }
 
         $warehouseStore = Store::query()->where('code', 'DEMO-WAREHOUSE')->first();
@@ -142,6 +144,8 @@ final class DemoErpSeeder extends Seeder
                 'allows_negative_stock' => false,
                 'policy_notes' => 'DEMO: procurement receipt location.',
             ]);
+        } else {
+            $warehouseStore->forceFill(['status' => 'active', 'allows_negative_stock' => false])->save();
         }
 
         app(SaveBranchSellingStoreMappingAction::class)->execute($branch->id, $salesStore->id, 'DEMO: local POS mapping.');
@@ -201,7 +205,12 @@ final class DemoErpSeeder extends Seeder
         ];
 
         foreach ($customerPolicies as $key => $value) {
-            if (! CustomerPolicySettingVersion::query()->where('key', $key)->exists()) {
+            $latestValue = CustomerPolicySettingVersion::query()
+                ->where('key', $key)
+                ->latest('version')
+                ->value('value');
+
+            if (trim((string) $latestValue) === '') {
                 app(SaveCustomerPolicySettingAction::class)->execute($key, $value, 'DEMO: local ERP seed prerequisite.');
             }
         }
@@ -250,7 +259,13 @@ final class DemoErpSeeder extends Seeder
     {
         $product = Product::query()->where('item_code', 'DEMO-PRODUCT-001')->first();
 
-        return $product ?? app(SaveProductAction::class)->execute([
+        if ($product !== null) {
+            $product->forceFill(['status' => 'active'])->save();
+
+            return $product;
+        }
+
+        return app(SaveProductAction::class)->execute([
             'item_code' => 'DEMO-PRODUCT-001',
             'name_ar' => 'مكعبات بناء تجريبية',
             'name_en' => 'Demo Building Blocks',

@@ -177,7 +177,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     data-guide="drawers-header"
 >
     <x-slot:actions>
-        <x-tables.resource-toolbar filter-target="drawers-filters">
+        <x-tables.resource-toolbar>
             @can('drawers_payments_tax_numbering_printers.create')
                 <flux:button type="button" variant="primary" icon="plus" wire:click="openCreateDrawerModal" data-guide="drawers-add-action">{{ __('Add Cash Drawer') }}</flux:button>
             @endcan
@@ -185,33 +185,30 @@ new #[Title('Cash Drawer Masters')] class extends Component
     </x-slot:actions>
 
     <!-- Filters & Search -->
-    <div id="drawers-filters" class="scroll-mt-24 flex flex-col gap-4 md:flex-row md:items-center md:justify-between" data-guide="drawers-filters">
-        <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <div class="w-full sm:w-72">
-                <flux:input
-                    wire:model.live.debounce.300ms="search"
-                    icon="magnifying-glass"
-                    :placeholder="__('Search drawers by code or name...')"
-                />
-            </div>
-            <div class="w-full sm:w-56">
-                <flux:select wire:model.live="branchFilter" :label="__('Branch')">
-                    <option value="all">{{ __('All Branches') }}</option>
-                    @foreach(Branch::visibleTo(auth()->user())->orderBy('name_en')->get() as $branchOption)
-                        <option value="{{ $branchOption->id }}">{{ app()->getLocale() === 'ar' ? $branchOption->name_ar : $branchOption->name_en }} ({{ $branchOption->code }})</option>
-                    @endforeach
-                </flux:select>
-            </div>
-            <div class="w-full sm:w-44">
-                <flux:select wire:model.live="statusFilter" :label="__('Status')">
-                    <option value="all">{{ __('All Statuses') }}</option>
-                    <option value="active">{{ __('Active') }}</option>
-                    <option value="inactive">{{ __('Inactive') }}</option>
-                    <option value="maintenance">{{ __('Maintenance') }}</option>
-                </flux:select>
-            </div>
+    <flux:card id="drawers-filters" class="scroll-mt-24 p-4 sm:p-5" data-guide="drawers-filters">
+        <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <flux:input
+                wire:model.live.debounce.300ms="search"
+                icon="magnifying-glass"
+                :placeholder="__('Search drawers by code or name...')"
+                size="sm"
+            />
+
+            <flux:select wire:model.live="branchFilter" :label="__('Branch')" size="sm">
+                <option value="all">{{ __('All Branches') }}</option>
+                @foreach(Branch::visibleTo(auth()->user())->orderBy('name_en')->get() as $branchOption)
+                    <option value="{{ $branchOption->id }}">{{ app()->getLocale() === 'ar' ? $branchOption->name_ar : $branchOption->name_en }} ({{ $branchOption->code }})</option>
+                @endforeach
+            </flux:select>
+
+            <flux:select wire:model.live="statusFilter" :label="__('Status')" size="sm">
+                <option value="all">{{ __('All Statuses') }}</option>
+                <option value="active">{{ __('Active') }}</option>
+                <option value="inactive">{{ __('Inactive') }}</option>
+                <option value="maintenance">{{ __('Maintenance') }}</option>
+            </flux:select>
         </div>
-    </div>
+    </flux:card>
 
     @php
         $query = CashDrawer::visibleTo(auth()->user())->with(['branch', 'store', 'assignedUser']);

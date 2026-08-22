@@ -20,7 +20,7 @@ new #[Title('Supplier Return Settings')] class extends Component
 
     public bool $isActive = true;
 
-    public string $financialKey = 'purchasing.supplier_return.number_prefix';
+    public string $financialKey = 'purchasing.supplier_return.print_title';
 
     public string $financialValue = '';
 
@@ -51,7 +51,6 @@ new #[Title('Supplier Return Settings')] class extends Component
         Gate::authorize('company_settings.edit');
 
         $allowedKeys = [
-            'purchasing.supplier_return.number_prefix',
             'purchasing.supplier_return.print_title',
             'purchasing.supplier_return.print_footer',
             'purchasing.supplier_return.approval_limit',
@@ -113,74 +112,172 @@ new #[Title('Supplier Return Settings')] class extends Component
 
     public function render()
     {
-        $versions = FinancialSettingVersion::query()->with('approvalRecord')->where(function ($q): void {
-            $q->where('key', 'like', '%supplier_return%')->orWhere('key', 'like', '%purchase_return%');
-        })->orderBy('key')->orderByDesc('version')->get()->groupBy('key')->map(static fn ($items) => $items->first());
+        $versions = FinancialSettingVersion::query()
+            ->with('approvalRecord')
+            ->whereIn('key', [
+                'purchasing.supplier_return.print_title',
+                'purchasing.supplier_return.print_footer',
+                'purchasing.supplier_return.approval_limit',
+            ])
+            ->orderBy('key')
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('key')
+            ->map(static fn ($items) => $items->first());
 
         return view('purchasing.return-settings', ['reasons' => SupplierReturnReason::query()->orderBy('code')->get(), 'versions' => $versions]);
     }
 };
 ?>
 
-<x-app.page :title="__('Supplier Return Settings')" :description="__('Owner-configurable reasons, numbering, and approval setting visibility. No production values are invented.')" max-width="6xl" class="space-y-6">
-    <x-slot:actions><flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-left">{{ __('Supplier returns') }}</flux:button></x-slot:actions>
-    <flux:callout variant="info">{{ __('Reason labels and active state are configurable. Financial limits are versioned and only take effect when an approved financial_setting_versions row exists.') }}</flux:callout>
+<x-app.page :title="__('Supplier Return Settings')" :description="__('Configure supplier-return reasons, print text, and approval limits. New values remain pending until separately approved.')" max-width="6xl" class="space-y-6">
+    <x-slot:actions>
+        <flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-left">{{ __('Supplier returns') }}</flux:button>
+    </x-slot:actions>
+
+    <flux:callout variant="info" icon="information-circle">
+        <flux:heading size="sm">{{ __('What this page controls') }}</flux:heading>
+        <flux:text>{{ __('Add the reasons shown when creating a supplier return, then submit print text or an approval limit for review.') }}</flux:text>
+    </flux:callout>
+
     @can('company_settings.edit')
-        <flux:card class="space-y-4">
-            <flux:heading size="lg">{{ __('Add or update reason') }}</flux:heading>
-            <div class="grid gap-4 md:grid-cols-3">
-                <flux:input wire:model="code" :label="__('Code')" placeholder="DAMAGED" />
-                <flux:input wire:model="labelAr" :label="__('Arabic label')" />
-                <flux:input wire:model="labelEn" :label="__('English label')" />
+        <section aria-labelledby="supplier-return-reasons" class="space-y-4">
+            <div>
+                <flux:heading id="supplier-return-reasons" size="lg">{{ __('Supplier return reasons') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('These bilingual reasons help the team choose a clear cause when returning goods to a supplier.') }}</flux:text>
             </div>
-            <flux:checkbox wire:model="isActive" :label="__('Active')" />
-            <flux:button wire:click="saveReason" variant="primary">{{ __('Save reason') }}</flux:button>
-        </flux:card>
-        <flux:card class="space-y-4">
-            <flux:heading size="lg">{{ __('Submit pending financial setting') }}</flux:heading>
-            <flux:text>{{ __('Owner input is saved as pending. It becomes active only after a separate approved financial version exists.') }}</flux:text>
-            <div class="grid gap-4 md:grid-cols-2">
-                <flux:select wire:model="financialKey" :label="__('Setting key')">
-                    <flux:select.option value="purchasing.supplier_return.number_prefix">{{ __('Number prefix') }}</flux:select.option>
-                    <flux:select.option value="purchasing.supplier_return.print_title">{{ __('Print title') }}</flux:select.option>
-                    <flux:select.option value="purchasing.supplier_return.print_footer">{{ __('Print footer') }}</flux:select.option>
-                    <flux:select.option value="purchasing.supplier_return.approval_limit">{{ __('Approval limit') }}</flux:select.option>
-                </flux:select>
-                <flux:input wire:model="financialValue" :label="__('Value')" />
-                <flux:input type="date" wire:model="effectiveFrom" :label="__('Effective from')" />
-                <flux:input type="date" wire:model="effectiveTo" :label="__('Effective to')" />
+            <flux:card class="space-y-5">
+                <flux:heading size="base">{{ __('Add a return reason') }}</flux:heading>
+                <div class="grid gap-4 lg:grid-cols-3">
+                    <flux:input wire:model="code" :label="__('Code')" placeholder="DAMAGED" dir="ltr" />
+                    <flux:input wire:model="labelAr" :label="__('Arabic label')" dir="rtl" />
+                    <flux:input wire:model="labelEn" :label="__('English label')" dir="ltr" />
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <flux:checkbox wire:model="isActive" :label="__('Active')" />
+                    <flux:button wire:click="saveReason" variant="primary">{{ __('Save reason') }}</flux:button>
+                </div>
+            </flux:card>
+        </section>
+
+        <section aria-labelledby="supplier-return-financial-settings" class="space-y-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <flux:heading id="supplier-return-financial-settings" size="lg">{{ __('Print and approval settings') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('Document numbers are managed from the central document-numbering settings. This page only controls supplier-return print text and approval limit.') }}</flux:text>
+                </div>
+                <flux:button size="sm" variant="subtle" icon="numbered-list" :href="route('admin.settings', ['tab' => 'sequences'])" wire:navigate>{{ __('Open document numbering') }}</flux:button>
             </div>
-            <flux:textarea wire:model="financialNotes" :label="__('Notes')" />
-            <flux:button wire:click="saveFinancialSetting" variant="primary">{{ __('Save pending setting') }}</flux:button>
-        </flux:card>
+            <flux:card class="space-y-5">
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <flux:select wire:model="financialKey" :label="__('Setting type')">
+                        <flux:select.option value="purchasing.supplier_return.print_title">{{ __('Print title') }}</flux:select.option>
+                        <flux:select.option value="purchasing.supplier_return.print_footer">{{ __('Print footer') }}</flux:select.option>
+                        <flux:select.option value="purchasing.supplier_return.approval_limit">{{ __('Approval limit') }}</flux:select.option>
+                    </flux:select>
+                    <flux:input
+                        wire:model="financialValue"
+                        :type="$financialKey === 'purchasing.supplier_return.approval_limit' ? 'number' : 'text'"
+                        :step="$financialKey === 'purchasing.supplier_return.approval_limit' ? '0.01' : null"
+                        :label="match ($financialKey) {
+                            'purchasing.supplier_return.print_footer' => __('Print footer'),
+                            'purchasing.supplier_return.approval_limit' => __('Approval limit'),
+                            default => __('Print title'),
+                        }"
+                    />
+                </div>
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <flux:input type="date" wire:model="effectiveFrom" :label="__('Effective from')" />
+                    <flux:input type="date" wire:model="effectiveTo" :label="__('Effective to')" />
+                </div>
+                <flux:textarea wire:model="financialNotes" :label="__('Review note (optional)')" />
+                <div class="flex justify-end">
+                    <flux:button wire:click="saveFinancialSetting" variant="primary">{{ __('Send for review') }}</flux:button>
+                </div>
+            </flux:card>
+        </section>
     @endcan
-    <flux:card>
-        <flux:heading size="lg">{{ __('Reason catalog') }}</flux:heading>
-        <flux:table class="mt-4"><flux:table.columns><flux:table.column>{{ __('Code') }}</flux:table.column><flux:table.column>{{ __('Arabic') }}</flux:table.column><flux:table.column>{{ __('English') }}</flux:table.column><flux:table.column>{{ __('Status') }}</flux:table.column><flux:table.column>{{ __('Action') }}</flux:table.column></flux:table.columns><flux:table.rows>
-            @forelse($reasons as $reason)<flux:table.row :key="$reason->id"><flux:table.cell>{{ $reason->code }}</flux:table.cell><flux:table.cell>{{ $reason->label_ar }}</flux:table.cell><flux:table.cell>{{ $reason->label_en }}</flux:table.cell><flux:table.cell>{{ $reason->is_active ? __('Active') : __('Inactive') }}</flux:table.cell><flux:table.cell>@can('company_settings.edit')<flux:button size="sm" variant="subtle" wire:click="toggle({{ $reason->id }})">{{ $reason->is_active ? __('Deactivate') : __('Activate') }}</flux:button>@endcan</flux:table.cell></flux:table.row>@empty<flux:table.row><flux:table.cell colspan="5">{{ __('No reasons configured yet.') }}</flux:table.cell></flux:table.row>@endforelse
-        </flux:table.rows></flux:table>
-    </flux:card>
-    <flux:card>
-        <flux:heading size="lg">{{ __('Return financial setting versions') }}</flux:heading>
-        <flux:text class="mt-2">{{ __('Numeric limits remain owner-configurable through the versioned financial settings contract.') }}</flux:text>
-        <div class="mt-4 overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead><tr class="text-start"><th class="px-3 py-2 text-start">{{ __('Setting key') }}</th><th class="px-3 py-2 text-start">{{ __('Value type') }}</th><th class="px-3 py-2 text-start">{{ __('Version') }}</th><th class="px-3 py-2 text-start">{{ __('Effective from') }}</th><th class="px-3 py-2 text-start">{{ __('Status') }}</th></tr></thead>
-                <tbody>
-                    @forelse($versions as $version)
-                        @php($approvalState = $version->approvalRecord?->approval_state?->value ?? 'pending')
-                        <tr class="border-t">
-                            <td class="px-3 py-2 font-mono">{{ $version->key }}</td>
-                            <td class="px-3 py-2">{{ $version->value_type }}</td>
-                            <td class="px-3 py-2">{{ $version->version }}</td>
-                            <td class="px-3 py-2">{{ $version->effective_from?->toIso8601String() }}</td>
-                            <td class="px-3 py-2">{{ $approvalState === 'approved' ? __('Approved') : __('Awaiting approval') }}</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="px-3 py-4">{{ __('No approved return-specific financial versions exist.') }}</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+
+    <section aria-labelledby="supplier-return-reason-catalog" class="space-y-4">
+        <div>
+            <flux:heading id="supplier-return-reason-catalog" size="lg">{{ __('Saved return reasons') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Only active reasons can be selected on a new supplier return.') }}</flux:text>
         </div>
-    </flux:card>
+        <flux:card class="p-0">
+            <div class="overflow-x-auto rounded-xl">
+                <flux:table class="min-w-[48rem]">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Code') }}</flux:table.column>
+                        <flux:table.column>{{ __('Arabic') }}</flux:table.column>
+                        <flux:table.column>{{ __('English') }}</flux:table.column>
+                        <flux:table.column>{{ __('Status') }}</flux:table.column>
+                        <flux:table.column>{{ __('Action') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse($reasons as $reason)
+                            <flux:table.row :key="$reason->id">
+                                <flux:table.cell class="font-mono" dir="ltr">{{ $reason->code }}</flux:table.cell>
+                                <flux:table.cell dir="rtl">{{ $reason->label_ar }}</flux:table.cell>
+                                <flux:table.cell dir="ltr">{{ $reason->label_en }}</flux:table.cell>
+                                <flux:table.cell>{{ $reason->is_active ? __('Active') : __('Inactive') }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @can('company_settings.edit')
+                                        <flux:button size="sm" variant="subtle" wire:click="toggle({{ $reason->id }})">{{ $reason->is_active ? __('Deactivate') : __('Activate') }}</flux:button>
+                                    @endcan
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="5">{{ __('No reasons configured yet.') }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+            </div>
+        </flux:card>
+    </section>
+
+    <section aria-labelledby="supplier-return-setting-history" class="space-y-4">
+        <div>
+            <flux:heading id="supplier-return-setting-history" size="lg">{{ __('Setting review history') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Submitted values appear here with their version and approval status.') }}</flux:text>
+        </div>
+        @php
+            $settingLabels = [
+                'purchasing.supplier_return.print_title' => __('Print title'),
+                'purchasing.supplier_return.print_footer' => __('Print footer'),
+                'purchasing.supplier_return.approval_limit' => __('Approval limit'),
+            ];
+            $valueTypeLabels = ['string' => __('Text'), 'decimal' => __('Number')];
+        @endphp
+        <flux:card class="p-0">
+            <div class="overflow-x-auto rounded-xl">
+                <table class="min-w-[44rem] w-full text-sm">
+                    <thead class="bg-zinc-50 text-start dark:bg-zinc-800/60">
+                        <tr>
+                            <th class="px-4 py-3 text-start">{{ __('Setting') }}</th>
+                            <th class="px-4 py-3 text-start">{{ __('Value type') }}</th>
+                            <th class="px-4 py-3 text-start">{{ __('Version') }}</th>
+                            <th class="px-4 py-3 text-start">{{ __('Effective from') }}</th>
+                            <th class="px-4 py-3 text-start">{{ __('Status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                        @forelse($versions as $version)
+                            @php($approvalState = $version->approvalRecord?->approval_state?->value ?? 'pending')
+                            <tr>
+                                <td class="px-4 py-3">{{ $settingLabels[$version->key] ?? __('Other setting') }}</td>
+                                <td class="px-4 py-3">{{ $valueTypeLabels[$version->value_type] ?? $version->value_type }}</td>
+                                <td class="px-4 py-3">{{ $version->version }}</td>
+                                <td class="px-4 py-3" dir="ltr">{{ $version->effective_from?->format('Y-m-d') }}</td>
+                                <td class="px-4 py-3">{{ $approvalState === 'approved' ? __('Approved') : __('Awaiting approval') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="px-4 py-5">{{ __('No approved return-specific financial versions exist.') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </flux:card>
+    </section>
 </x-app.page>

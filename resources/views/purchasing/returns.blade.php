@@ -289,13 +289,6 @@ new #[Title('Supplier Returns')] class extends Component
         {{ __('Phase 1 rule: every return line must reference an approved purchase invoice line. No WAC or fallback cost is accepted.') }}
     </flux:callout>
 
-    @if (! $hasReasonCatalog)
-        <flux:callout variant="warning" icon="exclamation-triangle">
-            <flux:heading size="sm">{{ __('Return reasons are not configured') }}</flux:heading>
-            <flux:text>{{ __('The reason catalog table is ready but intentionally empty. An administrator must add the owner-provided reporting reasons before a draft can be created.') }}</flux:text>
-        </flux:callout>
-    @endif
-
     <flux:card id="supplier-returns-filters" class="scroll-mt-24">
         <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-64 flex-1">
@@ -366,7 +359,15 @@ new #[Title('Supplier Returns')] class extends Component
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
-                    <flux:table.row><flux:table.cell colspan="7">{{ __('No supplier returns yet.') }}</flux:table.cell></flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="7">
+                            <div class="flex flex-col items-center gap-2 py-10 text-center">
+                                <flux:icon name="arrow-uturn-left" class="size-8 text-text-muted" />
+                                <flux:heading size="sm">{{ __('No supplier returns yet.') }}</flux:heading>
+                                <flux:text>{{ __('Create a supplier return from an approved purchase invoice.') }}</flux:text>
+                            </div>
+                        </flux:table.cell>
+                    </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>

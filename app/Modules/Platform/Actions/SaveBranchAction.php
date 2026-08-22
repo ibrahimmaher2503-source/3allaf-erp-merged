@@ -3,7 +3,6 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Customer\Support\PhoneNormalizer;
-use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use Illuminate\Support\Facades\DB;
@@ -115,90 +114,5 @@ class SaveBranchAction
 
             return $branch;
         });
-    }
-
-    /**
-     * Delete a branch record safely if no dependencies exist, with audit logging.
-     */
-    public function delete(int $id): void
-    {
-        Gate::authorize('branches_stores.logical_delete');
-        DB::transaction(function () use ($id) {
-            $branchQuery = Branch::query();
-            if (auth()->check()) {
-                $branchQuery->visibleTo(auth()->user());
-            }
-            $branch = $branchQuery->findOrFail($id);
-
-            if ($branch->stores()->exists() || $branch->sellingStoreMappings()->exists()) {
-                throw new InvalidArgumentException(__('Cannot delete branch with existing stores or mapping history. Deactivate the record instead.'));
-            }
-
-            $oldData = $branch->toArray();
-            $branch->delete();
-
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_branch',
-                source: $branch,
-                before: $oldData,
-                after: ['deleted' => true],
-                branchId: $id,
-                metadata: ['deleted_source_id' => $id],
-            );
-        });
-    }
-
-    /** Apply an approved logical delete while preserving approval foreign keys and master history. */
-    public function logicalDeleteAfterApproval(int $id): void
-    {
-        Gate::authorize('branches_stores.logical_delete');
-
-        $this->logicalDelete($id, true);
-    }
-
-    /** Apply the exact branch deletion already authorized by a terminal approval record. */
-    public function applyApprovedLogicalDelete(int $id, ApprovalRecord $approval): void
-    {
-        $this->assertApprovedDelete($id, $approval);
-        $this->logicalDelete($id, false);
-    }
-
-    private function logicalDelete(int $id, bool $scopeToAuthenticatedUser): void
-    {
-        DB::transaction(function () use ($id, $scopeToAuthenticatedUser): void {
-            $branchQuery = Branch::query()->lockForUpdate();
-            if ($scopeToAuthenticatedUser && auth()->check()) {
-                $branchQuery->visibleTo(auth()->user());
-            }
-            $branch = $branchQuery->findOrFail($id);
-            if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
-                throw new InvalidArgumentException(__('Cannot delete branch while it has active stores or an active selling store mapping.'));
-            }
-
-            $before = $branch->getAttributes();
-            $branch->update(['status' => 'inactive']);
-            app(RecordAuditEvent::class)->execute(
-                category: 'master_data',
-                event: 'delete_branch',
-                source: $branch,
-                before: $before,
-                after: ['deleted' => true, 'status' => 'inactive'],
-                branchId: $branch->id,
-                metadata: ['logical_delete' => true, 'approval_required' => true],
-            );
-        });
-    }
-
-    private function assertApprovedDelete(int $id, ApprovalRecord $approval): void
-    {
-        $context = $approval->limit_context ?? [];
-        if ($approval->approval_state->value !== 'approved'
-            || $approval->source_type !== 'platform_settings'
-            || (int) $approval->approver_id !== (int) auth()->id()
-            || ($context['resource'] ?? null) !== 'branch_delete'
-            || (int) ($context['id'] ?? 0) !== $id) {
-            throw new InvalidArgumentException(__('A matching approved branch deletion is required.'));
-        }
     }
 }

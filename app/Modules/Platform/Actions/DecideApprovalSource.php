@@ -2,6 +2,9 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Modules\Assets\Actions\ApproveAssetEventAction;
+use App\Modules\Assets\Actions\RejectAssetEventAction;
+use App\Modules\Assets\Models\AssetEvent;
 use App\Modules\Customer\Actions\ApproveLoyaltyAdjustmentAction;
 use App\Modules\Customer\Actions\ApprovePartyWalletAdjustmentAction;
 use App\Modules\Customer\Actions\ApproveProductWalletAdjustmentAction;
@@ -11,9 +14,6 @@ use App\Modules\Customer\Actions\RejectProductWalletAdjustmentAction;
 use App\Modules\Customer\Models\LoyaltyAdjustment;
 use App\Modules\Customer\Models\PartyWalletAdjustment;
 use App\Modules\Customer\Models\ProductWalletAdjustment;
-use App\Modules\Assets\Actions\ApproveAssetEventAction;
-use App\Modules\Assets\Actions\RejectAssetEventAction;
-use App\Modules\Assets\Models\AssetEvent;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
@@ -27,12 +27,13 @@ use App\Modules\Purchasing\Actions\ApprovePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\ApprovePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\RejectPurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\RejectPurchaseReturnAction;
-use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
-use App\Modules\Retail\Actions\ApproveOpenPriceAction;
 use App\Modules\Retail\Actions\ApproveDiscountAction;
+use App\Modules\Retail\Actions\ApproveOpenPriceAction;
 use App\Modules\Retail\Actions\RejectDiscountAction;
 use App\Modules\Retail\Actions\RejectOpenPriceAction;
+use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Models\PosShift;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -91,50 +92,54 @@ final class DecideApprovalSource
 
     public function reject(ApprovalRecord $record, string $reason): void
     {
-        match ($record->source_type) {
-            'platform_settings' => app(PlatformSettingsApprovalAction::class)->reject($record, $reason),
-            'pricing_labels' => app(RejectPriceProposalAction::class)->execute(PriceVersion::query()->findOrFail($record->source_id), $reason),
-            'purchase_invoices' => app(RejectPurchaseInvoiceAction::class)->execute((int) $record->source_id, $reason, (int) $record->source_version),
-            'purchase_returns' => app(RejectPurchaseReturnAction::class)->execute((int) $record->source_id, $reason, (int) $record->source_version),
-            'loyalty_adjustments' => app(RejectLoyaltyAdjustmentAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                $record,
-                $reason,
-            ),
-            'product_wallet_adjustments' => app(RejectProductWalletAdjustmentAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                $record,
-                $reason,
-            ),
-            'party_wallet_adjustments' => app(RejectPartyWalletAdjustmentAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                $record,
-                $reason,
-            ),
-            'pos_shifts' => app(ReviewShiftVarianceAction::class)->requestRecount(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                PosShift::query()->findOrFail($record->source_id),
-                $record,
-                $reason,
-                (int) $record->source_version,
-            ),
-            'pos_open_price' => app(RejectOpenPriceAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                $record,
-                $reason,
-            ),
-            'pos_discount' => app(RejectDiscountAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                $record,
-                $reason,
-            ),
-            'asset_events' => app(RejectAssetEventAction::class)->execute(
-                auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
-                AssetEvent::query()->findOrFail($record->source_id),
-                $reason,
-            ),
-            default => throw ValidationException::withMessages(['approval' => __('This source does not expose a rejection transition.')]),
-        };
+        DB::transaction(function () use ($record, $reason): void {
+            $record = ApprovalRecord::query()->lockForUpdate()->findOrFail($record->id);
+
+            match ($record->source_type) {
+                'platform_settings' => app(PlatformSettingsApprovalAction::class)->reject($record, $reason),
+                'pricing_labels' => app(RejectPriceProposalAction::class)->execute(PriceVersion::query()->findOrFail($record->source_id), $reason),
+                'purchase_invoices' => app(RejectPurchaseInvoiceAction::class)->execute((int) $record->source_id, $reason, (int) $record->source_version),
+                'purchase_returns' => app(RejectPurchaseReturnAction::class)->execute((int) $record->source_id, $reason, (int) $record->source_version),
+                'loyalty_adjustments' => app(RejectLoyaltyAdjustmentAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    $record,
+                    $reason,
+                ),
+                'product_wallet_adjustments' => app(RejectProductWalletAdjustmentAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    $record,
+                    $reason,
+                ),
+                'party_wallet_adjustments' => app(RejectPartyWalletAdjustmentAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    $record,
+                    $reason,
+                ),
+                'pos_shifts' => app(ReviewShiftVarianceAction::class)->requestRecount(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    PosShift::query()->findOrFail($record->source_id),
+                    $record,
+                    $reason,
+                    (int) $record->source_version,
+                ),
+                'pos_open_price' => app(RejectOpenPriceAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    $record,
+                    $reason,
+                ),
+                'pos_discount' => app(RejectDiscountAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    $record,
+                    $reason,
+                ),
+                'asset_events' => app(RejectAssetEventAction::class)->execute(
+                    auth()->user() ?? throw new \LogicException('An authenticated approver is required.'),
+                    AssetEvent::query()->findOrFail($record->source_id),
+                    $reason,
+                ),
+                default => throw ValidationException::withMessages(['approval' => __('This source does not expose a rejection transition.')]),
+            };
+        });
     }
 
     public function canReject(ApprovalRecord $record): bool

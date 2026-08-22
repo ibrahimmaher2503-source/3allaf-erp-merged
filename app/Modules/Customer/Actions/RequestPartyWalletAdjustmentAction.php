@@ -55,7 +55,7 @@ final class RequestPartyWalletAdjustmentAction
         $payloadHash = WalletPolicy::payloadHash($payload);
 
         try {
-            return DB::transaction(function () use ($actor, $customer, $store, $operation, $amount, $targetLedgerId, $sourceType, $sourceId, $sourceLineId, $sourceReference, $reason, $idempotencyKey, $payloadHash, $adjustmentPolicyVersion): PartyWalletAdjustment {
+            $requested = DB::transaction(function () use ($actor, $customer, $store, $operation, $amount, $targetLedgerId, $sourceType, $sourceId, $sourceLineId, $sourceReference, $reason, $idempotencyKey, $payloadHash, $adjustmentPolicyVersion): PartyWalletAdjustment {
                 Customer::query()->lockForUpdate()->findOrFail($customer->id);
                 $existing = PartyWalletAdjustment::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
                 if ($existing !== null) {
@@ -99,6 +99,12 @@ final class RequestPartyWalletAdjustmentAction
 
                 return $adjustment->fresh(['approvalRecord']);
             }, 5);
+
+            if ($actor->canBypassApproval() && $requested->approvalRecord?->approval_state->value === 'pending') {
+                app(ApprovePartyWalletAdjustmentAction::class)->execute($actor, $requested->approvalRecord, $store);
+            }
+
+            return $requested->fresh(['approvalRecord']);
         } catch (UniqueConstraintViolationException $exception) {
             $existing = PartyWalletAdjustment::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null && hash_equals((string) $existing->payload_hash, $payloadHash)) {
