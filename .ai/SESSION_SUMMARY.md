@@ -264,3 +264,5 @@
 - 2026-08-22 — Disabled offline-POS readiness cleanup: kept the implemented offline queue, sync, conflict, and device workflows intact, but hid the confusing readiness screen from the sidebar while offline POS is disabled. Direct visits now return to the POS screen until the local-only feature is enabled. No tests, browser checks, Git checks, commit, or push.
 
 - 2026-08-22 — Initial setup branch and stock-store clarity: separated the branch checklist card from stock-store readiness, renamed the visible warehouse step to `المخازن`, simplified its description, clarified the product-category blocker, and renamed/explained opening inventory as `رصيد البداية للمخزن`. A read-only data count confirmed two active stock stores are already linked to active branches, so the prior `لم يبدأ` screenshot predates the current seeded data. No automated tests, browser checks, or Git checks were run. No commit or push.
+
+- 2026-08-22 — Initial setup cleanup: removed the repeated technical readiness/approval warning from the bottom of the checklist. No automated tests, browser checks, or Git checks were run. No commit or push.

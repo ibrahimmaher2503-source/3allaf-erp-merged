@@ -32,6 +32,5 @@
                 </div></div>
             @endforeach
         </section>
-        <flux:callout variant="warning" icon="shield-check" title="{{ __('Readiness is not approval') }}">{{ __('A saved row is counted only when the current readiness rule is met. Financial approvals, production devices, and owner/UAT decisions remain separate gates.') }}</flux:callout>
     </x-app.page>
 </x-layouts::app>
