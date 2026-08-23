@@ -1,10 +1,13 @@
 <?php
 
+use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\ManageProductMediaAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
@@ -24,6 +27,7 @@ new #[Title('Product Card')] class extends Component {
     public bool $isEditing = false;
     public mixed $mediaUpload = null;
     public string $mediaRole = 'additional';
+    public string $supplierBarcode = '';
 
     public array $productForm = [
         'item_code' => '',
@@ -80,14 +84,58 @@ new #[Title('Product Card')] class extends Component {
         return ['ages' => AgeLabel::query()->where('status', 'active')->orderBy('sort_order')->get(), 'characters' => Character::query()->where('status', 'active')->orderBy('sort_order')->get(), 'colours' => Colour::query()->where('status', 'active')->orderBy('sort_order')->get(), 'genders' => Gender::query()->where('status', 'active')->orderBy('sort_order')->get()];
     }
 
-    public function save(SaveProductAction $action): void
+    public function generateItemCode(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+
+        if ($this->isEditing) {
+            return;
+        }
+
+        for ($number = 1; ; $number++) {
+            $code = sprintf('PRD-%04d', $number);
+
+            if (! Product::query()->where('item_code', $code)->exists()) {
+                $this->productForm['item_code'] = $code;
+                break;
+            }
+        }
+    }
+
+    public function generateBarcode(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+
+        if ($this->isEditing) {
+            return;
+        }
+
+        for ($number = 1; ; $number++) {
+            $barcode = sprintf('PRD-BC-%07d', $number);
+
+            if (! Barcode::query()->where('barcode', $barcode)->exists()) {
+                $this->supplierBarcode = $barcode;
+                break;
+            }
+        }
+    }
+
+    public function save(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
     {
         Gate::authorize($this->isEditing ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
-        $validated = $this->validate($this->rules())['productForm'];
+        $validated = $this->validate([
+            ...$this->rules(),
+            'supplierBarcode' => ['nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
+        ])['productForm'];
 
         try {
             $product = $action->execute($validated, $this->productId, $this->productVersion);
+
+            if (filled($this->supplierBarcode)) {
+                $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
+                $this->supplierBarcode = '';
+            }
 
             if (! $this->isEditing) {
                 session()->flash('status', __('Product card created successfully. Add protected images from this page.'));
@@ -239,7 +287,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.short_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.short_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.full_description_ar' => ['nullable', 'string', 'max:10000'], 'productForm.full_description_en' => ['nullable', 'string', 'max:10000'],
             'productForm.meta_title_ar' => ['nullable', 'string', 'max:255'], 'productForm.meta_title_en' => ['nullable', 'string', 'max:255'], 'productForm.meta_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.meta_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
             'productForm.model_number' => ['nullable', 'string', 'max:100'],
-            'productForm.product_type' => ['required', Rule::in(['standard', 'composite', 'service'])],
+            'productForm.product_type' => ['required', Rule::in(['standard', 'composite', 'service', 'digital'])],
             'productForm.status' => ['required', Rule::in(['active', 'inactive'])],
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -284,6 +332,8 @@ new #[Title('Product Card')] class extends Component {
             'product' => $product,
             'categories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'suppliers' => Supplier::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'lookups' => $this->lookupOptions(),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
         ]);
     }
@@ -319,21 +369,24 @@ new #[Title('Product Card')] class extends Component {
         </flux:callout>
     @endif
 
-    <form wire:submit="save" class="space-y-5" novalidate>
-        <flux:card class="space-y-4 p-5"><flux:heading size="lg">{{ __('Commercial and descriptive master fields') }}</flux:heading><div class="grid gap-4 md:grid-cols-2"><flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" /><flux:input wire:model="productForm.sale_price" type="number" min="0" step="0.01" :label="__('Sale price')" /><flux:input wire:model="productForm.battery_details" :label="__('Battery details')" /><flux:checkbox wire:model="productForm.battery_required" :label="__('Requires batteries')" /></div><flux:text class="text-sm text-text-muted">{{ __('Master data only; no financial posting or POS pricing behavior is changed.') }}</flux:text></flux:card>
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-identity">
-            <div class="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
+    <nav class="catalog-product-section-nav" aria-label="{{ __('Product sections') }}">
+        @foreach ([['#product-identity', __('Basic identity')], ['#product-classification', __('Classification and type')], ['#product-pricing', __('Commercial and descriptive master fields')]] as [$href, $label])
+            <a href="{{ $href }}">{{ $label }}</a>
+        @endforeach
+    </nav>
+
+    <form wire:submit="save" class="flex flex-col gap-4 sm:gap-5" novalidate>
+        <flux:card id="product-identity" class="order-1 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-identity">
+            <div class="border-b border-border pb-4">
                 <div>
                     <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
                     <flux:text class="mt-1 text-sm text-text-muted">{{ __('Keep the internal item code stable. Supplier, barcode, and descriptive changes never rewrite it.') }}</flux:text>
                 </div>
-                @if ($isEditing)
-                    <span class="catalog-code-chip self-start">{{ $productForm['item_code'] }}</span>
-                @endif
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input wire:model="productForm.item_code" :label="__('Immutable item code')" :disabled="$isEditing" required />
+                <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="productForm.item_code" :label="__('Immutable item code')" :disabled="$isEditing" required />@if (! $isEditing)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateItemCode" wire:loading.attr="disabled" wire:target="generateItemCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
                 <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" />
+                <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="supplierBarcode" :label="__('Barcode')" dir="ltr" />@if (! $isEditing)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateBarcode" wire:loading.attr="disabled" wire:target="generateBarcode" title="{{ __('Generate automatically') }}" aria-label="{{ __('Generate automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
                 <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" required />
             </div>
@@ -341,15 +394,21 @@ new #[Title('Product Card')] class extends Component {
                 <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="4" dir="rtl" />
                 <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="4" dir="ltr" />
             </div>
+            @if ($isEditing && $product)
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
+                    <span>{{ __('Manage barcodes after saving the product card.') }}</span>
+                    <flux:button href="{{ route('catalog.products.show', ['product' => $product]) }}" variant="subtle" size="sm" wire:navigate>{{ __('Product barcode management') }}</flux:button>
+                </div>
+            @endif
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-classification">
+        <flux:card id="product-classification" class="order-2 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-classification">
             <div>
                 <flux:heading size="lg">{{ __('Classification and type') }}</flux:heading>
-                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Only the approved standard, composite, and service types are available. Composite component lines are deferred until their policy is sufficiently defined.') }}</flux:text>
+                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the category and product type used for this item.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <flux:select wire:model="productForm.category_id" :label="__('Category')" required>
+                <flux:select wire:model="productForm.category_id" :label="__('Category / subcategory')" required>
                     <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
                     @foreach ($categories as $category)
                         <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</flux:select.option>
@@ -367,88 +426,104 @@ new #[Title('Product Card')] class extends Component {
                 @if ($brands->isEmpty())
                     <flux:text class="text-xs text-text-muted">{{ __('No active brands exist. Brand is optional; configure one only when this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ __('Configure brands') }}</a></flux:text>
                 @endif
+                <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
+                    <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
+                    @foreach ($suppliers as $supplier)
+                        <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ app()->getLocale() === 'ar' ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
+                    @endforeach
+                </flux:select>
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
-                    <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
                     <flux:select.option value="service">{{ __('Service') }}</flux:select.option>
+                    <flux:select.option value="digital">{{ __('Digital product') }}</flux:select.option>
+                    @if ($productForm['product_type'] === 'composite')
+                        <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
+                    @endif
                 </flux:select>
                 <flux:select wire:model="productForm.status" :label="__('Status')" required>
                     <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
                     <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
                 </flux:select>
             </div>
-            @if ($productForm['product_type'] === 'composite')
-                <flux:callout variant="info" icon="information-circle" title="{{ __('Composite type boundary') }}">{{ __('The product type is stored and audited. Component lines, assembly, and bundle pricing are deferred because the approved Phase 1 data contract does not define them.') }}</flux:callout>
-            @elseif ($productForm['product_type'] === 'service')
+            @if ($productForm['product_type'] === 'service')
                 <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Service product') }}">{{ __('Services do not create stock balances, so stock thresholds are not required for this type.') }}</flux:callout>
+            @elseif ($productForm['product_type'] === 'digital')
+                <flux:callout variant="info" icon="information-circle" title="{{ __('Digital product') }}">{{ __('Digital products do not use reorder thresholds.') }}</flux:callout>
             @endif
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-6 p-4 sm:p-6" data-guide="product-form-attributes">
+        <flux:card id="product-pricing" class="order-3 catalog-form-card space-y-5 p-4 sm:p-5">
             <div>
-                <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
-                <flux:text class="mt-1 text-sm text-text-muted">{{ __('These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.') }}</flux:text>
-            </div>
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
-                <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="0.001" :disabled="$productForm['product_type'] === 'service'" />
-                @php($lookups = $this->lookupOptions())
-                <flux:select wire:model="productForm.age_label_id" :label="__('Age label')"><flux:select.option value="">{{ __('Legacy text fallback') }}</flux:select.option>@foreach($lookups['ages'] as $lookup)<flux:select.option value="{{ $lookup->id }}">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach</flux:select>
-                <flux:input wire:model="productForm.target_age" :label="__('Legacy target age')" />
-                <flux:select wire:model="productForm.gender_id" :label="__('Gender')"><flux:select.option value="">{{ __('Legacy text fallback') }}</flux:select.option>@foreach($lookups['genders'] as $lookup)<flux:select.option value="{{ $lookup->id }}">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach</flux:select>
-                <flux:input wire:model="productForm.suitable_gender" :label="__('Legacy gender')" />
-                <flux:select wire:model="productForm.colour_id" :label="__('Colour')"><flux:select.option value="">{{ __('Legacy text fallback') }}</flux:select.option>@foreach($lookups['colours'] as $lookup)<flux:select.option value="{{ $lookup->id }}">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach</flux:select>
-                <flux:input wire:model="productForm.size" :label="__('Size')" />
-                <flux:select wire:model="productForm.character_id" :label="__('Character')"><flux:select.option value="">{{ __('Legacy text fallback') }}</flux:select.option>@foreach($lookups['characters'] as $lookup)<flux:select.option value="{{ $lookup->id }}">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach</flux:select>
-                <flux:input wire:model="productForm.character" :label="__('Legacy character')" />
-                <flux:input wire:model="productForm.weight" :label="__('Weight')" type="number" min="0" step="0.001" />
+                <flux:heading size="lg">{{ __('Commercial and descriptive master fields') }}</flux:heading>
+                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:textarea wire:model="productForm.key_points_ar" :label="__('Key points Arabic')" rows="3" dir="rtl" />
-                <flux:textarea wire:model="productForm.key_points_en" :label="__('Key points English')" rows="3" dir="ltr" />
-                <flux:textarea wire:model="productForm.keywords_ar" :label="__('Search keywords Arabic')" rows="3" dir="rtl" />
-                <flux:textarea wire:model="productForm.keywords_en" :label="__('Search keywords English')" rows="3" dir="ltr" />
+                <flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" />
+                <flux:input wire:model="productForm.sale_price" type="number" min="0" step="0.01" :label="__('Sale price')" />
+                <flux:input wire:model="productForm.battery_details" :label="__('Battery details')" />
+                <flux:checkbox wire:model="productForm.battery_required" :label="__('Requires batteries')" />
             </div>
-            <div class="grid gap-4 sm:grid-cols-4">
-                <flux:input wire:model="productForm.dimension_length" :label="__('Length')" type="number" min="0" step="0.001" />
-                <flux:input wire:model="productForm.dimension_width" :label="__('Width')" type="number" min="0" step="0.001" />
-                <flux:input wire:model="productForm.dimension_height" :label="__('Height')" type="number" min="0" step="0.001" />
-                <flux:input wire:model="productForm.dimension_unit" :label="__('Dimension unit')" placeholder="cm" />
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
+                <span>{{ __('Open-price rules are configured in Pricing and enforced in POS.') }}</span>
+                @can('pricing_labels.view')
+                    <flux:button href="{{ route('pricing.index') }}" variant="subtle" size="sm" wire:navigate>{{ __('Open pricing') }}</flux:button>
+                @endcan
             </div>
-            <div class="grid gap-4 md:grid-cols-2">
-                @foreach ([
-                    ['age_label_ids', $lookups['ages'], __('Age label')],
-                    ['character_ids', $lookups['characters'], __('Character')],
-                    ['colour_ids', $lookups['colours'], __('Colour')],
-                    ['gender_ids', $lookups['genders'], __('Gender')],
-                ] as [$field, $options, $label])
-                    <fieldset class="rounded-xl border border-border p-4">
-                        <legend class="px-1 text-sm font-semibold text-text-primary">{{ $label }}</legend>
-                        @if ($options->isEmpty())
-                            <p class="text-sm text-text-muted">{{ __('No active lookup values are available.') }}</p>
-                        @else
-                            <p class="mb-3 text-sm text-text-muted">{{ __('Select every applicable value. Leave empty when it does not apply.') }}</p>
-                            <div class="grid gap-2 sm:grid-cols-2">
-                                @foreach ($options as $lookup)
-                                    <label class="flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-primary">
-                                        <input wire:model="productForm.{{ $field }}" type="checkbox" value="{{ $lookup->id }}" class="rounded border-border text-primary focus:ring-primary" />
-                                        <span>{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        @endif
-                    </fieldset>
-                @endforeach
-            </div>
-            <flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity')" description="{{ __('Use this for products sold by weight, length, or another fractional unit.') }}" />
         </flux:card>
 
-        <flux:card class="catalog-form-card space-y-5 p-4 sm:p-6" data-guide="product-form-web-seo">
-            <div>
+        <details id="product-attributes" class="order-4 catalog-form-card catalog-product-disclosure" data-guide="product-form-attributes">
+            <summary>
+                <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
+                <flux:text class="mt-1 text-sm text-text-muted">{{ __('These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.') }}</flux:text>
+            </summary>
+            <div class="catalog-product-disclosure__content">
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
+                    <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="0.001" :disabled="in_array($productForm['product_type'], ['service', 'digital'], true)" />
+                    <flux:input wire:model="productForm.weight" :label="__('Weight')" type="number" min="0" step="0.001" />
+                </div>
+                <div class="mt-4 grid gap-4 sm:grid-cols-4">
+                    <flux:input wire:model="productForm.dimension_length" :label="__('Length')" type="number" min="0" step="0.001" />
+                    <flux:input wire:model="productForm.dimension_width" :label="__('Width')" type="number" min="0" step="0.001" />
+                    <flux:input wire:model="productForm.dimension_height" :label="__('Height')" type="number" min="0" step="0.001" />
+                    <flux:input wire:model="productForm.dimension_unit" :label="__('Dimension unit')" placeholder="cm" />
+                </div>
+                @php($volume = collect(['dimension_length', 'dimension_width', 'dimension_height'])->contains(fn ($field) => blank($productForm[$field])) ? null : (float) $productForm['dimension_length'] * (float) $productForm['dimension_width'] * (float) $productForm['dimension_height'])
+                <div class="mt-4 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
+                    <span class="font-medium text-text-primary">{{ __('Calculated volume') }}:</span>
+                    {{ $volume === null ? '—' : rtrim(rtrim(number_format($volume, 3, '.', ''), '0'), '.') }} {{ $productForm['dimension_unit'] ? $productForm['dimension_unit'].'³' : '' }}
+                </div>
+                <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <flux:select wire:model="productForm.gender_id" :label="__('Gender')">
+                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
+                        @foreach ($lookups['genders'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                    </flux:select>
+                    <flux:select wire:model="productForm.age_label_id" :label="__('Age label')">
+                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
+                        @foreach ($lookups['ages'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                    </flux:select>
+                    <flux:select wire:model="productForm.character_id" :label="__('Character')">
+                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
+                        @foreach ($lookups['characters'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                    </flux:select>
+                    @unless ($product?->has_variations)
+                        <flux:select wire:model="productForm.colour_id" :label="__('Colour')">
+                            <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
+                            @foreach ($lookups['colours'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->getLocale() === 'ar' ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                        </flux:select>
+                    @endunless
+                </div>
+                <div class="mt-4"><flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity')" description="{{ __('Use this for products sold by weight, length, or another fractional unit.') }}" /></div>
+            </div>
+        </details>
+
+        <details class="order-5 catalog-form-card catalog-product-disclosure" data-guide="product-form-web-seo">
+            <summary>
                 <flux:heading size="lg">{{ __('Product web & SEO') }}</flux:heading>
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Optional catalog content stays on this product card.') }}</flux:text>
-            </div>
-            <div class="grid gap-4 md:grid-cols-2">
+            </summary>
+            <div class="catalog-product-disclosure__content">
+                <div class="grid gap-4 md:grid-cols-2">
                 <flux:textarea wire:model="productForm.short_description_ar" :label="__('Short description Arabic')" rows="3" dir="rtl" />
                 <flux:textarea wire:model="productForm.short_description_en" :label="__('Short description English')" rows="3" dir="ltr" />
                 <flux:textarea wire:model="productForm.full_description_ar" :label="__('Full description Arabic')" rows="5" dir="rtl" />
@@ -458,19 +533,21 @@ new #[Title('Product Card')] class extends Component {
                 <flux:textarea wire:model="productForm.meta_description_ar" :label="__('Meta description Arabic')" rows="3" dir="rtl" />
                 <flux:textarea wire:model="productForm.meta_description_en" :label="__('Meta description English')" rows="3" dir="ltr" />
                 <flux:input wire:model="productForm.seo_slug" :label="__('SEO URL slug')" placeholder="toy-name" dir="ltr" />
-                <flux:select wire:model="productForm.publish_visibility" :label="__('Website visibility')"><flux:select.option value="">{{ __('Not published') }}</flux:select.option><flux:select.option value="catalog">{{ __('Catalog') }}</flux:select.option><flux:select.option value="hidden">{{ __('Hidden') }}</flux:select.option></flux:select>
+                <flux:select wire:model="productForm.publish_visibility" :label="__('Available online')"><flux:select.option value="">{{ __('Not published') }}</flux:select.option><flux:select.option value="catalog">{{ __('Available online') }}</flux:select.option><flux:select.option value="hidden">{{ __('Not available online') }}</flux:select.option></flux:select>
                 <flux:input wire:model="productForm.sort_order" :label="__('Website display order')" type="number" min="0" />
+                </div>
             </div>
-        </flux:card>
+        </details>
 
-        <flux:card class="catalog-form-card space-y-5 p-4 sm:p-6" data-guide="product-form-media">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <details id="product-media" class="order-6 catalog-form-card catalog-product-disclosure" data-guide="product-form-media">
+            <summary>
                 <div>
                     <flux:heading size="lg">{{ __('Protected product media') }}</flux:heading>
                     <flux:text class="mt-1 text-sm text-text-muted">{{ __('Private JPEG, PNG, and WebP files only. One main image and up to four additional images are retained through the shared Attachment Foundation.') }}</flux:text>
                 </div>
-                <flux:badge size="sm" color="sky">{{ __('1 main + 4 additional') }}</flux:badge>
-            </div>
+            </summary>
+            <div class="catalog-product-disclosure__content">
+                <div class="mb-4"><flux:badge size="sm" color="sky">{{ __('1 main + 4 additional') }}</flux:badge></div>
             @if (! $isEditing)
                 <flux:callout variant="info" icon="information-circle">{{ __('Save the card first, then upload protected images without losing the draft.') }}</flux:callout>
             @else
@@ -513,9 +590,10 @@ new #[Title('Product Card')] class extends Component {
                     @endforelse
                 </div>
             @endif
-        </flux:card>
+            </div>
+        </details>
 
-        <div class="sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
+        <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
             <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
             <flux:text wire:dirty class="self-center text-xs text-text-muted">{{ __('Unsaved changes') }}</flux:text>
             <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">{{ $isEditing ? __('Save product card') : __('Create product card') }} <span wire:loading wire:target="save">{{ __('Saving...') }}</span></flux:button>

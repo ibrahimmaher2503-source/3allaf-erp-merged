@@ -90,7 +90,11 @@ final class CustomerPolicy
     /** @return array{value: list<string>, version: int} */
     public static function childPurposes(): array
     {
-        return self::allowedPurposes('customer.children.purpose_scope');
+        try {
+            return self::allowedPurposes('customer.children.purpose_scope');
+        } catch (InvalidArgumentException) {
+            return self::allowedPurposes('customer.consent.purpose');
+        }
     }
 
     /** @return array{value: array<string, mixed>, version: int} */

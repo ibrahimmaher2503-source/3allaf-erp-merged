@@ -11,6 +11,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -101,26 +102,49 @@ new #[Title('Approval Inbox')] class extends Component
 
     public function approve(): void
     {
-        $approval = $this->selectedPendingApproval();
-        Gate::authorize('decide', $approval);
-        app(DecideApprovalSource::class)->approve($approval);
-        session()->flash('approval-success', __('The source was approved and its audit trail was recorded.'));
-        $this->closeApproval();
+        try {
+            $approval = $this->selectedPendingApproval();
+            Gate::authorize('decide', $approval);
+            app(DecideApprovalSource::class)->approve($approval);
+            session()->flash('approval-success', __('The source was approved and its audit trail was recorded.'));
+            $this->closeApproval();
+        } catch (AuthorizationException) {
+            $this->addError('approval', __('لا تملك صلاحية اعتماد هذا الطلب.'));
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first()
+                ?? __('تعذر اعتماد الطلب. راجع البيانات وحاول مرة أخرى.');
+            $this->addError('approval', (string) $message);
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('approval', __('تعذر اعتماد الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
+        }
     }
 
     public function reject(): void
     {
-        $approval = $this->selectedPendingApproval();
-        Gate::authorize('decide', $approval);
-        if (! app(DecideApprovalSource::class)->canReject($approval)) {
-            $this->addError('decisionReason', __('This source does not expose a rejection transition.'));
+        try {
+            $approval = $this->selectedPendingApproval();
+            Gate::authorize('decide', $approval);
+            if (! app(DecideApprovalSource::class)->canReject($approval)) {
+                $this->addError('decisionReason', __('هذا الطلب لا يدعم الرفض.'));
 
-            return;
+                return;
+            }
+            $validated = $this->validate(['decisionReason' => ['required', 'string', 'min:3', 'max:1000']]);
+            app(DecideApprovalSource::class)->reject($approval, $validated['decisionReason']);
+            session()->flash('approval-success', __('The source was rejected and its audit trail was recorded.'));
+            $this->closeApproval();
+        } catch (AuthorizationException) {
+            $this->addError('approval', __('لا تملك صلاحية رفض هذا الطلب.'));
+        } catch (ValidationException $exception) {
+            $errors = $exception->errors();
+            $message = collect($errors)->flatten()->first()
+                ?? __('تعذر رفض الطلب. راجع البيانات وحاول مرة أخرى.');
+            $this->addError(isset($errors['decisionReason']) ? 'decisionReason' : 'approval', (string) $message);
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('approval', __('تعذر رفض الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
         }
-        $validated = $this->validate(['decisionReason' => ['required', 'string', 'min:3', 'max:1000']]);
-        app(DecideApprovalSource::class)->reject($approval, $validated['decisionReason']);
-        session()->flash('approval-success', __('The source was rejected and its audit trail was recorded.'));
-        $this->closeApproval();
     }
 
     public function uploadEvidence(): void
@@ -272,10 +296,10 @@ new #[Title('Approval Inbox')] class extends Component
         @if($approvals->isEmpty())
             <x-state.empty :title="__('No approval requests found')" :description="__('No requests match your permissions, scope, and filters.')" icon="check-circle" />
         @else
-            <div class="hidden md:block">
-                <flux:table aria-label="{{ __('Approval requests') }}">
-                    <flux:table.columns><flux:table.column>{{ __('Requested') }}</flux:table.column><flux:table.column>{{ __('Source') }}</flux:table.column><flux:table.column>{{ __('Requester') }}</flux:table.column><flux:table.column>{{ __('Scope') }}</flux:table.column><flux:table.column>{{ __('State') }}</flux:table.column><flux:table.column>{{ __('Actions') }}</flux:table.column></flux:table.columns>
-                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="whitespace-nowrap font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell><div class="font-medium">{{ str($approval->source_type)->headline() }} #{{ $approval->source_id }}</div><div class="font-mono text-xs text-text-muted">{{ in_array($approval->requested_action, ['store_archive', 'store_delete'], true) ? __('Request archive') : $approval->requested_action }}</div></flux:table.cell><flux:table.cell>{{ $approval->requester?->name }}</flux:table.cell><flux:table.cell class="font-mono text-xs">{{ $approval->branch_id ? __('Branch').' #'.$approval->branch_id : '' }} {{ $approval->store_id ? __('Store').' #'.$approval->store_id : '' }}</flux:table.cell><flux:table.cell><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell><flux:button size="xs" variant="subtle" icon="eye" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</flux:button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
+            <div class="hidden overflow-x-auto md:block">
+                <flux:table class="min-w-[980px] table-fixed" aria-label="{{ __('Approval requests') }}">
+                    <flux:table.columns><flux:table.column class="w-[130px] whitespace-nowrap">{{ __('Requested') }}</flux:table.column><flux:table.column class="w-[280px]">{{ __('Source') }}</flux:table.column><flux:table.column class="w-[190px]">{{ __('Requester') }}</flux:table.column><flux:table.column class="w-[170px]">{{ __('Scope') }}</flux:table.column><flux:table.column class="w-[120px] whitespace-nowrap">{{ __('State') }}</flux:table.column><flux:table.column class="w-[110px] whitespace-nowrap">{{ __('Actions') }}</flux:table.column></flux:table.columns>
+                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="w-[130px] whitespace-nowrap align-top font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell class="w-[280px] max-w-[280px] align-top"><div class="break-words font-medium leading-5">{{ str($approval->source_type)->headline() }} #{{ $approval->source_id }}</div><div class="break-all font-mono text-xs leading-5 text-text-muted">{{ in_array($approval->requested_action, ['store_archive', 'store_delete'], true) ? __('Request archive') : $approval->requested_action }}</div></flux:table.cell><flux:table.cell class="w-[190px] max-w-[190px] break-words align-top leading-5">{{ $approval->requester?->name }}</flux:table.cell><flux:table.cell class="w-[170px] max-w-[170px] break-words align-top font-mono text-xs leading-5">{{ $approval->branch_id ? __('Branch').' #'.$approval->branch_id : '' }} {{ $approval->store_id ? __('Store').' #'.$approval->store_id : '' }}</flux:table.cell><flux:table.cell class="w-[120px] align-top"><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell class="w-[110px] align-top"><flux:button size="xs" variant="subtle" icon="eye" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</flux:button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
                 </flux:table>
             </div>
             <div class="space-y-3 md:hidden">@foreach($approvals as $approval)<x-cards.section-card :title="str($approval->source_type)->headline().' #'.$approval->source_id"><div class="space-y-3 text-sm"><div class="flex items-center justify-between gap-3"><x-status.badge :status="$approval->approval_state->value" /><span class="font-mono text-xs text-text-muted">{{ $approval->requested_at->format('Y-m-d H:i') }}</span></div><p>{{ __('Requester') }}: {{ $approval->requester?->name }}</p><flux:button size="sm" variant="subtle" icon="eye" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</flux:button></div></x-cards.section-card>@endforeach</div>

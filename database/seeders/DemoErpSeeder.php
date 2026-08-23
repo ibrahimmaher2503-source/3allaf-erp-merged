@@ -10,6 +10,9 @@ use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Actions\SaveProductSupplierAction;
 use App\Modules\Catalog\Actions\SaveSupplierAction;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
@@ -81,6 +84,7 @@ final class DemoErpSeeder extends Seeder
             [$branch, $salesStore, $warehouseStore] = $this->locations();
             $this->scopeApprover($approver, $branch, $salesStore, $warehouseStore);
             $this->customerAndPosPolicies();
+            $this->catalogReferenceData();
 
             $category = $this->category();
             $supplier = $this->supplier();
@@ -221,6 +225,41 @@ final class DemoErpSeeder extends Seeder
                 '0.05',
                 'DEMO: local ERP seed prerequisite.',
             );
+        }
+    }
+
+    /** Seed only the reusable catalog values required to exercise product cards. */
+    private function catalogReferenceData(): void
+    {
+        foreach ([
+            ['code' => 'BOYS', 'name_ar' => 'أولاد', 'name_en' => 'Boys'],
+            ['code' => 'GIRLS', 'name_ar' => 'بنات', 'name_en' => 'Girls'],
+            ['code' => 'BOYS_GIRLS', 'name_ar' => 'أولاد وبنات', 'name_en' => 'Boys & Girls'],
+        ] as $index => $row) {
+            Gender::query()->updateOrCreate(['code' => $row['code']], [...$row, 'status' => 'active', 'sort_order' => $index + 1]);
+        }
+
+        foreach ([
+            ['code' => 'AGE_0_6_MONTHS', 'name_ar' => 'من 0 إلى 6 أشهر', 'name_en' => '0–6 months'],
+            ['code' => 'AGE_6_12_MONTHS', 'name_ar' => 'من 6 إلى 12 شهرًا', 'name_en' => '6–12 months'],
+            ['code' => 'AGE_0_1_YEAR', 'name_ar' => 'من 0 إلى سنة', 'name_en' => '0–1 year (Baby)'],
+            ['code' => 'AGE_1_3_YEARS', 'name_ar' => 'من سنة إلى 3 سنوات', 'name_en' => '1–3 years (Toddler)'],
+            ['code' => 'AGE_3_6_YEARS', 'name_ar' => 'من 3 إلى 6 سنوات', 'name_en' => '3–6 years (Preschool)'],
+            ['code' => 'AGE_6_12_YEARS', 'name_ar' => 'من 6 إلى 12 سنة', 'name_en' => '6–12 years (Kids)'],
+            ['code' => 'AGE_12_PLUS', 'name_ar' => '12 سنة فأكثر', 'name_en' => '12+ years (Teens & Adults)'],
+        ] as $index => $row) {
+            AgeLabel::query()->updateOrCreate(['code' => $row['code']], [...$row, 'status' => 'active', 'sort_order' => $index + 1]);
+        }
+
+        foreach ([
+            ['code' => 'RED', 'name_ar' => 'أحمر', 'name_en' => 'Red'],
+            ['code' => 'BLUE', 'name_ar' => 'أزرق', 'name_en' => 'Blue'],
+            ['code' => 'YELLOW', 'name_ar' => 'أصفر', 'name_en' => 'Yellow'],
+            ['code' => 'GREEN', 'name_ar' => 'أخضر', 'name_en' => 'Green'],
+            ['code' => 'BLACK', 'name_ar' => 'أسود', 'name_en' => 'Black'],
+            ['code' => 'WHITE', 'name_ar' => 'أبيض', 'name_en' => 'White'],
+        ] as $index => $row) {
+            Colour::query()->updateOrCreate(['code' => $row['code']], [...$row, 'status' => 'active', 'sort_order' => $index + 1]);
         }
     }
 

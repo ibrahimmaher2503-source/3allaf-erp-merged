@@ -97,10 +97,6 @@ new #[Title('Roles')] class extends Component
         @endcan
     </x-slot:actions>
 
-    <flux:callout variant="info" icon="information-circle" title="{{ __('Role safety') }}">
-        {{ __('Canonical roles stay read-only here. Local roles can receive active non-sensitive permissions only; sensitive grants remain owner-approved canonical boundaries.') }}
-    </flux:callout>
-
     <x-tables.data-panel :title="__('Roles')" :description="__('Search roles, review their current assignments, then open the permission matrix for details.')">
         <x-slot:toolbar>
             <x-tables.filter-bar>

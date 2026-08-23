@@ -44,6 +44,7 @@
     "Amount": "Amount",
     "Remove": "Remove",
     "Operational context": "Operational context",
+    "Operational setup": "Operational setup",
     "Open": "Open",
     "Checkout requires a visible selling store and an active local POS shift.": "Checkout requires a visible selling store and an active local POS shift.",
     "Discount": "Discount",
@@ -372,7 +373,7 @@
     "Or, return to": "Or, return to",
     "log in": "log in",
     "Branches": "Branches",
-    "Stores & Mapping": "Stores & Mapping",
+    "Stores & Mapping": "Warehouses & Points of Sale",
     "Cash Drawers": "Cash Drawers",
     "Audit Logs": "Audit Logs",
     "Approval inbox": "Approval inbox",
@@ -1371,8 +1372,9 @@
     "The product type is stored and audited. Component lines, assembly, and bundle pricing are deferred because the approved Phase 1 data contract does not define them.": "The product type is stored and audited. Component lines, assembly, and bundle pricing are deferred because the approved Phase 1 data contract does not define them.",
     "Service product boundary": "Service product boundary",
     "Services do not create stock balances. Reorder threshold is disabled for this type; appointment and fulfillment workflows are outside TSK-011.": "Services do not create stock balances. Reorder threshold is disabled for this type; appointment and fulfillment workflows are outside TSK-011.",
-    "Physical and merchandising attributes": "Physical and merchandising attributes",
-    "These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.": "These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.",
+    "Physical and merchandising attributes": "Product operations and specifications",
+    "These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.": "Enter the product's measurement and operating details. Manage variation options in the Variations section below.",
+    "Explicit variation families create independent child SKUs. Ordinary colour and size fields above remain descriptive and never create variants.": "Create independent child SKUs from the option groups you set up.",
     "Unit of measure": "Unit of measure",
     "Owner-configurable": "Owner-configurable",
     "Reorder threshold": "Reorder threshold",
@@ -2210,4 +2212,47 @@
     ,"Select supplier": "Select supplier"
     ,"Select product": "Select product"
     ,"Unit cost": "Unit cost"
+    ,"Primary point of sale": "Primary point of sale"
+    ,"Primary point of sale per branch": "Primary point of sale per branch"
+    ,"Choose the point of sale used by each branch. Sales stock is taken from this point of sale.": "Choose the point of sale used by each branch. Sales stock is taken from this point of sale."
+    ,"Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale.": "Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale."
+    ,"Current point of sale": "Current point of sale"
+    ,"No primary point of sale": "No primary point of sale"
+    ,"Create point of sale": "Create point of sale"
+    ,"Needs setup": "Needs setup"
+    ,"Choose": "Choose"
+    ,"No branches are available.": "No branches are available."
+    ,"Choose primary point of sale": "Choose primary point of sale"
+    ,"Change primary point of sale": "Change primary point of sale"
+    ,"No point of sale is available for this branch.": "No point of sale is available for this branch."
+    ,"Create a point of sale for this branch first, then choose it here.": "Create a point of sale for this branch first, then choose it here."
+    ,"Point of sale": "Point of sale"
+    ,"Select a point of sale...": "Select a point of sale..."
+    ,"Only active points of sale for this branch are shown.": "Only active points of sale for this branch are shown."
+    ,"Add a short note for this change.": "Add a short note for this change."
+    ,"Primary point of sale history": "Primary point of sale history"
+    ,"No primary point of sale history for this branch.": "No primary point of sale history for this branch."
+    ,"Set as primary point of sale": "Set as primary point of sale"
+    ,"Set as primary": "Set as primary"
+    ,"Select a branch for this point of sale first.": "Select a branch for this point of sale first."
+    ,"This changes the primary point of sale for the branch. The previous choice stays in the history.": "This changes the primary point of sale for the branch. The previous choice stays in the history."
+    ,"A new active point of sale becomes primary for its branch when no primary point of sale exists.": "A new active point of sale becomes primary for its branch when no primary point of sale exists."
+    ,"Primary point of sale saved successfully.": "Primary point of sale saved successfully."
+    ,"Select an active branch for this point of sale.": "Select an active branch for this point of sale."
+    ,"Only points of sale can be set as a branch primary point of sale.": "Only points of sale can be set as a branch primary point of sale."
+    ,"Point of sale must be active to set it as primary.": "Point of sale must be active to set it as primary."
+    ,"Create warehouse or point of sale": "Create warehouse or point of sale"
+    ,"Edit warehouse or point of sale": "Edit warehouse or point of sale"
+    ,"Location type": "Location type"
+    ,"Save location": "Save location"
+    ,"A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists.": "A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists."
+    ,"Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.": "Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale."
+    ,"Back to catalog master": "Back to catalog master"
+    ,"Back to suppliers": "Back to suppliers"
+    ,"Back to settings": "Back to settings"
+    ,"Back to returns": "Back to returns"
+    ,"Download Excel template": "Download Excel template"
+    ,"Generate automatically": "Generate automatically"
+    ,"Generate code automatically": "Generate code automatically"
+    ,"Generated automatically": "Generated automatically"
 }

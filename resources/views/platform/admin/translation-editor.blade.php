@@ -128,6 +128,7 @@ new #[Title('Translation editor')] class extends Component {
 }; ?>
 
 <x-app.page :title="__('Translation editor')" :description="__('Change approved Arabic and English system wording without editing language files.')" max-width="7xl" class="space-y-5">
+    <x-slot:actions><flux:button href="{{ route('admin.settings') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to settings') }}</flux:button></x-slot:actions>
     <x-tables.data-panel :title="__('System translations')" :description="__('Search a known translation key, update both languages, or reset to the shipped wording.')">
         <x-slot:toolbar>
             <div class="grid gap-3 md:grid-cols-3">

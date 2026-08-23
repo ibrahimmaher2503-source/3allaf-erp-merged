@@ -88,14 +88,14 @@ final class UserFlowRegistry
                 null,
             ),
             'FLW-ADM-02' => self::flow(
-                ['ar' => 'إدارة المتاجر والربط', 'en' => 'Manage Stores and Mapping'],
+                ['ar' => 'إدارة المخازن ونقاط البيع', 'en' => 'Manage Warehouses and Points of Sale'],
                 ['ar' => 'مسؤول النظام المصرح له', 'en' => 'Authorized administrator'],
                 ['UI-ADM-004'],
                 ['branches_stores.view'],
                 [
                     ['ar' => 'مراجعة قائمة مواقع التخزين المسجلة.', 'en' => 'Review registered stock locations.'],
-                    ['ar' => 'تحديد المتجر البيعي الرئيسي المربوط بكل فرع.', 'en' => 'Set primary selling store mapping per branch.'],
-                    ['ar' => 'حفظ الربط بعد التحقق من عدم وجود تضارب تشغيلي.', 'en' => 'Save mapping after verifying no operational conflicts exist.'],
+                    ['ar' => 'تحديد نقطة البيع الأساسية لكل فرع.', 'en' => 'Choose the primary point of sale for each branch.'],
+                    ['ar' => 'حفظ التغيير مع الاحتفاظ بالسجل السابق.', 'en' => 'Save the change while keeping the previous history.'],
                 ],
                 null,
             ),

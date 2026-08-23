@@ -5,12 +5,12 @@ return [
         0 => 'admin.stores',
     ],
     'title' => [
-        'ar' => 'المتاجر والربط',
-        'en' => 'Stores & Mapping',
+        'ar' => 'المخازن ونقاط البيع',
+        'en' => 'Warehouses & Points of Sale',
     ],
     'purpose' => [
-        'ar' => 'تدير مواقع التخزين وربطها بالفروع.',
-        'en' => 'Manage stock locations and their branch mapping.',
+        'ar' => 'تدير المخازن ونقاط البيع التابعة للفروع.',
+        'en' => 'Manage warehouses and branch points of sale.',
     ],
     'when_to_use' => [
         'ar' => 'استخدم هذه الشاشة عندما تكون مهمتك الحالية مرتبطة بهذا السجل أو الإجراء.',

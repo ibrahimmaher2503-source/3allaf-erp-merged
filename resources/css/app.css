@@ -544,6 +544,44 @@
         padding-inline-end: 1.25rem;
     }
 
+    /* Keep the conventional final actions column compact and available while tables scroll. */
+    main [data-flux-table]:has(> [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child :is(button, a, [role="button"])) > [data-flux-columns] > tr > [data-flux-column]:last-child,
+    main [data-flux-table]:has(> [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child :is(button, a, [role="button"])) > [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child,
+    table.data-table:has(> tbody > tr > :last-child :is(button, a, [role="button"])) > :is(thead, tbody) > tr > :last-child,
+    .app-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child,
+    .catalog-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child,
+    .table-panel-surface:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child {
+        width: max-content !important;
+        min-width: max-content !important;
+        padding-inline: 0.75rem !important;
+        white-space: nowrap;
+        text-align: end !important;
+        position: sticky;
+        inset-inline-end: 0;
+        z-index: 10;
+        background-color: var(--color-surface);
+        border-inline-start: 1px solid var(--color-border);
+        box-shadow: -8px 0 12px -14px color-mix(in srgb, var(--color-text-primary) 72%, transparent);
+    }
+
+    main [data-flux-table]:has(> [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child :is(button, a, [role="button"])) > [data-flux-columns] > tr > [data-flux-column]:last-child,
+    table.data-table:has(> tbody > tr > :last-child :is(button, a, [role="button"])) > thead > tr > :last-child,
+    .app-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > thead > tr > :last-child,
+    .catalog-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > thead > tr > :last-child,
+    .table-panel-surface:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > thead > tr > :last-child {
+        z-index: 20;
+        background-color: color-mix(in srgb, var(--color-surface-muted) 88%, var(--color-surface));
+    }
+
+    [dir="rtl"] main [data-flux-table]:has(> [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child :is(button, a, [role="button"])) > [data-flux-columns] > tr > [data-flux-column]:last-child,
+    [dir="rtl"] main [data-flux-table]:has(> [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child :is(button, a, [role="button"])) > [data-flux-rows] > [data-flux-row] > [data-flux-cell]:last-child,
+    [dir="rtl"] table.data-table:has(> tbody > tr > :last-child :is(button, a, [role="button"])) > :is(thead, tbody) > tr > :last-child,
+    [dir="rtl"] .app-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child,
+    [dir="rtl"] .catalog-table-frame:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child,
+    [dir="rtl"] .table-panel-surface:has(> table > tbody > tr > :last-child :is(button, a, [role="button"])) > table > :is(thead, tbody) > tr > :last-child {
+        box-shadow: 8px 0 12px -14px color-mix(in srgb, var(--color-text-primary) 72%, transparent);
+    }
+
     .app-table-frame tbody tr:last-child,
     .catalog-table-frame tbody tr:last-child,
     main [data-flux-row]:last-child {
@@ -919,6 +957,47 @@
         @apply border-border bg-surface shadow-card;
     }
 
+    .catalog-product-section-nav {
+        @apply flex gap-2 overflow-x-auto rounded-xl border border-border bg-surface/70 p-2;
+    }
+
+    .catalog-product-section-nav a {
+        @apply shrink-0 rounded-lg px-3 py-2 text-sm text-text-muted transition hover:bg-surface hover:text-text-primary;
+    }
+
+    .catalog-product-disclosure {
+        @apply overflow-hidden;
+    }
+
+    .catalog-product-disclosure > summary {
+        @apply flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 sm:px-5;
+    }
+
+    .catalog-product-disclosure > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .catalog-product-disclosure > summary::after {
+        content: '⌄';
+        @apply mt-1 shrink-0 text-lg leading-none text-text-muted transition-transform;
+    }
+
+    .catalog-product-disclosure[open] > summary::after {
+        @apply rotate-180;
+    }
+
+    .catalog-product-disclosure__content {
+        @apply border-t border-border px-4 py-5 sm:px-5;
+    }
+
+    .settings-review-button[disabled]:not(.is-loading) > :not([data-flux-loading-indicator]) {
+        opacity: 1;
+    }
+
+    .settings-review-button[disabled]:not(.is-loading) > [data-flux-loading-indicator] {
+        opacity: 0;
+    }
+
     .catalog-detail-hero {
         @apply border-border bg-surface shadow-card;
     }
@@ -979,6 +1058,10 @@
 
 [data-flux-label] {
     @apply  !mb-0 !leading-tight;
+}
+
+:where(input[data-flux-control].h-10, select[data-flux-control].h-10) {
+    min-height: 2.75rem;
 }
 
 input:focus[data-flux-control],

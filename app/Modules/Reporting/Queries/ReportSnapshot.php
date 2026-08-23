@@ -103,7 +103,7 @@ final class ReportSnapshot
         $characterId = $this->scopedIdFilter($filters['character_id'] ?? null, Character::query()->where('status', 'active'), __('character'));
         $colourId = $this->scopedIdFilter($filters['colour_id'] ?? null, Colour::query()->where('status', 'active'), __('colour'));
         $genderId = $this->scopedIdFilter($filters['gender_id'] ?? null, Gender::query()->where('status', 'active'), __('gender'));
-        $productType = $this->enumFilter($filters['product_type'] ?? null, ['standard', 'service', 'bundle', 'rental', 'party_consumable']);
+        $productType = $this->enumFilter($filters['product_type'] ?? null, ['standard', 'service', 'digital', 'bundle', 'rental', 'party_consumable']);
         $productStatus = $this->enumFilter($filters['product_status'] ?? null, ['active', 'inactive', 'archived']);
         $paymentMethodId = $this->scopedIdFilter($filters['payment_method_id'] ?? null, PaymentMethod::query()->where('status', 'active'), __('payment method'));
         $documentStatus = $this->enumFilter($filters['document_status'] ?? null, ['approved', 'suspended', 'cancelled']);

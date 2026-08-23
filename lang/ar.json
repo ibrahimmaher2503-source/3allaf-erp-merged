@@ -1,7 +1,7 @@
 {
     "No active lookup values are available.": "لا توجد قيم بحث نشطة متاحة.",
     "Optional catalog content stays on this product card.": "تبقى بيانات الكتالوج الاختيارية في بطاقة المنتج هذه.",
-    "Product web & SEO": "بيانات الويب وتحسين محركات البحث للمنتج",
+    "Product web & SEO": "خيارات متقدمة",
     "Select every applicable value. Leave empty when it does not apply.": "اختر كل القيم المنطبقة، واتركها فارغة عند عدم الانطباق.",
     "Choose one value from every option group.": "اختر قيمة واحدة من كل مجموعة خيارات.",
     "A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.": "عائلة المتغيرات غير قابلة للبيع ولا يمكن أن تملك باركودًا. أضف الباركود إلى رمز SKU فرعي.",
@@ -121,7 +121,7 @@
     "The requested cart line was not found.": "لم يتم العثور على سطر السلة المطلوب.",
     "Quantity must be greater than zero and within the allowed limit.": "يجب أن تكون الكمية أكبر من صفر وضمن الحد المسموح.",
     "Tax was enabled, but one effective company default tax rule with an explicit rate is required.": "تم تفعيل الضريبة، لكن يلزم وجود قاعدة ضريبية افتراضية فعّالة للشركة بمعدل صريح.",
-    "Display order is applied among siblings: roots are ordered together, and each child stays beneath its selected parent. English names are optional for generic categories.": "يُطبَّق ترتيب العرض بين العناصر الشقيقة: تُرتَّب العناصر الجذرية معًا، ويبقى كل عنصر فرعي تحت الأصل المحدد له. الأسماء الإنجليزية اختيارية للتصنيفات العامة.",
+    "Sort each category within its main category so the list stays organized.": "رتّب كل تصنيف داخل تصنيفه الرئيسي لتبقى القائمة منظمة.",
     "Create root category": "إنشاء تصنيف جذري",
     "Catalog lookup masters": "البيانات الأساسية لقيم الكتالوج",
     "Maintain bilingual age labels, characters, colours, and genders used by product cards.": "حافظ على تسميات الأعمار والشخصيات والألوان والأنواع باللغتين لاستخدامها في بطاقات المنتجات.",
@@ -130,7 +130,10 @@
     "Open supplier masters": "فتح البيانات الأساسية للموردين",
     "Option group saved successfully.": "تم حفظ مجموعة الخيارات بنجاح.",
     "Option value saved successfully.": "تم حفظ قيمة الخيار بنجاح.",
-    "Build a reusable bilingual option library for explicit standard-product variation families.": "أنشئ مكتبة خيارات ثنائية اللغة قابلة لإعادة الاستخدام لعائلات متغيرات المنتجات القياسية الصريحة.",
+    "Build a reusable bilingual option library for explicit standard-product variation families.": "أنشئ مكتبة خيارات ثنائية اللغة مثل اللون والمقاس لاستخدامها عند إنشاء متغيرات المنتجات القياسية.",
+    "Product option setup": "إعداد خيارات المنتجات",
+    "Create reusable product options such as colour and size before building variations.": "أنشئ خيارات منتجات قابلة لإعادة الاستخدام، مثل اللون والمقاس، قبل إنشاء المتغيرات.",
+    "Create reusable product options, such as sizes and colours, before building products with variations.": "أنشئ خيارات منتجات قابلة لإعادة الاستخدام، مثل المقاسات والألوان، قبل إنشاء المنتجات ذات المتغيرات.",
     "Option group editor": "محرر مجموعة الخيارات",
     "Edit option group": "تعديل مجموعة الخيارات",
     "Codes are permanent. Labels and display order remain editable.": "الرموز دائمة، بينما تظل التسميات وترتيب العرض قابلة للتعديل.",
@@ -142,7 +145,7 @@
     "Value code": "رمز القيمة",
     "Variation matrix generated. Existing combinations were preserved.": "تم إنشاء مصفوفة المتغيرات، وحُفظت التركيبات الموجودة.",
     "Variation media saved.": "تم حفظ وسائط المتغير.",
-    "Explicit variation families create independent child SKUs. Ordinary colour and size fields above remain descriptive and never create variants.": "تنشئ عائلات المتغيرات الصريحة رموز SKU فرعية مستقلة. وتبقى حقول اللون والمقاس العادية أعلاه وصفية ولا تنشئ متغيرات أبدًا.",
+    "Explicit variation families create independent child SKUs. Ordinary colour and size fields above remain descriptive and never create variants.": "أنشئ متغيرات مستقلة برموز SKU خاصة بها من مجموعات الخيارات التي أعددتها.",
     "Only standard products can have variations. Services and composite products remain unavailable here.": "لا يمكن أن تحتوي على متغيرات إلا المنتجات القياسية. وتظل الخدمات والمنتجات المركبة غير متاحة هنا.",
     "Options": "الخيارات",
     "Stock": "المخزون",
@@ -173,8 +176,10 @@
     "Include Gift Card payment": "تضمين دفع بطاقة الهدايا",
     "Complete the selection to see price and availability.": "أكمل الاختيار لعرض السعر والتوفر.",
     "Use groups to filter customer lists and reports. Leave Parent empty for a root group; nested groups remain under their selected parent.": "استخدم المجموعات لتصفية قوائم العملاء والتقارير. اترك الأصل فارغًا للمجموعة الجذرية، وتبقى المجموعات المتداخلة تحت الأصل المحدد.",
+    "Use groups to organize customer profiles and simplify searching.": "استخدم المجموعات لتنظيم العملاء وتسهيل البحث عنهم.",
     "Create root group": "إنشاء مجموعة جذرية",
     "Customer Import": "استيراد العملاء",
+    "Download Excel template": "تنزيل قالب Excel",
     "Upload, validate, review errors, and obtain independent approval before importing customers.": "ارفع وتحقق وراجع الأخطاء واحصل على اعتماد مستقل قبل استيراد العملاء.",
     "Reviewed customer import": "استيراد العملاء المُراجع",
     "Consent is required and duplicates are warned or rejected. No automatic merge is performed. The requester cannot approve their own batch.": "الموافقة مطلوبة، ويُحذَّر من التكرارات أو تُرفض. لا يُنفَّذ دمج تلقائي، ولا يمكن لمُنشئ الطلب اعتماد دفعته.",
@@ -261,6 +266,8 @@
     "No backup creation or restore verification has been claimed.": "لم يُدّعَ إنشاء نسخة احتياطية أو التحقق من استعادتها.",
     "Notifications": "الإشعارات",
     "Operational alerts": "التنبيهات التشغيلية",
+    "Operational setup": "العمليات التشغيلية",
+    "Prepare supplier, catalog, product, and customer data in dependency order.": "جهّز بيانات مجموعات الموردين والموردين والتصنيفات والمنتجات والعملاء بالترتيب المناسب.",
     "Role-scoped operational alerts appear here when a configured source delivers them.": "تظهر هنا التنبيهات التشغيلية المقيدة بالدور عند وصولها من مصدر مكوّن.",
     "Checking notifications…": "جارٍ فحص الإشعارات…",
     "No notifications": "لا توجد إشعارات",
@@ -286,6 +293,15 @@
     "Prepare the catalog, partners, customers, prices, and opening balances.": "جهّز الكتالوج والموردين والعملاء والأسعار وأرصدة الافتتاح.",
     "areas": "مجالات",
     "Create active branches and stores, then assign an active selling store for each retail branch.": "أنشئ فروعًا ومخازن نشطة، ثم عيّن مخزن بيع نشطًا لكل فرع تجزئة.",
+    "Set the document code, where it applies, and how its next number is displayed.": "حدّد رمز المستند ونطاق استخدامه وشكل الرقم التالي.",
+    "Rule details": "بيانات القاعدة",
+    "Choose the document and the level that uses this numbering rule.": "اختر المستند والمستوى الذي ستُطبّق عليه قاعدة الترقيم.",
+    "Number format": "شكل الرقم",
+    "Arrange the text and digits exactly as they should appear on the document.": "رتّب النص والأرقام كما تريد أن تظهر في المستند.",
+    "Preview of the next document number": "معاينة الرقم التالي",
+    "Changes here do not reserve a number until you save the rule.": "لن يُحجز أي رقم قبل حفظ القاعدة.",
+    "Counter settings": "إعدادات العداد",
+    "Choose the first number and whether counting restarts on a schedule.": "حدّد أول رقم وما إذا كان العداد سيبدأ من جديد دوريًا.",
     "Create active branches and complete their basic details.": "أنشئ الفروع النشطة وأكمل بياناتها الأساسية.",
     "Stock stores": "المخازن",
     "Add at least one active stock store linked to an active branch.": "أضف مخزنًا نشطًا واحدًا على الأقل مرتبطًا بفرع نشط.",
@@ -543,6 +559,10 @@
     "Additional image": "صورة إضافية",
     "Address": "العنوان",
     "Address / Location": "العنوان / الموقع",
+    "Contact details": "بيانات الاتصال",
+    "Customer name": "اسم العميل",
+    "Enter the customer name and the contact details needed to reach them.": "أدخل اسم العميل وبيانات التواصل الأساسية.",
+    "Egyptian phone numbers are accepted in local or international format.": "يُقبل رقم الهاتف المصري بالصيغة المحلية أو الدولية.",
     "Adjust the filters or approve a source invoice first.": "عدّل عوامل التصفية أو اعتمد فاتورة مصدر أولًا.",
     "Adjust the filters or approve an invoice first.": "عدّل عوامل التصفية أو اعتمد فاتورة أولًا.",
     "Adjust the filters or date range to compare activity.": "عدّل عوامل التصفية أو الفترة الزمنية لمقارنة النشاط.",
@@ -828,7 +848,10 @@
     "Bookings": "حجوزات",
     "Bookings calendar": "تقويم الحجوزات",
     "Bookings in the selected range": "حجوزات في the selected range",
-    "Both Arabic and English names are required for catalog identity.": "يلزم إدخال الاسم بالعربية والإنجليزية لهوية الفهرس.",
+    "Both Arabic and English names are required for catalog identity.": "أدخل اسم العلامة التجارية بالعربية والإنجليزية.",
+    "Arabic name": "الاسم بالعربية",
+    "English name": "الاسم بالإنجليزية",
+    "Brand details": "بيانات العلامة التجارية",
     "Both Arabic and English names are required for the product card.": "Both arabic و english names are مطلوب لـ the الصنف card.",
     "Both reversal reference values are required together.": "يجب إدخال مرجعي العكس معًا.",
     "Both source type and source identifier are required when linking an attachment.": "يجب تحديد نوع المصدر ومعرّفه عند ربط مرفق.",
@@ -859,13 +882,13 @@
     "Branches": "الفروع",
     "Brand": "العلامة التجارية",
     "Brand action could not be completed": "تعذر إكمال إجراء العلامة التجارية",
-    "Brand catalog": "فهرس الماركات",
+    "Brand catalog": "العلامات التجارية",
     "Brand code": "رمز العلامة التجارية",
     "Brand created successfully.": "تم إنشاء العلامة التجارية بنجاح.",
     "Brand foundation": "أساس العلامة التجارية",
     "Brand master records are global catalog identity. Full supplier, terms, product media, and product-type behavior remain outside TSK-010.": "سجلات العلامات التجارية جزء من هوية الفهرس العامة. إدارة الموردين والشروط ووسائط المنتج وأنواع المنتجات خارج نطاق TSK-010.",
     "Brand name": "اسم العلامة التجارية",
-    "Brand status updated for :count records.": "Brand الحالة updated لـ :count records.",
+    "Brand status updated for :count records.": "تم تحديث حالة :count علامة تجارية.",
     "Brand status updated successfully.": "تم تحديث حالة العلامة التجارية بنجاح.",
     "Brand updated successfully.": "تم تحديث العلامة التجارية بنجاح.",
     "Brands": "العلامات التجارية",
@@ -956,7 +979,9 @@
     "Catalog and inventory": "دليل المنتجات والمخزون",
     "Catalog, unit, fraction, availability, and party-store mapping rules remain PENDING; no quantity is rendered.": "تبقى قواعد الكتالوج والوحدة والكسور والتوفر وربط متجر الحفلات معلقة؛ لا يتم عرض كمية.",
     "Category / brand": "التصنيف / العلامة",
-    "Category Masters": "الماستر الأساسي للتصنيفات",
+    "Category Masters": "التصنيفات",
+    "Product categories": "تصنيفات المنتجات",
+    "Organize product categories and subcategories clearly.": "نظّم تصنيفات المنتجات والتصنيفات الفرعية بشكل واضح.",
     "Category action could not be completed": "تعذر إكمال إجراء التصنيف",
     "Category code": "رمز التصنيف",
     "Category created successfully.": "تم إنشاء التصنيف بنجاح.",
@@ -968,7 +993,7 @@
     "Central / No Direct Branch": "مركزي / دون فرع مباشر",
     "Central / Unassigned": "مركزي / غير مُسند",
     "Central branch": "الفرع المركزي",
-    "Change": "الباقي",
+    "Change": "تغيير",
     "Change decision values here. Every save creates a new append-only local version and audit event; no value becomes approved policy.": "غيّر قيم القرارات من هنا. كل حفظ ينشئ إصدارًا محليًا جديدًا وسجل تدقيق ملحقًا، ولا تتحول أي قيمة إلى سياسة معتمدة.",
     "Change reason (for audit)": "Change السبب (لـ audit)",
     "Change the filter or create a permitted record.": "غيّر عامل التصفية أو أنشئ سجلًا مسموحًا.",
@@ -1038,7 +1063,8 @@
     "Closed shift immutability": "عدم تعديل الوردية المغلقة",
     "Closed shifts": "مغلق ورديات",
     "Code": "الرمز",
-    "Code or Arabic/English name...": "الرمز أو الاسم بالعربية أو الإنجليزية...",
+    "Code or Arabic/English name...": "ابحث بالرمز أو الاسم...",
+    "Search by code or name...": "ابحث بالرمز أو الاسم...",
     "Code or name": "كود أو الاسم",
     "Collected": "محصل",
     "Colour": "اللون",
@@ -1578,7 +1604,7 @@
     "Financial settings become active only after an approved version is recorded. This setup page never creates production defaults or bypasses approval.": "لا تصبح الإعدادات المالية فعالة إلا بعد تسجيل نسخة معتمدة. ولا تنشئ هذه الصفحة defaults إنتاجية أو تتجاوز الاعتماد.",
     "Financial settings require approval": "الإعدادات المالية تتطلب اعتمادًا",
     "Find a Party booking or invoice, then open its permission-scoped working invoice editor.": "Find a الحفلة حجز أو فاتورة, ثم فتح its permission-scoped working فاتورة editor.",
-    "Find a brand by its code or bilingual name.": "ابحث عن علامة تجارية بالكود أو الاسم ثنائي اللغة.",
+    "Find a brand by its code or bilingual name.": "ابحث عن العلامة التجارية بالرمز أو الاسم.",
     "Find a non-final Party invoice, then review its final settlement checklist.": "ابحث عن فاتورة حفلة مبدئية وراجع قائمة التسوية النهائية لها.",
     "Find an open Party invoice with a remaining balance, then record its payment.": "Find an فتح فاتورة حفلة مع a remaining الرصيد, ثم record its الدفع.",
     "Find generated files and review audit history.": "Find generated files و review audit history.",
@@ -1882,7 +1908,7 @@
     "Locale": "الإعدادات المحلية",
     "Locale-aware document direction supports Arabic RTL and English LTR layouts.": "يدعم اتجاه المستند المعتمد على اللغة تخطيطات العربية RTL والإنجليزية LTR.",
     "Localization & Currency Policy Baseline": "خط أساس التوطين وسياسة العملة",
-    "Localization and currency": "التوطين والعملة",
+    "Localization and currency": "العملة واللغة",
     "Locally generated": "مولد محليًا",
     "Location": "الموقع",
     "Location / room": "الموقع / الغرفة",
@@ -1918,8 +1944,8 @@
     "Main image": "الصورة الرئيسية",
     "Main image updated successfully.": "تم تحديث الصورة الرئيسية بنجاح.",
     "Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.": "إدارة هيكل تصنيفات محدود ومرتب، مع قواعد للدورات والتبعيات على الخادم.",
-    "Maintain bilingual brand identity with dependency-aware status changes.": "إدارة هوية العلامات التجارية ثنائية اللغة مع تغيير حالة يراعي التبعيات.",
-    "Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.": "إدارة هوية المنتج ثنائية اللغة والنوع المعتمد والسمات والوسائط المحمية في بطاقة موحدة.",
+    "Maintain bilingual brand identity with dependency-aware status changes.": "أضف وعدّل العلامات التجارية وتابع حالتها بسهولة.",
+    "Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.": "إدارة بيانات المنتج بالعربية والإنجليزية، ونوعه المعتمد، وسماته القابلة للتقارير، ووسائطه المحمية في بطاقة واحدة واضحة.",
     "Maintain supplier identity, contact details, tax reference, and configurable payment terms text.": "إدارة هوية المورد وبيانات الاتصال والرقم الضريبي وشروط السداد القابلة للتهيئة.",
     "Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.": "إدارة سجلات الموردين وبيانات الاتصال وشروط السداد والعلاقات المفضلة مع المنتجات وسجل المشتريات.",
     "Maintenance": "صيانة",
@@ -1931,7 +1957,7 @@
     "Manage roles": "إدارة الأدوار",
     "Manage approved roles and branch or store scopes.": "إدارة الأدوار المعتمدة ونطاقات الفروع أو المتاجر.",
     "Manage barcodes": "إدارة الباركودات",
-    "Manage brand identity here. Supplier terms, product media, and product details are managed in their related workspaces.": "Manage brand identity هنا. المورد terms, الصنف media, و الصنف details are managed في their related workspaces.",
+    "Manage brand identity here. Supplier terms, product media, and product details are managed in their related workspaces.": "أضف العلامات التجارية أو عدّلها هنا، ثم اربطها بالمنتجات عند الحاجة.",
     "Manage commercial branch locations and their authorized POS selling store assignments.": "إدارة مواقع الفروع التجارية وتعيينات متاجر البيع المعتمدة لنقاط البيع.",
     "Manage company identity, payment methods, tax rules, document numbering, printers, and audit history.": "إدارة هوية الشركة وطرق الدفع والضرائب وترقيم المستندات والطابعات وسجل المراجعة.",
     "Manage customers, permissions, approvals, reports, and system settings within your role.": "أدر العملاء والصلاحيات والاعتمادات والتقارير وإعدادات النظام ضمن دورك.",
@@ -2096,7 +2122,7 @@
     "No barcode is linked yet.": "لم يتم ربط أي باركود بعد.",
     "No barcode linked": "لا يوجد باركود مرتبط",
     "No brand": "بدون علامة تجارية",
-    "No brands found": "لم يتم العثور على علامات",
+    "No brands found": "لا توجد علامات تجارية بعد",
     "No card number, Gift Receipt reference, balance, price, holder data, payment, or print artifact is loaded in this readiness slice.": "لا يتم تحميل رقم بطاقة أو مرجع إيصال هدية أو رصيد أو سعر أو بيانات حامل أو دفعة أو مخرج طباعة في هذه الشريحة.",
     "No cash drawers match your search or active filters.": "لا توجد أدراج نقدية تطابق البحث أو عوامل التصفية النشطة.",
     "No cash movements recorded.": "لا cash movements recorded.",
@@ -2641,7 +2667,7 @@
     "e.g. 01012345678 or +20 1012345678": "مثال: 01012345678 أو ‎+20 1012345678",
     "Optional Egyptian phone number": "رقم هاتف مصري اختياري",
     "Phone or name": "الهاتف أو الاسم",
-    "Physical and merchandising attributes": "السمات الفيزيائية والتسويقية",
+    "Physical and merchandising attributes": "بيانات تشغيلية ومواصفات المنتج",
     "Physical branch address details...": "تفاصيل عنوان الفرع...",
     "Planned": "مخطط",
     "Platform": "المنصة",
@@ -2779,7 +2805,7 @@
     "Product card": "بطاقة الصنف",
     "Product card could not be saved": "تعذر حفظ بطاقة المنتج",
     "Product card created successfully. Add protected images from this page.": "تم إنشاء بطاقة المنتج بنجاح. أضف الصور المحمية من هذه الصفحة.",
-    "Product card saved successfully.": "الصنف card saved successfully.",
+    "Product card saved successfully.": "تم حفظ بطاقة المنتج بنجاح.",
     "Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.": "يتم تسجيل تغيير بطاقة المنتج والنوع والحالة والوسائط عبر أساس التدقيق المشترك. لا يتم إنشاء أي أثر للمخزون أو السعر هنا.",
     "Product catalog": "كتالوج المنتجات",
     "Product created successfully.": "تم إنشاء المنتج بنجاح.",
@@ -2790,7 +2816,7 @@
     "Product name": "اسم المنتج",
     "Product price": "سعر المنتج",
     "Product search and suspended sale held locally": "بحث المنتجات وتعليق البيع محليًا",
-    "Product status updated for :count records.": "الصنف الحالة updated لـ :count records.",
+    "Product status updated for :count records.": "تم تحديث حالة :count من المنتجات.",
     "Product status updated successfully.": "تم تحديث حالة المنتج بنجاح.",
     "Product type": "نوع المنتج",
     "Product was not found or is inactive.": "الصنف was ليس found أو is غير مفعل.",
@@ -3267,7 +3293,7 @@
     "Save product card": "حفظ بطاقة المنتج",
     "Save reason": "حفظ السبب",
     "Save the card first, then upload protected images without losing the draft.": "احفظ البطاقة أولًا، ثم ارفع الصور المحمية دون فقدان المسودة.",
-    "Save the product card before adding protected images.": "حفظ the الصنف card before adding protected images.",
+    "Save the product card before adding protected images.": "احفظ بطاقة المنتج قبل إضافة الصور المحمية.",
     "Save working invoice": "حفظ working فاتورة",
     "Saved": "تم الحفظ",
     "Saved items": "Saved أصناف",
@@ -3300,6 +3326,7 @@
     "Search by normalized phone or Arabic/English name": "ابحث بالهاتف أو الاسم بالعربية أو الإنجليزية",
     "Search by normalized phone or bilingual name. Customer data remains scoped to the assigned branch/store.": "ابحث بالهاتف بعد توحيده أو بالاسم بالعربية والإنجليزية. تبقى بيانات العميل ضمن الفرع أو المتجر المخصص.",
     "Search categories": "بحث في التصنيفات",
+    "Search and filter": "البحث والتصفية",
     "Search code or name...": "ابحث بالرمز أو الاسم...",
     "Search customer": "البحث عن عميل",
     "Search drawers by code or name...": "ابحث في الأدراج بالرمز أو الاسم...",
@@ -3344,7 +3371,7 @@
     "Select at least one product for the count.": "Select at least one الصنف لـ the count.",
     "Select at least one record.": "اختار سجل واحد على الأقل.",
     "Select branch :code": "Select الفرع :كود",
-    "Select brand :code": "Select brand :كود",
+    "Select brand :code": "تحديد العلامة التجارية :code",
     "Select category :code": "Select فئة :كود",
     "Select destination store": "اختر المتجر الوجهة",
     "Select eligible lines": "Select eligible سطور",
@@ -3382,7 +3409,7 @@
     "Service status & system health": "حالة الخدمات وصحة النظام",
     "Service/package catalog, rental assets, consumables, and planned lines remain owner-configurable.": "يبقى كتالوج الخدمات والباقات وأصول التأجير والمواد الاستهلاكية والبنود المخططة قابلاً لتهيئة المالك.",
     "Services and packages": "الخدمات والباقات",
-    "Services do not create stock balances, so stock thresholds are not required for this type.": "Services do ليس إنشاء stock balances, so stock thresholds are ليس مطلوب لـ هذا نوع.",
+    "Services do not create stock balances, so stock thresholds are not required for this type.": "لا تنشئ الخدمات أرصدة مخزون، لذلك لا تُطلب حدود إعادة الطلب لهذا النوع.",
     "Services do not create stock balances. Reorder threshold is disabled for this type; appointment and fulfillment workflows are outside TSK-011.": "الخدمات لا تنشئ أرصدة مخزون. تعتمد الإعادة معطل لهذا النوع؛ وسير المواعيد والتنفيذ خارج TSK-011.",
     "Services, consumables, rental assets, and other Party charges only. Prices are recalculated on the server.": "Services, consumables, تأجير أصول, و آخر الحفلة charges only. prices are recalculated على the server.",
     "Session expired": "الجلسة انتهت",
@@ -3516,7 +3543,7 @@
     "Store status updated for :count records.": "المخزن الحالة updated لـ :count records.",
     "Store status updated successfully.": "تم تحديث حالة المتجر بنجاح.",
     "Store updated successfully.": "تم تحديث المتجر بنجاح.",
-    "Stores & Mapping": "المتاجر والربط",
+    "Stores & Mapping": "المخازن ونقاط البيع",
     "Submit": "إرسال",
     "Submit Order": "إرسال الطلب",
     "Submit count": "إرسال العد",
@@ -3855,7 +3882,7 @@
     "These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.": "هذه المنتجات النشطة لا تملك سعرًا معتمدًا وساريًا في المتاجر الظاهرة. يمكن متابعة الاستلام، لكن البيع عبر نقطة البيع وإنشاء الملصقات يظلان محظورين حتى اعتماد التسعير.",
     "These controls keep payment and tax behavior explicit. Values require owner approval before operational use.": "توضح هذه الضوابط سلوك الدفع والضريبة. تتطلب القيم اعتماد المسؤول قبل استخدامها في التشغيل.",
     "These controls make Local/Dev behavior explicit and auditable. BLK-008 still requires owner-approved Production values and formats.": "توضح هذه الضوابط سلوك نقطة البيع وتجعله قابلاً للمراجعة. يلزم اعتماد المسؤول للقيم والصيغ قبل تفعيل التشغيل الفعلي.",
-    "These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.": "هذه القيم سمات قابلة للبحث والتقرير. لا تنشئ متغيرات أو أرصدة أو هويات باركود مستقلة.",
+    "These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.": "أدخل بيانات القياس والتشغيل الخاصة بالمنتج. تُدار خيارات المتغيرات من قسم المتغيرات أدناه.",
     "This Gift Card is already closed.": "هذا gift card is already مغلق.",
     "This Gift Card is not redeemable.": "هذا gift card is ليس redeemable.",
     "This Gift Receipt has already been used or voided.": "هذا gift إيصال has already been used أو voided.",
@@ -4505,6 +4532,7 @@
     ,"All supplier groups": "كل مجموعات الموردين"
     ,"Arabic full name": "الاسم الكامل بالعربية"
     ,"Arabic group name": "اسم المجموعة بالعربية"
+    ,"English group name": "اسم المجموعة بالإنجليزية"
     ,"Arabic or English group name": "اسم المجموعة بالعربية أو الإنجليزية"
     ,"Build a company-scoped hierarchy and use it to organize and filter customer profiles.": "أنشئ هيكلًا هرميًا على مستوى الشركة لتنظيم ملفات العملاء وتصفيتها."
     ,"By": "بواسطة"
@@ -4792,7 +4820,10 @@
     ,"No product matches the current search or filters. Clear them to see the full catalog, or add a new product.": "لا يوجد منتج يطابق البحث أو عوامل التصفية الحالية. امسحها لعرض الكتالوج كاملًا أو أضف منتجًا جديدًا."
     ,"No products match these filters": "لا توجد منتجات تطابق عوامل التصفية هذه"
     ,"Clear filters": "مسح عوامل التصفية"
-    ,"Excel import": "استيراد Excel"
+    ,"Excel import": "استيراد ملف"
+    ,"Add category": "إضافة تصنيف"
+    ,"Add brand": "إضافة علامة تجارية"
+    ,"All statuses": "كل الحالات"
     ,"Commercial and descriptive master fields": "الحقول الرئيسية التجارية والوصفية"
     ,"Age label": "الفئة العمرية"
     ,"Legacy target age": "العمر المستهدف السابق"
@@ -4913,6 +4944,47 @@
     ,"Map each retail branch to its active selling store before opening a cashier shift. Opening a shift remains an operational action, not a setup requirement.": "اربط كل فرع تجزئة بموقع البيع النشط قبل فتح وردية الكاشير. فتح الوردية إجراء تشغيلي وليس شرط تهيئة."
     ,"Printer profiles": "ملفات الطابعات"
     ,"Print-template assignments": "تعيينات قوالب الطباعة"
+    ,"Printers and print settings": "الطابعات وإعدادات الطباعة"
+     ,"Add the printers available at your branch, then choose where each document is printed.": "أضف الطابعات المتاحة في الفرع، ثم حدّد أين تُطبع المستندات."
+    ,"Printers": "الطابعات"
+    ,"Print settings": "إعدادات الطباعة"
+    ,"Edit printer": "تعديل الطابعة"
+    ,"Add printer": "إضافة طابعة"
+     ,"Enter the printer details used by the team. Advanced connection settings are optional.": "أدخل بيانات الطابعة التي يستخدمها الفريق. إعدادات الاتصال المتقدمة اختيارية."
+    ,"Test print": "اختبار الطباعة"
+    ,"Printer location": "مكان استخدام الطابعة"
+    ,"Entire company": "كل الشركة"
+    ,"Store / point of sale": "المخزن / نقطة البيع"
+     ,"Select a store or point of sale": "اختر مخزنًا أو نقطة بيع"
+    ,"Advanced manual setup": "إعداد يدوي متقدم"
+     ,"Use this only when the printer cannot be selected through the supported printing environment.": "استخدمه فقط إذا لم تتمكن من اختيار الطابعة من بيئة الطباعة المتاحة."
+    ,"Connection type": "نوع الاتصال"
+    ,"Browser print": "الطباعة من المتصفح"
+    ,"IP address": "عنوان IP"
+    ,"Make this the default printer for this location": "تعيينها كطابعة افتراضية لهذا الموقع"
+     ,"Use one default printer per location and printer type.": "استخدم طابعة افتراضية واحدة لكل موقع ولكل نوع طباعة."
+    ,"Update printer": "تحديث الطابعة"
+    ,"Save printer": "حفظ الطابعة"
+    ,"Configured printers": "الطابعات المضافة"
+     ,"Review availability and update the printer that is used at each location.": "راجع حالة الطابعات وعدّل الطابعة المستخدمة في كل موقع."
+    ,"Printer name": "اسم الطابعة"
+    ,"Paper size": "حجم الورق"
+    ,"Available": "متاحة"
+    ,"No printers added yet": "لا توجد طابعات مضافة بعد"
+     ,"Add your first printer to start setting up invoices, receipts, and reports.": "أضف أول طابعة لبدء إعداد طباعة الفواتير والإيصالات والتقارير."
+    ,"Thermal receipt printer": "طابعة إيصالات حرارية"
+    ,"Barcode / label printer": "طابعة ملصقات / باركود"
+    ,"A4 printer": "طابعة A4"
+    ,"PDF printer": "طابعة PDF"
+    ,"Manage printers": "إدارة الطابعات"
+     ,"Choose the approved print format for each printer. The printer itself can be used for more than one document type.": "اختر صيغة الطباعة المعتمدة لكل طابعة. يمكن للطابعة نفسها طباعة أكثر من نوع مستند."
+    ,"Printing location": "مكان الطباعة"
+    ,"Approved print format": "صيغة الطباعة المعتمدة"
+    ,"Thermal sales invoice": "فاتورة مبيعات حرارية"
+    ,"Gift receipt": "إيصال هدية"
+    ,"Thermal return receipt": "إيصال مرتجع حراري"
+    ,"Thermal shift closing receipt": "إيصال إغلاق وردية حراري"
+    ,"Barcode label": "ملصق باركود"
     ,"Review the existing template key assigned to each printer profile. Template layouts are not edited in this workspace.": "راجع مفتاح القالب الحالي المعيّن لكل ملف طابعة. لا يتم تعديل تصميمات القوالب داخل مساحة العمل هذه."
     ,"Create an active brand master because catalog readiness checks active brands even though an individual product may remain unbranded.": "أنشئ سجل علامة تجارية نشطًا لأن جاهزية الكتالوج تتحقق من العلامات النشطة، حتى إن كان المنتج الفردي بلا علامة."
     ,"Customers": "العملاء"
@@ -4964,7 +5036,7 @@
     ,"Available": "متاح"
     ,"Back to Purchase Orders": "العودة إلى أوامر الشراء"
     ,"Branch Context": "فرع العمل"
-    ,"Brand Masters": "سجلات العلامات التجارية"
+    ,"Brand Masters": "إدارة العلامات التجارية"
     ,"Browser Print": "طباعة المتصفح"
     ,"Cash Drawer": "درج النقدية"
     ,"Cash Drawers": "أدراج النقدية"
@@ -5072,4 +5144,119 @@
     ,"Unit cost": "تكلفة الوحدة"
     ,"Location Code": "رمز المخزن"
     ,"Branch context": "الفرع المرتبط"
+    ,"Set the rules for customer data, consent, and loyalty points.": "اضبط قواعد بيانات العملاء والموافقة ونقاط الولاء."
+    ,"Save each setting after entering its value. The latest saved version is used in the related customer or loyalty workflow.": "اكتب القيمة المناسبة ثم احفظ الإعداد. تُستخدم أحدث قيمة محفوظة في إجراءات العملاء أو الولاء المرتبطة بها."
+    ,"Completed settings": "الإعدادات المكتملة"
+    ,"Setting value": "قيمة الإعداد"
+    ,"Enter the agreed value": "اكتب القيمة المتفق عليها"
+    ,"Short note for the team": "ملاحظة قصيرة للفريق"
+    ,"Save changes": "حفظ التعديلات"
+    ,"Active TSK-027 retail earn/redeem rule snapshot used by the customer loyalty ledger.": "قاعدة كسب واستبدال نقاط الولاء لمبيعات التجزئة."
+    ,"Active TSK-027 FIFO expiry convention used by the customer loyalty ledger.": "طريقة انتهاء صلاحية نقاط الولاء حسب أقدم النقاط أولاً."
+    ,"Active TSK-027 floor rounding convention used by earn and redeem calculations.": "طريقة تقريب النقاط عند الكسب والاستبدال."
+    ,"Active TSK-027 approval and separation-of-duties policy for sensitive adjustments.": "قواعد اعتماد تعديلات نقاط الولاء الحساسة."
+    ,"Active TSK-027 immutable source, idempotency, and concurrency controls for the ledger.": "ضوابط حفظ سجل نقاط الولاء ومنع التكرار والتعارض."
+    ,"Warehouses & Points of Sale": "المخازن ونقاط البيع"
+    ,"Primary point of sale": "نقطة البيع الأساسية"
+    ,"Primary point of sale per branch": "نقطة البيع الأساسية لكل فرع"
+    ,"Choose the point of sale used by each branch. Sales stock is taken from this point of sale.": "اختر نقطة البيع التي يستخدمها كل فرع. تُخصم مبيعات الفرع من مخزونها."
+    ,"Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale.": "اختر نقطة البيع التي يستخدمها كل فرع. أنشئها أولًا من شاشة المخازن ونقاط البيع."
+    ,"Current point of sale": "نقطة البيع الحالية"
+    ,"No primary point of sale": "لم تُحدد نقطة بيع أساسية"
+    ,"Create point of sale": "إنشاء نقطة بيع"
+    ,"Needs setup": "يحتاج إعدادًا"
+    ,"Choose": "اختيار"
+    ,"No branches are available.": "لا توجد فروع متاحة."
+    ,"Choose primary point of sale": "اختيار نقطة البيع الأساسية"
+    ,"Change primary point of sale": "تغيير نقطة البيع الأساسية"
+    ,"No point of sale is available for this branch.": "لا توجد نقطة بيع نشطة لهذا الفرع."
+    ,"Create a point of sale for this branch first, then choose it here.": "أنشئ نقطة بيع نشطة لهذا الفرع أولًا، ثم اخترها هنا."
+    ,"Select a point of sale...": "اختر نقطة بيع..."
+    ,"Only active points of sale for this branch are shown.": "تظهر فقط نقاط البيع النشطة التابعة لهذا الفرع."
+    ,"Add a short note for this change.": "أضف ملاحظة قصيرة عن التغيير."
+    ,"Primary point of sale history": "سجل نقاط البيع الأساسية"
+    ,"No primary point of sale history for this branch.": "لا يوجد سجل سابق لنقطة البيع الأساسية لهذا الفرع."
+    ,"Set as primary point of sale": "تعيين كنقطة البيع الأساسية"
+    ,"Set as primary": "تعيين كأساسية"
+    ,"Select a branch for this point of sale first.": "اختر الفرع التابع له نقطة البيع أولًا."
+    ,"This changes the primary point of sale for the branch. The previous choice stays in the history.": "سيتم تغيير نقطة البيع الأساسية للفرع، مع الاحتفاظ بالاختيار السابق في السجل."
+    ,"A new active point of sale becomes primary for its branch when no primary point of sale exists.": "عند إنشاء نقطة بيع نشطة لفرع لا توجد له نقطة بيع أساسية، تُعيّن تلقائيًا كنقطة البيع الأساسية."
+    ,"Primary point of sale saved successfully.": "تم حفظ نقطة البيع الأساسية بنجاح."
+    ,"Select an active branch for this point of sale.": "اختر فرعًا نشطًا لنقطة البيع."
+    ,"Only points of sale can be set as a branch primary point of sale.": "يمكن تعيين نقطة بيع فقط كنقطة البيع الأساسية للفرع."
+    ,"Point of sale must be active to set it as primary.": "يجب أن تكون نقطة البيع نشطة لتعيينها كنقطة أساسية."
+    ,"Create warehouse or point of sale": "إنشاء مخزن أو نقطة بيع"
+    ,"Edit warehouse or point of sale": "تعديل مخزن أو نقطة بيع"
+    ,"Location type": "نوع الموقع"
+    ,"Save location": "حفظ الموقع"
+    ,"A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists.": "يجب أن تتبع نقطة البيع فرعًا نشطًا. وتُعيّن نقطة البيع النشطة الجديدة كأساسية عندما لا توجد نقطة بيع أساسية للفرع."
+    ,"Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.": "أضف مستودعًا فعليًا نشطًا واحدًا على الأقل مرتبطًا بفرع نشط، ثم تأكد أن لكل فرع تجزئة نشط نقطة بيع أساسية واحدة حالية وصالحة."
+    ,"Back to catalog master": "العودة إلى بيانات الكتالوج"
+    ,"Back to suppliers": "العودة إلى الموردين"
+    ,"Back to settings": "العودة إلى الإعدادات"
+    ,"Back to returns": "العودة إلى المرتجعات"
+    ,"Super Admin action completed without separate approval.": "اكتمل إجراء المدير الأعلى دون موافقة منفصلة."
+    ,"Manage warehouses and selling stores, including physical inventory and POS operations, with their branch context.": "أدر المخازن ونقاط البيع، بما يشمل المخزون الفعلي وعمليات نقاط البيع، مع سياق الفروع التابعة لها."
+    ,"Add warehouse": "إضافة مخزن"
+    ,"Search warehouse code or name...": "ابحث عن رمز المخزن أو اسمه..."
+    ,"Warehouse Type": "نوع المخزن"
+    ,"All Warehouse Types": "كل أنواع المخازن"
+    ,"No Warehouses Configured": "لم يتم إعداد أي مخازن"
+    ,"Add a warehouse to make it available for inventory or selling-store operations.": "أضف مخزنًا لإتاحته لعمليات المخزون أو نقاط البيع."
+    ,"Warehouse list": "قائمة المخازن"
+    ,"Warehouse Name (AR / EN)": "اسم المخزن (عربي / إنجليزي)"
+    ,"Warehouse Code": "رمز المخزن"
+    ,"Warehouse code": "رمز المخزن"
+    ,"Warehouse name": "اسم المخزن"
+    ,"Warehouse type": "نوع المخزن"
+    ,":count combination|:count combinations": ":count تركيبة|:count تركيبات"
+    ,"Full description Arabic": "الوصف الكامل بالعربية"
+    ,"Full description English": "الوصف الكامل بالإنجليزية"
+    ,"Hidden": "مخفي"
+    ,"Meta description Arabic": "الوصف التعريفي بالعربية"
+    ,"Meta description English": "الوصف التعريفي بالإنجليزية"
+    ,"Meta title Arabic": "العنوان التعريفي بالعربية"
+    ,"Meta title English": "العنوان التعريفي بالإنجليزية"
+    ,"Not published": "غير منشور"
+    ,"Partially received": "مستلم جزئيًا"
+    ,"Pending": "معلّق"
+    ,"Product sections": "أقسام المنتج"
+    ,"SEO URL slug": "الاسم اللطيف لرابط الصفحة"
+    ,"Set the product cost, selling price, and battery details in one place.": "حدّد تكلفة المنتج وسعر بيعه وتفاصيل البطارية في مكان واحد."
+    ,"Short description Arabic": "الوصف المختصر بالعربية"
+    ,"Short description English": "الوصف المختصر بالإنجليزية"
+    ,"Website display order": "ترتيب الظهور على الموقع"
+    ,"Website visibility": "ظهور المنتج على الموقع"
+    ,"ready": "جاهز"
+    ,"unpriced": "غير مسعّر"
+    ,"out_of_stock": "غير متوفر"
+    ,"blocked": "محظور"
+    ,"Out_of_stock": "غير متوفر"
+    ,"Unpriced": "غير مسعّر"
+    ,"Ready": "جاهز"
+    ,"Blocked": "محظور"
+    ,"Product details": "تفاصيل المنتج"
+    ,"Product measurements": "قياسات المنتج"
+    ,"Calculated volume": "الحجم المحسوب"
+    ,"Online product": "منتج متاح عبر الإنترنت"
+    ,"Available online": "متاح عبر الإنترنت"
+    ,"This product is available for online display.": "هذا المنتج متاح للعرض عبر الإنترنت."
+    ,"Open-price rules are configured in Pricing and enforced in POS.": "تُضبط قواعد الأسعار المفتوحة في التسعير وتُطبّق في نقطة البيع."
+    ,"Manage barcodes after saving the product card.": "أدر الباركود بعد حفظ بطاقة المنتج."
+    ,"Digital product": "منتج رقمي"
+    ,"Digital products do not create stock balances or support variations.": "المنتجات الرقمية لا تُنشئ أرصدة مخزون ولا تدعم التنويعات."
+    ,"Product barcode management": "إدارة باركود المنتج"
+    ,"Open pricing": "التسعير المفتوح"
+    ,"Non-stock product": "منتج غير مخزني"
+    ,"Non-stock products do not create stock balances, so stock thresholds are not required for this type.": "المنتجات غير المخزنية لا تُنشئ أرصدة مخزون، لذلك لا يلزم تحديد حدود المخزون لهذا النوع."
+    ,"Choose the category and product type used for this item.": "اختر الفئة ونوع المنتج المستخدمين لهذا الصنف."
+    ,"Category / subcategory": "الفئة / الفئة الفرعية"
+    ,"No supplier": "لا يوجد مورد"
+    ,"Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.": "حدّد تكلفة المنتج وسعر البيع المرجعي. وتبقى الأسعار المفتوحة ضمن إجراء التسعير المعتمد."
+    ,"Not specified": "غير محدد"
+    ,"Not available online": "غير متاح عبر الإنترنت"
+    ,"Digital products do not use reorder thresholds.": "المنتجات الرقمية لا تستخدم حدود إعادة الطلب."
+    ,"Generate automatically": "إنشاء تلقائي"
+    ,"Generate code automatically": "إنشاء الرمز تلقائيًا"
+    ,"Generated automatically": "تم الإنشاء تلقائيًا"
 }

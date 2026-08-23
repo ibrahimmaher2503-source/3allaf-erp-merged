@@ -3,6 +3,7 @@
 namespace App\Modules\Catalog\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Models\PaymentMethod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ class Supplier extends Model
         'phone',
         'tax_number',
         'payment_terms',
+        'preferred_payment_method_id',
         'address',
         'status',
         'supplier_group_id',
@@ -44,6 +46,12 @@ class Supplier extends Model
     public function supplierGroup(): BelongsTo
     {
         return $this->belongsTo(SupplierGroup::class, 'supplier_group_id');
+    }
+
+    /** @return BelongsTo<PaymentMethod, $this> */
+    public function preferredPaymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class, 'preferred_payment_method_id');
     }
 
     /** @return HasMany<SupplierContact, $this> */

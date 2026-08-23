@@ -72,6 +72,24 @@ new #[Title('Category Masters')] class extends Component
         $this->showCategoryModal = true;
     }
 
+    public function generateCategoryCode(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+
+        if ($this->editingCategoryId !== null) {
+            return;
+        }
+
+        for ($number = 1; ; $number++) {
+            $code = sprintf('CAT-%04d', $number);
+
+            if (! Category::query()->where('code', $code)->exists()) {
+                $this->categoryForm['code'] = $code;
+                break;
+            }
+        }
+    }
+
     public function saveCategory(SaveCategoryAction $action): void
     {
         Gate::authorize($this->editingCategoryId ? 'products_categories_brands.edit' : 'products_categories_brands.create');
@@ -153,27 +171,23 @@ new #[Title('Category Masters')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="__('Category Masters')"
-    :description="__('Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.')"
+    :title="__('Product categories')"
+    :description="__('Organize product categories and subcategories clearly.')"
     max-width="7xl"
     class="catalog-screen"
     data-guide="categories-header"
 >
     <x-slot:actions>
-        <x-tables.resource-toolbar filter-target="categories-filters">
+        <x-tables.resource-toolbar>
             @can('products_categories_brands.create')
-                <flux:button href="{{ route('catalog.reference-import') }}" variant="subtle">{{ __('Excel import') }}</flux:button>
+                <flux:button href="{{ route('catalog.reference-import') }}" wire:navigate variant="subtle">{{ __('Excel import') }}</flux:button>
                 <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <flux:callout class="catalog-scope-note" variant="info" icon="squares-2x2" title="{{ __('Hierarchy rules') }}">
-        {{ __('Root and child categories are supported. Self-parenting, descendant cycles, inactive parents for active children, and deactivation with active product or child dependencies are blocked on the server.') }}
-    </flux:callout>
-
     <flux:text class="text-sm text-text-muted" data-guide="categories-order-help">
-        {{ __('Display order is applied among siblings: roots are ordered together, and each child stays beneath its selected parent. English names are optional for generic categories.') }}
+        {{ __('Sort each category within its main category so the list stays organized.') }}
     </flux:text>
 
     @if ($errors->any())
@@ -182,15 +196,14 @@ new #[Title('Category Masters')] class extends Component
         </flux:callout>
     @endif
 
-    <div id="categories-filters" class="catalog-filter-card scroll-mt-24 rounded-xl p-4 sm:p-5" data-guide="categories-filters">
-        <div class="catalog-filter-heading mb-4">
+    <div id="categories-filters" class="catalog-filter-card scroll-mt-24 rounded-xl border border-border-subtle bg-surface-muted/40 p-4 sm:p-5" data-guide="categories-filters">
+        <div class="catalog-filter-heading mb-3">
             <div>
-                <flux:heading size="sm">{{ __('Search categories') }}</flux:heading>
-                <flux:text class="mt-1 text-xs text-text-muted">{{ __('Browse root categories and their child relationships.') }}</flux:text>
+                <flux:heading size="sm">{{ __('Search and filter') }}</flux:heading>
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search categories')" :placeholder="__('Code or Arabic/English name...')" />
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search categories')" :placeholder="__('Search by code or name...')" />
             <flux:select wire:model.live="statusFilter" :label="__('Status')">
                 <flux:select.option value="all">{{ __('All statuses') }}</flux:select.option>
                 <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
@@ -212,21 +225,8 @@ new #[Title('Category Masters')] class extends Component
         </flux:card>
     @else
         <div class="catalog-table-frame" data-guide="categories-table">
-            <x-tables.bulk-actions
-                :page-ids="$categories->pluck('id')->all()"
-                :selected-ids="$selectedIds"
-                :selected-count="count($selectedIds)"
-                :page-count="$categories->count()"
-            >
-                <x-slot:actions>
-                    @can('products_categories_brands.edit')
-                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkToggleCategoryStatus" wire:confirm="{{ __('Toggle status for the selected categories?') }}">{{ __('Toggle status') }}</flux:button>
-                    @endcan
-                </x-slot:actions>
-            </x-tables.bulk-actions>
             <flux:table aria-label="{{ __('Category hierarchy') }}">
                 <flux:table.columns>
-                    <flux:table.column><span class="sr-only">{{ __('Select') }}</span></flux:table.column>
                     <flux:table.column>{{ __('Code') }}</flux:table.column>
                     <flux:table.column>{{ __('Category name') }}</flux:table.column>
                     <flux:table.column>{{ __('Parent / level') }}</flux:table.column>
@@ -237,7 +237,6 @@ new #[Title('Category Masters')] class extends Component
                 <flux:table.rows>
                     @foreach ($categories as $category)
                         <flux:table.row :key="$category->id">
-                            <flux:table.cell><input type="checkbox" value="{{ $category->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select category :code', ['code' => $category->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" /></flux:table.cell>
                             <flux:table.cell class="whitespace-nowrap"><span class="catalog-code-chip">{{ $category->code }}</span></flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-start gap-2" style="padding-inline-start: calc({{ min((int) ($category->hierarchy_depth ?? 0), 12) }} * 1.25rem)" aria-level="{{ (int) ($category->hierarchy_depth ?? 0) + 1 }}">
@@ -260,7 +259,7 @@ new #[Title('Category Masters')] class extends Component
     <flux:modal wire:model="showCategoryModal" class="max-w-xl">
         <div class="catalog-modal-section space-y-1"><flux:heading size="lg">{{ $editingCategoryId ? __('Edit category') : __('Create category') }}</flux:heading><flux:subheading>{{ __('Choose no parent for a root category. Server validation rejects self-parenting and descendant cycles.') }}</flux:subheading></div>
         <form wire:submit="saveCategory" novalidate class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2"><label for="category-code" class="sr-only">{{ __('Category code') }}</label><flux:input id="category-code" wire:model="categoryForm.code" :label="__('Category code')" required /><label for="category-sort-order" class="sr-only">{{ __('Display order') }}</label><flux:input id="category-sort-order" wire:model="categoryForm.sort_order" type="number" min="0" :label="__('Display order')" required /></div>
+            <div class="grid gap-4 md:grid-cols-2"><div class="flex items-end gap-2"><label for="category-code" class="sr-only">{{ __('Category code') }}</label><flux:input id="category-code" class="min-w-0 flex-1" wire:model="categoryForm.code" :label="__('Category code')" required :disabled="$editingCategoryId !== null" />@if ($editingCategoryId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateCategoryCode" wire:loading.attr="disabled" wire:target="generateCategoryCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><label for="category-sort-order" class="sr-only">{{ __('Display order') }}</label><flux:input id="category-sort-order" wire:model="categoryForm.sort_order" type="number" min="0" :label="__('Display order')" required /></div>
             <div class="grid gap-4 md:grid-cols-2"><label for="category-name-ar" class="sr-only">{{ __('Arabic name') }}</label><flux:input id="category-name-ar" wire:model="categoryForm.name_ar" :label="__('Arabic name')" required /><label for="category-name-en" class="sr-only">{{ __('English name (optional)') }}</label><flux:input id="category-name-en" wire:model="categoryForm.name_en" :label="__('English name (optional)')" /><p class="text-xs text-text-muted md:col-start-2">{{ __('English name (optional)') }}</p></div>
             <flux:select wire:model="categoryForm.parent_id" :label="__('Parent category')"><flux:select.option value="">{{ __('No parent (root)') }}</flux:select.option>@foreach ($parentOptions as $parent)<flux:select.option :value="$parent->id">{{ $parent->code }} · {{ app()->getLocale() === 'ar' || blank($parent->name_en) ? $parent->name_ar : $parent->name_en }}</flux:select.option>@endforeach</flux:select>
             <flux:select wire:model="categoryForm.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>

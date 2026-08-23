@@ -30,6 +30,24 @@ new #[Title('Product Options')] class extends Component {
         $this->resetValidation();
     }
 
+    public function generateGroupCode(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+
+        if ($this->editingGroupId !== null) {
+            return;
+        }
+
+        for ($number = 1; ; $number++) {
+            $code = sprintf('OPT-%04d', $number);
+
+            if (! ProductOptionGroup::query()->where('code', $code)->exists()) {
+                $this->groupForm['code'] = $code;
+                break;
+            }
+        }
+    }
+
     public function saveGroup(SaveProductOptionAction $action): void
     {
         Gate::authorize($this->editingGroupId ? 'products_categories_brands.edit' : 'products_categories_brands.create');
@@ -68,6 +86,24 @@ new #[Title('Product Options')] class extends Component {
         $this->valueForm = $value->only(['code', 'name_ar', 'name_en', 'colour_swatch', 'status', 'sort_order']);
         $this->valueForm['colour_swatch'] ??= '';
         $this->resetValidation();
+    }
+
+    public function generateValueCode(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+
+        if ($this->editingValueId !== null || $this->valueGroupId === null) {
+            return;
+        }
+
+        for ($number = 1; ; $number++) {
+            $code = sprintf('VAL-%d-%03d', $this->valueGroupId, $number);
+
+            if (! ProductOptionValue::query()->where('product_option_group_id', $this->valueGroupId)->where('code', $code)->exists()) {
+                $this->valueForm['code'] = $code;
+                break;
+            }
+        }
     }
 
     public function saveValue(SaveProductOptionAction $action): void
@@ -112,7 +148,7 @@ new #[Title('Product Options')] class extends Component {
     @can('products_categories_brands.create')
         <form wire:submit="saveGroup" class="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:grid-cols-2 lg:grid-cols-6" aria-label="{{ __('Option group editor') }}">
             <div class="lg:col-span-6"><flux:heading size="lg">{{ $editingGroupId ? __('Edit option group') : __('New option group') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('Codes are permanent. Labels and display order remain editable.') }}</flux:text></div>
-            <flux:input wire:model="groupForm.code" :label="__('Code')" required :disabled="$editingGroupId !== null" />
+            <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="groupForm.code" :label="__('Code')" required :disabled="$editingGroupId !== null" />@if ($editingGroupId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateGroupCode" wire:loading.attr="disabled" wire:target="generateGroupCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
             <flux:input wire:model="groupForm.name_ar" :label="__('Arabic label')" dir="rtl" required />
             <flux:input wire:model="groupForm.name_en" :label="__('English label')" dir="ltr" required />
             <flux:select wire:model="groupForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
@@ -142,7 +178,7 @@ new #[Title('Product Options')] class extends Component {
 
     @if ($valueGroupId)
         <form wire:submit="saveValue" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" aria-label="{{ __('Option value editor') }}">
-            <div class="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-7"><flux:input wire:model="valueForm.code" :label="__('Value code')" required :disabled="$editingValueId !== null" /><flux:input wire:model="valueForm.name_ar" :label="__('Arabic label')" dir="rtl" required /><flux:input wire:model="valueForm.name_en" :label="__('English label')" dir="ltr" required /><flux:input wire:model="valueForm.colour_swatch" type="color" :label="__('Optional swatch')" /><flux:select wire:model="valueForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><flux:input wire:model="valueForm.sort_order" type="number" min="0" :label="__('Order')" /><div class="flex items-end gap-2"><flux:button type="submit" variant="primary" class="flex-1">{{ __('Save value') }}</flux:button><flux:button type="button" wire:click="$set('valueGroupId', null)" variant="subtle">{{ __('Cancel') }}</flux:button></div></div>
+            <div class="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-7"><div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="valueForm.code" :label="__('Value code')" required :disabled="$editingValueId !== null" />@if ($editingValueId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateValueCode" wire:loading.attr="disabled" wire:target="generateValueCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><flux:input wire:model="valueForm.name_ar" :label="__('Arabic label')" dir="rtl" required /><flux:input wire:model="valueForm.name_en" :label="__('English label')" dir="ltr" required /><flux:input wire:model="valueForm.colour_swatch" type="color" :label="__('Optional swatch')" /><flux:select wire:model="valueForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><flux:input wire:model="valueForm.sort_order" type="number" min="0" :label="__('Order')" /><div class="flex items-end gap-2"><flux:button type="submit" variant="primary" class="flex-1">{{ __('Save value') }}</flux:button><flux:button type="button" wire:click="$set('valueGroupId', null)" variant="subtle">{{ __('Cancel') }}</flux:button></div></div>
         </form>
     @endif
 </div>

@@ -1,104 +1,131 @@
 @php
-    $groupLabels = [
-        'customer' => __('Customer profile'),
-        'loyalty' => __('Loyalty'),
-        'wallet' => __('Wallets'),
-        'gift' => __('Gift instruments'),
-        'return' => __('Returns'),
-        'party' => __('Party operations'),
-        'asset' => __('Rental assets'),
-        'quotation' => __('Quotations'),
-        'report' => __('Reports'),
-        'export' => __('Exports'),
-        'migration' => __('Data migration'),
-        'operation' => __('Operations'),
-        'uat' => __('Acceptance review'),
-        'release' => __('Release controls'),
-        'audit' => __('Audit'),
-        'alert' => __('Alerts'),
+    $arabic = app()->getLocale() === 'ar';
+    $purposeOptions = [
+        'service_delivery' => $arabic ? 'تقديم الخدمة للعميل' : 'Service delivery',
+        'loyalty' => $arabic ? 'برنامج نقاط الولاء' : 'Loyalty programme',
+        'marketing' => $arabic ? 'العروض والتواصل التسويقي' : 'Marketing communications',
     ];
-    $settingGroups = $settings->groupBy(fn (array $setting, string $key): string => \Illuminate\Support\Str::before($key, '.'), preserveKeys: true);
+    $selectedPurposes = array_values(array_unique(['service_delivery', ...old('purposes', $customer['purposes'] ?: [])]));
 @endphp
 
-<x-layouts::app :title="__('Customer Policy Settings')">
-    <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4" data-guide="customer-settings-header">
-            <div>
-                <p class="text-xs font-semibold tracking-wide text-cyan-700">{{ __('Customer settings') }}</p>
-                <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{{ __('Customer Policy Settings') }}</h1>
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ __('Change decision values here. Every save creates a new append-only local version and audit event; no value becomes approved policy.') }}</p>
-            </div>
-            <a href="{{ route('customers.index') }}" class="inline-flex items-center rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 shadow-sm hover:border-cyan-300">{{ __('Open customer master') }}</a>
-        </div>
+<x-layouts::app :title="$arabic ? 'إعدادات العملاء والولاء' : 'Customer and loyalty settings'">
+    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6" x-data="{ tab: '{{ old('section', 'customer') }}' }">
+        <x-page-header :title="$arabic ? 'إعدادات العملاء والولاء' : 'Customer and loyalty settings'" :description="$arabic ? 'اضبط ما يحتاجه فريق العمل فقط، ثم احفظ التغييرات.' : 'Set only the rules your team needs, then save your changes.'">
+            <x-slot:actions>
+                <flux:button href="{{ route('customers.index') }}" variant="subtle" icon="users">{{ $arabic ? 'فتح سجل العملاء' : 'Open customer records' }}</flux:button>
+            </x-slot:actions>
+        </x-page-header>
 
         @if (session('status'))
-            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800" role="status">{{ session('status') }}</div>
+            <flux:callout variant="success" icon="check-circle" role="status">{{ session('status') }}</flux:callout>
         @endif
 
-        <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm" data-guide="customer-settings-boundary">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">{{ __('Settings boundary') }}</p>
-                    <h2 class="mt-2 text-lg font-semibold text-amber-950">{{ __('Local configuration only') }}</h2>
-                    <p class="mt-2 max-w-4xl text-sm leading-6 text-amber-900">{{ __('Do not enter secrets, personal customer data, payment values, or unapproved legal wording. Configured values are used only by the enabled customer and loyalty workflows; missing or invalid values stop the action, and owner approval is still required before publishing a policy.') }}</p>
-                </div>
-                <span class="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-bold text-amber-800">{{ __('Owner approval required') }}</span>
-            </div>
+        @if ($errors->any())
+            <flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>
+        @endif
+
+        <div class="rounded-2xl border border-border bg-surface p-2" role="tablist" aria-label="{{ $arabic ? 'أقسام الإعدادات' : 'Settings sections' }}">
+            <button type="button" role="tab" x-on:click="tab = 'customer'" x-bind:aria-selected="tab === 'customer'" x-bind:class="tab === 'customer' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-surface-muted hover:text-text-primary'" class="min-h-11 rounded-xl px-4 text-sm font-semibold transition sm:px-6">{{ $arabic ? 'بيانات العملاء والموافقة' : 'Customer data and consent' }}</button>
+            <button type="button" role="tab" x-on:click="tab = 'loyalty'" x-bind:aria-selected="tab === 'loyalty'" x-bind:class="tab === 'loyalty' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-surface-muted hover:text-text-primary'" class="min-h-11 rounded-xl px-4 text-sm font-semibold transition sm:px-6">{{ $arabic ? 'نقاط الولاء' : 'Loyalty points' }}</button>
+        </div>
+
+        <section x-show="tab === 'customer'" x-cloak role="tabpanel" class="space-y-5">
+            <form method="POST" action="{{ route('admin.settings.customer-loyalty.save') }}" class="space-y-5">
+                @csrf
+                <input type="hidden" name="section" value="customer">
+
+                <section class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+                    <div class="border-b border-border pb-4">
+                        <h2 class="text-lg font-semibold text-text-primary">{{ $arabic ? 'موافقة العميل' : 'Customer consent' }}</h2>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ $arabic ? 'يُسجل إنشاء العميل موافقة تقديم الخدمة تلقائيًا، مع حفظ سجل الموافقة ومراجعته.' : 'Customer creation automatically records service-delivery consent with a retained, auditable consent record.' }}</p>
+                    </div>
+
+                    <details class="mt-5 rounded-xl border border-border bg-surface-muted/40 p-4" @if($errors->has('purposes') || $errors->has('wording_version') || $errors->has('wording_text') || $errors->has('retention_days')) open @endif>
+                        <summary class="cursor-pointer text-sm font-semibold text-text-primary">{{ $arabic ? 'إعدادات الموافقة المتقدمة' : 'Advanced consent settings' }}</summary>
+                        <p class="mt-2 text-sm text-text-muted">{{ $arabic ? 'تقديم الخدمة مفعّل دائمًا لإنشاء العميل. يمكنك إدارة الأغراض الإضافية ونص الموافقة ومدة الاحتفاظ هنا.' : 'Service delivery stays enabled for customer creation. Manage additional purposes, consent wording, and retention here.' }}</p>
+                        <fieldset class="mt-4">
+                            <legend class="text-sm font-semibold text-text-primary">{{ $arabic ? 'أغراض حفظ البيانات' : 'Data collection purposes' }}</legend>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                                @foreach ($purposeOptions as $value => $label)
+                                    <label class="flex min-h-12 items-center gap-3 rounded-xl border border-border px-4 text-sm font-medium text-text-primary">
+                                        @if ($value === 'service_delivery')
+                                            <input type="hidden" name="purposes[]" value="service_delivery">
+                                            <input type="checkbox" checked disabled class="size-4 rounded border-border text-primary focus:ring-primary">
+                                        @else
+                                            <input type="checkbox" name="purposes[]" value="{{ $value }}" @checked(in_array($value, $selectedPurposes, true)) class="size-4 rounded border-border text-primary focus:ring-primary">
+                                        @endif
+                                        <span>{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('purposes')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror
+                        </fieldset>
+
+                        <div class="mt-5 grid gap-4 sm:grid-cols-[minmax(0,.55fr)_minmax(0,1.45fr)]">
+                            <flux:input name="wording_version" :label="$arabic ? 'رقم إصدار نص الموافقة' : 'Consent wording version'" :value="old('wording_version', $customer['wording_version'])" maxlength="80" required />
+                            <flux:textarea name="wording_text" :label="$arabic ? 'نص الموافقة الذي يراه العميل' : 'Consent text shown to the customer'" :value="old('wording_text', $customer['wording_text'])" rows="3" maxlength="2000" required />
+                            <flux:input name="retention_days" type="number" min="0" max="36500" :label="$arabic ? 'مدة الاحتفاظ بسجل الموافقة بالأيام' : 'Consent record retention in days'" :value="old('retention_days', $customer['retention_days'])" required />
+                        </div>
+                    </details>
+                </section>
+
+                <section class="rounded-2xl border border-border bg-surface-muted/40 p-5 text-sm sm:p-6">
+                    <h2 class="font-semibold text-text-primary">{{ $arabic ? 'قواعد ثابتة لحماية البيانات' : 'Fixed data-protection rules' }}</h2>
+                    <ul class="mt-3 space-y-2 leading-6 text-text-muted">
+                        <li>{{ $arabic ? 'يُوحَّد رقم الهاتف بالأرقام فقط لمنع تكرار الملف نفسه.' : 'Phone numbers are normalized to digits only to prevent duplicate profiles.' }}</li>
+                        <li>{{ $arabic ? 'بيانات الأطفال تستخدم أغراض موافقة العميل نفسها تلقائيًا.' : 'Child profiles automatically use the same customer-consent purposes.' }}</li>
+                        <li>{{ $arabic ? 'عرض سجل العميل يتبع صلاحيات المستخدم، ولا يحتاج إعدادًا منفصلًا هنا.' : 'Customer-history access follows user permissions and needs no separate setup here.' }}</li>
+                    </ul>
+                </section>
+
+                @can('company_settings.edit')
+                    <div class="flex flex-wrap items-end justify-between gap-4 border-t border-border pt-5">
+                        <div class="max-w-lg flex-1"><flux:input name="notes" :label="$arabic ? 'ملاحظة داخلية (اختياري)' : 'Internal note (optional)'" :value="old('section') === 'customer' ? old('notes') : null" maxlength="1000" /></div>
+                        <flux:button type="submit" variant="primary" icon="check">{{ $arabic ? 'حفظ إعدادات العملاء' : 'Save customer settings' }}</flux:button>
+                    </div>
+                @else
+                    <flux:callout variant="warning" icon="lock-closed">{{ $arabic ? 'لديك صلاحية عرض الإعدادات فقط.' : 'You have view-only access to these settings.' }}</flux:callout>
+                @endcan
+                @if ($customer['version'] > 0)<p class="text-xs text-text-muted">{{ $arabic ? 'آخر إصدار محفوظ' : 'Latest saved version' }}: {{ $customer['version'] }}</p>@endif
+            </form>
         </section>
 
-        <div class="space-y-4" data-guide="customer-settings-groups">
-            @foreach ($settingGroups as $group => $groupSettings)
-                @php
-                    $configuredCount = $groupSettings->filter(fn (array $setting): bool => filled($setting['record']?->value))->count();
-                    $groupTitle = $groupLabels[$group] ?? str($group)->headline();
-                @endphp
-                <details class="group rounded-2xl border border-border bg-surface shadow-card" @if (in_array($group, ['customer', 'loyalty'], true)) open @endif data-setting-group="{{ $group }}">
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-6">
-                        <span class="min-w-0">
-                            <span class="block text-base font-semibold text-text-primary">{{ $groupTitle }}</span>
-                            <span class="mt-1 block text-xs text-text-muted">{{ $configuredCount }} / {{ $groupSettings->count() }} {{ __('configured') }}</span>
-                        </span>
-                        <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition group-open:rotate-180" aria-hidden="true">⌄</span>
-                    </summary>
-                    <div class="grid gap-4 border-t border-border p-4 lg:grid-cols-2 sm:p-5">
-                        @foreach ($groupSettings as $key => $setting)
-                            @php($record = $setting['record'])
-                            <section class="rounded-xl border border-border-subtle bg-surface-muted/20 p-5" data-setting-key="{{ $key }}" @if ($loop->parent->first && $loop->first) data-guide="customer-settings-first-card" @endif>
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h2 class="font-semibold text-text-primary" data-guide="customer-settings-first-card-heading">{{ __($setting['title']) }}</h2>
-                                    </div>
-                                    <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $record?->value ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-text-muted' }}">{{ $record?->value ? __('Configured locally') : __('Pending') }}</span>
-                                </div>
-                                <p class="mt-3 text-sm leading-6 text-text-muted">{{ __($setting['description']) }}</p>
-                                @can('company_settings.edit')
-                                    <form method="POST" action="{{ route('admin.settings.customer-loyalty.save') }}" class="mt-4 space-y-3">
-                                        @csrf
-                                        <input type="hidden" name="key" value="{{ $key }}">
-                                        <div>
-                                            <label for="value-{{ \Illuminate\Support\Str::slug($key) }}" class="block text-sm font-semibold text-text-primary">{{ __('Local decision value') }}</label>
-                                            <textarea id="value-{{ \Illuminate\Support\Str::slug($key) }}" name="value" rows="3" maxlength="2000" class="mt-1 block w-full rounded-xl border-border bg-surface text-sm shadow-sm focus:border-primary focus:ring-primary" placeholder="{{ __('Leave blank to keep this decision pending') }}">{{ old('key') === $key ? old('value') : ($record?->value ?? '') }}</textarea>
-                                        </div>
-                                        <div>
-                                            <label for="notes-{{ \Illuminate\Support\Str::slug($key) }}" class="block text-sm font-semibold text-text-primary">{{ __('Notes') }}</label>
-                                            <textarea id="notes-{{ \Illuminate\Support\Str::slug($key) }}" name="notes" rows="2" maxlength="2000" class="mt-1 block w-full rounded-xl border-border bg-surface text-sm shadow-sm focus:border-primary focus:ring-primary" placeholder="{{ __('Optional local context; no secrets') }}">{{ old('key') === $key ? old('notes') : ($record?->notes ?? '') }}</textarea>
-                                        </div>
-                                        <div class="flex flex-wrap items-center justify-between gap-3">
-                                            <span class="text-xs text-text-muted">{{ __('Saving creates a new version; approval remains pending.') }}</span>
-                                            <flux:button type="submit" variant="primary" data-guide="customer-settings-save-action">{{ __('Save local version') }}</flux:button>
-                                        </div>
-                                    </form>
-                                @else
-                                    <div class="mt-4 rounded-xl border border-dashed border-border bg-surface-muted p-3 text-sm text-text-muted">{{ __('You have view-only access to these settings.') }}</div>
-                                @endcan
-                                @if ($record)
-                                    <p class="mt-3 text-xs text-text-muted">{{ __('Current version') }}: {{ $record->version }} · {{ __('Approval') }}: {{ __('Owner approval required') }}</p>
-                                @endif
-                            </section>
-                        @endforeach
+        <section x-show="tab === 'loyalty'" x-cloak role="tabpanel" class="space-y-5">
+            <form method="POST" action="{{ route('admin.settings.customer-loyalty.save') }}" class="space-y-5">
+                @csrf
+                <input type="hidden" name="section" value="loyalty">
+
+                <section class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+                    <div class="border-b border-border pb-4">
+                        <h2 class="text-lg font-semibold text-text-primary">{{ $arabic ? 'قاعدة نقاط البيع' : 'Retail points rule' }}</h2>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">{{ $arabic ? 'حدد كسب النقاط وقيمتها عند الاستبدال للشراء بالتجزئة.' : 'Set earning and redemption values for retail purchases.' }}</p>
                     </div>
-                </details>
-            @endforeach
-        </div>
+                    <div class="mt-5 grid gap-4 sm:grid-cols-3">
+                        <flux:input name="earn_points_per_currency" inputmode="decimal" :label="$arabic ? 'النقاط المكتسبة لكل جنيه' : 'Points earned per currency unit'" :value="old('earn_points_per_currency', $loyalty['earn_points_per_currency'])" required />
+                        <flux:input name="redeem_currency_per_point" inputmode="decimal" :label="$arabic ? 'قيمة النقطة عند الاستبدال بالجنيه' : 'Currency value per redeemed point'" :value="old('redeem_currency_per_point', $loyalty['redeem_currency_per_point'])" required />
+                        <flux:input name="expiry_days" type="number" min="1" max="36500" :label="$arabic ? 'انتهاء النقاط بعد عدد أيام' : 'Points expire after days'" :value="old('expiry_days', $loyalty['expiry_days'])" required />
+                    </div>
+                </section>
+
+                <section class="rounded-2xl border border-border bg-surface-muted/40 p-5 text-sm sm:p-6">
+                    <h2 class="font-semibold text-text-primary">{{ $arabic ? 'حماية تلقائية للنقاط' : 'Automatic loyalty safeguards' }}</h2>
+                    <ul class="mt-3 space-y-2 leading-6 text-text-muted">
+                        <li>{{ $arabic ? 'تُقرب النقاط لأسفل دائمًا، فلا تظهر كسور في رصيد العميل.' : 'Points are always rounded down, so customer balances contain no fractions.' }}</li>
+                        <li>{{ $arabic ? 'أي تعديل يدوي على النقاط يحتاج موافقة منفصلة.' : 'Every manual points adjustment requires separate approval.' }}</li>
+                        <li>{{ $arabic ? 'سجل النقاط محمي من التكرار والتعديل المباشر.' : 'The loyalty ledger is protected from duplicates and direct edits.' }}</li>
+                    </ul>
+                </section>
+
+                @can('company_settings.edit')
+                    <div class="flex flex-wrap items-end justify-between gap-4 border-t border-border pt-5">
+                        <div class="max-w-lg flex-1"><flux:input name="notes" :label="$arabic ? 'ملاحظة داخلية (اختياري)' : 'Internal note (optional)'" :value="old('section') === 'loyalty' ? old('notes') : null" maxlength="1000" /></div>
+                        <flux:button type="submit" variant="primary" icon="check">{{ $arabic ? 'حفظ إعدادات الولاء' : 'Save loyalty settings' }}</flux:button>
+                    </div>
+                @else
+                    <flux:callout variant="warning" icon="lock-closed">{{ $arabic ? 'لديك صلاحية عرض الإعدادات فقط.' : 'You have view-only access to these settings.' }}</flux:callout>
+                @endcan
+                @if ($loyalty['version'] > 0)<p class="text-xs text-text-muted">{{ $arabic ? 'آخر إصدار محفوظ' : 'Latest saved version' }}: {{ $loyalty['version'] }}</p>@endif
+            </form>
+        </section>
     </div>
 </x-layouts::app>

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
@@ -40,14 +41,16 @@ final class InitialSetupStatus
         $activeCompanyId = (int) Company::query()->where('status', 'active')->value('id');
         $activeCustomerGroups = CustomerGroup::query()->forCompany($activeCompanyId)->active();
         $activeSupplierGroups = SupplierGroup::query()->forCompany($activeCompanyId)->active();
+        $activeProductOptionGroups = ProductOptionGroup::query()
+            ->active()
+            ->whereHas('values', fn (Builder $query): Builder => $query->active());
         $customerConsentPolicyRecords = $this->customerConsentPolicyRecords();
         $partyPolicyRecords = $this->partyPolicyRecords();
 
         $steps = [
             $this->step('company', __('Company identity'), __('Use the approved bilingual identity, legal details, currency, timezone, and contact information.'), 'admin.settings', 'company_settings.view', $companyReady, Company::query()->count(), routeParameters: ['tab' => 'company'], destinationKey: 'company-identity'),
             $this->step('branches-stores', __('Branches'), __('Create active branches and complete their basic details.'), 'admin.branches', 'branches_stores.view', $branchesReady, Branch::query()->count()),
-            $this->step('warehouses', __('Stock stores'), __('Add at least one active stock store linked to an active branch.'), 'admin.stores', 'branches_stores.view', $this->warehousesReady(), Store::query()->where('type', 'warehouse')->count()),
-            $this->step('pos-selling-location', __('POS selling-location linkage'), __('Map each retail branch to its active selling store before opening a cashier shift. Opening a shift remains an operational action, not a setup requirement.'), 'admin.branches', 'branches_stores.view', $this->posSellingLocationReady(), BranchSellingStore::query()->where('status', 'active')->count(), routeParameters: ['section' => 'selling-store-mapping'], destinationKey: 'selling-store-mapping'),
+            $this->step('warehouses', __('Warehouses & Points of Sale'), __('Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.'), 'admin.stores', 'branches_stores.view', $this->warehousesReady() && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping(), Store::query()->where('type', 'warehouse')->count() + BranchSellingStore::query()->where('status', 'active')->count()),
             $this->step('cash-drawers', __('Cash drawers'), __('Assign active cash drawers to the stores that will receive controlled payments.'), 'admin.cash-drawers', 'drawers_payments_tax_numbering_printers.view', $this->cashDrawersReady(), CashDrawer::query()->count()),
             $this->step('users-scopes', __('Users, roles, and scopes'), __('Create the opening team, assign roles, and scope every non-administrator to approved branches or stores.'), 'admin.authorization-baseline', 'users_roles_permissions.view', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
             $this->step('payment-methods', __('Payment methods'), __('Define the persisted payment methods staff may recognize and reconcile.'), 'admin.settings', 'company_settings.view', $this->paymentMethodsReady(), PaymentMethod::query()->count(), routeParameters: ['tab' => 'payments'], destinationKey: 'payment-methods'),
@@ -62,6 +65,7 @@ final class InitialSetupStatus
             $this->step('party-readiness', __('Party readiness and policies'), __('Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.'), 'party.readiness', 'party_bookings_invoices.view', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.'), required: false),
             $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
             $this->step('suppliers', __('Suppliers and supplier SKUs'), __('Create approved suppliers and connect each supplied sellable SKU to its supplier item code.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
+            $this->step('product-options', __('Product option setup'), __('Create reusable product options, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
             $this->step('product-masters', __('Product masters'), __('Build active sellable products, including unbranded products, and valid variation families from the approved catalog. Supplier SKU linkage follows on its own supplier step.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding products.')),
             $this->step('product-import', __('Product import (optional)'), __('Manual product entry is sufficient. Use the reviewed import workspace only when a validated source file is available.'), 'catalog.products.import', 'products_categories_brands.create', true, 0, __('Manual entry is sufficient; import is optional and never a setup prerequisite.'), false),
             $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
@@ -105,11 +109,6 @@ final class InitialSetupStatus
     }
 
     private function warehousesReady(): bool { return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists(); }
-    private function posSellingLocationReady(): bool
-    {
-        return $this->retailBranchesHaveOneCurrentValidSellingStoreMapping();
-    }
-
     private function retailBranchesHaveOneCurrentValidSellingStoreMapping(): bool
     {
         $retailBranchIds = Branch::query()

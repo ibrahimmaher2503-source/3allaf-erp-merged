@@ -20,7 +20,7 @@
         @if ($consentPolicyError)
             <flux:callout variant="warning" icon="exclamation-triangle">
                 <div class="space-y-2">
-                    <p>{{ app()->getLocale() === 'ar' ? 'لا يمكن إنشاء ملف عميل لأن نطاق أغراض الموافقة على بيانات العميل غير مُعد. هذا الإعداد يحدد الغرض الذي يجوز تسجيل بيانات العميل من أجله، وهو مطلوب لحفظ سجل موافقة صحيح.' : 'Customer creation is unavailable because the customer consent-purpose scope has not been configured. This setting explains why the customer data may be recorded and is required for a valid consent record.' }}</p>
+                    <p>{{ app()->getLocale() === 'ar' ? 'لا يمكن إنشاء ملف عميل لأن إعداد الموافقة التلقائية لتقديم الخدمة غير مكتمل. يلزم حفظ سجل موافقة صحيح مع كل ملف عميل.' : 'Customer creation is unavailable because the automatic service-delivery consent setting is incomplete. A valid consent record is required for every customer profile.' }}</p>
                     @can('company_settings.edit')
                         <flux:button href="{{ route('admin.settings.customer-loyalty') }}" variant="primary" size="sm">{{ app()->getLocale() === 'ar' ? 'إعداد نطاق أغراض الموافقة' : 'Configure consent purposes' }}</flux:button>
                     @else
@@ -34,63 +34,94 @@
             @csrf
             <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
 
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <flux:heading size="lg">{{ __('Identity and contact') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('Customer Arabic first and last names are required. English names are optional and fall back to Arabic for display when omitted.') }}</flux:text>
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <flux:input name="phone" :label="__('Primary phone')" :value="old('phone')" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.')" dir="ltr" />
-                    <flux:input name="email" :label="__('Email')" :value="old('email')" type="email" autocomplete="email" />
-                    <flux:input name="first_name_ar" :label="__('First name (Arabic)')" :value="old('first_name_ar')" required dir="rtl" />
-                    <flux:input name="last_name_ar" :label="__('Last name (Arabic)')" :value="old('last_name_ar')" required dir="rtl" />
-                    <flux:input name="first_name_en" :label="__('First name (English, optional)')" :value="old('first_name_en')" dir="ltr" />
-                    <flux:input name="last_name_en" :label="__('Last name (English, optional)')" :value="old('last_name_en')" dir="ltr" />
-                    <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="old('secondary_phone')" autocomplete="tel" :placeholder="__('Optional Egyptian phone number')" dir="ltr" />
-                    <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
-                        <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
-                        @foreach ($groupOptions as $group)
-                            <flux:select.option value="{{ $group->id }}">{{ $group->parent ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }} · {{ app()->getLocale() === 'ar' ? $group->name_en : $group->name_ar }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    <div></div>
-                    <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar')" dir="rtl" />
-                    <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en')" dir="ltr" />
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+                <div class="border-b border-border pb-4">
+                    <flux:heading size="lg">{{ __('Identity and contact') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __('Enter the customer name and the contact details needed to reach them.') }}</flux:text>
+                </div>
+
+                <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]">
+                    <div class="space-y-5">
+                        <div class="rounded-xl border border-border bg-surface p-4">
+                            <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Customer name') }}</p>
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <flux:input name="first_name_ar" :label="__('First name (Arabic)')" :value="old('first_name_ar')" required dir="rtl" />
+                                <flux:input name="last_name_ar" :label="__('Last name (Arabic)')" :value="old('last_name_ar')" required dir="rtl" />
+                                <flux:input name="first_name_en" :label="__('First name (English, optional)')" :value="old('first_name_en')" dir="ltr" />
+                                <flux:input name="last_name_en" :label="__('Last name (English, optional)')" :value="old('last_name_en')" dir="ltr" />
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-border bg-surface p-4">
+                            <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Address') }}</p>
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar')" dir="rtl" />
+                                <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en')" dir="ltr" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-border bg-surface p-4">
+                        <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Contact details') }}</p>
+                        <div class="grid gap-4">
+                            <flux:input name="phone" :label="__('Primary phone')" :value="old('phone')" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian phone numbers are accepted in local or international format.')" dir="ltr" />
+                            <flux:input name="email" :label="__('Email')" :value="old('email')" type="email" autocomplete="email" />
+                            <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="old('secondary_phone')" autocomplete="tel" :placeholder="__('Optional Egyptian phone number')" dir="ltr" />
+                            <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
+                                <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
+                                @foreach ($groupOptions as $group)
+                                    <flux:select.option value="{{ $group->id }}">{{ $group->parent ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }} · {{ app()->getLocale() === 'ar' ? $group->name_en : $group->name_ar }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20">
-                <flux:heading size="lg">{{ __('Privacy and consent record') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('Choose the configured purpose and record the customer\'s current response. The event stores its purpose, state, capture time, actor, source, wording version, and scope.') }}</flux:text>
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <flux:select name="consent_purpose" :label="__('Configured consent purpose')" :description="__('Purpose categories come from the customer policy settings.')" required :disabled="$consentPurposes === []">
-                        @foreach ($consentPurposes as $purpose)
-                            <flux:select.option value="{{ $purpose }}">{{ $purpose }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    <flux:select name="consent_status" :label="__('Consent response')" :description="__('Granted records permission, withdrawn records a later withdrawal, and denied records a refusal.')" required>
-                        <flux:select.option value="granted">{{ __('Granted') }}</flux:select.option>
-                        <flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option>
-                        <flux:select.option value="denied">{{ __('Denied') }}</flux:select.option>
-                    </flux:select>
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" x-data="{ children: @js(old('children', [])), childPurpose: @js($childPurposes[0] ?? '') }" x-init="children.forEach(child => child.purpose ||= childPurpose)">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <flux:heading size="lg">{{ app()->getLocale() === 'ar' ? 'بيانات الأطفال (اختياري)' : __('Child profiles (optional)') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ app()->getLocale() === 'ar' ? 'أضف بيانات طفل أو أكثر عند الحاجة.' : 'Add one or more child profiles when needed.' }}</flux:text>
+                    </div>
+                    @if ($childPurposes !== [])
+                        <flux:button type="button" variant="subtle" icon="plus" x-on:click="children.push({ name_ar: '', name_en: '', birth_date: '', purpose: childPurpose })" x-bind:disabled="children.length >= 10">
+                            {{ app()->getLocale() === 'ar' ? 'إضافة طفل' : 'Add child' }}
+                        </flux:button>
+                    @endif
                 </div>
-            </section>
 
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <flux:heading size="lg">{{ __('Child profile (optional)') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('Child data requires a configured purpose scope and is stored separately from the customer identity.') }}</flux:text>
-                @if ($childPolicyError)
-                    <flux:callout class="mt-3" variant="info">{{ app()->getLocale() === 'ar' ? 'إعداد غرض بيانات الأطفال غير مُتاح حالياً؛ يمكن إنشاء العميل بدون ملف طفل.' : 'The child-data purpose scope is not configured; you can still create the customer without a child profile.' }}</flux:callout>
+                @if ($childPurposes !== [])
+                    <div class="mt-4 space-y-4" x-show="children.length">
+                        <template x-for="(child, index) in children" :key="index">
+                            <div class="rounded-xl border border-border bg-surface p-4">
+                                <div class="mb-4 flex items-center justify-between gap-3">
+                                    <p class="font-semibold text-text-primary" x-text="`{{ app()->getLocale() === 'ar' ? 'الطفل' : 'Child' }} ${index + 1}`"></p>
+                                    <flux:button type="button" size="sm" variant="subtle" icon="trash" x-on:click="children.splice(index, 1)">{{ app()->getLocale() === 'ar' ? 'حذف' : 'Remove' }}</flux:button>
+                                </div>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <flux:input x-bind:name="`children[${index}][name_ar]`" x-model="child.name_ar" :label="app()->getLocale() === 'ar' ? 'اسم الطفل بالعربية' : __('Child Arabic name')" dir="rtl" />
+                                    <flux:input x-bind:name="`children[${index}][name_en]`" x-model="child.name_en" :label="app()->getLocale() === 'ar' ? 'اسم الطفل بالإنجليزية (اختياري)' : __('Child English name')" dir="ltr" />
+                                    <flux:input x-bind:name="`children[${index}][birth_date]`" x-model="child.birth_date" :label="app()->getLocale() === 'ar' ? 'تاريخ الميلاد' : __('Birth date')" type="date" />
+                                    @if (count($childPurposes) === 1)
+                                        <input type="hidden" x-bind:name="`children[${index}][purpose]`" x-model="child.purpose">
+                                    @else
+                                        <label class="block min-w-0 text-sm font-medium text-text-primary">
+                                            {{ app()->getLocale() === 'ar' ? 'الغرض من حفظ بيانات الطفل' : __('Child-data purpose') }}
+                                            <select x-bind:name="`children[${index}][purpose]`" x-model="child.purpose" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
+                                                <option value="">{{ app()->getLocale() === 'ar' ? 'اختر الغرض' : 'Choose a purpose' }}</option>
+                                                @foreach ($childPurposes as $purpose)
+                                                    <option value="{{ $purpose }}">{{ $purpose }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    @endif
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <p class="mt-4 text-sm text-text-muted" x-show="! children.length">{{ app()->getLocale() === 'ar' ? 'لم تُضف بيانات أطفال بعد.' : 'No child profiles have been added.' }}</p>
                 @endif
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <flux:input name="child_name_ar" :label="__('Child Arabic name')" :value="old('child_name_ar')" dir="rtl" />
-                    <flux:input name="child_name_en" :label="__('Child English name')" :value="old('child_name_en')" dir="ltr" />
-                    <flux:input name="child_birth_date" :label="__('Birth date')" :value="old('child_birth_date')" type="date" />
-                    <flux:select name="child_purpose" :label="__('Child-data purpose')" :disabled="$childPurposes === []">
-                        <flux:select.option value="">{{ __('No child profile') }}</flux:select.option>
-                        @foreach ($childPurposes as $purpose)
-                            <flux:select.option value="{{ $purpose }}">{{ $purpose }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </div>
             </section>
 
             <div class="flex flex-wrap items-center justify-between gap-3">

@@ -217,7 +217,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $consentPurposes = [];
         $childPurposes = [];
         $consentPolicyError = null;
-        $childPolicyError = null;
         try {
             $consentPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
         } catch (InvalidArgumentException $exception) {
@@ -225,12 +224,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
         try {
             $childPurposes = CustomerPolicy::childPurposes()['value'];
-        } catch (InvalidArgumentException $exception) {
-            $childPolicyError = $exception->getMessage();
+        } catch (InvalidArgumentException) {
         }
         $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
-        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'consentPolicyError', 'childPolicyError', 'groupOptions'));
+        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'consentPolicyError', 'groupOptions'));
     })->middleware('can:customers.create')->name('customers.create');
 
     Route::post('customers', function (Request $request, CreateCustomerAction $action) use ($sellingStore) {
@@ -251,31 +249,26 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'address_ar' => ['nullable', 'string', 'max:4000'],
             'address_en' => ['nullable', 'string', 'max:4000'],
             'customer_group_id' => ['nullable', 'integer'],
-            'consent_purpose' => ['required', 'string', 'max:80'],
-            'consent_status' => ['required', Rule::in(['granted', 'withdrawn', 'denied'])],
-            'child_name_ar' => ['nullable', 'string', 'max:190'],
-            'child_name_en' => ['nullable', 'string', 'max:190'],
-            'child_birth_date' => ['nullable', 'date'],
-            'child_purpose' => ['nullable', 'string', 'max:80'],
+            'children' => ['nullable', 'array', 'max:10'],
+            'children.*.name_ar' => ['nullable', 'string', 'max:190'],
+            'children.*.name_en' => ['nullable', 'string', 'max:190'],
+            'children.*.birth_date' => ['nullable', 'date'],
+            'children.*.purpose' => ['nullable', 'string', 'max:80'],
         ]);
-        $child = filled($validated['child_name_ar'] ?? null) || filled($validated['child_name_en'] ?? null)
-            ? [[
-                'name_ar' => $validated['child_name_ar'] ?? '',
-                'name_en' => $validated['child_name_en'] ?? '',
-                'birth_date' => $validated['child_birth_date'] ?? null,
-                'purpose' => $validated['child_purpose'] ?? '',
-            ]]
-            : [];
+        $children = collect($validated['children'] ?? [])
+            ->filter(fn (array $child): bool => filled($child['name_ar'] ?? null) || filled($child['name_en'] ?? null))
+            ->values()
+            ->all();
 
         $store = $sellingStore($user);
         try {
             $customer = $action->execute($user, $store, $validated + [
                 'consents' => [[
-                    'purpose' => $validated['consent_purpose'],
-                    'status' => $validated['consent_status'],
+                    'purpose' => 'service_delivery',
+                    'status' => 'granted',
                     'source' => 'profile_create',
                 ]],
-                'children' => $child,
+                'children' => $children,
             ]);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
             $normalizedPhone = PhoneNormalizer::normalize((string) ($validated['phone'] ?? ''));

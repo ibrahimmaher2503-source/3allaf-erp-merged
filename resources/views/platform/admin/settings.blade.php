@@ -543,6 +543,8 @@ new #[Title('System Settings')] class extends Component
     {
         Gate::authorize('manage-settings');
 
+        $this->printerSection = 'printer-profiles';
+
         $printer = PrinterConfiguration::visibleTo(auth()->user())->findOrFail($id);
         $this->printerForm = $printer->toArray();
         $this->printerForm['scope_type'] = $printer->store_id !== null ? 'store' : ($printer->branch_id !== null ? 'branch' : 'global');
@@ -798,7 +800,9 @@ new #[Title('System Settings')] class extends Component
                             icon="eye"
                             x-bind:disabled="!dirty"
                             wire:loading.attr="disabled"
+                            wire:loading.class="is-loading"
                             wire:target="previewCompany"
+                            class="settings-review-button"
                             data-guide="settings-save-button"
                         >
                             {{ __('company.review_changes') }}
@@ -924,12 +928,6 @@ new #[Title('System Settings')] class extends Component
                             <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('When enabled, staff must attach or reference payment evidence before this payment can be approved.') }}</p>
                         </div>
 
-                        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                            <flux:switch
-                                wire:model="paymentMethodForm.offline_eligible"
-                                :label="__('Available for approved offline POS transactions')"
-                            />
-                        </div>
                     </div>
 
                     <div class="flex items-center justify-end gap-3">
@@ -1094,10 +1092,12 @@ new #[Title('System Settings')] class extends Component
                     <div class="grid gap-3 md:grid-cols-2">
                         <flux:switch
                             wire:model="taxSettingForm.is_default"
+                            align="left"
                             :label="__('Company Default Tax Rule')"
                         />
                         <flux:switch
                             wire:model="taxSettingForm.is_tax_inclusive"
+                            align="left"
                             :label="__('Default Prices Are Tax Inclusive')"
                         />
                     </div>
@@ -1198,17 +1198,21 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 4: Document Sequences -->
     <?php if ($activeTab === 'sequences'): ?>
         <div id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="space-y-6">
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">
-                    {{ $documentSequenceForm['id'] ? __('Edit document-numbering rule') : __('Add document-numbering rule') }}
-                </flux:heading>
+            <flux:card class="space-y-6">
+                <div class="space-y-1">
+                    <flux:heading size="lg">
+                        {{ $documentSequenceForm['id'] ? __('Edit document-numbering rule') : __('Add document-numbering rule') }}
+                    </flux:heading>
+                    <flux:text class="text-text-muted">{{ __('Set the document code, where it applies, and how its next number is displayed.') }}</flux:text>
+                </div>
 
-                <flux:callout variant="info" icon="information-circle" title="{{ __('How numbering works') }}">
-                    {{ __('A number is prefix + padded counter + suffix. Reset cycle starts a new period; existing documents keep their numbers.') }}
-                </flux:callout>
-
-                <form wire:submit="saveDocumentSequence" class="space-y-4">
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <form wire:submit="saveDocumentSequence" class="space-y-5">
+                    <section class="space-y-4 rounded-xl border border-border-subtle bg-surface-muted/40 p-4" aria-labelledby="sequence-basics-heading">
+                        <div>
+                            <flux:heading id="sequence-basics-heading" size="sm">{{ __('Rule details') }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the document and the level that uses this numbering rule.') }}</flux:text>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 {{ ($documentSequenceForm['scope_type'] ?? 'company') === 'branch' ? 'xl:grid-cols-3' : '' }}">
                         <flux:input
                             wire:model="documentSequenceForm.document_type"
                             :label="__('Document type')"
@@ -1230,7 +1234,15 @@ new #[Title('System Settings')] class extends Component
                                 <?php endforeach; ?>
                             </flux:select>
                         <?php endif; ?>
+                        </div>
+                    </section>
 
+                    <section class="space-y-4" aria-labelledby="sequence-format-heading">
+                        <div>
+                            <flux:heading id="sequence-format-heading" size="sm">{{ __('Number format') }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Arrange the text and digits exactly as they should appear on the document.') }}</flux:text>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <flux:input
                             wire:model="documentSequenceForm.prefix"
                             :label="__('Prefix (before the number)')"
@@ -1251,7 +1263,15 @@ new #[Title('System Settings')] class extends Component
                             type="number"
                             required
                         />
+                        </div>
+                    </section>
 
+                    <section class="space-y-4 rounded-xl border border-border-subtle p-4" aria-labelledby="sequence-counter-heading">
+                        <div>
+                            <flux:heading id="sequence-counter-heading" size="sm">{{ __('Counter settings') }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the first number and whether counting restarts on a schedule.') }}</flux:text>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <flux:input
                             wire:model="documentSequenceForm.next_value"
                             :label="$documentSequenceForm['id'] ? __('Current next number (read-only)') : __('First number to use')"
@@ -1267,7 +1287,8 @@ new #[Title('System Settings')] class extends Component
                             <option value="monthly">{{ __('Monthly — restart each month') }}</option>
                             <option value="yearly">{{ __('Yearly — restart each year') }}</option>
                         </flux:select>
-                    </div>
+                        </div>
+                    </section>
 
                     <?php
                         $previewValue = (int) ($documentSequenceForm['next_value'] ?? 1);
@@ -1275,16 +1296,15 @@ new #[Title('System Settings')] class extends Component
                             .str_pad((string) $previewValue, (int) ($documentSequenceForm['padding_length'] ?? 6), '0', STR_PAD_LEFT)
                             .(string) ($documentSequenceForm['suffix'] ?? '');
                     ?>
-                    <div class="rounded-lg border border-border-subtle bg-surface-muted p-4" data-sequence-preview>
-                        <flux:heading size="sm">{{ __('Example number') }}</flux:heading>
-                        <flux:text class="mt-1 font-mono text-lg font-semibold text-primary">{{ $previewNumber }}</flux:text>
-                        <flux:text class="mt-1 text-sm text-text-muted">{{ __('Example only — saving does not reserve a number.') }}</flux:text>
+                    <div class="rounded-xl border border-primary/25 bg-primary/5 px-5 py-4" data-sequence-preview>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <flux:heading size="sm">{{ __('Preview of the next document number') }}</flux:heading>
+                                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Changes here do not reserve a number until you save the rule.') }}</flux:text>
+                            </div>
+                            <output class="rounded-lg bg-surface px-4 py-2 font-mono text-lg font-semibold tracking-wide text-primary shadow-sm" aria-live="polite">{{ $previewNumber }}</output>
+                        </div>
                     </div>
-
-                    <flux:input
-                        wire:model="documentSequenceForm.policy_notes"
-                        :label="__('Notes')"
-                    />
 
                     <div class="flex items-center justify-end gap-3">
                         <?php if ($documentSequenceForm['id']): ?>
@@ -1384,34 +1404,49 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 5: Printer Configurations -->
     <?php if ($activeTab === 'printers'): ?>
         <div id="panel-printers" role="tabpanel" aria-labelledby="tab-printers" data-settings-active-section="{{ $printerSection }}" class="space-y-6">
-            <flux:callout variant="info" icon="information-circle" title="{{ $printerSection === 'print-templates' ? __('Print-template assignments') : __('Printer profiles') }}">
-                {{ $printerSection === 'print-templates'
-                    ? __('Review the template key assigned to each printer profile. Template layout design and physical printer testing remain outside this workspace.')
-                    : __('Printer profiles control the output destination. This workspace only assigns an existing template key to each profile; it does not create or edit template layouts.') }}
-            </flux:callout>
+            <div class="rounded-xl border border-border-subtle bg-surface-muted/40 p-5">
+                <flux:heading size="lg">{{ __('Printers and print settings') }}</flux:heading>
+                <flux:text class="mt-1 text-text-muted">{{ __('Add the printers available at your branch, then choose where each document is printed.') }}</flux:text>
+            </div>
 
             <div class="flex flex-wrap gap-2" aria-label="{{ __('Printer workspace') }}">
                 <flux:button size="sm" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}" :variant="$printerSection === 'printer-profiles' ? 'primary' : 'subtle'">
-                    {{ __('Printer profiles') }}
+                    {{ __('Printers') }}
                 </flux:button>
                 <flux:button size="sm" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'print-templates']) }}" :variant="$printerSection === 'print-templates' ? 'primary' : 'subtle'">
-                    {{ __('Print-template assignments') }}
+                    {{ __('Print settings') }}
                 </flux:button>
             </div>
 
             <?php if ($printerSection === 'printer-profiles'): ?>
-            <flux:card id="printer-profiles" class="scroll-mt-24 space-y-4">
-                <flux:heading size="lg">
-                    {{ $printerForm['id'] ? __('Edit Printer Profile') : __('Add Printer Profile') }}
-                </flux:heading>
-                <flux:subheading>{{ __('A printer profile describes where a document is sent. The print template key describes the layout selected for that profile; this workspace does not edit template layouts.') }}</flux:subheading>
+            <flux:card id="printer-profiles" class="scroll-mt-24 space-y-6">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <flux:heading size="lg">{{ $printerForm['id'] ? __('Edit printer') : __('Add printer') }}</flux:heading>
+                        <flux:subheading>{{ __('Enter the printer details used by the team. Advanced connection settings are optional.') }}</flux:subheading>
+                    </div>
+        <?php if ($printerForm['id']): ?>
+            <flux:button
+                href="{{ route('admin.settings.printer-preview', ['printer' => $printerForm['id']]) }}"
+                target="_blank"
+                variant="subtle"
+                icon="printer"
+            >
+                {{ __('Test print') }}
+            </flux:button>
+        <?php else: ?>
+            <flux:button type="button" variant="subtle" icon="printer" disabled>
+                {{ __('Test print') }}
+            </flux:button>
+        <?php endif; ?>
+                </div>
 
                 <form id="printer-profile-form" wire:submit="savePrinter" class="space-y-4">
                     <?php
                         $printerBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
                         $printerStores = \App\Modules\Platform\Models\Store::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
                     ?>
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <flux:input
                             wire:model="printerForm.name"
                             :label="__('Printer Name')"
@@ -1419,10 +1454,10 @@ new #[Title('System Settings')] class extends Component
                             required
                         />
 
-                        <flux:select wire:model="printerForm.scope_type" :label="__('Printer scope')" :description="__('Global applies everywhere; Branch limits selection to that branch; Location binds it to one active location.')">
-                            <option value="global">{{ __('Global workspace') }}</option>
+                        <flux:select wire:model="printerForm.scope_type" :label="__('Printer location')">
+                            <option value="global">{{ __('Entire company') }}</option>
                             <option value="branch">{{ __('Branch') }}</option>
-                            <option value="store">{{ __('Location / store') }}</option>
+                            <option value="store">{{ __('Store / point of sale') }}</option>
                         </flux:select>
 
                         <flux:select wire:model="printerForm.branch_id" :label="__('Branch')" :disabled="$printerForm['scope_type'] === 'global'">
@@ -1432,8 +1467,8 @@ new #[Title('System Settings')] class extends Component
                             @endforeach
                         </flux:select>
 
-                        <flux:select wire:model="printerForm.store_id" :label="__('Location / store')" :disabled="$printerForm['scope_type'] !== 'store'">
-                            <option value="">{{ __('Select location') }}</option>
+                        <flux:select wire:model="printerForm.store_id" :label="__('Store / point of sale')" :disabled="$printerForm['scope_type'] !== 'store'">
+                            <option value="">{{ __('Select a store or point of sale') }}</option>
                             @foreach ($printerStores as $store)
                                 <option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>
                             @endforeach
@@ -1447,45 +1482,26 @@ new #[Title('System Settings')] class extends Component
                         </flux:select>
 
                         <flux:select wire:model="printerForm.paper_size" :label="__('Paper Size')">
-                            <option value="80mm">{{ __('80mm Thermal') }}</option>
-                            <option value="58mm">{{ __('58mm Thermal') }}</option>
-                            <option value="a4">{{ __('A4 Sheet') }}</option>
-                            <option value="label">{{ __('Standard Label') }}</option>
+                            <?php if (($printerForm['printer_type'] ?? 'thermal') === 'thermal'): ?>
+                                <option value="80mm">{{ __('80mm Thermal') }}</option>
+                                <option value="58mm">{{ __('58mm Thermal') }}</option>
+                            <?php elseif (($printerForm['printer_type'] ?? '') === 'label'): ?>
+                                <option value="label">{{ __('Standard Label') }}</option>
+                            <?php else: ?>
+                                <option value="a4">{{ __('A4 Sheet') }}</option>
+                            <?php endif; ?>
                         </flux:select>
 
-                        <flux:input
-                            wire:model="printerForm.template_name"
-                            :label="__('Print template key')"
-                            placeholder="default_thermal"
-                            :description="__('Use the existing approved template key compatible with this paper size. This is a relationship to a template, not a printer name.')"
-                            required
-                        />
-
-                        <flux:select wire:model="printerForm.connection_type" :label="__('Connection Type')">
-                            <option value="network">{{ __('Network / IP') }}</option>
-                            <option value="usb">{{ __('USB') }}</option>
-                            <option value="bluetooth">{{ __('Bluetooth') }}</option>
-                            <option value="browser">{{ __('Browser Print') }}</option>
-                        </flux:select>
-
-                        <flux:input
-                            wire:model="printerForm.ip_address"
-                            :label="__('IP Address (Network)')"
-                            placeholder="192.168.1.100"
-                        />
                     </div>
+
+                    <input type="hidden" wire:model="printerForm.template_name">
 
                     <flux:switch
                         wire:model="printerForm.is_default"
-                        :label="__('Default printer profile')"
+                        align="start"
+                        :label="__('Make this the default printer for this location')"
                     />
-                    <p class="-mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('The default is used when an authorized print workflow does not choose another compatible profile. It does not test or install hardware.') }}</p>
-
-                    <flux:input
-                        wire:model="printerForm.notes"
-                        :label="__('Business configuration note (optional)')"
-                        :description="__('Use this note for context only; approval remains a separate decision.')"
-                    />
+                    <p class="-mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Use one default printer per location and printer type.') }}</p>
 
                     <div class="flex items-center justify-end gap-3">
                         <?php if ($printerForm['id']): ?>
@@ -1495,86 +1511,195 @@ new #[Title('System Settings')] class extends Component
                         <?php endif; ?>
 
                         <flux:button type="submit" variant="primary">
-                            {{ $printerForm['id'] ? __('Update Printer Profile') : __('Save Printer Profile') }}
+                            {{ $printerForm['id'] ? __('Update printer') : __('Save printer') }}
                         </flux:button>
                     </div>
                 </form>
+
+                <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store'])->orderBy('name')->limit(100)->get(); ?>
+                <div class="border-t border-border-subtle pt-5">
+                    <div class="mb-4">
+                        <flux:heading size="md">{{ __('Configured printers') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm text-text-muted">{{ __('Review availability and update the printer that is used at each location.') }}</flux:text>
+                    </div>
+                    <flux:table aria-label="{{ __('Configured printers') }}">
+                        <flux:table.columns>
+                            <flux:table.column>{{ __('Printer name') }}</flux:table.column>
+                            <flux:table.column>{{ __('Branch') }}</flux:table.column>
+                            <flux:table.column>{{ __('Store / point of sale') }}</flux:table.column>
+                            <flux:table.column>{{ __('Printer type') }}</flux:table.column>
+                            <flux:table.column>{{ __('Paper size') }}</flux:table.column>
+                            <flux:table.column>{{ __('Status') }}</flux:table.column>
+                            <flux:table.column>{{ __('Actions') }}</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            <?php foreach ($printers as $printer): ?>
+                                <flux:table.row key="physical-printer-{{ $printer->id }}">
+                                    <flux:table.cell class="font-medium">{{ $printer->name }}</flux:table.cell>
+                                    <flux:table.cell>{{ $printer->branch ? (app()->getLocale() === 'ar' ? $printer->branch->name_ar : $printer->branch->name_en) : __('Entire company') }}</flux:table.cell>
+                                    <flux:table.cell>{{ $printer->store ? (app()->getLocale() === 'ar' ? $printer->store->name_ar : $printer->store->name_en) : '—' }}</flux:table.cell>
+                                    <flux:table.cell>{{ __(match ($printer->printer_type) { 'thermal' => 'Thermal receipt printer', 'label' => 'Barcode / label printer', 'a4' => 'A4 printer', default => 'PDF printer' }) }}</flux:table.cell>
+                                    <flux:table.cell>{{ $printer->paper_size }}</flux:table.cell>
+                                    <flux:table.cell><flux:badge size="sm" :color="$printer->status === 'active' ? 'green' : 'zinc'">{{ $printer->status === 'active' ? __('Available') : __('Inactive') }}</flux:badge></flux:table.cell>
+                                    <flux:table.cell class="whitespace-nowrap">
+                                        <div class="flex flex-wrap gap-2">
+                            <flux:button
+                                size="sm"
+                                variant="subtle"
+                                href="{{ route('admin.settings.printer-preview', ['printer' => $printer->id]) }}"
+                                target="_blank"
+                                icon="printer"
+                            >
+                                {{ __('Test print') }}
+                            </flux:button>
+                                            <flux:button size="sm" variant="subtle" type="button" wire:click="editPrinter({{ $printer->id }})">{{ __('Edit') }}</flux:button>
+                                        </div>
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            <?php endforeach; ?>
+                            <?php if ($printers->isEmpty()): ?>
+                                <flux:table.row>
+                                    <flux:table.cell colspan="7" class="py-8 text-center">
+                                        <x-state.empty :title="__('No printers added yet')" :description="__('Add your first printer to start setting up invoices, receipts, and reports.')" icon="printer" />
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            <?php endif; ?>
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
             </flux:card>
             <?php endif; ?>
 
             <?php if ($printerSection === 'print-templates'): ?>
             <flux:card id="print-templates" class="scroll-mt-24 space-y-4">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <flux:heading size="lg">{{ __('Print-template assignments') }}</flux:heading>
-                        <flux:subheading>{{ __('Review the template key assigned to each printer profile. Template layout design and physical printer testing remain outside this workspace.') }}</flux:subheading>
+                <?php
+                    $printers = PrinterConfiguration::visibleTo(auth()->user())
+                        ->with(['branch', 'store'])
+                        ->orderBy('name')
+                        ->limit(100)
+                        ->get();
+                    $printMappings = [
+                        'default_thermal' => ['document' => 'فاتورة المبيعات', 'template' => 'فاتورة حرارية'],
+                        'gift_receipt' => ['document' => 'إيصال الهدية', 'template' => 'إيصال هدية'],
+                        'return_receipt' => ['document' => 'المرتجع والاستبدال', 'template' => 'إيصال مرتجع حراري'],
+                        'shift_closing' => ['document' => 'إغلاق الوردية', 'template' => 'إيصال إغلاق الوردية'],
+                        'barcode_label' => ['document' => 'ملصقات الباركود', 'template' => 'ملصق باركود'],
+                    ];
+                ?>
+
+                <div class="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <flux:heading size="lg">{{ __('تعيينات الطباعة') }}</flux:heading>
+                            <flux:subheading>{{ __('حدّد المستند، ثم القالب المناسب، والطابعة التي ستخرجه.') }}</flux:subheading>
+                        </div>
+                        <flux:button size="sm" variant="primary" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}">
+                            {{ __('إدارة الطابعات') }}
+                        </flux:button>
                     </div>
-                    <flux:button size="sm" variant="subtle" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}">
-                        {{ __('Manage printer profiles') }}
-                    </flux:button>
+
+                    <div class="mt-4 grid gap-3 md:grid-cols-3" aria-label="{{ __('مسار إعداد الطباعة') }}">
+                        <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
+                            <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">1</span>
+                            <div>
+                                <p class="font-medium">{{ __('المستند') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('ما الذي سيُطبع؟') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
+                            <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">2</span>
+                            <div>
+                                <p class="font-medium">{{ __('القالب') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('الشكل ومقاس الورق') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
+                            <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">3</span>
+                            <div>
+                                <p class="font-medium">{{ __('الطابعة والمكان') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('أين سيخرج المستند؟') }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <flux:table aria-label="{{ __('Configured Printer Profiles') }}">
-                    <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store'])->orderBy('name')->limit(100)->get(); ?>
+                <div class="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700">
+                    <flux:table class="min-w-[52rem]" aria-label="{{ __('تعيينات الطباعة') }}">
+                        <flux:table.columns>
+                            <flux:table.column>{{ __('المستند') }}</flux:table.column>
+                            <flux:table.column>{{ __('القالب ومقاس الورق') }}</flux:table.column>
+                            <flux:table.column>{{ __('الطابعة والمكان') }}</flux:table.column>
+                            <flux:table.column>{{ __('الحالة') }}</flux:table.column>
+                            <flux:table.column>{{ __('الإجراء') }}</flux:table.column>
+                        </flux:table.columns>
 
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Name') }}</flux:table.column>
-                        <flux:table.column>{{ __('Scope') }}</flux:table.column>
-                        <flux:table.column>{{ __('Printer type') }}</flux:table.column>
-                        <flux:table.column>{{ __('Paper Size') }}</flux:table.column>
-                        <flux:table.column>{{ __('Print template key') }}</flux:table.column>
-                        <flux:table.column>{{ __('Connection') }}</flux:table.column>
-                        <flux:table.column>{{ __('Default') }}</flux:table.column>
-                        <flux:table.column>{{ __('Status') }}</flux:table.column>
-                    </flux:table.columns>
-
-                    <flux:table.rows>
-                        <?php if ($printers->isNotEmpty()): ?>
-                            <?php foreach ($printers as $printer): ?>
-                            <flux:table.row key="printer-{{ $printer->id }}">
-                                <flux:table.cell class="font-medium">{{ $printer->name }}</flux:table.cell>
-                                <flux:table.cell class="text-xs">
-                                    @if ($printer->store)
-                                        {{ __('Location') }}: {{ $printer->store->code }}
-                                    @elseif ($printer->branch)
-                                        {{ __('Branch') }}: {{ $printer->branch->code }}
-                                    @else
-                                        {{ __('Global workspace') }}
-                                    @endif
-                                </flux:table.cell>
-                                <flux:table.cell><flux:badge size="sm" color="zinc">{{ strtoupper($printer->printer_type) }}</flux:badge></flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs">{{ $printer->paper_size }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs">{{ $printer->template_name }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-xs">{{ $printer->connection_type }} ({{ $printer->ip_address ?? __('Not specified') }})</flux:table.cell>
-                                <flux:table.cell>
-                                    <?php if ($printer->is_default): ?>
-                                        <flux:badge size="sm" color="green">{{ __('Default') }}</flux:badge>
-                                    <?php else: ?>
-                                        <flux:badge size="sm" color="zinc">{{ __('No') }}</flux:badge>
-                                    <?php endif; ?>
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    <?php if ($printer->status === 'active'): ?>
-                                        <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
-                                    <?php else: ?>
-                                        <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
-                                    <?php endif; ?>
-                                </flux:table.cell>
-                            </flux:table.row>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <flux:table.row>
-                                <flux:table.cell colspan="8" class="text-center py-4">
-                                    <x-state.empty
-                                        :title="__('No printer profiles configured')"
-                                        :description="__('Create an active printer profile, choose its compatible print-template key, and mark one profile as default before using a print workflow.')"
-                                        icon="printer"
-                                    />
-                                </flux:table.cell>
-                            </flux:table.row>
-                        <?php endif; ?>
-                    </flux:table.rows>
-                </flux:table>
+                        <flux:table.rows>
+                            <?php if ($printers->isNotEmpty()): ?>
+                                <?php foreach ($printers as $printer): ?>
+                                    <?php
+                                        $mapping = $printMappings[(string) $printer->template_name] ?? ['document' => 'مستند تشغيلي', 'template' => 'القالب المعتمد'];
+                                        $paperSize = match (strtolower(trim((string) $printer->paper_size))) {
+                                            '58mm', '58 mm' => '58 مم',
+                                            '80mm', '80 mm' => '80 مم',
+                                            'a4' => 'A4',
+                                            default => (string) $printer->paper_size ?: 'حسب إعداد الطابعة',
+                                        };
+                                        $printerName = preg_match('/^default[-_]/i', (string) $printer->name)
+                                            ? 'طابعة افتراضية'
+                                            : $printer->name;
+                                        $location = $printer->store
+                                            ? (app()->getLocale() === 'ar' ? $printer->store->name_ar : $printer->store->name_en)
+                                            : ($printer->branch
+                                                ? (app()->getLocale() === 'ar' ? $printer->branch->name_ar : $printer->branch->name_en)
+                                                : 'كل الشركة');
+                                    ?>
+                                    <flux:table.row key="printer-{{ $printer->id }}">
+                                        <flux:table.cell class="font-medium">{{ __($mapping['document']) }}</flux:table.cell>
+                                        <flux:table.cell>
+                                            <div class="space-y-1">
+                                                <div>{{ __($mapping['template']) }}</div>
+                                                <div class="text-xs text-text-muted">{{ $paperSize }}</div>
+                                            </div>
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <div class="space-y-1">
+                                                <div class="font-medium">{{ $printerName }}</div>
+                                                <div class="text-xs text-text-muted">{{ $location }}</div>
+                                            </div>
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <div class="flex flex-wrap gap-1.5">
+                                                <?php if ($printer->status === 'active'): ?>
+                                                    <flux:badge size="sm" color="green">{{ __('نشطة') }}</flux:badge>
+                                                <?php else: ?>
+                                                    <flux:badge size="sm" color="red">{{ __('غير نشطة') }}</flux:badge>
+                                                <?php endif; ?>
+                                                <?php if ($printer->is_default): ?>
+                                                    <flux:badge size="sm" color="zinc">{{ __('افتراضية') }}</flux:badge>
+                                                <?php endif; ?>
+                                            </div>
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <flux:button size="sm" variant="subtle" type="button" wire:click="editPrinter({{ $printer->id }})">
+                                                {{ __('تعديل الإعداد') }}
+                                            </flux:button>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <flux:table.row>
+                                    <flux:table.cell colspan="5" class="py-8 text-center">
+                                        <x-state.empty
+                                            :title="__('لا توجد تعيينات طباعة بعد')"
+                                            :description="__('أضف طابعة أولاً، ثم اختر القالب المناسب لكل مستند.')"
+                                            icon="printer"
+                                        />
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            <?php endif; ?>
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
             </flux:card>
             <?php endif; ?>
         </div>

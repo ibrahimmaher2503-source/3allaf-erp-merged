@@ -129,7 +129,13 @@ new #[Title('Product Details')] class extends Component {
                     @forelse ($product->barcodes as $barcode)
                         <div class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"><span class="catalog-code-chip">{{ $barcode->barcode }}</span><flux:badge size="sm" color="{{ $barcode->source === 'local' ? 'sky' : 'zinc' }}">{{ __($barcode->source === 'local' ? 'Local' : 'Supplier') }}</flux:badge></div>
                     @empty
-                        <x-state.empty :title="__('No barcode linked')" :description="__('Barcode identity can be managed from the catalog list.')" icon="tag">@if ($canEdit)<x-slot:action><flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="subtle" icon="pencil">{{ __('Edit product card') }}</flux:button></x-slot:action>@endif</x-state.empty>
+                        <x-state.empty :title="__('No barcode linked')" :description="__('Barcode identity can be managed from the catalog list.')" icon="tag">
+                            @if ($canEdit)
+                                <x-slot:action>
+                                    <flux:button href="{{ route('catalog.products.edit', ['product' => $product]) }}" variant="subtle" icon="pencil">{{ __('Edit product card') }}</flux:button>
+                                </x-slot:action>
+                            @endif
+                        </x-state.empty>
                     @endforelse
                 </div>
             </flux:card>

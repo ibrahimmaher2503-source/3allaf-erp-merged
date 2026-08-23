@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -19,7 +20,7 @@ use InvalidArgumentException;
 class SaveProductAction
 {
     /** @var array<int, string> */
-    private const PRODUCT_TYPES = ['standard', 'composite', 'service'];
+    private const PRODUCT_TYPES = ['standard', 'composite', 'service', 'digital'];
 
     /** @param array<string, mixed> $data */
     public function execute(array $data, ?int $id = null, ?int $expectedVersion = null): Product
@@ -91,7 +92,7 @@ class SaveProductAction
                     'category_id' => (int) $data['category_id'],
                     'brand_id' => ! empty($data['brand_id']) ? (int) $data['brand_id'] : null,
                     'status' => $status,
-                    'reorder_threshold' => $productType === 'service' ? null : $this->nullableNumeric($data['reorder_threshold'] ?? null),
+                    'reorder_threshold' => in_array($productType, ['service', 'digital'], true) ? null : $this->nullableNumeric($data['reorder_threshold'] ?? null),
                     'dimension_length' => $this->nullableNumeric($data['dimension_length'] ?? null),
                     'dimension_width' => $this->nullableNumeric($data['dimension_width'] ?? null),
                     'dimension_height' => $this->nullableNumeric($data['dimension_height'] ?? null),
@@ -164,9 +165,19 @@ class SaveProductAction
                         $product->{$relation}()->sync(array_values(array_filter(array_map('intval', (array) $data[$input]))));
                     }
                 }
-                if (! empty($data['preferred_supplier_id'])) {
+                if (array_key_exists('preferred_supplier_id', $data)) {
+                    $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
+                    $supplier = $supplierId > 0 ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first() : null;
+
+                    if ($supplierId > 0 && $supplier === null) {
+                        throw new InvalidArgumentException(__('The selected supplier must exist and be active.'));
+                    }
+
                     $product->productSuppliers()->update(['is_preferred' => false]);
-                    $product->productSuppliers()->updateOrCreate(['supplier_id' => (int) $data['preferred_supplier_id']], ['is_preferred' => true]);
+
+                    if ($supplier !== null) {
+                        $product->productSuppliers()->updateOrCreate(['supplier_id' => $supplier->id], ['is_preferred' => true]);
+                    }
                 }
 
                 app(RecordAuditEvent::class)->execute(

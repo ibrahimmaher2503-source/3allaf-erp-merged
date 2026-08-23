@@ -342,7 +342,7 @@ class StageProductImportAction
         }
         $supplierCode = strtoupper(trim((string) ($raw['preferred_supplier_code'] ?? '')));
         if ($supplierCode !== '' && ! isset($supplierCodes[$supplierCode])) $errors[] = __('The preferred supplier code is missing or inactive.');
-        if (! in_array($type, ['standard', 'composite', 'service'], true)) {
+        if (! in_array($type, ['standard', 'composite', 'service', 'digital'], true)) {
             $errors[] = __('The product type is not supported.');
         }
         if (! in_array($status, ['active', 'inactive'], true)) {

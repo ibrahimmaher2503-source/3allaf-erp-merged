@@ -20,6 +20,7 @@
                 @else
                     @can('customers.create')<flux:button data-guide="customer-create-action" href="{{ route('customers.create') }}" variant="primary" icon="plus">{{ __('New customer') }}</flux:button>@endcan
                 @endif
+                @canany(['customers.create', 'customers.import.approve'])<flux:button href="{{ route('customers.import') }}" variant="subtle" icon="arrow-up-tray" wire:navigate>{{ __('Customer Import') }}</flux:button>@endcanany
                 @can('customers.view')<flux:button href="{{ route('customers.groups.index') }}" variant="subtle" icon="folder">{{ __('Customer groups') }}</flux:button>@endcan
                 @can('customers.export')<flux:button data-guide="customer-export-action" href="{{ route('customers.export', ['q' => $term]) }}" variant="subtle" icon="arrow-down-tray">{{ __('Export') }}</flux:button>@endcan
             </x-slot:actions>
@@ -28,23 +29,23 @@
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif
 
-        <section data-guide="customer-search" class="rounded-xl border border-border bg-surface p-4 shadow-card" aria-labelledby="customer-search-heading">
-            <form method="GET" action="{{ route('customers.index') }}" class="flex flex-wrap items-end gap-3">
+        <section data-guide="customer-search" class="rounded-2xl border border-border bg-surface p-4 shadow-card sm:p-5" aria-labelledby="customer-search-heading">
+            <form method="GET" action="{{ route('customers.index') }}" class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_15rem_auto] sm:items-end">
                 <input type="hidden" name="mode" value="{{ $mode }}">
-                <div class="min-w-[16rem] flex-1">
-                    <label for="customer-search" class="block text-sm font-semibold">{{ __('Phone or name') }}</label>
-                    <input id="customer-search" name="q" value="{{ $term }}" dir="auto" autocomplete="off" class="mt-1 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-950" placeholder="{{ __('Search by normalized phone or Arabic/English name') }}">
+                <div>
+                    <label for="customer-search" class="mb-1 block text-sm font-semibold">{{ __('Phone or name') }}</label>
+                    <input id="customer-search" name="q" value="{{ $term }}" dir="auto" autocomplete="off" class="block h-11 w-full rounded-xl border border-border bg-surface px-4 text-sm shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="{{ __('Search by normalized phone or Arabic/English name') }}">
                 </div>
-                <div class="min-w-[15rem]">
-                    <label for="customer-group-filter" class="block text-sm font-semibold">{{ __('Customer group') }}</label>
-                    <select id="customer-group-filter" name="group_id" class="mt-1 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-950">
+                <div>
+                    <label for="customer-group-filter" class="mb-1 block text-sm font-semibold">{{ __('Customer group') }}</label>
+                    <select id="customer-group-filter" name="group_id" class="block h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                         <option value="">{{ __('All groups') }}</option>
                         @foreach ($groupOptions as $group)
                             <option value="{{ $group->id }}" @selected($groupId === $group->id)>{{ $group->parent ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</option>
                         @endforeach
                     </select>
                 </div>
-                <flux:button type="submit" variant="subtle" icon="magnifying-glass">{{ __('Search') }}</flux:button>
+                <flux:button type="submit" variant="primary" icon="magnifying-glass">{{ __('Search') }}</flux:button>
                 @if ($term !== '' || $groupId !== null)<flux:button href="{{ route('customers.index', ['mode' => $mode]) }}" variant="ghost">{{ __('Reset') }}</flux:button>@endif
             </form>
         </section>

@@ -161,10 +161,32 @@ new #[Title('Product Import')] class extends Component {
         </flux:callout>
     @endif
 
-    <flux:card class="space-y-5" data-guide="import-upload-section">
-        <div>
-            <flux:heading size="lg">{{ __('Excel import — 1. Upload and stage') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Required columns: item_code, name_ar, name_en, category_code. Optional active lookup codes include brand, preferred supplier, age_codes, character_codes, colour_codes, and gender_codes (comma-separated). Prices, dimensions, weight, and battery fields are validated before approval; formula cells are rejected.') }}</flux:text>
+    <flux:card class="space-y-5 rounded-2xl border border-cyan-200/20 bg-slate-900/30 p-4 sm:p-6" data-guide="import-upload-section">
+        <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <flux:heading size="lg">{{ app()->getLocale() === 'ar' ? 'استيراد المنتجات' : __('Excel import — 1. Upload and stage') }}</flux:heading>
+                <span class="rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-200">{{ app()->getLocale() === 'ar' ? 'الخطوة ١' : 'Step 1' }}</span>
+            </div>
+            @if (app()->getLocale() === 'ar')
+                <flux:text>ارفع ملف Excel أو CSV لتجهيز المنتجات ومراجعتها قبل اعتمادها وحفظها.</flux:text>
+                <div class="grid gap-3 pt-2 md:grid-cols-2">
+                    <div class="rounded-xl border border-cyan-200/15 bg-slate-950/20 p-4">
+                        <p class="text-sm font-semibold text-white">الأعمدة المطلوبة</p>
+                        <p class="mt-1 text-sm text-text-muted">يجب أن يحتوي الملف على:</p>
+                        <div class="mt-3 flex flex-wrap gap-2" dir="ltr">
+                            @foreach (['item_code', 'name_ar', 'name_en', 'category_code'] as $column)
+                                <code class="rounded-md bg-slate-950/60 px-2 py-1 text-xs text-cyan-200">{{ $column }}</code>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-white/10 bg-slate-950/20 p-4">
+                        <p class="text-sm font-semibold text-white">بيانات اختيارية</p>
+                        <p class="mt-1 text-sm leading-6 text-text-muted">يمكن إضافة العلامة التجارية والمورد والفئة العمرية والشخصية واللون والجنس. تُراجع الأسعار والأبعاد والوزن والبطارية قبل الاعتماد.</p>
+                    </div>
+                </div>
+            @else
+                <flux:text>{{ __('Required columns: item_code, name_ar, name_en, category_code. Optional active lookup codes include brand, preferred supplier, age_codes, character_codes, colour_codes, and gender_codes (comma-separated). Prices, dimensions, weight, and battery fields are validated before approval; formula cells are rejected.') }}</flux:text>
+            @endif
         </div>
 
         <form wire:submit="stage" class="grid gap-4 md:grid-cols-3">

@@ -45,6 +45,10 @@ class ApprovalRecord extends Model
     protected $casts = [
         'approval_state' => ApprovalState::class,
         'limit_context' => 'array',
+        'requester_id' => 'integer',
+        'approver_id' => 'integer',
+        'branch_id' => 'integer',
+        'store_id' => 'integer',
         'requested_at' => 'datetime',
         'decided_at' => 'datetime',
         'withdrawn_at' => 'datetime',

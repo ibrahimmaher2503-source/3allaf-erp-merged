@@ -18,7 +18,7 @@
         </div>
     @endif
 
-    <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div class="min-w-0 space-y-1">
             <div class="flex flex-wrap items-center gap-2.5">
                 <flux:heading size="xl" level="1" class="font-bold tracking-[-0.03em] text-text-primary">
@@ -45,7 +45,7 @@
             @endif
         </div>
 
-        <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:w-auto sm:justify-end">
+        <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 md:w-auto md:justify-end">
             @if ($requestId)
                 <flux:badge size="sm" variant="outline" icon="finger-print" class="font-mono text-xs" title="{{ __('Correlation ID') }}">
                     {{ $requestId }}

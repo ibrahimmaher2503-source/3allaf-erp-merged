@@ -7,6 +7,7 @@ use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\PaymentMethod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +48,14 @@ class SaveSupplierAction
                 throw new InvalidArgumentException(__('The selected supplier group is not available in the active company.'));
             }
 
+            $preferredPaymentMethodId = filled($data['preferred_payment_method_id'] ?? null) ? (int) $data['preferred_payment_method_id'] : null;
+            $preferredPaymentMethod = $preferredPaymentMethodId === null
+                ? null
+                : PaymentMethod::query()->where('status', 'active')->lockForUpdate()->find($preferredPaymentMethodId);
+            if ($preferredPaymentMethodId !== null && $preferredPaymentMethod === null) {
+                throw new InvalidArgumentException(__('The selected payment method is not active.'));
+            }
+
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
                 'name_ar' => trim((string) $data['name_ar']),
@@ -56,6 +65,7 @@ class SaveSupplierAction
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
                 'tax_number' => ! empty($data['tax_number']) ? trim((string) $data['tax_number']) : null,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
+                'preferred_payment_method_id' => $preferredPaymentMethod?->id,
                 'address' => ! empty($data['address']) ? trim((string) $data['address']) : null,
                 'status' => $status,
                 'supplier_group_id' => $supplierGroup?->id,
@@ -69,7 +79,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -82,7 +92,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'address', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

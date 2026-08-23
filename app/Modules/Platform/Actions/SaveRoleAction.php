@@ -4,7 +4,9 @@ namespace App\Modules\Platform\Actions;
 
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
+use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -65,22 +67,33 @@ final class SaveRoleAction
     /** @param array<int, int> $permissionIds */
     public function syncPermissions(Role $role, array $permissionIds): void
     {
-        Gate::authorize('users_roles_permissions.edit');
+        $actor = Auth::user();
+        $canManageAll = $actor instanceof User && self::canManagePermissions($actor, $role);
 
-        if (self::isCanonical($role)) {
+        if (! $canManageAll) {
+            Gate::authorize('users_roles_permissions.edit');
+        }
+
+        if (self::isCanonical($role) && ! $canManageAll) {
             throw new AuthorizationException(__('Canonical role permissions are read-only in this screen.'));
         }
 
         $permissionIds = array_values(array_unique(array_map('intval', $permissionIds)));
 
-        DB::transaction(function () use ($role, $permissionIds): void {
+        DB::transaction(function () use ($role, $permissionIds, $actor): void {
             $role = Role::query()->lockForUpdate()->findOrFail($role->id);
+            $canManageAll = $actor instanceof User && self::canManagePermissions($actor, $role);
+
+            if (self::isCanonical($role) && ! $canManageAll) {
+                throw new AuthorizationException(__('Canonical role permissions are read-only in this screen.'));
+            }
+
             $permissions = Permission::query()->whereIn('id', $permissionIds)->get(['id', 'code', 'status', 'sensitivity']);
 
             if ($permissions->count() !== count($permissionIds) || $permissions->contains(fn (Permission $permission): bool => $permission->status !== 'active')) {
                 throw ValidationException::withMessages(['permissionIds' => __('Each selected permission must be active and available.')]);
             }
-            if ($permissions->contains(fn (Permission $permission): bool => $permission->sensitivity === 'sensitive')) {
+            if (! $canManageAll && $permissions->contains(fn (Permission $permission): bool => $permission->sensitivity === 'sensitive')) {
                 throw ValidationException::withMessages(['permissionIds' => __('Sensitive permissions require an owner-approved canonical role grant.')]);
             }
 
@@ -94,6 +107,13 @@ final class SaveRoleAction
                 after: ['permission_ids' => $permissionIds],
             );
         });
+    }
+
+    public static function canManagePermissions(User $actor, Role $target): bool
+    {
+        return $actor->status === 'active'
+            && $target->code !== 'system-administrator'
+            && ($actor->is_super_admin || $actor->roles()->where('code', 'system-administrator')->where('status', 'active')->exists());
     }
 
     public static function isCanonical(Role $role): bool

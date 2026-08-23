@@ -120,7 +120,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'category_id' => ['nullable', 'integer'], 'payment_method_id' => ['nullable', 'integer'],
             'document_status' => ['nullable', 'string', 'in:approved,suspended,cancelled'],
             'party_status' => ['nullable', 'string', 'in:draft,confirmed,closed,cancelled'],
-            'product_type' => ['nullable', 'string', 'in:standard,service,bundle,rental,party_consumable'], 'product_status' => ['nullable', 'string', 'in:active,inactive,archived'],
+            'product_type' => ['nullable', 'string', 'in:standard,service,digital,bundle,rental,party_consumable'], 'product_status' => ['nullable', 'string', 'in:active,inactive,archived'],
             'brand_id' => ['nullable', 'integer'], 'age_label_id' => ['nullable', 'integer'], 'character_id' => ['nullable', 'integer'], 'colour_id' => ['nullable', 'integer'], 'gender_id' => ['nullable', 'integer'],
             'format' => ['required', 'string', 'in:xlsx,pdf'],
         ]);

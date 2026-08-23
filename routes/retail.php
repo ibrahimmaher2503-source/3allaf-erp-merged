@@ -15,7 +15,6 @@ use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletLedger;
 use App\Modules\Customer\Support\CustomerPolicy;
-use App\Modules\Customer\Support\CustomerPolicySettingRegistry;
 use App\Modules\Customer\Support\WalletPolicy;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\DeliverAttachment;
@@ -1218,36 +1217,92 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('admin/settings/customer-loyalty', function (Request $request) {
         abort_unless($request->user()?->can('company_settings.view'), 403);
 
-        $definitions = CustomerPolicySettingRegistry::all();
+        $keys = [
+            'customer.consent.purpose',
+            'customer.consent.wording',
+            'customer.consent.retention',
+            'loyalty.retail_rule',
+            'loyalty.expiry_policy',
+            'loyalty.rounding_policy',
+            'loyalty.approval_policy',
+            'loyalty.ledger_integrity',
+        ];
         $latest = CustomerPolicySettingVersion::query()
-            ->whereIn('key', array_keys($definitions))
+            ->whereIn('key', $keys)
             ->orderByDesc('version')
             ->get()
             ->groupBy('key')
             ->map(static fn ($versions) => $versions->first());
 
-        $settings = collect($definitions)->mapWithKeys(static fn (array $definition, string $key): array => [
-            $key => [
-                ...$definition,
-                'record' => $latest->get($key),
+        $object = static function (?CustomerPolicySettingVersion $setting): array {
+            $value = json_decode((string) $setting?->value, true);
+
+            return is_array($value) ? $value : [];
+        };
+        $purposes = $object($latest->get('customer.consent.purpose'));
+        $retention = $object($latest->get('customer.consent.retention'));
+        $wording = $object($latest->get('customer.consent.wording'));
+        $retailRule = $object($latest->get('loyalty.retail_rule'));
+        $expiry = $object($latest->get('loyalty.expiry_policy'));
+
+        return view('pages.admin.customer-loyalty-settings', [
+            'customer' => [
+                'purposes' => array_values(array_filter($purposes, 'is_string')),
+                'wording_version' => (string) ($wording['version'] ?? ''),
+                'wording_text' => (string) ($wording['text'] ?? ''),
+                'retention_days' => $retention['days'] ?? 365,
+                'version' => max((int) ($latest->get('customer.consent.purpose')?->version ?? 0), (int) ($latest->get('customer.consent.wording')?->version ?? 0), (int) ($latest->get('customer.consent.retention')?->version ?? 0)),
+            ],
+            'loyalty' => [
+                'earn_points_per_currency' => (string) ($retailRule['earn_points_per_currency'] ?? '1'),
+                'redeem_currency_per_point' => (string) ($retailRule['redeem_currency_per_point'] ?? '0.01'),
+                'expiry_days' => $expiry['days'] ?? 30,
+                'version' => max((int) ($latest->get('loyalty.retail_rule')?->version ?? 0), (int) ($latest->get('loyalty.expiry_policy')?->version ?? 0)),
             ],
         ]);
-
-        return view('pages.admin.customer-loyalty-settings', compact('settings'));
     })->middleware('can:company_settings.view')->name('admin.settings.customer-loyalty');
 
     Route::post('admin/settings/customer-loyalty', function (Request $request, SaveCustomerPolicySettingAction $action) {
         abort_unless($request->user()?->can('company_settings.edit'), 403);
 
         $data = $request->validate([
-            'key' => ['required', 'string', 'max:120'],
-            'value' => ['nullable', 'string', 'max:2000'],
-            'notes' => ['nullable', 'string', 'max:2000'],
+            'section' => ['required', Rule::in(['customer', 'loyalty'])],
+            'purposes' => ['required_if:section,customer', 'array', 'min:1', 'max:3'],
+            'purposes.*' => [Rule::in(['service_delivery', 'loyalty', 'marketing'])],
+            'wording_version' => ['required_if:section,customer', 'string', 'max:80'],
+            'wording_text' => ['required_if:section,customer', 'string', 'min:10', 'max:2000'],
+            'retention_days' => ['required_if:section,customer', 'integer', 'min:0', 'max:36500'],
+            'earn_points_per_currency' => ['required_if:section,loyalty', 'numeric', 'min:0.00000001', 'regex:/^(?:0|[1-9]\\d*)(?:\\.\\d{1,8})?$/'],
+            'redeem_currency_per_point' => ['required_if:section,loyalty', 'numeric', 'min:0.00000001', 'regex:/^(?:0|[1-9]\\d*)(?:\\.\\d{1,8})?$/'],
+            'expiry_days' => ['required_if:section,loyalty', 'integer', 'min:1', 'max:36500'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $action->execute($data['key'], $data['value'] ?? null, $data['notes'] ?? null);
+        $notes = $data['notes'] ?? null;
+        if ($data['section'] === 'customer') {
+            $action->executeMany([
+                'customer.phone_normalization' => 'digits_only',
+                'customer.consent.purpose' => json_encode(array_values($data['purposes']), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'customer.consent.wording' => json_encode([
+                    'version' => trim($data['wording_version']),
+                    'text' => trim($data['wording_text']),
+                ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'customer.consent.retention' => json_encode(['days' => (int) $data['retention_days']], JSON_THROW_ON_ERROR),
+            ], $notes);
+        } else {
+            $action->executeMany([
+                'loyalty.retail_rule' => json_encode([
+                    'earn_points_per_currency' => $data['earn_points_per_currency'],
+                    'redeem_currency_per_point' => $data['redeem_currency_per_point'],
+                ], JSON_THROW_ON_ERROR),
+                'loyalty.expiry_policy' => json_encode(['days' => (int) $data['expiry_days']], JSON_THROW_ON_ERROR),
+                'loyalty.rounding_policy' => '{"earn":"floor","redeem":"floor"}',
+                'loyalty.approval_policy' => '{"adjustment_requires_approval":true}',
+                'loyalty.ledger_integrity' => '{"enabled":true}',
+            ], $notes);
+        }
 
-        return to_route('admin.settings.customer-loyalty')->with('status', __('Customer policy settings saved. Owner approval is still required before publishing a policy.'));
+        return to_route('admin.settings.customer-loyalty')->with('status', app()->getLocale() === 'ar' ? 'تم حفظ نسخة جديدة من الإعدادات.' : 'A new settings version was saved.');
     })->middleware('can:company_settings.edit')->name('admin.settings.customer-loyalty.save');
 
     Route::get('pos/financial-readiness', function (Request $request) {

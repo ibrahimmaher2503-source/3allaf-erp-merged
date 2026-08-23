@@ -1,5 +1,6 @@
 <x-layouts::app :title="__('Return :number', ['number' => $return->return_number ?: $return->id])">
     <x-app.page :title="__('Return :number', ['number' => $return->return_number ?: $return->id])" :description="__('Source-linked document. The original sale remains immutable.')" max-width="5xl">
+        <x-slot:actions><flux:button href="{{ route('returns.index') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to returns') }}</flux:button></x-slot:actions>
         @if (session('success'))
             <flux:callout variant="success">{{ session('success') }}</flux:callout>
         @endif

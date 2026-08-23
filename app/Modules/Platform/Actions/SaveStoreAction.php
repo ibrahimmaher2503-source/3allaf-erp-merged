@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,12 @@ class SaveStoreAction
             }
             $branch = $branchId === null ? null : $branchQuery->whereKey($branchId)->lockForUpdate()->first();
             if ($branchId !== null && $branch === null) {
-                throw new InvalidArgumentException(__('Select an active branch for this store.'));
+                throw new InvalidArgumentException($type === 'selling'
+                    ? __('Select an active branch for this point of sale.')
+                    : __('Select an active branch for this store.'));
+            }
+            if ($type === 'selling' && $branch === null) {
+                throw new InvalidArgumentException(__('Select an active branch for this point of sale.'));
             }
 
             $company = $branch === null
@@ -147,6 +153,12 @@ class SaveStoreAction
                 ];
             } else {
                 $store = Store::create($attributes);
+
+                if ($store->type === 'selling' && $store->status === 'active' && $store->branch_id !== null
+                    && ! BranchSellingStore::query()->where('branch_id', $store->branch_id)->where('status', 'active')->exists()) {
+                    app(SaveBranchSellingStoreMappingAction::class)->execute($store->branch_id, $store->id);
+                }
+
                 $actionName = 'create_store';
                 $changes = [
                     'after' => $store->toArray(),
