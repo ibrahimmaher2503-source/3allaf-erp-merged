@@ -251,8 +251,8 @@ new #[Title('Supplier Masters')] class extends Component
             );
             $this->showSupplierModal = false;
         } catch (Throwable $exception) {
-            $this->addError('supplierForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('supplierForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -264,7 +264,7 @@ new #[Title('Supplier Masters')] class extends Component
             $action->execute($id);
             Flux::toast(variant: 'success', text: __('Supplier status updated successfully.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -281,7 +281,7 @@ new #[Title('Supplier Masters')] class extends Component
                 ? "تم تحديث حالة {$count} مورد."
                 : __('Supplier status updated for :count records.', ['count' => $count]));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -324,8 +324,8 @@ new #[Title('Supplier Masters')] class extends Component
             Flux::toast(variant: 'success', text: __('Product linked to supplier successfully.'));
             $this->showLinkProductModal = false;
         } catch (Throwable $exception) {
-            $this->addError('productLinkForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('productLinkForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -372,8 +372,8 @@ new #[Title('Supplier Masters')] class extends Component
             $this->showSupplierGroupModal = false;
             Flux::toast(variant: 'success', text: __('Supplier group saved successfully.'));
         } catch (Throwable $exception) {
-            $this->addError('supplierGroupForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('supplierGroupForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -413,8 +413,8 @@ new #[Title('Supplier Masters')] class extends Component
             $this->showSupplierContactModal = false;
             Flux::toast(variant: 'success', text: __('Supplier contact saved successfully.'));
         } catch (Throwable $exception) {
-            $this->addError('supplierContactForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('supplierContactForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -453,8 +453,8 @@ new #[Title('Supplier Masters')] class extends Component
             $this->showSupplierDestinationModal = false;
             Flux::toast(variant: 'success', text: __('Supplier communication destination saved successfully.'));
         } catch (Throwable $exception) {
-            $this->addError('supplierDestinationForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('supplierDestinationForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

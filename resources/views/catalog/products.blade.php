@@ -205,8 +205,8 @@ new #[Title('Product Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingProductId ? __('Product identity updated successfully.') : __('Product created successfully.'));
             $this->showProductModal = false;
         } catch (Throwable $exception) {
-            $this->addError('productForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('productForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -218,7 +218,7 @@ new #[Title('Product Masters')] class extends Component
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Product status updated successfully.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -233,7 +233,7 @@ new #[Title('Product Masters')] class extends Component
             $this->clearBulkSelection();
             Flux::toast(variant: 'success', text: __('Product status updated for :count records.', ['count' => $count]));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -282,8 +282,8 @@ new #[Title('Product Masters')] class extends Component
             $this->barcodeForm['barcode'] = '';
             $this->refreshBarcodeRecords();
         } catch (Throwable $exception) {
-            $this->addError('barcodeForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('barcodeForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -296,7 +296,7 @@ new #[Title('Product Masters')] class extends Component
             $this->refreshBarcodeRecords();
             Flux::toast(variant: 'success', text: __('Barcode deactivated without changing historical identity.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

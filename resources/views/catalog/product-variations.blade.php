@@ -92,8 +92,8 @@ new class extends Component {
             $this->refreshRows();
             Flux::toast(variant: 'success', text: __('Variation matrix generated. Existing combinations were preserved.'));
         } catch (\Throwable $exception) {
-            $this->addError('matrix', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('matrix', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -120,7 +120,7 @@ new class extends Component {
             $this->variantMediaUpload = null;
             Flux::toast(variant: 'success', text: __('Variation media saved.'));
         } catch (\Throwable $exception) {
-            $this->addError('variantMediaUpload', $exception->getMessage());
+            $this->addError('variantMediaUpload', \App\Support\UserSafeError::message($exception));
         }
     }
 

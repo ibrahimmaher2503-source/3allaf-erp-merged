@@ -64,7 +64,7 @@ new #[Title('Product Options')] class extends Component {
             $this->groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
             Flux::toast(variant: 'success', text: __('Option group saved successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('groupForm', $exception->getMessage());
+            $this->addError('groupForm', \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -124,7 +124,7 @@ new #[Title('Product Options')] class extends Component {
             $this->valueGroupId = null;
             Flux::toast(variant: 'success', text: __('Option value saved successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('valueForm', $exception->getMessage());
+            $this->addError('valueForm', \App\Support\UserSafeError::message($exception));
         }
     }
 

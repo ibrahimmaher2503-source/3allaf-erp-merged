@@ -115,8 +115,8 @@ new #[Title('Category Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingCategoryId ? __('Category updated successfully.') : __('Category created successfully.'));
             $this->showCategoryModal = false;
         } catch (Throwable $exception) {
-            $this->addError('categoryForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('categoryForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -129,7 +129,7 @@ new #[Title('Category Masters')] class extends Component
             $action->execute($category->only(['code', 'name_ar', 'name_en', 'parent_id', 'sort_order']) + ['status' => $category->status === 'active' ? 'inactive' : 'active'], $id);
             Flux::toast(variant: 'success', text: __('Category status updated successfully.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -145,7 +145,7 @@ new #[Title('Category Masters')] class extends Component
             $this->clearBulkSelection();
             Flux::toast(variant: 'success', text: __('Category status updated for :count records.', ['count' => $count]));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

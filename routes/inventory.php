@@ -236,7 +236,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         } catch (AuthorizationException|ValidationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['transfer' => $exception->getMessage()]);
+            return back()->withErrors(['transfer' => \App\Support\UserSafeError::message($exception)]);
         } catch (Throwable $exception) {
 
             report($exception);

@@ -82,7 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user(); abort_unless($user->can('customers.create'), 403);
         $data = $request->validate(['import_file'=>['required','file','mimes:xlsx,csv,ods','max:10240'],'mode'=>['required',Rule::in(['create_only','update_existing'])]]);
         if ($data['mode']==='update_existing') abort_unless($user->can('customers.edit'),403);
-        try {$rows=StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());} catch (InvalidArgumentException $exception) { throw ValidationException::withMessages(['import_file'=>$exception->getMessage()]); }
+        try {$rows=StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());} catch (InvalidArgumentException $exception) { throw ValidationException::withMessages(['import_file'=>\App\Support\UserSafeError::message($exception)]); }
         $batch=$action->stage($rows,$request->file('import_file')->getClientOriginalName(),$data['mode'],$user->id,$sellingStore($user));
         return to_route('customers.import')->with('success', __('Customer file staged. Review errors before approval.'))->with('batch_id',$batch->id);
     })->middleware('can:customers.create')->name('customers.import.stage');
@@ -123,7 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $sellingStore($user), $validated);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
-            return back()->withInput()->withErrors(['group' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['group' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('customers.groups.index')->with('success', __('Customer group created.'));
@@ -144,7 +144,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $group, $store, $validated);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
-            return back()->withInput()->withErrors(['group' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['group' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('customers.groups.index')->with('success', __('Customer group updated.'));
@@ -220,7 +220,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $consentPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
         } catch (InvalidArgumentException $exception) {
-            $consentPolicyError = $exception->getMessage();
+            $consentPolicyError = \App\Support\UserSafeError::message($exception);
         }
         try {
             $childPurposes = CustomerPolicy::childPurposes()['value'];
@@ -284,7 +284,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->first(['id', 'name_ar', 'name_en', 'phone_display']);
 
             return back()->withInput()
-                ->withErrors(['customer' => $exception->getMessage()])
+                ->withErrors(['customer' => \App\Support\UserSafeError::message($exception)])
                 ->with('duplicate_candidate', $candidate?->toArray());
         }
 
@@ -338,7 +338,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $saved = $action->execute($user, $customer, $store, $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['customer' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['customer' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('customers.show', $saved)->with('success', __('Customer profile updated.'));
@@ -353,7 +353,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated['purpose'], $validated['status'], 'profile', 'CONSENT:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['consent' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['consent' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Consent history recorded.'));
@@ -368,7 +368,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['child' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['child' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Child profile recorded.'));
@@ -384,7 +384,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated, $child);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['child' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['child' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Child profile updated.'));
@@ -412,7 +412,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $merged = $action->execute($user, $duplicate, $survivor, $store, $validated['reason'], 'MERGE:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['merge' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['merge' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('customers.show', $merged)->with('success', __('Customer profiles merged with history preserved.'));
@@ -480,7 +480,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $store, $sale, (int) $validated['points'], 'REDEEM:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['redeem' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['redeem' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty redemption recorded against the approved sale.'));
@@ -495,7 +495,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), (int) $validated['points'], $validated['reason'], 'ADJUST:'.$validated['idempotency_key'], $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['adjustment' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['adjustment' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment submitted for approval.'));
@@ -520,7 +520,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $approval, $store);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withErrors(['approval' => $exception->getMessage()]);
+            return back()->withErrors(['approval' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment approved and posted.'));
@@ -535,7 +535,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $approval, $validated['decision_note']);
         } catch (ValidationException|InvalidArgumentException $exception) {
-            return back()->withErrors(['approval' => $exception->getMessage()]);
+            return back()->withErrors(['approval' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment rejected and audited.'));
@@ -552,7 +552,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('product');
         } catch (InvalidArgumentException $exception) {
-            $policyError = $exception->getMessage();
+            $policyError = \App\Support\UserSafeError::message($exception);
         }
         $adjustmentIds = ProductWalletAdjustment::query()->visibleTo($user)->where('customer_id', $customer->id)->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
         $pendingAdjustments = $user->can('product_wallet.approve') && $adjustmentIds !== []
@@ -583,7 +583,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('party');
         } catch (InvalidArgumentException $exception) {
-            $policyError = $exception->getMessage();
+            $policyError = \App\Support\UserSafeError::message($exception);
         }
         $adjustmentIds = PartyWalletAdjustment::query()->visibleTo($user)->where('customer_id', $customer->id)->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
         $pendingAdjustments = $user->can('party_wallet.approve') && $adjustmentIds !== []
@@ -651,7 +651,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             app($action::class)->settle($user, $customer, $store, $validated['amount'], $validated['direction'], $validated['source_type'], $validated['source_id'], $validated['idempotency_key'], $validated['source_line_id'] ?? null, $validated['reference'] ?? null, $validated['reason'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Product Wallet settlement posted.'));
@@ -667,7 +667,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->settle($user, $customer, $store, $validated['amount'], $validated['direction'], $validated['source_type'], $validated['source_id'], $validated['idempotency_key'], $validated['source_line_id'] ?? null, $validated['reference'] ?? null, $validated['reason'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party Wallet settlement posted.'));
@@ -682,7 +682,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated['operation'], $validated['amount'], $validated['source_type'], $validated['source_id'], $validated['reason'], $validated['idempotency_key'], $validated['target_ledger_id'] ?? null, $validated['source_line_id'] ?? null, $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Product Wallet adjustment submitted for approval.'));
@@ -698,7 +698,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $store, $validated['operation'], $validated['amount'], $validated['source_type'], $validated['source_id'], $validated['reason'], $validated['idempotency_key'], $validated['target_ledger_id'] ?? null, $validated['source_line_id'] ?? null, $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party Wallet adjustment submitted for approval.'));
@@ -737,7 +737,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'purpose' => $validated['consent_purpose'], 'status' => 'granted', 'source' => 'pos',
             ]]]);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['customer' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['customer' => \App\Support\UserSafeError::message($exception)]);
         }
         $request->session()->put('pos.customer_id', $customer->id);
 

@@ -123,7 +123,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $booking = $action->execute($user, $store, $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['booking' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['booking' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.bookings.show', $booking)->with('success', __('Party booking and working invoice created.'));
@@ -144,7 +144,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $booking);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['booking' => $exception->getMessage()]);
+            return back()->withErrors(['booking' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party booking confirmed.'));
@@ -165,7 +165,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $booking, $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['booking' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['booking' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party booking rescheduled. Confirm it again after reviewing the new schedule.'));
@@ -179,7 +179,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $booking, $validated['reason']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['booking' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['booking' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.bookings.index')->with('success', __('Party booking cancelled.'));
@@ -239,7 +239,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $saved = $action->execute($user, $invoice, $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['invoice' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['invoice' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.invoices.show', $saved)->with('success', __('Working Party invoice saved.'));
@@ -263,7 +263,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $payment = $action->execute($user, $invoice, $method, (string) $validated['amount'], $validated['idempotency_key'], $validated['reference'] ?? null, $validated['evidence_reference'] ?? null);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['payment' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['payment' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.invoices.payments', $invoice)->with('success', __('Party payment recorded.'));
@@ -277,7 +277,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $final = $action->execute($user, $invoice, $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['finalize' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['finalize' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.invoices.show', $final)->with('success', __('Party invoice finalized and closed.'));
@@ -306,7 +306,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $order = $action->execute($user, $booking, $booking->invoice, $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['order' => $exception->getMessage()]);
+            return back()->withErrors(['order' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('parties.orders.show', $order)->with('success', __('Party operating order created.'));
@@ -325,7 +325,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['order' => $exception->getMessage()]);
+            return back()->withErrors(['order' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party operating order released.'));
@@ -339,7 +339,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order, $line, (string) $validated['quantity'], $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['issue' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['issue' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party consumable issued from the Party store.'));
@@ -356,7 +356,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $issue, $line, (string) $validated['quantity'], $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['return' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['return' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Unused Party consumable returned to the Party store.'));
@@ -371,7 +371,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order, $line, (string) $validated['consumed_quantity']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['actual' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['actual' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Actual Party consumable quantity recorded.'));
@@ -386,7 +386,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order, $line, $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['asset' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party rental asset checked out through the asset reservation.'));
@@ -401,7 +401,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order, $line, $validated['condition_after'], $validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['asset' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party rental asset returned for inspection.'));
@@ -416,7 +416,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order, $line, $validated['resulting_status'], $validated['assessment']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['asset' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['asset' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party rental asset inspection recorded.'));
@@ -428,7 +428,7 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
         try {
             $action->execute($user, $order);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['order' => $exception->getMessage()]);
+            return back()->withErrors(['order' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party operating order completed.'));

@@ -91,8 +91,8 @@ new #[Title('Brand Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingBrandId ? __('Brand updated successfully.') : __('Brand created successfully.'));
             $this->showBrandModal = false;
         } catch (Throwable $exception) {
-            $this->addError('brandForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('brandForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -105,7 +105,7 @@ new #[Title('Brand Masters')] class extends Component
             $action->execute($brand->only(['code', 'name_ar', 'name_en']) + ['status' => $brand->status === 'active' ? 'inactive' : 'active'], $id);
             Flux::toast(variant: 'success', text: __('Brand status updated successfully.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -121,7 +121,7 @@ new #[Title('Brand Masters')] class extends Component
             $this->clearBulkSelection();
             Flux::toast(variant: 'success', text: __('Brand status updated for :count records.', ['count' => $count]));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

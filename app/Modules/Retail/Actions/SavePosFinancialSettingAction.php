@@ -27,8 +27,8 @@ final class SavePosFinancialSettingAction
         if ($value !== null && $value !== '') {
             try {
                 $value = DecimalMoney::normalize($value, 4);
-            } catch (\InvalidArgumentException $exception) {
-                throw ValidationException::withMessages(['value' => $exception->getMessage()]);
+            } catch (\InvalidArgumentException) {
+                throw ValidationException::withMessages(['value' => __('A decimal value must be a valid number.')]);
             }
 
             if (bccomp($value, '0', 4) <= 0) {

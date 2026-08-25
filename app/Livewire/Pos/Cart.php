@@ -30,7 +30,7 @@ final class Cart extends Component
             $cart->quantity(request(), $user, $productId, $quantity);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
-            $this->addError('cart', $exception->getMessage());
+            $this->addError('cart', \App\Support\UserSafeError::message($exception));
         }
     }
 

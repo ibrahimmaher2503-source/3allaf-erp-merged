@@ -113,7 +113,7 @@ final class ProductBrowser extends Component
             $this->selectedVariantId = null;
             $this->quantity = '1';
         } catch (\Throwable $exception) {
-            $this->addError('selection', $exception->getMessage());
+            $this->addError('selection', \App\Support\UserSafeError::message($exception));
         }
     }
 

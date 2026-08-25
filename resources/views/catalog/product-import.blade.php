@@ -51,8 +51,8 @@ new #[Title('Product Import')] class extends Component {
             $this->importFile = null;
             Flux::toast(variant: 'success', text: __('File staged. Review all rows before approval.'));
         } catch (Throwable $exception) {
-            $this->addError('importFile', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('importFile', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -65,7 +65,7 @@ new #[Title('Product Import')] class extends Component {
             $action->approve($batch, app(\App\Modules\Catalog\Actions\SaveProductAction::class));
             Flux::toast(variant: 'success', text: __('Import approved and valid rows were written.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -78,7 +78,7 @@ new #[Title('Product Import')] class extends Component {
             $action->cancel($batch);
             Flux::toast(variant: 'success', text: __('Import cancelled. You can upload the same file again.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

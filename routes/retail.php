@@ -436,7 +436,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('product');
         } catch (InvalidArgumentException $exception) {
-            $policyError = $exception->getMessage();
+            $policyError = \App\Support\UserSafeError::message($exception);
         }
         $pendingAdjustments = $user->can('product_wallet.approve')
             ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'product_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'product_wallet.approve')->latest('id')->limit(20)->get()
@@ -477,7 +477,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('party');
         } catch (InvalidArgumentException $exception) {
-            $policyError = $exception->getMessage();
+            $policyError = \App\Support\UserSafeError::message($exception);
         }
         $pendingAdjustments = $user->can('party_wallet.approve')
             ? ApprovalRecord::query()->visibleTo($user)->where('source_type', 'party_wallet_adjustments')->where('approval_state', 'pending')->where('decision_permission', 'party_wallet.approve')->latest('id')->limit(20)->get()
@@ -601,7 +601,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             try {
                 $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
             } catch (InvalidArgumentException $exception) {
-                $customerPolicyError = $exception->getMessage();
+                $customerPolicyError = \App\Support\UserSafeError::message($exception);
             }
             $selectedCustomerId = $request->session()->get('pos.customer_id');
             if (is_numeric($selectedCustomerId)) {
@@ -755,7 +755,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             );
         } catch (InvalidArgumentException $exception) {
             $preview = null;
-            $previewError = $exception->getMessage();
+            $previewError = \App\Support\UserSafeError::message($exception);
         }
 
         $checkoutToken = $request->session()->get('pos.checkout_token');
@@ -852,7 +852,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'SHIFT-OPEN:'.$validated['idempotency_key'],
             );
         } catch (InvalidArgumentException $e) {
-            return back()->withErrors(['cash_drawer_id' => $e->getMessage()]);
+            return back()->withErrors(['cash_drawer_id' => \App\Support\UserSafeError::message($e)]);
         }
 
         $request->session()->forget('pos.shift.open_token');
@@ -885,7 +885,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $validated['reference'] ?? null,
             );
         } catch (InvalidArgumentException $e) {
-            return back()->withErrors(['amount' => $e->getMessage()]);
+            return back()->withErrors(['amount' => \App\Support\UserSafeError::message($e)]);
         }
 
         $request->session()->forget('pos.shift.movement_token.'.$shift->getKey());
@@ -926,7 +926,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $validated['notes'] ?? null,
             );
         } catch (InvalidArgumentException $e) {
-            return back()->withErrors(['actual_cash' => $e->getMessage()]);
+            return back()->withErrors(['actual_cash' => \App\Support\UserSafeError::message($e)]);
         }
 
         // The cashier returns to a screen that deliberately shows no expected
@@ -1091,7 +1091,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, PosShift::query()->findOrFail($validated['shift_id']), $validated['name'], $validated['token']);
         } catch (InvalidArgumentException|LogicException $exception) {
-            return back()->withErrors(['offline' => $exception->getMessage()]);
+            return back()->withErrors(['offline' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('pos.offline-readiness')->with('success', __('Offline device enrolled. Keep its token only on the enrolled browser.'));
@@ -1124,7 +1124,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $device, $validated['token'], $validated['payload']);
         } catch (InvalidArgumentException|LogicException $exception) {
-            return to_route('pos.offline.queue')->withErrors(['offline' => $exception->getMessage()]);
+            return to_route('pos.offline.queue')->withErrors(['offline' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('pos.offline.queue')->with('success', __('Offline transaction queued provisionally. No sale document has been created.'));
@@ -1144,7 +1144,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $result = $action->execute($user, $device, $validated['token']);
         } catch (InvalidArgumentException|LogicException $exception) {
-            return to_route('pos.offline.queue')->withErrors(['offline' => $exception->getMessage()]);
+            return to_route('pos.offline.queue')->withErrors(['offline' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('pos.offline.queue')->with('success', __('Sync completed: :accepted accepted, :conflicted require review.', $result));
@@ -1202,7 +1202,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $transaction, $validated['disposition'], $validated['reason']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['offline' => $exception->getMessage()]);
+            return back()->withErrors(['offline' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return to_route('offline.conflicts.index')->with('success', __('Offline conflict disposition was recorded in the audit trail.'));
@@ -1343,7 +1343,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             app(PosCartAction::class)->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['cart' => $exception->getMessage()]);
+            return back()->withErrors(['cart' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Product added to cart.'));
@@ -1370,7 +1370,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             app(PosCartAction::class)->quantity($request, $user, (int) $data['product_id'], (string) $data['quantity']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['cart' => $exception->getMessage()]);
+            return back()->withErrors(['cart' => \App\Support\UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Cart quantity updated.'));
@@ -1464,7 +1464,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 approved: $requiresApproval,
             );
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['discount' => $exception->getMessage()]);
+            return back()->withErrors(['discount' => \App\Support\UserSafeError::message($exception)]);
         }
 
         $before = [
@@ -1772,7 +1772,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 $customer,
             );
         } catch (InvalidArgumentException|RuntimeException $e) {
-            return back()->withInput()->withErrors(['payments' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['payments' => \App\Support\UserSafeError::message($e)]);
         }
 
         $request->session()->forget('pos.cart');
@@ -1801,7 +1801,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $preview = $action->suspendedResumePreview($user, $sale);
         } catch (InvalidArgumentException $exception) {
-            return redirect()->route('pos.suspended')->withErrors(['resume' => $exception->getMessage()]);
+            return redirect()->route('pos.suspended')->withErrors(['resume' => \App\Support\UserSafeError::message($exception)]);
         }
 
         $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
@@ -1889,7 +1889,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $sale = $action->finalizeSuspended($user, $sale, $tenders);
         } catch (InvalidArgumentException|RuntimeException $exception) {
-            return back()->withInput()->withErrors(['payments' => $exception->getMessage()]);
+            return back()->withInput()->withErrors(['payments' => \App\Support\UserSafeError::message($exception)]);
         }
 
         $request->session()->forget($resumeTokenKey);

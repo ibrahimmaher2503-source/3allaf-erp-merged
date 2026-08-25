@@ -134,7 +134,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingDrawerId ? __('Cash drawer updated successfully.') : __('Cash drawer created successfully.'));
             $this->showDrawerModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: $e->getMessage());
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -146,7 +146,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             $action->toggleStatus($id, $status);
             Flux::toast(variant: 'success', text: __('Cash drawer status updated successfully.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: $e->getMessage());
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -159,7 +159,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             $approvalAction->request('cash_drawer_delete', $drawer->id, ['deleted' => true], $drawer->getAttributes(), $drawer->branch_id, $drawer->store_id);
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Cash drawer deletion submitted for independent approval.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 

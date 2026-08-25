@@ -170,7 +170,7 @@ new #[Title('Branch Management')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingBranchId ? __('Branch updated successfully.') : __('Branch created successfully.'));
             $this->showBranchModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -182,7 +182,7 @@ new #[Title('Branch Management')] class extends Component
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Branch status updated successfully.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -197,7 +197,7 @@ new #[Title('Branch Management')] class extends Component
             $this->clearBulkSelection();
             Flux::toast(variant: 'success', text: __('Branch status updated for :count records.', ['count' => $count]));
         } catch (Exception $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -210,7 +210,7 @@ new #[Title('Branch Management')] class extends Component
             $approvalAction->request('branch_delete', $branch->id, ['deleted' => true], $branch->getAttributes(), $branch->id);
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Branch deletion submitted for independent approval.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -245,7 +245,7 @@ new #[Title('Branch Management')] class extends Component
             Flux::toast(variant: 'success', text: __('Primary point of sale saved successfully.'));
             $this->showMappingModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 

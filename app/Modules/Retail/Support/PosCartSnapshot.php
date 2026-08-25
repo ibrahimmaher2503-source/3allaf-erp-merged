@@ -54,7 +54,7 @@ final class PosCartSnapshot
             $preview = $lines === [] ? null : $this->calculator->calculate(array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines), '0.00', $taxApplicable ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)] : ['applicable' => false]);
         } catch (InvalidArgumentException $exception) {
             $preview = null;
-            $error = $exception->getMessage();
+            $error = \App\Support\UserSafeError::message($exception);
         }
 
         return compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting');

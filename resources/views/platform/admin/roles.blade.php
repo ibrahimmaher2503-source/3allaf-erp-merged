@@ -72,8 +72,8 @@ new #[Title('Roles')] class extends Component
             $this->roleModalOpen = false;
             Flux::toast(variant: 'success', text: __('Role saved successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('roleForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('roleForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

@@ -148,8 +148,8 @@ new #[Title('Product Card')] class extends Component {
             $this->loadProduct($product);
             Flux::toast(variant: 'success', text: __('Product card saved successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('productForm', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('productForm', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -180,8 +180,8 @@ new #[Title('Product Card')] class extends Component {
             $this->mediaUpload = null;
             Flux::toast(variant: 'success', text: __('Protected product image added successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('mediaUpload', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('mediaUpload', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -193,7 +193,7 @@ new #[Title('Product Card')] class extends Component {
             $action->setMain(Product::query()->findOrFail($this->productId), $imageId);
             Flux::toast(variant: 'success', text: __('Main image updated successfully.'));
         } catch (\Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 
@@ -205,7 +205,7 @@ new #[Title('Product Card')] class extends Component {
             $action->revoke(Product::query()->findOrFail($this->productId), $imageId);
             Flux::toast(variant: 'success', text: __('Product image removed while preserving attachment history.'));
         } catch (\Throwable $exception) {
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

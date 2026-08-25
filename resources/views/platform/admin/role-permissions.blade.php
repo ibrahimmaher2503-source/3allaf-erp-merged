@@ -36,8 +36,8 @@ new #[Title('Role Permissions')] class extends Component
             $this->role->refresh();
             Flux::toast(variant: 'success', text: __('Role permissions saved successfully.'));
         } catch (\Throwable $exception) {
-            $this->addError('permissionIds', $exception->getMessage());
-            Flux::toast(variant: 'danger', text: $exception->getMessage());
+            $this->addError('permissionIds', \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
 

@@ -48,8 +48,8 @@ new #[Title('Purchase Invoice Import')] class extends Component
             $this->importFile = null;
             Flux::toast(__('File staged. Review every row before creating drafts.'), variant: 'success');
         } catch (Throwable $exception) {
-            $this->addError('importFile', $exception->getMessage());
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            $this->addError('importFile', \App\Support\UserSafeError::message($exception));
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -62,7 +62,7 @@ new #[Title('Purchase Invoice Import')] class extends Component
             $action->createDrafts($batch, app(SavePurchaseInvoiceAction::class));
             Flux::toast(__('Draft invoices created. No stock or WAC was posted.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -75,7 +75,7 @@ new #[Title('Purchase Invoice Import')] class extends Component
             $action->cancel($batch);
             Flux::toast(__('Import batch cancelled.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 

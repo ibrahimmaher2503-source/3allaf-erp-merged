@@ -215,7 +215,7 @@ new #[Title('Purchase Orders')] class extends Component
             $this->showFormModal = false;
             Flux::toast($this->editingOrderId ? __('Purchase Order updated successfully.') : __('Purchase Order :number created as draft.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
-            Flux::toast($e->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
     }
 
@@ -228,7 +228,7 @@ new #[Title('Purchase Orders')] class extends Component
             app(SubmitPurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number submitted successfully.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
-            Flux::toast($e->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
     }
 
@@ -241,7 +241,7 @@ new #[Title('Purchase Orders')] class extends Component
             app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
-            Flux::toast($e->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
     }
 
@@ -269,7 +269,7 @@ new #[Title('Purchase Orders')] class extends Component
             $this->showCancelModal = false;
             Flux::toast(__('Purchase Order :number cancelled.', ['number' => $order->po_number]), variant: 'warning');
         } catch (Throwable $e) {
-            Flux::toast($e->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
     }
 
@@ -282,7 +282,7 @@ new #[Title('Purchase Orders')] class extends Component
             app(ClosePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
             Flux::toast(__('Purchase Order :number closed.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
-            Flux::toast($e->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
     }
 

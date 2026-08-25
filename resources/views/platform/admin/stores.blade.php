@@ -162,7 +162,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             Flux::toast(variant: 'success', text: $this->editingStoreId ? __('Location updated successfully.') : __('Location created successfully.'));
             $this->showStoreModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -174,7 +174,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Store status updated successfully.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -207,7 +207,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             $this->resetValidation();
             $this->showArchiveModal = true;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -228,7 +228,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             $this->showArchiveModal = false;
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Archive request submitted for independent approval.'));
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 
@@ -282,7 +282,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             Flux::toast(variant: 'success', text: __('Primary point of sale saved successfully.'));
             $this->showStoreMappingModal = false;
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
+            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }
     }
 

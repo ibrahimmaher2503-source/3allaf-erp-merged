@@ -142,7 +142,7 @@ new #[Title('Supplier Returns')] class extends Component
             Flux::toast(__('Supplier return saved as draft.'), variant: 'success');
             $this->dispatch('supplier-return-created', id: $return->id);
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -154,7 +154,7 @@ new #[Title('Supplier Returns')] class extends Component
             $action->execute($return->id, $return->lock_version);
             Flux::toast(__('Supplier return submitted for approval.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -166,7 +166,7 @@ new #[Title('Supplier Returns')] class extends Component
             $action->execute($return->id, $return->lock_version);
             Flux::toast(__('Supplier return approved and stock cost reversed.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -210,7 +210,7 @@ new #[Title('Supplier Returns')] class extends Component
             $this->showTransitionModal = false;
             Flux::toast(__('Supplier return transition completed.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 

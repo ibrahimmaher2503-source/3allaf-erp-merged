@@ -160,7 +160,7 @@ new #[Title('Purchase Invoices')] class extends Component
             Flux::toast($this->editingInvoiceId ? __('Purchase invoice updated.') : __('Purchase invoice saved as draft.'), variant: 'success');
             $this->editingInvoiceId = $invoice->id;
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -172,7 +172,7 @@ new #[Title('Purchase Invoices')] class extends Component
             $action->execute($invoice->id, $invoice->lock_version);
             Flux::toast(__('Purchase invoice submitted for approval.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -184,7 +184,7 @@ new #[Title('Purchase Invoices')] class extends Component
             $action->execute($invoice->id, $invoice->lock_version);
             Flux::toast(__('Purchase invoice approved and stock/WAC posted.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 
@@ -217,7 +217,7 @@ new #[Title('Purchase Invoices')] class extends Component
             $this->showTransitionModal = false;
             Flux::toast(__('Invoice transition completed.'), variant: 'success');
         } catch (Throwable $exception) {
-            Flux::toast($exception->getMessage(), variant: 'danger');
+            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
     }
 

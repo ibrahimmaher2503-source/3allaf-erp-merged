@@ -62,8 +62,8 @@ final class PhoneNormalizer
 
             try {
                 self::normalize((string) $value);
-            } catch (InvalidArgumentException $exception) {
-                $fail($exception->getMessage());
+            } catch (InvalidArgumentException) {
+                $fail(__('Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.'));
             }
         };
     }
