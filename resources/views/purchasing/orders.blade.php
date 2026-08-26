@@ -481,6 +481,12 @@ new #[Title('Purchase Orders')] class extends Component
                                         <flux:button size="xs" variant="primary" icon="check-badge" wire:click="approveOrder({{ $order->id }})" title="{{ __('Approve Order') }}" />
                                     @endif
 
+                                    @if (in_array($order->status, ['approved', 'partially_received'], true) && Gate::allows('purchase_invoices_supplier_returns.create') && $order->lines->contains(fn ($line): bool => bccomp(bcsub((string) $line->quantity_ordered, (string) $line->quantity_received, 6), '0', 6) > 0))
+                                        <flux:button size="xs" variant="primary" icon="inbox-arrow-down" href="{{ route('purchasing.invoices', ['purchase_order' => $order->id]) }}" wire:navigate>
+                                            {{ __('Receive') }}
+                                        </flux:button>
+                                    @endif
+
                                     @if ($order->isCancellable() && $canCancel)
                                         <flux:button size="xs" variant="ghost" icon="x-mark" class="text-rose-600 dark:text-rose-400" wire:click="openCancelModal({{ $order->id }})" title="{{ __('Cancel Order') }}" />
                                     @endif

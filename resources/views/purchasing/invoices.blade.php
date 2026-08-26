@@ -11,8 +11,10 @@ use App\Modules\Purchasing\Actions\ReversePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -54,7 +56,13 @@ new #[Title('Purchase Invoices')] class extends Component
     public function mount(): void
     {
         Gate::authorize('purchase_invoices_supplier_returns.view');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
         $this->invoiceForm['invoice_date'] = now()->toDateString();
+
+        if (($purchaseOrderId = request()->integer('purchase_order')) > 0) {
+            $this->openReceivingModal($purchaseOrderId);
+        }
     }
 
     public function updatingSearch(): void
@@ -83,6 +91,59 @@ new #[Title('Purchase Invoices')] class extends Component
             'lock_version' => 0,
         ];
         $this->lineItems = [$this->emptyLine()];
+        $this->showFormModal = true;
+    }
+
+    public function openReceivingModal(int $purchaseOrderId): void
+    {
+        Gate::authorize('purchase_invoices_supplier_returns.create');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+
+        $order = PurchaseOrder::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->with('lines')
+            ->findOrFail($purchaseOrderId);
+        abort_unless(in_array($order->status, ['approved', 'partially_received'], true), 422, __('Only approved purchase orders can be received.'));
+
+        $lineItems = $order->lines
+            ->map(function ($line): ?array {
+                $remainingQuantity = bcsub((string) $line->quantity_ordered, (string) $line->quantity_received, 6);
+
+                if (bccomp($remainingQuantity, '0', 6) <= 0) {
+                    return null;
+                }
+
+                return [
+                    'product_id' => (string) $line->product_id,
+                    'purchase_order_line_id' => (string) $line->id,
+                    'quantity' => $remainingQuantity,
+                    'unit_cost' => (string) $line->unit_cost,
+                    'discount_type' => '',
+                    'discount_value' => '0',
+                    'tax_rate' => '0',
+                    'tax_code' => '',
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        abort_unless($lineItems !== [], 422, __('This purchase order has no remaining quantity to receive.'));
+
+        $this->resetValidation();
+        $this->editingInvoiceId = null;
+        $this->invoiceForm = [
+            'supplier_id' => (string) $order->supplier_id,
+            'store_id' => (string) $order->store_id,
+            'purchase_order_id' => (string) $order->id,
+            'supplier_reference' => '',
+            'invoice_date' => now()->toDateString(),
+            'currency_code' => '',
+            'notes' => __('Receiving for :number', ['number' => $order->po_number]),
+            'lock_version' => 0,
+        ];
+        $this->lineItems = $lineItems;
         $this->showFormModal = true;
     }
 
@@ -389,6 +450,12 @@ new #[Title('Purchase Invoices')] class extends Component
         <flux:modal wire:model.self="showFormModal" class="md:w-[min(96vw,1100px)]">
             <form wire:submit="saveInvoice" class="space-y-5">
                 <flux:heading size="lg">{{ $editingInvoiceId ? __('Edit draft invoice') : __('New draft invoice') }}</flux:heading>
+                @if (filled($invoiceForm['purchase_order_id']))
+                    <input type="hidden" wire:model="invoiceForm.purchase_order_id" />
+                    <flux:callout icon="inbox-arrow-down" variant="info">
+                        {{ __('Receiving purchase order :id', ['id' => $invoiceForm['purchase_order_id']]) }}
+                    </flux:callout>
+                @endif
                 <div class="grid gap-4 md:grid-cols-3">
                     <flux:select wire:model="invoiceForm.supplier_id" :label="__('Supplier')">
                         <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
