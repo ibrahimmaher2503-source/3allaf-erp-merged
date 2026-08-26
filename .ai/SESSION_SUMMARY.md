@@ -464,3 +464,11 @@
 - **Item 35:** Synchronized the authoritative task, milestone, progress, decision, and session records. Items 1–36 are implemented and committed; items 37–40 are next, while production items 41–48 and post-stability items 49–53 have not started. The stable source-handoff reference is `v0.1.3-source-handoff-complete`, to be corrected to this documentation commit after commit creation.
 - **Verification actually run:** Diff checks and exact staged-path metadata checks passed. PHP lint passed for the four item 33–34 Blade files. No automated tests, browser checks, frontend build, database/migration operation, backup/restore rehearsal, deployment, production access, push, or remote operation occurred.
 - **Unclaimed:** Migrations, QA/UAT completion, backup/restore verification, production deployment, release approval, and owner approval.
+
+## 2026-08-26 — Sanitized Release Candidate preparation
+
+- **Items 37–38:** Removed the remaining 274 tracked QA/browser artifact paths from the original branch without deleting the ignored local files. Created an isolated no-hardlinks clone, removed its remote, and rewrote only the isolated release branch plus temporary milestone mappings to remove the seven approved QA/runtime/database roots from every reachable commit. Temporary/filter backup refs were removed, reflogs expired, and unreachable objects pruned.
+- **Items 39–40:** The isolated branch passed current-tree, full-history prohibited-path, and high-confidence secret-pattern scans. Sanitized milestone tags were created, and the Release Candidate reference is `v0.1.4-rc1`.
+- **State:** Checklist items 1–40 are complete. The original handoff branch is retained locally as recovery history and is not approved for publication. Items 41–48 production deployment and 49–53 post-stability have not started.
+- **Verification actually run:** Git path/ref/status/diff checks, history path scans, high-confidence secret-pattern scans, tag verification, and bundle verification. No migrations, database access, tests, browser checks, frontend build, production backup, deployment, push, or remote operation occurred.
+- **Unclaimed:** Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval.

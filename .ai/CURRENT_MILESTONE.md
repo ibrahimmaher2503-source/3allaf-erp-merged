@@ -1,11 +1,11 @@
-# Active Milestone — Release Candidate Preparation
+# Active Milestone — Production Preparation
 
 **Date:** 2026-08-26
-**Current phase:** Release Candidate
-**Current milestone:** Checklist items 37–40
-**Status:** Source-handoff checklist items 1–36 are implemented and committed. Item 36 removed only generated QA/runtime artifacts and established permanent repository exclusions. Items 37–40 are next; production items 41–48 and post-stability items 49–53 have not started.
+**Current phase:** Production preparation
+**Current milestone:** Checklist items 41–48
+**Status:** Checklist items 1–40 are complete. Items 37–38 were completed through an isolated sanitized release lineage; `release/v0.1.4-rc1-sanitized` contains no prohibited QA/runtime/database history. Items 41–48 production deployment and items 49–53 post-stability have not started.
 
-The stable source-handoff reference is `v0.1.3-source-handoff-complete`; its premature local tag will be corrected to the item-35 documentation commit after that commit is created. Migrations have not run for this handoff. QA/UAT completion, backup/restore rehearsal, production deployment, release approval, and owner approval are not claimed.
+The original handoff branch is retained locally as recovery history and is not approved for publication. The Release Candidate tag is `v0.1.4-rc1`. Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval are not claimed.
 
 ---
 
