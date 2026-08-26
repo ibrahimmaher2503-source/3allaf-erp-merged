@@ -150,7 +150,15 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->get('purchasing/invoices/export', function () {
         Gate::authorize('purchase_invoices_supplier_returns.export');
-        $invoices = PurchaseInvoice::query()->with(['supplier', 'store'])->latest('id')->limit(5000)->get();
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+        $invoices = PurchaseInvoice::query()
+            ->whereIn('store_id', $visibleStoreIds)
+            ->with(['supplier', 'store'])
+            ->latest('id')
+            ->limit(5000)
+            ->get();
 
         return response()->streamDownload(function () use ($invoices): void {
             $handle = fopen('php://output', 'wb');
