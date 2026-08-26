@@ -34,6 +34,7 @@ final class OperationalDashboardSnapshot
         $trendStart = now()->startOfDay()->subDays(6);
         $salesTrend = $user->can('pos_sales.view') ? (clone $sales)->where('approved_at', '>=', $trendStart)->selectRaw('DATE(approved_at) as day, SUM(payable_total) as total')->groupBy('day')->pluck('total', 'day') : collect();
         $purchaseTrend = $user->can('purchase_invoices_supplier_returns.view') ? (clone $purchases)->where('invoice_date', '>=', $trendStart->toDateString())->selectRaw('invoice_date as day, SUM(total_amount) as total')->groupBy('invoice_date')->pluck('total', 'day') : collect();
+        $stockBalances = StockBalance::query()->whereIn('store_id', clone $storeIds);
 
         return [
             'sales' => $user->can('pos_sales.view') ? [
@@ -46,9 +47,11 @@ final class OperationalDashboardSnapshot
                 'count' => (clone $purchases)->whereDate('invoice_date', $today)->count(),
                 'recent' => (clone $purchases)->with(['store:id,code,name_ar,name_en', 'supplier:id,name_ar,name_en'])->latest('invoice_date')->latest('id')->limit(5)->get(['id', 'store_id', 'supplier_id', 'invoice_number', 'total_amount', 'status', 'invoice_date']),
             ] : null,
-            'low_stock' => $user->can('inventory_stock_card.view') ? StockBalance::query()
-                ->whereIn('store_id', clone $storeIds)->where('on_hand', '>', 0)->whereRaw('(on_hand - reserved) <= ?', [5])
+            'low_stock' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)
+                ->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= ?', [5])
                 ->with(['product:id,item_code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->orderByRaw('(on_hand - reserved) asc')->limit(6)->get() : collect(),
+            'low_stock_count' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= ?', [5])->count() : null,
+            'out_of_stock_count' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)->whereRaw('(on_hand - reserved) <= 0')->count() : null,
             'recent_movements' => $user->can('inventory_stock_card.view') ? StockMovement::query()
                 ->whereIn('store_id', clone $storeIds)->with(['product:id,item_code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('posted_at')->latest('id')->limit(5)->get() : collect(),
             'trend' => collect(range(6, 0))->map(fn (int $days): array => ['day' => now()->subDays($days)->toDateString(), 'sales' => (string) ($salesTrend[now()->subDays($days)->toDateString()] ?? '0'), 'purchases' => (string) ($purchaseTrend[now()->subDays($days)->toDateString()] ?? '0')]),

@@ -1,11 +1,11 @@
-# Active Milestone — M50A Global Shell, Navigation, and Operational Dashboard
+# Active Milestone — M50A.1 Shell and Dashboard Visual Correction
 
 **Date:** 2026-08-27
 **Current phase:** Item 50 isolated UI/UX release phase
-**Current milestone:** M50A
-**Status:** Complete in development; M50B is the recommended next milestone.
+**Current milestone:** M50A.1
+**Status:** Complete in development after rendered-evidence review; M50B is the recommended next milestone.
 
-M50A establishes the shared responsive application shell, centralized permission-aware navigation, local Cairo Arabic typography, and a scoped operational dashboard. It preserves the published `v0.1.4` backend, schema, routes, permissions, and global footer. M50B will apply the shared page archetypes to internal module pages in small reviewable sequences.
+M50A.1 retains the M50A architecture while correcting header completeness, navigation hierarchy, dashboard density, representative Inventory module information architecture, responsive behavior, accessibility, and genuine locally rendered Cairo Arabic typography. It preserves the published `v0.1.4` backend, schema, routes, permissions, mutation workflows, and exact localized footer. M50B should apply these shared patterns to internal pages in small reviewable sequences.
 
 ---
 

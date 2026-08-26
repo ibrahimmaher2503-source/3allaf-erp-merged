@@ -71,6 +71,17 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     if ($movementType !== '') {
         $movementsQuery->where('movement_type', $movementType);
     }
+    $inventoryOverview = [
+        'visible_products' => (clone $balancesQuery)->distinct()->count('product_id'),
+        'stock_on_hand' => (string) (clone $balancesQuery)->sum('on_hand'),
+        'low_stock' => (clone $balancesQuery)->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= ?', [5])->count(),
+        'out_of_stock' => (clone $balancesQuery)->whereRaw('(on_hand - reserved) <= 0')->count(),
+        'pending_transfers' => StockTransfer::query()->where(function ($query) use ($visibleStoreIds): void {
+            $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
+        })->whereIn('status', ['draft', 'submitted', 'approved', 'in_transit', 'difference'])->count(),
+        'active_counts' => StockCount::query()->whereIn('store_id', $visibleStoreIds)->whereIn('status', ['draft', 'in_progress', 'submitted'])->count(),
+        'pending_adjustments' => InventoryAdjustment::query()->whereIn('store_id', $visibleStoreIds)->whereIn('status', ['draft', 'submitted'])->count(),
+    ];
     $balances = $balancesQuery->paginate(25, ['*'], 'balance_page')->withQueryString();
     $movements = $movementsQuery->paginate(50, ['*'], 'movement_page')->withQueryString();
     $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->where(function ($query) use ($visibleStoreIds): void {

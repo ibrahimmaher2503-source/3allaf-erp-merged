@@ -6,6 +6,7 @@ return [
         ['route' => 'alerts.index', 'permission' => 'dashboard_reports.view', 'icon' => 'bell-alert', 'label' => ['ar' => 'التنبيهات والمهام', 'en' => 'Alerts & tasks']],
     ]],
     ['key' => 'sales', 'icon' => 'shopping-cart', 'label' => ['ar' => 'المبيعات ونقطة البيع', 'en' => 'Sales & POS'], 'items' => [
+        ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
         ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'user-group', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],

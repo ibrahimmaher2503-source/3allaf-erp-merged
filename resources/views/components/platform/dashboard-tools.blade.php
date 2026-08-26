@@ -13,6 +13,8 @@
 
 <div
     x-data="dashboardAssistant({ context: @js($guide), locale: @js($locale), fallback: @js($fallback), preferences: window.__toyJoyUiPreferences || {}, progress: @js($tutorialProgress), preferencesUrl: @js(route('platform.ui-preferences')), progressUrl: @js(route('platform.tutorial-progress')) })"
+    x-on:open-page-guide.window="openGuide($event)"
+    x-on:open-appearance-customizer.window="openCustomizer($event)"
     x-on:keydown.escape.window="closeAll()"
     x-on:keydown.arrow-right.window="if (tour.active) nextTour()"
     x-on:keydown.arrow-left.window="if (tour.active) previousTour()"
@@ -20,19 +22,19 @@
 >
     <div class="platform-assistant__desktop-launchers" aria-label="{{ $isArabic ? 'أدوات الصفحة' : 'Page tools' }}">
         <button type="button" class="platform-assistant__launcher" x-on:click="openGuide($event)" aria-controls="page-guide-drawer" aria-label="{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}" data-guide="page-guide-launcher">
-            <span aria-hidden="true">?</span><span class="sr-only">{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</span>
+            <flux:icon.question-mark-circle class="size-5" aria-hidden="true" /><span class="sr-only">{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</span>
         </button>
         <button type="button" class="platform-assistant__launcher platform-assistant__launcher--appearance" x-on:click="openCustomizer($event)" aria-controls="appearance-customizer" aria-label="{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}">
-            <span aria-hidden="true">✦</span><span class="sr-only">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</span>
+            <flux:icon.paint-brush class="size-5" aria-hidden="true" /><span class="sr-only">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</span>
         </button>
     </div>
 
     <button type="button" class="platform-assistant__mobile-launcher" x-on:click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen.toString()" aria-controls="mobile-dashboard-tools" aria-label="{{ $isArabic ? 'أدوات لوحة التحكم' : 'Dashboard tools' }}">
-        <span aria-hidden="true">✦</span>
+        <flux:icon.adjustments-horizontal class="size-5" aria-hidden="true" />
     </button>
     <div id="mobile-dashboard-tools" x-cloak x-show="mobileMenuOpen" x-transition class="platform-assistant__mobile-menu">
-        <button type="button" x-on:click="mobileMenuOpen = false; openGuide($event)" class="platform-assistant__menu-action">? {{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</button>
-        <button type="button" x-on:click="mobileMenuOpen = false; openCustomizer($event)" class="platform-assistant__menu-action">✦ {{ $isArabic ? 'تخصيص المظهر' : 'Customize appearance' }}</button>
+        <button type="button" x-on:click="mobileMenuOpen = false; openGuide($event)" class="platform-assistant__menu-action"><flux:icon.question-mark-circle class="size-4" /> {{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</button>
+        <button type="button" x-on:click="mobileMenuOpen = false; openCustomizer($event)" class="platform-assistant__menu-action"><flux:icon.paint-brush class="size-4" /> {{ $isArabic ? 'تخصيص المظهر' : 'Customize appearance' }}</button>
     </div>
 
     <div x-cloak x-show="guideOpen" x-transition.opacity class="platform-assistant__backdrop" x-on:click="closeGuide()"></div>
@@ -43,13 +45,13 @@
                 <h2 id="page-guide-title" class="platform-assistant__title" x-text="text(context?.title) || (locale === 'ar' ? 'دليل الصفحة' : 'Page Guide')"></h2>
                 <p class="platform-assistant__screen" x-show="context?.screen_id">{{ $isArabic ? 'إرشاد مرتبط بهذه الشاشة' : 'Guidance for this screen' }}</p>
             </div>
-            <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}">×</button>
+            <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}"><flux:icon.x-mark class="size-5" /></button>
         </header>
 
         <div class="platform-assistant__body">
             <template x-if="context">
                 <div class="space-y-5">
-                    <div class="platform-assistant__progress" role="status" aria-live="polite"><span x-text="tutorialStatusText()"></span><span x-show="tutorialStatus === 'completed'" aria-hidden="true">✓</span></div>
+                    <div class="platform-assistant__progress" role="status" aria-live="polite"><span x-text="tutorialStatusText()"></span><flux:icon.check-circle x-show="tutorialStatus === 'completed'" class="size-4" aria-hidden="true" /></div>
                     <section x-show="context.module" class="rounded-xl border border-border bg-surface-muted p-4"><h3>{{ $isArabic ? 'عن هذه الوحدة' : 'About this module' }}</h3><p x-text="text(context.module?.description)"></p></section>
                     <section><h3>{{ $isArabic ? 'ماذا تفعل هذه الصفحة؟' : 'What this page does' }}</h3><p x-text="text(context.purpose)"></p></section>
                     <section><h3>{{ $isArabic ? 'متى تستخدمها؟' : 'When to use it' }}</h3><p x-text="text(context.when_to_use)"></p></section>
@@ -76,7 +78,7 @@
 
     <div x-cloak x-show="customizerOpen" x-transition.opacity class="platform-assistant__backdrop" x-on:click="closeCustomizer()"></div>
     <aside id="appearance-customizer" x-cloak x-show="customizerOpen" x-transition class="platform-assistant__drawer platform-assistant__drawer--customizer" role="dialog" aria-modal="true" aria-labelledby="appearance-title" x-trap.noscroll="customizerOpen">
-        <header class="platform-assistant__header"><div><p class="platform-assistant__eyebrow">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</p><h2 id="appearance-title" class="platform-assistant__title">{{ $isArabic ? 'إعدادات العرض' : 'Display settings' }}</h2></div><button type="button" class="platform-assistant__close" x-on:click="closeCustomizer()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}">×</button></header>
+        <header class="platform-assistant__header"><div><p class="platform-assistant__eyebrow">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</p><h2 id="appearance-title" class="platform-assistant__title">{{ $isArabic ? 'إعدادات العرض' : 'Display settings' }}</h2></div><button type="button" class="platform-assistant__close" x-on:click="closeCustomizer()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}"><flux:icon.x-mark class="size-5" /></button></header>
         <div class="platform-assistant__body platform-assistant__controls">
             <label>{{ $isArabic ? 'المظهر' : 'Appearance' }}<select x-model="preferences.appearance" x-on:change="applyPreferences(); savePreferences()"><option value="system">{{ $isArabic ? 'النظام' : 'System' }}</option><option value="light">{{ $isArabic ? 'فاتح' : 'Light' }}</option><option value="dark">{{ $isArabic ? 'داكن' : 'Dark' }}</option></select></label>
             <label>{{ $isArabic ? 'اللون المميز' : 'Accent color' }}<select x-model="preferences.accent_color" x-on:change="applyPreferences(); savePreferences()"><option value="teal">{{ $isArabic ? 'تركوازي' : 'Teal' }}</option><option value="indigo">{{ $isArabic ? 'نيلي' : 'Indigo' }}</option><option value="amber">{{ $isArabic ? 'كهرماني' : 'Amber' }}</option><option value="rose">{{ $isArabic ? 'وردي' : 'Rose' }}</option></select></label>

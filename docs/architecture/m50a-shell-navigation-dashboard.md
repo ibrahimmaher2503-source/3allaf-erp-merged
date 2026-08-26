@@ -10,6 +10,7 @@ M50A changes presentation and read-only dashboard composition only. Existing rou
 |---|---|---|---|
 | Home | Dashboard | `dashboard` | `dashboard_reports.view` |
 | Home | Alerts & tasks | `alerts.index` | `dashboard_reports.view` |
+| Sales & POS | Sales overview | `sales.index` | `pos_sales.view` |
 | Sales & POS | Point of sale | `pos` | `pos_sales.view` |
 | Sales & POS | Sales invoices | `sales.invoices` | `pos_sales.view` |
 | Sales & POS | Customers | `customers.index` | `customers.view` |
@@ -70,6 +71,6 @@ No KPI is synthesized. Missing permission removes the widget; an empty scoped re
 
 ## Direction, responsiveness, and accessibility
 
-The document-level `dir` remains locale-derived. Logical start/end utilities keep sidebar, spacing, menus, and controls correct in RTL/LTR. The sidebar is 260px on desktop, honors the existing collapsed preference, and uses Flux’s accessible off-canvas behavior on smaller screens. Header controls meet a 44px target, command search supports Ctrl/Command+K and Escape, focus rings are visible, numeric identifiers remain `dir=ltr`, and dense data panels retain horizontal-safe layouts.
+The document-level `dir` remains locale-derived. Logical start/end utilities keep sidebar, spacing, menus, and controls correct in RTL/LTR. The sidebar is approximately 272px on desktop, honors the existing collapsed preference, and uses Flux’s accessible off-canvas behavior on smaller screens. Header controls meet a 44px target, command search supports Ctrl/Command+K and Escape, focus rings are visible, numeric identifiers remain `dir=ltr`, and dense data panels retain horizontal-safe layouts.
 
-The approved v0.1.4 footer component is unchanged.
+The approved v0.1.4 footer text and link are unchanged; its compact responsive type is raised to a readable 12–13px where space permits and stays on one line.
