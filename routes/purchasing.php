@@ -121,11 +121,14 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:company_settings.view')
         ->name('purchasing.returns.settings');
 
-    $router->get('purchasing/returns/{return}', function (PurchaseReturn $return) {
+    $router->get('purchasing/returns/{return}', function (string $return) {
         Gate::authorize('purchase_returns.view');
-        $user = Auth::user();
-        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($return->store_id)->exists()), 403);
-        $return->load(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'submitter', 'approver', 'lines.product']);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->with(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'submitter', 'approver', 'lines.product'])
+            ->findOrFail((int) $return);
 
         return view('purchasing.return-detail', [
             'return' => $return,
@@ -135,13 +138,17 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ]);
     })->whereNumber('return')->middleware('can:purchase_returns.view')->name('purchasing.returns.show');
 
-    $router->get('purchasing/returns/{return}/print', function (PurchaseReturn $return) {
+    $router->get('purchasing/returns/{return}/print', function (string $return) {
         Gate::authorize('purchase_returns.print');
-        $user = Auth::user();
-        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($return->store_id)->exists()), 403);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->with(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'approver', 'lines.product'])
+            ->findOrFail((int) $return);
 
         return view('purchasing.return-print', [
-            'return' => $return->load(['supplier', 'store', 'purchaseInvoice', 'reason', 'creator', 'approver', 'lines.product']),
+            'return' => $return,
             'policy' => app(SupplierReturnPolicy::class),
         ]);
     })->whereNumber('return')->middleware('can:purchase_returns.print')->name('purchasing.returns.print');
