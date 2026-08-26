@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\ApprovePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseReturnAction;
@@ -83,7 +84,13 @@ new #[Title('Supplier Returns')] class extends Component
     public function editDraft(int $id): void
     {
         Gate::authorize('purchase_returns.edit');
-        $return = PurchaseReturn::query()->with('lines')->where('status', 'draft')->findOrFail($id);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->with('lines.product')
+            ->where('status', 'draft')
+            ->findOrFail($id);
         $this->selectedReturnId = $return->id;
         $this->selectedInvoiceId = $return->purchase_invoice_id;
         $this->selectedReasonId = $return->reason_id;
@@ -93,12 +100,18 @@ new #[Title('Supplier Returns')] class extends Component
 
     public function updatedSelectedInvoiceId(?int $invoiceId): void
     {
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
         $this->returnLines = [];
         if ($invoiceId === null) {
             return;
         }
 
-        $invoice = PurchaseInvoice::query()->with('lines.product')->where('status', 'approved')->findOrFail($invoiceId);
+        $invoice = PurchaseInvoice::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->with('lines.product')
+            ->where('status', 'approved')
+            ->findOrFail($invoiceId);
         $this->returnLines = $invoice->lines
             ->map(function ($line) use ($invoice): ?array {
                 $returned = PurchaseReturnLine::query()
@@ -216,11 +229,12 @@ new #[Title('Supplier Returns')] class extends Component
 
     public function render(): View
     {
-        $user = Auth::user();
-        $visibleStoreIds = $user?->is_super_admin ? null : Store::query()->visibleTo($user)->pluck('id');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
         $returns = PurchaseReturn::query()
+            ->whereIn('store_id', $visibleStoreIds)
             ->with(['supplier', 'store', 'reason', 'purchaseInvoice'])
-            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
             ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                 $query->where('return_number', 'like', '%'.$this->search.'%')
                     ->orWhereHas('purchaseInvoice', fn ($invoice) => $invoice->where('invoice_number', 'like', '%'.$this->search.'%'));
@@ -230,8 +244,8 @@ new #[Title('Supplier Returns')] class extends Component
             ->paginate(10);
 
         $sourceInvoices = PurchaseInvoice::query()
+            ->whereIn('store_id', $visibleStoreIds)
             ->where('status', 'approved')
-            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
             ->with(['supplier', 'lines.product'])
             ->latest()
             ->limit(100)
@@ -244,8 +258,8 @@ new #[Title('Supplier Returns')] class extends Component
             ->groupBy('purchase_invoice_line_id')
             ->pluck('quantity', 'purchase_invoice_line_id');
         $balances = StockBalance::query()
+            ->whereIn('store_id', $visibleStoreIds)
             ->whereIn('product_id', $sourceInvoices->flatMap(fn ($invoice) => $invoice->lines->pluck('product_id'))->unique())
-            ->when($visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $visibleStoreIds))
             ->get()
             ->keyBy(fn ($balance) => $balance->store_id.':'.$balance->product_id);
         $sourceInvoices = $sourceInvoices->filter(fn ($invoice): bool => $invoice->lines->contains(function ($line) use ($invoice, $returnedQuantities, $balances): bool {
