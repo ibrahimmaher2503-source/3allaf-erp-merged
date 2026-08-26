@@ -45,9 +45,11 @@ final class GenerateReportExportJob implements ShouldQueue
             throw new RuntimeException('The export requester no longer exists.');
         }
         Auth::setUser($user);
+        $locale = (string) ($job->filters['locale'] ?? config('app.fallback_locale', 'en'));
+        app()->setLocale(in_array($locale, config('app.supported_locales', ['ar', 'en']), true) ? $locale : (string) config('app.fallback_locale', 'en'));
 
         Gate::forUser($user)->authorize('dashboard_reports.export_'.$job->format);
-        $snapshot = $reports->execute($user, $job->filters ?? []);
+        $snapshot = $reports->execute($user, $job->filters ?? [], true);
         $currentSnapshotHash = $reports->fingerprint($snapshot);
         if ($job->snapshot_hash === null || ! hash_equals($job->snapshot_hash, $currentSnapshotHash)) {
             throw new RuntimeException('The report changed before export generation. Refresh the report and request it again. Expected snapshot '.$job->snapshot_hash.'; current snapshot '.$currentSnapshotHash.'.');
@@ -129,6 +131,9 @@ final class GenerateReportExportJob implements ShouldQueue
         foreach ($snapshot['sources'] as $key => $value) {
             $writer->addRow(Row::fromValues([$this->safe((string) $key), is_scalar($value) ? $value : json_encode($value)]));
         }
+        $writer->addRow(Row::fromValues([]));
+        $writer->addRow(Row::fromValues(['Export detail', 'Value']));
+        foreach ($snapshot['export'] ?? [] as $key => $value) { $writer->addRow(Row::fromValues([$this->safe((string) $key), is_bool($value) ? ($value ? 'true' : 'false') : $value])); }
         if (($snapshot['sources']['payment_method_summary'] ?? []) !== []) {
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues(['Payment method', 'Collected']));

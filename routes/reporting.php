@@ -44,11 +44,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     $renderReport = function (Request $request, ReportSnapshot $snapshot, ?string $focusedModule = null) use ($reportTitles) {
         /** @var User $user */
         $user = $request->user();
+        $request->validate(['search' => ['nullable', 'string', 'max:100'], 'sort' => ['nullable', 'string', 'in:document,store,cashier,gross,discount,tax,total'], 'direction' => ['nullable', 'string', 'in:asc,desc'], 'page' => ['nullable', 'integer', 'min:1', 'max:1000000']]);
         $filters = $request->only([
             'date_from', 'date_to', 'branch_id', 'store_id', 'user_id', 'module',
             'supplier_id', 'customer_id', 'product_id', 'category_id', 'payment_method_id',
             'document_status', 'party_status',
             'product_type', 'product_status', 'brand_id', 'age_label_id', 'character_id', 'colour_id', 'gender_id',
+            'search', 'sort', 'direction', 'page',
         ]);
         if ($focusedModule !== null) {
             $filters['module'] = $focusedModule;
@@ -122,6 +124,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'party_status' => ['nullable', 'string', 'in:draft,confirmed,closed,cancelled'],
             'product_type' => ['nullable', 'string', 'in:standard,service,digital,bundle,rental,party_consumable'], 'product_status' => ['nullable', 'string', 'in:active,inactive,archived'],
             'brand_id' => ['nullable', 'integer'], 'age_label_id' => ['nullable', 'integer'], 'character_id' => ['nullable', 'integer'], 'colour_id' => ['nullable', 'integer'], 'gender_id' => ['nullable', 'integer'],
+            'search' => ['nullable', 'string', 'max:100'], 'sort' => ['nullable', 'string', 'in:document,store,cashier,gross,discount,tax,total'], 'direction' => ['nullable', 'string', 'in:asc,desc'],
             'format' => ['required', 'string', 'in:xlsx,pdf'],
         ]);
         $job = $action->execute($user, $filters, $filters['format']);

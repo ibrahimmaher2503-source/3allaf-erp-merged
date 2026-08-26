@@ -79,7 +79,7 @@
                 @if (Gate::allows('dashboard_reports.export_xlsx') || Gate::allows('dashboard_reports.export_pdf'))
                     @foreach(['xlsx' => __('Excel'), 'pdf' => __('PDF')] as $format => $label)
                         @can('dashboard_reports.export_'.$format)
-                            <form method="POST" action="{{ route('reports.export') }}">@csrf @foreach($report['filters'] as $key => $value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach<input type="hidden" name="format" value="{{ $format }}"><flux:button type="submit" size="sm" :icon="$format === 'xlsx' ? 'table-cells' : 'document-arrow-down'" :aria-label="$format === 'xlsx' ? __('Create Excel export') : __('Create PDF export')">{{ $label }}</flux:button></form>
+                            <form method="POST" action="{{ route('reports.export') }}">@csrf @foreach($report['filters'] as $key => $value) @continue(in_array($key, ['page', 'per_page'], true)) <input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach<input type="hidden" name="format" value="{{ $format }}"><flux:button type="submit" size="sm" :icon="$format === 'xlsx' ? 'table-cells' : 'document-arrow-down'" :aria-label="$format === 'xlsx' ? __('Create Excel export') : __('Create PDF export')">{{ $label }}</flux:button></form>
                         @endcan
                     @endforeach
                 @endif
@@ -105,6 +105,7 @@
             <form method="GET" action="{{ url()->current() }}" class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <flux:input name="date_from" type="date" label="{{ __('From') }}" value="{{ $report['filters']['date_from'] }}" />
                 <flux:input name="date_to" type="date" label="{{ __('To') }}" value="{{ $report['filters']['date_to'] }}" />
+                @if($reportKey === 'sales')<flux:input name="search" type="search" label="{{ __('Search report details') }}" value="{{ $report['filters']['search'] ?? '' }}" />@endif
                 <flux:select name="branch_id" label="{{ __('Branch') }}"><option value="">{{ __('All visible branches') }}</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string) $report['filters']['branch_id'] === (string) $branch->id)>{{ $branch->code }} · {{ $branch->name_en }}</option>@endforeach</flux:select>
                 <flux:select name="store_id" label="{{ __('Store') }}"><option value="">{{ __('All visible stores') }}</option>@foreach($stores as $store)<option value="{{ $store->id }}" @selected((string) $report['filters']['store_id'] === (string) $store->id)>{{ $store->code }} · {{ $store->name_en }}</option>@endforeach</flux:select>
                 @if($showFor(['sales', 'cash']))<flux:select name="user_id" label="{{ __('User / cashier') }}"><option value="">{{ __('All visible users') }}</option>@foreach($users as $user)<option value="{{ $user->id }}" @selected((string) $report['filters']['user_id'] === (string) $user->id)>{{ $user->name }}{{ $user->username ? ' · '.$user->username : '' }}</option>@endforeach</flux:select>@endif
@@ -167,10 +168,11 @@
                 @foreach($report['detail_sections'] as $section)
                     <x-tables.data-panel :title="$section['title']" :description="trans_choice(':count row in the selected scope|:count rows in the selected scope', count($section['rows']), ['count' => count($section['rows'])])">
                         <x-slot:actions><flux:badge color="zinc" size="sm">{{ count($section['rows']) }} / 50</flux:badge></x-slot:actions>
-                        <table class="data-table min-w-[720px] w-full text-sm"><thead><tr>@foreach($section['columns'] as $label)<th>{{ $label }}</th>@endforeach</tr></thead><tbody>
+                        <table class="data-table min-w-[720px] w-full text-sm"><thead><tr>@foreach($section['columns'] as $key => $label)<th>@if(isset($section['sortable'][$key]))<a href="{{ request()->fullUrlWithQuery(['sort' => $key, 'direction' => (($report['filters']['sort'] ?? null) === $key && ($report['filters']['direction'] ?? 'desc') === 'asc') ? 'desc' : 'asc', 'page' => 1]) }}" class="underline decoration-dotted underline-offset-4">{{ $label }}@if(($report['filters']['sort'] ?? null) === $key) {{ ($report['filters']['direction'] ?? 'desc') === 'asc' ? '↑' : '↓' }}@endif</a>@else{{ $label }}@endif</th>@endforeach</tr></thead><tbody>
                             @forelse($section['rows'] as $row)<tr class="transition-colors hover:bg-primary-soft/30">@foreach(array_keys($section['columns']) as $key)<td @class(['tabular-nums' => is_numeric($row[$key] ?? null)])>{{ is_numeric($row[$key] ?? null) ? number_format((float) $row[$key], 2) : ($row[$key] ?? '—') }}</td>@endforeach</tr>
                             @empty<tr><td colspan="{{ count($section['columns']) }}"><x-state.empty :title="__('No matching source rows in this report range.')" :description="__('Try widening the date range or clearing a focused filter.')" /></td></tr>@endforelse
                         </tbody></table>
+                        @if(!empty($section['pagination']))<nav class="mt-4 flex items-center justify-between gap-3"><span>{{ trans_choice(':count row|:count rows', $section['pagination']['total'], ['count' => $section['pagination']['total']]) }} · {{ __('Page :current of :last', ['current' => $section['pagination']['current_page'], 'last' => $section['pagination']['last_page']]) }}</span><div>@if($section['pagination']['current_page'] > 1)<a href="{{ request()->fullUrlWithQuery(['page' => $section['pagination']['current_page'] - 1]) }}">{{ __('Previous') }}</a>@endif @if($section['pagination']['current_page'] < $section['pagination']['last_page'])<a href="{{ request()->fullUrlWithQuery(['page' => $section['pagination']['current_page'] + 1]) }}">{{ __('Next') }}</a>@endif</div></nav>@endif
                     </x-tables.data-panel>
                 @endforeach
             </div>

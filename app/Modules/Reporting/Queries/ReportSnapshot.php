@@ -48,6 +48,7 @@ use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Models\ShiftClosingSubmission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -56,6 +57,10 @@ use Throwable;
 
 final class ReportSnapshot
 {
+    public const EXPORT_ROW_LIMIT = 5000;
+
+    private const SALES_PAGE_SIZE = 50;
+
     /** @var array<string, string> */
     private const MODULE_PERMISSIONS = [
         'sales' => 'pos_sales.view',
@@ -69,7 +74,7 @@ final class ReportSnapshot
     ];
 
     /** @param array<string, mixed> $filters @return array<string, mixed> */
-    public function execute(User $user, array $filters = []): array
+    public function execute(User $user, array $filters = [], bool $forExport = false): array
     {
         Gate::forUser($user)->authorize('dashboard_reports.view');
 
@@ -108,6 +113,14 @@ final class ReportSnapshot
         $paymentMethodId = $this->scopedIdFilter($filters['payment_method_id'] ?? null, PaymentMethod::query()->where('status', 'active'), __('payment method'));
         $documentStatus = $this->enumFilter($filters['document_status'] ?? null, ['approved', 'suspended', 'cancelled']);
         $partyStatus = $this->enumFilter($filters['party_status'] ?? null, ['draft', 'confirmed', 'closed', 'cancelled']);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $search = $search === '' ? null : mb_substr($search, 0, 100);
+        $sort = filled($filters['sort'] ?? null) ? (string) $filters['sort'] : null;
+        $sortColumns = ['document' => 'document_number', 'store' => 'store_id', 'cashier' => 'cashier_id', 'gross' => 'subtotal', 'discount' => 'discount_total', 'tax' => 'tax_total', 'total' => 'total'];
+        abort_unless($sort === null || isset($sortColumns[$sort]), 422, __('The selected report sort is not available.'));
+        $direction = strtolower((string) ($filters['direction'] ?? 'desc'));
+        abort_unless(in_array($direction, ['asc', 'desc'], true), 422, __('The selected report direction is not available.'));
+        $page = max(1, min(1000000, (int) ($filters['page'] ?? 1)));
 
         $selectedSaleStatus = $documentStatus ?? 'approved';
         $salesDateColumn = $selectedSaleStatus === 'approved' ? 'approved_at' : 'created_at';
@@ -130,7 +143,15 @@ final class ReportSnapshot
         if ($paymentMethodId !== null) {
             $sales->whereHas('payments', fn (Builder $payments): Builder => $payments->where('payment_method_id', $paymentMethodId));
         }
+        $sales->when($search !== null, fn (Builder $query): Builder => $query->where(function (Builder $scope) use ($search): void {
+            $scope->where('document_number', 'like', '%'.$search.'%')->orWhere('notes', 'like', '%'.$search.'%');
+        }));
         $salesRowsQuery = clone $sales;
+        if ($sort === null) {
+            $salesRowsQuery->orderByDesc($salesDateColumn)->orderByDesc('id');
+        } else {
+            $salesRowsQuery->orderBy($sortColumns[$sort], $direction)->orderBy('id', $direction);
+        }
 
         $salesCount = 0;
         $salesGross = 0.0;
@@ -141,6 +162,8 @@ final class ReportSnapshot
         $refundTotal = 0.0;
         $paymentMethodSummary = collect();
         $salesRows = collect();
+        $salesPagination = null;
+        $salesDetailTotal = 0;
 
         if (in_array('sales', $modules, true)) {
             $salesCount = (clone $sales)->count();
@@ -186,9 +209,14 @@ final class ReportSnapshot
                 }
                 $refundTotal = (float) $refunds->sum('settlement_value');
             }
-            $salesRows = (clone $salesRowsQuery)->with(['store', 'cashier'])->latest($salesDateColumn)->limit(50)->get([
-                'id', 'document_number', 'store_id', 'cashier_id', 'subtotal', 'discount_total', 'tax_total', 'total', 'approved_at', 'created_at',
-            ]);
+            $salesDetailTotal = (clone $salesRowsQuery)->reorder()->count();
+            $columns = ['id', 'document_number', 'store_id', 'cashier_id', 'subtotal', 'discount_total', 'tax_total', 'total', 'approved_at', 'created_at'];
+            if ($forExport) {
+                $salesRows = (clone $salesRowsQuery)->with(['store', 'cashier'])->limit(self::EXPORT_ROW_LIMIT)->get($columns);
+            } else {
+                $salesPagination = (clone $salesRowsQuery)->with(['store', 'cashier'])->paginate(self::SALES_PAGE_SIZE, $columns, 'page', $page);
+                $salesRows = $salesPagination->getCollection();
+            }
         }
 
         $stock = StockBalance::query()
@@ -380,7 +408,9 @@ final class ReportSnapshot
             'document_status' => $documentStatus,
             'party_status' => $partyStatus,
             'module' => $module,
+            'search' => $search, 'sort' => $sort, 'direction' => $direction,
         ];
+        if (! $forExport) { $normalizedFilters['page'] = $page; }
 
         $kpis = [
             'gross_sales' => round($salesGross, 2),
@@ -458,7 +488,7 @@ final class ReportSnapshot
             $kpis = array_intersect_key($kpis, array_flip($moduleKpis[$module]));
         }
 
-        $detailSections = $this->detailSections($user, $modules, $storeIds, $from, $to, $normalizedFilters, $salesRows, $assetRows);
+        $detailSections = $this->detailSections($user, $modules, $storeIds, $from, $to, $normalizedFilters, $salesRows, $salesPagination, $assetRows, $forExport);
         $visuals = $this->visuals($modules, $kpis, $paymentMethodSummary->all());
 
         return [
@@ -494,6 +524,7 @@ final class ReportSnapshot
             ],
             'sales' => $salesRows,
             'assets' => $assetRows,
+            'export' => ['row_limit' => self::EXPORT_ROW_LIMIT, 'total_filtered_rows' => $salesDetailTotal, 'exported_row_count' => $salesRows->count(), 'truncated' => $forExport && $salesDetailTotal > self::EXPORT_ROW_LIMIT],
             'detail_sections' => $detailSections,
             'visuals' => $visuals,
         ];
@@ -619,14 +650,15 @@ final class ReportSnapshot
      * @param  Collection<int, int>  $storeIds
      * @param  array<string, mixed>  $filters
      * @param  Collection<int, Sale>  $salesRows
+     * @param  LengthAwarePaginator<Sale>|null  $salesPagination
      * @param  Collection<int, RentalAsset>  $assetRows
      * @return array<int, array{key:string,title:string,columns:array<string,string>,rows:array<int,array<string,mixed>>}>
      */
-    private function detailSections(User $user, array $modules, Collection $storeIds, CarbonImmutable $from, CarbonImmutable $to, array $filters, Collection $salesRows, Collection $assetRows): array
+    private function detailSections(User $user, array $modules, Collection $storeIds, CarbonImmutable $from, CarbonImmutable $to, array $filters, Collection $salesRows, ?LengthAwarePaginator $salesPagination, Collection $assetRows, bool $forExport): array
     {
         $sections = [];
-        $section = static function (string $key, string $title, array $columns, Collection|array $rows) use (&$sections): void {
-            $sections[] = ['key' => $key, 'title' => $title, 'columns' => $columns, 'rows' => collect($rows)->take(50)->values()->all()];
+        $section = static function (string $key, string $title, array $columns, Collection|array $rows, ?LengthAwarePaginator $pagination = null, array $sortable = []) use (&$sections, $forExport): void {
+            $sections[] = ['key' => $key, 'title' => $title, 'columns' => $columns, 'rows' => ($forExport || $pagination !== null) ? collect($rows)->values()->all() : collect($rows)->take(50)->values()->all(), 'sortable' => $sortable, 'pagination' => $pagination === null ? null : ['total' => $pagination->total(), 'current_page' => $pagination->currentPage(), 'last_page' => $pagination->lastPage()]];
         };
 
         if (in_array('sales', $modules, true)) {
@@ -637,7 +669,7 @@ final class ReportSnapshot
                 'document' => $sale->document_number, 'store' => $sale->store?->code, 'cashier' => $sale->cashier?->name,
                 'gross' => (float) $sale->subtotal, 'discount' => (float) $sale->discount_total,
                 'tax' => (float) $sale->tax_total, 'total' => (float) $sale->total,
-            ]));
+            ]), $salesPagination, ['document' => __('Document'), 'store' => __('Store'), 'cashier' => __('Cashier'), 'gross' => __('Gross'), 'discount' => __('Discount'), 'tax' => __('Tax'), 'total' => __('Total')]);
 
             $saleLines = SaleLine::query()
                 ->whereIn('sale_id', $salesRows->pluck('id'))
@@ -646,7 +678,7 @@ final class ReportSnapshot
                 ->with('sale:id,document_number')
                 ->orderByDesc('sale_id')
                 ->orderBy('line_number')
-                ->limit(50)
+                ->limit($forExport ? self::EXPORT_ROW_LIMIT : 50)
                 ->get();
             $section('sales_product_lines', __('Sale product lines'), [
                 'document' => __('Document'), 'sku' => __('SKU'), 'product' => __('Product'),
@@ -924,6 +956,7 @@ final class ReportSnapshot
             'sales' => collect($snapshot['sales'])->pluck('id')->values()->all(),
             'assets' => collect($snapshot['assets'])->pluck('id')->values()->all(),
             'detail_sections' => $snapshot['detail_sections'] ?? [],
+            'export' => $snapshot['export'] ?? [],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 

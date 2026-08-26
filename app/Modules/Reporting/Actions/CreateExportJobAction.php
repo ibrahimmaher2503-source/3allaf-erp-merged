@@ -21,7 +21,10 @@ final class CreateExportJobAction
         abort_unless(in_array($format, ['xlsx', 'pdf'], true), 422, __('Only PDF and Excel exports are supported.'));
         Gate::forUser($user)->authorize('dashboard_reports.export_'.$format);
 
-        $snapshot = app(ReportSnapshot::class)->execute($user, $filters);
+        unset($filters['page'], $filters['per_page']);
+        $locale = app()->getLocale();
+        $locale = in_array($locale, config('app.supported_locales', ['ar', 'en']), true) ? $locale : (string) config('app.fallback_locale', 'en');
+        $snapshot = app(ReportSnapshot::class)->execute($user, $filters, true);
         $job = DB::transaction(fn (): ExportJob => ExportJob::query()->create([
             'report_key' => $snapshot['filters']['module'] ?? 'dashboard',
             'format' => $format,
@@ -29,7 +32,7 @@ final class CreateExportJobAction
             'requested_by' => $user->id,
             'branch_id' => $snapshot['filters']['branch_id'],
             'store_id' => $snapshot['filters']['store_id'],
-            'filters' => $snapshot['filters'],
+            'filters' => [...$snapshot['filters'], 'locale' => $locale],
             'snapshot_hash' => app(ReportSnapshot::class)->fingerprint($snapshot),
             'expires_at' => now()->addDays(7),
         ]));
