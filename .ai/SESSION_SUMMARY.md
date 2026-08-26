@@ -472,3 +472,9 @@
 - **State:** Checklist items 1–40 are complete. The original handoff branch is retained locally as recovery history and is not approved for publication. Items 41–48 production deployment and 49–53 post-stability have not started.
 - **Verification actually run:** Git path/ref/status/diff checks, history path scans, high-confidence secret-pattern scans, tag verification, and bundle verification. No migrations, database access, tests, browser checks, frontend build, production backup, deployment, push, or remote operation occurred.
 - **Unclaimed:** Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval.
+
+## 2026-08-26 — Final v0.1.4 global footer
+
+- Added one shared locale-aware application footer for authenticated, authentication, and POS layouts, with the release version sourced from `ApplicationVersion::RELEASE` and the Intelligent Solutions link secured for a new tab.
+- Verification run: `git diff --check`, PHP syntax lint for all five implementation files, and focused structural assertions for layout inclusion, one-line rendering, version source, URL, target, and rel attributes.
+- No automated tests or browser tooling were run. No frontend build was required. Production cutover and final tag verification remain the next actions in this session; no push occurred.

@@ -506,6 +506,8 @@
             {{ $slot }}
         </flux:main>
 
+        <x-app-footer />
+
         @persist('toast')
             <flux:toast.group>
                 <flux:toast />
