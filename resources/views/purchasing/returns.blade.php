@@ -18,6 +18,7 @@ use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -139,18 +140,32 @@ new #[Title('Supplier Returns')] class extends Component
     public function saveDraft(CreatePurchaseReturnDraftAction $create, UpdatePurchaseReturnDraftAction $update): void
     {
         Gate::authorize($this->selectedReturnId === null ? 'purchase_returns.create' : 'purchase_returns.edit');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
         $this->validate([
-            'selectedInvoiceId' => 'required|integer|exists:purchase_invoices,id',
+            'selectedInvoiceId' => [
+                'required',
+                'integer',
+                Rule::exists('purchase_invoices', 'id')->where(
+                    fn ($query) => $query->whereIn('store_id', Store::query()->visibleTo($actor)->select('id')),
+                ),
+            ],
             'selectedReasonId' => 'required|integer|exists:supplier_return_reasons,id',
             'returnLines' => 'required|array|min:1',
             'returnLines.*.purchase_invoice_line_id' => 'required|integer',
             'returnLines.*.quantity' => 'required|numeric|gt:0',
         ]);
+        $existingReturn = $this->selectedReturnId === null
+            ? null
+            : PurchaseReturn::query()
+                ->whereIn('store_id', $visibleStoreIds)
+                ->findOrFail($this->selectedReturnId);
 
         try {
             $return = $this->selectedReturnId === null
                 ? $create->execute($this->selectedInvoiceId, $this->selectedReasonId, $this->returnLines)
-                : $update->execute($this->selectedReturnId, $this->selectedReasonId, $this->returnLines, PurchaseReturn::query()->findOrFail($this->selectedReturnId)->lock_version);
+                : $update->execute($this->selectedReturnId, $this->selectedReasonId, $this->returnLines, $existingReturn->lock_version);
             $this->showFormModal = false;
             Flux::toast(__('Supplier return saved as draft.'), variant: 'success');
             $this->dispatch('supplier-return-created', id: $return->id);
@@ -162,8 +177,12 @@ new #[Title('Supplier Returns')] class extends Component
     public function submitReturn(int $id, SubmitPurchaseReturnAction $action): void
     {
         Gate::authorize('purchase_returns.edit');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->findOrFail($id);
         try {
-            $return = PurchaseReturn::query()->findOrFail($id);
             $action->execute($return->id, $return->lock_version);
             Flux::toast(__('Supplier return submitted for approval.'), variant: 'success');
         } catch (Throwable $exception) {
@@ -174,8 +193,12 @@ new #[Title('Supplier Returns')] class extends Component
     public function approveReturn(int $id, ApprovePurchaseReturnAction $action): void
     {
         Gate::authorize('purchase_returns.approve');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->findOrFail($id);
         try {
-            $return = PurchaseReturn::query()->findOrFail($id);
             $action->execute($return->id, $return->lock_version);
             Flux::toast(__('Supplier return approved and stock cost reversed.'), variant: 'success');
         } catch (Throwable $exception) {
@@ -207,10 +230,14 @@ new #[Title('Supplier Returns')] class extends Component
             default => throw new InvalidArgumentException(__('Unknown supplier return transition.')),
         };
         Gate::authorize($ability);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
         $this->validate(['transitionReason' => 'required|string|min:3|max:500']);
+        $return = PurchaseReturn::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->findOrFail($this->transitionReturnId);
 
         try {
-            $return = PurchaseReturn::query()->findOrFail($this->transitionReturnId);
             $action = match ($this->transitionAction) {
                 'cancel' => $cancel,
                 'reject' => $reject,
