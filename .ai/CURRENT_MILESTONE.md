@@ -1,3 +1,16 @@
+# Active Milestone — Release Candidate Preparation
+
+**Date:** 2026-08-26
+**Current phase:** Release Candidate
+**Current milestone:** Checklist items 37–40
+**Status:** Source-handoff checklist items 1–36 are implemented and committed. Item 36 removed only generated QA/runtime artifacts and established permanent repository exclusions. Items 37–40 are next; production items 41–48 and post-stability items 49–53 have not started.
+
+The stable source-handoff reference is `v0.1.3-source-handoff-complete`; its premature local tag will be corrected to the item-35 documentation commit after that commit is created. Migrations have not run for this handoff. QA/UAT completion, backup/restore rehearsal, production deployment, release approval, and owner approval are not claimed.
+
+---
+
+## Historical milestone record
+
 # Active Milestone — Client Feedback Setup Remediation (Expanded Master Request)
 
 **Date:** 2026-08-20

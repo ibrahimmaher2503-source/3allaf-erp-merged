@@ -1,3 +1,5 @@
 # Owner Decisions
 
 - 2026-08-23 — Owner-requested privileged role-permission override: a super-admin or user holding the active `system-administrator` role may manage all active permissions, including sensitive permissions, for every role except the `system-administrator` role itself. Canonical role metadata remains protected, and maker/checker rules remain unchanged.
+
+- 2026-08-26 — Source-handoff repository hygiene: generated/runtime artifacts, environment overrides, secrets, caches, logs, local databases/dumps, temporary exports/backups, and private attachments are excluded from version control while intentional examples, migrations, public source assets, and Laravel placeholder `.gitignore` files remain tracked. Item 36 removed the two tracked browser verification logs and generated PHPUnit compiled-view artifacts without rewriting history; the placeholder files were preserved. The stable source-handoff reference is `v0.1.3-source-handoff-complete`, which will be corrected to the item-35 documentation commit after that commit is created.
