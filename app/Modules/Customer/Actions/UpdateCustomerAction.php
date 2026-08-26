@@ -44,7 +44,7 @@ final class UpdateCustomerAction
             ? (filled($data['customer_group_id']) ? (int) $data['customer_group_id'] : null)
             : (($customer->customer_group_id !== null) ? (int) $customer->customer_group_id : null);
 
-        return DB::transaction(function () use ($actor, $customer, $store, $data, $phone, $phoneDisplay, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $customerGroupId): Customer {
+        return DB::transaction(function () use ($actor, $customer, $store, $data, $phone, $phoneDisplay, $secondaryPhone, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $customerGroupId): Customer {
             $locked = Customer::query()->lockForUpdate()->findOrFail($customer->id);
             if ($locked->status !== 'active') {
                 throw new InvalidArgumentException(__('This customer profile is no longer editable.'));
