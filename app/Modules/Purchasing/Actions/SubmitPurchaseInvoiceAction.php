@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\RequestApproval;
 use App\Modules\Platform\Data\ApprovalRequestData;
@@ -20,8 +21,16 @@ final class SubmitPurchaseInvoiceAction
     {
         Gate::authorize('purchase_invoices_supplier_returns.edit');
 
-        return DB::transaction(function () use ($id, $expectedVersion): PurchaseInvoice {
-            $invoice = PurchaseInvoice::query()->lockForUpdate()->findOrFail($id);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->getAuthIdentifier();
+
+        return DB::transaction(function () use ($actor, $actorId, $id, $expectedVersion): PurchaseInvoice {
+            $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+            $invoice = PurchaseInvoice::query()
+                ->whereIn('store_id', $visibleStoreIds)
+                ->lockForUpdate()
+                ->findOrFail($id);
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before submitting.'));
             }
@@ -36,7 +45,7 @@ final class SubmitPurchaseInvoiceAction
             $invoice->update([
                 'status' => 'submitted',
                 'submitted_at' => now(),
-                'submitted_by' => Auth::id(),
+                'submitted_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,
             ]);
             $branchId = Store::query()->whereKey($invoice->store_id)->value('branch_id');
