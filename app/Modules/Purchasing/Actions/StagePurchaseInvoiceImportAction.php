@@ -15,6 +15,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportRow;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -36,6 +37,11 @@ final class StagePurchaseInvoiceImportAction
     public function stage(string|Attachment $sourceFile, string $originalFilename, string $mimeType, int $sizeBytes, int $userId): PurchaseInvoiceImportBatch
     {
         Gate::authorize('purchase_invoices_supplier_returns.create');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->getAuthIdentifier();
+        abort_unless($userId === $actorId, 403);
+
         $attachment = $sourceFile instanceof Attachment ? $sourceFile : null;
         $storageDisk = $attachment?->storage_disk ?? 'local';
         $storagePath = $attachment?->storage_path ?? $sourceFile;
@@ -75,7 +81,7 @@ final class StagePurchaseInvoiceImportAction
             $rows = [];
             $seenReferences = [];
             $suppliers = Supplier::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
-            $stores = Store::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $stores = Store::query()->visibleTo($actor)->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $products = Product::query()->sellable()->pluck('id', 'item_code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $barcodes = Barcode::query()->active()->pluck('product_id', 'barcode')->mapWithKeys(fn ($id, $code) => [(string) $code => $id])->all();
 
@@ -165,9 +171,15 @@ final class StagePurchaseInvoiceImportAction
     public function createDrafts(PurchaseInvoiceImportBatch $batch, SavePurchaseInvoiceAction $saveAction): PurchaseInvoiceImportBatch
     {
         Gate::authorize('purchase_invoices_supplier_returns.approve');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->getAuthIdentifier();
 
-        return DB::transaction(function () use ($batch, $saveAction): PurchaseInvoiceImportBatch {
-            $batch = PurchaseInvoiceImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
+        return DB::transaction(function () use ($actorId, $batch, $saveAction): PurchaseInvoiceImportBatch {
+            $batch = PurchaseInvoiceImportBatch::query()
+                ->where('created_by', $actorId)
+                ->lockForUpdate()
+                ->findOrFail($batch->id);
             if ($batch->status !== 'ready_for_review' || $batch->invalid_rows > 0) {
                 throw new InvalidArgumentException(__('Only a ready import with no rejected rows can create drafts.'));
             }
@@ -203,14 +215,23 @@ final class StagePurchaseInvoiceImportAction
     public function cancel(PurchaseInvoiceImportBatch $batch): PurchaseInvoiceImportBatch
     {
         Gate::authorize('purchase_invoices_supplier_returns.create');
-        abort_unless($batch->created_by === auth()->id(), 404);
-        if (! in_array($batch->status, ['staging', 'ready_for_review'], true)) {
-            throw new InvalidArgumentException(__('Only a staged or reviewable import can be cancelled.'));
-        }
-        $batch->update(['status' => 'cancelled']);
-        app(RecordAuditEvent::class)->execute(category: 'procurement_import', event: 'cancel_purchase_invoice_import', source: $batch, after: ['status' => 'cancelled']);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->getAuthIdentifier();
 
-        return $batch->fresh();
+        return DB::transaction(function () use ($actorId, $batch): PurchaseInvoiceImportBatch {
+            $batch = PurchaseInvoiceImportBatch::query()
+                ->where('created_by', $actorId)
+                ->lockForUpdate()
+                ->findOrFail($batch->id);
+            if (! in_array($batch->status, ['staging', 'ready_for_review'], true)) {
+                throw new InvalidArgumentException(__('Only a staged or reviewable import can be cancelled.'));
+            }
+            $batch->update(['status' => 'cancelled']);
+            app(RecordAuditEvent::class)->execute(category: 'procurement_import', event: 'cancel_purchase_invoice_import', source: $batch, after: ['status' => 'cancelled']);
+
+            return $batch->fresh();
+        });
     }
 
     /**
