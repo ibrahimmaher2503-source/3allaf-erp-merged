@@ -27,8 +27,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('sale_payments', function (Blueprint $table): void {
+            $table->dropForeign(['gift_card_id']);
             $table->dropIndex(['gift_card_id', 'sale_id']);
-            $table->dropConstrainedForeignId('gift_card_id');
+            $table->dropColumn('gift_card_id');
         });
     }
 };

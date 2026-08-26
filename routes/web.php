@@ -3,6 +3,39 @@
 use App\Modules\Platform\Support\InitialSetupStatus;
 use Illuminate\Support\Facades\Route;
 
+Route::get('build/{path}', function (string $path) {
+    $buildDirectory = realpath(public_path('build'));
+    $file = realpath(public_path('build/'.$path));
+
+    abort_unless(
+        $buildDirectory !== false
+        && $file !== false
+        && str_starts_with($file, $buildDirectory.DIRECTORY_SEPARATOR)
+        && is_file($file),
+        404,
+    );
+
+    $contentType = match (strtolower(pathinfo($file, PATHINFO_EXTENSION))) {
+        'css' => 'text/css; charset=utf-8',
+        'js', 'mjs' => 'application/javascript; charset=utf-8',
+        'json', 'map' => 'application/json; charset=utf-8',
+        'svg' => 'image/svg+xml',
+        'png' => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'ico' => 'image/x-icon',
+        'woff' => 'font/woff',
+        'woff2' => 'font/woff2',
+        default => 'application/octet-stream',
+    };
+
+    return response()->file($file, [
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+        'Content-Type' => $contentType,
+    ]);
+})->where('path', '.*')->name('build.asset');
+
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

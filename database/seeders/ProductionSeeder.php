@@ -21,13 +21,6 @@ use LogicException;
 
 final class ProductionSeeder extends Seeder
 {
-    private const BOOTSTRAP_ADMIN = [
-        'name' => 'Toy & Joy Administrator',
-        'username' => 'admin',
-        'email' => 'admin@instaparty.online',
-        'password' => 'ToyJoy!Bootstrap2026',
-    ];
-
     public function run(): void
     {
         DB::transaction(function (): void {
@@ -228,30 +221,47 @@ final class ProductionSeeder extends Seeder
 
     private function seedBootstrapAdministrator(): void
     {
+        $bootstrapAdmin = $this->bootstrapAdministratorConfig();
+
         $administrator = User::query()
-            ->where('username', self::BOOTSTRAP_ADMIN['username'])
-            ->orWhere('email', self::BOOTSTRAP_ADMIN['email'])
+            ->where('username', $bootstrapAdmin['username'])
+            ->orWhere('email', $bootstrapAdmin['email'])
             ->first();
 
         if ($administrator === null) {
             $administrator = new User([
-                'name' => self::BOOTSTRAP_ADMIN['name'],
-                'username' => self::BOOTSTRAP_ADMIN['username'],
-                'email' => self::BOOTSTRAP_ADMIN['email'],
-                'password' => Hash::make(self::BOOTSTRAP_ADMIN['password']),
+                'name' => $bootstrapAdmin['name'],
+                'username' => $bootstrapAdmin['username'],
+                'email' => $bootstrapAdmin['email'],
+                'password' => Hash::make($bootstrapAdmin['password']),
                 'status' => 'active',
             ]);
             $administrator->forceFill([
                 'email_verified_at' => now(),
                 'is_super_admin' => true,
             ])->save();
-        } elseif ($administrator->username !== self::BOOTSTRAP_ADMIN['username'] || $administrator->email !== self::BOOTSTRAP_ADMIN['email']) {
+        } elseif ($administrator->username !== $bootstrapAdmin['username'] || $administrator->email !== $bootstrapAdmin['email']) {
             throw new LogicException('The baseline administrator username or email belongs to another user. Seeding was rolled back.');
         }
 
         $administrator->roles()->syncWithoutDetaching([
             Role::query()->where('code', 'system-administrator')->firstOrFail()->id,
         ]);
+    }
+
+    /** @return array{name: string, username: string, email: string, password: string} */
+    private function bootstrapAdministratorConfig(): array
+    {
+        $bootstrapAdmin = config('production-seeding.admin');
+
+        foreach (['name', 'username', 'email', 'password'] as $field) {
+            if (! is_string($bootstrapAdmin[$field] ?? null) || trim($bootstrapAdmin[$field]) === '') {
+                throw new LogicException("Missing required Production administrator configuration: {$field}.");
+            }
+        }
+
+        /** @var array{name: string, username: string, email: string, password: string} $bootstrapAdmin */
+        return $bootstrapAdmin;
     }
 
     private function seedOperationalBaseline(): void
