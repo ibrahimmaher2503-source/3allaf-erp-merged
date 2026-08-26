@@ -27,8 +27,17 @@ final class ApprovePurchaseInvoiceAction
     {
         Gate::authorize('purchase_invoices_supplier_returns.approve');
 
-        return DB::transaction(function () use ($id, $expectedVersion): PurchaseInvoice {
-            $invoice = PurchaseInvoice::query()->with('lines')->lockForUpdate()->findOrFail($id);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->getAuthIdentifier();
+
+        return DB::transaction(function () use ($actor, $actorId, $id, $expectedVersion): PurchaseInvoice {
+            $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+            $invoice = PurchaseInvoice::query()
+                ->whereIn('store_id', $visibleStoreIds)
+                ->with('lines')
+                ->lockForUpdate()
+                ->findOrFail($id);
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session. Please reload before approving.'));
             }
@@ -38,10 +47,9 @@ final class ApprovePurchaseInvoiceAction
             if ($invoice->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be approved.'));
             }
-            if ($invoice->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
+            if ($invoice->created_by === $actorId && ! $actor->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
-            $this->assertStoreScope($invoice->store_id);
 
             $before = $invoice->only(['invoice_number', 'status', 'total_amount', 'lock_version']);
             $approval = ApprovalRecord::query()
@@ -51,9 +59,11 @@ final class ApprovePurchaseInvoiceAction
                 ->where('approval_state', ApprovalState::Pending->value)
                 ->lockForUpdate()
                 ->firstOrFail();
+            $this->validateBusinessRules($invoice);
+
             $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute();
             foreach ($invoice->lines as $line) {
-                $this->postLine($invoice, $line);
+                $this->postLine($invoice, $line, $actorId);
             }
             $this->updatePurchaseOrderState($invoice);
 
@@ -61,7 +71,7 @@ final class ApprovePurchaseInvoiceAction
                 'invoice_number' => $number,
                 'status' => 'approved',
                 'approved_at' => now(),
-                'approved_by' => Auth::id(),
+                'approved_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,
             ]);
             app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Purchase invoice and stock receipt approved.'));
@@ -71,7 +81,35 @@ final class ApprovePurchaseInvoiceAction
         });
     }
 
-    private function postLine(PurchaseInvoice $invoice, PurchaseInvoiceLine $line): void
+    private function validateBusinessRules(PurchaseInvoice $invoice): void
+    {
+        foreach ($invoice->lines as $line) {
+            $idempotencyKey = 'purchase-invoice:'.$invoice->id.':line:'.$line->id;
+            if (StockMovement::query()->where('idempotency_key', $idempotencyKey)->exists()) {
+                continue;
+            }
+            if ($this->compare($line->quantity, '0') <= 0) {
+                throw new InvalidArgumentException(__('Received quantity must be greater than zero.'));
+            }
+
+            $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $invoice->store_id)->lockForUpdate()->first();
+            $onHand = $balance?->on_hand ?? '0';
+            if ($this->compare($onHand, '0') < 0) {
+                throw new InvalidArgumentException(__('Negative on-hand balance must be reconciled before receiving.'));
+            }
+
+            $quantity = $this->decimal($line->quantity);
+            $lineCost = $this->decimal($line->subtotal);
+            $newQuantity = $this->add($onHand, $quantity, 6);
+            $newValue = $this->add($balance?->total_value ?? '0', $lineCost, 4);
+            $this->divide($newValue, $newQuantity, 4);
+            $this->divide($lineCost, $quantity, 4);
+        }
+
+        $this->validatePurchaseOrderRules($invoice);
+    }
+
+    private function postLine(PurchaseInvoice $invoice, PurchaseInvoiceLine $line, int $actorId): void
     {
         $idempotencyKey = 'purchase-invoice:'.$invoice->id.':line:'.$line->id;
         if (StockMovement::query()->where('idempotency_key', $idempotencyKey)->exists()) {
@@ -109,7 +147,7 @@ final class ApprovePurchaseInvoiceAction
             'source_line_id' => $line->id,
             'idempotency_key' => $idempotencyKey,
             'posted_at' => now(),
-            'created_by' => Auth::id(),
+            'created_by' => $actorId,
         ]);
         $balance->update(['on_hand' => $newQuantity, 'average_cost' => $newAverage, 'total_value' => $newValue, 'version' => $balance->version + 1]);
         $line->update(['quantity_received' => $quantity]);
@@ -120,14 +158,23 @@ final class ApprovePurchaseInvoiceAction
         if (! $invoice->purchase_order_id) {
             return;
         }
-        $order = PurchaseOrder::query()->with('lines')->lockForUpdate()->findOrFail($invoice->purchase_order_id);
+        $order = PurchaseOrder::query()
+            ->whereKey($invoice->purchase_order_id)
+            ->where('store_id', $invoice->store_id)
+            ->where('supplier_id', $invoice->supplier_id)
+            ->with('lines')
+            ->lockForUpdate()
+            ->firstOrFail();
         foreach ($invoice->lines as $line) {
             if (! $line->purchase_order_line_id) {
                 continue;
             }
             $poLine = PurchaseOrderLine::query()
                 ->where('purchase_order_id', $order->id)
-                ->find($line->purchase_order_line_id);
+                ->where('product_id', $line->product_id)
+                ->whereKey($line->purchase_order_line_id)
+                ->lockForUpdate()
+                ->first();
             if (! $poLine) {
                 throw new InvalidArgumentException(__('The invoice line is not linked to the selected purchase order.'));
             }
@@ -143,6 +190,49 @@ final class ApprovePurchaseInvoiceAction
         $allReceived = $order->lines()->whereColumn('quantity_received', '<', 'quantity_ordered')->doesntExist();
         $someReceived = $order->lines()->where('quantity_received', '>', 0)->exists();
         $order->mutateApprovedDocument(['status' => $allReceived ? 'received' : ($someReceived ? 'partially_received' : $order->status), 'lock_version' => $order->lock_version + 1]);
+    }
+
+    private function validatePurchaseOrderRules(PurchaseInvoice $invoice): void
+    {
+        if (! $invoice->purchase_order_id) {
+            foreach ($invoice->lines as $line) {
+                if ($line->purchase_order_line_id) {
+                    throw new InvalidArgumentException(__('The invoice line is not linked to the selected purchase order.'));
+                }
+            }
+
+            return;
+        }
+
+        $order = PurchaseOrder::query()
+            ->whereKey($invoice->purchase_order_id)
+            ->where('store_id', $invoice->store_id)
+            ->where('supplier_id', $invoice->supplier_id)
+            ->lockForUpdate()
+            ->firstOrFail();
+        foreach ($invoice->lines as $line) {
+            if (! $line->purchase_order_line_id) {
+                continue;
+            }
+            $poLine = PurchaseOrderLine::query()
+                ->where('purchase_order_id', $order->id)
+                ->whereKey($line->purchase_order_line_id)
+                ->lockForUpdate()
+                ->first();
+            if (! $poLine) {
+                throw new InvalidArgumentException(__('The invoice line is not linked to the selected purchase order.'));
+            }
+            if ((int) $poLine->product_id !== (int) $line->product_id) {
+                throw new InvalidArgumentException(__('The invoice line product does not match the selected purchase-order line.'));
+            }
+            $newReceived = $this->add($poLine->quantity_received, $line->quantity, 6);
+            if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
+                throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
+            }
+            if ($this->compare($newReceived, $poLine->quantity_ordered) < 0) {
+                throw new InvalidArgumentException(__('Partial receipt is not allowed under invoice-posts-stock Model A; invoice quantity must complete the PO line.'));
+            }
+        }
     }
 
     /** @return numeric-string */
@@ -178,14 +268,4 @@ final class ApprovePurchaseInvoiceAction
         return bcdiv($this->decimal($left), $this->decimal($right), $scale);
     }
 
-    private function assertStoreScope(int $storeId): void
-    {
-        $user = Auth::user();
-        if (! $user instanceof User || $user->is_super_admin) {
-            return;
-        }
-        if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
-            throw new InvalidArgumentException(__('You are not authorized for the selected receiving store.'));
-        }
-    }
 }
