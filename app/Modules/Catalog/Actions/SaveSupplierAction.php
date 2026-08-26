@@ -33,6 +33,18 @@ class SaveSupplierAction
                 throw new InvalidArgumentException(__('The selected supplier status is not supported.'));
             }
 
+            $barcodePrefix = strtoupper(trim((string) ($data['barcode_prefix'] ?? '')));
+            if ($barcodePrefix !== '' && ! preg_match('/^[A-Z0-9]{1,12}$/', $barcodePrefix)) {
+                throw new InvalidArgumentException(__('The barcode prefix may contain only uppercase English letters and digits, up to 12 characters.'));
+            }
+            $prefixQuery = Supplier::query()->where('barcode_prefix', $barcodePrefix);
+            if ($supplier !== null) {
+                $prefixQuery->whereKeyNot($supplier->id);
+            }
+            if ($barcodePrefix !== '' && $prefixQuery->exists()) {
+                throw new InvalidArgumentException(__('The barcode prefix is already assigned to another supplier.'));
+            }
+
             if ($supplier !== null && $supplier->status === 'active' && $status === 'inactive') {
                 if ($supplier->productSuppliers()->where('is_preferred', true)->exists()) {
                     throw new InvalidArgumentException(__('Cannot deactivate a supplier that is set as preferred for active products.'));
@@ -58,6 +70,7 @@ class SaveSupplierAction
 
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
+                'barcode_prefix' => $barcodePrefix !== '' ? $barcodePrefix : null,
                 'name_ar' => trim((string) $data['name_ar']),
                 'name_en' => trim((string) ($data['name_en'] ?? '')),
                 'contact_name' => ! empty($data['contact_name']) ? trim((string) $data['contact_name']) : null,
@@ -79,7 +92,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -92,7 +105,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

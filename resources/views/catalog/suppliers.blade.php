@@ -56,6 +56,7 @@ new #[Title('Supplier Masters')] class extends Component
 
     public array $supplierForm = [
         'code' => '',
+        'barcode_prefix' => '',
         'name_ar' => '',
         'name_en' => '',
         'contact_name' => '',
@@ -150,6 +151,7 @@ new #[Title('Supplier Masters')] class extends Component
         $this->editingSupplierId = null;
         $this->supplierForm = [
             'code' => '',
+            'barcode_prefix' => '',
             'name_ar' => '',
             'name_en' => '',
             'contact_name' => '',
@@ -174,6 +176,7 @@ new #[Title('Supplier Masters')] class extends Component
         $this->editingSupplierId = $supplier->id;
         $this->supplierForm = [
             'code' => $supplier->code,
+            'barcode_prefix' => $supplier->barcode_prefix ?? '',
             'name_ar' => $supplier->name_ar,
             'name_en' => $supplier->name_en,
             'contact_name' => $supplier->contact_name ?? '',
@@ -212,6 +215,7 @@ new #[Title('Supplier Masters')] class extends Component
     public function saveSupplier(SaveSupplierAction $action): void
     {
         Gate::authorize($this->editingSupplierId ? 'suppliers.edit' : 'suppliers.create');
+        $this->supplierForm['barcode_prefix'] = strtoupper(trim((string) ($this->supplierForm['barcode_prefix'] ?? '')));
         $validated = $this->validate([
             'supplierForm.code' => [
                 'required',
@@ -222,6 +226,7 @@ new #[Title('Supplier Masters')] class extends Component
             ],
             'supplierForm.name_ar' => ['required', 'string', 'max:255'],
             'supplierForm.name_en' => ['required', 'string', 'max:255'],
+            'supplierForm.barcode_prefix' => ['nullable', 'string', 'max:12', 'regex:/^[A-Za-z0-9]+$/', Rule::unique('suppliers', 'barcode_prefix')->ignore($this->editingSupplierId)],
             'supplierForm.contact_name' => ['nullable', 'string', 'max:255'],
             'supplierForm.email' => ['nullable', 'email', 'max:255'],
             'supplierForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
@@ -775,6 +780,7 @@ new #[Title('Supplier Masters')] class extends Component
             <form wire:submit.prevent="saveSupplier" novalidate class="space-y-4">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="supplierForm.code" :label="app()->getLocale() === 'ar' ? 'كود المورد' : __('Supplier code')" placeholder="SUP-001" required :disabled="$editingSupplierId !== null" />@if ($editingSupplierId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateSupplierCode" wire:loading.attr="disabled" wire:target="generateSupplierCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
+                    <flux:input wire:model="supplierForm.barcode_prefix" :label="__('Barcode prefix')" maxlength="12" placeholder="AHMED01" />
                     <flux:select wire:model="supplierForm.status" :label="app()->getLocale() === 'ar' ? 'الحالة' : __('Operational status')">
                         <option value="active">{{ app()->getLocale() === 'ar' ? 'نشط' : __('Active') }}</option>
                         <option value="inactive">{{ app()->getLocale() === 'ar' ? 'غير نشط' : __('Inactive') }}</option>

@@ -17,6 +17,7 @@ class Supplier extends Model
 
     protected $fillable = [
         'code',
+        'barcode_prefix',
         'name_ar',
         'name_en',
         'contact_name',
