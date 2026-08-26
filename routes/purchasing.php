@@ -91,8 +91,19 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/invoices/import', 'purchasing::invoice-import')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices.import');
-    $router->get('purchasing/invoices/import/{batch}/source/{attachment}', function (PurchaseInvoiceImportBatch $batch, Attachment $attachment) {
-        abort_unless($attachment->purpose === 'import_source' && $attachment->source_type === PurchaseInvoiceImportBatch::class && $attachment->source_id === (string) $batch->id, 404);
+    $router->get('purchasing/invoices/import/{batch}/source/{attachment}', function (string $batch, string $attachment) {
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = $actor->id;
+        $batch = PurchaseInvoiceImportBatch::query()
+            ->where('created_by', $actorId)
+            ->findOrFail((int) $batch);
+        $attachment = Attachment::query()
+            ->where('purpose', 'import_source')
+            ->where('source_type', PurchaseInvoiceImportBatch::class)
+            ->where('source_id', (string) $batch->id)
+            ->where('uploaded_by', $actorId)
+            ->findOrFail((int) $attachment);
 
         return app(DeliverAttachment::class)->execute(
             $attachment,
