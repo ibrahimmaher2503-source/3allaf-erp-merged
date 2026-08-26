@@ -89,7 +89,13 @@ new #[Title('Purchase Invoices')] class extends Component
     public function openEditModal(int $id): void
     {
         Gate::authorize('purchase_invoices_supplier_returns.edit');
-        $invoice = PurchaseInvoice::query()->with('lines')->findOrFail($id);
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+        $invoice = PurchaseInvoice::query()
+            ->whereIn('store_id', $visibleStoreIds)
+            ->with('lines')
+            ->findOrFail($id);
         abort_if($invoice->status !== 'draft', 422, __('Only draft purchase invoices can be edited.'));
 
         $this->resetValidation();
