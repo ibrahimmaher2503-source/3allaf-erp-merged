@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
@@ -134,11 +135,15 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ]);
     })->whereNumber('return')->middleware('can:purchase_returns.print')->name('purchasing.returns.print');
 
-    $router->get('purchasing/invoices/{invoice}/print', function (PurchaseInvoice $invoice) {
+    $router->get('purchasing/invoices/{invoice}/print', function (string $invoice) {
         Gate::authorize('purchase_invoices_supplier_returns.print');
-        $user = Auth::user();
-        abort_unless($user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($invoice->store_id)->exists()), 403);
-        $invoice->load(['supplier', 'store', 'purchaseOrder', 'lines.product']);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+        $invoice = PurchaseInvoice::query()
+            ->whereIn('store_id', $visibleStoreIds)
+            ->with(['supplier', 'store', 'purchaseOrder', 'lines.product'])
+            ->findOrFail((int) $invoice);
 
         return view('purchasing.invoice-print', compact('invoice'));
     })->name('purchasing.invoices.print');
