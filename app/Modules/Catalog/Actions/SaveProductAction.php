@@ -58,6 +58,14 @@ class SaveProductAction
                     throw new InvalidArgumentException(__('The selected brand must exist and be active.'));
                 }
 
+                $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
+                $supplier = $supplierId > 0
+                    ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first()
+                    : null;
+                if ($supplierId > 0 && $supplier === null) {
+                    throw new InvalidArgumentException(__('The selected supplier must exist and be active.'));
+                }
+
                 $product = $id === null ? null : Product::query()->lockForUpdate()->findOrFail($id);
 
                 if ($product?->isVariant()) {
@@ -74,6 +82,12 @@ class SaveProductAction
 
                 if ($product !== null && ! array_key_exists('product_type', $data)) {
                     $productType = $product->product_type;
+                }
+
+                $identity = null;
+                if ($product === null) {
+                    $identity = app(ReserveProductIdentityAction::class)->reserve($itemCode, $supplierId ?: null);
+                    $itemCode = $identity['item_code'];
                 }
 
                 $attributes = [
@@ -141,9 +155,14 @@ class SaveProductAction
                 }
 
                 if ($product === null) {
-                    $attributes['barcode_mode'] = 'none';
+                    $attributes['barcode_mode'] = $identity['barcode_source'];
                     $attributes['lock_version'] = 0;
                     $product = Product::query()->create($attributes);
+                    app(ReserveProductIdentityAction::class)->createPrimaryBarcode(
+                        $product,
+                        $identity['item_code'],
+                        $identity['barcode_source'],
+                    );
                     $event = 'create_product_card';
                     $before = null;
                 } else {
@@ -166,13 +185,6 @@ class SaveProductAction
                     }
                 }
                 if (array_key_exists('preferred_supplier_id', $data)) {
-                    $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
-                    $supplier = $supplierId > 0 ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first() : null;
-
-                    if ($supplierId > 0 && $supplier === null) {
-                        throw new InvalidArgumentException(__('The selected supplier must exist and be active.'));
-                    }
-
                     $product->productSuppliers()->update(['is_preferred' => false]);
 
                     if ($supplier !== null) {
@@ -286,5 +298,4 @@ class SaveProductAction
         $family->variants()->update($fields);
     }
 }
-
 

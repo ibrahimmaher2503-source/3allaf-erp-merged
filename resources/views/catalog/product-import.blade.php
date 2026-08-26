@@ -137,7 +137,7 @@ new #[Title('Product Import')] class extends Component {
         @endcan
     </x-slot:actions>
 
-    @php($productImportTemplate = "item_code,name_ar,name_en,category_code,brand_code,preferred_supplier_code,sale_price,average_cost,unit_of_measure,weight,dimension_length,dimension_width,dimension_height,dimension_unit,battery_required,battery_details,age_codes,character_codes,colour_codes,gender_codes\nSKU-001,Example product,Example product,CAT-001,,,,,piece,,,,,false,,,,")
+    @php($productImportTemplate = "item_code,name_ar,name_en,category_code,brand_code,preferred_supplier_code,sale_price,average_cost,unit_of_measure,weight,dimension_length,dimension_width,dimension_height,dimension_unit,battery_required,battery_details,age_codes,character_codes,colour_codes,gender_codes\n,Example product,Example product,CAT-001,,SUP-001,,,piece,,,,,false,,,,")
     <flux:callout variant="info" icon="information-circle" title="{{ __('Two ways to add products') }}">
         <div class="space-y-3">
             <p>{{ __('Manual entry is best for one product. Excel import is for a reviewed batch: upload, validate, review errors, then approve. Nothing is written to products during staging.') }}</p>
@@ -174,7 +174,7 @@ new #[Title('Product Import')] class extends Component {
                         <p class="text-sm font-semibold text-white">الأعمدة المطلوبة</p>
                         <p class="mt-1 text-sm text-text-muted">يجب أن يحتوي الملف على:</p>
                         <div class="mt-3 flex flex-wrap gap-2" dir="ltr">
-                            @foreach (['item_code', 'name_ar', 'name_en', 'category_code'] as $column)
+                            @foreach (['name_ar', 'name_en', 'category_code'] as $column)
                                 <code class="rounded-md bg-slate-950/60 px-2 py-1 text-xs text-cyan-200">{{ $column }}</code>
                             @endforeach
                         </div>
@@ -185,7 +185,7 @@ new #[Title('Product Import')] class extends Component {
                     </div>
                 </div>
             @else
-                <flux:text>{{ __('Required columns: item_code, name_ar, name_en, category_code. Optional active lookup codes include brand, preferred supplier, age_codes, character_codes, colour_codes, and gender_codes (comma-separated). Prices, dimensions, weight, and battery fields are validated before approval; formula cells are rejected.') }}</flux:text>
+                <flux:text>{{ __('Required columns: name_ar, name_en, category_code. item_code is optional for new products when preferred_supplier_code resolves to an active supplier. Other optional lookup codes include brand, age_codes, character_codes, colour_codes, and gender_codes (comma-separated). Prices, dimensions, weight, and battery fields are validated before approval; formula cells are rejected.') }}</flux:text>
             @endif
         </div>
 

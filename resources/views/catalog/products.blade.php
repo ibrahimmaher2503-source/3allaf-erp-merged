@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
@@ -49,6 +50,7 @@ new #[Title('Product Masters')] class extends Component
         'product_type' => 'standard',
         'category_id' => '',
         'brand_id' => '',
+        'preferred_supplier_id' => '',
         'status' => 'active',
     ];
 
@@ -136,6 +138,7 @@ new #[Title('Product Masters')] class extends Component
             'product_type' => 'standard',
             'category_id' => '',
             'brand_id' => '',
+            'preferred_supplier_id' => '',
             'status' => 'active',
         ];
         $this->resetValidation();
@@ -155,6 +158,7 @@ new #[Title('Product Masters')] class extends Component
             'product_type' => $product->product_type,
             'category_id' => (string) $product->category_id,
             'brand_id' => (string) ($product->brand_id ?? ''),
+            'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
             'status' => $product->status,
         ];
         $this->resetValidation();
@@ -182,7 +186,7 @@ new #[Title('Product Masters')] class extends Component
 
         $validated = $this->validate([
             'productForm.item_code' => [
-                'required',
+                $this->editingProductId ? 'required' : 'nullable',
                 'string',
                 'max:50',
                 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/',
@@ -193,6 +197,7 @@ new #[Title('Product Masters')] class extends Component
             'productForm.product_type' => ['required', 'in:standard,composite,service,digital'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'productForm.preferred_supplier_id' => [$this->editingProductId || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.status' => ['required', 'in:active,inactive'],
         ], app()->getLocale() === 'ar' ? [
             'productForm.item_code.required' => 'كود الصنف مطلوب.',
@@ -257,13 +262,13 @@ new #[Title('Product Masters')] class extends Component
         $rules = [
             'barcodeForm.source' => ['required', 'in:supplier,local'],
             'barcodeForm.barcode' => ['nullable', 'string', 'max:64'],
-            'barcodeForm.supplier_code' => ['nullable', 'regex:/^\d{4}$/'],
+            'barcodeForm.supplier_code' => ['nullable', 'regex:/^[A-Za-z0-9]{1,12}$/'],
         ];
 
         if ($this->barcodeForm['source'] === 'supplier') {
             $rules['barcodeForm.barcode'] = ['required', 'string', 'max:64', 'regex:/^\S+$/'];
         } else {
-            $rules['barcodeForm.supplier_code'] = ['required', 'regex:/^\d{4}$/'];
+            $rules['barcodeForm.supplier_code'] = ['required', 'regex:/^[A-Za-z0-9]{1,12}$/'];
         }
 
         $validated = $this->validate($rules)['barcodeForm'];
@@ -328,6 +333,7 @@ new #[Title('Product Masters')] class extends Component
             'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'activeSuppliers' => Supplier::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
         ];
     }
 
@@ -599,7 +605,7 @@ new #[Title('Product Masters')] class extends Component
         </div>
         <form wire:submit="saveProduct" novalidate class="space-y-4">
             <div>
-                <flux:input autofocus wire:model="productForm.item_code" :label="app()->getLocale() === 'ar' ? 'كود الصنف الثابت' : __('Immutable item code')" :disabled="$editingProductId !== null" required />
+                <flux:input autofocus wire:model="productForm.item_code" :label="__('Global / scanned code (optional)')" :disabled="$editingProductId !== null" />
                 <flux:text class="mt-1 text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? 'لا يمكن تغيير هذا الكود بعد إنشاء المنتج.' : __('This identity value cannot be changed after the product is created.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
@@ -630,6 +636,12 @@ new #[Title('Product Masters')] class extends Component
             @if ($activeBrands->isEmpty())
                 <flux:text class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? 'لا توجد علامات تجارية نشطة. العلامة اختيارية؛ أضفها فقط إذا كان المنتج يحتاجها.' : __('No active brands exist. Brand is optional; configure one only if this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ app()->getLocale() === 'ar' ? 'إعداد العلامات التجارية' : __('Configure brands') }}</a></flux:text>
             @endif
+            <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Preferred supplier')">
+                <flux:select.option value="">{{ __('Select supplier when no global code is supplied') }}</flux:select.option>
+                @foreach ($activeSuppliers as $supplier)
+                    <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ $supplier->name_en }}</flux:select.option>
+                @endforeach
+            </flux:select>
             </div>
             <flux:select wire:model="productForm.status" :label="app()->getLocale() === 'ar' ? 'الحالة' : __('Status')" required>
                 <flux:select.option value="active">{{ app()->getLocale() === 'ar' ? 'نشط' : __('Active') }}</flux:select.option>
@@ -649,7 +661,7 @@ new #[Title('Product Masters')] class extends Component
             <flux:subheading>{{ $barcodeProductLabel }}</flux:subheading>
         </div>
         <div class="rounded-xl border border-info/15 bg-info/5 p-4 text-sm leading-7 text-text-primary">
-            {{ app()->getLocale() === 'ar' ? 'باركود المورد يُسجَّل كما ورد على العبوة. الباركود المحلي يُنشأ تلقائيًا من كود المورد ورقم تسلسلي.' : __('Supplier barcodes are preserved as supplied. Local barcodes concatenate a four-digit supplier code and a six-digit sequential serial, with no invented check digit.') }}
+            {{ app()->getLocale() === 'ar' ? 'باركود المورد يُسجَّل كما ورد على العبوة. الباركود المحلي يُنشأ تلقائيًا من بادئة المورد ورقم تسلسلي.' : __('Supplier barcodes are preserved as supplied. Local barcodes concatenate a supplier prefix of up to 12 letters or digits and a six-digit sequential serial, with no invented check digit.') }}
         </div>
         @if ($barcodeProductId)
             <div class="rounded-xl border border-border bg-surface-muted/10 p-4 space-y-3">
@@ -690,7 +702,7 @@ new #[Title('Product Masters')] class extends Component
             @if ($barcodeForm['source'] === 'supplier')
                 <flux:input wire:model="barcodeForm.barcode" :label="app()->getLocale() === 'ar' ? 'باركود المورد' : __('Supplier barcode')" :placeholder="app()->getLocale() === 'ar' ? 'أدخل الباركود كما هو' : __('Enter the supplied value')" required />
             @else
-                <flux:input wire:model="barcodeForm.supplier_code" :label="app()->getLocale() === 'ar' ? 'كود المورد (4 أرقام)' : __('Four-digit supplier code')" inputmode="numeric" maxlength="4" placeholder="1001" required />
+                <flux:input wire:model="barcodeForm.supplier_code" :label="__('Supplier barcode prefix')" maxlength="12" placeholder="AHMED01" required />
             @endif
             <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
                 <flux:button type="button" variant="subtle" wire:click="$set('showBarcodeModal', false)">{{ __('Close') }}</flux:button>

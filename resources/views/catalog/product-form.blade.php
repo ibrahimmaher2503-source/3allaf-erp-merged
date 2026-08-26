@@ -4,7 +4,6 @@ use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\ManageProductMediaAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
@@ -82,42 +81,6 @@ new #[Title('Product Card')] class extends Component {
     public function lookupOptions(): array
     {
         return ['ages' => AgeLabel::query()->where('status', 'active')->orderBy('sort_order')->get(), 'characters' => Character::query()->where('status', 'active')->orderBy('sort_order')->get(), 'colours' => Colour::query()->where('status', 'active')->orderBy('sort_order')->get(), 'genders' => Gender::query()->where('status', 'active')->orderBy('sort_order')->get()];
-    }
-
-    public function generateItemCode(): void
-    {
-        Gate::authorize('products_categories_brands.create');
-
-        if ($this->isEditing) {
-            return;
-        }
-
-        for ($number = 1; ; $number++) {
-            $code = sprintf('PRD-%04d', $number);
-
-            if (! Product::query()->where('item_code', $code)->exists()) {
-                $this->productForm['item_code'] = $code;
-                break;
-            }
-        }
-    }
-
-    public function generateBarcode(): void
-    {
-        Gate::authorize('products_categories_brands.create');
-
-        if ($this->isEditing) {
-            return;
-        }
-
-        for ($number = 1; ; $number++) {
-            $barcode = sprintf('PRD-BC-%07d', $number);
-
-            if (! Barcode::query()->where('barcode', $barcode)->exists()) {
-                $this->supplierBarcode = $barcode;
-                break;
-            }
-        }
     }
 
     public function save(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
@@ -279,7 +242,7 @@ new #[Title('Product Card')] class extends Component {
     private function rules(): array
     {
         return [
-            'productForm.item_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
+            'productForm.item_code' => [$this->isEditing ? 'required' : 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.name_ar' => ['required', 'string', 'max:255'],
             'productForm.name_en' => ['required', 'string', 'max:255'],
             'productForm.description_ar' => ['nullable', 'string', 'max:5000'],
@@ -314,7 +277,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.fractional_quantity' => ['boolean'],
             'productForm.average_cost' => ['nullable', 'numeric', 'min:0'], 'productForm.sale_price' => ['nullable', 'numeric', 'min:0'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
-            'productForm.preferred_supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
+            'productForm.preferred_supplier_id' => [$this->isEditing || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
             'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
             'productForm.colour_ids' => ['array'], 'productForm.colour_ids.*' => ['integer', 'exists:colours,id'],
@@ -384,9 +347,9 @@ new #[Title('Product Card')] class extends Component {
                 </div>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="productForm.item_code" :label="__('Immutable item code')" :disabled="$isEditing" required />@if (! $isEditing)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateItemCode" wire:loading.attr="disabled" wire:target="generateItemCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
+                <flux:input wire:model="productForm.item_code" :label="__('Global / scanned code (optional)')" :disabled="$isEditing" />
                 <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" />
-                <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="supplierBarcode" :label="__('Barcode')" dir="ltr" />@if (! $isEditing)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateBarcode" wire:loading.attr="disabled" wire:target="generateBarcode" title="{{ __('Generate automatically') }}" aria-label="{{ __('Generate automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
+                <flux:input wire:model="supplierBarcode" :label="__('Additional supplier barcode')" dir="ltr" />
                 <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" required />
             </div>

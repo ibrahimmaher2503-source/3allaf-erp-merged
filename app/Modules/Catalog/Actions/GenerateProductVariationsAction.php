@@ -2,7 +2,6 @@
 
 namespace App\Modules\Catalog\Actions;
 
-use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\ProductOptionValue;
@@ -43,6 +42,42 @@ class GenerateProductVariationsAction
                     throw new InvalidArgumentException(__('A product family cannot generate more than 100 SKUs.'));
                 }
 
+                $preferredSupplierId = $family->preferredProductSupplier()
+                    ->whereHas('supplier', fn ($query) => $query->where('status', 'active'))
+                    ->value('supplier_id');
+                $plans = [];
+                $reservedCodes = [];
+                foreach ($combinations as $sortOrder => $selection) {
+                    $signature = $this->signature($selection);
+                    if ($family->variants()->where('variant_signature', $signature)->exists()) {
+                        continue;
+                    }
+
+                    $input = $variantInput[$signature] ?? [];
+                    $sku = strtoupper(trim((string) ($input['sku'] ?? '')));
+                    $barcode = strtoupper(trim((string) ($input['barcode'] ?? '')));
+                    if ($sku !== '' && $barcode !== '' && $sku !== $barcode) {
+                        throw new InvalidArgumentException(__('A new variation global code and barcode must match.'));
+                    }
+                    $identity = app(ReserveProductIdentityAction::class)->reserve($sku !== '' ? $sku : $barcode, $preferredSupplierId ? (int) $preferredSupplierId : null);
+                    if (isset($reservedCodes[$identity['item_code']])) {
+                        throw new InvalidArgumentException(__('Every new variation must have a unique identity.'));
+                    }
+                    $reservedCodes[$identity['item_code']] = true;
+                    $status = (string) ($input['status'] ?? 'inactive');
+                    if (! in_array($status, ['active', 'inactive'], true)) {
+                        throw new InvalidArgumentException(__('The selected variation status is not supported.'));
+                    }
+                    $plans[] = [
+                        'selection' => $selection,
+                        'signature' => $signature,
+                        'sort_order' => $sortOrder + 1,
+                        'identity' => $identity,
+                        'status' => $status,
+                        'reorder_threshold' => $this->nullableNonNegative($input['reorder_threshold'] ?? null),
+                    ];
+                }
+
                 if (! $family->has_variations) {
                     $family->update(['has_variations' => true, 'lock_version' => $family->lock_version + 1]);
                 }
@@ -65,39 +100,27 @@ class GenerateProductVariationsAction
                 }
 
                 $created = [];
-                foreach ($combinations as $sortOrder => $selection) {
-                    $signature = $this->signature($selection);
-                    if ($family->variants()->where('variant_signature', $signature)->exists()) {
-                        continue;
-                    }
-                    $input = $variantInput[$signature] ?? [];
-                    $sku = strtoupper(trim((string) ($input['sku'] ?? '')));
-                    if (! preg_match('/^[A-Z0-9][A-Z0-9._\/-]{0,49}$/', $sku)) {
-                        throw new InvalidArgumentException(__('Every new variation requires a valid unique immutable SKU.'));
-                    }
-                    if (Product::query()->where('item_code', $sku)->exists()) {
-                        throw new InvalidArgumentException(__('A variation SKU is already assigned: :sku', ['sku' => $sku]));
-                    }
-                    $status = (string) ($input['status'] ?? 'inactive');
-                    if (! in_array($status, ['active', 'inactive'], true)) {
-                        throw new InvalidArgumentException(__('The selected variation status is not supported.'));
-                    }
-
+                foreach ($plans as $plan) {
+                    $identity = $plan['identity'];
                     $variant = Product::query()->create([
                         ...$this->descriptiveFields($family),
-                        'item_code' => $sku,
+                        'item_code' => $identity['item_code'],
                         'product_type' => 'standard',
                         'has_variations' => false,
                         'parent_product_id' => $family->id,
-                        'variant_signature' => $signature,
-                        'variant_sort_order' => $sortOrder + 1,
-                        'status' => $status,
-                        'barcode_mode' => 'none',
+                        'variant_signature' => $plan['signature'],
+                        'variant_sort_order' => $plan['sort_order'],
+                        'status' => $plan['status'],
+                        'barcode_mode' => $identity['barcode_source'],
                         'average_cost' => null,
-                        'reorder_threshold' => $this->nullableNonNegative($input['reorder_threshold'] ?? null),
+                        'reorder_threshold' => $plan['reorder_threshold'],
                         'lock_version' => 0,
                     ]);
-                    foreach ($selection as $position => $valueId) {
+                    app(ReserveProductIdentityAction::class)->createPrimaryBarcode($variant, $identity['item_code'], $identity['barcode_source']);
+                    if ($identity['supplier'] !== null) {
+                        $variant->productSuppliers()->create(['supplier_id' => $identity['supplier']->id, 'is_preferred' => true]);
+                    }
+                    foreach ($plan['selection'] as $position => $valueId) {
                         $value = ProductOptionValue::query()->findOrFail($valueId);
                         ProductVariantValue::query()->create([
                             'product_id' => $variant->id,
@@ -105,14 +128,6 @@ class GenerateProductVariationsAction
                             'product_option_value_id' => $value->id,
                             'sort_order' => $position + 1,
                         ]);
-                    }
-                    $barcode = trim((string) ($input['barcode'] ?? ''));
-                    if ($barcode !== '') {
-                        if (Barcode::query()->where('barcode', $barcode)->exists()) {
-                            throw new InvalidArgumentException(__('A variation barcode is already assigned: :barcode', ['barcode' => $barcode]));
-                        }
-                        Barcode::query()->create(['product_id' => $variant->id, 'barcode' => $barcode, 'source' => 'supplier', 'status' => 'active', 'is_primary' => true]);
-                        $variant->update(['barcode_mode' => 'supplier']);
                     }
                     $created[] = $variant->id;
                 }

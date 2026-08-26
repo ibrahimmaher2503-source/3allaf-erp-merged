@@ -29,7 +29,7 @@ use Throwable;
 
 class StageProductImportAction
 {
-    private const REQUIRED_FIELDS = ['item_code', 'name_ar', 'name_en', 'category_code'];
+    private const REQUIRED_FIELDS = ['name_ar', 'name_en', 'category_code'];
 
     private const ALLOWED_FIELDS = [
         'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
@@ -319,10 +319,7 @@ class StageProductImportAction
         $type = strtolower(trim((string) ($raw['product_type'] ?? 'standard')));
         $status = strtolower(trim((string) ($raw['status'] ?? 'active')));
 
-        if ($itemCode === '') {
-            $errors[] = __('Item code is required.');
-        }
-        if (isset($seenCodes[$itemCode])) {
+        if ($itemCode !== '' && isset($seenCodes[$itemCode])) {
             $errors[] = __('The item code is duplicated in this batch.');
         }
         if ($itemCode !== '') {
@@ -342,6 +339,12 @@ class StageProductImportAction
         }
         $supplierCode = strtoupper(trim((string) ($raw['preferred_supplier_code'] ?? '')));
         if ($supplierCode !== '' && ! isset($supplierCodes[$supplierCode])) $errors[] = __('The preferred supplier code is missing or inactive.');
+        if ($mode === 'create_only' && $itemCode === '' && ! isset($supplierCodes[$supplierCode])) {
+            $errors[] = __('An active preferred supplier is required when item_code is omitted.');
+        }
+        if ($mode === 'update_existing' && $itemCode === '') {
+            $errors[] = __('Item code is required when updating existing products.');
+        }
         if (! in_array($type, ['standard', 'composite', 'service', 'digital'], true)) {
             $errors[] = __('The product type is not supported.');
         }
