@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Store;
@@ -223,7 +224,12 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function render(): View
     {
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
+        $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+
         $invoices = PurchaseInvoice::query()
+            ->whereIn('store_id', $visibleStoreIds)
             ->with(['supplier', 'store'])
             ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                 $query->where('supplier_reference', 'like', '%'.$this->search.'%')
