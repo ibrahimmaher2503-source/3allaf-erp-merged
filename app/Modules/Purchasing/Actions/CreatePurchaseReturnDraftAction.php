@@ -32,9 +32,13 @@ final class CreatePurchaseReturnDraftAction
     public function execute(int $purchaseInvoiceId, int $reasonId, array $lines, ?string $idempotencyKey = null): PurchaseReturn
     {
         Gate::authorize('purchase_returns.create');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $actorId = (int) $actor->id;
 
-        return DB::transaction(function () use ($purchaseInvoiceId, $reasonId, $lines, $idempotencyKey): PurchaseReturn {
+        return DB::transaction(function () use ($actor, $actorId, $purchaseInvoiceId, $reasonId, $lines, $idempotencyKey): PurchaseReturn {
             $invoice = PurchaseInvoice::query()
+                ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
                 ->with('lines')
                 ->lockForUpdate()
                 ->findOrFail($purchaseInvoiceId);
@@ -42,7 +46,6 @@ final class CreatePurchaseReturnDraftAction
             if ($invoice->status !== 'approved') {
                 throw new InvalidArgumentException(__('Supplier returns can only reference approved purchase invoices.'));
             }
-            $this->assertStoreScope($invoice->store_id);
 
             $reason = SupplierReturnReason::query()
                 ->whereKey($reasonId)
@@ -52,8 +55,31 @@ final class CreatePurchaseReturnDraftAction
                 throw new InvalidArgumentException(__('An active supplier return reason is required.'));
             }
 
+            if ($lines === []) {
+                throw new InvalidArgumentException(__('A supplier return must contain at least one invoice line.'));
+            }
+
+            $aggregated = [];
+            foreach ($lines as $lineData) {
+                $sourceLineId = (int) ($lineData['purchase_invoice_line_id'] ?? 0);
+                $quantity = $this->decimal($lineData['quantity'] ?? '0');
+                if ($this->compare($quantity, '0') <= 0) {
+                    throw new InvalidArgumentException(__('Return quantity must be greater than zero.'));
+                }
+                if (isset($aggregated[$sourceLineId])) {
+                    throw new InvalidArgumentException(__('A source invoice line can appear only once.'));
+                }
+                $aggregated[$sourceLineId] = ['input' => $lineData, 'quantity' => $quantity];
+            }
+            ksort($aggregated);
+
             $key = $idempotencyKey !== null && trim($idempotencyKey) !== '' ? trim($idempotencyKey) : (string) Str::uuid();
-            $existing = PurchaseReturn::query()->where('idempotency_key', $key)->with('lines')->first();
+            $existing = PurchaseReturn::query()
+                ->where('created_by', $actorId)
+                ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+                ->where('idempotency_key', $key)
+                ->with('lines')
+                ->first();
             if ($existing !== null) {
                 $replaySafe = $existing->purchase_invoice_id === $purchaseInvoiceId
                     && $existing->reason_id === $reasonId
@@ -66,21 +92,16 @@ final class CreatePurchaseReturnDraftAction
                 return $existing->load(['supplier', 'store', 'reason', 'purchaseInvoice', 'lines.product']);
             }
 
-            if ($lines === []) {
-                throw new InvalidArgumentException(__('A supplier return must contain at least one invoice line.'));
-            }
-
             $normalized = [];
             $subtotal = '0';
-            foreach ($lines as $lineData) {
-                $sourceLineId = (int) ($lineData['purchase_invoice_line_id'] ?? 0);
-                $quantity = $this->decimal($lineData['quantity'] ?? '0');
-                if ($this->compare($quantity, '0') <= 0) {
-                    throw new InvalidArgumentException(__('Return quantity must be greater than zero.'));
-                }
-
+            foreach ($aggregated as $sourceLineId => $aggregate) {
+                $lineData = $aggregate['input'];
+                $quantity = $aggregate['quantity'];
                 $sourceLine = $invoice->lines->firstWhere('id', $sourceLineId);
                 if ($sourceLine === null) {
+                    throw new InvalidArgumentException(__('Every supplier return line must reference a line from the selected approved invoice.'));
+                }
+                if (isset($lineData['product_id']) && (int) $lineData['product_id'] !== (int) $sourceLine->product_id) {
                     throw new InvalidArgumentException(__('Every supplier return line must reference a line from the selected approved invoice.'));
                 }
 
@@ -126,8 +147,8 @@ final class CreatePurchaseReturnDraftAction
                 'total_amount' => $subtotal,
                 'idempotency_key' => $key,
                 'lock_version' => 0,
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id(),
+                'created_by' => $actorId,
+                'updated_by' => $actorId,
             ]);
 
             foreach ($normalized as $line) {
@@ -186,17 +207,6 @@ final class CreatePurchaseReturnDraftAction
         }
 
         return true;
-    }
-
-    private function assertStoreScope(int $storeId): void
-    {
-        $user = Auth::user();
-        if (! $user instanceof User || $user->is_super_admin) {
-            return;
-        }
-        if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
-            throw new InvalidArgumentException(__('You are not authorized for the selected return store.'));
-        }
     }
 
     /** @return numeric-string */
