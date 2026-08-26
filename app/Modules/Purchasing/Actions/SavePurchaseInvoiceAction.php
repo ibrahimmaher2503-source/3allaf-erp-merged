@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,10 +27,17 @@ final class SavePurchaseInvoiceAction
     public function execute(array $data, array $lines, ?int $id = null, ?int $expectedVersion = null): PurchaseInvoice
     {
         Gate::authorize($id ? 'purchase_invoices_supplier_returns.edit' : 'purchase_invoices_supplier_returns.create');
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
 
-        return DB::transaction(function () use ($data, $lines, $id, $expectedVersion): PurchaseInvoice {
-            $userId = Auth::id();
-            $invoice = $id === null ? null : PurchaseInvoice::query()->lockForUpdate()->findOrFail($id);
+        return DB::transaction(function () use ($actor, $data, $lines, $id, $expectedVersion): PurchaseInvoice {
+            $userId = $actor->id;
+            $invoice = $id === null
+                ? null
+                : PurchaseInvoice::query()
+                    ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+                    ->lockForUpdate()
+                    ->findOrFail($id);
 
             if ($invoice !== null) {
                 if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
@@ -39,12 +48,47 @@ final class SavePurchaseInvoiceAction
                 }
             }
 
-            $supplier = Supplier::query()->findOrFail((int) ($data['supplier_id'] ?? 0));
+            $store = Store::query()
+                ->visibleTo($actor)
+                ->with('branch:id,company_id')
+                ->lockForUpdate()
+                ->findOrFail((int) ($data['store_id'] ?? 0));
+            $operationalCompanyId = $store->company_id ?? $store->branch?->company_id;
+            if ($store->company_id !== null && $store->branch?->company_id !== null && (int) $store->company_id !== (int) $store->branch->company_id) {
+                throw new InvalidArgumentException(__('The selected receiving store has inconsistent company ownership.'));
+            }
+
+            $supplier = Supplier::query()->with('supplierGroup:id,company_id')->findOrFail((int) ($data['supplier_id'] ?? 0));
             if ($supplier->status !== 'active') {
                 throw new InvalidArgumentException(__('Cannot create an invoice for an inactive supplier.'));
             }
+            if ($supplier->supplierGroup !== null && ($operationalCompanyId === null || (int) $supplier->supplierGroup->company_id !== (int) $operationalCompanyId)) {
+                throw new InvalidArgumentException(__('The selected supplier does not belong to the receiving store company.'));
+            }
 
-            $store = Store::query()->findOrFail((int) ($data['store_id'] ?? 0));
+            $purchaseOrderId = ! empty($data['purchase_order_id']) ? (int) $data['purchase_order_id'] : null;
+            $purchaseOrder = $purchaseOrderId === null
+                ? null
+                : PurchaseOrder::query()
+                    ->where('store_id', $store->id)
+                    ->with(['store:id,company_id,branch_id', 'branch:id,company_id'])
+                    ->lockForUpdate()
+                    ->findOrFail($purchaseOrderId);
+            if ($purchaseOrder !== null) {
+                if ((int) $purchaseOrder->supplier_id !== (int) $supplier->id) {
+                    throw new InvalidArgumentException(__('The selected purchase order does not belong to the invoice supplier.'));
+                }
+                if ((int) $purchaseOrder->branch_id !== (int) $store->branch_id) {
+                    throw new InvalidArgumentException(__('The selected purchase order does not belong to the receiving store branch.'));
+                }
+                $orderCompanyId = $purchaseOrder->store?->company_id ?? $purchaseOrder->branch?->company_id;
+                if ($operationalCompanyId !== null && $orderCompanyId !== null && (int) $orderCompanyId !== (int) $operationalCompanyId) {
+                    throw new InvalidArgumentException(__('The selected purchase order does not belong to the receiving store company.'));
+                }
+                if ($purchaseOrder->branch?->company_id !== null && $operationalCompanyId !== null && (int) $purchaseOrder->branch->company_id !== (int) $operationalCompanyId) {
+                    throw new InvalidArgumentException(__('The selected purchase order branch does not belong to the receiving store company.'));
+                }
+            }
             if (($data['supplier_reference'] ?? '') !== '') {
                 $duplicate = PurchaseInvoice::query()
                     ->where('supplier_id', $supplier->id)
@@ -57,20 +101,40 @@ final class SavePurchaseInvoiceAction
                 }
             }
 
+            $submittedOrderLineIds = collect($lines)
+                ->map(fn (array $line): ?int => filled($line['purchase_order_line_id'] ?? null) ? (int) $line['purchase_order_line_id'] : null)
+                ->filter(fn (?int $lineId): bool => $lineId !== null)
+                ->unique()
+                ->values();
+            if ($submittedOrderLineIds->isNotEmpty() && $purchaseOrder === null) {
+                throw new InvalidArgumentException(__('A purchase order is required when an invoice line references a purchase-order line.'));
+            }
+            $purchaseOrderLines = $submittedOrderLineIds->isEmpty()
+                ? collect()
+                : $purchaseOrder->lines()->whereKey($submittedOrderLineIds)->lockForUpdate()->get()->keyBy('id');
+            if ($purchaseOrderLines->count() !== $submittedOrderLineIds->count()) {
+                throw new InvalidArgumentException(__('Every referenced purchase-order line must belong to the selected purchase order.'));
+            }
+
             $normalizedLines = [];
             foreach ($lines as $index => $line) {
                 $product = Product::query()->sellable()->findOrFail((int) ($line['product_id'] ?? 0));
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be invoiced.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
-                $normalizedLines[] = [...$line, 'product_id' => $product->id, 'line_number' => $index + 1];
+                $purchaseOrderLineId = filled($line['purchase_order_line_id'] ?? null) ? (int) $line['purchase_order_line_id'] : null;
+                $purchaseOrderLine = $purchaseOrderLineId === null ? null : $purchaseOrderLines->get($purchaseOrderLineId);
+                if ($purchaseOrderLine !== null && (int) $purchaseOrderLine->product_id !== (int) $product->id) {
+                    throw new InvalidArgumentException(__('The referenced purchase-order line does not belong to the selected product.'));
+                }
+                $normalizedLines[] = [...$line, 'product_id' => $product->id, 'purchase_order_line_id' => $purchaseOrderLine?->id, 'line_number' => $index + 1];
             }
 
             $totals = app(PurchaseInvoiceCalculator::class)->calculateDocument($normalizedLines);
             $attributes = [
                 'invoice_number' => $invoice?->invoice_number,
                 'supplier_id' => $supplier->id,
-                'purchase_order_id' => ! empty($data['purchase_order_id']) ? (int) $data['purchase_order_id'] : null,
+                'purchase_order_id' => $purchaseOrder?->id,
                 'store_id' => $store->id,
                 'supplier_reference' => ! empty($data['supplier_reference']) ? trim((string) $data['supplier_reference']) : null,
                 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(),
@@ -102,7 +166,7 @@ final class SavePurchaseInvoiceAction
                 $invoice->lines()->create([
                     ...$line,
                     'product_id' => $normalizedLines[$index]['product_id'],
-                    'purchase_order_line_id' => ! empty($normalizedLines[$index]['purchase_order_line_id']) ? (int) $normalizedLines[$index]['purchase_order_line_id'] : null,
+                    'purchase_order_line_id' => $normalizedLines[$index]['purchase_order_line_id'],
                     'quantity_received' => 0,
                 ]);
             }
