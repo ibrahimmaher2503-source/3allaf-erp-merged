@@ -1,15 +1,12 @@
-# Release Candidate Progress
+# UI/UX Release Progress
 
-**Updated:** 2026-08-26
-**Branch:** `release/v0.1.4-rc1-sanitized`
-**Release Candidate:** `v0.1.4-rc1`
+**Updated:** 2026-08-27
+**Branch:** `feature/m50a-shell-dashboard`
+**Baseline:** published `v0.1.4`
 
-| Checklist range | Status |
+| Milestone | Status |
 |---|---|
-| 1–40 | Complete |
-| 41–48 | Production deployment not started |
-| 49–53 | Post-stability work not started |
+| M50A — global shell, navigation, operational dashboard | Complete in development |
+| M50B — internal module pages | Recommended next phase; not started |
 
-Items 37–38 were completed through an isolated sanitized release lineage. The original handoff branch remains local recovery history and is not approved for publication. The sanitized branch contains no prohibited QA/runtime/database history.
-
-Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval are not claimed.
+M50A changed shared presentation and bounded read-only dashboard composition only. No route, permission, mutation workflow, schema, migration, production runtime, or deployment state changed. Local rendered evidence is stored outside Git in the approved release-artifact evidence directory.

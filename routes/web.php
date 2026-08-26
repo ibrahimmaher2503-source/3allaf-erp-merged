@@ -39,8 +39,14 @@ Route::get('build/{path}', function (string $path) {
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (InitialSetupStatus $setupStatus) {
-        return view('dashboard', ['setup' => $setupStatus->snapshot()]);
+    Route::get('dashboard', function (InitialSetupStatus $setupStatus, \App\Modules\Platform\Support\OperationalDashboardSnapshot $dashboard) {
+        $user = request()->user();
+        abort_unless($user instanceof \App\Models\User, 403);
+
+        return view('dashboard', [
+            'setup' => $setupStatus->snapshot(),
+            'dashboard' => $dashboard->for($user),
+        ]);
     })->middleware('can:dashboard_reports.view')->name('dashboard');
     require __DIR__.'/retail.php';
     require __DIR__.'/customers.php';

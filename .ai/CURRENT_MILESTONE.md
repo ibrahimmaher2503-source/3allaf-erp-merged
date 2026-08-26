@@ -1,11 +1,11 @@
-# Active Milestone — Production Preparation
+# Active Milestone — M50A Global Shell, Navigation, and Operational Dashboard
 
-**Date:** 2026-08-26
-**Current phase:** Production preparation
-**Current milestone:** Checklist items 41–48
-**Status:** Checklist items 1–40 are complete. Items 37–38 were completed through an isolated sanitized release lineage; `release/v0.1.4-rc1-sanitized` contains no prohibited QA/runtime/database history. Items 41–48 production deployment and items 49–53 post-stability have not started.
+**Date:** 2026-08-27
+**Current phase:** Item 50 isolated UI/UX release phase
+**Current milestone:** M50A
+**Status:** Complete in development; M50B is the recommended next milestone.
 
-The original handoff branch is retained locally as recovery history and is not approved for publication. The Release Candidate tag is `v0.1.4-rc1`. Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval are not claimed.
+M50A establishes the shared responsive application shell, centralized permission-aware navigation, local Cairo Arabic typography, and a scoped operational dashboard. It preserves the published `v0.1.4` backend, schema, routes, permissions, and global footer. M50B will apply the shared page archetypes to internal module pages in small reviewable sequences.
 
 ---
 

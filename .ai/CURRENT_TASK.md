@@ -1,20 +1,18 @@
-# Current Task — Production Preparation Items 41–48
+# Current Task — M50A Application Shell and Operational Dashboard
 
-**Date:** 2026-08-26
-**Branch:** `release/v0.1.4-rc1-sanitized`
-**Release Candidate:** `v0.1.4-rc1`
+**Date:** 2026-08-27
+**Branch:** `feature/m50a-shell-dashboard`
+**Baseline:** published `v0.1.4`
 
 ## Status
 
-- Checklist items 1–40 are complete.
-- Items 37–38 completed through an isolated sanitized release lineage.
-- The original `handoff/integration-20260826` branch remains local recovery history and is not approved for publication.
-- The sanitized release branch contains no prohibited QA/runtime/database history.
-- Items 41–48 (production deployment) have not started.
-- Items 49–53 (post-stability) have not started.
+- M50A implementation and focused development verification are complete in the milestone commit.
+- The shell uses centralized permission-filtered navigation, a responsive locale-aware sidebar/header, and locally hosted Cairo typography for Arabic.
+- The global dashboard uses bounded, user/store-visible operational queries and leaves existing module workspaces, routes, permissions, actions, and mutations authoritative.
+- POS remains a dedicated full-screen archetype under Sales & POS.
 
-## Boundaries
+## Verification boundary
 
-- Migrations, production backups, production deployment, QA/UAT completion, release approval, and owner production approval are not claimed.
-- The Release Candidate tag name is `v0.1.4-rc1`.
-- No remote operation, push, deployment, database operation, test, browser check, or frontend build occurred during sanitization.
+- The locked frontend build completed once after the authorized native dependency repair.
+- Local static rendering covered Arabic/English desktop/mobile, expanded/collapsed navigation, mobile drawer, dashboard, module workspace, and POS placement with no production or database access.
+- No migrations, backend business behavior, production state, remote Git refs, or deployment configuration changed.
