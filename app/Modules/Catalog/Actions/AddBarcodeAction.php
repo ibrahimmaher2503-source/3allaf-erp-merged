@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\BarcodeSequence;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -28,7 +29,8 @@ class AddBarcodeAction
                 throw new InvalidArgumentException(__('A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.'));
             }
 
-            if (Barcode::query()->where('barcode', $value)->exists()) {
+            if (Barcode::query()->where('barcode', $value)->exists()
+                || Product::query()->where('item_code', $value)->exists()) {
                 throw new InvalidArgumentException(__('This barcode is already assigned and cannot be silently reassigned.'));
             }
 
@@ -55,26 +57,23 @@ class AddBarcodeAction
     public function allocateLocalBarcode(int $productId, string $supplierCode, string $allocationKey): Barcode
     {
         Gate::authorize('products_categories_brands.edit');
-        $supplierCode = trim($supplierCode);
+        $supplierCode = strtoupper(trim($supplierCode));
         $allocationKey = trim($allocationKey);
 
-        if (! preg_match('/^\d{4}$/', $supplierCode)) {
-            throw new InvalidArgumentException(__('The supplier code must contain exactly four digits.'));
+        if (! preg_match('/^[A-Z0-9]{1,12}$/', $supplierCode)) {
+            throw new InvalidArgumentException(__('The supplier barcode prefix must contain up to 12 uppercase English letters or digits.'));
         }
 
         if ($allocationKey === '') {
             throw new InvalidArgumentException(__('A barcode allocation request key is required.'));
         }
 
-        return DB::transaction(function () use ($productId, $supplierCode, $allocationKey): Barcode {
+        try {
+            return DB::transaction(function () use ($productId, $supplierCode, $allocationKey): Barcode {
             $existing = Barcode::query()->where('allocation_key', $allocationKey)->lockForUpdate()->first();
 
             if ($existing !== null) {
-                if ((int) $existing->product_id !== $productId) {
-                    throw new InvalidArgumentException(__('This barcode allocation request key belongs to another product.'));
-                }
-
-                return $existing;
+                return $this->assertMatchingLocalAllocation($existing, $productId, $supplierCode, $allocationKey);
             }
 
             $product = Product::query()->lockForUpdate()->findOrFail($productId);
@@ -82,8 +81,14 @@ class AddBarcodeAction
             if ($product->isFamily()) {
                 throw new InvalidArgumentException(__('A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.'));
             }
-            $sequence = BarcodeSequence::query()->where('supplier_code', $supplierCode)->lockForUpdate()->first();
-            $serial = $sequence?->next_serial ?? 1;
+            BarcodeSequence::query()->insertOrIgnore([
+                'supplier_code' => $supplierCode,
+                'next_serial' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $sequence = BarcodeSequence::query()->where('supplier_code', $supplierCode)->lockForUpdate()->firstOrFail();
+            $serial = $sequence->next_serial;
 
             while ($serial <= 999999) {
                 $value = $supplierCode.str_pad((string) $serial, 6, '0', STR_PAD_LEFT);
@@ -99,14 +104,7 @@ class AddBarcodeAction
                 throw new InvalidArgumentException(__('The local barcode serial range is exhausted for this supplier code.'));
             }
 
-            if ($sequence === null) {
-                BarcodeSequence::query()->create([
-                    'supplier_code' => $supplierCode,
-                    'next_serial' => $serial + 1,
-                ]);
-            } else {
-                $sequence->update(['next_serial' => $serial + 1]);
-            }
+            $sequence->update(['next_serial' => $serial + 1]);
 
             $barcode = Barcode::query()->create([
                 'product_id' => $product->id,
@@ -128,8 +126,16 @@ class AddBarcodeAction
                 metadata: ['allocation_key_hash' => hash('sha256', $allocationKey)],
             );
 
-            return $barcode;
-        });
+                return $barcode;
+            });
+        } catch (QueryException $exception) {
+            $existing = Barcode::query()->where('allocation_key', $allocationKey)->first();
+            if ($existing !== null) {
+                return $this->assertMatchingLocalAllocation($existing, $productId, $supplierCode, $allocationKey);
+            }
+
+            throw $exception;
+        }
     }
 
     public function deactivate(int $barcodeId): Barcode
@@ -166,5 +172,30 @@ class AddBarcodeAction
         };
 
         $product->update(['barcode_mode' => $mode]);
+    }
+
+    private function assertMatchingLocalAllocation(
+        Barcode $barcode,
+        int $productId,
+        string $supplierCode,
+        string $allocationKey,
+    ): Barcode {
+        $serial = $barcode->serial_value;
+        $expectedValue = $serial === null
+            ? null
+            : $supplierCode.str_pad((string) $serial, 6, '0', STR_PAD_LEFT);
+
+        if ((int) $barcode->product_id !== $productId
+            || $barcode->source !== 'local'
+            || $barcode->supplier_code !== $supplierCode
+            || $barcode->allocation_key !== $allocationKey
+            || $serial === null
+            || $serial < 1
+            || $serial > 999999
+            || $barcode->barcode !== $expectedValue) {
+            throw new InvalidArgumentException(__('This barcode allocation request key conflicts with another allocation.'));
+        }
+
+        return $barcode;
     }
 }
