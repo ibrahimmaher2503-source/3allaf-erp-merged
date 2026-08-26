@@ -127,7 +127,10 @@ new #[Title('Product Details')] class extends Component {
                 <flux:heading size="lg">{{ __('Barcode summary') }}</flux:heading>
                 <div class="space-y-2">
                     @forelse ($product->barcodes as $barcode)
-                        <div class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"><span class="catalog-code-chip">{{ $barcode->barcode }}</span><flux:badge size="sm" color="{{ $barcode->source === 'local' ? 'sky' : 'zinc' }}">{{ __($barcode->source === 'local' ? 'Local' : 'Supplier') }}</flux:badge></div>
+                        @php($barcodeLabel = $barcode->source === 'local'
+                            ? (app()->getLocale() === 'ar' ? 'باركود داخلي ينشئه النظام' : 'System-Generated Internal Barcode')
+                            : (app()->getLocale() === 'ar' ? 'باركود المصنع الموجود' : 'Existing Manufacturer Barcode'))
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"><bdi dir="ltr" class="catalog-code-chip">{{ $barcode->barcode }}</bdi><flux:badge size="sm" color="{{ $barcode->source === 'local' ? 'sky' : 'zinc' }}">{{ $barcodeLabel }}</flux:badge></div>
                     @empty
                         <x-state.empty :title="__('No barcode linked')" :description="__('Barcode identity can be managed from the catalog list.')" icon="tag">
                             @if ($canEdit)

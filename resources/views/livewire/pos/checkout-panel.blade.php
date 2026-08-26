@@ -2,7 +2,7 @@
     x-data="{ tender: '{{ $cashMethod ? 'cash' : ($electronicMethods->isNotEmpty() ? 'electronic' : 'gift') }}', cashReceived: '', total: {{ json_encode((float) $total) }}, useElectronic: true, useGift: false }">
     <div class="flex items-center justify-between gap-3">
         <flux:heading id="live-pos-payment-heading" size="lg">{{ __('Payment') }}</flux:heading>
-        @can('pos_sales.apply_tax')<form method="POST" action="{{ route('pos.cart.tax') }}">@csrf<input type="hidden" name="tax_applicable" value="{{ ($taxApplicable ?? false) ? 0 : 1 }}"><button type="submit" class="min-h-9 rounded-lg px-2 text-xs font-bold text-cyan-700">{{ ($taxApplicable ?? false) ? __('Remove tax') : __('Add tax') }}</button></form>@endcan
+        @can('pos_sales.apply_tax')<form method="POST" action="{{ route('pos.cart.tax') }}">@csrf<input type="hidden" name="tax_applicable" value="{{ ($taxApplicable ?? false) ? 0 : 1 }}"><button type="submit" class="min-h-11 rounded-lg px-2 text-xs font-bold text-cyan-700">{{ ($taxApplicable ?? false) ? __('Remove tax') : __('Add tax') }}</button></form>@endcan
     </div>
     @php($blocker = $cart->isEmpty() ? __('Add an item to begin checkout.') : (!$store ? __('No selling store is assigned.') : (!$shift ? __('Open a cashier shift before checkout.') : (($error ?? null) ?: (!$preview ? __('Review the cart before checkout.') : null)))))
     @if($preview)

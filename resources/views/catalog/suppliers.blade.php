@@ -766,8 +766,9 @@ new #[Title('Supplier Masters')] class extends Component
 
     @if ($section === 'supplier-masters')
     <!-- Create / Edit Supplier Modal -->
-    <flux:modal wire:model="showSupplierModal" class="md:max-w-xl">
-        <div class="space-y-6">
+    @if ($showSupplierModal)
+    <flux:modal wire:key="supplier-modal-content-{{ $editingSupplierId === null ? 'new' : 'edit-'.$editingSupplierId }}" wire:model="showSupplierModal" class="w-full max-w-[calc(100vw-2rem)] md:max-w-xl">
+        <div wire:key="supplier-form-{{ $editingSupplierId === null ? 'new' : 'edit-'.$editingSupplierId }}" class="space-y-6">
             <div>
                 <flux:heading size="lg">
                     {{ app()->getLocale() === 'ar' ? ($editingSupplierId ? 'تعديل المورد' : 'إضافة مورد') : ($editingSupplierId ? __('Edit Supplier Master') : __('Create Supplier Master')) }}
@@ -875,6 +876,7 @@ new #[Title('Supplier Masters')] class extends Component
             </form>
         </div>
     </flux:modal>
+    @endif
 
     <!-- Supplier Detail & History Modal -->
     <flux:modal wire:model="showDetailModal" class="md:max-w-3xl">
