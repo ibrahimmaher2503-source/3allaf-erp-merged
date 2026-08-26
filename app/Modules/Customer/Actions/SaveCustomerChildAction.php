@@ -25,7 +25,8 @@ final class SaveCustomerChildAction
         abort_unless($customer->status === 'active', 404);
 
         $allowedPurposes = CustomerPolicy::childPurposes()['value'];
-        $purpose = trim((string) ($data['purpose'] ?? '')) ?: (string) ($allowedPurposes[0] ?? '');
+        $purpose = trim((string) ($data['purpose'] ?? ''))
+            ?: ($child?->purpose ?: (string) ($allowedPurposes[0] ?? ''));
         if (! in_array($purpose, $allowedPurposes, true)) {
             throw new InvalidArgumentException(__('This child-data purpose is not allowed by the configured policy.'));
         }
