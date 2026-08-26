@@ -20,7 +20,7 @@ class SaveSupplierAction
     {
         Gate::authorize($id ? 'suppliers.edit' : 'suppliers.create');
 
-        return DB::transaction(function () use ($data, $id, $expectedVersion): Supplier {
+        return DB::transaction(function () use ($data, $id, $expectedVersion, $companyId): Supplier {
             $userId = Auth::id();
             $supplier = $id === null ? null : Supplier::query()->lockForUpdate()->findOrFail($id);
 
