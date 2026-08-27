@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
+use App\Modules\Platform\Support\WorkContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -24,6 +25,12 @@ $router->post('locale', function (Request $request) {
 })->name('locale.switch');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
+    $router->post('ui/work-context', function (Request $request, WorkContext $context) {
+        $validated = $request->validate(['store_id' => ['nullable', 'integer', 'min:1']]);
+        $context->select($request->user(), filled($validated['store_id'] ?? null) ? (int) $validated['store_id'] : null);
+
+        return back();
+    })->name('platform.work-context');
     $router->post('ui/preferences', [DashboardAssistantController::class, 'preferences'])->name('platform.ui-preferences');
     $router->post('ui/tutorial-progress', [DashboardAssistantController::class, 'tutorialProgress'])->name('platform.tutorial-progress');
     $router->livewire('notifications', 'platform::system.notifications')->name('notifications.index');

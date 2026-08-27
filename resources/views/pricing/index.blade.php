@@ -11,6 +11,7 @@ use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceVersion;
+use App\Modules\Pricing\Queries\PricingDashboard;
 use App\Modules\Platform\Support\UiLabel;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -30,6 +31,18 @@ new #[Title('Pricing Workspace')] class extends Component
     public string $search = '';
 
     public string $statusFilter = 'all';
+
+    public string $storeFilter = 'all';
+
+    public string $effectiveFrom = '';
+
+    public string $effectiveTo = '';
+
+    public int $perPage = 12;
+
+    public string $sort = 'id';
+
+    public string $direction = 'desc';
 
     public bool $showProposalForm = false;
 
@@ -64,6 +77,8 @@ new #[Title('Pricing Workspace')] class extends Component
         Gate::authorize('pricing_labels.view');
         $this->mode = $mode ?? 'workspace';
         abort_unless(in_array($this->mode, self::MODES, true), 404);
+        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($this->actor());
+        $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
     }
 
     public function updatingSearch(string $value): void
@@ -76,6 +91,35 @@ new #[Title('Pricing Workspace')] class extends Component
     public function updatingStatusFilter(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedStoreFilter(): void { $this->resetPage(); $this->resetPage('unpriced_page'); }
+    public function updatedEffectiveFrom(): void { $this->resetPage(); }
+    public function updatedEffectiveTo(): void { $this->resetPage(); }
+
+    public function sortBy(string $column): void
+    {
+        abort_unless(in_array($column, ['id', 'effective_from', 'approved_at'], true), 422);
+        $this->direction = $this->sort === $column && $this->direction === 'desc' ? 'asc' : 'desc';
+        $this->sort = $column;
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        abort_unless(in_array($this->perPage, [12, 24, 48], true), 422);
+        $this->resetPage();
+    }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->statusFilter = 'all';
+        $this->storeFilter = 'all';
+        $this->effectiveFrom = '';
+        $this->effectiveTo = '';
+        $this->resetPage();
+        $this->resetPage('unpriced_page');
     }
 
     public function openProposalForm(): void
@@ -130,7 +174,7 @@ new #[Title('Pricing Workspace')] class extends Component
             'form.price_list_name_ar' => ['required', 'string', 'max:255'],
             'form.price_list_name_en' => ['required', 'string', 'max:255'],
             'form.product_id' => ['required', 'integer', 'exists:products,id'],
-            'form.store_id' => ['required', 'integer', 'exists:stores,id'],
+            'form.store_id' => ['required', 'integer', Rule::exists('stores', 'id')->where(fn ($query) => $query->whereIn('id', Store::query()->visibleTo($this->actor())->select('id')))],
             'form.amount' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
             'form.reference_amount' => ['nullable', 'numeric', 'gte:0', 'decimal:0,3'],
             'form.open_price_minimum' => ['nullable', 'numeric', 'gte:0', 'decimal:0,4', 'required_if:form.open_price_allowed,true'],
@@ -145,7 +189,7 @@ new #[Title('Pricing Workspace')] class extends Component
 
         app(CreatePriceProposalAction::class)->execute(
             product: Product::query()->sellable()->findOrFail((int) $data['form']['product_id']),
-            store: Store::query()->findOrFail((int) $data['form']['store_id']),
+            store: Store::query()->visibleTo($this->actor())->findOrFail((int) $data['form']['store_id']),
             priceListCode: $data['form']['price_list_code'],
             priceListNameAr: $data['form']['price_list_name_ar'],
             priceListNameEn: $data['form']['price_list_name_en'],
@@ -168,13 +212,13 @@ new #[Title('Pricing Workspace')] class extends Component
 
     public function submitProposal(int $versionId): void
     {
-        app(SubmitPriceProposalAction::class)->execute(PriceVersion::query()->findOrFail($versionId));
+        app(SubmitPriceProposalAction::class)->execute($this->scopedVersion($versionId));
         session()->flash('status', __('Price proposal submitted for approval.'));
     }
 
     public function approveProposal(int $versionId): void
     {
-        app(ApprovePriceProposalAction::class)->execute(PriceVersion::query()->findOrFail($versionId));
+        app(ApprovePriceProposalAction::class)->execute($this->scopedVersion($versionId));
         session()->flash('status', __('Price version approved and effective where its date allows.'));
     }
 
@@ -182,15 +226,40 @@ new #[Title('Pricing Workspace')] class extends Component
     {
         Gate::authorize('pricing_labels.approve');
         $this->validate(['rejectionReason' => ['required', 'string', 'max:1000']]);
-        app(RejectPriceProposalAction::class)->execute(PriceVersion::query()->findOrFail($versionId), $this->rejectionReason);
+        app(RejectPriceProposalAction::class)->execute($this->scopedVersion($versionId), $this->rejectionReason);
         $this->rejectionReason = '';
         session()->flash('status', __('Price proposal rejected with an audit reason.'));
+    }
+
+    private function actor(): User
+    {
+        $actor = request()->user();
+        abort_unless($actor instanceof User, 403);
+
+        return $actor;
+    }
+
+    private function scopedVersion(int $versionId): PriceVersion
+    {
+        $actor = $this->actor();
+
+        return PriceVersion::query()
+            ->whereHas('lines', fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($actor)->select('id')))
+            ->findOrFail($versionId);
     }
 
     public function render(): mixed
     {
         abort_unless(in_array($this->mode, self::MODES, true), 404);
-        $query = PriceVersion::query()->with(['priceList', 'lines.product', 'lines.store', 'approvalRecord.requester', 'approvalRecord.approver'])->latest('id');
+        /** @var User $user */
+        $user = $this->actor();
+        $selectedStoreId = $this->storeFilter === 'all' ? null : (int) $this->storeFilter;
+        abort_if($selectedStoreId !== null && ! Store::query()->visibleTo($user)->whereKey($selectedStoreId)->exists(), 404);
+
+        $query = PriceVersion::query()
+            ->whereHas('lines', fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))
+                ->when($selectedStoreId !== null, fn ($scope) => $scope->where('store_id', $selectedStoreId)))
+            ->with(['priceList', 'lines' => fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))->with(['product', 'store']), 'approvalRecord.requester', 'approvalRecord.approver']);
         if ($this->statusFilter !== 'all') {
             $query->where('state', $this->statusFilter);
         }
@@ -201,14 +270,20 @@ new #[Title('Pricing Workspace')] class extends Component
             });
         }
 
-        /** @var User $user */
-        $user = request()->user();
-        $versions = $query->paginate(12);
+        if ($this->effectiveFrom !== '') {
+            $query->where(fn ($dates) => $dates->whereNull('effective_to')->orWhereDate('effective_to', '>=', $this->effectiveFrom));
+        }
+        if ($this->effectiveTo !== '') {
+            $query->where(fn ($dates) => $dates->whereNull('effective_from')->orWhereDate('effective_from', '<=', $this->effectiveTo));
+        }
+        abort_unless(in_array($this->perPage, [12, 24, 48], true), 422);
+        abort_unless(in_array($this->sort, ['id', 'effective_from', 'approved_at'], true) && in_array($this->direction, ['asc', 'desc'], true), 422);
+        $versions = $query->orderBy($this->sort, $this->direction)->orderBy('id', $this->direction)->paginate($this->perPage);
         $products = Product::query()->sellable()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id']);
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
-        $storeIds = $stores->pluck('id');
-        $pricedProductIds = $storeIds->isEmpty() ? collect() : PriceLine::query()
-            ->whereIn('store_id', $storeIds)
+        $pricedProductIds = PriceLine::query()
+            ->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))
+            ->when($selectedStoreId !== null, fn ($scope) => $scope->where('store_id', $selectedStoreId))
             ->whereHas('version', function ($version): void {
                 $version->where('state', PriceVersionState::Approved->value)
                     ->where(function ($dates): void {
@@ -229,26 +304,31 @@ new #[Title('Pricing Workspace')] class extends Component
             });
         }
         $unpricedProducts = $unpricedQuery->orderBy('item_code')->paginate(12, ['id', 'item_code', 'name_ar', 'name_en'], 'unpriced_page')->withQueryString();
-        $diffVersion = $this->compareVersionId === null ? null : PriceVersion::query()->with(['priceList', 'lines.product', 'lines.store'])->find($this->compareVersionId);
-        $diffPrevious = $diffVersion === null ? null : PriceVersion::query()->with(['lines.product', 'lines.store'])->where('price_list_id', $diffVersion->price_list_id)->where('version', '<', $diffVersion->version)->latest('version')->first();
+        $diffVersion = $this->compareVersionId === null ? null : PriceVersion::query()
+            ->whereHas('lines', fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id')))
+            ->with(['priceList', 'lines' => fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))->with(['product', 'store'])])
+            ->find($this->compareVersionId);
+        $diffPrevious = $diffVersion === null ? null : PriceVersion::query()
+            ->whereHas('lines', fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id')))
+            ->with(['lines' => fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))->with(['product', 'store'])])
+            ->where('price_list_id', $diffVersion->price_list_id)->where('version', '<', $diffVersion->version)->latest('version')->first();
 
-        return view('pricing.index', compact('versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious'));
+        $dashboard = app(PricingDashboard::class)->for($user, $selectedStoreId);
+
+        return view('pricing.index', compact('versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious', 'dashboard'));
     }
 };
 ?>
-<div class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" data-pricing-mode="{{ $mode }}">
-    @php($modeTitles = ['workspace' => __('Pricing workspace'), 'versions' => __('Price lists & versions'), 'unpriced' => __('Unpriced products'), 'history' => __('Price change history')])
+<x-app.page :title="app()->getLocale() === 'ar' ? 'التسعير' : 'Pricing workspace'" :description="app()->getLocale() === 'ar' ? 'إدارة الأسعار الفعالة والنسخ المجدولة والاعتمادات والاستثناءات ضمن المتاجر المصرح بها.' : 'Manage effective prices, schedules, approvals, and exceptions across authorized stores.'" :breadcrumbs="app()->getLocale() === 'ar' ? 'التسعير' : 'Pricing'" max-width="7xl" class="pricing-screen" data-pricing-mode="{{ $mode }}">
+    @php($modeTitles = ['workspace' => app()->getLocale() === 'ar' ? 'نظرة عامة' : 'Overview', 'versions' => app()->getLocale() === 'ar' ? 'قوائم ونسخ الأسعار' : 'Price lists & versions', 'unpriced' => app()->getLocale() === 'ar' ? 'منتجات بلا سعر' : 'Unpriced products', 'history' => app()->getLocale() === 'ar' ? 'سجل التغييرات' : 'Change history'])
+    <x-slot:actions><x-tables.resource-toolbar filter-target="pricing-filters">@can('pricing_labels.create')<flux:button variant="subtle" wire:click="openImportForm" icon="arrow-up-tray">{{ app()->getLocale() === 'ar' ? 'استيراد CSV' : 'Import CSV' }}</flux:button><flux:button variant="primary" wire:click="openProposalForm" icon="plus">{{ app()->getLocale() === 'ar' ? 'مقترح سعر جديد' : 'New price proposal' }}</flux:button>@endcan</x-tables.resource-toolbar></x-slot:actions>
+    <div class="space-y-5">
     <div class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $modeTitles[$mode] }}</h1>
             <flux:text class="mt-1 max-w-3xl">{{ __('Create immutable price proposals, submit them through approval, and resolve only approved effective prices. Cost changes never rewrite sale prices.') }}</flux:text>
         </div>
-        <x-tables.resource-toolbar filter-target="pricing-filters">
-            @can('pricing_labels.create')
-                <flux:button variant="subtle" wire:click="openImportForm">{{ __('Import CSV') }}</flux:button>
-                <flux:button variant="primary" wire:click="openProposalForm">{{ __('New proposal') }}</flux:button>
-            @endcan
-        </x-tables.resource-toolbar>
+        <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="printer" wire:navigate>{{ app()->getLocale() === 'ar' ? 'ملصقات الأسعار' : 'Price labels' }}</flux:button>
     </div>
 
     @if (session('status'))
@@ -261,21 +341,17 @@ new #[Title('Pricing Workspace')] class extends Component
         @endforeach
     </nav>
 
-    <div id="pricing-filters" class="scroll-mt-24 grid gap-4 lg:grid-cols-[1fr_auto]">
+    <div id="pricing-filters" class="scroll-mt-24 grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_12rem_12rem_12rem_12rem_auto]">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Search list, item code, or product') }}" />
-        @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter" class="min-w-48">
-            <option value="all">{{ __('All states') }}</option>
-            @foreach (PriceVersionState::cases() as $state)
-                <option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>
-            @endforeach
-        </flux:select>@endif
+        <flux:select wire:model.live="storeFilter"><option value="all">{{ app()->getLocale() === 'ar' ? 'كل المتاجر' : 'All stores' }}</option>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>@endforeach</flux:select>
+        @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter"><option value="all">{{ __('All states') }}</option>@foreach (PriceVersionState::cases() as $state)<option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>@endforeach</flux:select>@else<div></div>@endif
+        <flux:input wire:model.live="effectiveFrom" type="date" :label="app()->getLocale() === 'ar' ? 'ساري من' : 'Effective from'" />
+        <flux:input wire:model.live="effectiveTo" type="date" :label="app()->getLocale() === 'ar' ? 'ساري حتى' : 'Effective to'" />
+        <flux:select wire:model.live="perPage" :label="app()->getLocale() === 'ar' ? 'حجم الصفحة' : 'Page size'"><option value="12">12</option><option value="24">24</option><option value="48">48</option></flux:select>
+        <flux:button wire:click="resetFilters" variant="ghost" icon="arrow-path">{{ app()->getLocale() === 'ar' ? 'إعادة ضبط' : 'Reset' }}</flux:button>
     </div>
 
-    @if($mode !== 'unpriced')<div class="grid gap-4 sm:grid-cols-3">
-        <flux:card><flux:text>{{ __('Total versions') }}</flux:text><flux:heading size="lg">{{ $versions->total() }}</flux:heading></flux:card>
-        <flux:card><flux:text>{{ __('Pending approval') }}</flux:text><flux:heading size="lg">{{ $versions->where('state', 'submitted')->count() }}</flux:heading></flux:card>
-        <flux:card><flux:text>{{ __('Active price list') }}</flux:text><flux:heading size="lg">{{ __('Open') }}</flux:heading></flux:card>
-    </div>@endif
+    @if($mode === 'workspace')<x-pricing.dashboard :dashboard="$dashboard" />@endif
 
     @if (in_array($mode, ['workspace', 'unpriced'], true))
         <flux:card>
@@ -299,18 +375,18 @@ new #[Title('Pricing Workspace')] class extends Component
 
     @if(in_array($mode, ['workspace', 'versions', 'history'], true))
     <x-tables.data-panel :title="$mode === 'history' ? __('Price change history') : __('Price versions')" :description="__('Review proposed and approved prices by product and store.')">
-        <table class="data-table min-w-full text-start text-sm">
-                <thead><tr><th scope="col">{{ __('Version') }}</th><th scope="col">{{ __('Product / location') }}</th><th scope="col">{{ __('Amount') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col">{{ __('State') }}</th><th scope="col">{{ __('Actions') }}</th></tr></thead>
+        <table class="data-table responsive-resource-table min-w-full text-start text-sm">
+                <thead><tr><th scope="col"><button type="button" wire:click="sortBy('id')" class="font-semibold">{{ __('Version') }}</button></th><th scope="col">{{ __('Product / location') }}</th><th scope="col">{{ __('Amount') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col"><button type="button" wire:click="sortBy('approved_at')" class="font-semibold">{{ __('State') }}</button></th><th scope="col">{{ __('Actions') }}</th></tr></thead>
                 <tbody>
                     @forelse ($versions as $version)
                         @php($line = $version->lines->first())
                         <tr wire:key="price-version-{{ $version->id }}" class="align-top">
-                            <td><div class="font-semibold text-text-primary">{{ $version->priceList->code }} · v{{ $version->version }}</div><div class="text-xs text-text-muted">{{ optional($version->effective_from)->format('Y-m-d H:i') ?: __('Immediate') }}</div></td>
-                            <td><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->getLocale() === 'ar' ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-text-muted">{{ $line?->store?->code }} · {{ app()->getLocale() === 'ar' ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
-                            <td class="font-semibold"><x-money :amount="$line?->amount" /></td>
-                            <td><div>{{ $version->source_type === 'product_card' ? __('Product price') : __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-text-muted">{{ $version->source_reference ?: '—' }}</div></td>
-                            <td><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div></td>
-                            <td class="space-y-2">
+                            <td data-primary><div class="font-semibold text-text-primary">{{ $version->priceList->code }} · v{{ $version->version }}</div><div class="text-xs text-text-muted">{{ optional($version->effective_from)->format('Y-m-d H:i') ?: __('Immediate') }}</div></td>
+                            <td data-label="{{ __('Product / location') }}"><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->getLocale() === 'ar' ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-text-muted">{{ $line?->store?->code }} · {{ app()->getLocale() === 'ar' ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
+                            <td data-label="{{ __('Amount') }}" class="font-semibold"><x-money :amount="$line?->amount" /></td>
+                            <td data-label="{{ __('Source') }}"><div>{{ $version->source_type === 'product_card' ? __('Product price') : __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-text-muted">{{ $version->source_reference ?: '—' }}</div></td>
+                            <td data-label="{{ __('State') }}"><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div></td>
+                            <td data-label="{{ __('Actions') }}" class="space-y-2">
                                 @can('pricing_labels.view')<flux:button size="sm" variant="subtle" wire:click="openDiff({{ $version->id }})">{{ __('Compare history') }}</flux:button>@endcan
                                 @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:click="submitProposal({{ $version->id }})">{{ __('Submit') }}</flux:button>@endif @endcan
                                 @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)<flux:button size="sm" variant="primary" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</flux:button><flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" /><flux:button size="sm" variant="danger" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</flux:button>@endif @endcan
@@ -380,4 +456,5 @@ new #[Title('Pricing Workspace')] class extends Component
             </div>
         </flux:modal>
     @endif
-</div>
+    </div>
+</x-app.page>

@@ -29,6 +29,8 @@ new #[Title('Purchase Orders')] class extends Component
 
     public string $supplierFilter = 'all';
 
+    public string $storeFilter = 'all';
+
     public bool $showFormModal = false;
 
     public ?int $editingOrderId = null;
@@ -65,6 +67,8 @@ new #[Title('Purchase Orders')] class extends Component
     {
         Gate::authorize('purchase_orders.view');
         $this->orderForm['order_date'] = now()->toDateString();
+        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id(auth()->user());
+        $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
     }
 
     public function updatingSearch(): void
@@ -328,6 +332,9 @@ new #[Title('Purchase Orders')] class extends Component
         if ($this->supplierFilter !== 'all') {
             $query->where('supplier_id', (int) $this->supplierFilter);
         }
+        if ($this->storeFilter !== 'all') {
+            $query->where('store_id', (int) $this->storeFilter);
+        }
 
         $orders = $query->latest('id')->paginate(15);
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
@@ -370,7 +377,7 @@ new #[Title('Purchase Orders')] class extends Component
             'canCancel' => Gate::allows('purchase_orders.cancel'),
             'canPrint' => Gate::allows('purchase_orders.print'),
             'canApprove' => Gate::allows('purchase_orders.approve'),
-            'dashboard' => $dashboard->for($user),
+            'dashboard' => $dashboard->for($user, $this->storeFilter === 'all' ? null : (int) $this->storeFilter),
         ]);
     }
 }; ?>

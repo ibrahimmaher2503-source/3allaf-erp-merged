@@ -560,3 +560,12 @@
 - **Complete query audit:** Qualified every dashboard status, date, store, branch, approval, currency, amount, and identifier reference with its authoritative table. Joined supplier/product aggregates and all visible-store subqueries retain their original calculations and authorization scope.
 - **Deployment correction:** Runtime ACL restoration and verification must recurse through `storage/framework/views`, including `livewire/classes`, and validate effective masks rather than named entries alone.
 - **Boundaries:** No schema, migration, database mutation, frontend build, cron change, tag, push, or remote operation occurred.
+
+
+## 2026-08-27 — M50B.4 Pricing workspace implementation
+
+- **Task:** Implemented the M50B.4 Pricing workspace from published `v0.1.8` on `feature/m50b4-pricing-promotions` without deployment.
+- **Work completed:** Added a permission-aware authorized-store Pricing dashboard for active lists, effective/scheduled prices, submitted approvals, unpriced products, open-price coverage, deterministic exceptions, recent changes, responsive filters, sorting, pagination, and scoped label readiness. Explicitly documented that standalone promotions/campaign rules are absent from the authoritative model.
+- **Shell correction:** Replaced the misleading first-visible-store header label with a validated session work context. Multiple-store users receive a permission-filtered selector, single-store users receive a fixed indicator, and “All authorized stores” is shown for genuinely aggregated scope. Supported dashboards consume the selected context; POS transaction ownership remains shift/store controlled.
+- **Verification actually run:** PHP/Blade syntax lint, Pricing and work-context route registration, complete navigation route mapping, `git diff --check`, unchanged package manifests, and one locked Vite build with Node 20.20.2. Manifest SHA-256 is `eca12b88c0f3d25ea52ca3448fb0c0af7decf7f7d88ad72ad0c31b5dec3043c6`; every referenced asset exists. No automated suite, browser-control, or database runtime ran.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.

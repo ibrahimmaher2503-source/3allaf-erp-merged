@@ -1,18 +1,16 @@
-# Current Task — M50B.3 Products, Inventory & Barcodes
+# Current Task — M50B.4 Pricing, Promotions & Discounts
 
 **Date:** 2026-08-27
-**Branch:** `feature/m50b3-inventory-catalog`
-**Baseline:** published `v0.1.7` commit `6dc33299d89d82e5762490d080c6bdfb78dace55`
+**Branch:** `feature/m50b4-pricing-promotions`
+**Baseline:** published `v0.1.8` commit `faabe2ffcd0bd51b80aa004f57ffd5a9324f74da`
 
 ## Status
 
-- Complete in development: the Inventory landing route now receives its existing overview data and adds permission-aware, visible-store-scoped operational metrics and exceptions.
-- Products, barcodes/labels, balances, and movement-ledger tables reuse responsive M50B record-card and pagination patterns.
-- Authoritative balance valuation is exposed only to the existing cost-view permission; stock, barcode, and catalog exceptions are never inferred beyond current records.
-- The System Settings idle-spinner regression is corrected by separating the Alpine idle-disabled review state from Flux submit loading and targeting each Settings save action explicitly.
+- Implemented in development: permission-aware Pricing overview, effective/scheduled pricing indicators, approval and unpriced-product exceptions, bounded recent activity, responsive price-version controls, and scoped label readiness.
+- The authoritative model supports immutable price versions, effective periods, open-price bounds, POS cart discounts, and approval. It does not contain standalone promotion/campaign rules; the UI states that capability boundary instead of fabricating records.
+- Added a permission-filtered session work context so the shell accurately distinguishes one store from all authorized stores. Supported Sales, Purchasing, Inventory, and Pricing views consume it; POS retains its authoritative shift/store transaction context.
 
 ## Verification boundary
 
-- PHP syntax, route registration, navigation/permission mapping, `git diff --check`, and one locked Vite build passed.
-- No automated suite ran. No isolated MariaDB runtime was configured, so no browser fixture database or screenshots were created.
-- No schema, migration, route, permission, workflow, inventory calculation, barcode allocation, production, deployment, tag, or remote change occurred.
+- One locked Vite build, focused PHP/Blade/route/navigation checks, manifest/reference verification, and `git diff --check` passed.
+- Automated tests and browser-control are not authorized for this task. No schema, migration, production, database, deployment, tag, push, or remote operation is allowed.

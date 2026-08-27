@@ -18,11 +18,11 @@ use Illuminate\Database\Eloquent\Builder;
 final class PurchasingDashboard
 {
     /** @return array<string, mixed> */
-    public function for(User $actor): array
+    public function for(User $actor, ?int $storeId = null): array
     {
-        $orders = $this->visibleOrders($actor);
-        $invoices = $this->visibleInvoices($actor);
-        $returns = $this->visibleReturns($actor);
+        $orders = $this->visibleOrders($actor, $storeId);
+        $invoices = $this->visibleInvoices($actor, $storeId);
+        $returns = $this->visibleReturns($actor, $storeId);
         $periodStart = today()->subDays(6);
 
         $approvedPeriodInvoices = (clone $invoices)
@@ -66,6 +66,7 @@ final class PurchasingDashboard
                 ->join('purchase_invoices', 'purchase_invoices.id', '=', 'purchase_invoice_lines.purchase_invoice_id')
                 ->join('products', 'products.id', '=', 'purchase_invoice_lines.product_id')
                 ->whereIn('purchase_invoices.store_id', Store::query()->visibleTo($actor)->select('id'))
+                ->when($storeId !== null, fn (Builder $query) => $query->where('purchase_invoices.store_id', $storeId))
                 ->where('purchase_invoices.status', 'approved')
                 ->whereDate('purchase_invoices.invoice_date', '>=', $periodStart)
                 ->select(['products.id', 'products.item_code', 'products.name_ar', 'products.name_en'])
@@ -78,21 +79,21 @@ final class PurchasingDashboard
         ];
     }
 
-    private function visibleOrders(User $actor): Builder
+    private function visibleOrders(User $actor, ?int $storeId): Builder
     {
         return PurchaseOrder::query()->where(function (Builder $query) use ($actor): void {
             $query->whereIn('purchase_orders.store_id', Store::query()->visibleTo($actor)->select('id'))
                 ->orWhereIn('purchase_orders.branch_id', Branch::query()->visibleTo($actor)->select('id'));
-        });
+        })->when($storeId !== null, fn (Builder $query) => $query->where('purchase_orders.store_id', $storeId));
     }
 
-    private function visibleInvoices(User $actor): Builder
+    private function visibleInvoices(User $actor, ?int $storeId): Builder
     {
-        return PurchaseInvoice::query()->whereIn('purchase_invoices.store_id', Store::query()->visibleTo($actor)->select('id'));
+        return PurchaseInvoice::query()->whereIn('purchase_invoices.store_id', Store::query()->visibleTo($actor)->select('id'))->when($storeId !== null, fn (Builder $query) => $query->where('purchase_invoices.store_id', $storeId));
     }
 
-    private function visibleReturns(User $actor): Builder
+    private function visibleReturns(User $actor, ?int $storeId): Builder
     {
-        return PurchaseReturn::query()->whereIn('purchase_returns.store_id', Store::query()->visibleTo($actor)->select('id'));
+        return PurchaseReturn::query()->whereIn('purchase_returns.store_id', Store::query()->visibleTo($actor)->select('id'))->when($storeId !== null, fn (Builder $query) => $query->where('purchase_returns.store_id', $storeId));
     }
 }

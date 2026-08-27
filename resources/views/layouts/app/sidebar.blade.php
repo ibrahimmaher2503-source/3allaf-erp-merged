@@ -33,9 +33,13 @@
     $navigationGroups = app(\App\Modules\Platform\Support\ApplicationNavigation::class)->for($actor, app()->getLocale());
     $activeGroup = collect($navigationGroups)->firstWhere('active', true);
     $activeItem = collect($activeGroup['items'] ?? [])->firstWhere('active', true);
-    $contextStore = \App\Modules\Platform\Models\Store::query()->visibleTo($actor)->where('status', 'active')->with('company:id,name_ar,name_en')->orderBy('code')->first(['id', 'company_id', 'code', 'name_ar', 'name_en']);
-    $contextName = $contextStore ? ($isArabic ? $contextStore->name_ar : $contextStore->name_en) : null;
-    $companyName = $contextStore?->company ? ($isArabic ? $contextStore->company->name_ar : $contextStore->company->name_en) : config('app.name');
+    $workContext = app(\App\Modules\Platform\Support\WorkContext::class);
+    $contextStores = $workContext->stores($actor);
+    $contextStore = $workContext->selected($actor) ?? ($contextStores->count() === 1 ? $contextStores->first() : null);
+    $contextName = $contextStore ? ($isArabic ? $contextStore->name_ar : $contextStore->name_en) : ($isArabic ? 'كل المتاجر المصرح بها' : 'All authorized stores');
+    $companyStore = $contextStore ?? $contextStores->first();
+    $company = $companyStore?->company()->first(['id', 'name_ar', 'name_en']);
+    $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp
 <flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! h-dvh w-[272px] gap-2 overflow-hidden border-e p-3">
@@ -64,7 +68,7 @@
         </div>
         <button type="button" class="app-topbar__search" x-data x-on:click="$dispatch('open-navigation-search')" aria-label="{{ $isArabic ? 'بحث سريع في النظام' : 'Quick system search' }}"><flux:icon.magnifying-glass class="size-5" /><span>{{ $isArabic ? 'ابحث عن شاشة أو إجراء' : 'Search screens and actions' }}</span><kbd dir="ltr">Ctrl K</kbd></button>
         <div class="app-topbar__actions">
-            @if ($contextName)<span class="app-topbar__context hidden xl:inline-flex"><flux:icon.building-storefront class="size-4" /><span>{{ $contextName }}</span></span>@endif
+            @if($contextStores->count() > 1)<flux:dropdown position="bottom" align="end"><flux:button variant="ghost" class="app-topbar__context hidden min-h-11 xl:inline-flex" icon="building-storefront" icon-trailing="chevron-down" aria-label="{{ $isArabic ? 'موقع العمل الحالي' : 'Current work location' }}: {{ $contextName }}">{{ $contextName }}</flux:button><flux:menu><div class="px-3 py-2"><strong class="block text-xs">{{ $isArabic ? 'موقع العمل الحالي' : 'Current work location' }}</strong><span class="text-xs text-text-muted">{{ $isArabic ? 'يؤثر في طرق العرض الداعمة للنطاق ولا يغير ملكية العمليات.' : 'Filters supported views; transaction ownership is unchanged.' }}</span></div><flux:menu.separator /><form method="POST" action="{{ route('platform.work-context') }}">@csrf<input type="hidden" name="store_id" value=""><flux:menu.item as="button" type="submit" icon="squares-2x2" class="w-full">{{ $isArabic ? 'كل المتاجر المصرح بها' : 'All authorized stores' }}</flux:menu.item></form>@foreach($contextStores as $availableStore)<form method="POST" action="{{ route('platform.work-context') }}">@csrf<input type="hidden" name="store_id" value="{{ $availableStore->id }}"><flux:menu.item as="button" type="submit" icon="building-storefront" class="w-full">{{ $availableStore->code }} · {{ $isArabic ? $availableStore->name_ar : $availableStore->name_en }}</flux:menu.item></form>@endforeach</flux:menu></flux:dropdown>@elseif($contextStores->count() === 1)<span class="app-topbar__context hidden xl:inline-flex" aria-label="{{ $isArabic ? 'موقع العمل الحالي' : 'Current work location' }}: {{ $contextName }}"><flux:icon.building-storefront class="size-4" /><span>{{ $contextName }}</span></span>@endif
             <flux:dropdown position="bottom" align="end">
                 <flux:tooltip content="{{ $isArabic ? 'إنشاء سريع' : 'Quick create' }}" position="bottom"><flux:button variant="ghost" square icon="plus" aria-label="{{ $isArabic ? 'إنشاء سريع' : 'Quick create' }}" /></flux:tooltip>
                 <flux:menu>

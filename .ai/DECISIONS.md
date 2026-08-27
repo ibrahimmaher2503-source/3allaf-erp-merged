@@ -24,3 +24,10 @@
 - Display inventory value only from authoritative `stock_balances.total_value` and only when `inventory_stock_card.cost_view` is allowed.
 - Treat Flux submit loading and an Alpine idle-disabled state as separate concerns: the Company review button invokes only `previewCompany`, while every Settings save action has an explicit loading target.
 - Preserve inventory mutations, costing, barcode allocation, routes, permissions, policies, and schema.
+
+
+## 2026-08-27 — M50B.4 pricing capability and work-context boundary
+
+- Treat immutable `PriceList`/`PriceVersion`/`PriceLine` records, effective dates, open-price bounds, approval, and POS cart-discount permissions as the authoritative pricing capabilities. Do not present standalone promotions or campaign discounts because no such source-owned model/workflow exists.
+- Do not infer margin from unrelated or mixed store costs. Pricing coverage and exception indicators remain authorized-store scoped and read-only.
+- The prior header selected the first visible store while most dashboards aggregated all visible stores. The shell now defaults to “All authorized stores,” persists an optional permission-checked store in the existing session context, and applies it to supported Sales, Purchasing, Inventory, and Pricing views. POS continues to use its existing shift/store ownership and is never silently reassigned by the shell.

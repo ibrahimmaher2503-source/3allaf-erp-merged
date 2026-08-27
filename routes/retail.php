@@ -1903,6 +1903,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
+        if (! $request->filled('store_id') && ($contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($user)) !== null) { $request->merge(['store_id' => $contextStoreId]); }
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
         $sort = in_array((string) $request->string('sort'), ['created_at', 'document_number', 'status', 'total'], true) ? (string) $request->string('sort') : 'created_at';
         $direction = (string) $request->string('direction') === 'asc' ? 'asc' : 'desc';
@@ -1960,6 +1961,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
+        if (! $request->filled('store_id') && ($contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($user)) !== null) { $request->merge(['store_id' => $contextStoreId]); }
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
         $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier'])->withCount('payments');
         $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));

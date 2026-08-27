@@ -1,11 +1,13 @@
-# Active Milestone — M50B.3 Products, Inventory & Barcodes
+# Active Milestone — M50B.4 Pricing, Promotions & Discounts
 
 **Date:** 2026-08-27
 **Current phase:** Item 50 isolated UI/UX release phase
-**Current milestone:** M50B.3
-**Status:** Complete in development after focused build, route, syntax, scope, responsive-table, and RTL/LTR source verification.
+**Current milestone:** M50B.4
+**Status:** Complete in development after the single locked build and focused syntax, route, permission mapping, manifest, and diff verification.
 
-M50B.3 reuses the published v0.1.7 shell and M50B internal-page foundation. It completes the permission-aware Products & Inventory landing experience, catalog/barcode navigation, responsive stock tables, and the focused Settings idle-loading correction without changing backend behavior or schema.
+M50B.4 reuses the published v0.1.8 shell and M50B page foundation. It adds a scoped operational Pricing dashboard and refines the existing price proposal, versions, schedule, history, unpriced-product, open-price, approval, and label-readiness surfaces without changing pricing resolution, financial behavior, permissions, routes, or schema.
+
+Standalone promotion campaigns and commercial discount-rule records are not part of the current authoritative data model. This milestone records that boundary rather than adding unsupported commercial logic.
 
 ---
 
