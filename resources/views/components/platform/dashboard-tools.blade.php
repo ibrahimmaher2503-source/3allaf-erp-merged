@@ -13,6 +13,7 @@
 
 <div
     x-data="dashboardAssistant({ context: @js($guide), locale: @js($locale), fallback: @js($fallback), preferences: window.__toyJoyUiPreferences || {}, progress: @js($tutorialProgress), preferencesUrl: @js(route('platform.ui-preferences')), progressUrl: @js(route('platform.tutorial-progress')) })"
+    x-on:toggle-desktop-sidebar.window="toggleDesktopSidebar()"
     x-on:open-page-guide.window="openGuide($event)"
     x-on:open-appearance-customizer.window="openCustomizer($event)"
     x-on:keydown.escape.window="closeAll()"

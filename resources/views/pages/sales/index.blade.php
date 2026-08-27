@@ -28,13 +28,13 @@
                 <div><p class="dashboard-kpi__label">{{ $isArabic ? 'مبيعات اليوم' : "Today's sales" }}</p><p class="dashboard-kpi__value"><x-money :amount="$dashboard['today_total']" :currency="$dashboard['currency_code']" /></p><p class="dashboard-kpi__state">{{ $dashboard['today_count'] }} {{ $isArabic ? 'فاتورة معتمدة' : 'approved invoices' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.banknotes class="size-5" /></span>
             </a>
             <a href="{{ route('sales.invoices', ['date_from' => today()->toDateString(), 'date_to' => today()->toDateString()]) }}" class="dashboard-kpi">
-                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'فواتير اليوم' : "Today's invoices" }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['today_count']) }}</p><p class="dashboard-kpi__state">{{ $isArabic ? 'ضمن نطاق العرض الحالي' : 'Within the current visibility scope' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.document-text class="size-5" /></span>
+                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'متوسط الفاتورة' : 'Average ticket' }}</p><p class="dashboard-kpi__value"><x-money :amount="$dashboard['average_ticket']" :currency="$dashboard['currency_code']" /></p><p class="dashboard-kpi__state">{{ number_format($dashboard['today_count']) }} {{ $isArabic ? 'فاتورة اليوم' : 'invoices today' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.document-text class="size-5" /></span>
             </a>
             @can('shifts_cash_movements.view')<a href="{{ route('pos.shift') }}" class="dashboard-kpi">
                 <div><p class="dashboard-kpi__label">{{ $isArabic ? 'الورديات المفتوحة' : 'Open shifts' }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['open_shifts']) }}</p><p class="dashboard-kpi__state">{{ $isArabic ? 'تحتاج متابعة تشغيلية' : 'Operational shift context' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.clock class="size-5" /></span>
             </a>@endcan
-            <a href="{{ route('sales.index', ['status' => 'suspended']) }}" class="dashboard-kpi">
-                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'المبيعات المعلقة' : 'Suspended sales' }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['suspended_count']) }}</p><p class="dashboard-kpi__state">{{ $isArabic ? 'جاهزة للاستئناف' : 'Ready to resume' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.pause-circle class="size-5" /></span>
+            <a href="{{ route('returns.index') }}" class="dashboard-kpi">
+                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'خصومات اليوم' : "Today's discounts" }}</p><p class="dashboard-kpi__value"><x-money :amount="$dashboard['discount_total']" :currency="$dashboard['currency_code']" /></p><p class="dashboard-kpi__state">{{ number_format($dashboard['returns_count']) }} {{ $isArabic ? 'مرتجع اليوم' : 'returns today' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.pause-circle class="size-5" /></span>
             </a>
         </section>
 

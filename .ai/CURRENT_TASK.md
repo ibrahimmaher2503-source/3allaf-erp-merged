@@ -6,6 +6,8 @@
 
 ## Status
 
+- M50B.1a corrective review is complete: genuine isolated Laravel rendering verifies the deterministic desktop/sidebar states, mobile drawer, Sales workspace, and operational POS against the v0.1.5 shell.
+
 - M50B.1 implements the reusable internal page/filter/table/pagination foundation and complete Sales & POS workspace presentation.
 - Sales Overview uses bounded permission-scoped real queries; invoice, customer, and shift pages share responsive list patterns while POS remains dedicated.
 - The desktop sidebar regression is corrected through a versioned validated shell preference, expanded safe default, deterministic icon rail, and mobile-only Flux drawer behavior.

@@ -51,6 +51,7 @@ use App\Modules\Retail\Models\OfflineDevice;
 use App\Modules\Retail\Models\OfflineTransaction;
 use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
@@ -1941,6 +1942,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $dashboard = [
             'today_total' => (string) (clone $todaySales)->sum('total'),
             'today_count' => (clone $todaySales)->count(),
+            'average_ticket' => (string) ((clone $todaySales)->avg('total') ?? '0.00'),
+            'discount_total' => (string) (clone $todaySales)->sum('discount_total'),
+            'returns_count' => RetailReturn::query()->visibleTo($user)->whereDate('created_at', today())->count(),
             'currency_code' => (string) ((clone $todaySales)->value('currency_code') ?: 'EGP'),
             'open_shifts' => PosShift::query()->visibleTo($user)->active()->count(),
             'suspended_count' => Sale::query()->visibleTo($user)->where('status', 'suspended')->count(),

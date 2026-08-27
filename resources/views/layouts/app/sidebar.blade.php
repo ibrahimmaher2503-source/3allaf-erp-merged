@@ -2,6 +2,13 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ in_array(app()->getLocale(), config('app.rtl_locales'), true) ? 'rtl' : 'ltr' }}" class="overflow-x-hidden">
 <head>@include('partials.head')</head>
 <body class="app-layout min-h-screen overflow-x-hidden">
+<style>
+    @media (max-width: 1023px) {
+        body.app-layout { display: block !important; grid-template-columns: none !important; }
+        .app-layout > .app-sidebar { position: fixed !important; inset-block: 0 !important; }
+        .app-layout > .app-layout__content { display: flex !important; flex-direction: column !important; grid-area: auto !important; width: 100% !important; min-width: 0 !important; margin: 0 !important; }
+    }
+</style>
 @php
     $actor = auth()->user();
     $isArabic = app()->getLocale() === 'ar';
@@ -17,7 +24,7 @@
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:tooltip :content="$isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar'" :position="$isArabic ? 'left' : 'right'">
-            <button type="button" class="sidebar-desktop-toggle hidden size-11 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" x-on:click="toggleDesktopSidebar" :aria-expanded="preferences.sidebar_mode !== 'collapsed'" aria-controls="application-navigation" aria-label="{{ $isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar' }}">
+            <button type="button" class="sidebar-desktop-toggle hidden size-11 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" x-on:click="$dispatch('toggle-desktop-sidebar')" :aria-expanded="preferences.sidebar_mode !== 'collapsed'" aria-controls="application-navigation" aria-label="{{ $isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar' }}">
                 <flux:icon name="bars-3-center-left" class="size-5" />
             </button>
         </flux:tooltip>
@@ -25,8 +32,7 @@
     </flux:sidebar.header>
     <div class="app-company-context" title="{{ $companyName }}"><span class="app-company-context__dot" aria-hidden="true"></span><span class="min-w-0"><strong>{{ $companyName }}</strong><small>{{ $contextName ?: ($isArabic ? 'كل المواقع المصرح بها' : 'All authorized locations') }}</small></span></div>
     <x-app-navigation id="application-navigation" :groups="$navigationGroups" />
-    <div class="sidebar-status"><div x-data="{ online: navigator.onLine }" x-on:online.window="online = true" x-on:offline.window="online = false" class="flex items-center gap-2"><span class="size-2 rounded-full" :class="online ? 'bg-emerald-400' : 'bg-amber-400'"></span><span x-text="online ? '{{ $isArabic ? 'متصل' : 'Online' }}' : '{{ $isArabic ? 'غير متصل' : 'Offline' }}'"></span></div></div>
-    <x-desktop-user-menu class="hidden lg:block" :name="$actor->name" />
+    <div class="app-sidebar__footer"><div class="sidebar-status"><div x-data="{ online: navigator.onLine }" x-on:online.window="online = true" x-on:offline.window="online = false" class="flex items-center gap-2"><span class="size-2 rounded-full" :class="online ? 'bg-emerald-400' : 'bg-amber-400'"></span><span data-status-label x-text="online ? '{{ $isArabic ? 'متصل' : 'Online' }}' : '{{ $isArabic ? 'غير متصل' : 'Offline' }}'"></span></div></div><x-desktop-user-menu class="hidden lg:block" :name="$actor->name" /></div>
 </flux:sidebar>
 <div class="app-layout__content min-w-0">
     <header class="app-topbar" aria-label="{{ $isArabic ? 'شريط التطبيق' : 'Application header' }}">
