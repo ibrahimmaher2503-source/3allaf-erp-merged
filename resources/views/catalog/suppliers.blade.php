@@ -653,7 +653,7 @@ new #[Title('Supplier Masters')] class extends Component
 
         <flux:card class="overflow-hidden p-0" data-guide="suppliers-table">
             <div class="app-table-frame">
-                <table class="data-table min-w-full">
+                <table class="data-table responsive-resource-table min-w-full">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
                             <th scope="col" class="w-12 px-3 py-3 text-center text-xs font-semibold text-text-muted"><span class="sr-only">{{ app()->getLocale() === 'ar' ? 'تحديد' : __('Select') }}</span></th>
@@ -673,10 +673,10 @@ new #[Title('Supplier Masters')] class extends Component
                                 <td class="px-3 py-3 text-center">
                                     <input type="checkbox" value="{{ $supplier->id }}" wire:model.live="selectedIds" aria-label="{{ app()->getLocale() === 'ar' ? 'تحديد المورد '.$supplier->code : __('Select supplier :code', ['code' => $supplier->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" />
                                 </td>
-                                <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                                <td data-primary class="px-4 py-3 text-sm font-medium whitespace-nowrap">
                                     <span class="catalog-code-chip">{{ $supplier->code }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-sm">
+                                <td data-label="{{ app()->getLocale() === 'ar' ? 'اسم المورد' : __('Supplier') }}" class="px-4 py-3 text-sm">
                                     <div class="font-medium text-zinc-900 dark:text-zinc-100">
                                         {{ app()->getLocale() === 'ar' ? $supplier->name_ar : $supplier->name_en }}
                                     </div>
@@ -684,7 +684,7 @@ new #[Title('Supplier Masters')] class extends Component
                                         {{ app()->getLocale() === 'ar' ? $supplier->name_en : $supplier->name_ar }}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-sm">
+                                <td data-label="{{ app()->getLocale() === 'ar' ? 'التواصل' : __('Contact') }}" class="px-4 py-3 text-sm">
                                     @if ($supplier->contact_name)
                                         <div class="font-medium text-xs">{{ $supplier->contact_name }}</div>
                                     @endif
@@ -698,21 +698,21 @@ new #[Title('Supplier Masters')] class extends Component
                                         <span class="text-xs text-text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-sm whitespace-nowrap text-text-muted font-mono text-xs">
+                                <td data-label="{{ app()->getLocale() === 'ar' ? 'الرقم الضريبي' : __('Tax number') }}" class="px-4 py-3 text-sm whitespace-nowrap text-text-muted font-mono text-xs">
                                     {{ $supplier->tax_number ?: '—' }}
                                 </td>
-                                <td class="px-4 py-3 text-sm max-w-48 truncate text-text-muted text-xs">
+                                <td data-label="{{ app()->getLocale() === 'ar' ? 'شروط الدفع' : __('Payment terms') }}" class="px-4 py-3 text-sm max-w-48 truncate text-text-muted text-xs">
                                     {{ $supplier->payment_terms ?: __('Not configured') }}
                                 </td>
-                                <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                <td data-label="{{ __('Status') }}" class="px-4 py-3 text-sm whitespace-nowrap">
                                     <flux:badge size="sm" color="{{ $supplier->status === 'active' ? 'emerald' : 'zinc' }}">
                                         {{ __($supplier->status === 'active' ? 'Active' : 'Inactive') }}
                                     </flux:badge>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
+                                <td data-label="{{ app()->getLocale() === 'ar' ? 'المنتجات' : __('Products') }}" class="px-4 py-3 text-sm text-center whitespace-nowrap">
                                     <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
+                                <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
                                     <flux:button
                                         size="xs"
                                         variant="subtle"
@@ -754,11 +754,7 @@ new #[Title('Supplier Masters')] class extends Component
                 </table>
             </div>
 
-            @if ($suppliers->hasPages())
-                <div class="border-t border-border p-4" data-guide="suppliers-pagination">
-                    {{ $suppliers->links() }}
-                </div>
-            @endif
+            <x-tables.pagination :paginator="$suppliers" />
         </flux:card>
             </section>
         @endif

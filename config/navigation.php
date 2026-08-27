@@ -13,8 +13,8 @@ return [
         ['route' => 'pos.shift', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'الورديات والتحصيل', 'en' => 'Shifts & collections']],
     ]],
     ['key' => 'purchasing', 'icon' => 'truck', 'label' => ['ar' => 'المشتريات والموردون', 'en' => 'Purchasing & suppliers'], 'items' => [
-        ['route' => 'purchasing.invoices', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'receipt-percent', 'label' => ['ar' => 'فواتير المشتريات', 'en' => 'Purchase invoices']],
-        ['route' => 'purchasing.orders', 'permission' => 'purchase_orders.view', 'icon' => 'document-text', 'label' => ['ar' => 'أوامر الشراء والاستلام', 'en' => 'Purchase orders & receiving']],
+        ['route' => 'purchasing.orders', 'permission' => 'purchase_orders.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'نظرة عامة وأوامر الشراء', 'en' => 'Overview & purchase orders']],
+        ['route' => 'purchasing.invoices', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'receipt-percent', 'label' => ['ar' => 'فواتير المشتريات والاستلام', 'en' => 'Invoices & receiving']],
         ['route' => 'purchasing.returns', 'permission' => 'purchase_returns.view', 'icon' => 'arrow-path', 'label' => ['ar' => 'مرتجعات الموردين', 'en' => 'Supplier returns']],
         ['route' => 'catalog.suppliers', 'permission' => 'suppliers.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'الموردون', 'en' => 'Suppliers']],
     ]],

@@ -11,6 +11,7 @@ use App\Modules\Purchasing\Actions\ClosePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Queries\PurchasingDashboard;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -295,7 +296,7 @@ new #[Title('Purchase Orders')] class extends Component
         $this->showDetailModal = true;
     }
 
-    public function render(): View
+    public function render(PurchasingDashboard $dashboard): View
     {
         $user = auth()->user();
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'lines']);
@@ -369,13 +370,15 @@ new #[Title('Purchase Orders')] class extends Component
             'canCancel' => Gate::allows('purchase_orders.cancel'),
             'canPrint' => Gate::allows('purchase_orders.print'),
             'canApprove' => Gate::allows('purchase_orders.approve'),
+            'dashboard' => $dashboard->for($user),
         ]);
     }
 }; ?>
 
 <x-app.page
-    :title="__('Purchase Orders')"
-    :description="__('Manage procurement lifecycle, draft order lines, and order state actions.')"
+    :title="app()->getLocale() === 'ar' ? 'نظرة عامة على المشتريات' : __('Purchasing overview')"
+    :description="app()->getLocale() === 'ar' ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.')"
+    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="purchasing-screen"
     data-guide="po-header"
@@ -394,6 +397,8 @@ new #[Title('Purchase Orders')] class extends Component
         @endif
         </x-tables.resource-toolbar>
     </x-slot:actions>
+
+    <x-purchasing.dashboard :dashboard="$dashboard" />
 
     <!-- Filters Bar -->
     <flux:card id="po-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="po-filters">
@@ -421,9 +426,9 @@ new #[Title('Purchase Orders')] class extends Component
     </flux:card>
 
     <!-- Orders Table -->
-    <flux:card class="overflow-hidden p-0" data-guide="po-table">
+    <flux:card id="purchase-orders-queue" class="scroll-mt-24 overflow-hidden p-0" data-guide="po-table">
         <div class="app-table-frame">
-            <table class="w-full text-start text-sm">
+            <table class="data-table responsive-resource-table w-full text-start text-sm">
                 <thead class="bg-zinc-50 dark:bg-zinc-800/80 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-border">
                     <tr>
                         <th class="px-4 py-3 text-start">{{ __('PO Number') }}</th>
@@ -438,19 +443,19 @@ new #[Title('Purchase Orders')] class extends Component
                 <tbody class="divide-y divide-border">
                     @forelse ($orders as $order)
                         <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition">
-                            <td class="px-4 py-3 font-mono font-bold text-primary">
+                            <td data-primary class="px-4 py-3 font-mono font-bold text-primary">
                                 {{ $order->po_number }}
                             </td>
-                            <td class="px-4 py-3">
+                            <td data-label="{{ __('Supplier') }}" class="px-4 py-3">
                                 <div class="font-medium text-zinc-900 dark:text-white">
                                     {{ app()->getLocale() === 'ar' ? $order->supplier->name_ar : ($order->supplier->name_en ?: $order->supplier->name_ar) }}
                                 </div>
                                 <div class="text-xs font-mono text-zinc-500">{{ $order->supplier->code }}</div>
                             </td>
-                            <td class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
+                            <td data-label="{{ __('Store') }}" class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
                                 {{ $order->store ? (app()->getLocale() === 'ar' ? $order->store->name_ar : $order->store->name_en) : '—' }}
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td data-label="{{ __('Status') }}" class="px-4 py-3 text-center">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide
                                     @if($order->status === 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300
                                     @elseif($order->status === 'submitted') bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300
@@ -462,13 +467,13 @@ new #[Title('Purchase Orders')] class extends Component
                                     {{ __(ucfirst(str_replace('_', ' ', $order->status))) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
+                            <td data-label="{{ __('Order Date') }}" class="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                                 {{ $order->order_date?->format('Y-m-d') }}
                             </td>
-                            <td class="px-4 py-3 text-end font-mono font-semibold text-zinc-900 dark:text-white">
+                            <td data-label="{{ __('Total') }}" class="px-4 py-3 text-end font-mono font-semibold text-zinc-900 dark:text-white">
                                 {{ number_format((float) $order->total_amount, 2) }}
                             </td>
-                            <td class="px-4 py-3 text-end whitespace-nowrap">
+                            <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-end whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <flux:button size="xs" variant="ghost" icon="eye" wire:click="openDetailModal({{ $order->id }})" title="{{ __('View Details') }}" />
 
@@ -518,11 +523,7 @@ new #[Title('Purchase Orders')] class extends Component
             </table>
         </div>
 
-        @if ($orders->hasPages())
-            <div class="border-t border-border p-4" data-guide="po-pagination">
-                {{ $orders->links() }}
-            </div>
-        @endif
+        <x-tables.pagination :paginator="$orders" />
     </flux:card>
 
     <!-- Create / Edit Form Modal -->

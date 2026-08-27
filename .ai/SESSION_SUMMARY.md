@@ -533,3 +533,10 @@
 - **Task:** Completed the focused sidebar contrast, Arabic shifts/collections localization, and narrow mobile-header correction on `feature/m50b1-sales-workspace`, without deployment.
 - **Work completed:** Increased restrained navy-sidebar contrast while preserving the teal active state; localized shift headings, operational copy, dates, pagination wording, and cash/card labels; and reduced narrow headers to essential controls while moving secondary actions into the profile menu. Routes, permissions, schema, and financial behavior are unchanged.
 - **Verification actually run:** One effective locked Vite build with Node 20.20.2; focused PHP syntax and `git diff --check`; and five authenticated loopback-only genuine Laravel screenshots against an asserted disposable SQLite database. Evidence confirms 272px/80px sidebar states, Cairo RTL, English LTR, localized shift content, zero header/document overflow, and no browser errors. No automated application test suite ran.
+
+## 2026-08-27 — M50B.2 Purchasing & Suppliers workspace
+
+- **Work completed:** Added a bounded visible-store/branch purchasing dashboard and refined supplier, invoice, order/receiving, and return lists with bilingual headings, operational filters, responsive cards, status/money presentation, and shared pagination.
+- **Verification actually run:** PHP syntax lint, focused route registration, navigation inspection, `git diff --check`, manifest/reference verification, and one effective locked Vite build with Node 20.20.2. The initial system-Node-16 invocation failed before emitting assets. No automated suite ran.
+- **Evidence boundary:** No task-local MariaDB runtime was configured and SQLite remains prohibited, so no browser fixture session or screenshots were created; no visual result is claimed.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.

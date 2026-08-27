@@ -11,3 +11,9 @@
 - 2026-08-27 — M50A.1 visual correction: retain the M50A route/permission architecture, make Sales Overview the Sales & POS landing concept while keeping POS directly reachable, and use Inventory as the first real-data module-dashboard implementation. A centralized module-dashboard specification records ten module contracts for staged M50B delivery. Arabic rendering is accepted only with local WOFF2 response, FontFace readiness, Cairo-first computed styles, and glyph-metric evidence; a CSS family declaration alone is insufficient. Mobile KPI regions are keyboard-focusable horizontal strips, while the global document remains overflow-free.
 
 - 2026-08-27 — M50B.1 internal-page and shell-state boundary: resource lists use shared page headers, GET filter summaries, responsive labeled rows, bounded 20/50/100 pagination, and server-validated sort allowlists. Desktop collapse is Rajeh-owned; only a valid version-2 local preference may select collapsed mode, while missing, legacy, unknown, empty, or corrupt state self-recovers to expanded. Flux remains responsible only for the mobile overlay drawer.
+
+## 2026-08-27 — M50B.2 purchasing landing and payable boundary
+
+- Use the existing authorized `purchasing.orders` route as the module landing/dashboard and order/receiving queue; do not add a route.
+- Do not infer supplier due/overdue amounts without an authoritative payable ledger.
+- Preserve existing routes, Gates, policies, visible-store/branch scopes, actions, calculations, approvals, inventory mutations, and schema.

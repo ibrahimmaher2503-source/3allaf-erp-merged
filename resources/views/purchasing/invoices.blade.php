@@ -28,6 +28,14 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public string $statusFilter = 'all';
 
+    public string $supplierFilter = 'all';
+
+    public string $storeFilter = 'all';
+
+    public string $dateFrom = '';
+
+    public string $dateTo = '';
+
     public bool $showFormModal = false;
 
     public bool $showTransitionModal = false;
@@ -74,6 +82,14 @@ new #[Title('Purchase Invoices')] class extends Component
     {
         $this->resetPage();
     }
+
+    public function updatedSupplierFilter(): void { $this->resetPage(); }
+
+    public function updatedStoreFilter(): void { $this->resetPage(); }
+
+    public function updatedDateFrom(): void { $this->resetPage(); }
+
+    public function updatedDateTo(): void { $this->resetPage(); }
 
     public function openCreateModal(): void
     {
@@ -303,13 +319,17 @@ new #[Title('Purchase Invoices')] class extends Component
                     ->orWhere('invoice_number', 'like', '%'.$this->search.'%');
             }))
             ->when($this->statusFilter !== 'all', fn ($query) => $query->where('status', $this->statusFilter))
+            ->when($this->supplierFilter !== 'all', fn ($query) => $query->where('supplier_id', (int) $this->supplierFilter))
+            ->when($this->storeFilter !== 'all', fn ($query) => $query->where('store_id', (int) $this->storeFilter))
+            ->when($this->dateFrom !== '', fn ($query) => $query->whereDate('invoice_date', '>=', $this->dateFrom))
+            ->when($this->dateTo !== '', fn ($query) => $query->whereDate('invoice_date', '<=', $this->dateTo))
             ->latest()
-            ->paginate(10);
+            ->paginate(20);
 
         return view('purchasing.invoices', [
             'invoices' => $invoices,
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('name_en')->get(),
-            'stores' => Store::query()->where('status', 'active')->orderBy('name_en')->get(),
+            'stores' => Store::query()->visibleTo($actor)->where('status', 'active')->orderBy('name_en')->get(),
             'products' => Product::query()->sellable()->orderBy('item_code')->limit(1000)->get(),
         ]);
     }
@@ -332,8 +352,9 @@ new #[Title('Purchase Invoices')] class extends Component
 ?>
 
 <x-app.page
-    :title="__('Purchase Invoices')"
-    :description="__('Create and review draft purchase invoices. Approval and stock posting are separate controlled actions.')"
+    :title="app()->getLocale() === 'ar' ? 'فواتير المشتريات' : __('Purchase invoices')"
+    :description="app()->getLocale() === 'ar' ? 'راجع فواتير الموردين والاستلام والاعتماد والترحيل ضمن نطاقك.' : __('Review supplier invoices, receiving, approvals, and posting within your scope.')"
+    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="space-y-6"
 >
@@ -360,12 +381,12 @@ new #[Title('Purchase Invoices')] class extends Component
     </flux:callout>
 
     <flux:card id="purchase-invoices-filters" class="scroll-mt-24">
-        <div class="flex flex-wrap items-end gap-3">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <div class="min-w-64 flex-1">
                 <flux:label>{{ __('Search') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="search" placeholder="{{ __('Invoice number or supplier reference') }}" />
             </div>
-            <div class="w-48">
+            <div>
                 <flux:label>{{ __('Status') }}</flux:label>
                 <flux:select wire:model.live="statusFilter">
                     <flux:select.option value="all">{{ __('All') }}</flux:select.option>
@@ -374,11 +395,15 @@ new #[Title('Purchase Invoices')] class extends Component
                     <flux:select.option value="approved">{{ __('Approved') }}</flux:select.option>
                 </flux:select>
             </div>
+            <flux:select wire:model.live="supplierFilter" :label="app()->getLocale() === 'ar' ? 'المورد' : __('Supplier')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale() === 'ar' ? $supplier->name_ar : ($supplier->name_en ?: $supplier->name_ar) }}</flux:select.option>@endforeach</flux:select>
+            <flux:select wire:model.live="storeFilter" :label="app()->getLocale() === 'ar' ? 'المخزن' : __('Store')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($stores as $store)<flux:select.option value="{{ $store->id }}">{{ app()->getLocale() === 'ar' ? $store->name_ar : ($store->name_en ?: $store->name_ar) }}</flux:select.option>@endforeach</flux:select>
+            <flux:input wire:model.live="dateFrom" type="date" :label="__('From')" />
+            <flux:input wire:model.live="dateTo" type="date" :label="__('To')" />
         </div>
     </flux:card>
 
-    <flux:card>
-        <flux:table aria-label="{{ __('Purchase invoices') }}">
+    <flux:card class="overflow-hidden p-0">
+        <flux:table class="responsive-resource-table" aria-label="{{ __('Purchase invoices') }}">
             <flux:table.columns>
                 <flux:table.column>{{ __('Reference') }}</flux:table.column>
                 <flux:table.column>{{ __('Supplier') }}</flux:table.column>
@@ -391,13 +416,13 @@ new #[Title('Purchase Invoices')] class extends Component
             <flux:table.rows>
                 @forelse ($invoices as $invoice)
                     <flux:table.row :key="$invoice->id">
-                        <flux:table.cell>{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}</flux:table.cell>
-                        <flux:table.cell>{{ $invoice->supplier?->name_en ?: $invoice->supplier?->name_ar }}</flux:table.cell>
-                        <flux:table.cell>{{ $invoice->store?->name_en ?: $invoice->store?->name_ar }}</flux:table.cell>
-                        <flux:table.cell>{{ $invoice->invoice_date?->format('Y-m-d') }}</flux:table.cell>
-                        <flux:table.cell>{{ $invoice->total_amount }}</flux:table.cell>
-                        <flux:table.cell><x-status.badge :status="$invoice->status" /></flux:table.cell>
-                        <flux:table.cell>
+                        <flux:table.cell data-primary>{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}<div class="text-xs text-text-muted">{{ $invoice->supplier_reference }}</div></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Supplier') }}">{{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Store') }}">{{ app()->getLocale() === 'ar' ? ($invoice->store?->name_ar ?: $invoice->store?->name_en) : ($invoice->store?->name_en ?: $invoice->store?->name_ar) }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Date') }}">{{ $invoice->invoice_date?->format('Y-m-d') }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Total') }}"><x-money :amount="$invoice->total_amount" :currency="$invoice->currency_code" /></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Status') }}"><x-status.badge :status="$invoice->status" /></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Actions') }}">
                             @can('purchase_invoices_supplier_returns.print')
                                 <flux:button size="sm" variant="subtle" href="{{ route('purchasing.invoices.print', $invoice) }}" target="_blank">{{ __('Print') }}</flux:button>
                             @endcan
@@ -443,7 +468,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 @endforelse
             </flux:table.rows>
         </flux:table>
-        <div class="mt-4">{{ $invoices->links() }}</div>
+        <x-tables.pagination :paginator="$invoices" />
     </flux:card>
 
     @if ($showFormModal)

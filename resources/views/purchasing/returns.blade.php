@@ -309,8 +309,9 @@ new #[Title('Supplier Returns')] class extends Component
 ?>
 
 <x-app.page
-    :title="__('Supplier Returns')"
-    :description="__('Return stock only against an approved purchase invoice line. Cost is always copied from the original invoice line.')"
+    :title="app()->getLocale() === 'ar' ? 'مرتجعات الموردين' : __('Supplier returns')"
+    :description="app()->getLocale() === 'ar' ? 'تابع المرتجعات المرتبطة بفواتير الشراء وحالات الاعتماد والعكس.' : __('Track source-linked returns, approvals, posting, and reversal states.')"
+    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="space-y-6"
 >
@@ -351,8 +352,8 @@ new #[Title('Supplier Returns')] class extends Component
         </div>
     </flux:card>
 
-    <flux:card>
-        <flux:table aria-label="{{ __('Supplier returns') }}">
+    <flux:card class="overflow-hidden p-0">
+        <flux:table class="responsive-resource-table" aria-label="{{ __('Supplier returns') }}">
             <flux:table.columns>
                 <flux:table.column>{{ __('Return') }}</flux:table.column>
                 <flux:table.column>{{ __('Original invoice') }}</flux:table.column>
@@ -365,13 +366,13 @@ new #[Title('Supplier Returns')] class extends Component
             <flux:table.rows>
                 @forelse ($returns as $return)
                     <flux:table.row :key="$return->id">
-                        <flux:table.cell><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
-                        <flux:table.cell>{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
-                        <flux:table.cell>{{ app()->getLocale() === 'ar' ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
-                        <flux:table.cell>{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
-                        <flux:table.cell>{{ $return->total_amount }}</flux:table.cell>
-                        <flux:table.cell><x-status.badge :status="$return->status" /></flux:table.cell>
-                        <flux:table.cell>
+                        <flux:table.cell data-primary><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Original invoice') }}">{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Supplier') }}">{{ app()->getLocale() === 'ar' ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Reason') }}">{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Total cost') }}"><x-money :amount="$return->total_amount" currency="EGP" /></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Status') }}"><x-status.badge :status="$return->status" /></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Actions') }}">
                             @if ($return->status === 'draft')
                                 @can('purchase_returns.edit')
                                     <flux:button size="sm" variant="subtle" wire:click="editDraft({{ $return->id }})">{{ __('Edit') }}</flux:button>
@@ -412,7 +413,7 @@ new #[Title('Supplier Returns')] class extends Component
                 @endforelse
             </flux:table.rows>
         </flux:table>
-        <div class="mt-4">{{ $returns->links() }}</div>
+        <x-tables.pagination :paginator="$returns" />
     </flux:card>
 
     @if ($showTransitionModal)
