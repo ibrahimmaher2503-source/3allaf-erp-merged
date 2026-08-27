@@ -40,16 +40,16 @@ final class PurchasingDashboard
             'today_count' => (clone $invoices)->where('purchase_invoices.status', 'approved')->whereDate('purchase_invoices.invoice_date', today())->count(),
             'period_total' => (string) (clone $approvedPeriodInvoices)->sum('purchase_invoices.total_amount'),
             'period_count' => (clone $approvedPeriodInvoices)->count(),
-            'open_orders' => (clone $orders)->whereIn('status', ['draft', 'submitted', 'approved', 'partially_received'])->count(),
+            'open_orders' => (clone $orders)->whereIn('purchase_orders.status', ['draft', 'submitted', 'approved', 'partially_received'])->count(),
             'receiving' => [
-                'pending' => (clone $orders)->where('status', 'approved')->count(),
-                'partial' => (clone $orders)->where('status', 'partially_received')->count(),
-                'completed' => (clone $orders)->whereIn('status', ['received', 'closed'])->count(),
+                'pending' => (clone $orders)->where('purchase_orders.status', 'approved')->count(),
+                'partial' => (clone $orders)->where('purchase_orders.status', 'partially_received')->count(),
+                'completed' => (clone $orders)->whereIn('purchase_orders.status', ['received', 'closed'])->count(),
             ],
-            'returns_requiring_action' => (clone $returns)->whereIn('status', ['draft', 'submitted'])->count(),
+            'returns_requiring_action' => (clone $returns)->whereIn('purchase_returns.status', ['draft', 'submitted'])->count(),
             'pending_approvals' => ApprovalRecord::query()->visibleTo($actor)
-                ->whereIn('source_type', ['purchase_orders', 'purchase_invoices', 'purchase_returns'])
-                ->where('approval_state', ApprovalState::Pending->value)
+                ->whereIn('approval_records.source_type', ['purchase_orders', 'purchase_invoices', 'purchase_returns'])
+                ->where('approval_records.approval_state', ApprovalState::Pending->value)
                 ->count(),
             'trend' => collect(range(6, 0))->map(function (int $offset) use ($trendRows): array {
                 $date = today()->subDays($offset);
@@ -72,17 +72,17 @@ final class PurchasingDashboard
                 ->selectRaw('COALESCE(SUM(purchase_invoice_lines.quantity), 0) as units, COALESCE(SUM(purchase_invoice_lines.line_total), 0) as purchase_total')
                 ->groupBy('products.id', 'products.item_code', 'products.name_ar', 'products.name_en')
                 ->orderByDesc('purchase_total')->limit(5)->get(),
-            'recent_invoices' => (clone $invoices)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('invoice_date')->latest('id')->limit(5)->get(),
-            'recent_orders' => (clone $orders)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('order_date')->latest('id')->limit(5)->get(),
-            'recent_returns' => (clone $returns)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('return_date')->latest('id')->limit(5)->get(),
+            'recent_invoices' => (clone $invoices)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('purchase_invoices.invoice_date')->latest('purchase_invoices.id')->limit(5)->get(),
+            'recent_orders' => (clone $orders)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('purchase_orders.order_date')->latest('purchase_orders.id')->limit(5)->get(),
+            'recent_returns' => (clone $returns)->with(['supplier:id,code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('purchase_returns.return_date')->latest('purchase_returns.id')->limit(5)->get(),
         ];
     }
 
     private function visibleOrders(User $actor): Builder
     {
         return PurchaseOrder::query()->where(function (Builder $query) use ($actor): void {
-            $query->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
-                ->orWhereIn('branch_id', Branch::query()->visibleTo($actor)->select('id'));
+            $query->whereIn('purchase_orders.store_id', Store::query()->visibleTo($actor)->select('id'))
+                ->orWhereIn('purchase_orders.branch_id', Branch::query()->visibleTo($actor)->select('id'));
         });
     }
 
@@ -93,6 +93,6 @@ final class PurchasingDashboard
 
     private function visibleReturns(User $actor): Builder
     {
-        return PurchaseReturn::query()->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'));
+        return PurchaseReturn::query()->whereIn('purchase_returns.store_id', Store::query()->visibleTo($actor)->select('id'));
     }
 }

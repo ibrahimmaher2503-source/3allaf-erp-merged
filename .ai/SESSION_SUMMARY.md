@@ -554,3 +554,9 @@
 - **Correction:** Qualified all reusable purchase-invoice scope, date, status, currency, and amount columns with `purchase_invoices` so joined and non-joined dashboard aggregates preserve identical visible-store scope and calculations.
 - **Verification actually run:** Focused PHP lint and `git diff --check`; production read-only query/render and deployment verification follow in the corrected immutable release.
 - **Boundaries:** No migration, database mutation, frontend build, cron change, tag, push, or remote operation occurred.
+## 2026-08-27 — v0.1.8 Purchasing compiled-class ACL correction
+
+- **Second production exception:** Request `4033638a-f00f-4595-9064-933007a7fc19` failed before dashboard execution because the nested compiled Livewire class had a nominal `rajeh` ACL but an effective mask of `---`; the prior deployment check covered only top-level compiled views.
+- **Complete query audit:** Qualified every dashboard status, date, store, branch, approval, currency, amount, and identifier reference with its authoritative table. Joined supplier/product aggregates and all visible-store subqueries retain their original calculations and authorization scope.
+- **Deployment correction:** Runtime ACL restoration and verification must recurse through `storage/framework/views`, including `livewire/classes`, and validate effective masks rather than named entries alone.
+- **Boundaries:** No schema, migration, database mutation, frontend build, cron change, tag, push, or remote operation occurred.
