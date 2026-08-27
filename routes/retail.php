@@ -52,6 +52,7 @@ use App\Modules\Retail\Models\OfflineTransaction;
 use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Models\SaleLine;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Services\DiscountPolicy;
 use App\Modules\Retail\Services\PosCalculationService;
@@ -1901,6 +1902,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
+        $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
+        $sort = in_array((string) $request->string('sort'), ['created_at', 'document_number', 'status', 'total'], true) ? (string) $request->string('sort') : 'created_at';
+        $direction = (string) $request->string('direction') === 'asc' ? 'asc' : 'desc';
         $query = Sale::query()->visibleTo($user)->with(['store', 'cashier'])->withCount(['lines', 'payments']);
         $query->when($request->filled('q'), function ($query) use ($request): void {
             $term = trim((string) $request->string('q'));
@@ -1913,22 +1917,52 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
         $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->string('date_from')));
         $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->string('date_to')));
-        $sales = $query->latest('id')->paginate(20)->withQueryString();
+        $sales = $query->orderBy($sort, $direction)->orderBy('id', $direction)->paginate($perPage)->withQueryString();
         $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
+        $todaySales = Sale::query()->visibleTo($user)->approved()->whereDate('approved_at', today())
+            ->when($request->filled('store_id'), fn ($builder) => $builder->where('store_id', $request->integer('store_id')));
+        $sevenDayStart = today()->subDays(6);
+        $trend = Sale::query()->visibleTo($user)->approved()->whereDate('approved_at', '>=', $sevenDayStart)
+            ->when($request->filled('store_id'), fn ($builder) => $builder->where('store_id', $request->integer('store_id')))
+            ->selectRaw('DATE(approved_at) as sale_day, COUNT(*) as invoice_count, SUM(total) as sales_total')
+            ->groupByRaw('DATE(approved_at)')->orderBy('sale_day')->get()->keyBy('sale_day');
+        $trendDays = collect(range(0, 6))->map(function (int $offset) use ($sevenDayStart, $trend): array {
+            $date = $sevenDayStart->copy()->addDays($offset);
+            $row = $trend->get($date->toDateString());
+            return ['date' => $date, 'count' => (int) ($row?->invoice_count ?? 0), 'total' => (string) ($row?->sales_total ?? '0.00')];
+        });
+        $paymentSummary = SalePayment::query()->whereHas('sale', fn ($builder) => $builder->visibleTo($user)->approved()->whereDate('approved_at', today())
+            ->when($request->filled('store_id'), fn ($scope) => $scope->where('store_id', $request->integer('store_id'))))
+            ->selectRaw('method_code, SUM(amount) as collected_total')->groupBy('method_code')->orderByDesc('collected_total')->limit(6)->get();
+        $topProducts = SaleLine::query()->whereHas('sale', fn ($builder) => $builder->visibleTo($user)->approved()->whereDate('approved_at', '>=', $sevenDayStart)
+            ->when($request->filled('store_id'), fn ($scope) => $scope->where('store_id', $request->integer('store_id'))))
+            ->selectRaw('product_id, item_code, name_ar, name_en, SUM(quantity) as units, SUM(net_amount) as net_total')
+            ->groupBy('product_id', 'item_code', 'name_ar', 'name_en')->orderByDesc('units')->limit(5)->get();
+        $dashboard = [
+            'today_total' => (string) (clone $todaySales)->sum('total'),
+            'today_count' => (clone $todaySales)->count(),
+            'currency_code' => (string) ((clone $todaySales)->value('currency_code') ?: 'EGP'),
+            'open_shifts' => PosShift::query()->visibleTo($user)->active()->count(),
+            'suspended_count' => Sale::query()->visibleTo($user)->where('status', 'suspended')->count(),
+            'trend' => $trendDays,
+            'payment_summary' => $paymentSummary,
+            'top_products' => $topProducts,
+        ];
 
-        return view('pages.sales.index', compact('sales', 'stores'));
+        return view('pages.sales.index', compact('sales', 'stores', 'dashboard', 'sort', 'direction'));
     })->middleware('can:pos_sales.view')->name('sales.index');
 
     Route::get('sales/invoices', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
+        $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
         $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier'])->withCount('payments');
         $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));
         $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
         $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('approved_at', '>=', $request->string('date_from')));
         $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('approved_at', '<=', $request->string('date_to')));
-        $sales = $query->latest('approved_at')->paginate(20)->withQueryString();
+        $sales = $query->latest('approved_at')->latest('id')->paginate($perPage)->withQueryString();
         $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
 
         return view('pages.sales.invoices', compact('sales', 'stores'));

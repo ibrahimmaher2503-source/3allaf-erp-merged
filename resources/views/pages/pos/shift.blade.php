@@ -8,7 +8,13 @@
 --}}
 <x-layouts::pos :title="__('Cash Shift')" :store="$shift?->store" :shift="$shift">
     <div class="mx-auto w-full max-w-3xl p-4 sm:p-6">
-        <flux:heading size="xl">{{ __('Cash Shift') }}</flux:heading>
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+            <div><flux:heading size="xl">{{ __('Shifts & collections') }}</flux:heading><flux:text class="mt-1">{{ __('Manage your active drawer and review recent immutable shift closes.') }}</flux:text></div>
+            <nav class="flex flex-wrap gap-2" aria-label="{{ __('Sales navigation') }}">
+                <flux:button href="{{ route('sales.index') }}" variant="subtle" icon="presentation-chart-line" wire:navigate>{{ __('Sales overview') }}</flux:button>
+                @can('pos_sales.create')<flux:button href="{{ route('pos') }}" variant="primary" icon="shopping-cart" wire:navigate>{{ __('Open POS') }}</flux:button>@endcan
+            </nav>
+        </header>
 
         @if (session('success'))
             <flux:callout class="mt-4" variant="success" icon="check-circle">{{ session('success') }}</flux:callout>
@@ -47,15 +53,15 @@
                         <flux:badge color="zinc">{{ $closedShifts->count() }}</flux:badge>
                     </div>
                     <div class="mt-4 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
-                        <table class="data-table w-full min-w-[36rem] text-sm">
+                        <table class="data-table responsive-resource-table w-full text-sm">
                             <thead><tr><th class="text-start">{{ __('Document') }}</th><th class="text-start">{{ __('Drawer') }}</th><th class="text-start">{{ __('Closed at') }}</th><th class="text-end">{{ __('Outputs') }}</th></tr></thead>
                             <tbody>
                                 @foreach ($closedShifts as $closedShift)
                                     <tr>
-                                        <td class="font-mono font-semibold">{{ $closedShift->closing_document_number }}</td>
-                                        <td>{{ $closedShift->cashDrawer?->code ?: $closedShift->cash_drawer_code_snapshot }}</td>
-                                        <td>{{ $closedShift->closed_at?->toDayDateTimeString() }}</td>
-                                        <td class="text-end">
+                                        <td data-primary class="font-mono font-semibold">{{ $closedShift->closing_document_number }}</td>
+                                        <td data-label="{{ __('Drawer') }}">{{ $closedShift->cashDrawer?->code ?: $closedShift->cash_drawer_code_snapshot }}</td>
+                                        <td data-label="{{ __('Closed at') }}">{{ $closedShift->closed_at?->toDayDateTimeString() }}</td>
+                                        <td data-label="{{ __('Outputs') }}" class="text-end">
                                             @can('shifts_cash_movements.print')
                                                 <div class="flex flex-wrap justify-end gap-2">
                                                     <a class="text-sm font-medium text-zinc-700 underline hover:text-zinc-950" href="{{ route('pos.shift.print.thermal', $closedShift) }}" target="_blank" rel="noopener">{{ __('Thermal') }}</a>

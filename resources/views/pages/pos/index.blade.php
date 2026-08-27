@@ -32,6 +32,7 @@
                 </div>
             </div>
             <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('POS tools') }}">
+                @can('shifts_cash_movements.view')<flux:button href="{{ route('pos.shift') }}" size="sm" variant="subtle" icon="banknotes" wire:navigate>{{ __('Shifts & collections') }}</flux:button>@endcan
                 <flux:button href="{{ route('pos.suspended') }}" size="sm" variant="subtle" icon="pause" wire:navigate>{{ __('Held sales') }} <span class="tabular-nums">{{ $suspendedCount }}</span></flux:button>
                 <flux:button href="{{ route('sales.index') }}" size="sm" variant="subtle" icon="receipt-percent" wire:navigate>{{ __('Sales') }}</flux:button>
                 @if (auth()->user()->hasPermission('offline_queue_conflicts.view'))

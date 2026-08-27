@@ -66,6 +66,7 @@ const registerDashboardAssistant = () => {
             },
             normalizePreferences(value = {}) {
                 const merged = { ...this.defaults, ...(value || {}) };
+                if (!['expanded', 'collapsed'].includes(merged.sidebar_mode)) merged.sidebar_mode = 'expanded';
                 merged.reduced_motion = merged.reduced_motion === true || merged.reduced_motion === 1 || merged.reduced_motion === '1' || merged.reduced_motion === 'true';
                 return merged;
             },
@@ -146,11 +147,18 @@ const registerDashboardAssistant = () => {
                     if (body) body.style.gridTemplateColumns = '';
                     const sidebar = document.querySelector('.app-sidebar');
                     if (!sidebar) return;
-                    if (this.preferences.sidebar_mode === 'collapsed') sidebar.setAttribute('data-flux-sidebar-collapsed-desktop', '');
-                    else sidebar.removeAttribute('data-flux-sidebar-collapsed-desktop');
+                    sidebar.removeAttribute('data-flux-sidebar-collapsed-desktop');
+                    try {
+                        localStorage.setItem('rajeh_shell_preferences_v2', JSON.stringify({ version: 2, sidebar_mode: this.preferences.sidebar_mode }));
+                    } catch (ignored) {}
                 };
                 syncSidebar();
                 window.requestAnimationFrame?.(syncSidebar);
+            },
+            toggleDesktopSidebar() {
+                this.preferences.sidebar_mode = this.preferences.sidebar_mode === 'collapsed' ? 'expanded' : 'collapsed';
+                this.applyPreferences();
+                this.savePreferences();
             },
             async savePreferences() {
                 this.preferences = this.normalizePreferences(this.preferences);

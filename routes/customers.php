@@ -174,7 +174,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $query->when($request->filled('status'), fn ($builder) => $builder->where('status', (string) $request->string('status')));
         $groupId = $request->integer('group_id') ?: null;
         $query->when($groupId !== null, fn ($builder) => $builder->where('customer_group_id', $groupId));
-        $customers = $query->latest('id')->paginate(20)->withQueryString();
+        $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
+        $customers = $query->latest('id')->paginate($perPage)->withQueryString();
         $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
         return view('pages.customers.index', ['customers' => $customers, 'term' => $term, 'mode' => $mode, 'groupId' => $groupId, 'groupOptions' => $groupOptions]);

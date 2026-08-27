@@ -1183,6 +1183,9 @@ select:focus[data-flux-control] {
     @media (min-width:1024px) {
         .app-layout { display:grid; grid-template-columns:272px minmax(0,1fr); }
         html[data-sidebar-mode="collapsed"] .app-layout { grid-template-columns:5rem minmax(0,1fr); }
+        .app-sidebar { display:flex!important; visibility:visible!important; transform:none!important; opacity:1!important; position:sticky!important; top:0!important; }
+        html[data-sidebar-mode="expanded"] .app-sidebar { width:272px!important; max-width:272px!important; }
+        html[data-sidebar-mode="collapsed"] .app-sidebar { display:flex!important; visibility:visible!important; width:5rem!important; max-width:5rem!important; transform:none!important; }
     }
     .app-layout__content { display:flex; min-height:100dvh; flex-direction:column; background:var(--color-background); }
     .app-sidebar { background:linear-gradient(180deg,#10253d 0%,#0b1c30 100%)!important; color:#dce8f2!important; border-color:rgb(255 255 255/.09)!important; box-shadow:0 18px 45px rgb(5 19 34/.2); }
@@ -1219,4 +1222,31 @@ select:focus[data-flux-control] {
     @media(max-width:767px){.app-layout{display:block}.app-topbar{grid-template-columns:auto 2.75rem auto;gap:.3rem;min-height:3.75rem;padding:.4rem .5rem}.app-topbar__identity{min-width:7.5rem}.app-topbar__mobile-brand{white-space:nowrap;font-size:.88rem}.app-topbar__search{width:2.75rem;justify-content:center;padding:0;justify-self:center}.app-topbar__search span,.app-topbar__search kbd{display:none}.app-topbar__actions>[data-flux-dropdown]:first-child,.app-topbar__actions>.app-topbar__context{display:none}.app-main{padding:.65rem!important}.dashboard-toolbar{align-items:stretch;gap:.65rem;padding-bottom:.75rem}.dashboard-toolbar>div{width:100%}.dashboard-kpi-grid,.module-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.dashboard-kpi{min-height:6.6rem;gap:.45rem;padding:.7rem}.dashboard-kpi__icon{width:2rem;height:2rem}.dashboard-kpi__label{font-size:.78rem;line-height:1.4}.dashboard-kpi__value{font-size:1.3rem}.dashboard-kpi__state{font-size:.72rem}.dashboard-panel__header{align-items:flex-start;padding:.65rem .75rem}.dashboard-empty{min-height:4.25rem;padding:.65rem;font-size:.8rem}.dashboard-trend-empty{min-height:4.75rem;padding:.65rem .75rem .45rem}.dashboard-trend-empty__dates{font-size:.68rem}.app-footer{font-size:clamp(.625rem,2.55vw,.72rem);line-height:1.2;padding-block:.45rem}}
     @media(max-width:390px){.app-topbar__actions{gap:0}.app-topbar__actions [data-flux-button]{min-width:2.75rem}.dashboard-trend{gap:.25rem;padding-inline:.55rem}}
     @media(max-width:339px){.dashboard-kpi-grid,.module-overview-grid{grid-template-columns:1fr}}
+}
+
+/* M50B.1 reusable internal workspaces ----------------------------------- */
+@layer components {
+    .internal-page { @apply mx-auto w-full max-w-7xl space-y-5; }
+    .internal-toolbar { @apply rounded-xl border border-border bg-surface p-3 shadow-card sm:p-4; }
+    .internal-toolbar__grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-6; }
+    .filter-chips { @apply mt-3 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs; }
+    .filter-chips__label { @apply font-semibold text-text-muted; }
+    .filter-chip { @apply inline-flex min-h-8 items-center gap-1 rounded-full bg-surface-muted px-3 text-text-muted; }
+    .filter-chip--reset { @apply text-primary hover:bg-primary-soft; }
+    .resource-pagination { @apply flex flex-col gap-3 border-t border-border/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between; }
+    .resource-pagination__count { @apply text-sm text-text-muted; }
+    .resource-pagination__controls { @apply flex flex-wrap items-center justify-between gap-3 sm:justify-end; }
+    .sales-overview-grid { @apply grid gap-4 lg:grid-cols-12; }
+    .sales-overview-grid__trend { @apply lg:col-span-8; }
+    .sales-overview-grid__summary { @apply lg:col-span-4; }
+    .resource-mobile-card { @apply hidden border-b border-border p-4; }
+    @media (max-width: 639px) {
+        .responsive-resource-table thead { display:none; }
+        .responsive-resource-table tbody,.responsive-resource-table tr,.responsive-resource-table td { display:block; width:100%; }
+        .responsive-resource-table tr { @apply border-b border-border p-3; }
+        .responsive-resource-table td { @apply flex min-h-10 items-center justify-between gap-4 border-0! px-0! py-1.5! text-end; }
+        .responsive-resource-table td::before { content:attr(data-label); @apply shrink-0 text-start text-xs font-semibold text-text-muted; }
+        .responsive-resource-table td[data-primary] { @apply block text-start; }
+        .responsive-resource-table td[data-primary]::before { display:none; }
+    }
 }

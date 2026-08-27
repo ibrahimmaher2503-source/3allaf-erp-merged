@@ -1,7 +1,7 @@
 @props(['groups' => null])
 @php($groups ??= app(\App\Modules\Platform\Support\ApplicationNavigation::class)->for(auth()->user(), app()->getLocale()))
 
-<nav aria-label="{{ app()->getLocale() === 'ar' ? 'التنقل الرئيسي' : 'Primary navigation' }}" class="app-navigation" data-flux-sidebar-nav>
+<nav {{ $attributes->class('app-navigation') }} aria-label="{{ app()->getLocale() === 'ar' ? 'التنقل الرئيسي' : 'Primary navigation' }}" data-flux-sidebar-nav>
     @foreach ($groups as $group)
         <flux:sidebar.group
             :heading="$group['label']"

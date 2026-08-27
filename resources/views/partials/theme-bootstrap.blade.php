@@ -28,12 +28,28 @@
     (() => {
         const prefs = window.__toyJoyUiPreferences;
         const root = document.documentElement;
+        const shellPreferenceKey = 'rajeh_shell_preferences_v2';
+        const validSidebarModes = ['expanded', 'collapsed'];
+        let sidebarMode = 'expanded';
+        try {
+            const saved = JSON.parse(localStorage.getItem(shellPreferenceKey) || 'null');
+            if (saved?.version === 2 && validSidebarModes.includes(saved.sidebar_mode)) {
+                sidebarMode = saved.sidebar_mode;
+            } else {
+                localStorage.setItem(shellPreferenceKey, JSON.stringify({ version: 2, sidebar_mode: sidebarMode }));
+            }
+            ['toyjoy_sidebar_mode', 'sidebar_mode', 'flux.sidebar'].forEach((key) => localStorage.removeItem(key));
+        } catch (error) {
+            sidebarMode = 'expanded';
+            try { localStorage.setItem(shellPreferenceKey, JSON.stringify({ version: 2, sidebar_mode: sidebarMode })); } catch (ignored) {}
+        }
         const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
         const appearance = prefs.appearance === 'system' ? (systemDark ? 'dark' : 'light') : prefs.appearance;
         root.classList.toggle('dark', appearance === 'dark');
         root.dataset.appearance = prefs.appearance;
         root.dataset.accent = prefs.accent_color;
-        root.dataset.sidebarMode = prefs.sidebar_mode;
+        prefs.sidebar_mode = sidebarMode;
+        root.dataset.sidebarMode = sidebarMode;
         root.dataset.contentWidth = prefs.content_width;
         root.dataset.fontScale = prefs.font_scale;
         root.dataset.tableDensity = prefs.table_density;

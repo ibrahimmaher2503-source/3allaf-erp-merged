@@ -1,9 +1,9 @@
-# Active Milestone — M50A.1 Shell and Dashboard Visual Correction
+# Active Milestone — M50B.1 Sales Workspace and Internal Page Foundation
 
 **Date:** 2026-08-27
 **Current phase:** Item 50 isolated UI/UX release phase
-**Current milestone:** M50A.1
-**Status:** Complete in development after rendered-evidence review; M50B is the recommended next milestone.
+**Current milestone:** M50B.1
+**Status:** Complete in development after focused build, route, syntax, responsive, RTL/LTR, Cairo, and sidebar-state verification.
 
 M50A.1 retains the M50A architecture while correcting header completeness, navigation hierarchy, dashboard density, representative Inventory module information architecture, responsive behavior, accessibility, and genuine locally rendered Cairo Arabic typography. It preserves the published `v0.1.4` backend, schema, routes, permissions, mutation workflows, and exact localized footer. M50B should apply these shared patterns to internal pages in small reviewable sequences.
 

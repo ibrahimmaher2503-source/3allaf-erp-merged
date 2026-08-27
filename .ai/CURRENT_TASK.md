@@ -1,10 +1,14 @@
-# Current Task — M50A.1 Visual and Responsive Correction
+# Current Task — M50B.1 Sales Workspace and Internal Page Foundation
 
 **Date:** 2026-08-27
-**Branch:** `feature/m50a-shell-dashboard`
-**Baseline:** M50A commit `8f21035b0109dc8b7554a523a0d159a375e824bc` on published `v0.1.4`
+**Branch:** `feature/m50b1-sales-workspace`
+**Baseline:** published `v0.1.5` commit `4ec48f8f6a0f0689e960e239b9ac60502143a963`
 
 ## Status
+
+- M50B.1 implements the reusable internal page/filter/table/pagination foundation and complete Sales & POS workspace presentation.
+- Sales Overview uses bounded permission-scoped real queries; invoice, customer, and shift pages share responsive list patterns while POS remains dedicated.
+- The desktop sidebar regression is corrected through a versioned validated shell preference, expanded safe default, deterministic icon rail, and mobile-only Flux drawer behavior.
 
 - M50A.1 corrects the visual hierarchy, header completeness, dashboard density, navigation polish, responsive behavior, accessibility, and Arabic typography of the accepted M50A engineering foundation.
 - The shell retains centralized permission-filtered navigation, real routes, existing permissions, a dedicated POS archetype, and bounded visible-store operational data.

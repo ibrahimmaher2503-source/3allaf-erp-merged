@@ -29,7 +29,7 @@
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif
 
-        <section data-guide="customer-search" class="rounded-2xl border border-border bg-surface p-4 shadow-card sm:p-5" aria-labelledby="customer-search-heading">
+        <section data-guide="customer-search" class="internal-toolbar" aria-labelledby="customer-search-heading">
             <form method="GET" action="{{ route('customers.index') }}" class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_15rem_auto] sm:items-end">
                 <input type="hidden" name="mode" value="{{ $mode }}">
                 <div>
@@ -48,22 +48,23 @@
                 <flux:button type="submit" variant="primary" icon="magnifying-glass">{{ __('Search') }}</flux:button>
                 @if ($term !== '' || $groupId !== null)<flux:button href="{{ route('customers.index', ['mode' => $mode]) }}" variant="ghost">{{ __('Reset') }}</flux:button>@endif
             </form>
+            <x-tables.filter-chips :filters="[__('Search') => $term, __('Customer group') => $groupId]" :reset-url="route('customers.index', ['mode' => $mode])" />
         </section>
 
         <x-tables.data-panel data-guide="customer-table" :title="__('Profiles')" :description="__('Customer records in your authorized scope.')">
             <x-slot:actions><flux:badge size="sm" color="zinc">{{ $customers->total() }} {{ __('records') }}</flux:badge></x-slot:actions>
-            <table class="data-table data-table--mobile-summary min-w-full text-start text-sm">
+            <table class="data-table responsive-resource-table min-w-full text-start text-sm">
                     <thead><tr><th scope="col">{{ __('Customer') }}</th><th scope="col">{{ __('Customer group') }}</th><th scope="col">{{ __('Phone') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Consent records') }}</th><th scope="col">{{ __('Children') }}</th><th scope="col" class="text-end">{{ __('Action') }}</th></tr></thead>
                     <tbody>
                         @forelse ($customers as $customer)
                             <tr data-customer-row>
-                                <td><div class="font-semibold text-text-primary">{{ app()->getLocale() === 'ar' ? $customer->name_ar : $customer->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ app()->getLocale() === 'ar' ? $customer->name_en : $customer->name_ar }}</div></td>
-                                <td><div class="font-medium">{{ $customer->group ? (app()->getLocale() === 'ar' ? $customer->group->name_ar : $customer->group->name_en) : __('No group assigned') }}</div>@if ($customer->group?->parent)<div class="mt-1 text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $customer->group->parent->name_ar : $customer->group->parent->name_en }}</div>@endif</td>
-                                <td class="font-mono text-xs" dir="ltr">{{ $customer->phone_display }}</td>
-                                <td><x-status.badge :status="$customer->status" /></td>
-                                <td class="tabular-nums">{{ $customer->consents_count }}</td>
-                                <td class="tabular-nums">{{ $customer->children_count }}</td>
-                                <td class="text-end">
+                                <td data-primary><div class="font-semibold text-text-primary">{{ app()->getLocale() === 'ar' ? $customer->name_ar : $customer->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ app()->getLocale() === 'ar' ? $customer->name_en : $customer->name_ar }}</div></td>
+                                <td data-label="{{ __('Customer group') }}"><div class="font-medium">{{ $customer->group ? (app()->getLocale() === 'ar' ? $customer->group->name_ar : $customer->group->name_en) : __('No group assigned') }}</div>@if ($customer->group?->parent)<div class="mt-1 text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $customer->group->parent->name_ar : $customer->group->parent->name_en }}</div>@endif</td>
+                                <td data-label="{{ __('Phone') }}" class="font-mono text-xs" dir="ltr">{{ $customer->phone_display }}</td>
+                                <td data-label="{{ __('Status') }}"><x-status.badge :status="$customer->status" /></td>
+                                <td data-label="{{ __('Consent records') }}" class="tabular-nums">{{ $customer->consents_count }}</td>
+                                <td data-label="{{ __('Children') }}" class="tabular-nums">{{ $customer->children_count }}</td>
+                                <td data-label="{{ __('Action') }}" class="text-end">
                                     @if ($mode === 'loyalty')
                                         <flux:button href="{{ route('customers.loyalty', $customer) }}" size="sm" variant="subtle">{{ __('Open loyalty ledger') }}</flux:button>
                                     @elseif ($mode === 'history')
@@ -78,7 +79,7 @@
                         @endforelse
                     </tbody>
                 </table>
-            <x-slot:footer>@if ($customers->hasPages()){{ $customers->links() }}@endif</x-slot:footer>
+            <x-slot:footer><x-tables.pagination :paginator="$customers" /></x-slot:footer>
         </x-tables.data-panel>
     </div>
 </x-layouts::app>
