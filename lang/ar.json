@@ -1059,7 +1059,7 @@
     "Close transition, correction references, post-close transaction denial, and audit events require the approved lifecycle.": "يتطلب انتقال الإغلاق ومراجع التصحيح ومنع العمليات بعد الإغلاق وأحداث التدقيق دورة حياة معتمدة.",
     "Closed": "مغلق",
     "Closed and immutable. Corrections require a referenced document.": "مغلق و immutable. corrections require a referenced مستند.",
-    "Closed at": "مغلق at",
+    "Closed at": "وقت الإغلاق",
     "Closed shift immutability": "عدم تعديل الوردية المغلقة",
     "Closed shifts": "مغلق ورديات",
     "Code": "الرمز",
@@ -1175,7 +1175,7 @@
     "Could not save settings; they remain applied locally": "تعذر حفظ الإعدادات، لكنها ما تزال مطبقة محليًا",
     "Count submitted for review.": "Count submitted لـ review.",
     "Count the drawer and enter the actual amounts. Expected totals are not shown before you submit.": "اعدّ درج النقدية وأدخل المبالغ الفعلية. لا تظهر الإجماليات المتوقعة قبل الإرسال.",
-    "Counted cash": "الكاش المجرد",
+    "Counted cash": "النقدية المعدودة",
     "Counted quantity must be a non-negative decimal with up to 6 places.": "Counted الكمية must be a non-negative decimal مع أعلى إلى 6 places.",
     "Counts only; no monetary fields or expected values are loaded into this page.": "أعداد فقط؛ لا يتم تحميل حقول مالية أو قيم متوقعة إلى هذه الصفحة.",
     "Create": "إنشاء",
@@ -2253,7 +2253,7 @@
     "None yet": "لا يوجد بعد",
     "Not available yet": "غير متاح بعد",
     "Not configured": "غير مهيأ",
-    "Not permitted": "ليس permitted",
+    "Not permitted": "غير مسموح",
     "Not provided": "غير مدخل",
     "Not specified": "غير محدد",
     "Not verified": "غير متحقق منه",
@@ -5260,4 +5260,12 @@
     ,"Generate code automatically": "إنشاء الرمز تلقائيًا"
     ,"Generated automatically": "تم الإنشاء تلقائيًا"
     ,"Unable to complete the request. Please review the data and try again.": "تعذر إكمال الطلب. راجع البيانات وحاول مرة أخرى."
+    ,"Shifts & collections": "الورديات والتحصيل"
+    ,"Manage your active drawer and review recent immutable shift closes.": "أدر درجك النقدي النشط وراجع عمليات إغلاق الورديات السابقة دون تغيير سجلاتها."
+    ,"Active shift": "الوردية النشطة"
+    ,"Closed shifts": "الورديات المغلقة"
+    ,"Print a historical close without changing its immutable record.": "اطبع إغلاقًا سابقًا دون تغيير سجله المحفوظ."
+    ,"Showing :from–:to of :total records": "عرض السجلات من :from إلى :to من أصل :total"
+    ,"Card": "بطاقة"
+    ,"Sales overview": "نظرة عامة على المبيعات"
 }

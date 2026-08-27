@@ -55,7 +55,8 @@
                 <header class="dashboard-panel__header"><flux:heading size="lg">{{ $isArabic ? 'تحصيل اليوم' : "Today's collections" }}</flux:heading><flux:icon.credit-card class="size-5 text-primary" /></header>
                 <div class="dashboard-list">
                     @forelse ($dashboard['payment_summary'] as $payment)
-                        <div class="dashboard-list__row"><span class="font-medium" dir="auto">{{ $payment->method_code }}</span><x-money :amount="$payment->collected_total" :currency="$dashboard['currency_code']" class="font-semibold" /></div>
+                        @php($paymentLabel = $isArabic ? match (strtolower((string) $payment->method_code)) { 'cash' => 'نقدي', 'card' => 'بطاقة', default => $payment->method_code } : $payment->method_code)
+                        <div class="dashboard-list__row"><span class="font-medium" dir="auto">{{ $paymentLabel }}</span><x-money :amount="$payment->collected_total" :currency="$dashboard['currency_code']" class="font-semibold" /></div>
                     @empty
                         <x-state.empty :title="$isArabic ? 'لا توجد عمليات تحصيل اليوم' : 'No collections today'" icon="credit-card" />
                     @endforelse

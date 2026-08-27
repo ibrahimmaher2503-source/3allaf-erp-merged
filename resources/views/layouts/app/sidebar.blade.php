@@ -8,6 +8,24 @@
         .app-layout > .app-sidebar { position: fixed !important; inset-block: 0 !important; }
         .app-layout > .app-layout__content { display: flex !important; flex-direction: column !important; grid-area: auto !important; width: 100% !important; min-width: 0 !important; margin: 0 !important; }
     }
+    .app-sidebar [data-flux-sidebar-item], .app-sidebar [data-sidebar-expandable] > button { color: #d2dde7 !important; }
+    .app-company-context strong { color: #f2f7fb; }
+    .app-company-context small, .sidebar-status { color: #c7d4df; }
+    .app-navigation__group summary { color: #d5e0e9; }
+    .app-navigation__chevron { color: #aebfce; }
+    .app-navigation__item { color: #cbd8e3; }
+    .app-navigation__item:hover, .app-navigation__group summary:hover, .app-navigation__rail-link:hover { background: rgb(255 255 255 / .08); color: #f5f9fc; }
+    .app-navigation__item.is-active { background: rgb(20 184 166 / .2); color: #f7fffe; box-shadow: inset 3px 0 #2dd4bf; }
+    [dir=rtl] .app-navigation__item.is-active { box-shadow: inset -3px 0 #2dd4bf; }
+    .app-navigation__rail-link { color: #d5e0e9; }
+    .app-navigation__rail-link.is-active { color: #f7fffe !important; }
+    @media (max-width: 767px) {
+        .app-topbar { grid-template-columns: minmax(0, 1fr) 2.75rem auto; gap: .25rem; }
+        .app-topbar__identity { min-width: 0; overflow: hidden; }
+        .app-topbar__mobile-brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .app-topbar__actions { flex: none; }
+        .app-topbar__actions > form { display: none !important; }
+    }
 </style>
 @php
     $actor = auth()->user();
@@ -59,9 +77,9 @@
             </flux:dropdown>
             <flux:tooltip content="{{ $isArabic ? 'الإشعارات' : 'Notifications' }}" position="bottom"><flux:button :href="route('notifications.index')" variant="ghost" square aria-label="{{ $isArabic ? 'الإشعارات، غير المقروءة: '.$unreadNotifications : 'Notifications, unread: '.$unreadNotifications }}" wire:navigate><span class="relative"><flux:icon.bell class="size-5" />@if($unreadNotifications > 0)<span class="absolute -end-2 -top-2 min-w-4 rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-4 text-white" dir="ltr">{{ min($unreadNotifications, 99) }}</span>@endif</span></flux:button></flux:tooltip>
             <flux:tooltip content="{{ $isArabic ? 'مساعدة الصفحة' : 'Page help' }}" position="bottom"><flux:button type="button" variant="ghost" square icon="question-mark-circle" aria-label="{{ $isArabic ? 'مساعدة الصفحة' : 'Page help' }}" x-data x-on:click="$dispatch('open-page-guide')" class="hidden md:inline-flex" /></flux:tooltip>
-            <form method="POST" action="{{ route('locale.switch') }}" class="hidden sm:block">@csrf<input type="hidden" name="locale" value="{{ $isArabic ? 'en' : 'ar' }}"><flux:button type="submit" variant="ghost" icon="language" class="min-h-11" aria-label="{{ $isArabic ? 'Switch to English' : 'التبديل إلى العربية' }}">{{ $isArabic ? 'English' : 'العربية' }}</flux:button></form>
+            <form method="POST" action="{{ route('locale.switch') }}" class="hidden md:block">@csrf<input type="hidden" name="locale" value="{{ $isArabic ? 'en' : 'ar' }}"><flux:button type="submit" variant="ghost" icon="language" class="min-h-11" aria-label="{{ $isArabic ? 'Switch to English' : 'التبديل إلى العربية' }}">{{ $isArabic ? 'English' : 'العربية' }}</flux:button></form>
             <flux:tooltip content="{{ $isArabic ? 'المظهر' : 'Appearance' }}" position="bottom"><flux:button type="button" variant="ghost" square icon="sun" aria-label="{{ $isArabic ? 'تخصيص المظهر' : 'Customize appearance' }}" x-data x-on:click="$dispatch('open-appearance-customizer')" class="hidden md:inline-flex" /></flux:tooltip>
-            <flux:dropdown position="bottom" align="end"><flux:profile :initials="$actor->initials()" :name="$actor->name" icon-trailing="chevron-down" class="app-topbar__profile" /><flux:menu><div class="px-3 py-2"><strong class="block truncate text-sm">{{ $actor->name }}</strong><span class="block truncate text-xs text-text-muted" dir="ltr">{{ $actor->email }}</span></div><flux:menu.separator /><flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ $isArabic ? 'الملف والإعدادات' : 'Profile & settings' }}</flux:menu.item><form method="POST" action="{{ route('logout') }}">@csrf<flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">{{ $isArabic ? 'تسجيل الخروج' : 'Log out' }}</flux:menu.item></form></flux:menu></flux:dropdown>
+            <flux:dropdown position="bottom" align="end"><flux:profile :initials="$actor->initials()" :name="$actor->name" icon-trailing="chevron-down" class="app-topbar__profile" /><flux:menu><div class="px-3 py-2"><strong class="block truncate text-sm">{{ $actor->name }}</strong><span class="block truncate text-xs text-text-muted" dir="ltr">{{ $actor->email }}</span></div><flux:menu.separator /><flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ $isArabic ? 'الملف والإعدادات' : 'Profile & settings' }}</flux:menu.item><flux:menu.item as="button" type="button" icon="question-mark-circle" class="md:hidden" x-data x-on:click="$dispatch('open-page-guide')">{{ $isArabic ? 'مساعدة الصفحة' : 'Page help' }}</flux:menu.item><flux:menu.item as="button" type="button" icon="sun" class="md:hidden" x-data x-on:click="$dispatch('open-appearance-customizer')">{{ $isArabic ? 'المظهر' : 'Appearance' }}</flux:menu.item><form method="POST" action="{{ route('locale.switch') }}" class="md:hidden">@csrf<input type="hidden" name="locale" value="{{ $isArabic ? 'en' : 'ar' }}"><flux:menu.item as="button" type="submit" icon="language" class="w-full">{{ $isArabic ? 'English' : 'العربية' }}</flux:menu.item></form><flux:menu.separator /><form method="POST" action="{{ route('logout') }}">@csrf<flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">{{ $isArabic ? 'تسجيل الخروج' : 'Log out' }}</flux:menu.item></form></flux:menu></flux:dropdown>
         </div>
     </header>
     <div x-data="navigationSearch(@js($navigationGroups))" x-on:open-navigation-search.window="open = true; $nextTick(() => $refs.query.focus())" x-on:keydown.meta.k.window.prevent="open = true; $nextTick(() => $refs.query.focus())" x-on:keydown.ctrl.k.window.prevent="open = true; $nextTick(() => $refs.query.focus())" x-on:keydown.escape.window="open = false">
