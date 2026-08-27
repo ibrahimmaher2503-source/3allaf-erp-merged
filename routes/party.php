@@ -28,6 +28,7 @@ use App\Modules\Party\Models\PartyConsumableIssue;
 use App\Modules\Party\Models\PartyInvoice;
 use App\Modules\Party\Models\PartyOperatingOrder;
 use App\Modules\Party\Models\PartyPayment;
+use App\Modules\Party\Queries\PartyDashboard;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
@@ -63,19 +64,37 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
             ->orderBy('starts_at')
             ->limit(200)
             ->get();
+        $bookings = $user->can('party_bookings_invoices.view')
+            ? PartyBooking::query()->visibleTo($user)->with(['customer:id,name_ar,name_en', 'store:id,code,name_ar,name_en'])
+                ->whereNot('party_bookings.status', 'cancelled')->where('party_bookings.starts_at', '<=', $to)->where('party_bookings.ends_at', '>=', $from)
+                ->orderBy('party_bookings.starts_at')->limit(200)->get()
+            : collect();
 
-        return view('pages.party.calendar', compact('from', 'to', 'reservations'));
+        return view('pages.party.calendar', compact('from', 'to', 'reservations', 'bookings'));
     })->middleware('can:rental_assets.view')->name('calendar');
 
-    Route::get('bookings', function (Request $request) {
+    Route::get('bookings', function (Request $request, PartyDashboard $dashboardQuery) use ($partyStores) {
         /** @var User $user */
         $user = $request->user();
-        $bookings = PartyBooking::query()->visibleTo($user)->with(['customer', 'store', 'invoice'])->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))->when($request->filled('q'), function ($query) use ($request): void {
-            $term = '%'.trim((string) $request->string('q')).'%';
-            $query->where(fn ($scope) => $scope->where('booking_number', 'like', $term)->orWhereHas('customer', fn ($customer) => $customer->where('name_en', 'like', $term)->orWhere('name_ar', 'like', $term)));
-        })->latest('party_date')->latest('starts_at')->paginate(20)->withQueryString();
+        $validated = $request->validate(['q' => ['nullable', 'string', 'max:120'], 'status' => ['nullable', Rule::in(array_column(\App\Modules\Party\Enums\PartyBookingStatus::cases(), 'value'))], 'store_id' => ['nullable', 'integer'], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'], 'per_page' => ['nullable', Rule::in(['20', '50', '100'])]]);
+        $stores = $partyStores($user)->get(['id', 'code', 'name_ar', 'name_en']);
+        $requestedStoreId = filled($validated['store_id'] ?? null) ? (int) $validated['store_id'] : null;
+        abort_if($requestedStoreId !== null && ! $stores->contains('id', $requestedStoreId), 404);
+        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($user);
+        $storeId = $requestedStoreId ?? ($stores->contains('id', $contextStoreId) ? $contextStoreId : null);
+        $term = trim((string) ($validated['q'] ?? ''));
+        $bookings = PartyBooking::query()->visibleTo($user)->with(['customer', 'store', 'invoice'])
+            ->when($storeId !== null, fn ($query) => $query->where('party_bookings.store_id', $storeId))
+            ->when(filled($validated['status'] ?? null), fn ($query) => $query->where('party_bookings.status', $validated['status']))
+            ->when(filled($validated['from'] ?? null), fn ($query) => $query->whereDate('party_bookings.party_date', '>=', $validated['from']))
+            ->when(filled($validated['to'] ?? null), fn ($query) => $query->whereDate('party_bookings.party_date', '<=', $validated['to']))
+            ->when($term !== '', function ($query) use ($term, $user): void {
+                $like = '%'.$term.'%';
+                $query->where(fn ($scope) => $scope->where('party_bookings.booking_number', 'like', $like)->orWhere('party_bookings.location', 'like', $like)->orWhereHas('customer', fn ($customer) => $customer->where('name_en', 'like', $like)->orWhere('name_ar', 'like', $like)->when($user->can('customers.sensitive'), fn ($customerQuery) => $customerQuery->orWhere('phone_e164', 'like', $like))));
+            })->latest('party_bookings.party_date')->latest('party_bookings.starts_at')->paginate((int) ($validated['per_page'] ?? 20))->withQueryString();
+        $dashboard = $dashboardQuery->for($user, $storeId);
 
-        return view('pages.party.bookings.index', compact('bookings'));
+        return view('pages.party.bookings.index', compact('bookings', 'dashboard', 'stores', 'storeId', 'term'));
     })->middleware('can:party_bookings_invoices.view')->name('bookings.index');
 
     Route::get('bookings/create', function (Request $request) use ($partyStores) {
@@ -293,9 +312,15 @@ Route::prefix('parties')->name('parties.')->group(function (): void {
 
     Route::get('orders', function (Request $request) {
         /** @var User $user */
-        $orders = PartyOperatingOrder::query()->visibleTo($user = $request->user())->with(['booking.customer', 'store'])->latest('id')->paginate(20);
+        $user = $request->user();
+        $validated = $request->validate(['q' => ['nullable', 'string', 'max:120'], 'status' => ['nullable', Rule::in(array_column(\App\Modules\Party\Enums\PartyOperatingOrderState::cases(), 'value'))]]);
+        $term = trim((string) ($validated['q'] ?? ''));
+        $orders = PartyOperatingOrder::query()->visibleTo($user)->with(['booking.customer', 'store'])
+            ->when(filled($validated['status'] ?? null), fn ($query) => $query->where('party_operating_orders.status', $validated['status']))
+            ->when($term !== '', function ($query) use ($term): void { $like = '%'.$term.'%'; $query->where(fn ($scope) => $scope->where('party_operating_orders.order_number', 'like', $like)->orWhereHas('booking', fn ($booking) => $booking->where('booking_number', 'like', $like)->orWhereHas('customer', fn ($customer) => $customer->where('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)))); })
+            ->latest('party_operating_orders.id')->paginate(20)->withQueryString();
 
-        return view('pages.party.orders.index', compact('orders'));
+        return view('pages.party.orders.index', compact('orders', 'term'));
     })->middleware('can:party_operating_orders_consumables.view')->name('orders.index');
 
     Route::post('bookings/{bookingId}/orders', function (Request $request, int $bookingId, CreatePartyOperatingOrderAction $action) {

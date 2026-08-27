@@ -1,16 +1,16 @@
-# Current Task — M50B.4 Pricing, Promotions & Discounts
+# Current Task — M50B.5 Parties, Bookings & Customers
 
 **Date:** 2026-08-27
-**Branch:** `feature/m50b4-pricing-promotions`
-**Baseline:** published `v0.1.8` commit `faabe2ffcd0bd51b80aa004f57ffd5a9324f74da`
+**Branch:** `feature/m50b5-parties-bookings`
+**Baseline:** published `v0.1.9` commit `b134401d8860c9fb4b350928e021425faeb6f467`
 
 ## Status
 
-- Implemented in development: permission-aware Pricing overview, effective/scheduled pricing indicators, approval and unpriced-product exceptions, bounded recent activity, responsive price-version controls, and scoped label readiness.
-- The authoritative model supports immutable price versions, effective periods, open-price bounds, POS cart discounts, and approval. It does not contain standalone promotion/campaign rules; the UI states that capability boundary instead of fabricating records.
-- Added a permission-filtered session work context so the shell accurately distinguishes one store from all authorized stores. Supported Sales, Purchasing, Inventory, and Pricing views consume it; POS retains its authoritative shift/store transaction context.
+- Complete in development: permission-scoped Party overview, calendar/agenda, booking filters, invoice and operating-order mobile records, centralized navigation, and unified customer Party history.
+- Dashboard values come only from visible Party bookings, invoices, approved payments, invoice service lines, and operating orders. No package, venue, deposit, payable, or approval data is inferred beyond those authoritative records.
+- Existing Party actions remain the mutation and concurrency boundary; routes, permissions, status transitions, calculations, wallets, and schema are unchanged.
 
 ## Verification boundary
 
-- One locked Vite build, focused PHP/Blade/route/navigation checks, manifest/reference verification, and `git diff --check` passed.
-- Automated tests and browser-control are not authorized for this task. No schema, migration, production, database, deployment, tag, push, or remote operation is allowed.
+- One locked Vite build, focused PHP/Blade syntax, route/navigation mapping, manifest/reference verification, and `git diff --check` were run.
+- No database, automated suite, browser session, production, deployment, migration, tag, push, or remote operation was used.

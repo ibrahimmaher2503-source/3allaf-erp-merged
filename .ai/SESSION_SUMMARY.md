@@ -569,3 +569,11 @@
 - **Shell correction:** Replaced the misleading first-visible-store header label with a validated session work context. Multiple-store users receive a permission-filtered selector, single-store users receive a fixed indicator, and “All authorized stores” is shown for genuinely aggregated scope. Supported dashboards consume the selected context; POS transaction ownership remains shift/store controlled.
 - **Verification actually run:** PHP/Blade syntax lint, Pricing and work-context route registration, complete navigation route mapping, `git diff --check`, unchanged package manifests, and one locked Vite build with Node 20.20.2. Manifest SHA-256 is `eca12b88c0f3d25ea52ca3448fb0c0af7decf7f7d88ad72ad0c31b5dec3043c6`; every referenced asset exists. No automated suite, browser-control, or database runtime ran.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.
+
+## 2026-08-27 — M50B.5 Parties, Bookings & Customers workspace
+
+- **Task:** Implemented M50B.5 from published `v0.1.9` on `feature/m50b5-parties-bookings` without deployment.
+- **Work completed:** Added an authorized Party operations dashboard with today/upcoming/follow-up booking counts, operating-order workload, real invoice/payment totals, seven-day trend, upcoming agenda, service-line usage, and payment mix. Refined booking, calendar, invoice, and operating-order lists with bilingual filters and responsive records; expanded centralized navigation; and added separately paginated Party history to the existing customer profile.
+- **Verification actually run:** PHP/Blade syntax lint, focused Party route registration, navigation mapping inspection, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20. No automated application suite, browser-control, or database runtime ran.
+- **Capability boundary:** The model supports scheduled bookings, free-form locations, invoice service/consumable/asset lines, approved payments, balances, and operating orders. It has no package or venue master model, so none was fabricated.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.

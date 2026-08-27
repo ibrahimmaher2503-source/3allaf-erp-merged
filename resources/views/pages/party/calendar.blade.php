@@ -19,12 +19,18 @@
             <flux:text class="mt-3 text-sm">{{ __('Choose up to 31 days. Only overlapping reservations in your authorized branch or Party-store scope are shown.') }}</flux:text>
         </flux:card>
 
+        @can('party_bookings_invoices.view')
+            <x-tables.data-panel :title="app()->getLocale()==='ar' ? 'أجندة الحجوزات' : 'Booking agenda'" :description="app()->getLocale()==='ar' ? 'المواعيد المؤكدة والمبدئية ضمن النطاق والتاريخ المختارين.' : 'Operational bookings within the authorized scope and selected dates.'">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">@forelse($bookings as $booking)<a href="{{ route('parties.bookings.show', $booking) }}" class="rounded-xl border border-border bg-surface p-4 transition hover:border-primary"><div class="flex items-start justify-between gap-3"><strong class="font-mono" dir="ltr">{{ $booking->booking_number }}</strong><x-status.badge :status="$booking->status" /></div><p class="mt-2 font-semibold">{{ app()->getLocale()==='ar' ? $booking->customer?->name_ar : $booking->customer?->name_en }}</p><p class="mt-1 text-sm text-text-muted">{{ $booking->starts_at?->format('Y-m-d H:i') }}–{{ $booking->ends_at?->format('H:i') }}</p><p class="mt-1 truncate text-sm text-text-muted">{{ $booking->location }} · {{ $booking->store?->code }}</p></a>@empty<div class="md:col-span-2 xl:col-span-3"><x-state.empty :title="app()->getLocale()==='ar' ? 'لا توجد حجوزات في هذه الفترة' : 'No bookings in this period'" icon="calendar-days" /></div>@endforelse</div>
+            </x-tables.data-panel>
+        @endcan
+
         <x-tables.data-panel :title="__('Scheduled asset reservations')" :description="__('Reservations are operational availability records, not retail stock or financial postings.')">
             <x-slot:actions>
                 <flux:badge color="zinc">{{ $reservations->count() }} / 200 {{ __('shown') }}</flux:badge>
             </x-slot:actions>
-            <div class="overflow-x-auto">
-                <table class="data-table data-table--mobile-summary min-w-[720px] w-full text-sm">
+            <div class="responsive-resource-table">
+                <table class="data-table data-table--mobile-summary w-full text-sm">
                     <thead><tr><th>{{ __('Asset') }}</th><th>{{ __('Party store') }}</th><th>{{ __('Starts') }}</th><th>{{ __('Ends') }}</th><th>{{ __('Reference') }}</th><th>{{ __('Status') }}</th></tr></thead>
                     <tbody>
                         @forelse ($reservations as $reservation)

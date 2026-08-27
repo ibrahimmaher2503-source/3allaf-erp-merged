@@ -31,8 +31,10 @@ return [
         ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'banknotes', 'label' => ['ar' => 'قوائم وقواعد الأسعار', 'en' => 'Price lists & rules']],
     ]],
     ['key' => 'parties', 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
-        ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'الحجوزات', 'en' => 'Bookings']],
-        ['route' => 'parties.orders.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'العمليات المرتبطة', 'en' => 'Related operations']],
+        ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],
+        ['route' => 'parties.calendar', 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'التقويم والأجندة', 'en' => 'Calendar & agenda']],
+        ['route' => 'parties.invoices.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير ومدفوعات الحفلات', 'en' => 'Party invoices & payments']],
+        ['route' => 'parties.orders.index', 'permission' => 'party_operating_orders_consumables.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'أوامر التشغيل', 'en' => 'Operating orders']],
     ]],
     ['key' => 'assets', 'icon' => 'building-office-2', 'label' => ['ar' => 'الأصول والتأجير', 'en' => 'Assets & rental'], 'items' => [
         ['route' => 'party.assets.index', 'parameters' => ['mode' => 'workspace'], 'permission' => 'rental_assets.view', 'icon' => 'cube', 'label' => ['ar' => 'الأصول المؤجرة', 'en' => 'Rental assets']],

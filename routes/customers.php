@@ -37,6 +37,7 @@ use App\Modules\Customer\Support\WalletPolicy;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Retail\Models\Sale;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -306,6 +307,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $customer->load(['children' => fn ($query) => $query->visibleTo($user)->latest('id')]);
         }
         $sales = Sale::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->approved()->with('store')->latest('approved_at')->paginate(10, ['*'], 'sales_page')->withQueryString();
+        $partyBookings = $user->can('party_bookings_invoices.view')
+            ? PartyBooking::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->with(['store', 'invoice'])->latest('party_date')->paginate(8, ['*'], 'party_page')->withQueryString()
+            : null;
         $balance = (int) LoyaltyLedger::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->sum('points');
         $dueExpiry = (int) LoyaltyLedger::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->where('points', '>', 0)->whereNotNull('expires_at')->where('expires_at', '<=', now())->sum('points');
         $adjustments = $user->can('loyalty.view') ? LoyaltyAdjustment::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->latest('id')->limit(10)->get() : collect();
@@ -313,7 +317,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $partyWalletBalance = $user->can('party_wallet.view') ? app(PartyWalletBalance::class)->forCustomer($customer, $user) : null;
         $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
 
-        return view('pages.customers.show', compact('customer', 'store', 'sales', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions'));
+        return view('pages.customers.show', compact('customer', 'store', 'sales', 'partyBookings', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions'));
     })->middleware('can:customers.view')->name('customers.show');
 
     Route::put('customers/{customerId}', function (Request $request, int $customerId, UpdateCustomerAction $action) use ($sellingStore) {

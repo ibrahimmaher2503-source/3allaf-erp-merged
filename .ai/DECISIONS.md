@@ -31,3 +31,9 @@
 - Treat immutable `PriceList`/`PriceVersion`/`PriceLine` records, effective dates, open-price bounds, approval, and POS cart-discount permissions as the authoritative pricing capabilities. Do not present standalone promotions or campaign discounts because no such source-owned model/workflow exists.
 - Do not infer margin from unrelated or mixed store costs. Pricing coverage and exception indicators remain authorized-store scoped and read-only.
 - The prior header selected the first visible store while most dashboards aggregated all visible stores. The shell now defaults to “All authorized stores,” persists an optional permission-checked store in the existing session context, and applies it to supported Sales, Purchasing, Inventory, and Pricing views. POS continues to use its existing shift/store ownership and is never silently reassigned by the shell.
+
+## 2026-08-27 — M50B.5 Party capability and customer-history boundary
+
+- Use the existing authorized `parties.bookings.index` route as the Party module landing page and keep calendar, invoice/payment, operating-order, and booking-detail workflows on their current routes and action boundaries.
+- Treat `PartyBooking.location` and Party invoice service lines as the authoritative current venue/service description. Do not invent package, venue, resource-capacity, deposit, or approval master records that do not exist.
+- Reuse the existing Customer identity and expose separately scoped Party history in its profile. Retail sales, Product Wallet, Party Wallet, Party invoices, and Party payments remain distinct ledgers and histories.
