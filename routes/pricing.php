@@ -2,6 +2,7 @@
 
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\LabelQueue;
 use App\Modules\Pricing\Models\PriceVersion;
 use Illuminate\Support\HtmlString;
