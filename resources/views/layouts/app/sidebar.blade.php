@@ -9,7 +9,8 @@
         .app-layout > .app-layout__content { display: flex !important; flex-direction: column !important; grid-area: auto !important; width: 100% !important; min-width: 0 !important; margin: 0 !important; }
     }
     .app-sidebar [data-flux-sidebar-item], .app-sidebar [data-sidebar-expandable] > button { color: #d2dde7 !important; }
-    .app-company-context strong { color: #f2f7fb; }
+    .app-company-context strong,
+    .app-brand-block [data-flux-sidebar-brand], .app-brand-block [data-flux-sidebar-brand] * { color: #f2f7fb !important; }
     .app-company-context small, .sidebar-status { color: #c7d4df; }
     .app-navigation__group summary { color: #d5e0e9; }
     .app-navigation__chevron { color: #aebfce; }

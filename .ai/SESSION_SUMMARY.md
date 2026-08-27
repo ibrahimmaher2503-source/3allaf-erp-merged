@@ -577,3 +577,10 @@
 - **Verification actually run:** PHP/Blade syntax lint, focused Party route registration, navigation mapping inspection, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20. No automated application suite, browser-control, or database runtime ran.
 - **Capability boundary:** The model supports scheduled bookings, free-form locations, invoice service/consumable/asset lines, approved payments, balances, and operating orders. It has no package or venue master model, so none was fabricated.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.
+
+## 2026-08-27 — M50B.5 sidebar brand contrast follow-up
+
+- **Task:** Closed the pre-deployment sidebar brand contrast defect on `feature/m50b5-parties-bookings`.
+- **Work completed:** Applied the shell's existing high-contrast sidebar foreground to the Flux brand and its name content in expanded, collapsed, and mobile-drawer markup. Logo geometry, layout, Cairo, direction, navigation state, and the aggregate “All authorized stores” work context are unchanged.
+- **Verification actually run:** PHP/Blade syntax lint and `git diff --check`. No frontend build was required because the correction uses the existing inline shell style and color.
+- **Boundaries:** No production, deployment, tag, database, remote/network, or Toy & Joy WordPress access occurred.
