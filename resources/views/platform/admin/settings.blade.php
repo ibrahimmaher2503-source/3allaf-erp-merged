@@ -795,14 +795,13 @@ new #[Title('System Settings')] class extends Component
 
                     <div class="flex justify-end">
                         <flux:button
-                            type="submit"
+                            type="button"
                             variant="primary"
                             icon="eye"
                             x-bind:disabled="!dirty"
+                            wire:click="previewCompany"
                             wire:loading.attr="disabled"
-                            wire:loading.class="is-loading"
                             wire:target="previewCompany"
-                            class="settings-review-button"
                             data-guide="settings-save-button"
                         >
                             {{ __('company.review_changes') }}
@@ -937,7 +936,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary">
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="savePaymentMethod">
                             {{ $paymentMethodForm['id'] ? __('Update Method') : __('Save Method') }}
                         </flux:button>
                     </div>
@@ -1110,7 +1109,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary">
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveTaxSetting">
                             {{ $taxSettingForm['id'] ? __('Update Tax Setting') : __('Save Tax Setting') }}
                         </flux:button>
                     </div>
@@ -1313,7 +1312,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary">
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveDocumentSequence">
                             {{ $documentSequenceForm['id'] ? __('Update Sequence') : __('Save Sequence') }}
                         </flux:button>
                     </div>
@@ -1510,7 +1509,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary">
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="savePrinter">
                             {{ $printerForm['id'] ? __('Update printer') : __('Save printer') }}
                         </flux:button>
                     </div>

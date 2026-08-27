@@ -1,6 +1,7 @@
 <x-app.page
-    :title="__('Price labels')"
-    :description="__('Prepare and review price labels before printing.')"
+    :title="app()->getLocale() === 'ar' ? 'الباركود وملصقات الأسعار' : __('Barcodes & price labels')"
+    :description="app()->getLocale() === 'ar' ? 'راجع هوية المنتج وسياق الطباعة والطابور قبل إنشاء المخرجات.' : __('Review product identity, print context, and the queue before producing output.')"
+    :breadcrumbs="app()->getLocale() === 'ar' ? 'المنتجات والمخزون' : 'Products & inventory'"
     max-width="6xl"
     class="pricing-screen"
     data-guide="price-labels-workspace"
@@ -44,7 +45,7 @@
                 <x-slot:action><flux:button href="{{ route('pricing.index') }}" variant="subtle" icon="arrow-left">{{ __('Review approved prices') }}</flux:button></x-slot:action>
             </x-state.empty>
         @else
-            <flux:table aria-label="{{ __('Label queue readiness') }}">
+            <flux:table class="responsive-resource-table" aria-label="{{ __('Label queue readiness') }}">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Product') }}</flux:table.column>
                     <flux:table.column>{{ __('Branch / store') }}</flux:table.column>
@@ -55,14 +56,14 @@
                 <flux:table.rows>
                     @foreach ($queues as $queue)
                         <flux:table.row key="label-queue-{{ $queue->id }}" data-label-queue="{{ $queue->id }}">
-                            <flux:table.cell>
+                            <flux:table.cell data-primary>
                                 <div class="font-medium">{{ $queue->product?->item_code ?? __('Unknown product') }}</div>
                                 <div class="text-xs text-zinc-500">{{ $queue->product?->name_en ?? $queue->product?->name_ar ?? __('Product name unavailable') }}</div>
                             </flux:table.cell>
-                            <flux:table.cell>{{ $queue->store?->code ?? __('Store unavailable') }}</flux:table.cell>
-                            <flux:table.cell>{{ $queue->printer?->name ?? __('Not assigned') }}</flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">{{ $queue->template_name ?: ($queue->printer?->template_name ?? __('Not assigned')) }}</flux:table.cell>
-                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ __(str_replace('_', ' ', ucfirst((string) $queue->status))) }}</flux:badge></flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Branch / store') }}">{{ $queue->store?->code ?? __('Store unavailable') }}</flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Printer profile') }}">{{ $queue->printer?->name ?? __('Not assigned') }}</flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Print template key') }}" class="font-mono text-xs">{{ $queue->template_name ?: ($queue->printer?->template_name ?? __('Not assigned')) }}</flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Status') }}"><flux:badge size="sm" color="zinc">{{ __(str_replace('_', ' ', ucfirst((string) $queue->status))) }}</flux:badge></flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

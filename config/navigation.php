@@ -19,9 +19,10 @@ return [
         ['route' => 'catalog.suppliers', 'permission' => 'suppliers.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'الموردون', 'en' => 'Suppliers']],
     ]],
     ['key' => 'inventory', 'icon' => 'archive-box', 'label' => ['ar' => 'المنتجات والمخزون', 'en' => 'Products & inventory'], 'items' => [
+        ['route' => 'inventory.index', 'permission' => 'inventory_stock_card.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'نظرة عامة على المخزون', 'en' => 'Inventory overview']],
         ['route' => 'catalog.products', 'permission' => 'products_categories_brands.view', 'icon' => 'cube', 'label' => ['ar' => 'المنتجات', 'en' => 'Products']],
         ['route' => 'catalog.categories', 'permission' => 'products_categories_brands.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'التصنيفات والخيارات', 'en' => 'Categories & options']],
-        ['route' => 'inventory.index', 'permission' => 'inventory_stock_card.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'الأرصدة وحركة المخزون', 'en' => 'Balances & movements']],
+        ['route' => 'inventory.balances', 'permission' => 'inventory_stock_card.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأرصدة وحركة المخزون', 'en' => 'Balances & movements']],
         ['route' => 'inventory.transfers', 'permission' => 'transfers.view', 'icon' => 'arrows-right-left', 'label' => ['ar' => 'التحويلات', 'en' => 'Transfers']],
         ['route' => 'inventory.counts', 'permission' => 'inventory_stock_card.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'الجرد والتسويات', 'en' => 'Counts & adjustments']],
         ['route' => 'pricing.labels', 'permission' => 'pricing_labels.view', 'icon' => 'qr-code', 'label' => ['ar' => 'الباركود', 'en' => 'Barcodes']],

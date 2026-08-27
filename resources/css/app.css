@@ -1009,14 +1009,6 @@
         @apply border-t border-border px-4 py-5 sm:px-5;
     }
 
-    .settings-review-button[disabled]:not(.is-loading) > :not([data-flux-loading-indicator]) {
-        opacity: 1;
-    }
-
-    .settings-review-button[disabled]:not(.is-loading) > [data-flux-loading-indicator] {
-        opacity: 0;
-    }
-
     .catalog-detail-hero {
         @apply border-border bg-surface shadow-card;
     }

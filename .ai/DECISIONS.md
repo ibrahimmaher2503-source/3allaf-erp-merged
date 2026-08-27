@@ -17,3 +17,10 @@
 - Use the existing authorized `purchasing.orders` route as the module landing/dashboard and order/receiving queue; do not add a route.
 - Do not infer supplier due/overdue amounts without an authoritative payable ledger.
 - Preserve existing routes, Gates, policies, visible-store/branch scopes, actions, calculations, approvals, inventory mutations, and schema.
+
+## 2026-08-27 — M50B.3 inventory scope and Settings loading boundary
+
+- Use `inventory.index` as the existing module landing route and keep catalog, balances, transfers, counts, adjustments, and barcode labels in one permission-filtered navigation group.
+- Display inventory value only from authoritative `stock_balances.total_value` and only when `inventory_stock_card.cost_view` is allowed.
+- Treat Flux submit loading and an Alpine idle-disabled state as separate concerns: the Company review button invokes only `previewCompany`, while every Settings save action has an explicit loading target.
+- Preserve inventory mutations, costing, barcode allocation, routes, permissions, policies, and schema.

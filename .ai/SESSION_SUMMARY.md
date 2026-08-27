@@ -540,3 +540,11 @@
 - **Verification actually run:** PHP syntax lint, focused route registration, navigation inspection, `git diff --check`, manifest/reference verification, and one effective locked Vite build with Node 20.20.2. The initial system-Node-16 invocation failed before emitting assets. No automated suite ran.
 - **Evidence boundary:** No task-local MariaDB runtime was configured and SQLite remains prohibited, so no browser fixture session or screenshots were created; no visual result is claimed.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.
+
+## 2026-08-27 — M50B.3 Products, Inventory & Barcodes
+
+- **Work completed:** Wired the existing inventory overview into its view and added bounded visible-store metrics for active products/variants, stock, authorized valuation, low/out/negative exceptions, today movements, catalog/barcode gaps, pending documents, store distribution, and top-moving products. Added barcode-aware search, stock-state filtering, responsive product/balance/movement/label records, shared pagination, and an Inventory-first navigation landing.
+- **Settings correction:** Flux interprets any disabled submit button as loading. The Company review control was disabled by Alpine while idle, hiding its label and exposing the spinner. It now uses an exact `previewCompany` click target; the obsolete CSS workaround was removed, and each Settings save button disables only for its own action.
+- **Verification actually run:** PHP/Blade/config syntax, focused route and permission mapping, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20.20.2. No automated application suite ran.
+- **Evidence boundary:** No isolated database/runtime was already practical, so no browser fixture session or visual evidence is claimed.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.

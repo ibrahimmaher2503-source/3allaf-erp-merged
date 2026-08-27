@@ -404,8 +404,9 @@ new #[Title('Product Masters')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="__('Product Masters')"
-    :description="__('Browse stable identity, full product-card types, reportable attributes, exact barcode search, and protected media.')"
+    :title="app()->getLocale() === 'ar' ? 'المنتجات والباركود' : __('Products & barcodes')"
+    :description="app()->getLocale() === 'ar' ? 'ابحث بالاسم أو كود الصنف أو الباركود، وراجع الهوية والمتغيرات وحالة بيانات الكتالوج.' : __('Search by name, item code, or barcode and review identity, variants, and catalog readiness.')"
+    :breadcrumbs="app()->getLocale() === 'ar' ? 'المنتجات والمخزون' : 'Products & inventory'"
     max-width="7xl"
     class="catalog-screen"
     data-guide="products-header"
@@ -534,7 +535,7 @@ new #[Title('Product Masters')] class extends Component
                     @endcan
                 </x-slot:actions>
             </x-tables.bulk-actions>
-            <flux:table class="catalog-resource-table" aria-label="{{ __('Product masters') }}">
+            <flux:table class="catalog-resource-table responsive-resource-table" aria-label="{{ __('Product masters') }}">
                 <flux:table.columns>
                     <flux:table.column>
                         <span class="sr-only">{{ __('Select') }}</span>
@@ -553,19 +554,19 @@ new #[Title('Product Masters')] class extends Component
                             <flux:table.cell>
                                 <input type="checkbox" value="{{ $product->id }}" wire:model.live="selectedIds" aria-label="{{ __('Select product :code', ['code' => $product->item_code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" />
                             </flux:table.cell>
-                            <flux:table.cell class="whitespace-nowrap"><span class="catalog-code-chip">{{ $product->item_code }}</span></flux:table.cell>
-                            <flux:table.cell>
+                            <flux:table.cell data-primary class="whitespace-nowrap"><span class="catalog-code-chip">{{ $product->item_code }}</span></flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Product name') }}">
                                 <div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</div>
                                 <div class="catalog-secondary-line">{{ app()->getLocale() === 'ar' ? $product->name_en : $product->name_ar }}</div>
                             </flux:table.cell>
-                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
-                            <flux:table.cell class="text-xs">
+                            <flux:table.cell data-label="{{ __('Type') }}"><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Category / brand') }}" class="text-xs">
                                 <div>{{ $product->category?->code }} · {{ app()->getLocale() === 'ar' ? $product->category?->name_ar : $product->category?->name_en }}</div>
                                 @if ($product->brand)
                                     <div class="text-zinc-500">{{ $product->brand->code }} · {{ app()->getLocale() === 'ar' ? $product->brand->name_ar : $product->brand->name_en }}</div>
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Barcodes') }}">
                                 <div class="flex max-w-72 flex-wrap gap-1">
                                     @forelse ($product->barcodes as $barcode)
                                         <span class="catalog-code-chip">{{ $barcode->barcode }}</span>
@@ -574,10 +575,10 @@ new #[Title('Product Masters')] class extends Component
                                     @endforelse
                                 </div>
                             </flux:table.cell>
-                            <flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Status') }}">
                                 <flux:badge size="sm" :color="$product->status === 'active' ? 'emerald' : 'zinc'">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
                             </flux:table.cell>
-                            <flux:table.cell class="whitespace-nowrap">
+                            <flux:table.cell data-label="{{ __('Actions') }}" class="whitespace-nowrap">
                                 @can('products_categories_brands.edit')
                                     <div class="catalog-actions">
                                         <flux:button size="xs" variant="subtle" icon="eye" href="{{ route('catalog.products.show', ['product' => $product]) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}" wire:navigate />
@@ -595,7 +596,7 @@ new #[Title('Product Masters')] class extends Component
                 </flux:table.rows>
             </flux:table>
         </div>
-        <div data-guide="products-pagination">{{ $products->links() }}</div>
+        <div data-guide="products-pagination"><x-tables.pagination :paginator="$products" :page-sizes="[12]" /></div>
     @endif
 
     <flux:modal name="product-identity-editor" wire:model="showProductModal" class="max-w-2xl">

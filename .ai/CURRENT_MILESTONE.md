@@ -1,11 +1,11 @@
-# Active Milestone — M50B.2 Purchasing & Suppliers Workspace
+# Active Milestone — M50B.3 Products, Inventory & Barcodes
 
 **Date:** 2026-08-27
 **Current phase:** Item 50 isolated UI/UX release phase
-**Current milestone:** M50B.2
+**Current milestone:** M50B.3
 **Status:** Complete in development after focused build, route, syntax, scope, responsive-table, and RTL/LTR source verification.
 
-M50B.2 reuses the published v0.1.6 shell and M50B internal-page foundation. It adds a scoped purchasing overview to the existing purchase-order landing route and refines suppliers, purchase invoices, receiving/orders, and supplier returns without changing backend behavior or schema.
+M50B.3 reuses the published v0.1.7 shell and M50B internal-page foundation. It completes the permission-aware Products & Inventory landing experience, catalog/barcode navigation, responsive stock tables, and the focused Settings idle-loading correction without changing backend behavior or schema.
 
 ---
 
