@@ -9,6 +9,7 @@ use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
 use App\Modules\Platform\Support\WorkContext;
+use App\Modules\Platform\Queries\AdministrationDashboard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -38,6 +39,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
     $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
+    $router->get('admin', fn (AdministrationDashboard $dashboard) => view('platform.admin.overview', ['dashboard' => $dashboard->for(auth()->user())]))
+        ->middleware('can:company_settings.view')->name('admin.overview');
     $router->livewire('admin/translations', 'platform::admin.translation-editor')->middleware('can:company_settings.edit')->name('admin.translations');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
     foreach ([

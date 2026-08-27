@@ -1329,7 +1329,7 @@ new #[Title('System Settings')] class extends Component
                                 <flux:input wire:model="sequenceOverride.next_value" type="number" min="1" :label="__('Replacement next number')" required />
                                 <flux:textarea wire:model="sequenceOverride.reason" :label="__('Reason for correction')" required />
                             </div>
-                            <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Change this document counter? The action is permanent and audited.') }}">{{ __('Submit counter correction') }}</flux:button></div>
+                            <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Change this document counter? The action is permanent and audited.') }}" wire:loading.attr="disabled" wire:target="overrideSequenceCounter"><span wire:loading.remove wire:target="overrideSequenceCounter">{{ __('Submit counter correction') }}</span><span wire:loading wire:target="overrideSequenceCounter">{{ __('Saving...') }}</span></flux:button></div>
                         </form>
                     <?php endif; ?>
                 <?php endif; ?>

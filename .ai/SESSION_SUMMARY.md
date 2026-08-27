@@ -584,3 +584,11 @@
 - **Work completed:** Applied the shell's existing high-contrast sidebar foreground to the Flux brand and its name content in expanded, collapsed, and mobile-drawer markup. Logo geometry, layout, Cairo, direction, navigation state, and the aggregate “All authorized stores” work context are unchanged.
 - **Verification actually run:** PHP/Blade syntax lint and `git diff --check`. No frontend build was required because the correction uses the existing inline shell style and color.
 - **Boundaries:** No production, deployment, tag, database, remote/network, or Toy & Joy WordPress access occurred.
+
+## 2026-08-28 — M50C Reports, Administration & System Settings
+
+- **Task:** Implemented M50C from published `v0.1.10` on `feature/m50c-reports-administration`, without deployment.
+- **Work completed:** Added a permission-aware Administration Center for readiness, users/roles, locations, configuration coverage, approvals, and redacted audit activity. Expanded the Reports Center with an authorized catalog, recent requester-owned export state, date presets, and removable filter chips. Added missing Reports/Administration navigation destinations and exact Livewire targets for authorization saving and document-counter correction.
+- **Reporting boundary:** Preserved `ReportSnapshot`, visible-store/user scoping, bounded source rows, sales pagination/sorting, the 5,000-row export cap, snapshot hashes, requester ownership, locale restoration, XLSX formula protection, and PDF security.
+- **Verification actually run:** Focused PHP/Blade syntax, route/navigation/export mapping, `git diff --check`, and one locked Vite build with Node 20.20.2. Manifest SHA-256: `a9e9896affa4baf7ad19a4febdf6de76bf6cf84475b4e9acc277054c7378d94f`; every referenced asset exists. Automated tests and browser control were not authorized, and no database runtime was used.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, Apache, cron, or Toy & Joy WordPress access occurred.

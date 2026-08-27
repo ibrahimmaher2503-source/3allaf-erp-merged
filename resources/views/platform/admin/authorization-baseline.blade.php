@@ -272,7 +272,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
             <div class="flex justify-end gap-2 border-t border-border pt-4">
                 <flux:button type="button" variant="subtle" wire:click="closeAuthorization">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" variant="primary" icon="check" wire:loading.attr="disabled">{{ __('Save authorization') }}</flux:button>
+                <flux:button type="submit" variant="primary" icon="check" wire:loading.attr="disabled" wire:target="saveAuthorization"><span wire:loading.remove wire:target="saveAuthorization">{{ __('Save authorization') }}</span><span wire:loading wire:target="saveAuthorization">{{ __('Saving...') }}</span></flux:button>
             </div>
         </form>
     </flux:modal>

@@ -90,9 +90,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $genders = Gender::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
 
         $reportKey = $focusedModule ?? 'dashboard';
-        $reportTitle = $focusedModule === null ? __('Dashboard & KPI reports') : $reportTitles[$focusedModule];
+        $reportTitle = $focusedModule === null ? __('Reports center') : $reportTitles[$focusedModule];
+        $recentExports = ($user->can('dashboard_reports.export_xlsx') || $user->can('dashboard_reports.export_pdf'))
+            ? ExportJob::query()->where('requested_by', $user->id)->latest('id')->limit(5)->get(['id', 'report_key', 'format', 'status', 'row_count', 'created_at', 'completed_at'])
+            : collect();
 
-        return view('pages.reports.index', compact('report', 'reportKey', 'reportTitle', 'branches', 'stores', 'users', 'products', 'categories', 'paymentMethods', 'customers', 'suppliers', 'brands', 'ages', 'characters', 'colours', 'genders'));
+        return view('pages.reports.index', compact('report', 'reportKey', 'reportTitle', 'recentExports', 'branches', 'stores', 'users', 'products', 'categories', 'paymentMethods', 'customers', 'suppliers', 'brands', 'ages', 'characters', 'colours', 'genders'));
     };
 
     Route::get('reports', fn (Request $request, ReportSnapshot $snapshot) => $renderReport($request, $snapshot))
