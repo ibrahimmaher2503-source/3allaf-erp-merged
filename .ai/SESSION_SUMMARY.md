@@ -548,3 +548,9 @@
 - **Verification actually run:** PHP/Blade/config syntax, focused route and permission mapping, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20.20.2. No automated application suite ran.
 - **Evidence boundary:** No isolated database/runtime was already practical, so no browser fixture session or visual evidence is claimed.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, cron, or Toy & Joy WordPress access occurred.
+## 2026-08-27 — v0.1.8 Purchasing Overview SQL hotfix
+
+- **Production diagnosis:** Authenticated request `b3f3fc8e-96c6-4954-9552-001d28224490` failed in `PurchasingDashboard::for()` because the top-suppliers join inherited an unqualified `status` predicate, making MySQL resolve two candidate columns.
+- **Correction:** Qualified all reusable purchase-invoice scope, date, status, currency, and amount columns with `purchase_invoices` so joined and non-joined dashboard aggregates preserve identical visible-store scope and calculations.
+- **Verification actually run:** Focused PHP lint and `git diff --check`; production read-only query/render and deployment verification follow in the corrected immutable release.
+- **Boundaries:** No migration, database mutation, frontend build, cron change, tag, push, or remote operation occurred.

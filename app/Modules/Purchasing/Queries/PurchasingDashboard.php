@@ -26,19 +26,19 @@ final class PurchasingDashboard
         $periodStart = today()->subDays(6);
 
         $approvedPeriodInvoices = (clone $invoices)
-            ->where('status', 'approved')
-            ->whereDate('invoice_date', '>=', $periodStart);
+            ->where('purchase_invoices.status', 'approved')
+            ->whereDate('purchase_invoices.invoice_date', '>=', $periodStart);
 
         $trendRows = (clone $approvedPeriodInvoices)
-            ->selectRaw('DATE(invoice_date) as purchase_day, COUNT(*) as invoice_count, COALESCE(SUM(total_amount), 0) as total')
-            ->groupByRaw('DATE(invoice_date)')
+            ->selectRaw('DATE(purchase_invoices.invoice_date) as purchase_day, COUNT(*) as invoice_count, COALESCE(SUM(purchase_invoices.total_amount), 0) as total')
+            ->groupByRaw('DATE(purchase_invoices.invoice_date)')
             ->pluck('total', 'purchase_day');
 
         return [
-            'currency_code' => (clone $approvedPeriodInvoices)->value('currency_code') ?: 'EGP',
-            'today_total' => (string) (clone $invoices)->where('status', 'approved')->whereDate('invoice_date', today())->sum('total_amount'),
-            'today_count' => (clone $invoices)->where('status', 'approved')->whereDate('invoice_date', today())->count(),
-            'period_total' => (string) (clone $approvedPeriodInvoices)->sum('total_amount'),
+            'currency_code' => (clone $approvedPeriodInvoices)->value('purchase_invoices.currency_code') ?: 'EGP',
+            'today_total' => (string) (clone $invoices)->where('purchase_invoices.status', 'approved')->whereDate('purchase_invoices.invoice_date', today())->sum('purchase_invoices.total_amount'),
+            'today_count' => (clone $invoices)->where('purchase_invoices.status', 'approved')->whereDate('purchase_invoices.invoice_date', today())->count(),
+            'period_total' => (string) (clone $approvedPeriodInvoices)->sum('purchase_invoices.total_amount'),
             'period_count' => (clone $approvedPeriodInvoices)->count(),
             'open_orders' => (clone $orders)->whereIn('status', ['draft', 'submitted', 'approved', 'partially_received'])->count(),
             'receiving' => [
@@ -88,7 +88,7 @@ final class PurchasingDashboard
 
     private function visibleInvoices(User $actor): Builder
     {
-        return PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'));
+        return PurchaseInvoice::query()->whereIn('purchase_invoices.store_id', Store::query()->visibleTo($actor)->select('id'));
     }
 
     private function visibleReturns(User $actor): Builder
