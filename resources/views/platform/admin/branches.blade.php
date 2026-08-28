@@ -453,7 +453,11 @@ new #[Title('Branch Management')] class extends Component
                     <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                         @can('branches_stores.edit')
                             <flux:button size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})">{{ __('Edit') }}</flux:button>
-                            <flux:button size="sm" variant="subtle" color="{{ $branch->status === 'active' ? 'amber' : 'green' }}" icon="{{ $branch->status === 'active' ? 'pause' : 'play' }}" wire:click="toggleBranchStatus({{ $branch->id }})" @if ($branch->status === 'active') onclick="if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }" @endif>{{ __($branch->status === 'active' ? 'Deactivate' : 'Activate') }}</flux:button>
+                            @if ($branch->status === 'active')
+                                <flux:button size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Deactivate') }}</flux:button>
+                            @else
+                                <flux:button size="sm" variant="subtle" color="green" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})">{{ __('Activate') }}</flux:button>
+                            @endif
                         @endcan
                         @can('branches_stores.logical_delete')
                             <flux:button size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for branch :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Delete') }}</flux:button>
