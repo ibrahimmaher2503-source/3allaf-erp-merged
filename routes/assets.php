@@ -13,6 +13,7 @@ use App\Modules\Assets\Actions\ReturnAssetAction;
 use App\Modules\Assets\Models\AssetEvent;
 use App\Modules\Assets\Models\AssetReservation;
 use App\Modules\Assets\Models\RentalAsset;
+use App\Modules\Assets\Queries\AssetDashboard;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
@@ -21,24 +22,52 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('party/assets', function (Request $request) {
+    Route::get('party/assets', function (Request $request, AssetDashboard $dashboardQuery) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('rental_assets.view'), 403);
-        $mode = (string) $request->string('mode', 'workspace');
-        abort_unless(in_array($mode, ['workspace', 'reservations', 'returns', 'history'], true), 404);
+        $validated = $request->validate([
+            'mode' => ['nullable', Rule::in(['dashboard', 'workspace', 'catalog', 'calendar', 'reservations', 'returns', 'history'])],
+            'q' => ['nullable', 'string', 'max:120'],
+            'store_id' => ['nullable', 'integer'],
+            'status' => ['nullable', Rule::in(['available', 'reserved', 'checked_out', 'under_inspection', 'damaged', 'under_maintenance', 'retired', 'lost'])],
+            'condition' => ['nullable', Rule::in(['good', 'fair', 'poor'])],
+            'category' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'per_page' => ['nullable', Rule::in(['20', '50', '100'])],
+        ]);
+        $mode = (string) ($validated['mode'] ?? 'dashboard');
+        $mode = $mode === 'workspace' ? 'catalog' : $mode;
+        $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
+        $requestedStoreId = filled($validated['store_id'] ?? null) ? (int) $validated['store_id'] : null;
+        abort_if($requestedStoreId !== null && ! $stores->contains('id', $requestedStoreId), 404);
+        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($user);
+        $storeId = $requestedStoreId ?? ($stores->contains('id', $contextStoreId) ? $contextStoreId : null);
+        $term = trim((string) ($validated['q'] ?? ''));
         $assets = RentalAsset::query()->visibleTo($user)
             ->with(['store', 'reservations' => fn ($query) => $query->latest('starts_at')->limit(20), 'checkouts' => fn ($query) => $query->latest('checked_out_at')->limit(20), 'returns' => fn ($query) => $query->latest('returned_at')->limit(20), 'events' => fn ($query) => $query->latest('id')->limit(20)])
             ->withCount(['reservations', 'checkouts', 'returns', 'events'])
-            ->when(! $request->filled('status') && $mode === 'reservations', fn ($q) => $q->whereIn('status', ['available', 'reserved', 'checked_out']))
-            ->when(! $request->filled('status') && $mode === 'returns', fn ($q) => $q->whereIn('status', ['checked_out', 'under_inspection', 'damaged', 'under_maintenance', 'lost']))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->when($request->filled('q'), fn ($q) => $q->where(fn ($search) => $search->where('code', 'like', '%'.$request->string('q').'%')->orWhere('name_en', 'like', '%'.$request->string('q').'%')->orWhere('name_ar', 'like', '%'.$request->string('q').'%')))
-            ->latest('id')->paginate(20)->withQueryString();
-        $calendarStart = now()->startOfDay();
-        $calendarEnd = now()->addDays(30)->endOfDay();
+            ->when($storeId !== null, fn ($query) => $query->where('rental_assets.store_id', $storeId))
+            ->when(! filled($validated['status'] ?? null) && $mode === 'reservations', fn ($query) => $query->whereIn('rental_assets.status', ['available', 'reserved', 'checked_out']))
+            ->when(! filled($validated['status'] ?? null) && $mode === 'returns', fn ($query) => $query->whereIn('rental_assets.status', ['checked_out', 'under_inspection', 'damaged', 'under_maintenance', 'lost']))
+            ->when(filled($validated['status'] ?? null), fn ($query) => $query->where('rental_assets.status', $validated['status']))
+            ->when(filled($validated['condition'] ?? null), fn ($query) => $query->where('rental_assets.condition', $validated['condition']))
+            ->when(filled($validated['category'] ?? null), fn ($query) => $query->where('rental_assets.category', $validated['category']))
+            ->when($term !== '', function ($query) use ($term): void {
+                $like = '%'.$term.'%';
+                $query->where(fn ($search) => $search->where('rental_assets.code', 'like', $like)
+                    ->orWhere('rental_assets.name_en', 'like', $like)
+                    ->orWhere('rental_assets.name_ar', 'like', $like)
+                    ->orWhere('rental_assets.category', 'like', $like)
+                    ->orWhere('rental_assets.location', 'like', $like));
+            })
+            ->latest('rental_assets.id')->paginate((int) ($validated['per_page'] ?? 20))->withQueryString();
+        $calendarStart = filled($validated['from'] ?? null) ? now()->parse($validated['from'])->startOfDay() : now()->startOfDay();
+        $calendarEnd = filled($validated['to'] ?? null) ? now()->parse($validated['to'])->endOfDay() : $calendarStart->copy()->addDays(30)->endOfDay();
+        abort_if($calendarStart->diffInDays($calendarEnd) > 31, 422, __('Choose a calendar range of 31 days or fewer.'));
         $calendarReservations = AssetReservation::query()->with(['asset', 'store'])
-            ->whereHas('asset', fn ($query) => $query->visibleTo($user))
+            ->whereHas('asset', fn ($query) => $query->visibleTo($user)->when($storeId !== null, fn ($scope) => $scope->where('rental_assets.store_id', $storeId)))
             ->whereIn('status', ['reserved', 'fulfilled'])
             ->where('ends_at', '>=', $calendarStart)
             ->where('starts_at', '<=', $calendarEnd)
@@ -47,13 +76,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->get();
         $historyEvents = $mode === 'history'
             ? AssetEvent::query()->with(['asset', 'store', 'responsibleUser', 'approvalRecord'])
-                ->whereHas('asset', fn ($query) => $query->visibleTo($user))
-                ->latest('id')->paginate(30, ['*'], 'history_page')->withQueryString()
+                ->whereHas('asset', fn ($query) => $query->visibleTo($user)
+                    ->when($storeId !== null, fn ($scope) => $scope->where('rental_assets.store_id', $storeId))
+                    ->when($term !== '', fn ($scope) => $scope->where(fn ($search) => $search->where('rental_assets.code', 'like', '%'.$term.'%')->orWhere('rental_assets.name_ar', 'like', '%'.$term.'%')->orWhere('rental_assets.name_en', 'like', '%'.$term.'%'))))
+                ->when(filled($validated['from'] ?? null), fn ($query) => $query->whereDate('asset_events.created_at', '>=', $validated['from']))
+                ->when(filled($validated['to'] ?? null), fn ($query) => $query->whereDate('asset_events.created_at', '<=', $validated['to']))
+                ->latest('asset_events.id')->paginate(30, ['*'], 'history_page')->withQueryString()
             : null;
         $branches = Branch::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
-        $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
+        $categories = RentalAsset::query()->visibleTo($user)->when($storeId !== null, fn ($query) => $query->where('rental_assets.store_id', $storeId))
+            ->whereNotNull('category')->where('category', '!=', '')->distinct()->orderBy('category')->limit(100)->pluck('category');
+        $dashboard = $dashboardQuery->for($user, $storeId);
 
-        return view('pages.party.assets', compact('mode', 'assets', 'branches', 'stores', 'calendarReservations', 'calendarStart', 'calendarEnd', 'historyEvents'));
+        return view('pages.party.assets', compact('mode', 'assets', 'branches', 'stores', 'storeId', 'term', 'categories', 'dashboard', 'calendarReservations', 'calendarStart', 'calendarEnd', 'historyEvents'));
     })->middleware('can:rental_assets.view')->name('party.assets.index');
 
     Route::post('party/assets', function (Request $request, CreateAssetAction $action) {
@@ -123,6 +158,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return back()->with('success', __('Asset event approved.'));
     })->middleware('can:rental_assets.approve')->name('party.asset-events.approve');
+
+    Route::get('party/assets/{asset}', function (Request $request, RentalAsset $asset) {
+        /** @var User $user */
+        $user = $request->user();
+        $asset = RentalAsset::query()->visibleTo($user)
+            ->with(['branch', 'store', 'reservations' => fn ($query) => $query->latest('starts_at')->limit(30), 'checkouts' => fn ($query) => $query->latest('checked_out_at')->limit(30), 'returns' => fn ($query) => $query->latest('returned_at')->limit(30), 'events' => fn ($query) => $query->with(['responsibleUser', 'approvalRecord'])->latest('id')->limit(50)])
+            ->whereKey($asset->id)->firstOrFail();
+
+        return view('pages.party.asset-show', compact('asset'));
+    })->middleware('can:rental_assets.view')->name('party.assets.show');
 
     Route::get('party/assets/{asset}/print', function (Request $request, RentalAsset $asset) {
         /** @var User $user */ $user = $request->user();

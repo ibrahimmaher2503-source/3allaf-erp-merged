@@ -37,8 +37,11 @@ return [
         ['route' => 'parties.orders.index', 'permission' => 'party_operating_orders_consumables.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'أوامر التشغيل', 'en' => 'Operating orders']],
     ]],
     ['key' => 'assets', 'icon' => 'building-office-2', 'label' => ['ar' => 'الأصول والتأجير', 'en' => 'Assets & rental'], 'items' => [
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'workspace'], 'permission' => 'rental_assets.view', 'icon' => 'cube', 'label' => ['ar' => 'الأصول المؤجرة', 'en' => 'Rental assets']],
-        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'reservations'], 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'عمليات التأجير', 'en' => 'Rental operations']],
+        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'dashboard'], 'permission' => 'rental_assets.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة على الأصول', 'en' => 'Assets overview']],
+        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'catalog'], 'permission' => 'rental_assets.view', 'icon' => 'archive-box', 'label' => ['ar' => 'سجل الأصول', 'en' => 'Asset catalog']],
+        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'calendar'], 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'الإتاحة والحجوزات', 'en' => 'Availability & reservations']],
+        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'returns'], 'permission' => 'rental_assets.view', 'icon' => 'arrow-uturn-left', 'label' => ['ar' => 'الإرجاع والحالة', 'en' => 'Returns & condition']],
+        ['route' => 'party.assets.index', 'parameters' => ['mode' => 'history'], 'permission' => 'rental_assets.view', 'icon' => 'clock', 'label' => ['ar' => 'الصيانة وسجل الأحداث', 'en' => 'Maintenance & history']],
     ]],
     ['key' => 'reports', 'icon' => 'chart-bar', 'label' => ['ar' => 'التقارير', 'en' => 'Reports'], 'items' => [
         ['route' => 'reports.index', 'permission' => 'dashboard_reports.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز التقارير', 'en' => 'Reports center']],

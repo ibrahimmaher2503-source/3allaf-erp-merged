@@ -5268,4 +5268,11 @@
     ,"Showing :from–:to of :total records": "عرض السجلات من :from إلى :to من أصل :total"
     ,"Card": "بطاقة"
     ,"Sales overview": "نظرة عامة على المبيعات"
+    ,"Bounded reservations for the selected date and authorized location scope.": "حجوزات محدودة ضمن التاريخ المحدد ونطاق المواقع المصرح بها."
+    ,"Choose a calendar range of 31 days or fewer.": "اختر نطاقاً للتقويم لا يتجاوز 31 يوماً."
+    ,"Party / booking reference": "مرجع الحفلة / الحجز"
+    ,"Rental assets": "أصول التأجير"
+    ,"Reserve this asset": "حجز هذا الأصل"
+    ,"Return location": "موقع الإرجاع"
+    ,"View details": "عرض التفاصيل"
 }

@@ -1,18 +1,18 @@
-# Current Task — M50C Reports, Administration & System Settings
+# Current Task — M50D Assets, Rental & Transfers
 
 **Date:** 2026-08-28
-**Branch:** `feature/m50c-reports-administration`
-**Baseline:** published `v0.1.10` commit `a4118929b4e0fece2816f784fd9788bbb3d34e6f`
+**Branch:** `feature/m50d-assets-rental`
+**Baseline:** published `v0.1.11` commit `d363c5f47f412f93b3dd9c695209b3d94d602cbf`
 
 ## Status
 
-- Complete in development: centralized Reports Center, permission-aware Administration Center, expanded report/admin navigation, and focused settings loading-state corrections.
-- Reporting continues to use `ReportSnapshot` as the authorized scoped query boundary and the existing requester-owned queued XLSX/PDF export flow.
-- Administration metrics expose counts and redacted audit summaries only when the viewer has the corresponding permission. Existing actions remain the mutation boundary.
-- No schema, migration, calculation, policy, route removal, credential, or authentication behavior changed.
+- Complete in development: permission-aware Assets overview, catalog, detail, availability calendar, reservation/check-out/return/inspection actions, condition activity, and responsive operational lists.
+- Dashboard and pages use the existing visible-store scope and authoritative rental-asset reservation/event models. Existing action classes remain the mutation boundaries.
+- The current model has no standalone asset-transfer request workflow, category master, maintenance work order, direct customer rental ledger, or rental-revenue ledger; the UI reports these boundaries without fabricating data or dead actions.
+- No schema, migration, inventory-product coupling, calculation, policy, or existing workflow changed.
 
 ## Verification boundary
 
-- One locked Vite build, focused PHP/Blade syntax, route/navigation/export mapping, manifest/reference verification, and `git diff --check` were run.
+- One locked Vite build, focused PHP/Blade syntax, route/navigation/permission mapping, manifest/reference verification, and `git diff --check` were run.
 - Automated tests and browser control remain prohibited for this task. No local database runtime was used, so no browser evidence is claimed.
 - No production, shared runtime, database, deployment, migration, tag, push, or remote operation occurred.

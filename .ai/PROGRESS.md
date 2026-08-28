@@ -1,8 +1,8 @@
 # UI/UX Release Progress
 
-**Updated:** 2026-08-27
-**Branch:** `feature/m50a-shell-dashboard`
-**Baseline:** published `v0.1.4`
+**Updated:** 2026-08-28
+**Branch:** `feature/m50d-assets-rental`
+**Baseline:** published `v0.1.11`
 
 | Milestone | Status |
 |---|---|
@@ -18,6 +18,8 @@ M50A.1 changed shared presentation, centralized module-dashboard specification, 
 | M50B.3 — Products, Inventory & Barcodes workspace | Complete in development |
 | M50B.4 — Pricing, Promotions & Discounts workspace | Complete in development |
 | M50B.5 — Parties, Bookings & Customers workspace | Complete in development |
+| M50C — Reports, Administration & System Settings | Complete in development |
+| M50D — Assets, Rental & Transfers workspace | Complete in development |
 
 M50B.2 adds the scoped purchasing overview, seven-day trend, receiving/approval/return indicators, bounded top/recent purchasing lists, and responsive supplier/invoice/order/return tables. Due/overdue balances are omitted because there is no authoritative payable ledger.
 
@@ -26,6 +28,8 @@ M50B.3 wires and expands the existing scoped inventory overview with authoritati
 M50B.4 adds an authorized-store-scoped Pricing dashboard, effective/scheduled price coverage, approval and deterministic exception indicators, bounded recent activity, responsive filters/sorting/pagination, and scoped label readiness. No standalone promotion campaign model exists, so unsupported promotion metrics and margin inference are deliberately omitted. The shell now reports all authorized stores honestly instead of displaying the first visible store as an implied active context.
 
 M50B.5 adds a visible-branch/store-scoped Party dashboard, schedule and collections indicators, seven-day booking trend, upcoming agenda, service/payment summaries, responsive booking/invoice/order queues, and Party history on the existing customer profile. Package and venue master data are not fabricated because the authoritative model currently stores service lines and booking locations directly.
+
+M50D adds an authorized-store-scoped Assets dashboard, asset catalog/detail, bounded availability calendar, reservation and custody actions, return exceptions, and immutable condition/event activity. Rental assets remain separate from inventory products. Standalone transfer requests, maintenance work orders, customer rental ledgers, and rental-revenue reporting are absent from the authoritative model and were not fabricated.
 
 ## 2026-08-28 — M50C Reports, Administration & System Settings
 

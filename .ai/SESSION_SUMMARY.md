@@ -592,3 +592,13 @@
 - **Reporting boundary:** Preserved `ReportSnapshot`, visible-store/user scoping, bounded source rows, sales pagination/sorting, the 5,000-row export cap, snapshot hashes, requester ownership, locale restoration, XLSX formula protection, and PDF security.
 - **Verification actually run:** Focused PHP/Blade syntax, route/navigation/export mapping, `git diff --check`, and one locked Vite build with Node 20.20.2. Manifest SHA-256: `a9e9896affa4baf7ad19a4febdf6de76bf6cf84475b4e9acc277054c7378d94f`; every referenced asset exists. Automated tests and browser control were not authorized, and no database runtime was used.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, Apache, cron, or Toy & Joy WordPress access occurred.
+
+
+## 2026-08-28 — M50D Assets, Rental & Transfers
+
+- **Task:** Implemented M50D from published `v0.1.11` on `feature/m50d-assets-rental`, without deployment.
+- **Work completed:** Added a permission-aware Assets dashboard, scoped catalog/detail, bounded availability calendar, reservation/checkout/return/inspection actions, overdue-return and condition exceptions, responsive asset records, and expanded centralized navigation/module specification. Existing `RentalAsset`, reservation, immutable event, Party-link, permission, and visible-store boundaries remain authoritative.
+- **Capability boundary:** The application has no standalone transfer-request workflow, asset-category master, maintenance work order, direct customer rental ledger, or rental-revenue ledger. These capabilities were not fabricated, and rental assets remain separate from stock inventory products.
+- **Verification actually run:** Focused PHP/Blade syntax and route/navigation/permission mapping, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20.20.2. Manifest SHA-256: `28ea65ff017fdf9af0afc12ac5695e1fd173d1672a7045476484274c80e59d91`; every referenced asset exists. Automated tests and browser control were not authorized, and no database runtime was used.
+- **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, Apache, cron, or Toy & Joy WordPress access occurred.
+- **Next action:** Owner review of M50D; deployment and `v0.1.12` remain unstarted.
