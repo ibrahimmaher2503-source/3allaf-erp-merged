@@ -153,8 +153,8 @@ new #[Title('Product Options')] class extends Component {
             <flux:input wire:model="groupForm.name_en" :label="__('English label')" dir="ltr" required />
             <flux:select wire:model="groupForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
             <flux:input wire:model="groupForm.sort_order" type="number" min="0" :label="__('Order')" />
-            <div class="flex items-end"><flux:button type="submit" variant="primary" class="w-full" wire:loading.attr="disabled">{{ __('Save group') }}</flux:button></div>
-            <div wire:loading class="lg:col-span-6"><div class="h-1.5 animate-pulse rounded-full bg-cyan-200 dark:bg-cyan-900"></div></div>
+            <div class="flex items-end"><flux:button type="submit" variant="primary" class="w-full" wire:loading.attr="disabled" wire:target="saveGroup">{{ __('Save group') }}</flux:button></div>
+            <div wire:loading wire:target="saveGroup" class="lg:col-span-6"><div class="h-1.5 animate-pulse rounded-full bg-cyan-200 dark:bg-cyan-900"></div></div>
         </form>
     @endcan
 

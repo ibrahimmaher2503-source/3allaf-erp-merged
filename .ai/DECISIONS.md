@@ -44,3 +44,11 @@
 - The canonical hierarchy is `Branch → Store(type=selling) → CashDrawer → PosShift`. Present it as Branch → Sales Outlet → Cashier Till → Shift while preserving every internal class, field, route, permission, action, and relationship.
 - Settings navigation wraps existing save methods: navigation happens only after successful validation/persistence, each control targets its exact action, and read-only history has no save action.
 - Branch success guidance may prefill only the existing authorized store form. Primary-outlet selection appears only through the existing mapping action and is never fabricated or silently reassigned.
+
+
+## 2026-08-28 — v0.1.14 navigation, table and action-system boundary
+
+- Server-resolved route patterns are the authority for active module and destination state; local storage controls only the valid expanded/collapsed desktop preference and is migrated to version 3 with an expanded fallback.
+- `InitialSetupStatus` remains the sole readiness authority. The primary 21-step context persists on linked pages and the settings-only numbered navigator remains secondary; neither writes progress.
+- Management lists share table density, focus, mobile-record, and semantic action presentation. Print/PDF/export documents and the operational POS cart remain specialized and are intentionally excluded.
+- Exact `wire:target` values scope confirmed loading states to their actual action. Routes, methods, permissions, policies, schema, calculations, and workflows are unchanged.

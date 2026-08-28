@@ -91,7 +91,7 @@ new class extends Component {
                     x-show="showRecoveryCodes"
                     icon="arrow-path"
                     variant="filled"
-                    wire:click="regenerateRecoveryCodes"
+                    wire:click="regenerateRecoveryCodes" wire:loading.attr="disabled" wire:target="regenerateRecoveryCodes"
                 >
                     {{ __('Regenerate codes') }}
                 </flux:button>
@@ -120,7 +120,7 @@ new class extends Component {
                             <div
                                 role="listitem"
                                 class="select-text"
-                                wire:loading.class="opacity-50 animate-pulse"
+                                wire:loading.class="opacity-50 animate-pulse" wire:target="regenerateRecoveryCodes"
                             >
                                 {{ $code }}
                             </div>

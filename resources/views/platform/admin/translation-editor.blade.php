@@ -143,7 +143,7 @@ new #[Title('Translation editor')] class extends Component {
             </div>
         </x-slot:toolbar>
 
-        <div wire:loading class="py-3 text-sm text-text-muted">{{ __('Loading translations…') }}</div>
+        <div wire:loading wire:target="search,groupFilter,perPage,gotoPage,previousPage,nextPage" class="py-3 text-sm text-text-muted">{{ __('Loading translations…') }}</div>
         @if ($rows->isEmpty())
             <x-state.empty :title="__('No translations found')" :description="__('Try another search or translation file.')" icon="language" />
         @else
@@ -161,13 +161,13 @@ new #[Title('Translation editor')] class extends Component {
             <flux:heading size="lg">{{ __('Edit translation') }}</flux:heading>
             <flux:text class="text-text-muted break-words">{{ $editingGroup }} · {{ $translationKey }}</flux:text>
         </div>
-            @if ($saved)<flux:callout variant="success" icon="check-circle" wire:loading.remove>{{ __('Translation changes saved.') }}</flux:callout>@endif
+            @if ($saved)<flux:callout variant="success" icon="check-circle" wire:loading.remove wire:target="save">{{ __('Translation changes saved.') }}</flux:callout>@endif
             <flux:textarea wire:model.blur="values.ar" dir="rtl" :label="__('Arabic')" :invalid="$errors->has('values.ar')" />
             @error('values.ar')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
             <flux:textarea wire:model.blur="values.en" dir="ltr" :label="__('English')" :invalid="$errors->has('values.en')" />
             @error('values.en')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
             @error('translationKey')<flux:text class="text-red-600">{{ $message }}</flux:text>@enderror
-            <div class="flex flex-wrap justify-end gap-3 border-t border-border pt-4"><flux:button variant="subtle" wire:click="$set('editorOpen', false)">{{ __('Cancel') }}</flux:button><flux:button wire:click="save" wire:loading.attr="disabled" wire:dirty.attr="data-dirty">{{ __('Save') }}</flux:button><flux:button variant="subtle" wire:click="resetOverride(@js($editingGroup), @js($translationKey))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}" wire:loading.attr="disabled">{{ __('Reset to base') }}</flux:button></div>
+            <div class="flex flex-wrap justify-end gap-3 border-t border-border pt-4"><flux:button variant="subtle" wire:click="$set('editorOpen', false)">{{ __('Cancel') }}</flux:button><flux:button wire:click="save" wire:loading.attr="disabled" wire:target="save" wire:dirty.attr="data-dirty">{{ __('Save') }}</flux:button><flux:button variant="subtle" wire:click="resetOverride(@js($editingGroup), @js($translationKey))" wire:confirm="{{ __('Reset both Arabic and English values to the shipped wording?') }}" wire:loading.attr="disabled" wire:target="resetOverride">{{ __('Reset to base') }}</flux:button></div>
         @endif
     </flux:modal>
 </x-app.page>

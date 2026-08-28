@@ -1,18 +1,16 @@
-# Current Task — v0.1.13 Guided Setup & Administration UX
+# Current Task — v0.1.14 Navigation, Tables and Action-System UX
 
 **Date:** 2026-08-28
-**Branch:** `feature/v0.1.13-guided-setup-admin-ux`
-**Baseline:** published `v0.1.12` commit `eb3533e8a564dfdc7aa8fffd5c5116a235636d6b`
+**Branch:** `feature/v0.1.14-navigation-table-actions`
+**Baseline:** published `v0.1.13` commit `3ac3aca028bacee7faaf53787fa970000205bfc9`
 
 ## Status
 
-- Complete in development: direct validation-first navigation across existing settings sections, compact responsive administration lists, and permission-aware context for the existing 21-item setup checklist.
-- Existing `InitialSetupStatus`, settings actions, branch/store mapping, till, shift, routes, Gates, policies, and mutations remain authoritative.
-- User-facing terminology clarifies Branch → Sales Outlet → Cashier Till → Shift without renaming internal identifiers.
-- No schema, migration, calculation, authorization, policy, or business workflow change is authorized.
+- Complete in development: one centralized active-route navigation map, versioned safe sidebar preference recovery, persistent two-level setup context, exact Livewire loading targets, and shared management-table/action presentation.
+- The authoritative 21-item setup journey remains readiness-derived and permission-filtered.
+- Routes, methods, permissions, policies, validation, schema, calculations, and workflows remain unchanged.
 
 ## Verification boundary
 
-- One locked Vite build plus focused PHP/Blade/JSON, route/permission mapping, manifest/reference verification, and `git diff --check` passed.
-- Automated tests remain prohibited. Browser evidence is optional and is not required for closure.
-- No production, shared runtime, database, deployment, migration, tag, push, or remote operation occurred.
+- One locked Vite build and focused syntax/mapping/diff validation passed; automated suites and new browser/database runtimes are prohibited.
+- No production, shared runtime, database, deployment, migration, version bump, tag, push, or remote operation is authorized.

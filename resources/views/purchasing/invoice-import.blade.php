@@ -129,7 +129,7 @@ new #[Title('Purchase Invoice Import')] class extends Component
                 <flux:input type="file" wire:model="importFile" accept=".xlsx,.csv" />
                 @error('importFile') <flux:text class="text-red-600">{{ $message }}</flux:text> @enderror
             </div>
-            <flux:button type="submit" variant="primary" wire:loading.attr="disabled">{{ __('Stage file') }}</flux:button>
+            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="stage"><span wire:loading.remove wire:target="stage">{{ __('Stage file') }}</span><span wire:loading wire:target="stage">{{ __('Staging...') }}</span></flux:button>
         </form>
         <flux:text size="sm">{{ __('Required headers: supplier_code, supplier_invoice_number, invoice_date, receiving_store_code, item_code or barcode, quantity, unit_cost.') }}</flux:text>
     </flux:card>

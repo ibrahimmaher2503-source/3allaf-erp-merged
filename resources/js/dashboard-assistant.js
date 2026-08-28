@@ -20,7 +20,7 @@ const registerDashboardAssistant = () => {
                     initialDark = document.documentElement.dataset.darkSidebar === 'true';
                 }
                 this.darkSidebar = initialDark;
-                this.preferences = this.normalizePreferences(preferences);
+                this.preferences = this.restoreShellPreferences(preferences);
                 this.progress = progress || {};
                 this.tutorialStatus = this.statusForContext();
                 this.applyPreferences();
@@ -63,6 +63,26 @@ const registerDashboardAssistant = () => {
                 } catch (error) {
                     console.warn('Tutorial progress could not be saved', error);
                 }
+            },
+            restoreShellPreferences(serverPreferences = {}) {
+                let stored = null;
+                try {
+                    stored = JSON.parse(localStorage.getItem('rajeh_shell_preferences_v3') || 'null');
+                    if (!stored || stored.version !== 3 || !['expanded', 'collapsed'].includes(stored.sidebar_mode)) {
+                        const legacy = JSON.parse(localStorage.getItem('rajeh_shell_preferences_v2') || 'null');
+                        stored = legacy?.version === 2 && ['expanded', 'collapsed'].includes(legacy.sidebar_mode)
+                            ? { version: 3, sidebar_mode: legacy.sidebar_mode }
+                            : null;
+                    }
+                } catch (ignored) {
+                    stored = null;
+                }
+                const resolved = this.normalizePreferences({ ...serverPreferences, sidebar_mode: stored?.sidebar_mode || serverPreferences?.sidebar_mode || 'expanded' });
+                try {
+                    localStorage.setItem('rajeh_shell_preferences_v3', JSON.stringify({ version: 3, sidebar_mode: resolved.sidebar_mode }));
+                    localStorage.removeItem('rajeh_shell_preferences_v2');
+                } catch (ignored) {}
+                return resolved;
             },
             normalizePreferences(value = {}) {
                 const merged = { ...this.defaults, ...(value || {}) };
@@ -149,7 +169,7 @@ const registerDashboardAssistant = () => {
                     if (!sidebar) return;
                     sidebar.removeAttribute('data-flux-sidebar-collapsed-desktop');
                     try {
-                        localStorage.setItem('rajeh_shell_preferences_v2', JSON.stringify({ version: 2, sidebar_mode: this.preferences.sidebar_mode }));
+                        localStorage.setItem('rajeh_shell_preferences_v3', JSON.stringify({ version: 3, sidebar_mode: this.preferences.sidebar_mode }));
                     } catch (ignored) {}
                 };
                 syncSidebar();
@@ -450,3 +470,13 @@ const registerDashboardAssistant = () => {
 registerDashboardAssistant();
 document.addEventListener('alpine:init', registerDashboardAssistant);
 document.addEventListener('livewire:navigated', registerDashboardAssistant);
+
+const synchronizeActiveNavigation = () => {
+    document.querySelectorAll(".app-navigation__group[data-active-group]").forEach((group) => { group.open = true; });
+    const active = document.querySelector(".app-navigation__item[aria-current=page]");
+    if (active && active.closest(".app-navigation")) {
+        window.requestAnimationFrame(() => active.scrollIntoView({ block: "nearest", inline: "nearest" }));
+    }
+};
+document.addEventListener("DOMContentLoaded", synchronizeActiveNavigation);
+document.addEventListener("livewire:navigated", synchronizeActiveNavigation);

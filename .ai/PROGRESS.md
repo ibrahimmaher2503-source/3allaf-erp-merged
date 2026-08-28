@@ -20,6 +20,7 @@ M50A.1 changed shared presentation, centralized module-dashboard specification, 
 | M50B.5 — Parties, Bookings & Customers workspace | Complete in development |
 | M50C — Reports, Administration & System Settings | Complete in development |
 | M50D — Assets, Rental & Transfers workspace | Complete in development |
+| M52 — v0.1.14 navigation, tables and action controls | Complete in development |
 | v0.1.13 — Guided Setup & Administration UX | Complete in development |
 
 M50B.2 adds the scoped purchasing overview, seven-day trend, receiving/approval/return indicators, bounded top/recent purchasing lists, and responsive supplier/invoice/order/return tables. Due/overdue balances are omitted because there is no authoritative payable ledger.

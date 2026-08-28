@@ -581,11 +581,11 @@ new #[Title('Product Masters')] class extends Component
                             <flux:table.cell data-label="{{ __('Actions') }}" class="whitespace-nowrap">
                                 @can('products_categories_brands.edit')
                                     <div class="catalog-actions">
-                                        <flux:button size="xs" variant="subtle" icon="eye" href="{{ route('catalog.products.show', ['product' => $product]) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}" wire:navigate />
-                                        <flux:button size="xs" variant="subtle" icon="arrow-top-right-on-square" href="{{ route('catalog.products.edit', ['product' => $product]) }}" title="{{ __('Full product card') }}" aria-label="{{ __('Full product card') }}" wire:navigate />
-                                        <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditProductModal({{ $product->id }})" title="{{ __('Edit identity') }}" aria-label="{{ __('Edit identity') }}" />
-                                        <flux:button size="xs" variant="subtle" icon="tag" wire:click="openBarcodeModal({{ $product->id }})" title="{{ __('Manage barcodes') }}" aria-label="{{ __('Manage barcodes') }}" />
-                                        <flux:button size="xs" variant="subtle" :icon="$product->status === 'active' ? 'pause' : 'play'" wire:click="toggleProductStatus({{ $product->id }})" title="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" aria-label="{{ $product->status === 'active' ? __('Deactivate') : __('Activate') }}" />
+                                        <x-actions.button semantic="view" :label="__('View details')" :href="route('catalog.products.show', ['product' => $product])" size="xs" wire:navigate />
+                                        <x-actions.button semantic="view" icon="arrow-top-right-on-square" :label="__('Full product card')" :href="route('catalog.products.edit', ['product' => $product])" size="xs" wire:navigate />
+                                        <x-actions.button semantic="edit" :label="__('Edit identity')" size="xs" wire:click="openEditProductModal({{ $product->id }})" />
+                                        <x-actions.button semantic="assign" icon="tag" :label="__('Manage barcodes')" size="xs" wire:click="openBarcodeModal({{ $product->id }})" />
+                                        <x-actions.button :semantic="$product->status === 'active' ? 'disable' : 'restore'" :icon="$product->status === 'active' ? 'pause' : 'play'" :label="$product->status === 'active' ? __('Deactivate') : __('Activate')" size="xs" wire:click="toggleProductStatus({{ $product->id }})" />
                                     </div>
                                 @else
                                     <span class="text-xs font-medium text-text-muted">{{ __('View only') }}</span>

@@ -642,83 +642,17 @@ new #[Title('System Settings')] class extends Component
         ][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
     ?>
 
-    <!-- Navigation Tabs -->
-    <div class="settings-screen__tabs border-b border-border">
-        <nav class="-mb-px flex gap-6 overflow-x-auto text-sm font-medium" role="tablist" aria-label="{{ __('Settings Sections') }}" data-guide="settings-tabs">
-            <button
-                type="button"
-                id="tab-company"
-                role="tab"
-                aria-selected="{{ $activeTab === 'company' ? 'true' : 'false' }}"
-                aria-controls="panel-company"
-                wire:click="$set('activeTab', 'company')"
-                data-settings-tab="company"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'company' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Company Identity') }}
-            </button>
-            <button
-                type="button"
-                id="tab-payments"
-                role="tab"
-                aria-selected="{{ $activeTab === 'payments' ? 'true' : 'false' }}"
-                aria-controls="panel-payments"
-                wire:click="$set('activeTab', 'payments')"
-                data-settings-tab="payments"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'payments' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Payment Methods') }}
-            </button>
-            <button
-                type="button"
-                id="tab-tax"
-                role="tab"
-                aria-selected="{{ $activeTab === 'tax' ? 'true' : 'false' }}"
-                aria-controls="panel-tax"
-                wire:click="$set('activeTab', 'tax')"
-                data-settings-tab="tax"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'tax' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Tax rules') }}
-            </button>
-            <button
-                type="button"
-                id="tab-sequences"
-                role="tab"
-                aria-selected="{{ $activeTab === 'sequences' ? 'true' : 'false' }}"
-                aria-controls="panel-sequences"
-                wire:click="$set('activeTab', 'sequences')"
-                data-settings-tab="sequences"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'sequences' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Document numbering') }}
-            </button>
-            <button
-                type="button"
-                id="tab-printers"
-                role="tab"
-                aria-selected="{{ $activeTab === 'printers' ? 'true' : 'false' }}"
-                aria-controls="panel-printers"
-                wire:click="$set('activeTab', 'printers')"
-                data-settings-tab="printers"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'printers' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Printers & Print Profiles') }}
-            </button>
-            <button
-                type="button"
-                id="tab-audit"
-                role="tab"
-                aria-selected="{{ $activeTab === 'audit' ? 'true' : 'false' }}"
-                aria-controls="panel-audit"
-                wire:click="$set('activeTab', 'audit')"
-                data-settings-tab="audit"
-                class="pb-3 border-b-2 transition-colors cursor-pointer {{ $activeTab === 'audit' ? 'border-primary text-primary font-semibold' : 'border-transparent text-text-muted hover:text-text-primary' }}"
-            >
-                {{ __('Configuration Change History') }}
-            </button>
-        </nav>
-    </div>
+    @php
+        $settingsSections = [
+            'company' => ['label' => __('Company Identity')],
+            'payments' => ['label' => __('Payment Methods')],
+            'tax' => ['label' => __('Tax rules')],
+            'sequences' => ['label' => __('Document numbering')],
+            'printers' => ['label' => __('Printers & Print Profiles')],
+            'audit' => ['label' => __('Configuration Change History')],
+        ];
+    @endphp
+    <x-setup.section-navigator :sections="$settingsSections" :current="$activeTab" />
 
     <flux:card class="settings-screen__summary space-y-1 border-s-4 border-primary bg-surface shadow-card" data-settings-section-summary="{{ $activeTab }}">
         <flux:heading size="lg">{{ $sectionMeta[0] }}</flux:heading>
@@ -826,13 +760,12 @@ new #[Title('System Settings')] class extends Component
                         <flux:button
                             type="submit"
                             variant="primary"
-                            icon="arrow-right"
                             x-bind:disabled="!dirty"
                             wire:loading.attr="disabled"
                             wire:target="saveCompanyAndNext"
                             data-guide="settings-save-button"
                         >
-                            <span wire:loading.remove wire:target="saveCompanyAndNext">{{ __('Save & Next') }}</span>
+                            <span wire:loading.remove wire:target="saveCompanyAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span>
                             <span wire:loading wire:target="saveCompanyAndNext">{{ __('Saving...') }}</span>
                         </flux:button>
                     </div>
@@ -907,8 +840,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="savePaymentMethodAndPrevious" wire:loading.attr="disabled" wire:target="savePaymentMethodAndPrevious"><span wire:loading.remove wire:target="savePaymentMethodAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="savePaymentMethodAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="savePaymentMethodAndNext" wire:loading.attr="disabled" wire:target="savePaymentMethodAndNext"><span wire:loading.remove wire:target="savePaymentMethodAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="savePaymentMethodAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="subtle" wire:click="savePaymentMethodAndPrevious" wire:loading.attr="disabled" wire:target="savePaymentMethodAndPrevious"><span wire:loading.remove wire:target="savePaymentMethodAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="savePaymentMethodAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" wire:click="savePaymentMethodAndNext" wire:loading.attr="disabled" wire:target="savePaymentMethodAndNext"><span wire:loading.remove wire:target="savePaymentMethodAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="savePaymentMethodAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
             </flux:card>
@@ -1079,8 +1012,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="saveTaxSettingAndPrevious" wire:loading.attr="disabled" wire:target="saveTaxSettingAndPrevious"><span wire:loading.remove wire:target="saveTaxSettingAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="saveTaxSettingAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="saveTaxSettingAndNext" wire:loading.attr="disabled" wire:target="saveTaxSettingAndNext"><span wire:loading.remove wire:target="saveTaxSettingAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="saveTaxSettingAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="subtle" wire:click="saveTaxSettingAndPrevious" wire:loading.attr="disabled" wire:target="saveTaxSettingAndPrevious"><span wire:loading.remove wire:target="saveTaxSettingAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="saveTaxSettingAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" wire:click="saveTaxSettingAndNext" wire:loading.attr="disabled" wire:target="saveTaxSettingAndNext"><span wire:loading.remove wire:target="saveTaxSettingAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="saveTaxSettingAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
             </flux:card>
@@ -1281,8 +1214,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="saveDocumentSequenceAndPrevious" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndPrevious"><span wire:loading.remove wire:target="saveDocumentSequenceAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="saveDocumentSequenceAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="saveDocumentSequenceAndNext" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndNext"><span wire:loading.remove wire:target="saveDocumentSequenceAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="saveDocumentSequenceAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="subtle" wire:click="saveDocumentSequenceAndPrevious" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndPrevious"><span wire:loading.remove wire:target="saveDocumentSequenceAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="saveDocumentSequenceAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" wire:click="saveDocumentSequenceAndNext" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndNext"><span wire:loading.remove wire:target="saveDocumentSequenceAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="saveDocumentSequenceAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
 
@@ -1675,7 +1608,7 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 6: Settings Audit Trail -->
     <?php if ($activeTab === 'audit'): ?>
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" class="space-y-6">
-            <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" icon="arrow-left" wire:click="$set('activeTab', 'printers')">{{ __('Previous') }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
+            <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('activeTab', 'printers')">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <div>

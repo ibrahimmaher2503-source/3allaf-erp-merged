@@ -609,3 +609,11 @@
 - **Boundaries:** Existing actions, validators, routes, Gates, readiness rules, BranchSellingStore mapping, CashDrawer/PosShift ownership, schema, calculations, and mutation rules are unchanged. No unsupported relationship or wizard persistence was added.
 - **Verification:** One locked Vite production build completed with Node 20.20.2 and manifest SHA-256 `482a91443a77d0753066b5324963d01dcb0a66e189806017252ab13b92c870af`; all 12 referenced assets exist. Focused PHP/Blade/JSON syntax, route/permission mapping, and `git diff --check` passed. No automated test suite or browser control was run.
 - **Delivery:** Development-only; no production access, database operation, migration, deployment, version bump, tag, push, remote contact, or Toy & Joy WordPress access occurred.
+
+
+# 2026-08-28 — v0.1.14 navigation, tables and action-system UX
+
+- **Task:** Implement the v0.1.14 development milestone from published `v0.1.13` on `feature/v0.1.14-navigation-table-actions`.
+- **Work completed:** Centralized nested-route activation, active parent/child sidebar state, version-3 preference recovery, persistent primary setup context, numbered Settings section navigation, exact loading targets, shared table styling, and semantic action controls. Mechanically inventoried 79 table/list views; specialized print/export/POS surfaces remain intentionally excluded.
+- **Boundaries:** No route, permission, policy, validation, schema, migration, model, calculation, mutation, production, database, shared-runtime, remote, tag, or deployment change.
+- **Verification:** PHP/Blade syntax, JavaScript syntax, 339-route registration and required navigation mappings, manifest references, and `git diff --check` passed. One locked Vite build ran with Node 20.20.2; manifest SHA-256 is `7c93212c6060ea82799efdadfe1822cd7961e0d1dd223c6af5fc07a6e758de20`. No automated test suite, browser session, or database runtime ran.

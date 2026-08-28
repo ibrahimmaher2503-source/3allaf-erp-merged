@@ -1247,3 +1247,41 @@ select:focus[data-flux-control] {
         .responsive-resource-table td[data-primary]::before { display:none; }
     }
 }
+
+/* v0.1.14 shared navigation, setup, table and action controls */
+@layer components {
+    .app-navigation__group.is-active > summary { background:color-mix(in srgb,var(--color-primary-soft) 72%,transparent);color:#f7fffe; }
+    .app-navigation__group.is-active > summary > svg:first-child { color:var(--color-primary); }
+    html[data-sidebar-mode="collapsed"] .app-navigation__rail-link.is-active { box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--color-primary) 62%,transparent); }
+
+    .setup-section-nav { @apply overflow-hidden rounded-2xl border border-border bg-surface p-3 shadow-sm; }
+    .setup-section-nav__list { @apply flex gap-2 overflow-x-auto pb-1; }
+    .setup-section-nav__step { @apply inline-flex min-h-11 min-w-max items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-surface-muted hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40; }
+    .setup-section-nav__step.is-active { @apply border-primary/30 bg-primary-soft text-primary; }
+    .setup-section-nav__number { @apply inline-flex size-6 items-center justify-center rounded-full bg-surface-muted text-xs font-bold; }
+    .setup-section-nav__step.is-active .setup-section-nav__number { @apply bg-primary text-white; }
+
+    .app-action { min-width:2.75rem!important;min-height:2.75rem!important;border-width:1px!important;border-color:transparent!important;border-radius:.7rem!important;box-shadow:none!important; }
+    .app-action:focus-visible { outline:2px solid var(--color-primary);outline-offset:2px; }
+    .app-action--view { background:#eff6ff!important;color:#1d4ed8!important;border-color:#bfdbfe!important; }
+    .app-action--edit { background:#f0fdfa!important;color:#0f766e!important;border-color:#99f6e4!important; }
+    .app-action--create,.app-action--link,.app-action--assign,.app-action--restore { background:#f0fdf4!important;color:#15803d!important;border-color:#bbf7d0!important; }
+    .app-action--approve,.app-action--confirm,.app-action--receive,.app-action--complete { background:#ecfdf5!important;color:#047857!important;border-color:#a7f3d0!important; }
+    .app-action--print,.app-action--export,.app-action--download { background:#f5f3ff!important;color:#6d28d9!important;border-color:#ddd6fe!important; }
+    .app-action--history { background:#f8fafc!important;color:#475569!important;border-color:#cbd5e1!important; }
+    .app-action--pause,.app-action--disable,.app-action--unavailable { background:#fffbeb!important;color:#b45309!important;border-color:#fde68a!important; }
+    .app-action--reject,.app-action--cancel,.app-action--delete,.app-action--archive { background:#fef2f2!important;color:#b91c1c!important;border-color:#fecaca!important; }
+    .app-action:hover { filter:saturate(1.08) brightness(.98); }
+    .app-action__label { white-space:nowrap; }
+
+    .table-panel-surface,.table-shell { @apply overflow-hidden rounded-2xl border border-border bg-surface shadow-sm; }
+    :where(.table-panel-surface,.table-shell,.app-table-frame,.catalog-table-frame) :where(th,[data-flux-column]) { @apply bg-surface-muted/80 text-xs font-bold text-text-muted;letter-spacing:.01em; }
+    :where(.table-panel-surface,.table-shell,.app-table-frame,.catalog-table-frame) :where(td,[data-flux-cell]) { @apply align-middle text-sm; }
+    :where(.table-panel-surface,.table-shell,.app-table-frame,.catalog-table-frame) :where(tbody tr,[data-flux-row]) { transition:background-color .15s ease; }
+    :where(.table-panel-surface,.table-shell,.app-table-frame,.catalog-table-frame) :where(tbody tr,[data-flux-row]):hover { background:color-mix(in srgb,var(--color-primary-soft) 34%,var(--color-surface)); }
+    .table-identity { @apply min-w-0 font-semibold text-text-primary; }
+    .table-identity__secondary { @apply mt-0.5 block text-xs font-normal text-text-muted; }
+    .table-ltr { direction:ltr;unicode-bidi:isolate;text-align:start; }
+    .table-actions { @apply flex flex-wrap items-center justify-end gap-1.5; }
+    @media(max-width:639px){.resource-mobile-card{display:block}.desktop-resource-table{display:none!important}}
+}

@@ -92,7 +92,7 @@
         <section x-cloak x-show="open" x-transition class="navigation-search" role="dialog" aria-modal="true" aria-labelledby="navigation-search-title" x-trap.noscroll="open"><div class="navigation-search__input"><flux:icon.magnifying-glass class="size-5" /><label id="navigation-search-title" class="sr-only" for="navigation-search-query">{{ $isArabic ? 'بحث التنقل' : 'Navigation search' }}</label><input id="navigation-search-query" x-ref="query" x-model="query" type="search" placeholder="{{ $isArabic ? 'اكتب اسم الشاشة أو الوحدة' : 'Type a screen or module name' }}"><flux:button type="button" variant="ghost" square icon="x-mark" aria-label="{{ $isArabic ? 'إغلاق البحث' : 'Close search' }}" x-on:click="open=false" /></div><div class="navigation-search__results"><template x-for="item in results" :key="item.url"><a :href="item.url" x-on:click="open = false"><span x-text="item.label"></span><small x-text="item.group"></small></a></template><p x-show="results.length === 0" class="p-5 text-center text-sm text-text-muted">{{ $isArabic ? 'لا توجد شاشة مطابقة ضمن صلاحياتك.' : 'No matching screen is available in your permissions.' }}</p></div></section>
     </div>
     @include('components.platform.dashboard-tools', ['pageGuide' => \App\Modules\Platform\Data\PageGuideContext::fromRequest($actor)])
-    <flux:main class="app-main">{{ $slot }}</flux:main>
+    <flux:main class="app-main"><x-setup.route-context />{{ $slot }}</flux:main>
     <x-app-footer />
     @persist('toast')<flux:toast.group><flux:toast /></flux:toast.group>@endpersist
 </div>

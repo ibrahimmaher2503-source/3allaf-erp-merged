@@ -148,3 +148,8 @@ The production release gate verifies: production environment and debug settings;
 The setup journey is a presentation layer over `InitialSetupStatus` and existing permission-protected routes. It does not persist page position or completion flags: continuation is derived from authoritative readiness on each request. Contextual links carry only non-authoritative navigation hints.
 
 The operational location chain remains `Branch → Store(type=selling) → CashDrawer → PosShift`. UI copy presents Store(type=selling) as “Sales Outlet” and CashDrawer as “Cashier Till”; domain identifiers and mutation boundaries remain unchanged.
+
+
+## v0.1.14 shared navigation, table, and action controls
+
+Nested create/edit/detail routes resolve through `ApplicationNavigation` patterns to one authorized list/module destination. The active group is server-opened and cannot be hidden by a stale client preference; only a validated version-3 expanded/collapsed preference is retained. Linked setup pages render the readiness-derived primary 21-step context, while Settings adds a compact secondary section navigator. Management lists inherit shared density, focus, responsive record-card, and semantic action classes; exact action targets isolate Livewire loading state. See `docs/architecture/v014-navigation-table-action-system.md`.
