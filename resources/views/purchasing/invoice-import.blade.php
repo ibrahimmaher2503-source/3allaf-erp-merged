@@ -173,7 +173,7 @@ new #[Title('Purchase Invoice Import')] class extends Component
                         <flux:button href="{{ route('purchasing.invoices.import.source', [$selectedBatch, $sourceAttachment]) }}" variant="subtle" icon="arrow-down-tray">{{ __('Download source') }}</flux:button>
                     @endif
                     @if (in_array($selectedBatch->status, ['staging', 'ready_for_review'], true))
-                        <flux:button variant="danger" wire:click="cancelBatch">{{ __('Cancel batch') }}</flux:button>
+                        <x-actions.button semantic="cancel" :label="__('Cancel batch')" variant="danger" wire:click="cancelBatch">{{ __('Cancel batch') }}</x-actions.button>
                     @endif
                     @can('purchase_invoices_supplier_returns.approve')
                         <flux:button variant="primary" wire:click="createDrafts" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->invalid_rows > 0">{{ __('Create draft invoices') }}</flux:button>

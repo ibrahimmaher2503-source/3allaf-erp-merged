@@ -167,7 +167,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                 <thead class="bg-surface-muted/70 text-xs text-text-muted"><tr><th class="px-3 py-2.5 text-start font-semibold">{{ __('Reference') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Name') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Scope') }}</th><th class="px-3 py-2.5 text-start font-semibold">{{ __('Status') }}</th><th class="px-3 py-2.5 text-end font-semibold">{{ __('Action') }}</th></tr></thead>
                 <tbody>
                     @foreach ([['PLT-104', __('Central branch'), __('Branch scope'), 'active'], ['PLT-105', __('Store drawer'), __('Store scope'), 'pending'], ['PLT-106', __('Review queue'), __('Global scope'), 'inactive']] as [$reference, $name, $scope, $status])
-                        <tr class="data-table-row"><td class="px-3 py-3 font-mono text-xs text-text-muted">{{ $reference }}</td><td class="px-3 py-3 font-medium text-text-primary">{{ $name }}</td><td class="px-3 py-3 text-text-muted">{{ $scope }}</td><td class="px-3 py-3"><x-status.badge :status="$status" /></td><td class="px-3 py-3 text-end"><flux:button size="xs" variant="subtle" icon="ellipsis-horizontal" aria-label="{{ __('View record') }}" /></td></tr>
+                        <tr class="data-table-row"><td class="px-3 py-3 font-mono text-xs text-text-muted">{{ $reference }}</td><td class="px-3 py-3 font-medium text-text-primary">{{ $name }}</td><td class="px-3 py-3 text-text-muted">{{ $scope }}</td><td class="px-3 py-3"><x-status.badge :status="$status" /></td><td class="px-3 py-3 text-end"><x-actions.button semantic="view" :label="__('View record')" size="xs" /></td></tr>
                     @endforeach
                 </tbody>
             </table>

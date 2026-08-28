@@ -56,9 +56,9 @@
                         <td>{{ $receipt->created_at?->format('Y-m-d H:i') }}</td>
                         <td>
                             @if($receipt->print_events_count === 0 && auth()->user()->can('gift_receipts.print'))
-                                <a class="text-sm font-medium text-teal-700 underline" href="{{ route('gift.receipts.print', $receipt) }}">{{ __('Print') }}</a>
+                                <x-actions.button semantic="print" :label="__('Print')" :href="route('gift.receipts.print', $receipt)">{{ __('Print') }}</x-actions.button>
                             @elseif($receipt->print_events_count > 0 && auth()->user()->can('gift_receipts.reprint'))
-                                <a class="text-sm font-medium text-teal-700 underline" href="{{ route('gift.receipts.print', [$receipt, 'reprint' => 1, 'reason' => __('Customer reprint')]) }}">{{ __('Reprint') }}</a>
+                                <x-actions.button semantic="print" :label="__('Reprint')" :href="route('gift.receipts.print', [$receipt, 'reprint' => 1, 'reason' => __('Customer reprint')])">{{ __('Reprint') }}</x-actions.button>
                             @endif
                         </td>
                     </tr>

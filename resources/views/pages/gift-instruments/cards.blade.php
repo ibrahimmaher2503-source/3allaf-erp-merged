@@ -32,8 +32,8 @@
                                 <td class="font-mono font-semibold">{{ $card->identifier }}</td><td><x-status.badge :status="$card->status" /></td>
                                 <td>{{ number_format((float) $card->issued_value, 2) }} {{ $card->currency_code }}</td><td class="font-semibold">{{ number_format((float) $card->balance, 2) }} {{ $card->currency_code }}</td><td>{{ $card->store?->name_en ?: $card->store_id }}</td>
                                 <td class="flex flex-wrap gap-3">
-                                    <a class="text-sm text-teal-700 underline" href="{{ route('gift.cards.show', $card) }}">{{ __('History') }}</a>
-                                    @can('gift_cards.print')<a class="text-sm text-teal-700 underline" href="{{ route('gift.cards.print', $card) }}">{{ __('Print') }}</a>@endcan
+                                    <x-actions.button semantic="history" :label="__('History')" href="{{ route('gift.cards.show', $card) }}">{{ __('History') }}</x-actions.button>
+                                    @can('gift_cards.print')<x-actions.button semantic="print" :label="__('Print')" href="{{ route('gift.cards.print', $card) }}">{{ __('Print') }}</x-actions.button>@endcan
                                     @can('gift_cards.void')
                                         @if(!in_array($card->status, ['voided', 'expired', 'fully_used'], true))
                                             <details><summary class="cursor-pointer text-sm text-red-700 underline">{{ __('Void') }}</summary><form method="POST" action="{{ route('gift.cards.void', $card) }}" class="mt-2 flex gap-2">@csrf<input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}"><input class="w-40 rounded border-zinc-300" name="reason" placeholder="{{ __('Reason') }}" required><button class="text-sm text-red-700 underline" type="submit">{{ __('Confirm') }}</button></form></details>

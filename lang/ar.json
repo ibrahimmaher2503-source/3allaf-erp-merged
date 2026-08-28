@@ -132,6 +132,8 @@
     "Option value saved successfully.": "تم حفظ قيمة الخيار بنجاح.",
     "Build a reusable bilingual option library for explicit standard-product variation families.": "أنشئ مكتبة خيارات ثنائية اللغة مثل اللون والمقاس لاستخدامها عند إنشاء متغيرات المنتجات القياسية.",
     "Product option setup": "إعداد خيارات المنتجات",
+    "Basics": "الأساسيات",
+    "Operational readiness": "الجاهزية التشغيلية",
     "Create reusable product options such as colour and size before building variations.": "أنشئ خيارات منتجات قابلة لإعادة الاستخدام، مثل اللون والمقاس، قبل إنشاء المتغيرات.",
     "Create reusable product options, such as sizes and colours, before building products with variations.": "أنشئ خيارات منتجات قابلة لإعادة الاستخدام، مثل المقاسات والألوان، قبل إنشاء المنتجات ذات المتغيرات.",
     "Option group editor": "محرر مجموعة الخيارات",

@@ -713,21 +713,9 @@ new #[Title('Supplier Masters')] class extends Component
                                     <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
                                 <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
-                                    <flux:button
-                                        size="xs"
-                                        variant="subtle"
-                                        icon="eye"
-                                        wire:click="openSupplierDetailModal({{ $supplier->id }})"
-                                        title="{{ __('View supplier details & history') }}"
-                                    />
+                                    <x-actions.button semantic="view" :label="__('View supplier details & history')" size="xs" wire:click="openSupplierDetailModal({{ $supplier->id }})" />
                                     @if ($canEdit)
-                                        <flux:button
-                                            size="xs"
-                                            variant="subtle"
-                                            icon="pencil"
-                                            wire:click="openEditSupplierModal({{ $supplier->id }})"
-                                            title="{{ __('Edit supplier master') }}"
-                                        />
+                                        <x-actions.button semantic="edit" :label="__('Edit supplier master')" size="xs" wire:click="openEditSupplierModal({{ $supplier->id }})" />
                                         <flux:button
                                             size="xs"
                                             variant="subtle"

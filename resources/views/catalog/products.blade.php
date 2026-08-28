@@ -678,7 +678,7 @@ new #[Title('Product Masters')] class extends Component
                             <flux:badge size="sm" color="{{ $barcode['status'] === 'active' ? 'emerald' : 'zinc' }}">{{ __($barcode['status'] === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
                         </div>
                         @if ($barcode['status'] === 'active')
-                            <flux:button size="xs" variant="subtle" color="red" wire:click="deactivateBarcode({{ $barcode['id'] }})" wire:confirm="{{ __('Deactivate this barcode while preserving its historical identity?') }}">{{ __('Deactivate') }}</flux:button>
+                            <x-actions.button semantic="disable" :label="__('Deactivate')" size="xs" variant="subtle" color="red" wire:click="deactivateBarcode({{ $barcode['id'] }})" wire:confirm="{{ __('Deactivate this barcode while preserving its historical identity?') }}">{{ __('Deactivate') }}</x-actions.button>
                         @endif
                     </div>
                 @empty

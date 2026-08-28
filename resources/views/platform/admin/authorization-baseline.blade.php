@@ -208,7 +208,7 @@ new #[Title('Authorization Baseline')] class extends Component
                             <td class="px-3 py-3"><x-status.badge :status="$user->email_verified_at ? 'active' : 'pending'" :label="$user->email_verified_at ? __('Verified') : __('Not verified')" /></td>
                             <td class="px-3 py-3 text-end">
                                 @can('users_roles_permissions.edit')
-                                    <flux:button size="xs" variant="subtle" icon="pencil-square" wire:click="editAuthorization({{ $user->id }})" wire:loading.attr="disabled" wire:loading.attr="aria-busy" wire:loading.class="cursor-wait opacity-60" wire:target="editAuthorization" data-guide="auth-users-manage-action">
+                                    <x-actions.button semantic="edit" :label="__('Manage')" size="xs" wire:click="editAuthorization({{ $user->id }})" wire:loading.attr="disabled" wire:target="editAuthorization" data-guide="auth-users-manage-action">
                                         <span wire:loading.remove wire:target="editAuthorization">{{ __('Manage') }}</span>
                                         <span wire:loading wire:target="editAuthorization">{{ __('Opening authorization…') }}</span>
                                     </flux:button>

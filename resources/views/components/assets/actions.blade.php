@@ -1,8 +1,8 @@
 @props(['asset', 'reservation' => null, 'checkout' => null, 'assetReturn' => null])
 
 <div {{ $attributes->class('space-y-2') }}>
-    <flux:button size="sm" variant="subtle" icon="eye" href="{{ route('party.assets.show', $asset) }}">{{ __('View details') }}</flux:button>
-    @can('rental_assets.print')<flux:button size="sm" variant="subtle" icon="printer" href="{{ route('party.assets.print', $asset) }}">{{ __('History / print') }}</flux:button>@endcan
+    <x-actions.button semantic="view" :label="__('View details')" :href="route('party.assets.show', $asset)">{{ __('View details') }}</x-actions.button>
+    @can('rental_assets.print')<x-actions.button semantic="print" :label="__('History / print')" :href="route('party.assets.print', $asset)">{{ __('History / print') }}</x-actions.button>@endcan
     @can('rental_assets.reserve')
         @if($asset->status === 'available')
             <details class="rounded-xl border border-border p-3"><summary class="min-h-11 cursor-pointer py-2 text-sm font-semibold">{{ __('Reserve this asset') }}</summary><form method="POST" action="{{ route('party.assets.reserve', $asset) }}" class="mt-2 grid gap-2 sm:grid-cols-2">@csrf<input type="hidden" name="timezone" value="{{ config('app.timezone') }}"><input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}"><flux:input name="starts_at" type="datetime-local" label="{{ __('Starts') }}" value="{{ now()->addDay()->startOfHour()->format('Y-m-d\TH:i') }}" required /><flux:input name="ends_at" type="datetime-local" label="{{ __('Ends') }}" value="{{ now()->addDays(2)->startOfHour()->format('Y-m-d\TH:i') }}" required /><flux:input name="source_reference" label="{{ __('Party / booking reference') }}" required /><flux:button type="submit" size="sm" variant="primary">{{ __('Reserve interval') }}</flux:button></form></details>

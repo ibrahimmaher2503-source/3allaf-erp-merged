@@ -482,15 +482,15 @@ new #[Title('Purchase Orders')] class extends Component
                             </td>
                             <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-end whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <flux:button size="xs" variant="ghost" icon="eye" wire:click="openDetailModal({{ $order->id }})" title="{{ __('View Details') }}" />
+                                    <x-actions.button semantic="view" :label="__('View Details')" size="xs" wire:click="openDetailModal({{ $order->id }})" />
 
                                     @if ($order->isDraft() && $canEdit)
-                                        <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="openEditModal({{ $order->id }})" title="{{ __('Edit Draft') }}" />
+                                        <x-actions.button semantic="edit" :label="__('Edit Draft')" size="xs" wire:click="openEditModal({{ $order->id }})" />
                                         <flux:button size="xs" variant="subtle" icon="paper-airplane" wire:click="submitOrder({{ $order->id }})" title="{{ __('Submit Order') }}" />
                                     @endif
 
                                     @if ($order->status === 'submitted' && $canApprove && $order->submitted_by !== auth()->id())
-                                        <flux:button size="xs" variant="primary" icon="check-badge" wire:click="approveOrder({{ $order->id }})" title="{{ __('Approve Order') }}" />
+                                        <x-actions.button semantic="approve" :label="__('Approve Order')" size="xs" wire:click="approveOrder({{ $order->id }})" />
                                     @endif
 
                                     @if (in_array($order->status, ['approved', 'partially_received'], true) && Gate::allows('purchase_invoices_supplier_returns.create') && $order->lines->contains(fn ($line): bool => bccomp(bcsub((string) $line->quantity_ordered, (string) $line->quantity_received, 6), '0', 6) > 0))
@@ -500,11 +500,11 @@ new #[Title('Purchase Orders')] class extends Component
                                     @endif
 
                                     @if ($order->isCancellable() && $canCancel)
-                                        <flux:button size="xs" variant="ghost" icon="x-mark" class="text-rose-600 dark:text-rose-400" wire:click="openCancelModal({{ $order->id }})" title="{{ __('Cancel Order') }}" />
+                                        <x-actions.button semantic="cancel" :label="__('Cancel Order')" size="xs" wire:click="openCancelModal({{ $order->id }})" />
                                     @endif
 
                                     @if ($order->isClosable() && $canEdit)
-                                        <flux:button size="xs" variant="ghost" icon="check-circle" class="text-emerald-600 dark:text-emerald-400" wire:click="closeOrder({{ $order->id }})" title="{{ __('Close Order') }}" />
+                                        <x-actions.button semantic="complete" :label="__('Close Order')" size="xs" wire:click="closeOrder({{ $order->id }})" />
                                     @endif
 
                                     @if ($canPrint)

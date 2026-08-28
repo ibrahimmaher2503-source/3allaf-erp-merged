@@ -1,11 +1,11 @@
-@props(['currentKey'])
+@props(['currentKey', 'enabled' => null])
 
 @php
     $setupContext = app(\App\Modules\Platform\Support\InitialSetupStatus::class)->snapshot();
     $setupGroups = [
         'basics' => ['label' => __('Basics'), 'keys' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes']],
         'settings' => ['label' => __('Settings'), 'keys' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates']],
-        'operations' => ['label' => __('Operational readiness'), 'keys' => ['supplier-groups', 'suppliers', 'categories', 'brands', 'product-options', 'product-masters', 'product-import', 'prices', 'customer-groups', 'customers', 'party-readiness']],
+        'operations' => ['label' => __('Operational readiness'), 'keys' => ['supplier-groups', 'suppliers', 'categories', 'brands', 'product-options', 'product-masters', 'product-import', 'prices', 'opening-configuration', 'customer-groups', 'customers', 'party-readiness']],
     ];
     $authoritativeSteps = collect($setupContext['steps']);
     $authorizedSetupSteps = $authoritativeSteps->filter(fn (array $step) => $step['can_access'])->values();
@@ -18,7 +18,8 @@
     $setupHref = static fn (array $step): string => $step['route'].(str_contains($step['route'], '?') ? '&' : '?').http_build_query(['setup' => 1, 'setup_step' => $step['key']]);
 @endphp
 
-@if ($currentSetupStep)
+@php($setupEnabled = $enabled ?? request()->boolean('setup'))
+@if ($setupEnabled && $currentSetupStep)
     <aside {{ $attributes->class('setup-context rounded-2xl border border-primary/25 bg-primary/5 p-4 shadow-sm') }} aria-label="{{ __('Setup guidance') }}" data-setup-step="{{ $currentKey }}">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0 space-y-2">
@@ -33,12 +34,12 @@
                     <flux:badge size="sm" color="{{ $currentSetupStep['complete'] ? 'green' : ($currentSetupStep['status'] === 'blocked' ? 'red' : 'amber') }}">{{ $currentSetupStep['status_label'] }}</flux:badge>
                     <span class="text-xs text-text-muted">{{ $currentSetupStep['required'] ? __('Required') : __('Optional') }}</span>
                 </div>
-                <div class="h-1.5 max-w-xl overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-valuenow="{{ $setupContext['progress_percent'] }}" aria-valuemin="0" aria-valuemax="100"><span class="block h-full rounded-full bg-primary" style="width: {{ $setupContext['progress_percent'] }}%"></span></div>
+                <div class="h-1.5 max-w-xl overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label="{{ __('Setup completion progress') }}" aria-valuenow="{{ $setupContext['progress_percent'] }}" aria-valuemin="0" aria-valuemax="100"><span class="block h-full rounded-full bg-primary" style="width: {{ $setupContext['progress_percent'] }}%"></span></div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <flux:button :href="route('initial-setup')" size="sm" variant="subtle" icon="squares-2x2" wire:navigate>{{ __('Return to Setup Center') }}</flux:button>
+                <flux:button :href="route('initial-setup')" size="sm" variant="subtle" :icon="app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left'" wire:navigate>{{ __('Return to Setup Center') }}</flux:button>
                 @if ($continueStep && $continueStep['key'] !== $currentKey)
-                    <flux:button :href="$setupHref($continueStep)" size="sm" variant="primary" icon="arrow-right" wire:navigate>{{ __('Continue Setup') }}</flux:button>
+                    <flux:button :href="$setupHref($continueStep)" size="sm" variant="primary" :icon="app()->getLocale() === 'ar' ? 'arrow-left' : 'arrow-right'" wire:navigate>{{ __('Continue setup') }}</flux:button>
                 @endif
             </div>
         </div>

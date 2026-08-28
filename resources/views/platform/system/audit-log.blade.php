@@ -244,7 +244,7 @@ new #[Title('Audit Logs')] class extends Component {
                             <flux:table.cell class="font-mono text-xs">{{ class_basename((string) $log->source_type) }}{{ $log->source_id ? ' #'.$log->source_id : '' }}</flux:table.cell>
                             <flux:table.cell class="font-mono text-xs">{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</flux:table.cell>
                             <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
-                            <flux:table.cell><flux:button size="xs" variant="subtle" icon="eye" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</flux:button></flux:table.cell>
+                            <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -263,7 +263,7 @@ new #[Title('Audit Logs')] class extends Component {
                         <div><dt class="text-text-muted">{{ __('Source') }}</dt><dd class="break-all font-mono text-xs">{{ class_basename((string) $log->source_type) }}{{ $log->source_id ? ' #'.$log->source_id : '' }}</dd></div>
                         <div><dt class="text-text-muted">{{ __('Scope') }}</dt><dd>{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</dd></div>
                     </dl>
-                    <flux:button size="sm" variant="subtle" icon="eye" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</flux:button>
+                    <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</x-actions.button>
                 </x-cards.section-card>
             @endforeach
         </div>

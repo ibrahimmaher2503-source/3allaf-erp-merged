@@ -101,8 +101,8 @@
                                     <td>{{ $closedShift->closed_at?->toDayDateTimeString() }}</td>
                                     <td class="text-end">
                                         <div class="flex flex-wrap justify-end gap-2">
-                                            <a class="text-sm font-medium text-zinc-700 underline hover:text-zinc-950" href="{{ route('pos.shift.print.thermal', $closedShift) }}" target="_blank" rel="noopener">{{ __('Thermal') }}</a>
-                                            <a class="text-sm font-medium text-zinc-700 underline hover:text-zinc-950" href="{{ route('pos.shift.print.a4', $closedShift) }}" target="_blank" rel="noopener">{{ __('Print A4') }}</a>
+                                            <x-actions.button semantic="print" :label="__('Thermal')" :href="route('pos.shift.print.thermal', $closedShift)" target="_blank" rel="noopener">{{ __('Thermal') }}</x-actions.button>
+                                            <x-actions.button semantic="print" :label="__('Print A4')" :href="route('pos.shift.print.a4', $closedShift)" target="_blank" rel="noopener">{{ __('Print A4') }}</x-actions.button>
                                         </div>
                                     </td>
                                 </tr>

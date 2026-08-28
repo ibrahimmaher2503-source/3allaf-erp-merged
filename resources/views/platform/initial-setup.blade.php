@@ -6,7 +6,7 @@
     $stepGroups = [
         'foundation' => ['label' => __('Foundation'), 'description' => __('Set the company context and the places where work happens.'), 'keys' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes']],
         'configuration' => ['label' => __('Configuration'), 'description' => __('Save the financial, numbering, printer-profile, and template-assignment rules used by operations.'), 'keys' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates']],
-        'master-data' => ['label' => __('Operational setup'), 'description' => __('Prepare supplier, catalog, product, and customer data in dependency order.'), 'keys' => ['supplier-groups', 'suppliers', 'categories', 'brands', 'product-options', 'product-masters', 'product-import', 'prices', 'customer-groups', 'customers', 'party-readiness']],
+        'master-data' => ['label' => __('Operational readiness'), 'description' => __('Prepare supplier, catalog, product, customer, and opening inventory data in dependency order.'), 'keys' => ['supplier-groups', 'suppliers', 'categories', 'brands', 'product-options', 'product-masters', 'product-import', 'prices', 'opening-configuration', 'customer-groups', 'customers', 'party-readiness']],
     ];
     $groupStats = collect($stepGroups)->mapWithKeys(static function (array $group, string $key) use ($setupSteps): array {
         $steps = $setupSteps->whereIn('key', $group['keys']);

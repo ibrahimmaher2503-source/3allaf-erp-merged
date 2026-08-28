@@ -1,7 +1,9 @@
-# Active Milestone — v0.1.14 Navigation, Tables and Action-System UX
+# Active Milestone — v0.1.15 Visual UX Corrections
 
 **Date:** 2026-08-28
-**Current phase:** Item 52 shared application interaction system
-**Status:** Complete in development after the single locked build and focused checks.
+**Current phase:** M53 setup context and complete visual action adoption
+**Status:** Complete in development after final genuine visual acceptance.
 
-This milestone keeps the Rajeh shell and business workflows intact while centralizing route-aware active navigation, management-table presentation, semantic action controls, exact action-scoped loading behavior, and persistent two-level setup guidance. The existing 21-step readiness service remains authoritative; no navigation persistence or schema is added.
+This milestone corrects the authoritative Setup count to 22, keeps its primary context localized and persistent, scopes Settings loading indicators to exact actions, completes semantic action adoption across the 79-view inventory, applies logical table spacing, preserves route-derived active sidebar location, and removes unnecessary mobile table-surface scrolling after tables transform into record cards.
+
+No business workflow, permission, route, model, schema, calculation, or production state changed.

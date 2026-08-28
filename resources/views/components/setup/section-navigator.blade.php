@@ -4,7 +4,7 @@
     <ol class="setup-section-nav__list">
         @foreach ($sections as $key => $section)
             <li>
-                <button type="button" role="tab" aria-selected="{{ $current === $key ? 'true' : 'false' }}" wire:click="$set('activeTab', '{{ $key }}')" class="setup-section-nav__step {{ $current === $key ? 'is-active' : '' }}">
+                <button type="button" @if($current === $key) aria-current="step" @endif wire:click="$set('activeTab', '{{ $key }}')" class="setup-section-nav__step {{ $current === $key ? 'is-active' : '' }}">
                     <span class="setup-section-nav__number" aria-hidden="true">{{ $loop->iteration }}</span>
                     <span>{{ $section['label'] }}</span>
                 </button>

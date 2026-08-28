@@ -11,6 +11,7 @@
         in_array($routeName, ['catalog.products', 'catalog.products.create', 'catalog.products.edit', 'catalog.products.show'], true) => 'product-masters',
         $routeName === 'catalog.products.import' => 'product-import',
         $routeName === 'pricing.index' => 'prices',
+        $routeName === 'inventory.adjustments.create' => 'opening-configuration',
         $routeName === 'customers.groups.index' => 'customer-groups',
         in_array($routeName, ['customers.index', 'customers.create', 'customers.show'], true) => 'customers',
         $routeName === 'party.readiness' => 'party-readiness',
@@ -21,5 +22,5 @@
 @endphp
 
 @if ($currentKey && ! in_array($routeName, ['admin.branches', 'admin.stores', 'admin.cash-drawers'], true))
-    <div class="mx-auto mb-5 w-full max-w-7xl"><x-setup.context :current-key="$currentKey" /></div>
+    <div class="mx-auto mb-5 w-full max-w-7xl"><x-setup.context :current-key="$currentKey" :enabled="request()->boolean('setup')" /></div>
 @endif

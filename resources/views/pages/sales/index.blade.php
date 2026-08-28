@@ -101,7 +101,7 @@
                             <td data-label="{{ __('Lines') }}" class="text-end tabular-nums">{{ $sale->lines_count }}</td>
                             <td data-label="{{ __('Payments') }}" class="text-end tabular-nums">{{ $sale->payments_count }}</td>
                             <td data-label="{{ __('Total') }}" class="text-end"><x-money :amount="$sale->total" :currency="$sale->currency_code" class="font-semibold" /></td>
-                            <td data-label="{{ __('Action') }}" class="text-end"><flux:button href="{{ route('sales.show', $sale) }}" size="sm" variant="subtle" icon="eye" wire:navigate>{{ __('View') }}</flux:button></td>
+                            <td data-label="{{ __('Action') }}" class="text-end"><x-actions.button semantic="view" :label="__('View')" :href="route('sales.show', $sale)" wire:navigate>{{ __('View') }}</x-actions.button></td>
                         </tr>
                     @empty
                         <tr><td colspan="8"><x-state.empty :title="__('No sales match the selected filters.')" :description="__('Try another filter or clear the current filters.')" /></td></tr>

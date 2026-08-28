@@ -270,7 +270,7 @@ new #[Title('Product Import')] class extends Component {
                         @endif
                     @endcan
                     @if (in_array($selectedBatch->status, ['staging', 'ready_for_review'], true))
-                        <flux:button variant="danger" wire:click="cancelBatch" wire:loading.attr="disabled" wire:target="cancelBatch">{{ __('Cancel batch') }}</flux:button>
+                        <x-actions.button semantic="cancel" :label="__('Cancel batch')" variant="danger" wire:click="cancelBatch" wire:loading.attr="disabled" wire:target="cancelBatch">{{ __('Cancel batch') }}</x-actions.button>
                     @endif
                     @can('products_categories_brands.approve')
                         <flux:button variant="primary" wire:click="approve" wire:loading.attr="disabled" wire:target="approve" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->invalid_rows > 0" data-guide="import-approve-button"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>

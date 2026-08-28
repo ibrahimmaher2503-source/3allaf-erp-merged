@@ -21,6 +21,7 @@ M50A.1 changed shared presentation, centralized module-dashboard specification, 
 | M50C — Reports, Administration & System Settings | Complete in development |
 | M50D — Assets, Rental & Transfers workspace | Complete in development |
 | M52 — v0.1.14 navigation, tables and action controls | Complete in development |
+| M53 — v0.1.15 verified visual UX corrections | Complete in development |
 | v0.1.13 — Guided Setup & Administration UX | Complete in development |
 
 M50B.2 adds the scoped purchasing overview, seven-day trend, receiving/approval/return indicators, bounded top/recent purchasing lists, and responsive supplier/invoice/order/return tables. Due/overdue balances are omitted because there is no authoritative payable ledger.
@@ -45,3 +46,6 @@ M50D adds an authorized-store-scoped Assets dashboard, asset catalog/detail, bou
 - Implemented validation-first sequential settings controls over the existing save actions, permission-filtered 21-step setup guidance, branch-to-outlet continuation, compact administration tables/mobile cards, and clarified Sales Outlet/Cashier Till terminology.
 - Preserved readiness queries, direct routes, permissions, settings validation/actions, branch/store/till/shift relationships, schema, and business mutations.
 - The single locked Vite build completed with Node 20.20.2; manifest/reference, focused syntax, route/permission mapping, and `git diff --check` passed. No automated tests, browser session, database operation, deployment, tag, push, or remote access occurred.
+
+
+M53 corrects the UI inventory to all 22 authoritative Setup steps, fully localizes and persists Setup context, replaces unreliable Flux idle-loading presentation with exact action-scoped controls, completes the 79-view semantic action adoption matrix, standardizes logical table spacing, and verifies active navigation and responsive mobile cards with genuine Arabic/English rendering. The mobile Sales table surface no longer remains horizontally scrollable after conversion to record cards.

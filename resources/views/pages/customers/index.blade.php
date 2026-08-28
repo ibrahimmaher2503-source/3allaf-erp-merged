@@ -66,11 +66,11 @@
                                 <td data-label="{{ __('Children') }}" class="tabular-nums">{{ $customer->children_count }}</td>
                                 <td data-label="{{ __('Action') }}" class="text-end">
                                     @if ($mode === 'loyalty')
-                                        <flux:button href="{{ route('customers.loyalty', $customer) }}" size="sm" variant="subtle">{{ __('Open loyalty ledger') }}</flux:button>
+                                        <x-actions.button semantic="history" :label="__('Open loyalty ledger')" :href="route('customers.loyalty', $customer)">{{ __('Open loyalty ledger') }}</x-actions.button>
                                     @elseif ($mode === 'history')
-                                        <flux:button href="{{ route('customers.show', $customer) }}" size="sm" variant="subtle">{{ __('Open transaction history') }}</flux:button>
+                                        <x-actions.button semantic="history" :label="__('Open transaction history')" :href="route('customers.show', $customer)">{{ __('Open transaction history') }}</x-actions.button>
                                     @else
-                                        <flux:button href="{{ route('customers.show', $customer) }}" size="sm" variant="subtle">{{ __('Open profile') }}</flux:button>
+                                        <x-actions.button semantic="view" :label="__('Open profile')" :href="route('customers.show', $customer)">{{ __('Open profile') }}</x-actions.button>
                                     @endif
                                 </td>
                             </tr>

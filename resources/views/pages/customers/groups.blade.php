@@ -64,7 +64,7 @@
                                                 <flux:input name="name_en" :label="__('English group name')" :value="$group->name_en" required dir="ltr" />
                                                 <div><label class="block text-sm font-semibold">{{ __('Parent group') }}</label><select name="parent_id" class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"><option value="">{{ __('No parent — root group') }}</option>@foreach ($parentOptions as $parent)<option value="{{ $parent->id }}" @selected($group->parent_id === $parent->id || ($group->parent_id === null && $parent->id === 0))>{{ $parent->parent_id ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $parent->name_ar : $parent->name_en }}</option>@endforeach</select></div>
                                                 <flux:select name="status" :label="__('Status')"><flux:select.option value="active" :selected="$group->status === 'active'">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive" :selected="$group->status === 'inactive'">{{ __('Inactive') }}</flux:select.option></flux:select>
-                                                <flux:button type="submit" variant="primary" size="sm">{{ __('Save group') }}</flux:button>
+                                                <x-actions.button semantic="edit" :label="__('Save group')" type="submit" variant="primary" size="sm">{{ __('Save group') }}</x-actions.button>
                                             </form>
                                         </details>
                                     @endcan

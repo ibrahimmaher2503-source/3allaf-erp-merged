@@ -52,3 +52,11 @@
 - `InitialSetupStatus` remains the sole readiness authority. The primary 21-step context persists on linked pages and the settings-only numbered navigator remains secondary; neither writes progress.
 - Management lists share table density, focus, mobile-record, and semantic action presentation. Print/PDF/export documents and the operational POS cart remain specialized and are intentionally excluded.
 - Exact `wire:target` values scope confirmed loading states to their actual action. Routes, methods, permissions, policies, schema, calculations, and workflows are unchanged.
+
+
+## 2026-08-28 — v0.1.15 genuine visual acceptance boundary
+
+- `InitialSetupStatus` remains the sole readiness authority. The UI maps all 22 unique steps, including the existing `opening-configuration` step after approved selling prices; totals remain permission-filtered and derived rather than hard-coded.
+- Settings actions retain their original methods and validation. The shared loading button exposes a spinner only for its exact `wire:target`; read-only sections never receive a save action.
+- Responsive management tables stop horizontal scrolling when they have transformed into mobile record cards. Desktop/tablet overflow behavior remains available where content genuinely needs it.
+- Genuine evidence may read authoritative data only through GET/HEAD requests guarded by a database read-only session and request rollback, with all writable runtime state task-local. No production record mutation is permitted.

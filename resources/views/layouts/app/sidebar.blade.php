@@ -47,7 +47,7 @@
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:tooltip :content="$isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar'" :position="$isArabic ? 'left' : 'right'">
-            <button type="button" class="sidebar-desktop-toggle hidden size-11 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" x-on:click="$dispatch('toggle-desktop-sidebar')" :aria-expanded="preferences.sidebar_mode !== 'collapsed'" aria-controls="application-navigation" aria-label="{{ $isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar' }}">
+            <button type="button" class="sidebar-desktop-toggle hidden size-11 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" x-on:click="$dispatch('toggle-desktop-sidebar')" :aria-expanded="document.documentElement.dataset.sidebarMode !== 'collapsed'" aria-controls="application-navigation" aria-label="{{ $isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar' }}">
                 <flux:icon name="bars-3-center-left" class="size-5" />
             </button>
         </flux:tooltip>

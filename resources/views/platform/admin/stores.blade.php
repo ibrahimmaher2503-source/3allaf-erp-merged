@@ -12,6 +12,7 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -26,6 +27,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     public string $typeFilter = 'all';
 
     public string $statusFilter = 'all';
+    #[Url(as: 'setup', except: false)]
+    public bool $setupMode = false;
 
     // Store Modal State
     public bool $showStoreModal = false;
@@ -350,7 +353,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     class="space-y-6"
     data-guide="stores-header"
 >
-    <x-setup.context current-key="warehouses" />
+    <x-setup.context current-key="warehouses" :enabled="$setupMode" />
     <flux:callout variant="info" icon="information-circle"><strong>{{ __('Sales Outlet') }}:</strong> {{ __('Sales Outlet help') }}</flux:callout>
     <x-slot:actions>
         <x-tables.resource-toolbar>
@@ -452,7 +455,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             @if ($isPendingArchive)
                                 <flux:badge size="sm" color="amber" inset="top">{{ __('Pending archive approval') }}</flux:badge>
                             @elseif ($st->status === 'active')
-                                <flux:badge size="sm" color="emerald" inset="top">{{ __('Active') }}</flux:badge>
+                                <flux:badge size="sm" color="emerald" inset="top" class="!bg-emerald-700 !text-white">{{ __('Active') }}</flux:badge>
                             @else
                                 <flux:badge size="sm" color="zinc" inset="top">{{ __('Inactive / Archived') }}</flux:badge>
                             @endif
@@ -465,7 +468,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             @if ($st->branch)
                                 <div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ $st->branch->code }} · {{ app()->getLocale() === 'ar' ? $st->branch->name_ar : $st->branch->name_en }}</div>
                             @else
-                                <div class="mt-0.5 text-zinc-400">{{ __('Central / Unassigned') }}</div>
+                                <div class="mt-0.5 text-zinc-600 dark:text-zinc-300">{{ __('Central / Unassigned') }}</div>
                             @endif
                         </div>
                         @if ($st->type === 'selling')
@@ -490,19 +493,19 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
                     <div class="grid grid-cols-2 gap-2">
                         @can('branches_stores.edit')
-                            <flux:button size="sm" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})">{{ __('Edit') }}</flux:button>
+                            <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})">{{ __('Edit') }}</x-actions.button>
                             @if ($st->type === 'selling' && $st->status === 'active')
-                                <flux:button size="sm" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})">{{ __('Set as primary point of sale') }}</flux:button>
+                                <x-actions.button semantic="assign" :label="__('Assign')" size="sm" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})">{{ __('Set as primary point of sale') }}</x-actions.button>
                             @endif
                             @if ($st->status === 'active' && ! $isPendingArchive)
-                                <flux:button size="sm" variant="subtle" icon="pause" wire:click="toggleStoreStatus({{ $st->id }})">{{ __('Deactivate') }}</flux:button>
+                                <x-actions.button semantic="disable" :label="__('Deactivate')" size="sm" variant="subtle" icon="pause" wire:click="toggleStoreStatus({{ $st->id }})">{{ __('Deactivate') }}</x-actions.button>
                             @elseif ($st->status !== 'active')
-                                <flux:button size="sm" variant="subtle" icon="play" wire:click="toggleStoreStatus({{ $st->id }})">{{ __('Activate') }}</flux:button>
+                                <x-actions.button semantic="restore" :label="__('Activate')" size="sm" variant="subtle" icon="play" wire:click="toggleStoreStatus({{ $st->id }})">{{ __('Activate') }}</x-actions.button>
                             @endif
                         @endcan
                         @can('branches_stores.logical_delete')
                             @if ($st->status === 'active' && ! $isPendingArchive)
-                                <flux:button size="sm" variant="subtle" icon="archive-box" wire:click="openArchiveModal({{ $st->id }})">{{ __('Request archive') }}</flux:button>
+                                <x-actions.button semantic="archive" :label="__('Request archive')" size="sm" variant="subtle" icon="archive-box" wire:click="openArchiveModal({{ $st->id }})">{{ __('Request archive') }}</x-actions.button>
                             @endif
                         @endcan
                     </div>
@@ -562,7 +565,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                                 <span class="block font-mono font-medium text-zinc-700 dark:text-zinc-300">{{ $st->branch->code }}</span>
                                 <span class="block leading-relaxed text-zinc-500">({{ app()->getLocale() === 'ar' ? $st->branch->name_ar : $st->branch->name_en }})</span>
                             @else
-                                <span class="text-zinc-400 font-italic">{{ __('Central / Unassigned') }}</span>
+                                <span class="font-italic text-zinc-600 dark:text-zinc-300">{{ __('Central / Unassigned') }}</span>
                             @endif
                         </flux:table.cell>
 
@@ -571,7 +574,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                                 @if ($activeBranchMapping && $activeBranchMapping->branch)
                                     <div class="space-y-0.5">
                                         <div class="flex items-center gap-1.5">
-                                            <flux:badge size="sm" variant="solid" color="emerald">
+                                            <flux:badge size="sm" variant="solid" color="emerald" class="!bg-emerald-700 !text-white">
                                                 {{ $activeBranchMapping->branch->code }}
                                             </flux:badge>
                                         </div>
@@ -585,7 +588,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                                     </flux:badge>
                                 @endif
                             @else
-                                <span class="text-xs text-zinc-400">—</span>
+                                <span class="text-xs text-zinc-600 dark:text-zinc-300">—</span>
                             @endif
                         </flux:table.cell>
 
@@ -601,7 +604,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             @if ($isPendingArchive)
                                 <flux:badge size="sm" color="amber" inset="top" class="font-medium">{{ __('Pending archive approval') }}</flux:badge>
                             @elseif ($st->status === 'active')
-                                <flux:badge size="sm" color="emerald" inset="top" class="font-medium">{{ __('Active') }}</flux:badge>
+                                <flux:badge size="sm" color="emerald" inset="top" class="font-medium !bg-emerald-700 !text-white">{{ __('Active') }}</flux:badge>
                             @else
                                 <flux:badge size="sm" color="zinc" inset="top">{{ __('Inactive / Archived') }}</flux:badge>
                             @endif
@@ -610,21 +613,21 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                         <flux:table.cell class="align-top text-end">
                             <div class="flex flex-wrap items-center justify-end gap-2">
                                 @can('branches_stores.edit')
-                                    <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
+                                    <x-actions.button semantic="edit" :label="__('Edit')" size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                                     @if ($st->type === 'selling' && $st->status === 'active')
-                                        <flux:button size="xs" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})" aria-label="{{ __('Set as primary point of sale') }}" title="{{ __('Set as primary point of sale') }}" />
+                                        <x-actions.button semantic="assign" :label="__('Assign')" size="xs" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})" aria-label="{{ __('Set as primary point of sale') }}" title="{{ __('Set as primary point of sale') }}" />
                                     @endif
                                     @if ($st->status === 'active' && ! $isPendingArchive)
-                                        <flux:button size="xs" variant="subtle" icon="pause" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Deactivate') }}" title="{{ __('Deactivate') }}">{{ __('Deactivate') }}</flux:button>
+                                        <x-actions.button semantic="disable" :label="__('Deactivate')" size="xs" variant="subtle" icon="pause" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Deactivate') }}" title="{{ __('Deactivate') }}">{{ __('Deactivate') }}</x-actions.button>
                                     @else
                                         @if ($st->status !== 'active')
-                                            <flux:button size="xs" variant="subtle" icon="play" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Activate') }}" title="{{ __('Activate') }}">{{ __('Activate') }}</flux:button>
+                                            <x-actions.button semantic="restore" :label="__('Activate')" size="xs" variant="subtle" icon="play" class="whitespace-nowrap" wire:click="toggleStoreStatus({{ $st->id }})" aria-label="{{ __('Activate') }}" title="{{ __('Activate') }}">{{ __('Activate') }}</x-actions.button>
                                         @endif
                                     @endif
                                 @endcan
                                 @can('branches_stores.logical_delete')
                                     @if ($st->status === 'active' && ! $isPendingArchive)
-                                        <flux:button size="xs" variant="subtle" icon="archive-box" class="whitespace-nowrap" wire:click="openArchiveModal({{ $st->id }})" aria-label="{{ __('Request archive') }}" title="{{ __('Request archive') }}">{{ __('Request archive') }}</flux:button>
+                                        <x-actions.button semantic="archive" :label="__('Request archive')" size="xs" variant="subtle" icon="archive-box" class="whitespace-nowrap" wire:click="openArchiveModal({{ $st->id }})" aria-label="{{ __('Request archive') }}" title="{{ __('Request archive') }}">{{ __('Request archive') }}</x-actions.button>
                                     @endif
                                 @endcan
                             </div>
@@ -722,8 +725,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
-                <flux:button variant="subtle" wire:click="$set('showStoreModal', false)">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveStore"><span wire:loading.remove wire:target="saveStore">{{ __('Save location') }}</span><span wire:loading wire:target="saveStore">{{ __('Saving...') }}</span></flux:button>
+                <flux:button variant="subtle" wire:click="$set('showStoreModal', false)">{{ __('Cancel') }}</x-actions.button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveStore"><span wire:loading.remove wire:target="saveStore">{{ __('Save location') }}</span><span wire:loading wire:target="saveStore">{{ __('Saving...') }}</span></x-actions.button>
             </div>
         </form>
     </flux:modal>
@@ -756,7 +759,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
         <div class="flex flex-wrap justify-end gap-3 pt-2">
             <flux:button variant="subtle" wire:click="$set('showArchiveModal', false)">{{ __('Cancel') }}</flux:button>
-            <flux:button variant="primary" icon="archive-box" wire:click="requestArchive">{{ __('Request archive') }}</flux:button>
+            <x-actions.button semantic="archive" :label="__('Request archive')" variant="primary"  wire:click="requestArchive">{{ __('Request archive') }}</x-actions.button>
         </div>
     </flux:modal>
 

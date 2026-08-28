@@ -117,7 +117,7 @@
                                 <td>{{ $return->sourceSale?->document_number ?: ($return->sourceGiftReceipt?->reference ?: __('Source unavailable')) }}</td>
                                 <td>{{ $return->lines->count() }}</td><td>{{ str_replace('_', ' ', ucfirst($return->settlement_type)) }}</td>
                                 <td>{{ number_format((float) $return->settlement_value, 2) }} {{ $return->currency_code }}</td><td><x-status.badge :status="$return->status" /></td>
-                                <td><a class="text-sm text-teal-700 underline" href="{{ route('returns.show', $return) }}">{{ __('Open') }}</a> <a class="ms-2 text-sm text-teal-700 underline" href="{{ route('returns.print', $return) }}">{{ __('Print') }}</a></td>
+                                <td><x-actions.button semantic="view" :label="__('Open')" :href="route('returns.show', $return)">{{ __('Open') }}</x-actions.button> <x-actions.button semantic="print" :label="__('Print')" :href="route('returns.print', $return)">{{ __('Print') }}</x-actions.button></td>
                             </tr>
                         @empty
                             <tr><td colspan="7"><x-state.empty :title="__('No returns yet')" :description="__('Start from a completed sale or a valid Gift Receipt.')" /></td></tr>

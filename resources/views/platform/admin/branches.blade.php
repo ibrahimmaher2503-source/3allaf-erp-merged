@@ -28,6 +28,8 @@ new #[Title('Branch Management')] class extends Component
     public string $search = '';
 
     public string $statusFilter = 'all';
+    #[Url(as: 'setup', except: false)]
+    public bool $setupMode = false;
 
     #[Url(as: 'section', except: 'branch-masters')]
     public string $section = 'branch-masters';
@@ -323,7 +325,7 @@ new #[Title('Branch Management')] class extends Component
     class="space-y-6"
     data-guide="branches-header"
 >
-    <x-setup.context current-key="branches-stores" />
+    <x-setup.context current-key="branches-stores" :enabled="$setupMode" />
     @if ($savedBranchId)
         <flux:callout variant="success" icon="check-circle" title="{{ __('Branch created successfully.') }}">
             <p>{{ __('The branch :name is saved. Continue by creating or linking its warehouse or sales outlet.', ['name' => $savedBranchName]) }}</p>
@@ -390,7 +392,7 @@ new #[Title('Branch Management')] class extends Component
                                 <flux:table.cell class="align-top text-end">
                                     <div class="flex flex-wrap items-center justify-end gap-2">
                                     @can('branches_stores.edit')
-                                        <flux:button size="sm" variant="subtle" icon="arrows-right-left" wire:click="openMappingModal({{ $branch->id }})">{{ $branch->activeSellingStoreMapping ? __('Change') : __('Choose') }}</flux:button>
+                                        <x-actions.button semantic="assign" :label="__('Assign')" size="sm" variant="subtle" icon="arrows-right-left" wire:click="openMappingModal({{ $branch->id }})">{{ $branch->activeSellingStoreMapping ? __('Change') : __('Choose') }}</x-actions.button>
                                     @endcan
                                     <flux:button size="xs" variant="subtle" icon="clock" wire:click="openHistoryModal({{ $branch->id }})" title="{{ __('Mapping History') }}" aria-label="{{ __('Mapping History') }}" />
                                     </div>
@@ -452,15 +454,15 @@ new #[Title('Branch Management')] class extends Component
                     <dl class="grid grid-cols-2 gap-3 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Phone') }}</dt><dd dir="ltr">{{ $branch->phone ?: '—' }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Timezone') }}</dt><dd class="font-mono text-xs" dir="ltr">{{ $branch->timezone }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Warehouses') }}</dt><dd>{{ $branch->active_warehouse_count }}</dd></div></dl>
                     <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                         @can('branches_stores.edit')
-                            <flux:button size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})">{{ __('Edit') }}</flux:button>
+                            <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})">{{ __('Edit') }}</x-actions.button>
                             @if ($branch->status === 'active')
-                                <flux:button size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Deactivate') }}</flux:button>
+                                <x-actions.button semantic="disable" :label="__('Deactivate')" size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Deactivate') }}</x-actions.button>
                             @else
-                                <flux:button size="sm" variant="subtle" color="green" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})">{{ __('Activate') }}</flux:button>
+                                <x-actions.button semantic="restore" :label="__('Activate')" size="sm" variant="subtle" color="green" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})">{{ __('Activate') }}</x-actions.button>
                             @endif
                         @endcan
                         @can('branches_stores.logical_delete')
-                            <flux:button size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for branch :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Delete') }}</flux:button>
+                            <x-actions.button semantic="delete" :label="__('Delete')" size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" wire:confirm="{{ __('Confirm this action?') }}">{{ __('Delete') }}</x-actions.button>
                         @endcan
                     </div>
                 </flux:card>
@@ -522,18 +524,18 @@ new #[Title('Branch Management')] class extends Component
 
                         <flux:table.cell class="text-end space-x-1 rtl:space-x-reverse">
                             @can('branches_stores.edit')
-                                <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})" title="{{ __('Edit') }}" />
+                                <x-actions.button semantic="edit" :label="__('Edit')" size="xs" variant="subtle" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})" title="{{ __('Edit') }}" />
                             @endcan
 
                             @can('branches_stores.edit')
                                 @if ($branch->status === 'active')
-                                <flux:button size="xs" variant="subtle" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Deactivate branch :name? Its historical records are preserved.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }" title="{{ __('Deactivate') }}" />
+                                <x-actions.button semantic="disable" :label="__('Deactivate')" size="xs" variant="subtle" icon="pause" wire:click="toggleBranchStatus({{ $branch->id }})" wire:confirm="{{ __('Confirm this action?') }}" title="{{ __('Deactivate') }}" />
                                 @else
-                                    <flux:button size="xs" variant="subtle" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})" title="{{ __('Activate') }}" />
+                                    <x-actions.button semantic="restore" :label="__('Activate')" size="xs" variant="subtle" icon="play" wire:click="toggleBranchStatus({{ $branch->id }})" title="{{ __('Activate') }}" />
                                 @endif
                             @endcan
                             @can('branches_stores.logical_delete')
-                                <flux:button size="xs" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for branch :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }" title="{{ __('Delete') }}" />
+                                <x-actions.button semantic="delete" :label="__('Delete')" size="xs" variant="subtle" color="red" icon="trash" wire:click="deleteBranch({{ $branch->id }})" wire:confirm="{{ __('Confirm this action?') }}" title="{{ __('Delete') }}" />
                             @endcan
                         </flux:table.cell>
                     </flux:table.row>
@@ -610,8 +612,8 @@ new #[Title('Branch Management')] class extends Component
             />
 
             <div class="flex justify-end gap-3 pt-4">
-                <flux:button variant="subtle" wire:click="$set('showBranchModal', false)">{{ __('Cancel') }}</flux:button>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveBranch"><span wire:loading.remove wire:target="saveBranch">{{ __('Save Branch') }}</span><span wire:loading wire:target="saveBranch">{{ __('Saving...') }}</span></flux:button>
+                <flux:button variant="subtle" wire:click="$set('showBranchModal', false)">{{ __('Cancel') }}</x-actions.button>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveBranch"><span wire:loading.remove wire:target="saveBranch">{{ __('Save Branch') }}</span><span wire:loading wire:target="saveBranch">{{ __('Saving...') }}</span></x-actions.button>
             </div>
         </form>
     </flux:modal>
@@ -641,7 +643,7 @@ new #[Title('Branch Management')] class extends Component
                     <p class="font-semibold">{{ __('No point of sale is available for this branch.') }}</p>
                     <p class="text-sm">{{ __('Create a point of sale for this branch first, then choose it here.') }}</p>
                     @can('branches_stores.create')
-                        <flux:button href="{{ route('admin.stores') }}" size="sm" variant="primary" wire:navigate>{{ __('Create point of sale') }}</flux:button>
+                        <flux:button href="{{ route('admin.stores') }}" size="sm" variant="primary" wire:navigate>{{ __('Create point of sale') }}</x-actions.button>
                     @endcan
                 </div>
             </flux:callout>
@@ -667,7 +669,7 @@ new #[Title('Branch Management')] class extends Component
             />
 
             <div class="flex justify-end gap-3 pt-4">
-                <flux:button variant="subtle" wire:click="$set('showMappingModal', false)">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="subtle" wire:click="$set('showMappingModal', false)">{{ __('Cancel') }}</x-actions.button>
                 <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveSellingStoreMapping"><span wire:loading.remove wire:target="saveSellingStoreMapping">{{ __('Save') }}</span><span wire:loading wire:target="saveSellingStoreMapping">{{ __('Saving...') }}</span></flux:button>
             </div>
         </form>

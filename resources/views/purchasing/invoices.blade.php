@@ -368,7 +368,7 @@ new #[Title('Purchase Invoices')] class extends Component
             <flux:button href="{{ route('purchasing.returns') }}" variant="subtle" icon="arrow-uturn-left">{{ __('Supplier returns') }}</flux:button>
         @endcan
         @can('purchase_invoices_supplier_returns.export')
-            <flux:button href="{{ route('purchasing.invoices.export') }}" variant="subtle" icon="arrow-down-tray">{{ __('Export') }}</flux:button>
+            <x-actions.button semantic="export" :label="__('Export')" href="{{ route('purchasing.invoices.export') }}" variant="subtle" icon="arrow-down-tray">{{ __('Export') }}</x-actions.button>
         @endcan
         @can('purchase_invoices_supplier_returns.create')
             <flux:button wire:click="openCreateModal" variant="primary" icon="plus">{{ __('New draft invoice') }}</flux:button>
@@ -424,11 +424,11 @@ new #[Title('Purchase Invoices')] class extends Component
                         <flux:table.cell data-label="{{ __('Status') }}"><x-status.badge :status="$invoice->status" /></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Actions') }}">
                             @can('purchase_invoices_supplier_returns.print')
-                                <flux:button size="sm" variant="subtle" href="{{ route('purchasing.invoices.print', $invoice) }}" target="_blank">{{ __('Print') }}</flux:button>
+                                <x-actions.button semantic="print" :label="__('Print')" :href="route('purchasing.invoices.print', $invoice)" target="_blank">{{ __('Print') }}</x-actions.button>
                             @endcan
                             @if ($invoice->status === 'draft')
                                 <div class="flex flex-wrap gap-2">
-                                    <flux:button size="sm" variant="subtle" wire:click="openEditModal({{ $invoice->id }})">{{ __('Edit') }}</flux:button>
+                                    <x-actions.button semantic="edit" :label="__('Edit')" wire:click="openEditModal({{ $invoice->id }})">{{ __('Edit') }}</x-actions.button>
                                     @can('purchase_invoices_supplier_returns.edit')
                                         <flux:button size="sm" variant="subtle" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Submit') }}</flux:button>
                                     @endcan
@@ -439,8 +439,8 @@ new #[Title('Purchase Invoices')] class extends Component
                             @elseif ($invoice->status === 'submitted')
                                 <div class="flex flex-wrap gap-2">
                                     @can('purchase_invoices_supplier_returns.approve')
-                                        <flux:button size="sm" variant="primary" wire:click="approveInvoice({{ $invoice->id }})">{{ __('Approve & post') }}</flux:button>
-                                        <flux:button size="sm" variant="subtle" wire:click="openTransitionModal('reject', {{ $invoice->id }})">{{ __('Reject') }}</flux:button>
+                                        <x-actions.button semantic="approve" :label="__('Approve & post')" wire:click="approveInvoice({{ $invoice->id }})">{{ __('Approve & post') }}</x-actions.button>
+                                        <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal('reject', {{ $invoice->id }})">{{ __('Reject') }}</x-actions.button>
                                     @endcan
                                     @can('purchase_invoices_supplier_returns.cancel')
                                         <flux:button size="sm" variant="subtle" wire:click="openTransitionModal('cancel', {{ $invoice->id }})">{{ __('Cancel') }}</flux:button>

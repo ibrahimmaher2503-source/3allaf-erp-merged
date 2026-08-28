@@ -341,10 +341,10 @@ new #[Title('Pricing Workspace')] class extends Component
         @endforeach
     </nav>
 
-    <div id="pricing-filters" class="scroll-mt-24 grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_12rem_12rem_12rem_12rem_auto]">
+    <div id="pricing-filters" class="scroll-mt-24 grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-2 min-w-0 xl:grid-cols-[minmax(12rem,1.5fr)_repeat(4,minmax(8.5rem,1fr))_auto]">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Search list, item code, or product') }}" />
-        <flux:select wire:model.live="storeFilter"><option value="all">{{ app()->getLocale() === 'ar' ? 'كل المتاجر' : 'All stores' }}</option>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>@endforeach</flux:select>
-        @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter"><option value="all">{{ __('All states') }}</option>@foreach (PriceVersionState::cases() as $state)<option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>@endforeach</flux:select>@else<div></div>@endif
+        <flux:select wire:model.live="storeFilter" :label="app()->getLocale() === 'ar' ? 'موقع العمل' : 'Work location'"><option value="all">{{ app()->getLocale() === 'ar' ? 'كل المتاجر' : 'All stores' }}</option>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>@endforeach</flux:select>
+        @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter" :label="__('Status')"><option value="all">{{ __('All states') }}</option>@foreach (PriceVersionState::cases() as $state)<option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>@endforeach</flux:select>@else<div></div>@endif
         <flux:input wire:model.live="effectiveFrom" type="date" :label="app()->getLocale() === 'ar' ? 'ساري من' : 'Effective from'" />
         <flux:input wire:model.live="effectiveTo" type="date" :label="app()->getLocale() === 'ar' ? 'ساري حتى' : 'Effective to'" />
         <flux:select wire:model.live="perPage" :label="app()->getLocale() === 'ar' ? 'حجم الصفحة' : 'Page size'"><option value="12">12</option><option value="24">24</option><option value="48">48</option></flux:select>
@@ -387,9 +387,9 @@ new #[Title('Pricing Workspace')] class extends Component
                             <td data-label="{{ __('Source') }}"><div>{{ $version->source_type === 'product_card' ? __('Product price') : __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-text-muted">{{ $version->source_reference ?: '—' }}</div></td>
                             <td data-label="{{ __('State') }}"><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div></td>
                             <td data-label="{{ __('Actions') }}" class="space-y-2">
-                                @can('pricing_labels.view')<flux:button size="sm" variant="subtle" wire:click="openDiff({{ $version->id }})">{{ __('Compare history') }}</flux:button>@endcan
+                                @can('pricing_labels.view')<x-actions.button semantic="history" :label="__('Compare history')" wire:click="openDiff({{ $version->id }})">{{ __('Compare history') }}</x-actions.button>@endcan
                                 @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:click="submitProposal({{ $version->id }})">{{ __('Submit') }}</flux:button>@endif @endcan
-                                @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)<flux:button size="sm" variant="primary" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</flux:button><flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" /><flux:button size="sm" variant="danger" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</flux:button>@endif @endcan
+                                @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)<x-actions.button semantic="approve" :label="__('Approve')" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</x-actions.button><flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" /><x-actions.button semantic="reject" :label="__('Reject')" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</x-actions.button>@endif @endcan
                             </td>
                         </tr>
                     @empty

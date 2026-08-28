@@ -24,11 +24,11 @@
             <div class="responsive-resource-table"><table class="data-table data-table--mobile-summary w-full"><thead><tr><th>{{ __('Invoice') }}</th><th>{{ __('Booking') }}</th><th>{{ __('Customer') }}</th><th>{{ __('Store') }}</th><th>{{ __('State') }}</th><th class="text-end">{{ __('Balance due') }}</th><th class="text-end">{{ __('Action') }}</th></tr></thead><tbody>
                 @forelse($invoices as $invoice)<tr><td data-label="{{ __('Invoice') }}" class="font-mono font-semibold">{{ $invoice->invoice_number }}</td><td data-label="{{ __('Booking') }}" class="font-mono">{{ $invoice->booking?->booking_number }}</td><td data-label="{{ __('Customer') }}">{{ app()->getLocale() === 'ar' ? $invoice->booking?->customer?->name_ar : $invoice->booking?->customer?->name_en }}</td><td data-label="{{ __('Store') }}">{{ $invoice->booking?->store?->code }}</td><td data-label="{{ __('State') }}"><x-status.badge :status="$invoice->state" /></td><td data-label="{{ __('Balance due') }}" class="text-end tabular-nums">{{ number_format((float) $invoice->balance_due, 2) }} {{ $invoice->currency_code }}</td><td data-label="{{ __('Action') }}" class="text-end">
                     @if($mode === 'payments')
-                        <flux:button size="sm" variant="subtle" href="{{ route('parties.invoices.payments', $invoice->id) }}">{{ __('Open payments') }}</flux:button>
+                        <x-actions.button semantic="view" :label="__('Open payments')" :href="route('parties.invoices.payments', $invoice->id)">{{ __('Open payments') }}</x-actions.button>
                     @elseif($mode === 'settlement')
-                        <flux:button size="sm" variant="subtle" href="{{ route('parties.invoices.settle', $invoice->id) }}">{{ __('Review settlement') }}</flux:button>
+                        <x-actions.button semantic="view" :label="__('Review settlement')" :href="route('parties.invoices.settle', $invoice->id)">{{ __('Review settlement') }}</x-actions.button>
                     @else
-                        <flux:button size="sm" variant="subtle" href="{{ route('parties.invoices.show', $invoice->id) }}">{{ __('Open editor') }}</flux:button>
+                        <x-actions.button semantic="edit" :label="__('Open editor')" :href="route('parties.invoices.show', $invoice->id)">{{ __('Open editor') }}</x-actions.button>
                     @endif
                 </td></tr>
                 @empty<tr><td colspan="7"><x-state.empty :title="__('No Party invoices found.')" :description="__('Create a Party booking or adjust the filters.')" /></td></tr>@endforelse

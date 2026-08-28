@@ -222,7 +222,7 @@ new #[Title('Supplier Return Settings')] class extends Component
                                 <flux:table.cell>{{ $reason->is_active ? __('Active') : __('Inactive') }}</flux:table.cell>
                                 <flux:table.cell>
                                     @can('company_settings.edit')
-                                        <flux:button size="sm" variant="subtle" wire:click="toggle({{ $reason->id }})">{{ $reason->is_active ? __('Deactivate') : __('Activate') }}</flux:button>
+                                        <x-actions.button :semantic="$reason->is_active ? 'disable' : 'restore'" :label="$reason->is_active ? __('Deactivate') : __('Activate')" wire:click="toggle({{ $reason->id }})">{{ $reason->is_active ? __('Deactivate') : __('Activate') }}</x-actions.button>
                                     @endcan
                                 </flux:table.cell>
                             </flux:table.row>

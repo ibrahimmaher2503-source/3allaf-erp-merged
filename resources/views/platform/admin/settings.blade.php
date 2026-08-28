@@ -25,6 +25,8 @@ new #[Title('System Settings')] class extends Component
     // Active Tab
     #[Url(as: 'tab', except: 'company')]
     public string $activeTab = 'company';
+    #[Url(as: 'setup', except: false)]
+    public bool $setupMode = false;
 
     #[Url(as: 'section', except: 'printer-profiles')]
     public string $printerSection = 'printer-profiles';
@@ -617,7 +619,7 @@ new #[Title('System Settings')] class extends Component
 
     <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
 
-    <x-setup.context :current-key="match ($activeTab) { 'company' => 'company', 'payments' => 'payment-methods', 'tax' => 'taxes', 'sequences' => 'document-sequences', 'printers' => $printerSection === 'print-templates' ? 'print-templates' : 'printers', default => 'company' }" />
+    <x-setup.context :enabled="$setupMode" :current-key="match ($activeTab) { 'company' => 'company', 'payments' => 'payment-methods', 'tax' => 'taxes', 'sequences' => 'document-sequences', 'printers' => $printerSection === 'print-templates' ? 'print-templates' : 'printers', default => 'company' }" />
 
     <?php if ($errors->any()): ?>
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
@@ -757,17 +759,7 @@ new #[Title('System Settings')] class extends Component
                     />
 
                     <div class="flex justify-end">
-                        <flux:button
-                            type="submit"
-                            variant="primary"
-                            x-bind:disabled="!dirty"
-                            wire:loading.attr="disabled"
-                            wire:target="saveCompanyAndNext"
-                            data-guide="settings-save-button"
-                        >
-                            <span wire:loading.remove wire:target="saveCompanyAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span>
-                            <span wire:loading wire:target="saveCompanyAndNext">{{ __('Saving...') }}</span>
-                        </flux:button>
+                        <x-actions.loading-button type="submit" action="saveCompanyAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" x-bind:disabled="!dirty" data-guide="settings-save-button" />
                     </div>
                 </flux:card>
             </form>
@@ -840,8 +832,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" wire:click="savePaymentMethodAndPrevious" wire:loading.attr="disabled" wire:target="savePaymentMethodAndPrevious"><span wire:loading.remove wire:target="savePaymentMethodAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="savePaymentMethodAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" wire:click="savePaymentMethodAndNext" wire:loading.attr="disabled" wire:target="savePaymentMethodAndNext"><span wire:loading.remove wire:target="savePaymentMethodAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="savePaymentMethodAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <x-actions.loading-button action="savePaymentMethodAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
+                        <x-actions.loading-button action="savePaymentMethodAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
                     </div>
                 </form>
             </flux:card>
@@ -1012,8 +1004,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" wire:click="saveTaxSettingAndPrevious" wire:loading.attr="disabled" wire:target="saveTaxSettingAndPrevious"><span wire:loading.remove wire:target="saveTaxSettingAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="saveTaxSettingAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" wire:click="saveTaxSettingAndNext" wire:loading.attr="disabled" wire:target="saveTaxSettingAndNext"><span wire:loading.remove wire:target="saveTaxSettingAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="saveTaxSettingAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <x-actions.loading-button action="saveTaxSettingAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
+                        <x-actions.loading-button action="saveTaxSettingAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
                     </div>
                 </form>
             </flux:card>
@@ -1214,8 +1206,8 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="button" variant="subtle" wire:click="saveDocumentSequenceAndPrevious" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndPrevious"><span wire:loading.remove wire:target="saveDocumentSequenceAndPrevious">{{ app()->getLocale() === 'ar' ? 'السابق →' : '← Previous' }}</span><span wire:loading wire:target="saveDocumentSequenceAndPrevious">{{ __('Saving...') }}</span></flux:button>
-                        <flux:button type="button" variant="primary" wire:click="saveDocumentSequenceAndNext" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndNext"><span wire:loading.remove wire:target="saveDocumentSequenceAndNext">{{ app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →' }}</span><span wire:loading wire:target="saveDocumentSequenceAndNext">{{ __('Saving...') }}</span></flux:button>
+                        <x-actions.loading-button action="saveDocumentSequenceAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
+                        <x-actions.loading-button action="saveDocumentSequenceAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
                     </div>
                 </form>
 
@@ -1410,9 +1402,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="savePrinter">
-                            {{ $printerForm['id'] ? __('Update printer') : __('Save printer') }}
-                        </flux:button>
+                        <x-actions.loading-button type="submit" action="savePrinter" :label="$printerForm['id'] ? __('Update printer') : __('Save printer')" />
                     </div>
                 </form>
 

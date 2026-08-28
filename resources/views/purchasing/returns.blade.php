@@ -375,7 +375,7 @@ new #[Title('Supplier Returns')] class extends Component
                         <flux:table.cell data-label="{{ __('Actions') }}">
                             @if ($return->status === 'draft')
                                 @can('purchase_returns.edit')
-                                    <flux:button size="sm" variant="subtle" wire:click="editDraft({{ $return->id }})">{{ __('Edit') }}</flux:button>
+                                    <x-actions.button semantic="edit" :label="__('Edit')" wire:click="editDraft({{ $return->id }})">{{ __('Edit') }}</x-actions.button>
                                     <flux:button size="sm" variant="subtle" wire:click="submitReturn({{ $return->id }})">{{ __('Submit') }}</flux:button>
                                 @endcan
                                 @can('purchase_returns.cancel')
@@ -383,10 +383,10 @@ new #[Title('Supplier Returns')] class extends Component
                                 @endcan
                             @elseif ($return->status === 'submitted')
                                 @can('purchase_returns.approve')
-                                    <flux:button size="sm" variant="primary" wire:click="approveReturn({{ $return->id }})">{{ __('Approve & post') }}</flux:button>
+                                    <x-actions.button semantic="approve" :label="__('Approve & post')" wire:click="approveReturn({{ $return->id }})">{{ __('Approve & post') }}</x-actions.button>
                                 @endcan
                                 @can('purchase_returns.reject')
-                                    <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'reject')">{{ __('Reject') }}</flux:button>
+                                    <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal({{ $return->id }}, 'reject')">{{ __('Reject') }}</x-actions.button>
                                 @endcan
                                 @can('purchase_returns.cancel')
                                     <flux:button size="sm" variant="subtle" wire:click="openTransitionModal({{ $return->id }}, 'cancel')">{{ __('Cancel') }}</flux:button>
