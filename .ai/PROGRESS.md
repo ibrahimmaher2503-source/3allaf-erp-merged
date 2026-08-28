@@ -1,8 +1,8 @@
 # UI/UX Release Progress
 
 **Updated:** 2026-08-28
-**Branch:** `feature/m50d-assets-rental`
-**Baseline:** published `v0.1.11`
+**Branch:** `feature/v0.1.13-guided-setup-admin-ux`
+**Baseline:** published `v0.1.12`
 
 | Milestone | Status |
 |---|---|
@@ -20,6 +20,7 @@ M50A.1 changed shared presentation, centralized module-dashboard specification, 
 | M50B.5 — Parties, Bookings & Customers workspace | Complete in development |
 | M50C — Reports, Administration & System Settings | Complete in development |
 | M50D — Assets, Rental & Transfers workspace | Complete in development |
+| v0.1.13 — Guided Setup & Administration UX | Complete in development |
 
 M50B.2 adds the scoped purchasing overview, seven-day trend, receiving/approval/return indicators, bounded top/recent purchasing lists, and responsive supplier/invoice/order/return tables. Due/overdue balances are omitted because there is no authoritative payable ledger.
 
@@ -38,3 +39,8 @@ M50D adds an authorized-store-scoped Assets dashboard, asset catalog/detail, bou
 - **Reporting boundary:** Preserved `ReportSnapshot`, visible-store/user scoping, bounded source rows, sales pagination/sorting, the 5,000-row export cap, snapshot hashes, requester ownership, locale restoration, XLSX formula protection, and PDF security.
 - **Verification actually run:** Focused PHP/Blade syntax, route/navigation/export mapping, `git diff --check`, and one locked Vite build with Node 20.20.2. Manifest SHA-256: `a9e9896affa4baf7ad19a4febdf6de76bf6cf84475b4e9acc277054c7378d94f`; every referenced asset exists. Automated tests and browser control were not authorized, and no database runtime was used.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, Apache, cron, or Toy & Joy WordPress access occurred.
+# 2026-08-28 — v0.1.13 guided setup and administration UX
+
+- Implemented validation-first sequential settings controls over the existing save actions, permission-filtered 21-step setup guidance, branch-to-outlet continuation, compact administration tables/mobile cards, and clarified Sales Outlet/Cashier Till terminology.
+- Preserved readiness queries, direct routes, permissions, settings validation/actions, branch/store/till/shift relationships, schema, and business mutations.
+- The single locked Vite build completed with Node 20.20.2; manifest/reference, focused syntax, route/permission mapping, and `git diff --check` passed. No automated tests, browser session, database operation, deployment, tag, push, or remote access occurred.

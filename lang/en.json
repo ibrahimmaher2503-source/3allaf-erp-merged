@@ -336,7 +336,7 @@
     "PWA shell is configured for fast local navigation and offline indicator.": "PWA shell is configured for fast local navigation and offline indicator.",
     "Branch Context": "Branch Context",
     "Selling Store": "Selling Store",
-    "Cash Drawer": "Cash Drawer",
+    "Cash Drawer": "Cashier Till",
     "Shift Status": "Shift Status",
     "Active Shift": "Active Shift",
     "Search or scan barcode...": "Search or scan barcode...",
@@ -374,7 +374,7 @@
     "log in": "log in",
     "Branches": "Branches",
     "Stores & Mapping": "Warehouses & Points of Sale",
-    "Cash Drawers": "Cash Drawers",
+    "Cash Drawers": "Cashier Tills",
     "Audit Logs": "Audit Logs",
     "Approval inbox": "Approval inbox",
     "Approval requests": "Approval requests",
@@ -990,7 +990,7 @@
     "Unassigned Branch": "Unassigned Branch",
     "Location Type": "Location Type",
     "All Location Types": "All Location Types",
-    "Point of Sale (POS)": "Point of Sale (POS)",
+    "Point of Sale (POS)": "Sales Outlet",
     "Main Warehouse": "Main Warehouse",
     "Service Center": "Service Center",
     "Damaged & Defective Stock": "Damaged & Defective Stock",
@@ -1029,9 +1029,9 @@
     "Only stores of type Selling Store can be mapped to branches for POS operations.": "Only stores of type Selling Store can be mapped to branches for POS operations.",
     "Selling store must be active to map to a branch.": "Selling store must be active to map to a branch.",
     "Selling store mapped to branch successfully.": "Selling store mapped to branch successfully.",
-    "Cash Drawer Masters": "Cash Drawer Masters",
+    "Cash Drawer Masters": "Cashier Tills",
     "Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).": "Configure branch-scoped cash drawers and default assignments for POS operations. Shifts and opening balances remain deferred (BLK-006).",
-    "Add Cash Drawer": "Add Cash Drawer",
+    "Add Cash Drawer": "Add Cashier Till",
     "Local Baseline — Reversible Cash Drawer Masters (TSK-007 / BLK-006)": "Local Baseline — Reversible Cash Drawer Masters (TSK-007 / BLK-006)",
     "Cash drawers are registered per branch and optional store/cashier link. Opening balances, shift sessions, cash movements, and blind close reconciliation are explicitly deferred to DM 3.3 (TSK-025). Shift dependency guards remain set to TBD.": "Cash drawers are registered per branch and optional store/cashier link. Opening balances, shift sessions, cash movements, and blind close reconciliation are explicitly deferred to DM 3.3 (TSK-025). Shift dependency guards remain set to TBD.",
     "Search drawers by code or name...": "Search drawers by code or name...",
@@ -1041,7 +1041,7 @@
     "Are you sure you want to delete this cash drawer?": "Are you sure you want to delete this cash drawer?",
     "No Cash Drawers Found": "No Cash Drawers Found",
     "No cash drawers match your search or active filters.": "No cash drawers match your search or active filters.",
-    "Create Cash Drawer": "Create Cash Drawer",
+    "Create Cash Drawer": "Create Cashier Till",
     "Edit Cash Drawer": "Edit Cash Drawer",
     "Configure cash drawer identifier, branch assignment, store, and default cashier.": "Configure cash drawer identifier, branch assignment, store, and default cashier.",
     "Select Branch": "Select Branch",
@@ -2212,8 +2212,8 @@
     ,"Select supplier": "Select supplier"
     ,"Select product": "Select product"
     ,"Unit cost": "Unit cost"
-    ,"Primary point of sale": "Primary point of sale"
-    ,"Primary point of sale per branch": "Primary point of sale per branch"
+    ,"Primary point of sale": "Primary Sales Outlet"
+    ,"Primary point of sale per branch": "Primary Sales Outlet per branch"
     ,"Choose the point of sale used by each branch. Sales stock is taken from this point of sale.": "Choose the point of sale used by each branch. Sales stock is taken from this point of sale."
     ,"Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale.": "Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale."
     ,"Current point of sale": "Current point of sale"
@@ -2256,4 +2256,30 @@
     ,"Generate code automatically": "Generate code automatically"
     ,"Generated automatically": "Generated automatically"
     ,"Unable to complete the request. Please review the data and try again.": "Unable to complete the request. Please review the data and try again."
+    ,"Save & Next": "Save & Next"
+    ,"Save & Previous": "Save & Previous"
+    ,"Continue setup": "Continue setup"
+    ,"Setup guidance": "Setup guidance"
+    ,"Setup Center": "Setup Center"
+    ,"Return to Setup Center": "Return to Setup Center"
+    ,"Return to Branches": "Return to Branches"
+    ,"Finish setup review": "Finish setup review"
+    ,"Step :current of :total": "Step :current of :total"
+    ,"step :current of :total": "step :current of :total"
+    ,"Add warehouse or sales outlet": "Add warehouse or Sales Outlet"
+    ,"The branch :name is saved. Continue by creating or linking its warehouse or sales outlet.": "The branch :name is saved. Continue by creating or linking its warehouse or Sales Outlet."
+    ,"Branch identity": "Branch identity"
+    ,"Branch directory": "Branch directory"
+    ,"Location identity": "Location identity"
+    ,"Mapped Sales Outlet": "Mapped Sales Outlet"
+    ,"Branch → Sales Outlet → Cashier Till": "Branch → Sales Outlet → Cashier Till"
+    ,"Sales Outlet": "Sales Outlet"
+    ,"Sales Outlet help": "Where sales are recorded and the relevant selling inventory context is selected."
+    ,"Cashier Till": "Cashier Till"
+    ,"Cashier Till help": "The cash-accountability unit used by a cashier shift for opening balance, collections, and closing reconciliation."
+    ,"Complete": "Complete"
+    ,"Needs setup": "Needs setup"
+    ,"Needs review": "Needs review"
+    ,"Mark unavailable": "Mark unavailable"
+    ,"Mark unavailable for shifts": "Mark unavailable for shifts"
 }

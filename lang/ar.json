@@ -512,7 +512,7 @@
     "Actual submission": "إرسال القيم الفعلية",
     "Actual totals": "الإجماليات الفعلية",
     "Add": "إضافة",
-    "Add Cash Drawer": "إضافة درج نقدية",
+    "Add Cash Drawer": "إضافة خزينة كاشير",
     "Add Document Sequence": "إضافة تسلسل مستند",
     "Add Item Line": "إضافة بند صنف",
     "Add New Payment Method Baseline": "إضافة خط أساس لطريقة دفع",
@@ -941,7 +941,7 @@
     "Cash": "نقدي",
     "Cash & shift reports": "تقارير الخزائن والورديات",
     "Cash & shifts": "النقد والورديات",
-    "Cash Drawer Masters": "البيانات الأساسية لأدراج النقدية",
+    "Cash Drawer Masters": "خزائن الكاشير",
     "Cash In": "إيداع نقدي",
     "Cash Out": "سحب نقدي",
     "Cash Shift": "وردية الخزينة",
@@ -1180,7 +1180,7 @@
     "Counts only; no monetary fields or expected values are loaded into this page.": "أعداد فقط؛ لا يتم تحميل حقول مالية أو قيم متوقعة إلى هذه الصفحة.",
     "Create": "إنشاء",
     "Create Branch Master": "إنشاء البيانات الأساسية للفرع",
-    "Create Cash Drawer": "إنشاء درج نقدية",
+    "Create Cash Drawer": "إنشاء خزينة كاشير",
     "Create Excel export": "إنشاء excel تصدير",
     "Create Local Branch": "إنشاء فرع محلي",
     "Create Local Store": "إنشاء متجر محلي",
@@ -2682,7 +2682,7 @@
     "Please review and correct the following validation errors:": "يرجى مراجعة أخطاء التحقق التالية وتصحيحها:",
     "Please verify your email address by clicking on the link we just emailed to you.": "يرجى التحقق من بريدك الإلكتروني بالنقر على الرابط الذي أرسلناه إليك للتو.",
     "Please verify your email address by clicking on the link we just emailed you.": "يرجى التحقق من بريدك الإلكتروني بالنقر على الرابط الذي أرسلناه إليك للتو.",
-    "Point of Sale (POS)": "نقطة بيع",
+    "Point of Sale (POS)": "منفذ البيع",
     "Point of sale, sales history, shifts, and cash movements are available from the workspace.": "تتوفر نقطة البيع وتاريخ المبيعات والورديات وحركات الخزينة من مساحة العمل.",
     "Points": "نقاط",
     "Policy & Baseline Notes": "ملاحظات السياسة وخط الأساس",
@@ -5038,8 +5038,8 @@
     ,"Branch Context": "فرع العمل"
     ,"Brand Masters": "إدارة العلامات التجارية"
     ,"Browser Print": "طباعة المتصفح"
-    ,"Cash Drawer": "درج النقدية"
-    ,"Cash Drawers": "أدراج النقدية"
+    ,"Cash Drawer": "خزينة الكاشير"
+    ,"Cash Drawers": "خزائن الكاشير"
     ,"Category": "الفئة"
     ,"Company Identity": "هوية الشركة"
     ,"Configured": "مهيأ"
@@ -5156,9 +5156,9 @@
     ,"Active TSK-027 floor rounding convention used by earn and redeem calculations.": "طريقة تقريب النقاط عند الكسب والاستبدال."
     ,"Active TSK-027 approval and separation-of-duties policy for sensitive adjustments.": "قواعد اعتماد تعديلات نقاط الولاء الحساسة."
     ,"Active TSK-027 immutable source, idempotency, and concurrency controls for the ledger.": "ضوابط حفظ سجل نقاط الولاء ومنع التكرار والتعارض."
-    ,"Warehouses & Points of Sale": "المخازن ونقاط البيع"
-    ,"Primary point of sale": "نقطة البيع الأساسية"
-    ,"Primary point of sale per branch": "نقطة البيع الأساسية لكل فرع"
+    ,"Warehouses & Points of Sale": "المخازن ومنافذ البيع"
+    ,"Primary point of sale": "منفذ البيع الأساسي"
+    ,"Primary point of sale per branch": "منفذ البيع الأساسي لكل فرع"
     ,"Choose the point of sale used by each branch. Sales stock is taken from this point of sale.": "اختر نقطة البيع التي يستخدمها كل فرع. تُخصم مبيعات الفرع من مخزونها."
     ,"Choose the point of sale used for each branch. It is created from Warehouses & Points of Sale.": "اختر نقطة البيع التي يستخدمها كل فرع. أنشئها أولًا من شاشة المخازن ونقاط البيع."
     ,"Current point of sale": "نقطة البيع الحالية"
@@ -5275,4 +5275,30 @@
     ,"Reserve this asset": "حجز هذا الأصل"
     ,"Return location": "موقع الإرجاع"
     ,"View details": "عرض التفاصيل"
+    ,"Save & Next": "حفظ والتالي"
+    ,"Save & Previous": "حفظ والسابق"
+    ,"Continue setup": "متابعة الإعداد"
+    ,"Setup guidance": "إرشادات الإعداد"
+    ,"Setup Center": "مركز الإعداد"
+    ,"Return to Setup Center": "العودة إلى مركز الإعداد"
+    ,"Return to Branches": "العودة إلى الفروع"
+    ,"Finish setup review": "إنهاء مراجعة الإعداد"
+    ,"Step :current of :total": "الخطوة :current من :total"
+    ,"step :current of :total": "الخطوة :current من :total"
+    ,"Add warehouse or sales outlet": "إضافة مخزن أو منفذ بيع"
+    ,"The branch :name is saved. Continue by creating or linking its warehouse or sales outlet.": "تم حفظ الفرع :name. تابع بإنشاء مخزنه أو منفذ البيع الخاص به أو ربطه."
+    ,"Branch identity": "بيانات الفرع"
+    ,"Branch directory": "دليل الفروع"
+    ,"Location identity": "بيانات الموقع"
+    ,"Mapped Sales Outlet": "منفذ البيع المرتبط"
+    ,"Branch → Sales Outlet → Cashier Till": "الفرع ← منفذ البيع ← خزينة الكاشير"
+    ,"Sales Outlet": "منفذ البيع"
+    ,"Sales Outlet help": "الموقع الذي تُسجَّل فيه المبيعات ويُحدَّد منه سياق مخزون البيع ذي الصلة."
+    ,"Cashier Till": "خزينة الكاشير"
+    ,"Cashier Till help": "وحدة المسؤولية النقدية التي تستخدمها وردية الكاشير لرصيد الافتتاح والتحصيل وتسوية الإغلاق."
+    ,"Complete": "مكتمل"
+    ,"Needs setup": "يحتاج إلى إعداد"
+    ,"Needs review": "يحتاج إلى مراجعة"
+    ,"Mark unavailable": "تعليم كغير متاحة"
+    ,"Mark unavailable for shifts": "تعليم الخزينة كغير متاحة للورديات"
 }

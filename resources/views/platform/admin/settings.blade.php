@@ -29,8 +29,6 @@ new #[Title('System Settings')] class extends Component
     #[Url(as: 'section', except: 'printer-profiles')]
     public string $printerSection = 'printer-profiles';
 
-    public bool $showCompanyPreview = false;
-
     public ?int $companyId = null;
 
     public bool $companyDirty = false;
@@ -201,17 +199,6 @@ new #[Title('System Settings')] class extends Component
         // policy must remain owner-provided; an empty state is intentional.
     }
 
-    /**
-     * Validate and preview company identity before committing it.
-     */
-    public function previewCompany(): void
-    {
-        Gate::authorize('manage-settings');
-
-        $this->validate($this->companyRules());
-        $this->showCompanyPreview = true;
-    }
-
     public function updatedCompanyForm(): void
     {
         $this->companyDirty = true;
@@ -231,9 +218,49 @@ new #[Title('System Settings')] class extends Component
         $this->companyForm = array_merge($this->companyForm, $res['company']->toArray());
         $this->companyId = $res['company']->id;
         $this->companyDirty = false;
-        $this->showCompanyPreview = false;
-
         Flux::toast(variant: 'success', text: __('Company settings saved successfully.'));
+    }
+
+    public function saveCompanyAndNext(SaveLocalSettingsAction $action): void
+    {
+        $this->saveCompany($action);
+        $this->activeTab = 'payments';
+    }
+
+    public function savePaymentMethodAndPrevious(SaveLocalSettingsAction $action): void
+    {
+        $this->savePaymentMethod($action);
+        $this->activeTab = 'company';
+    }
+
+    public function savePaymentMethodAndNext(SaveLocalSettingsAction $action): void
+    {
+        $this->savePaymentMethod($action);
+        $this->activeTab = 'tax';
+    }
+
+    public function saveTaxSettingAndPrevious(PlatformSettingsApprovalAction $action): void
+    {
+        $this->saveTaxSetting($action);
+        $this->activeTab = 'payments';
+    }
+
+    public function saveTaxSettingAndNext(PlatformSettingsApprovalAction $action): void
+    {
+        $this->saveTaxSetting($action);
+        $this->activeTab = 'sequences';
+    }
+
+    public function saveDocumentSequenceAndPrevious(PlatformSettingsApprovalAction $action): void
+    {
+        $this->saveDocumentSequence($action);
+        $this->activeTab = 'tax';
+    }
+
+    public function saveDocumentSequenceAndNext(PlatformSettingsApprovalAction $action): void
+    {
+        $this->saveDocumentSequence($action);
+        $this->activeTab = 'printers';
     }
 
     /** @return array<string, array<int, string>> */
@@ -590,6 +617,8 @@ new #[Title('System Settings')] class extends Component
 
     <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
 
+    <x-setup.context :current-key="match ($activeTab) { 'company' => 'company', 'payments' => 'payment-methods', 'tax' => 'taxes', 'sequences' => 'document-sequences', 'printers' => $printerSection === 'print-templates' ? 'print-templates' : 'printers', default => 'company' }" />
+
     <?php if ($errors->any()): ?>
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
             <p class="text-sm font-medium">{{ __('Please review and correct the following validation errors:') }}</p>
@@ -705,7 +734,7 @@ new #[Title('System Settings')] class extends Component
                 </flux:callout>
             <?php else: ?>
             <form
-                wire:submit="previewCompany"
+                wire:submit="saveCompanyAndNext"
                 x-on:input="dirty = true"
                 class="space-y-6"
             >
@@ -795,79 +824,21 @@ new #[Title('System Settings')] class extends Component
 
                     <div class="flex justify-end">
                         <flux:button
-                            type="button"
+                            type="submit"
                             variant="primary"
-                            icon="eye"
+                            icon="arrow-right"
                             x-bind:disabled="!dirty"
-                            wire:click="previewCompany"
                             wire:loading.attr="disabled"
-                            wire:target="previewCompany"
+                            wire:target="saveCompanyAndNext"
                             data-guide="settings-save-button"
                         >
-                            {{ __('company.review_changes') }}
+                            <span wire:loading.remove wire:target="saveCompanyAndNext">{{ __('Save & Next') }}</span>
+                            <span wire:loading wire:target="saveCompanyAndNext">{{ __('Saving...') }}</span>
                         </flux:button>
                     </div>
                 </flux:card>
             </form>
 
-            <flux:modal
-                wire:model.self="showCompanyPreview"
-                aria-label="{{ __('company.review_title') }}"
-                class="md:w-[min(96vw,46rem)]"
-            >
-                <div class="space-y-6">
-                    <div class="space-y-1">
-                        <flux:heading id="company-preview-title" size="lg">{{ __('company.review_title') }}</flux:heading>
-                        <flux:subheading>{{ __('company.review_help') }}</flux:subheading>
-                    </div>
-
-                    <?php
-                        $companyPreviewRows = [
-                            __('Company Code') => $companyForm['code'],
-                            __('Legal Name') => $companyForm['legal_name'],
-                            __('Name (Arabic)') => $companyForm['name_ar'],
-                            __('Name (English)') => $companyForm['name_en'],
-                            __('Tax Identification Number (TIN)') => $companyForm['tax_number'],
-                            __('Commercial Registration (CR)') => $companyForm['commercial_registration'],
-                            __('Currency code') => $companyForm['currency_code'],
-                            __('Currency symbol') => $companyForm['currency_symbol'],
-                            __('Default Application Locale') => strtoupper($companyForm['locale_default']),
-                            __('Contact Phone') => $companyForm['phone'],
-                            __('Contact Email') => $companyForm['email'],
-                        ];
-                    ?>
-                    <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                        <?php foreach ($companyPreviewRows as $label => $value): ?>
-                            <div class="min-w-0 border-b border-zinc-200 pb-3 dark:border-zinc-700">
-                                <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ $label }}</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100" dir="auto">
-                                    {{ filled($value) ? $value : __('Not provided') }}
-                                </dd>
-                            </div>
-                        <?php endforeach; ?>
-                    </dl>
-
-                    <?php if (filled($companyForm['address'])): ?>
-                        <dl class="space-y-4">
-                            <?php if (filled($companyForm['address'])): ?>
-                                <div>
-                                    <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ __('Address') }}</dt>
-                                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100" dir="auto">{{ $companyForm['address'] }}</dd>
-                                </div>
-                            <?php endif; ?>
-                        </dl>
-                    <?php endif; ?>
-
-                    <form wire:submit="saveCompany" class="flex flex-col-reverse gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700 sm:flex-row sm:justify-end">
-                        <flux:button type="button" variant="subtle" wire:click="$set('showCompanyPreview', false)">
-                            {{ __('Back to edit') }}
-                        </flux:button>
-                        <flux:button type="submit" variant="primary" icon="check" wire:loading.attr="disabled" wire:target="saveCompany">
-                            {{ __('Confirm and save') }}
-                        </flux:button>
-                    </form>
-                </div>
-            </flux:modal>
             <?php endif; ?>
         </div>
     <?php endif; ?>
@@ -929,16 +900,15 @@ new #[Title('System Settings')] class extends Component
 
                     </div>
 
-                    <div class="flex items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-end gap-3">
                         <?php if ($paymentMethodForm['id']): ?>
                             <flux:button type="button" wire:click="resetPaymentMethodForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="savePaymentMethod">
-                            {{ $paymentMethodForm['id'] ? __('Update Method') : __('Save Method') }}
-                        </flux:button>
+                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="savePaymentMethodAndPrevious" wire:loading.attr="disabled" wire:target="savePaymentMethodAndPrevious"><span wire:loading.remove wire:target="savePaymentMethodAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="savePaymentMethodAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="savePaymentMethodAndNext" wire:loading.attr="disabled" wire:target="savePaymentMethodAndNext"><span wire:loading.remove wire:target="savePaymentMethodAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="savePaymentMethodAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
             </flux:card>
@@ -1102,16 +1072,15 @@ new #[Title('System Settings')] class extends Component
                     </div>
                     <flux:text class="text-sm text-text-muted">{{ __('Tax inclusive means the displayed price already includes the tax amount.') }}</flux:text>
 
-                    <div class="flex items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-end gap-3">
                         <?php if ($taxSettingForm['id']): ?>
                             <flux:button type="button" wire:click="resetTaxSettingForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveTaxSetting">
-                            {{ $taxSettingForm['id'] ? __('Update Tax Setting') : __('Save Tax Setting') }}
-                        </flux:button>
+                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="saveTaxSettingAndPrevious" wire:loading.attr="disabled" wire:target="saveTaxSettingAndPrevious"><span wire:loading.remove wire:target="saveTaxSettingAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="saveTaxSettingAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="saveTaxSettingAndNext" wire:loading.attr="disabled" wire:target="saveTaxSettingAndNext"><span wire:loading.remove wire:target="saveTaxSettingAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="saveTaxSettingAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
             </flux:card>
@@ -1305,16 +1274,15 @@ new #[Title('System Settings')] class extends Component
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-end gap-3">
                         <?php if ($documentSequenceForm['id']): ?>
                             <flux:button type="button" wire:click="resetDocumentSequenceForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
                         <?php endif; ?>
 
-                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveDocumentSequence">
-                            {{ $documentSequenceForm['id'] ? __('Update Sequence') : __('Save Sequence') }}
-                        </flux:button>
+                        <flux:button type="button" variant="subtle" icon="arrow-left" wire:click="saveDocumentSequenceAndPrevious" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndPrevious"><span wire:loading.remove wire:target="saveDocumentSequenceAndPrevious">{{ __('Save & Previous') }}</span><span wire:loading wire:target="saveDocumentSequenceAndPrevious">{{ __('Saving...') }}</span></flux:button>
+                        <flux:button type="button" variant="primary" icon="arrow-right" wire:click="saveDocumentSequenceAndNext" wire:loading.attr="disabled" wire:target="saveDocumentSequenceAndNext"><span wire:loading.remove wire:target="saveDocumentSequenceAndNext">{{ __('Save & Next') }}</span><span wire:loading wire:target="saveDocumentSequenceAndNext">{{ __('Saving...') }}</span></flux:button>
                     </div>
                 </form>
 
@@ -1707,6 +1675,7 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 6: Settings Audit Trail -->
     <?php if ($activeTab === 'audit'): ?>
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" class="space-y-6">
+            <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" icon="arrow-left" wire:click="$set('activeTab', 'printers')">{{ __('Previous') }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <div>

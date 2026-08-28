@@ -176,6 +176,8 @@ new #[Title('Cash Drawer Masters')] class extends Component
     class="space-y-6"
     data-guide="drawers-header"
 >
+    <x-setup.context current-key="cash-drawers" />
+    <flux:callout variant="info" icon="information-circle"><strong>{{ __('Cashier Till') }}:</strong> {{ __('Cashier Till help') }} <span class="ms-2 text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</span></flux:callout>
     <x-slot:actions>
         <x-tables.resource-toolbar>
             @can('drawers_payments_tax_numbering_printers.create')
@@ -190,6 +192,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             <flux:input
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
+                :label="__('Search')"
                 :placeholder="__('Search drawers by code or name...')"
                 size="sm"
             />
@@ -252,7 +255,29 @@ new #[Title('Cash Drawer Masters')] class extends Component
     <!-- Cash Drawers Data Table -->
     <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden shadow-xs" data-guide="drawers-table">
         @if($drawers->count() > 0)
-            <div class="overflow-x-auto">
+            <div class="grid gap-3 p-3 md:hidden">
+                @foreach($drawers as $drawer)
+                    <flux:card class="space-y-3 p-4">
+                        <div class="flex items-start justify-between gap-3"><div><div class="font-semibold">{{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $drawer->name_en : $drawer->name_ar }}</div><span class="font-mono text-xs text-primary" dir="ltr">{{ $drawer->code }}</span></div><x-status.badge :status="$drawer->status === 'active' ? 'active' : ($drawer->status === 'maintenance' ? 'warning' : 'inactive')" :label="__($drawer->status === 'active' ? 'Active' : ($drawer->status === 'maintenance' ? 'Maintenance' : 'Inactive'))" /></div>
+                        <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->assignedUser?->name ?? __('Unassigned') }}</dd></div></dl>
+                        <div class="flex flex-wrap gap-2 border-t border-border pt-3">
+                            @can('drawers_payments_tax_numbering_printers.edit')
+                                <flux:button size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</flux:button>
+                                @if($drawer->status === 'active')
+                                    <flux:button size="sm" variant="subtle" color="amber" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</flux:button>
+                                    <flux:button size="sm" variant="subtle" color="amber" icon="pause" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" onclick="if (! window.confirm(@js(__('Deactivate cash drawer :name? It will be unavailable for new POS shifts and its history is preserved.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Deactivate') }}</flux:button>
+                                @else
+                                    <flux:button size="sm" variant="subtle" color="green" icon="play" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</flux:button>
+                                @endif
+                            @endcan
+                            @can('drawers_payments_tax_numbering_printers.logical_delete')
+                                <flux:button size="sm" variant="subtle" color="red" icon="trash" wire:click="deleteDrawer({{ $drawer->id }})" onclick="if (! window.confirm(@js(__('Submit deletion request for cash drawer :name? It remains in history and becomes pending independent approval.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Delete') }}</flux:button>
+                            @endcan
+                        </div>
+                    </flux:card>
+                @endforeach
+            </div>
+            <div class="hidden overflow-x-auto md:block">
                 <table class="data-table w-full text-start text-sm">
                     <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                         <tr>
@@ -313,7 +338,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                         @can('drawers_payments_tax_numbering_printers.edit')
                                             <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</flux:button>
                                             @if($drawer->status === 'active')
-                                                <flux:button size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')">{{ __('Maintenance') }}</flux:button>
+                                                <flux:button size="xs" variant="subtle" class="text-amber-600 dark:text-amber-400" icon="wrench-screwdriver" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'maintenance')" title="{{ __('Mark unavailable for shifts') }}">{{ __('Mark unavailable') }}</flux:button>
                                                 <flux:button size="xs" variant="subtle" class="text-red-600 dark:text-red-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'inactive')" onclick="if (! window.confirm(@js(__('Deactivate cash drawer :name? It will be unavailable for new POS shifts and its history is preserved.', ['name' => app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en])))) { event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation(); return false; }">{{ __('Deactivate') }}</flux:button>
                                             @else
                                                 <flux:button size="xs" variant="subtle" class="text-emerald-600 dark:text-emerald-400" wire:click="toggleDrawerStatus({{ $drawer->id }}, 'active')">{{ __('Activate') }}</flux:button>

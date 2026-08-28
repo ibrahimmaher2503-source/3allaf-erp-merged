@@ -143,3 +143,8 @@ Core integrity commits remain synchronous and transactional. Do not queue approv
 Do not call the application fast based on an empty local database. Before production readiness, use representative authorized data volumes to inspect first meaningful render, navigation, query and Livewire request counts, duplicate queries, response and DOM size, asset transfer size, layout shifts, page-specific code, slow server actions, and relevant database execution plans.
 
 The production release gate verifies: production environment and debug settings; Composer and OPcache optimization; Laravel and Vite caches; compression and asset headers; indexes and unique constraints against real query patterns; paginated lists; image and font behavior; queue and scheduler operations where enabled; request-ID diagnostics; backups and restore; monitoring; and the absence of obvious frontend, network, or query bottlenecks. This gate is implemented and evidenced through the approved release task, not assumed by local development.
+## Guided setup presentation boundary (v0.1.13)
+
+The setup journey is a presentation layer over `InitialSetupStatus` and existing permission-protected routes. It does not persist page position or completion flags: continuation is derived from authoritative readiness on each request. Contextual links carry only non-authoritative navigation hints.
+
+The operational location chain remains `Branch → Store(type=selling) → CashDrawer → PosShift`. UI copy presents Store(type=selling) as “Sales Outlet” and CashDrawer as “Cashier Till”; domain identifiers and mutation boundaries remain unchanged.

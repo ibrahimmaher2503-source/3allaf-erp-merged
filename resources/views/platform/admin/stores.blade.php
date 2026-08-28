@@ -66,6 +66,15 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     public function mount(): void
     {
         Gate::authorize('branches_stores.view');
+
+        $branchId = request()->integer('branch_id');
+        if ($branchId > 0 && Branch::visibleTo(auth()->user())->whereKey($branchId)->where('status', 'active')->exists()) {
+            $this->branchFilter = (string) $branchId;
+            $this->storeForm['branch_id'] = (string) $branchId;
+            if (request()->boolean('create') && auth()->user()?->can('branches_stores.create')) {
+                $this->showStoreModal = true;
+            }
+        }
     }
 
     public function updatingSearch(): void
@@ -341,6 +350,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     class="space-y-6"
     data-guide="stores-header"
 >
+    <x-setup.context current-key="warehouses" />
+    <flux:callout variant="info" icon="information-circle"><strong>{{ __('Sales Outlet') }}:</strong> {{ __('Sales Outlet help') }}</flux:callout>
     <x-slot:actions>
         <x-tables.resource-toolbar>
             @can('branches_stores.create')
@@ -355,6 +366,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             <flux:input
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
+                :label="__('Search')"
                 placeholder="{{ __('Search warehouse code or name...') }}"
                 size="sm"
             />
@@ -499,16 +511,15 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         </div>
 
         <div class="hidden overflow-x-auto rounded-xl border border-zinc-200 px-2 dark:border-zinc-700 md:block" aria-label="{{ __('Warehouse list') }}">
-            <flux:table data-guide="stores-table" class="min-w-[90rem]">
+            <flux:table data-guide="stores-table" class="w-full">
             <flux:table.columns>
-                <flux:table.column sortable class="min-w-24 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
-                <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Warehouse Name (AR / EN)') }}</span></flux:table.column>
+                <flux:table.column class="min-w-52"><span class="block whitespace-normal leading-tight">{{ __('Location identity') }}</span></flux:table.column>
                 <flux:table.column class="min-w-36 whitespace-nowrap">{{ __('Type') }}</flux:table.column>
-                <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Branch Context') }}</span></flux:table.column>
-                <flux:table.column class="min-w-48"><span class="block whitespace-normal leading-tight">{{ __('Mapped POS Branch') }}</span></flux:table.column>
-                <flux:table.column class="min-w-44"><span class="block whitespace-normal leading-tight">{{ __('Negative Stock') }}</span></flux:table.column>
+                <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Branch Context') }}</span></flux:table.column>
+                <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Mapped Sales Outlet') }}</span></flux:table.column>
+                <flux:table.column class="min-w-32"><span class="block whitespace-normal leading-tight">{{ __('Negative Stock') }}</span></flux:table.column>
                 <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
-                <flux:table.column class="w-64 min-w-64 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
+                <flux:table.column class="min-w-44 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -518,13 +529,10 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 $isPendingArchive = in_array($st->id, $pendingArchiveStoreIds, true);
 ?>
                     <flux:table.row :key="$st->id">
-                        <flux:table.cell class="font-mono font-medium">
-                            {{ $st->code }}
-                        </flux:table.cell>
-
                         <flux:table.cell>
                             <div class="font-medium text-zinc-900 dark:text-zinc-100">{{ $st->name_ar }}</div>
                             <div class="text-xs text-zinc-500">{{ $st->name_en }}</div>
+                            <span class="mt-1 inline-block rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary" dir="ltr">{{ $st->code }}</span>
                         </flux:table.cell>
 
                         <flux:table.cell>
@@ -599,7 +607,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             @endif
                         </flux:table.cell>
 
-                        <flux:table.cell class="w-64 min-w-64 align-top text-end">
+                        <flux:table.cell class="align-top text-end">
                             <div class="flex flex-wrap items-center justify-end gap-2">
                                 @can('branches_stores.edit')
                                     <flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" />

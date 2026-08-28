@@ -37,3 +37,10 @@
 - Use the existing authorized `parties.bookings.index` route as the Party module landing page and keep calendar, invoice/payment, operating-order, and booking-detail workflows on their current routes and action boundaries.
 - Treat `PartyBooking.location` and Party invoice service lines as the authoritative current venue/service description. Do not invent package, venue, resource-capacity, deposit, or approval master records that do not exist.
 - Reuse the existing Customer identity and expose separately scoped Party history in its profile. Retail sales, Product Wallet, Party Wallet, Party invoices, and Party payments remain distinct ledgers and histories.
+
+## 2026-08-28 — v0.1.13 guided-setup and administration UX boundary
+
+- Keep `InitialSetupStatus` as the readiness authority and derive continuation from the first authorized required incomplete item; visiting a page never marks it complete and no persisted wizard-position field is introduced.
+- The canonical hierarchy is `Branch → Store(type=selling) → CashDrawer → PosShift`. Present it as Branch → Sales Outlet → Cashier Till → Shift while preserving every internal class, field, route, permission, action, and relationship.
+- Settings navigation wraps existing save methods: navigation happens only after successful validation/persistence, each control targets its exact action, and read-only history has no save action.
+- Branch success guidance may prefill only the existing authorized store form. Primary-outlet selection appears only through the existing mapping action and is never fabricated or silently reassigned.

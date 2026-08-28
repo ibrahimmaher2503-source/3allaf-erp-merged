@@ -1,10 +1,10 @@
-# Active Milestone — M50D Assets, Rental & Transfers
+# Active Milestone — v0.1.13 Guided Setup & Administration UX
 
 **Date:** 2026-08-28
 **Current phase:** Item 50 isolated UI/UX release phase
-**Current milestone:** M50D
-**Status:** Complete in development after the single locked build and focused syntax, route, permission/navigation, manifest, and diff verification.
+**Current milestone:** consolidated setup and administration UX
+**Status:** Complete in development after the single locked build and focused checks.
 
-The Assets workspace now provides an authorized operational dashboard, scoped asset catalog and detail, bounded availability calendar, reservation and custody actions, overdue-return attention, and immutable condition/event history. Rental assets remain separate from stock inventory products, and Party-linked reservations continue through the established action boundaries.
+This milestone connects the existing readiness-derived 21-step setup journey to the canonical settings, branch, store/outlet, and cashier-till pages. Settings persistence remains in its existing actions; guided navigation occurs only after successful validation and save.
 
-Unsupported transfer requests, maintenance work orders, customer rental ledgers, and revenue reporting were not invented. No database schema or business mutation boundary changed. Deployment and a `v0.1.12` release remain explicitly outside this development milestone.
+The authoritative hierarchy is Branch → selling Store → CashDrawer → PosShift. Only user-facing terminology changes to Sales Outlet and Cashier Till. Unsupported relationships are omitted. Deployment and a `v0.1.13` tag remain outside this development milestone.

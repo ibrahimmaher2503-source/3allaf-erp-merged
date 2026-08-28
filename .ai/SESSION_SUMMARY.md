@@ -602,3 +602,10 @@
 - **Verification actually run:** Focused PHP/Blade syntax and route/navigation/permission mapping, `git diff --check`, manifest/reference verification, and one locked Vite build with Node 20.20.2. Manifest SHA-256: `28ea65ff017fdf9af0afc12ac5695e1fd173d1672a7045476484274c80e59d91`; every referenced asset exists. Automated tests and browser control were not authorized, and no database runtime was used.
 - **Boundaries:** No production/shared runtime, database, migration, deployment, tag, remote/network, cPanel, Apache, cron, or Toy & Joy WordPress access occurred.
 - **Next action:** Owner review of M50D; deployment and `v0.1.12` remain unstarted.
+# 2026-08-28 — v0.1.13 guided setup and administration UX
+
+- **Task:** Implement the consolidated guided-setup and administration UX milestone from published `v0.1.12`.
+- **Work completed:** Replaced Company preview with direct validation-first Save & Next; added exact-target Save & Previous/Next controls to the existing editable settings sequence and read-only history navigation. Added a shared permission-aware setup context, 21-step/group position, readiness-derived continuation, compact branch/store/till desktop tables and mobile cards, branch-success links to the existing store route, and bilingual Sales Outlet/Cashier Till terminology.
+- **Boundaries:** Existing actions, validators, routes, Gates, readiness rules, BranchSellingStore mapping, CashDrawer/PosShift ownership, schema, calculations, and mutation rules are unchanged. No unsupported relationship or wizard persistence was added.
+- **Verification:** One locked Vite production build completed with Node 20.20.2 and manifest SHA-256 `482a91443a77d0753066b5324963d01dcb0a66e189806017252ab13b92c870af`; all 12 referenced assets exist. Focused PHP/Blade/JSON syntax, route/permission mapping, and `git diff --check` passed. No automated test suite or browser control was run.
+- **Delivery:** Development-only; no production access, database operation, migration, deployment, version bump, tag, push, remote contact, or Toy & Joy WordPress access occurred.
