@@ -1,24 +1,26 @@
 @php
     $routeName = request()->route()?->getName();
-    $currentKey = match (true) {
+    $routeSetupKey = match (true) {
         $routeName === 'admin.branches' => 'branches-stores',
         $routeName === 'admin.stores' => 'warehouses',
         $routeName === 'admin.cash-drawers' => 'cash-drawers',
-        $routeName === 'admin.authorization-baseline' => 'users-scopes',
-        $routeName === 'catalog.categories' => 'categories',
-        $routeName === 'catalog.brands' => 'brands',
-        $routeName === 'catalog.product-options' => 'product-options',
-        in_array($routeName, ['catalog.products', 'catalog.products.create', 'catalog.products.edit', 'catalog.products.show'], true) => 'product-masters',
-        $routeName === 'catalog.products.import' => 'product-import',
-        $routeName === 'pricing.index' => 'prices',
-        $routeName === 'inventory.adjustments.create' => 'opening-configuration',
-        $routeName === 'customers.groups.index' => 'customer-groups',
-        in_array($routeName, ['customers.index', 'customers.create', 'customers.show'], true) => 'customers',
+        str_starts_with((string) $routeName, 'admin.authorization') || in_array($routeName, ['admin.users', 'admin.roles'], true) => 'users-scopes',
+        str_starts_with((string) $routeName, 'catalog.categories') => 'categories',
+        str_starts_with((string) $routeName, 'catalog.brands') => 'brands',
+        str_starts_with((string) $routeName, 'catalog.product-options') => 'product-options',
+        str_starts_with((string) $routeName, 'catalog.products.import') => 'product-import',
+        str_starts_with((string) $routeName, 'catalog.products') => 'product-masters',
+        str_starts_with((string) $routeName, 'pricing.') => 'prices',
+        str_starts_with((string) $routeName, 'inventory.adjustments') && request('setup_step') === 'opening-configuration' => 'opening-configuration',
+        str_starts_with((string) $routeName, 'customers.groups.') => 'customer-groups',
+        str_starts_with((string) $routeName, 'customers.') => 'customers',
         $routeName === 'party.readiness' => 'party-readiness',
         in_array($routeName, ['catalog.suppliers', 'suppliers.index'], true) && request('section') === 'supplier-groups' => 'supplier-groups',
         in_array($routeName, ['catalog.suppliers', 'suppliers.index'], true) => 'suppliers',
         default => null,
     };
+    $requestedSetupKey = request()->string('setup_step')->toString();
+    $currentKey = $routeSetupKey ?? ($requestedSetupKey !== '' ? $requestedSetupKey : null);
 @endphp
 
 @if ($currentKey && ! in_array($routeName, ['admin.branches', 'admin.stores', 'admin.cash-drawers'], true))

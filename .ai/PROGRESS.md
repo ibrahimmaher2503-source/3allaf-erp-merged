@@ -22,6 +22,7 @@ M50A.1 changed shared presentation, centralized module-dashboard specification, 
 | M50D — Assets, Rental & Transfers workspace | Complete in development |
 | M52 — v0.1.14 navigation, tables and action controls | Complete in development |
 | M53 — v0.1.15 verified visual UX corrections | Complete in development |
+| M53.1 — guided Setup Previous/Next navigation | Complete in development |
 | v0.1.13 — Guided Setup & Administration UX | Complete in development |
 
 M50B.2 adds the scoped purchasing overview, seven-day trend, receiving/approval/return indicators, bounded top/recent purchasing lists, and responsive supplier/invoice/order/return tables. Due/overdue balances are omitted because there is no authoritative payable ledger.
@@ -49,3 +50,5 @@ M50D adds an authorized-store-scoped Assets dashboard, asset catalog/detail, bou
 
 
 M53 corrects the UI inventory to all 22 authoritative Setup steps, fully localizes and persists Setup context, replaces unreliable Flux idle-loading presentation with exact action-scoped controls, completes the 79-view semantic action adoption matrix, standardizes logical table spacing, and verifies active navigation and responsive mobile cards with genuine Arabic/English rendering. The mobile Sales table surface no longer remains horizontally scrollable after conversion to record cards.
+
+M53.1 completes the primary Setup context with permission-filtered adjacent navigation derived from `InitialSetupStatus`. It preserves Setup query context, resolves nested pages to their owning step, keeps the Settings secondary navigator, and aligns both Setup group maps with the authoritative service order so Opening inventory remains step 22.
