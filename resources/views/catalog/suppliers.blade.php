@@ -232,7 +232,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
             'supplierForm.tax_number' => ['nullable', 'string', 'max:50'],
             'supplierForm.payment_terms' => ['nullable', 'string', 'max:1000'],
-            'supplierForm.preferred_payment_method_id' => ['nullable', 'integer', Rule::exists('payment_methods', 'id')->where('status', 'active')],
+            'supplierForm.preferred_payment_method_id' => ['required', 'integer', Rule::exists('payment_methods', 'id')->where('status', 'active')],
             'supplierForm.address' => ['nullable', 'string', 'max:1000'],
             'supplierForm.supplier_group_id' => ['nullable', 'integer'],
             'supplierForm.status' => ['required', 'in:active,inactive'],
@@ -821,7 +821,7 @@ new #[Title('Supplier Masters')] class extends Component
                         :label="app()->getLocale() === 'ar' ? 'شروط الدفع' : __('Payment terms text')"
                         placeholder="Net 30 Days / دفع بعد 30 يوم"
                     />
-                    <flux:select wire:model="supplierForm.preferred_payment_method_id" :label="app()->getLocale() === 'ar' ? 'طريقة الدفع المفضلة (اختياري)' : __('Preferred payment method (optional)')">
+                    <flux:select wire:model="supplierForm.preferred_payment_method_id" :label="app()->getLocale() === 'ar' ? 'طريقة التسوية المالية' : __('Financial-settlement method')" required>
                         <option value="">{{ app()->getLocale() === 'ar' ? 'بدون طريقة مفضلة' : __('No preferred payment method') }}</option>
                         @foreach ($activePaymentMethods as $paymentMethod)
                             <option value="{{ $paymentMethod->id }}">{{ app()->getLocale() === 'ar' ? $paymentMethod->name_ar : $paymentMethod->name_en }}{{ $paymentMethod->code ? ' — '.$paymentMethod->code : '' }}</option>
@@ -853,9 +853,7 @@ new #[Title('Supplier Masters')] class extends Component
                     <flux:button variant="subtle" wire:click="$set('showSupplierModal', false)">
                         {{ app()->getLocale() === 'ar' ? 'إلغاء' : __('Cancel') }}
                     </flux:button>
-                    <flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplier">
-                        <span wire:loading.remove wire:target="saveSupplier">{{ app()->getLocale() === 'ar' ? ($editingSupplierId ? 'حفظ التعديلات' : 'إضافة المورد') : ($editingSupplierId ? __('Update Supplier') : __('Create Supplier')) }}</span><span wire:loading wire:target="saveSupplier">{{ app()->getLocale() === 'ar' ? 'جارٍ الحفظ...' : __('Saving...') }}</span>
-                    </flux:button>
+                    <x-actions.loading-button type="submit" action="saveSupplier" :label="__('Save')" />
                 </div>
             </form>
         </div>

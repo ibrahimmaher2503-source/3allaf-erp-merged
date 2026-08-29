@@ -179,7 +179,6 @@ new #[Title('Cash Drawer Masters')] class extends Component
     class="space-y-6"
     data-guide="drawers-header"
 >
-    <x-setup.context current-key="cash-drawers" :enabled="$setupMode" />
     <flux:callout variant="info" icon="information-circle"><strong>{{ __('Cashier Till') }}:</strong> {{ __('Cashier Till help') }} <span class="ms-2 text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</span></flux:callout>
     <x-slot:actions>
         <x-tables.resource-toolbar>

@@ -223,48 +223,6 @@ new #[Title('System Settings')] class extends Component
         Flux::toast(variant: 'success', text: __('Company settings saved successfully.'));
     }
 
-    public function saveCompanyAndNext(SaveLocalSettingsAction $action): void
-    {
-        $this->saveCompany($action);
-        $this->activeTab = 'payments';
-    }
-
-    public function savePaymentMethodAndPrevious(SaveLocalSettingsAction $action): void
-    {
-        $this->savePaymentMethod($action);
-        $this->activeTab = 'company';
-    }
-
-    public function savePaymentMethodAndNext(SaveLocalSettingsAction $action): void
-    {
-        $this->savePaymentMethod($action);
-        $this->activeTab = 'tax';
-    }
-
-    public function saveTaxSettingAndPrevious(PlatformSettingsApprovalAction $action): void
-    {
-        $this->saveTaxSetting($action);
-        $this->activeTab = 'payments';
-    }
-
-    public function saveTaxSettingAndNext(PlatformSettingsApprovalAction $action): void
-    {
-        $this->saveTaxSetting($action);
-        $this->activeTab = 'sequences';
-    }
-
-    public function saveDocumentSequenceAndPrevious(PlatformSettingsApprovalAction $action): void
-    {
-        $this->saveDocumentSequence($action);
-        $this->activeTab = 'tax';
-    }
-
-    public function saveDocumentSequenceAndNext(PlatformSettingsApprovalAction $action): void
-    {
-        $this->saveDocumentSequence($action);
-        $this->activeTab = 'printers';
-    }
-
     /** @return array<string, array<int, string>> */
     private function companyRules(): array
     {
@@ -619,8 +577,6 @@ new #[Title('System Settings')] class extends Component
 
     <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
 
-    <x-setup.context :enabled="$setupMode" :current-key="match ($activeTab) { 'company' => 'company', 'payments' => 'payment-methods', 'tax' => 'taxes', 'sequences' => 'document-sequences', 'printers' => $printerSection === 'print-templates' ? 'print-templates' : 'printers', default => 'company' }" />
-
     <?php if ($errors->any()): ?>
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
             <p class="text-sm font-medium">{{ __('Please review and correct the following validation errors:') }}</p>
@@ -670,7 +626,7 @@ new #[Title('System Settings')] class extends Component
                 </flux:callout>
             <?php else: ?>
             <form
-                wire:submit="saveCompanyAndNext"
+                wire:submit="saveCompany"
                 x-on:input="dirty = true"
                 class="space-y-6"
             >
@@ -758,8 +714,9 @@ new #[Title('System Settings')] class extends Component
                         :label="__('Address')"
                     />
 
-                    <div class="flex justify-end">
-                        <x-actions.loading-button type="submit" action="saveCompanyAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" x-bind:disabled="!dirty" data-guide="settings-save-button" />
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'payments'])" variant="subtle" wire:navigate>{{ __('Next') }}</flux:button>
+                        <x-actions.loading-button type="submit" action="saveCompany" :label="__('Save')" x-bind:disabled="!dirty" data-guide="settings-save-button" />
                     </div>
                 </flux:card>
             </form>
@@ -832,8 +789,9 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <x-actions.loading-button action="savePaymentMethodAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
-                        <x-actions.loading-button action="savePaymentMethodAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'company'])" variant="subtle" wire:navigate>{{ __('Previous') }}</flux:button>
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'tax'])" variant="subtle" wire:navigate>{{ __('Next') }}</flux:button>
+                        <x-actions.loading-button type="submit" action="savePaymentMethod" :label="__('Save')" />
                     </div>
                 </form>
             </flux:card>
@@ -881,7 +839,7 @@ new #[Title('System Settings')] class extends Component
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <?php if ($method->requires_evidence): ?>
-                                        <flux:badge size="sm" color="amber">{{ __('Required') }}</flux:badge>
+                                        <flux:badge size="sm" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Required') }}</span></flux:badge>
                                     <?php else: ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Not required') }}</flux:badge>
                                     <?php endif; ?>
@@ -1004,8 +962,9 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <x-actions.loading-button action="saveTaxSettingAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
-                        <x-actions.loading-button action="saveTaxSettingAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'payments'])" variant="subtle" wire:navigate>{{ __('Previous') }}</flux:button>
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'sequences'])" variant="subtle" wire:navigate>{{ __('Next') }}</flux:button>
+                        <x-actions.loading-button type="submit" action="saveTaxSetting" :label="__('Save')" />
                     </div>
                 </form>
             </flux:card>
@@ -1041,7 +1000,7 @@ new #[Title('System Settings')] class extends Component
                                     <?php if ($tax->rate !== null): ?>
                                         <span class="font-mono font-semibold">{{ number_format((float)$tax->rate, 2) }}%</span>
                                     <?php else: ?>
-                                        <flux:badge size="sm" color="amber">{{ __('Not configured') }}</flux:badge>
+                                        <flux:badge size="sm" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Not configured') }}</span></flux:badge>
                                     <?php endif; ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
@@ -1206,8 +1165,9 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <x-actions.loading-button action="saveDocumentSequenceAndPrevious" variant="subtle" :label="app()->getLocale() === 'ar' ? 'السابق →' : '← Previous'" />
-                        <x-actions.loading-button action="saveDocumentSequenceAndNext" :label="app()->getLocale() === 'ar' ? '← حفظ والتالي' : 'Save & Next →'" />
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'tax'])" variant="subtle" wire:navigate>{{ __('Previous') }}</flux:button>
+                        <flux:button type="button" :href="route('admin.settings', ['tab' => 'printers'])" variant="subtle" wire:navigate>{{ __('Next') }}</flux:button>
+                        <x-actions.loading-button type="submit" action="saveDocumentSequence" :label="__('Save')" />
                     </div>
                 </form>
 
@@ -1402,7 +1362,7 @@ new #[Title('System Settings')] class extends Component
                             </flux:button>
                         <?php endif; ?>
 
-                        <x-actions.loading-button type="submit" action="savePrinter" :label="$printerForm['id'] ? __('Update printer') : __('Save printer')" />
+                        <x-actions.loading-button type="submit" action="savePrinter" :label="__('Save')" />
                     </div>
                 </form>
 

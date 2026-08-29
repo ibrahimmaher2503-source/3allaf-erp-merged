@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Product Options')] class extends Component {
+new #[Title('Product Filters')] class extends Component {
     public ?int $editingGroupId = null;
     public ?int $editingValueId = null;
     public ?int $valueGroupId = null;
@@ -137,7 +137,7 @@ new #[Title('Product Options')] class extends Component {
 }; ?>
 
 <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
-    <x-page-header :title="__('Product Options')" :description="__('Build a reusable bilingual option library for explicit standard-product variation families.')">
+    <x-page-header :title="__('Product Filters')" :description="__('Build reusable bilingual product filters for explicit standard-product variation families.')">
         <x-slot:actions><flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Product Master') }}</flux:button></x-slot:actions>
     </x-page-header>
 

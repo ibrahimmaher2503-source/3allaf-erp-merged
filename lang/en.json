@@ -802,6 +802,8 @@
     "Validation Errors": "Validation Errors",
     "Please review and correct the following validation errors:": "Please review and correct the following validation errors:",
     "Settings Sections": "Settings Sections",
+    "Section :current of :total": "Section :current of :total",
+    "Cashier role scope description": "Operates POS sales, permitted collections, and assigned shifts only within authorized branch, Sales Outlet, and Cashier Till scopes.",
     "Company Identity": "Company Identity",
     "Payment Methods": "Payment Methods",
     "Tax Settings": "Tax Settings",
@@ -1876,7 +1878,7 @@
     "Select destination store": "Select destination store",
     "Source and destination stores must be different.": "Source and destination stores must be different.",
     "This transfer has no pending approval request. Submit it for approval before approving.": "This transfer has no pending approval request. Submit it for approval before approving."
-    ,"Product Options": "Product Options"
+    ,"Product Options": "Product Filters"
     ,"Variations": "Variations"
     ,"Option library": "Option library"
     ,"New option group": "New option group"
@@ -2287,4 +2289,14 @@
     ,"Needs review": "Needs review"
     ,"Mark unavailable": "Mark unavailable"
     ,"Mark unavailable for shifts": "Mark unavailable for shifts"
+    ,"Product Filters": "Product Filters"
+    ,"Product Cards": "Product Cards"
+    ,"Complete later": "Complete later"
+    ,"Skipped": "Skipped"
+    ,"Add an active supplier and select an active financial-settlement method for it.": "Add an active supplier and select an active financial-settlement method for it."
+    ,"Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.": "Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional."
+    ,"Create an active category before adding product cards.": "Create an active category before adding product cards."
+    ,"Select an active supplier financial-settlement method.": "Select an active supplier financial-settlement method."
+    ,"Financial-settlement method": "Financial-settlement method"
+    ,"Build reusable bilingual product filters for explicit standard-product variation families.": "Build reusable bilingual product filters for explicit standard-product variation families."
 }

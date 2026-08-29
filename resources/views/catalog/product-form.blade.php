@@ -559,7 +559,7 @@ new #[Title('Product Card')] class extends Component {
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
             <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
             <flux:text wire:dirty class="self-center text-xs text-text-muted">{{ __('Unsaved changes') }}</flux:text>
-            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="save">{{ $isEditing ? __('Save product card') : __('Create product card') }} <span wire:loading wire:target="save">{{ __('Saving...') }}</span></flux:button>
+            <x-actions.loading-button type="submit" action="save" :label="__('Save')" />
         </div>
     </form>
 

@@ -2,11 +2,14 @@
 
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Actions\ExportAuditLogs;
+use App\Modules\Platform\Actions\RecordSetupDecision;
 use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Support\TutorialRegistry;
+use App\Modules\Platform\Support\InitialSetupStatus;
+use App\Modules\Platform\Support\SetupContinuation;
 use App\Modules\Platform\Support\UserFlowRegistry;
 use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Platform\Queries\AdministrationDashboard;
@@ -39,6 +42,19 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
     $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
+    $router->post('initial-setup/decisions', function (Request $request, RecordSetupDecision $action, InitialSetupStatus $status, SetupContinuation $continuation) {
+        $validated = $request->validate([
+            'step_key' => ['required', 'string', 'max:80'],
+            'decision' => ['required', 'string', 'in:skipped,deferred'],
+        ]);
+        $action->execute($validated['step_key'], $validated['decision']);
+        $steps = collect($status->snapshot()['steps'])->filter(fn (array $step): bool => $step['can_access'])->values();
+        $next = $continuation->next($steps);
+
+        return $next
+            ? redirect()->to($next['route'].(str_contains($next['route'], '?') ? '&' : '?').http_build_query(['setup' => 1, 'setup_step' => $next['key']]))
+            : redirect()->route('initial-setup');
+    })->middleware('can:company_settings.edit')->name('setup.decisions.store');
     $router->get('admin', fn (AdministrationDashboard $dashboard) => view('platform.admin.overview', ['dashboard' => $dashboard->for(auth()->user())]))
         ->middleware('can:company_settings.view')->name('admin.overview');
     $router->livewire('admin/translations', 'platform::admin.translation-editor')->middleware('can:company_settings.edit')->name('admin.translations');

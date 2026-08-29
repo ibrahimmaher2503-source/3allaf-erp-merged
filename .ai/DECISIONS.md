@@ -60,3 +60,10 @@
 - Settings actions retain their original methods and validation. The shared loading button exposes a spinner only for its exact `wire:target`; read-only sections never receive a save action.
 - Responsive management tables stop horizontal scrolling when they have transformed into mobile record cards. Desktop/tablet overflow behavior remains available where content genuinely needs it.
 - Genuine evidence may read authoritative data only through GET/HEAD requests guarded by a database read-only session and request rollback, with all writable runtime state task-local. No production record mutation is permitted.
+
+## 2026-08-29 — v0.1.16 Setup decision and Cashier boundary
+
+- `InitialSetupStatus` remains the sole readiness calculator; `InitialSetupRouteMap` is the sole ordered group/route ownership map. Product Import is an action inside Product Cards, not a readiness step.
+- Setup skip/defer choices are append-only company-scoped records with actor and timestamp. Skipping applies only to optional steps; deferring required work never marks readiness complete and is surfaced after other actionable work.
+- Supplier readiness is an active Supplier plus an active preferred financial-settlement Payment Method. Payment terms and supplier-product/SKU references remain optional.
+- The built-in Cashier template uses only existing POS, collection/evidence, assigned shift, catalog/stock read, and customer permissions. Existing user branch/store scopes and active till/shift assignment remain the authorization boundary; no user is auto-assigned.

@@ -131,7 +131,7 @@
     "Option group saved successfully.": "تم حفظ مجموعة الخيارات بنجاح.",
     "Option value saved successfully.": "تم حفظ قيمة الخيار بنجاح.",
     "Build a reusable bilingual option library for explicit standard-product variation families.": "أنشئ مكتبة خيارات ثنائية اللغة مثل اللون والمقاس لاستخدامها عند إنشاء متغيرات المنتجات القياسية.",
-    "Product option setup": "إعداد خيارات المنتجات",
+    "Product option setup": "إعداد الفلاتر",
     "Basics": "الأساسيات",
     "Operational readiness": "الجاهزية التشغيلية",
     "Create reusable product options such as colour and size before building variations.": "أنشئ خيارات منتجات قابلة لإعادة الاستخدام، مثل اللون والمقاس، قبل إنشاء المتغيرات.",
@@ -329,7 +329,7 @@
     "Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.": "أضف بيانات العملاء الحقيقية فقط بعد حفظ أحدث سياسة غير فارغة لغرض الموافقة وصيغتها والاحتفاظ بالبيانات؛ ولا تُحمّل بيانات شخصية مصطنعة مسبقًا.",
     "Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.": "احفظ إعدادات سير عمل الحفلات المنفصل وسياسات الخصوصية والخدمات والجدولة والفواتير قبل قبول حجوزات الحفلات. تبقى الجاهزية غير مكتملة حتى يحدد المالك السياسات الإلزامية للحفلات بدقة.",
     "Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.": "يبقى استكمال سياسات الحفلات معلقًا بقرار من المالك؛ ولا تخوّل قيم السياسات المحفوظة قبول الحجوزات.",
-    "Product masters": "البيانات الأساسية للمنتجات",
+    "Product masters": "كروت الأصناف",
     "Build active sellable products, including unbranded products, and valid variation families from the approved catalog. Supplier SKU linkage follows on its own supplier step.": "أنشئ منتجات نشطة قابلة للبيع، بما فيها المنتجات بلا علامة تجارية، وعائلات متغيرات صالحة من الكتالوج المعتمد. يُستكمل ربط رمز الصنف لدى المورد في خطوة الموردين المخصصة.",
     "Start an opening-stock entry through the controlled adjustment form. Choose the approved opening reason; balances are never edited directly. Production zero-start path remains subject to owner approval.": "ابدأ إدخال المخزون الافتتاحي عبر نموذج التسوية الخاضع للضبط. اختر سبب الافتتاح المعتمد؛ ولا تعدّل الأرصدة مباشرة. يظل مسار البدء من رصيد صفري للإنتاج خاضعًا لاعتماد المالك.",
     "Complete active branches, stores, categories, and product masters before opening inventory.": "أكمل الفروع والمخازن والتصنيفات والبيانات الأساسية للمنتجات النشطة قبل بدء المخزون.",
@@ -353,7 +353,7 @@
     "Configure active payment methods, tax treatment, document sequences, and the approved printer profile.": "اضبط طرق الدفع النشطة والمعالجة الضريبية وتسلسلات المستندات وملف الطابعة المعتمد.",
     "Categories, brands, products, and variations": "الفئات والعلامات والمنتجات والمتغيرات",
     "Build the approved catalog. Variation families remain non-sellable; every retained combination has its own child SKU.": "أنشئ الكتالوج المعتمد. تبقى عائلات المتغيرات غير قابلة للبيع، ويكون لكل تركيبة معتمدة رمز SKU فرعي مستقل.",
-    "Suppliers and supplier SKUs": "الموردون ورموز الأصناف لدى المورد",
+    "Suppliers and supplier SKUs": "الموردون",
     "Create approved suppliers and connect each supplied sellable SKU to the supplier item code.": "أنشئ الموردين المعتمدين واربط كل رمز SKU قابل للبيع برمز الصنف لدى المورد.",
     "Approved selling prices": "أسعار البيع المعتمدة",
     "Create, submit, and approve an effective store price for every sellable SKU before POS use.": "أنشئ سعر متجر لكل رمز SKU قابل للبيع، ثم أرسله واعتمده قبل استخدام نقطة البيع.",
@@ -3426,6 +3426,8 @@
     "Settings": "الإعدادات",
     "Settings Audit Trail": "سجل تدقيق الإعدادات",
     "Settings Sections": "أقسام الإعدادات",
+    "Section :current of :total": "القسم :current من :total",
+    "Cashier role scope description": "يشغّل مبيعات نقطة البيع والتحصيلات المصرح بها والورديات المعيّنة فقط ضمن الفرع ومنفذ البيع وخزينة الكاشير المصرح بها.",
     "Settings boundary": "حدود الإعدادات",
     "Settings history": "سجل الإعدادات",
     "Settings reviewed": "تمت مراجعة الإعدادات",
@@ -4314,7 +4316,7 @@
     "Tomorrow": "بكرة",
     "Last Week": "الأسبوع اللي فات",
     "results": "نتايج"
-    ,"Product Options": "خيارات المنتجات"
+    ,"Product Options": "فلاتر المنتجات"
     ,"Variations": "المتغيرات"
     ,"Option library": "مكتبة الخيارات"
     ,"New option group": "مجموعة خيارات جديدة"
@@ -5308,4 +5310,16 @@
     ,"Needs review": "يحتاج إلى مراجعة"
     ,"Mark unavailable": "تعليم كغير متاحة"
     ,"Mark unavailable for shifts": "تعليم الخزينة كغير متاحة للورديات"
+    ,"Product Filters": "فلاتر المنتجات"
+    ,"Product Cards": "كروت الأصناف"
+    ,"Configure reusable product filters, such as sizes and colours, before building products with variations.": "إعداد فلاتر منتجات قابلة لإعادة الاستخدام، مثل المقاسات والألوان، قبل إنشاء الأصناف ذات المتغيرات."
+    ,"Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.": "إنشاء كروت أصناف نشطة قابلة للبيع وعائلات متغيرات صحيحة من الدليل المعتمد. يظل استيراد المنتجات إجراءً اختياريًا داخل هذه المساحة."
+    ,"Complete later": "الإكمال لاحقًا"
+    ,"Skipped": "تم التخطي"
+    ,"Add an active supplier and select an active financial-settlement method for it.": "أضف موردًا نشطًا وحدد له طريقة تسوية مالية نشطة."
+    ,"Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.": "أنشئ موردًا نشطًا واحدًا على الأقل وحدد طريقة التسوية المالية الخاصة به. تظل شروط الدفع ومراجع أصناف المورد اختيارية."
+    ,"Create an active category before adding product cards.": "أنشئ تصنيفًا نشطًا قبل إضافة كروت الأصناف."
+    ,"Select an active supplier financial-settlement method.": "حدد طريقة تسوية مالية نشطة للمورد."
+    ,"Financial-settlement method": "طريقة التسوية المالية"
+    ,"Build reusable bilingual product filters for explicit standard-product variation families.": "أنشئ فلاتر منتجات ثنائية اللغة قابلة لإعادة الاستخدام لعائلات متغيرات الأصناف المحددة."
 }

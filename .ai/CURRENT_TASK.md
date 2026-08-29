@@ -1,21 +1,18 @@
-# Current Task — M53.1 Guided Setup Navigation Hotfix
+# Current Task — v0.1.16 Setup and Administration Foundation
 
-**Date:** 2026-08-28
-**Branch:** `feature/v0.1.15-visual-ux-corrections`
-**Baseline:** published `v0.1.14` commit `33d80f9f56265cda070025cc37dfbf2608d81a31`
+**Date:** 2026-08-29
+**Branch:** `feature/v0.1.16-setup-admin-foundation`
+**Baseline:** published `v0.1.15` commit `4b385aa081d390c9a5ba3620072423f1e7f46c6c`
 
-## Status
+## Scope
 
-- Complete in development after genuine guarded Arabic/English rendering with the existing built assets.
-- The primary Setup context now exposes permission-filtered Previous/Next controls derived directly from `InitialSetupStatus`; nested Setup pages resolve to their owning step and retain `setup=true` plus the authoritative `setup_step` identifier.
-- The authoritative Setup journey exposes 22 unique permission-filtered steps: 5 Basics, 5 Settings, and 12 Operational Readiness.
-- Persistent localized Setup context, reliable action-scoped loading controls, semantic table actions, logical table spacing, and active sidebar location are visibly verified.
-- Routes, methods, permissions, policies, validation, schema, calculations, and workflows remain unchanged.
+- One authoritative, permission-filtered 21-step Setup sequence: 5 Basics, 5 Settings, 11 Operational Readiness.
+- Persistent direct-route Setup context, factual readiness reasons, and append-only company-scoped skip/defer decisions.
+- Separate Save and navigation controls in Settings; exact loading targets and no implicit save on navigation.
+- Supplier readiness based only on an active supplier with an active financial-settlement method.
+- Idempotent least-privilege Cashier role template using existing permissions and existing location scopes.
+- Shared Save labels on representative create/edit forms; route-specific list actions remain unchanged.
 
-## Verification boundary
+## Verification directive
 
-- One final locked Vite build produced manifest SHA-256 `dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0`.
-- Genuine loopback GET/HEAD rendering used a read-only database session with request rollback and task-local sessions, logs, caches, and compiled views. No mutation form was submitted.
-- The original 20-page evidence remains accepted. The seven-case M53.1 evidence and 22-destination verification record are stored outside Git under `v015-setup-navigation-hotfix-20260828`.
-- No frontend build was required for M53.1; the accepted manifest remains `dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0`.
-- No production mutation, schema change, deployment, migration, version bump, tag, push, or remote operation occurred.
+Focused unit coverage is owner-authorized for sequence, continuation decisions, direct-route resolution, and Cashier boundaries. The owner-authorized genuine browser pass completed against the loopback-only guarded renderer with task-local writable runtime paths and the shared environment referenced in place. Database access was GET/HEAD-only, session-transaction read-only, write-statement rejected, and rolled back at request termination.

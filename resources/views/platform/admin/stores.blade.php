@@ -353,7 +353,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     class="space-y-6"
     data-guide="stores-header"
 >
-    <x-setup.context current-key="warehouses" :enabled="$setupMode" />
     <flux:callout variant="info" icon="information-circle"><strong>{{ __('Sales Outlet') }}:</strong> {{ __('Sales Outlet help') }}</flux:callout>
     <x-slot:actions>
         <x-tables.resource-toolbar>
@@ -447,13 +446,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                                     <flux:badge size="sm" variant="subtle" color="rose">{{ __('Damaged & Defective Stock') }}</flux:badge>
                                     @break
                                 @case('transit')
-                                    <flux:badge size="sm" variant="subtle" color="amber">{{ __('Stock in Transit') }}</flux:badge>
+                                    <flux:badge size="sm" variant="subtle" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Stock in Transit') }}</span></flux:badge>
                                     @break
                                 @default
                                     <flux:badge size="sm" variant="subtle">{{ $st->type }}</flux:badge>
                             @endswitch
                             @if ($isPendingArchive)
-                                <flux:badge size="sm" color="amber" inset="top">{{ __('Pending archive approval') }}</flux:badge>
+                                <flux:badge size="sm" color="amber" inset="top"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Pending archive approval') }}</span></flux:badge>
                             @elseif ($st->status === 'active')
                                 <flux:badge size="sm" color="emerald" inset="top" class="!bg-emerald-700 !text-white">{{ __('Active') }}</flux:badge>
                             @else
@@ -477,14 +476,14 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                                 @if ($activeBranchMapping && $activeBranchMapping->branch)
                                     <div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ $activeBranchMapping->branch->code }} · {{ app()->getLocale() === 'ar' ? $activeBranchMapping->branch->name_ar : $activeBranchMapping->branch->name_en }}</div>
                                 @else
-                                    <div class="mt-0.5"><flux:badge size="sm" variant="outline" color="amber">{{ __('Unmapped') }}</flux:badge></div>
+                                    <div class="mt-0.5"><flux:badge size="sm" variant="outline" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Unmapped') }}</span></flux:badge></div>
                                 @endif
                             </div>
                         @endif
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-xs text-zinc-500">{{ __('Negative Stock') }}</span>
                             @if ($st->allows_negative_stock)
-                                <flux:badge size="sm" color="amber" variant="subtle">{{ __('Allowed (Warning)') }}</flux:badge>
+                                <flux:badge size="sm" color="amber" variant="subtle"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Allowed (Warning)') }}</span></flux:badge>
                             @else
                                 <flux:badge size="sm" color="zinc" variant="subtle">{{ __('Blocked (Safe)') }}</flux:badge>
                             @endif

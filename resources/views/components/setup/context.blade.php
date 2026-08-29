@@ -1,79 +1,52 @@
-@props(['currentKey', 'enabled' => null])
+@props(['currentKey'])
 
 @php
     $setupContext = app(\App\Modules\Platform\Support\InitialSetupStatus::class)->snapshot();
-    $setupGroups = [
-        'basics' => ['label' => __('Basics'), 'keys' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes']],
-        'settings' => ['label' => __('Settings'), 'keys' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates']],
-        'operations' => ['label' => __('Operational readiness'), 'keys' => ['categories', 'brands', 'customer-groups', 'customers', 'party-readiness', 'supplier-groups', 'suppliers', 'product-options', 'product-masters', 'product-import', 'prices', 'opening-configuration']],
-    ];
-    $authoritativeSteps = collect($setupContext['steps']);
-    $authorizedSetupSteps = $authoritativeSteps->filter(fn (array $step) => $step['can_access'])->values();
-    $currentSetupIndex = $authorizedSetupSteps->search(fn (array $step) => $step['key'] === $currentKey);
-    $currentSetupStep = $currentSetupIndex !== false ? $authorizedSetupSteps[$currentSetupIndex] : null;
-    $previousSetupStep = $currentSetupIndex !== false && $currentSetupIndex > 0
-        ? $authorizedSetupSteps[$currentSetupIndex - 1]
-        : null;
-    $nextSetupStep = $currentSetupIndex !== false && $currentSetupIndex < $authorizedSetupSteps->count() - 1
-        ? $authorizedSetupSteps[$currentSetupIndex + 1]
-        : null;
-    $currentGroup = collect($setupGroups)->first(fn (array $group) => in_array($currentKey, $group['keys'], true));
-    $authorizedGroupSteps = $currentGroup ? $authorizedSetupSteps->filter(fn (array $step) => in_array($step['key'], $currentGroup['keys'], true))->values() : collect();
-    $groupIndex = $authorizedGroupSteps->search(fn (array $step) => $step['key'] === $currentKey);
-    $continueStep = $authorizedSetupSteps->first(fn (array $step) => $step['required'] && ! $step['complete']);
+    $groupKeys = \App\Modules\Platform\Support\InitialSetupRouteMap::groups();
+    $groupLabels = ['basics' => __('Basics'), 'settings' => __('Settings'), 'operations' => __('Operational readiness')];
+    $authorizedSteps = collect($setupContext['steps'])->filter(fn (array $step) => $step['can_access'])->values();
+    $currentIndex = $authorizedSteps->search(fn (array $step) => $step['key'] === $currentKey);
+    $currentStep = $currentIndex !== false ? $authorizedSteps[$currentIndex] : null;
+    $previousStep = $currentIndex !== false && $currentIndex > 0 ? $authorizedSteps[$currentIndex - 1] : null;
+    $nextStep = $currentIndex !== false && $currentIndex < $authorizedSteps->count() - 1 ? $authorizedSteps[$currentIndex + 1] : null;
+    $groupName = collect($groupKeys)->search(fn (array $keys) => in_array($currentKey, $keys, true));
+    $groupSteps = $groupName !== false ? $authorizedSteps->whereIn('key', $groupKeys[$groupName])->values() : collect();
+    $groupIndex = $groupSteps->search(fn (array $step) => $step['key'] === $currentKey);
+    $continueStep = app(\App\Modules\Platform\Support\SetupContinuation::class)->next($authorizedSteps);
     $setupHref = static fn (array $step): string => $step['route'].(str_contains($step['route'], '?') ? '&' : '?').http_build_query(['setup' => 1, 'setup_step' => $step['key']]);
 @endphp
 
-@php($setupEnabled = $enabled ?? request()->boolean('setup'))
-@if ($setupEnabled && $currentSetupStep)
-    <aside {{ $attributes->class('setup-context rounded-2xl border border-primary/25 bg-primary/5 p-4 shadow-sm') }} aria-label="{{ __('Setup guidance') }}" data-setup-step="{{ $currentKey }}">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+@if ($currentStep)
+    <aside {{ $attributes->class('setup-context rounded-2xl border border-primary/30 bg-surface/95 p-3 shadow-md backdrop-blur sm:p-4') }} aria-label="{{ __('Setup guidance') }}" data-setup-step="{{ $currentKey }}">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div class="min-w-0 space-y-2">
-                <nav class="text-xs font-medium text-text-muted" aria-label="{{ __('Breadcrumb') }}">
-                    <a href="{{ route('initial-setup') }}" class="text-primary hover:underline" wire:navigate>{{ __('Setup Center') }}</a>
-                    <span aria-hidden="true"> / </span><span>{{ $currentGroup['label'] ?? __('Setup') }}</span>
-                    <span aria-hidden="true"> / </span><span>{{ $currentSetupStep['label'] }}</span>
-                </nav>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="font-semibold text-text-primary">{{ __('Step :current of :total', ['current' => $currentSetupIndex + 1, 'total' => $authorizedSetupSteps->count()]) }}</span>
-                    @if ($groupIndex !== false)<span class="text-sm text-text-muted">{{ $currentGroup['label'] }} — {{ __('Step :current of :total', ['current' => $groupIndex + 1, 'total' => $authorizedGroupSteps->count()]) }}</span>@endif
-                    <flux:badge size="sm" color="{{ $currentSetupStep['complete'] ? 'green' : ($currentSetupStep['status'] === 'blocked' ? 'red' : 'amber') }}">{{ $currentSetupStep['status_label'] }}</flux:badge>
-                    <span class="text-xs text-text-muted">{{ $currentSetupStep['required'] ? __('Required') : __('Optional') }}</span>
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <a href="{{ route('initial-setup') }}" class="font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" wire:navigate>{{ __('Setup Center') }}</a>
+                    <span aria-hidden="true">/</span>
+                    <span>{{ $groupLabels[$groupName] ?? __('Setup') }}</span>
+                    <span aria-hidden="true">/</span>
+                    <strong>{{ $currentStep['label'] }}</strong>
+                    <flux:badge size="sm" color="{{ $currentStep['complete'] ? 'green' : ($currentStep['status'] === 'blocked' ? 'red' : 'amber') }}">{{ $currentStep['status_label'] }}</flux:badge>
                 </div>
-                <div class="h-1.5 max-w-xl overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label="{{ __('Setup completion progress') }}" aria-valuenow="{{ $setupContext['progress_percent'] }}" aria-valuemin="0" aria-valuemax="100"><span class="block h-full rounded-full bg-primary" style="width: {{ $setupContext['progress_percent'] }}%"></span></div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
+                    <span>{{ __('Step :current of :total', ['current' => $currentIndex + 1, 'total' => $authorizedSteps->count()]) }}</span>
+                    @if ($groupIndex !== false)<span>{{ $groupLabels[$groupName] }} — {{ __('Step :current of :total', ['current' => $groupIndex + 1, 'total' => $groupSteps->count()]) }}</span>@endif
+                    <span>{{ $currentStep['required'] ? __('Required') : __('Optional') }}</span>
+                </div>
+                @if (! $currentStep['complete'])<p class="max-w-3xl text-sm text-amber-800 dark:text-amber-200">{{ $currentStep['reason'] }}</p>@endif
+                <div class="h-1.5 max-w-2xl overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label="{{ __('Setup completion progress') }}" aria-valuenow="{{ $setupContext['progress_percent'] }}" aria-valuemin="0" aria-valuemax="100"><span class="block h-full rounded-full bg-primary" style="width: {{ $setupContext['progress_percent'] }}%"></span></div>
             </div>
-            <div class="flex flex-col gap-2 sm:items-end">
+            <div class="flex flex-col gap-2">
                 <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Adjacent setup steps') }}">
-                    @if ($previousSetupStep)
-                        <flux:button
-                            :href="$setupHref($previousSetupStep)"
-                            size="sm"
-                            variant="subtle"
-                            class="min-h-11"
-                            aria-label="{{ __('Go to previous setup step: :step', ['step' => $previousSetupStep['label']]) }}"
-                            data-setup-direction="previous"
-                            data-setup-destination="{{ $previousSetupStep['key'] }}"
-                            wire:navigate
-                        >{{ __('Setup previous') }}</flux:button>
-                    @endif
-                    @if ($nextSetupStep)
-                        <flux:button
-                            :href="$setupHref($nextSetupStep)"
-                            size="sm"
-                            variant="primary"
-                            class="min-h-11"
-                            aria-label="{{ __('Go to next setup step: :step', ['step' => $nextSetupStep['label']]) }}"
-                            data-setup-direction="next"
-                            data-setup-destination="{{ $nextSetupStep['key'] }}"
-                            wire:navigate
-                        >{{ __('Setup next') }}</flux:button>
+                    @if ($previousStep)<flux:button :href="$setupHref($previousStep)" size="sm" variant="subtle" class="min-h-11" :icon="app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left'" aria-label="{{ __('Go to previous setup step: :step', ['step' => $previousStep['label']]) }}" wire:navigate>{{ __('Previous') }}</flux:button>@endif
+                    @if ($nextStep)<flux:button :href="$setupHref($nextStep)" size="sm" variant="primary" class="min-h-11" :icon-trailing="app()->getLocale() === 'ar' ? 'arrow-left' : 'arrow-right'" aria-label="{{ __('Go to next setup step: :step', ['step' => $nextStep['label']]) }}" wire:navigate>{{ __('Next') }}</flux:button>@endif
+                    @if (! $currentStep['complete'])
+                        <form method="POST" action="{{ route('setup.decisions.store') }}" class="inline-flex">@csrf<input type="hidden" name="step_key" value="{{ $currentKey }}"><input type="hidden" name="decision" value="{{ $currentStep['required'] ? 'deferred' : 'skipped' }}"><flux:button type="submit" size="sm" variant="subtle" class="min-h-11">{{ $currentStep['required'] ? __('Complete later') : __('Skip') }}</flux:button></form>
                     @endif
                 </nav>
                 <div class="flex flex-wrap items-center gap-2">
-                    <flux:button :href="route('initial-setup')" size="sm" variant="subtle" class="min-h-11" :icon="app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left'" wire:navigate>{{ __('Return to Setup Center') }}</flux:button>
-                    @if ($continueStep && $continueStep['key'] !== $currentKey && $continueStep['key'] !== ($nextSetupStep['key'] ?? null))
-                        <flux:button :href="$setupHref($continueStep)" size="sm" variant="subtle" class="min-h-11" :icon="app()->getLocale() === 'ar' ? 'arrow-left' : 'arrow-right'" wire:navigate>{{ __('Continue setup') }}</flux:button>
-                    @endif
+                    <flux:button :href="route('initial-setup')" size="sm" variant="subtle" class="min-h-11" wire:navigate>{{ __('Return to Setup Center') }}</flux:button>
+                    @if ($continueStep && $continueStep['key'] !== $currentKey)<flux:button :href="$setupHref($continueStep)" size="sm" variant="subtle" class="min-h-11" wire:navigate>{{ __('Continue setup') }}</flux:button>@endif
                 </div>
             </div>
         </div>

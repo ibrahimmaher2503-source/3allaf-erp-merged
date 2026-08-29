@@ -325,7 +325,6 @@ new #[Title('Branch Management')] class extends Component
     class="space-y-6"
     data-guide="branches-header"
 >
-    <x-setup.context current-key="branches-stores" :enabled="$setupMode" />
     @if ($savedBranchId)
         <flux:callout variant="success" icon="check-circle" title="{{ __('Branch created successfully.') }}">
             <p>{{ __('The branch :name is saved. Continue by creating or linking its warehouse or sales outlet.', ['name' => $savedBranchName]) }}</p>

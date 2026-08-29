@@ -118,7 +118,16 @@ new #[Title('Roles')] class extends Component
                             @php($canonical = SaveRoleAction::isCanonical($role))
                             <tr class="data-table-row">
                                 <td class="px-3 py-3 align-top font-mono text-xs">{{ $role->code }}</td>
-                                <td class="px-3 py-3 align-top"><div class="font-medium">{{ app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $role->name_en : $role->name_ar }}</div></td>
+                                <td class="px-3 py-3 align-top">
+                                    <div class="font-medium">{{ app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en }}</div>
+                                    <div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $role->name_en : $role->name_ar }}</div>
+                                    @php($roleDescription = app()->getLocale() === 'ar' ? $role->description_ar : $role->description_en)
+                                    @if ($role->code === 'cashier')
+                                        <p class="mt-1 max-w-xl text-xs leading-5 text-text-muted">{{ $roleDescription ?: __('Cashier role scope description') }}</p>
+                                    @elseif ($roleDescription)
+                                        <p class="mt-1 max-w-xl text-xs leading-5 text-text-muted">{{ $roleDescription }}</p>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-3 align-top text-text-muted whitespace-normal">{{ __(':users users · :permissions permissions', ['users' => $role->users_count, 'permissions' => $role->permissions_count]) }}</td>
                                 <td class="px-3 py-3 align-top"><div class="flex flex-wrap items-center gap-1"><x-status.badge :status="$role->status" :label="$role->status === 'active' ? __('Active') : __('Inactive')" /> @if ($canonical)<flux:badge size="sm" variant="outline">{{ __('Canonical role') }}</flux:badge>@endif</div></td>
                                 <td class="px-3 py-3 align-top text-end"><div class="flex flex-wrap justify-end gap-1"> <x-actions.button semantic="assign" :label="__('Permissions')" size="xs" variant="subtle" icon="key" :href="route('admin.role-permissions', $role)" wire:navigate>{{ __('Permissions') }}</x-actions.button>@if (! $canonical) @can('users_roles_permissions.edit')<x-actions.button semantic="edit" :label="__('Edit')" size="xs" wire:click="openEditRole({{ $role->id }})">{{ __('Edit') }}</x-actions.button>@endcan @endif</div></td>

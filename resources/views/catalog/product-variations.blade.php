@@ -204,7 +204,7 @@ new class extends Component {
             <flux:heading id="variations-heading" size="lg">{{ __('Variations') }}</flux:heading>
             <flux:text class="mt-1 max-w-3xl text-sm">{{ __('Explicit variation families create independent child SKUs. Ordinary colour and size fields above remain descriptive and never create variants.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch">{{ __('Product Options') }}</flux:button>
+        <flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch">{{ __('Product Filters') }}</flux:button>
     </div>
     @if ($family->product_type !== 'standard')
         <flux:callout variant="warning">{{ __('Only standard products can have variations. Services and composite products remain unavailable here.') }}</flux:callout>

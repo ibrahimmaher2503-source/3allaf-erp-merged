@@ -535,7 +535,7 @@ new #[Title('Product Masters')] class extends Component
                     @endcan
                 </x-slot:actions>
             </x-tables.bulk-actions>
-            <flux:table class="catalog-resource-table responsive-resource-table" aria-label="{{ __('Product masters') }}">
+            <flux:table class="catalog-resource-table responsive-resource-table" aria-label="{{ __('Product Cards') }}">
                 <flux:table.columns>
                     <flux:table.column>
                         <span class="sr-only">{{ __('Select') }}</span>

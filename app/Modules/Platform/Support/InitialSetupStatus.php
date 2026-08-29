@@ -9,7 +9,6 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
-use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Customer\Models\CustomerGroup;
@@ -24,10 +23,12 @@ use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\SetupDecision;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 
 final class InitialSetupStatus
 {
@@ -46,6 +47,9 @@ final class InitialSetupStatus
             ->whereHas('values', fn (Builder $query): Builder => $query->active());
         $customerConsentPolicyRecords = $this->customerConsentPolicyRecords();
         $partyPolicyRecords = $this->partyPolicyRecords();
+        $latestDecisions = $activeCompanyId > 0 && Schema::hasTable('setup_decisions')
+            ? SetupDecision::query()->where('company_id', $activeCompanyId)->latest('id')->get()->unique('step_key')->keyBy('step_key')
+            : collect();
 
         $steps = [
             $this->step('company', __('Company identity'), __('Use the approved bilingual identity, legal details, currency, timezone, and contact information.'), 'admin.settings', 'company_settings.view', $companyReady, Company::query()->count(), routeParameters: ['tab' => 'company'], destinationKey: 'company-identity'),
@@ -64,13 +68,32 @@ final class InitialSetupStatus
             $this->step('customers', __('Customers'), __('Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.'), 'customers.index', 'customers.view', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords, required: false),
             $this->step('party-readiness', __('Party readiness and policies'), __('Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.'), 'party.readiness', 'party_bookings_invoices.view', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.'), required: false),
             $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
-            $this->step('suppliers', __('Suppliers and supplier SKUs'), __('Create approved suppliers and connect each supplied sellable SKU to its supplier item code.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
-            $this->step('product-options', __('Product option setup'), __('Create reusable product options, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
-            $this->step('product-masters', __('Product masters'), __('Build active sellable products, including unbranded products, and valid variation families from the approved catalog. Supplier SKU linkage follows on its own supplier step.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding products.')),
-            $this->step('product-import', __('Product import (optional)'), __('Manual product entry is sufficient. Use the reviewed import workspace only when a validated source file is available.'), 'catalog.products.import', 'products_categories_brands.create', true, 0, __('Manual entry is sufficient; import is optional and never a setup prerequisite.'), false),
+            $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and select an active financial-settlement method for it.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
+            $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
+            $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding product cards.')),
             $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
             $this->step('opening-configuration', __('Opening inventory'), __('Record the quantity already in each stock store when you start using the system. Use the opening-stock adjustment; never edit balances directly.'), 'inventory.adjustments.create', 'inventory_stock_card.create', $this->openingInventoryReady(), InventoryAdjustment::query()->where('adjustment_type', 'entry')->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
+
+        $steps = array_map(function (array $step) use ($latestDecisions): array {
+            $decision = $latestDecisions->get($step['key']);
+            if ($step['complete'] || $decision === null) {
+                return $step + ['decision' => null, 'decided_at' => null, 'decided_by' => null];
+            }
+
+            $value = (string) $decision->decision;
+            if (($step['required'] && $value !== 'deferred') || (! $step['required'] && $value !== 'skipped')) {
+                return $step + ['decision' => null, 'decided_at' => null, 'decided_by' => null];
+            }
+
+            $step['decision'] = $value;
+            $step['decided_at'] = $decision->decided_at;
+            $step['decided_by'] = $decision->decided_by;
+            $step['status'] = $value;
+            $step['status_label'] = __($value === 'skipped' ? 'Skipped' : 'Complete later');
+
+            return $step;
+        }, $steps);
 
         $required = array_values(array_filter($steps, static fn (array $step): bool => $step['required']));
         $completed = count(array_filter($required, static fn (array $step): bool => $step['complete']));
@@ -86,7 +109,9 @@ final class InitialSetupStatus
         $route = $routeName === null ? null : route($routeName, $routeParameters);
         $canAccess = $permission !== null && auth()->check() && auth()->user()->can($permission);
 
-        return ['key' => $key, 'destination_key' => $destinationKey ?? $key, 'label' => $label, 'description' => $description, 'reason' => $blockedReason ?? ($complete ? __('Persisted data meets the current readiness rule.') : ($records === 0 ? __('No matching persisted records were found yet.') : __('Some persisted records exist, but the readiness rule is not satisfied.'))), 'route' => $route, 'route_name' => $routeName, 'permission' => $permission, 'can_access' => $canAccess, 'complete' => $complete, 'required' => $required, 'records' => $records, 'status' => $status, 'status_label' => __(match ($status) {
+        $reason = $blockedReason ?? ($complete ? __('Persisted data meets the current readiness rule.') : $description);
+
+        return ['key' => $key, 'destination_key' => $destinationKey ?? $key, 'label' => $label, 'description' => $description, 'reason' => $reason, 'passed_conditions' => $complete ? [$reason] : [], 'failed_conditions' => $complete ? [] : [$reason], 'route' => $route, 'route_name' => $routeName, 'permission' => $permission, 'can_access' => $canAccess, 'complete' => $complete, 'required' => $required, 'records' => $records, 'status' => $status, 'status_label' => __(match ($status) {
             'not_started' => 'Not started', 'incomplete' => 'Incomplete', 'ready' => 'Ready', 'blocked' => 'Blocked', default => 'Completed',
         }), 'cta_label' => __($complete ? 'Review' : 'Configure')];
     }
@@ -203,7 +228,11 @@ final class InitialSetupStatus
 
     private function suppliersReady(): bool
     {
-        return Supplier::query()->where('status', 'active')->exists() && ProductSupplier::query()->whereHas('supplier', fn (Builder $query): Builder => $query->where('status', 'active'))->whereHas('product', fn (Builder $query): Builder => $query->sellable())->whereNotNull('supplier_item_code')->where('supplier_item_code', '!=', '')->exists();
+        return Supplier::query()
+            ->where('status', 'active')
+            ->whereNotNull('preferred_payment_method_id')
+            ->whereHas('preferredPaymentMethod', fn (Builder $query): Builder => $query->where('status', 'active'))
+            ->exists();
     }
 
     private function pricesReady(): bool

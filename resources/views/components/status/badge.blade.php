@@ -59,6 +59,8 @@
     ];
 
     $color = $colorMap[$normalized] ?? 'zinc';
+    $contrastClass = $color === 'amber' ? 'text-amber-800 dark:text-amber-200' : '';
+    $contrastStyle = $color === 'amber' ? 'color: light-dark(#78350f, #fde68a)' : null;
 
     $defaultLabels = [
         'active' => __('Active'),
@@ -107,7 +109,7 @@
     $displayLabel = $label ?? $defaultLabels[$normalized] ?? __(ucfirst((string) $status));
 @endphp
 
-<flux:badge :size="$size" :color="$color" :variant="$variant" {{ $attributes->merge(['class' => 'inline-flex items-center gap-1.5 font-medium']) }}>
+<flux:badge :size="$size" :color="$color" :variant="$variant" :style="$contrastStyle" {{ $attributes->merge(['class' => 'inline-flex items-center gap-1.5 font-medium '.$contrastClass]) }}>
     <span class="size-1.5 rounded-full bg-current opacity-75"></span>
-    <span>{{ $displayLabel }}</span>
+    <span @if($color === 'amber') style="color: light-dark(#78350f, #fde68a)" @endif>{{ $displayLabel }}</span>
 </flux:badge>

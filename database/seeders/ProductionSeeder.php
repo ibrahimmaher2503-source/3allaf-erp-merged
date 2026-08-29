@@ -59,19 +59,19 @@ final class ProductionSeeder extends Seeder
     private function seedAuthorization(): void
     {
         $roles = [
-            'system-administrator' => ['مسؤول النظام', 'System Administrator'],
-            'branch-manager' => ['مدير الفرع', 'Branch Manager'],
-            'cashier' => ['أمين الصندوق', 'Cashier'],
-            'purchasing-officer' => ['مسؤول المشتريات', 'Purchasing Officer'],
-            'warehouse-manager' => ['مدير المستودع', 'Warehouse Manager'],
-            'pricing-officer' => ['مسؤول التسعير', 'Pricing Officer'],
-            'party-manager' => ['مدير الحفلات', 'Party Manager'],
-            'stock-counter' => ['مراقب المخزون', 'Stock Counter'],
-            'accountant-reviewer' => ['المحاسب / المراجع', 'Accountant / Reviewer'],
+            'system-administrator' => ['مسؤول النظام', 'System Administrator', null, null],
+            'branch-manager' => ['مدير الفرع', 'Branch Manager', null, null],
+            'cashier' => ['أمين الصندوق', 'Cashier', 'تشغيل نقطة البيع والتحصيل والوردية المعيّنة فقط ضمن الفرع ومنفذ البيع وخزينة الكاشير المصرح بها.', 'Operates POS sales, collections, and assigned shifts only within authorized branch, Sales Outlet, and Cashier Till scopes.'],
+            'purchasing-officer' => ['مسؤول المشتريات', 'Purchasing Officer', null, null],
+            'warehouse-manager' => ['مدير المستودع', 'Warehouse Manager', null, null],
+            'pricing-officer' => ['مسؤول التسعير', 'Pricing Officer', null, null],
+            'party-manager' => ['مدير الحفلات', 'Party Manager', null, null],
+            'stock-counter' => ['مراقب المخزون', 'Stock Counter', null, null],
+            'accountant-reviewer' => ['المحاسب / المراجع', 'Accountant / Reviewer', null, null],
         ];
 
-        foreach ($roles as $code => [$nameAr, $nameEn]) {
-            Role::query()->updateOrCreate(['code' => $code], ['name_ar' => $nameAr, 'name_en' => $nameEn, 'status' => 'active']);
+        foreach ($roles as $code => [$nameAr, $nameEn, $descriptionAr, $descriptionEn]) {
+            Role::query()->updateOrCreate(['code' => $code], ['name_ar' => $nameAr, 'name_en' => $nameEn, 'description_ar' => $descriptionAr, 'description_en' => $descriptionEn, 'status' => 'active']);
         }
 
         $permissions = [
@@ -344,7 +344,16 @@ final class ProductionSeeder extends Seeder
         return [
             'system-administrator' => [],
             'branch-manager' => ['branches_stores.view', 'pos_sales.view'],
-            'cashier' => ['pos_sales.view', 'pos_sales.create', 'pos_sales.print'],
+            'cashier' => [
+                'pos_sales.view', 'pos_sales.create', 'pos_sales.print',
+                'pos_sales.payment_view', 'pos_sales.payment_create',
+                'pos_sales.payment_evidence_upload', 'pos_sales.payment_evidence_view',
+                'suspended_sales.view',
+                'shifts_cash_movements.view', 'shifts_cash_movements.create',
+                'shifts_cash_movements.edit', 'shifts_cash_movements.submit', 'shifts_cash_movements.print',
+                'products_categories_brands.view', 'inventory_stock_card.view',
+                'customers.view', 'customers.create', 'customers.edit',
+            ],
             'accountant-reviewer' => ['dashboard_reports.view', 'audit_logs.view'],
             'purchasing-officer' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.preferred_change'],
             'warehouse-manager' => [],

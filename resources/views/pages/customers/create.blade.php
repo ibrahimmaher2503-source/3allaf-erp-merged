@@ -126,7 +126,7 @@
 
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <flux:text class="text-xs text-slate-500">{{ __('The selected selling store is') }}: <span class="font-semibold">{{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</span></flux:text>
-                <flux:button type="submit" variant="primary" :disabled="$consentPurposes === []">{{ __('Create customer profile') }}</flux:button>
+                <flux:button type="submit" variant="primary" :disabled="$consentPurposes === []">{{ __('Save') }}</flux:button>
             </div>
         </form>
     </div>

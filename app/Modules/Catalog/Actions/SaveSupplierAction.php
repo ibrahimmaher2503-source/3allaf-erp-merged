@@ -61,6 +61,9 @@ class SaveSupplierAction
             }
 
             $preferredPaymentMethodId = filled($data['preferred_payment_method_id'] ?? null) ? (int) $data['preferred_payment_method_id'] : null;
+            if ($preferredPaymentMethodId === null) {
+                throw new InvalidArgumentException(__('Select an active supplier financial-settlement method.'));
+            }
             $preferredPaymentMethod = $preferredPaymentMethodId === null
                 ? null
                 : PaymentMethod::query()->where('status', 'active')->lockForUpdate()->find($preferredPaymentMethodId);
