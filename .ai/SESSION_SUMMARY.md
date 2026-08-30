@@ -673,3 +673,9 @@
 - **Verification actually run:** Focused PHPUnit passed 11 tests/33 assertions; changed PHP and JSON syntax, route mapping, manifest references, isolated MariaDB migration 000097, and `git diff --check` passed. Ten genuine authenticated Arabic/English desktop/mobile captures passed with local Cairo, no serious/critical Axe findings, document overflow, console errors, or external requests. Three Arabic PDF exports embedded subsetted Cairo-Regular only with no DejaVu and rendered successfully to PNG.
 - **Corrections from final pass:** Imported the existing customer-policy model used by Setup context, corrected invalid Flux option markup and hierarchy ARIA, and made Opening Inventory a full-shell responsive labeled-card layout on mobile.
 - **Build/boundary:** Frontend sources did not change, so no build ran; retained manifest SHA-256 is `dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0`. No production/shared data, deployment, version bump, tag, push, remote contact, or excluded-path access occurred.
+
+## 2026-08-30 — v0.1.18 Product Card stage-heading hotfix
+
+- **Correction:** Replaced the unreliable Flux callout title with visible semantic Stage A and Stage B headings on Product Card create/edit rendering, with the exact Arabic and English labels. The two-stage save/enrichment behavior is unchanged.
+- **Focused verification:** Six Product Card tests passed with 16 assertions; changed Blade/PHP and Arabic JSON syntax plus `git diff --check` passed. Genuine inactive-release rendering remains the next release gate.
+- **Boundaries:** No frontend, schema, migration, barcode, import, Opening Inventory, package, lock, production data, tag, remote, ACL, or excluded-path change.

@@ -359,6 +359,11 @@ new #[Title('Product Card')] class extends Component {
     </nav>
 
     <form wire:submit="save" class="flex flex-col gap-4 sm:gap-5" novalidate>
+        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30">
+            <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage A — Required basic data') }}</h2>
+            <p class="mt-1 text-sm text-text-muted">{{ __('Save the required barcode, model, identity, cost, consumer price, category, brand, price behavior, and product type before adding optional details.') }}</p>
+        </div>
+
         <flux:card id="product-identity" class="order-1 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-identity">
             <div class="border-b border-border pb-4">
                 <div>
@@ -460,7 +465,7 @@ new #[Title('Product Card')] class extends Component {
         </flux:card>
 
         @if($isEditing)
-        <div class="order-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"><div><strong>{{ __('Stage B — Additional product data') }}</strong><p class="text-sm text-text-muted">{{ __('The required Product Card is saved. Images, Product Filters, dimensions, online visibility, descriptions, and battery data are optional enrichment.') }}</p></div><flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch" wire:navigate>{{ __('Product Filters') }}</flux:button></div>
+        <div class="order-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"><div><h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage B — Optional additional data') }}</h2><p class="mt-1 text-sm text-text-muted">{{ __('The required Product Card is saved. Images, Product Filters, dimensions, online visibility, descriptions, and battery data are optional enrichment.') }}</p></div><flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch" wire:navigate>{{ __('Product Filters') }}</flux:button></div>
         <details id="product-attributes" class="order-4 catalog-form-card catalog-product-disclosure" data-guide="product-form-attributes">
             <summary>
                 <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
@@ -586,7 +591,10 @@ new #[Title('Product Card')] class extends Component {
         </details>
 
         @else
-            <flux:callout class="order-4" variant="info" icon="information-circle" title="{{ __('Stage A — Required basic data') }}">{{ __('Save the required barcode, model, identity, cost, consumer price, category, brand, price behavior, and product type before adding optional details.') }}</flux:callout>
+            <div class="order-4 rounded-xl border border-border bg-surface-muted/40 p-4">
+                <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage B — Optional additional data') }}</h2>
+                <p class="mt-1 text-sm text-text-muted">{{ __('Save the required Product Card first. Optional images, Product Filters, dimensions, online visibility, descriptions, and battery data become available afterward.') }}</p>
+            </div>
         @endif
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
             <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
