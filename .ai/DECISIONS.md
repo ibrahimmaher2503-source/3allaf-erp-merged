@@ -67,3 +67,9 @@
 - Setup skip/defer choices are append-only company-scoped records with actor and timestamp. Skipping applies only to optional steps; deferring required work never marks readiness complete and is surfaced after other actionable work.
 - Supplier readiness is an active Supplier plus an active preferred financial-settlement Payment Method. Payment terms and supplier-product/SKU references remain optional.
 - The built-in Cashier template uses only existing POS, collection/evidence, assigned shift, catalog/stock read, and customer permissions. Existing user branch/store scopes and active till/shift assignment remain the authorization boundary; no user is auto-assigned.
+
+## 2026-08-30 — M52 catalog identity and opening-inventory boundary
+
+- International barcodes remain string identities and use applicable GTIN check digits. Local barcodes are exactly `0` plus the first four numeric supplier-code digits plus a six-digit per-supplier committed sequence, allocated under a database row lock and uniqueness constraint.
+- Product cost and base consumer selling price are separate explicit fields; neither is inferred from the other. The shared pricing contract permits changes only from the corresponding approved explicit input.
+- Opening Inventory is a dedicated immutable ledger document, not a transfer, purchase invoice, or count. It posts all lines transactionally once; corrections use a referenced reversal. Setup readiness requires an approved non-reversed opening document or the audited company zero-opening decision.

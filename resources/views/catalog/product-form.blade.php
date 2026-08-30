@@ -14,6 +14,7 @@ use App\Modules\Catalog\Models\Gender;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -27,9 +28,14 @@ new #[Title('Product Card')] class extends Component {
     public mixed $mediaUpload = null;
     public string $mediaRole = 'additional';
     public string $supplierBarcode = '';
+    public string $stage = 'basic';
 
     public array $productForm = [
         'item_code' => '',
+        'barcode_registration_type' => 'international',
+        'open_price' => false,
+        'sell_online' => false,
+        'weight_unit' => 'kg',
         'name_ar' => '',
         'name_en' => '',
         'description_ar' => '',
@@ -89,16 +95,22 @@ new #[Title('Product Card')] class extends Component {
 
         $validated = $this->validate([
             ...$this->rules(),
-            'supplierBarcode' => ['nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
+            'supplierBarcode' => [Rule::requiredIf(fn (): bool => ! $this->isEditing && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
         ])['productForm'];
 
         try {
-            $product = $action->execute($validated, $this->productId, $this->productVersion);
+            $product = DB::transaction(function () use ($action, $barcodeAction, $validated) {
+                $product = $action->execute($validated, $this->productId, $this->productVersion);
+                if (! $this->isEditing && $validated['barcode_registration_type'] === 'local') {
+                    $supplier = Supplier::query()->findOrFail((int) $validated['preferred_supplier_id']);
+                    $barcodeAction->allocateLocalBarcode($product->id, $supplier->code, 'product-card:'.$product->id);
+                } elseif ($validated['barcode_registration_type'] === 'international' && filled($this->supplierBarcode)) {
+                    $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
+                }
 
-            if (filled($this->supplierBarcode)) {
-                $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
-                $this->supplierBarcode = '';
-            }
+                return $product;
+            });
+            $this->supplierBarcode = '';
 
             if (! $this->isEditing) {
                 session()->flash('status', __('Product card created successfully. Add protected images from this page.'));
@@ -198,6 +210,10 @@ new #[Title('Product Card')] class extends Component {
         $product = $product->load(['category', 'brand', 'images.attachment', 'preferredProductSupplier', 'ages', 'characters', 'colours', 'genders']);
         $this->productForm = [
             'item_code' => $product->item_code,
+            'barcode_registration_type' => $product->barcode_registration_type ?? 'international',
+            'open_price' => (bool) $product->open_price,
+            'sell_online' => (bool) $product->sell_online,
+            'weight_unit' => $product->weight_unit ?? 'kg',
             'name_ar' => $product->name_ar,
             'name_en' => $product->name_en,
             'description_ar' => $product->description_ar ?? '',
@@ -243,14 +259,18 @@ new #[Title('Product Card')] class extends Component {
     {
         return [
             'productForm.item_code' => [$this->isEditing ? 'required' : 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
+            'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
+            'productForm.open_price' => ['boolean'],
+            'productForm.sell_online' => ['boolean'],
+            'productForm.weight_unit' => ['nullable', Rule::in(['g', 'kg'])],
             'productForm.name_ar' => ['required', 'string', 'max:255'],
-            'productForm.name_en' => ['required', 'string', 'max:255'],
+            'productForm.name_en' => ['nullable', 'string', 'max:255'],
             'productForm.description_ar' => ['nullable', 'string', 'max:5000'],
             'productForm.description_en' => ['nullable', 'string', 'max:5000'],
             'productForm.short_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.short_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.full_description_ar' => ['nullable', 'string', 'max:10000'], 'productForm.full_description_en' => ['nullable', 'string', 'max:10000'],
             'productForm.meta_title_ar' => ['nullable', 'string', 'max:255'], 'productForm.meta_title_en' => ['nullable', 'string', 'max:255'], 'productForm.meta_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.meta_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
-            'productForm.model_number' => ['nullable', 'string', 'max:100'],
-            'productForm.product_type' => ['required', Rule::in(['standard', 'composite', 'service', 'digital'])],
+            'productForm.model_number' => ['required', 'string', 'max:100'],
+            'productForm.product_type' => ['required', Rule::in($this->isEditing && $this->productForm['product_type'] === 'digital' ? ['standard', 'composite', 'service', 'digital'] : ['standard', 'composite', 'service'])],
             'productForm.status' => ['required', Rule::in(['active', 'inactive'])],
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -275,9 +295,9 @@ new #[Title('Product Card')] class extends Component {
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
             'productForm.fractional_quantity' => ['boolean'],
-            'productForm.average_cost' => ['nullable', 'numeric', 'min:0'], 'productForm.sale_price' => ['nullable', 'numeric', 'min:0'],
+            'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
-            'productForm.preferred_supplier_id' => [$this->isEditing || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+            'productForm.preferred_supplier_id' => [$this->productForm['barcode_registration_type'] === 'local' ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
             'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
             'productForm.colour_ids' => ['array'], 'productForm.colour_ids.*' => ['integer', 'exists:colours,id'],
@@ -303,7 +323,7 @@ new #[Title('Product Card')] class extends Component {
 }; ?>
 
 <x-app.page
-    :title="$isEditing ? __('Edit product card') : __('Create product card')"
+    :title="$isEditing ? __('Edit product card') : __('Add Product Card')"
     :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
     max-width="7xl"
     class="catalog-screen"
@@ -347,11 +367,19 @@ new #[Title('Product Card')] class extends Component {
                 </div>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input wire:model="productForm.item_code" :label="__('Global / scanned code (optional)')" :disabled="$isEditing" />
-                <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" />
-                <flux:input wire:model="supplierBarcode" :label="__('Additional supplier barcode')" dir="ltr" />
+                <flux:select wire:model.live="productForm.barcode_registration_type" :label="__('Barcode registration type')" required>
+                    <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
+                    <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
+                </flux:select>
+                @if ($productForm['barcode_registration_type'] === 'international')
+                    <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
+                @else
+                    <flux:text class="self-end text-sm text-text-muted">{{ __('A local barcode is generated after saving from the first four numeric digits in the selected supplier code.') }}</flux:text>
+                @endif
+                <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" required />
+                ($isEditing)<flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled />
                 <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
-                <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" required />
+                <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="4" dir="rtl" />
@@ -398,10 +426,8 @@ new #[Title('Product Card')] class extends Component {
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
                     <flux:select.option value="service">{{ __('Service') }}</flux:select.option>
-                    <flux:select.option value="digital">{{ __('Digital product') }}</flux:select.option>
-                    @if ($productForm['product_type'] === 'composite')
-                        <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
-                    @endif
+                    <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
+                    ($isEditing && $productForm['product_type'] === 'digital')<flux:select.option value="digital">{{ __('Digital product (legacy)') }}</flux:select.option>
                 </flux:select>
                 <flux:select wire:model="productForm.status" :label="__('Status')" required>
                     <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
@@ -423,8 +449,7 @@ new #[Title('Product Card')] class extends Component {
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" />
                 <flux:input wire:model="productForm.sale_price" type="number" min="0" step="0.01" :label="__('Sale price')" />
-                <flux:input wire:model="productForm.battery_details" :label="__('Battery details')" />
-                <flux:checkbox wire:model="productForm.battery_required" :label="__('Requires batteries')" />
+                <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
                 <span>{{ __('Open-price rules are configured in Pricing and enforced in POS.') }}</span>
@@ -434,6 +459,8 @@ new #[Title('Product Card')] class extends Component {
             </div>
         </flux:card>
 
+        @if($isEditing)
+        <div class="order-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"><div><strong>{{ __('Stage B — Additional product data') }}</strong><p class="text-sm text-text-muted">{{ __('The required Product Card is saved. Images, Product Filters, dimensions, online visibility, descriptions, and battery data are optional enrichment.') }}</p></div><flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch" wire:navigate>{{ __('Product Filters') }}</flux:button></div>
         <details id="product-attributes" class="order-4 catalog-form-card catalog-product-disclosure" data-guide="product-form-attributes">
             <summary>
                 <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
@@ -444,6 +471,7 @@ new #[Title('Product Card')] class extends Component {
                     <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
                     <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="0.001" :disabled="in_array($productForm['product_type'], ['service', 'digital'], true)" />
                     <flux:input wire:model="productForm.weight" :label="__('Weight')" type="number" min="0" step="0.001" />
+                    <flux:select wire:model="productForm.weight_unit" :label="__('Weight unit')"><flux:select.option value="kg">kg</flux:select.option><flux:select.option value="g">g</flux:select.option></flux:select>
                 </div>
                 <div class="mt-4 grid gap-4 sm:grid-cols-4">
                     <flux:input wire:model="productForm.dimension_length" :label="__('Length')" type="number" min="0" step="0.001" />
@@ -477,6 +505,7 @@ new #[Title('Product Card')] class extends Component {
                     @endunless
                 </div>
                 <div class="mt-4"><flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity')" description="{{ __('Use this for products sold by weight, length, or another fractional unit.') }}" /></div>
+                <div class="mt-4 grid gap-4 md:grid-cols-2"><flux:checkbox wire:model="productForm.sell_online" :label="__('Sell online')" /><flux:checkbox wire:model="productForm.battery_required" :label="__('Uses battery')" /><flux:input wire:model="productForm.battery_details" :label="__('Battery details')" /></div>
             </div>
         </details>
 
@@ -556,6 +585,9 @@ new #[Title('Product Card')] class extends Component {
             </div>
         </details>
 
+        @else
+            <flux:callout class="order-4" variant="info" icon="information-circle" title="{{ __('Stage A — Required basic data') }}">{{ __('Save the required barcode, model, identity, cost, consumer price, category, brand, price behavior, and product type before adding optional details.') }}</flux:callout>
+        @endif
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
             <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
             <flux:text wire:dirty class="self-center text-xs text-text-muted">{{ __('Unsaved changes') }}</flux:text>

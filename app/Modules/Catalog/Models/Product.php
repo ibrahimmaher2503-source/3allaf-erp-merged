@@ -38,16 +38,21 @@ class Product extends Model
         'unit_of_measure',
         'category_id',
         'brand_id',
+        'originating_supplier_id',
         'status',
         'barcode_mode',
+        'barcode_registration_type',
         'average_cost',
         'sale_price',
+        'open_price',
+        'sell_online',
         'reorder_threshold',
         'dimension_length',
         'dimension_width',
         'dimension_height',
         'dimension_unit',
         'weight',
+        'weight_unit',
         'target_age',
         'age_label_id',
         'suitable_gender',
@@ -69,6 +74,8 @@ class Product extends Model
         'lock_version' => 'integer',
         'average_cost' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'open_price' => 'boolean',
+        'sell_online' => 'boolean',
         'battery_required' => 'boolean',
         'reorder_threshold' => 'decimal:3',
         'dimension_length' => 'decimal:3',
@@ -98,6 +105,11 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function originatingSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'originating_supplier_id');
     }
 
     public function barcodes(): HasMany

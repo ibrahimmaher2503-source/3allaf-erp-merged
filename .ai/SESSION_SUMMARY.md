@@ -664,3 +664,12 @@
 - **Arabic rendering:** Added fail-closed PDF-only shaping/visual ordering through the installed trusted FriBidi binary. Arabic tables render in deterministic visual column order while stable Latin codes remain unchanged.
 - **Verification actually run:** Generated customer-group, filtered-customer, and filtered-supplier Arabic PDFs; all embedded only subsetted `Cairo-Regular` fonts with no DejaVu reference. Every landscape page was rendered to PNG and visually inspected for connected shaping, RTL order, repeated headers, clipping, overlap, empty pages, and missing glyphs. Two focused PHPUnit tests, changed-file syntax, evidence JSON parsing, and `git diff --check` passed.
 - **Boundary:** No database, migration, frontend build, import, browser-suite rerun, production/shared runtime, deployment, version bump, tag, push, remote contact, or excluded-path access occurred.
+
+
+## 2026-08-30 — M52 v0.1.18 Product Cards and Opening Inventory
+
+- **Task:** Implemented M52 from published `v0.1.17` on `feature/v0.1.18-product-cards-opening-stock` without deployment.
+- **Work completed:** Delivered modal Product Filters, two-stage Product Cards, international and supplier-local barcode allocation, product/category/brand XLSX and Cairo-PDF exchange, and dedicated Opening Inventory draft/preview/approval/reversal/zero-decision behavior using the inventory ledger.
+- **Verification actually run:** Focused PHPUnit passed 11 tests/33 assertions; changed PHP and JSON syntax, route mapping, manifest references, isolated MariaDB migration 000097, and `git diff --check` passed. Ten genuine authenticated Arabic/English desktop/mobile captures passed with local Cairo, no serious/critical Axe findings, document overflow, console errors, or external requests. Three Arabic PDF exports embedded subsetted Cairo-Regular only with no DejaVu and rendered successfully to PNG.
+- **Corrections from final pass:** Imported the existing customer-policy model used by Setup context, corrected invalid Flux option markup and hierarchy ARIA, and made Opening Inventory a full-shell responsive labeled-card layout on mobile.
+- **Build/boundary:** Frontend sources did not change, so no build ran; retained manifest SHA-256 is `dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0`. No production/shared data, deployment, version bump, tag, push, remote contact, or excluded-path access occurred.

@@ -12,6 +12,7 @@ use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -29,14 +30,14 @@ class SaveProductAction
 
         try {
             return DB::transaction(function () use ($data, $id, $expectedVersion): Product {
-                $itemCode = strtoupper(trim((string) ($data['item_code'] ?? '')));
+                $itemCode = strtoupper(trim((string) ($data['item_code'] ?? $data['model_number'] ?? '')));
                 $nameAr = trim((string) ($data['name_ar'] ?? ''));
                 $nameEn = trim((string) ($data['name_en'] ?? ''));
                 $productType = trim((string) ($data['product_type'] ?? 'standard'));
                 $status = trim((string) ($data['status'] ?? 'active'));
 
-                if ($nameAr === '' || $nameEn === '') {
-                    throw new InvalidArgumentException(__('Both Arabic and English names are required for the product card.'));
+                if ($nameAr === '') {
+                    throw new InvalidArgumentException(__('The Arabic product name is required for the product card.'));
                 }
 
                 if (! in_array($productType, self::PRODUCT_TYPES, true)) {
@@ -58,6 +59,7 @@ class SaveProductAction
                     throw new InvalidArgumentException(__('The selected brand must exist and be active.'));
                 }
 
+                $pricing = app(ProductPricingContract::class)->forProductCard($data['average_cost'] ?? null, $data['sale_price'] ?? null);
                 $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
                 $supplier = $supplierId > 0
                     ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first()
@@ -105,6 +107,8 @@ class SaveProductAction
                     'unit_of_measure' => $this->nullableString($data['unit_of_measure'] ?? null),
                     'category_id' => (int) $data['category_id'],
                     'brand_id' => ! empty($data['brand_id']) ? (int) $data['brand_id'] : null,
+                    'originating_supplier_id' => ! empty($data['preferred_supplier_id'] ?? null) ? (int) $data['preferred_supplier_id'] : null,
+                    'barcode_registration_type' => $this->nullableString($data['barcode_registration_type'] ?? null),
                     'status' => $status,
                     'reorder_threshold' => in_array($productType, ['service', 'digital'], true) ? null : $this->nullableNumeric($data['reorder_threshold'] ?? null),
                     'dimension_length' => $this->nullableNumeric($data['dimension_length'] ?? null),
@@ -112,6 +116,7 @@ class SaveProductAction
                     'dimension_height' => $this->nullableNumeric($data['dimension_height'] ?? null),
                     'dimension_unit' => $this->nullableString($data['dimension_unit'] ?? null),
                     'weight' => $this->nullableNumeric($data['weight'] ?? null),
+                    'weight_unit' => $this->nullableString($data['weight_unit'] ?? null),
                     'target_age' => $this->nullableString($data['target_age'] ?? null),
                     'age_label_id' => $this->nullableLookupId($data['age_label_id'] ?? null, AgeLabel::class),
                     'suitable_gender' => $this->nullableString($data['suitable_gender'] ?? null),
@@ -126,7 +131,9 @@ class SaveProductAction
                     'keywords_ar' => $this->nullableString($data['keywords_ar'] ?? null),
                     'keywords_en' => $this->nullableString($data['keywords_en'] ?? null),
                     'fractional_quantity' => (bool) ($data['fractional_quantity'] ?? false),
-                    'sale_price' => $this->nullableNumeric($data['sale_price'] ?? null),
+                    'sale_price' => $pricing['sale_price'],
+                    'open_price' => (bool) ($data['open_price'] ?? false),
+                    'sell_online' => (bool) ($data['sell_online'] ?? false),
                     'battery_required' => (bool) ($data['battery_required'] ?? false),
                     'battery_details' => $this->nullableString($data['battery_details'] ?? null),
                 ];
@@ -135,17 +142,17 @@ class SaveProductAction
                 // contract for later approved work, but never accept a normal forged mutation.
                 if ($product === null) {
                     $attributes['average_cost'] = auth()->user()?->hasPermission('products_categories_brands.cost_view')
-                        ? $this->nullableNumeric($data['average_cost'] ?? null)
+                        ? $pricing['average_cost']
                         : null;
                 } elseif (auth()->user()?->hasPermission('products_categories_brands.cost_view')) {
-                    $attributes['average_cost'] = $this->nullableNumeric($data['average_cost'] ?? $product->average_cost);
+                    $attributes['average_cost'] = $pricing['average_cost'];
                 }
 
                 if ($product !== null) {
                     foreach ([
                         'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details',
                         'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
-                        'dimension_unit', 'weight', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
+                        'dimension_unit', 'weight', 'weight_unit', 'open_price', 'sell_online', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
                         'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',
                     ] as $optionalField) {
                         if (! array_key_exists($optionalField, $data)) {
@@ -155,14 +162,9 @@ class SaveProductAction
                 }
 
                 if ($product === null) {
-                    $attributes['barcode_mode'] = $identity['barcode_source'];
+                    $attributes['barcode_mode'] = 'none';
                     $attributes['lock_version'] = 0;
                     $product = Product::query()->create($attributes);
-                    app(ReserveProductIdentityAction::class)->createPrimaryBarcode(
-                        $product,
-                        $identity['item_code'],
-                        $identity['barcode_source'],
-                    );
                     $event = 'create_product_card';
                     $before = null;
                 } else {

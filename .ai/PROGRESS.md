@@ -68,3 +68,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added fixed supplier settlement methods and aligned Setup readiness to an active configured supplier while retaining optional terms and supplier-product references.
 - Added staged company-scoped XLSX imports, partial valid-row processing, localized rejection workbooks, formula-safe exports, and bounded filtered customer/supplier exports.
 - Focused tests, syntax/routes/diff checks, isolated MariaDB migration, and 13 genuine Arabic/English desktop/mobile captures passed. Existing frontend assets were reused; manifest SHA-256 remains `dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0`.
+
+## 2026-08-30 — M52 v0.1.18 Product Cards and Opening Inventory
+
+- Added modal Product Filters management, two-stage Product Cards, exact international/supplier-local barcode policy, and an explicit reusable pricing-update contract.
+- Added protected partial XLSX import and filtered XLSX/Cairo-PDF exchange for products, categories, and brands.
+- Added dedicated immutable Opening Inventory draft, preview, transactional approval, reversal, and audited zero-opening decision; Setup step 21 now resolves to this workflow.
+- Focused tests passed 11 tests/33 assertions; migration 000097 passed on isolated MariaDB; 10 genuine Arabic/English desktop/mobile captures passed with Cairo, zero serious/critical Axe findings, console errors, external requests, and document overflow. Existing frontend build retained: dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0.

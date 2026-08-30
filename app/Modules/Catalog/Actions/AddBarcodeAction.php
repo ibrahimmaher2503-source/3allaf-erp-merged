@@ -5,6 +5,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\BarcodeSequence;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Support\ProductBarcodePolicy;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +20,9 @@ class AddBarcodeAction
         $value = trim($barcode);
 
         if ($value === '') {
-            throw new InvalidArgumentException(__('A supplier barcode is required.'));
+            throw new InvalidArgumentException(__('An international barcode is required.'));
         }
+        $value = app(ProductBarcodePolicy::class)->international($value);
 
         return DB::transaction(function () use ($productId, $value): Barcode {
             $product = Product::query()->lockForUpdate()->findOrFail($productId);
@@ -37,7 +39,7 @@ class AddBarcodeAction
             $barcode = Barcode::query()->create([
                 'product_id' => $product->id,
                 'barcode' => $value,
-                'source' => 'supplier',
+                'source' => 'international',
                 'status' => 'active',
                 'is_primary' => ! $product->barcodes()->where('status', 'active')->exists(),
             ]);
@@ -45,7 +47,7 @@ class AddBarcodeAction
             $this->syncProductMode($product);
             app(RecordAuditEvent::class)->execute(
                 category: 'master_data',
-                event: 'create_supplier_barcode',
+                event: 'create_international_barcode',
                 source: $barcode,
                 after: $barcode->only(['product_id', 'barcode', 'source', 'status', 'is_primary']),
             );
@@ -60,10 +62,7 @@ class AddBarcodeAction
         $supplierCode = strtoupper(trim($supplierCode));
         $allocationKey = trim($allocationKey);
 
-        if (! preg_match('/^[A-Z0-9]{1,12}$/', $supplierCode)) {
-            throw new InvalidArgumentException(__('The supplier barcode prefix must contain up to 12 uppercase English letters or digits.'));
-        }
-
+        $supplierCode = app(ProductBarcodePolicy::class)->supplierDigits($supplierCode);
         if ($allocationKey === '') {
             throw new InvalidArgumentException(__('A barcode allocation request key is required.'));
         }
@@ -89,9 +88,11 @@ class AddBarcodeAction
             ]);
             $sequence = BarcodeSequence::query()->where('supplier_code', $supplierCode)->lockForUpdate()->firstOrFail();
             $serial = $sequence->next_serial;
+            $highestCommitted = (int) Barcode::query()->where('source', 'local')->where('supplier_code', $supplierCode)->max('serial_value');
+            $serial = max((int) $serial, $highestCommitted + 1);
 
             while ($serial <= 999999) {
-                $value = $supplierCode.str_pad((string) $serial, 6, '0', STR_PAD_LEFT);
+                $value = app(ProductBarcodePolicy::class)->local($supplierCode, $serial);
 
                 if (! Barcode::query()->where('barcode', $value)->exists()) {
                     break;
@@ -161,12 +162,13 @@ class AddBarcodeAction
         });
     }
 
+
     private function syncProductMode(Product $product): void
     {
         $sources = $product->barcodes()->where('status', 'active')->pluck('source')->unique()->values()->all();
         $mode = match (true) {
             count($sources) === 0 => 'none',
-            count($sources) === 1 && $sources[0] === 'supplier' => 'supplier',
+            count($sources) === 1 && in_array($sources[0], ['supplier', 'international'], true) => 'international',
             count($sources) === 1 && $sources[0] === 'local' => 'local',
             default => 'mixed',
         };
@@ -183,7 +185,7 @@ class AddBarcodeAction
         $serial = $barcode->serial_value;
         $expectedValue = $serial === null
             ? null
-            : $supplierCode.str_pad((string) $serial, 6, '0', STR_PAD_LEFT);
+            : app(ProductBarcodePolicy::class)->local($supplierCode, $serial);
 
         if ((int) $barcode->product_id !== $productId
             || $barcode->source !== 'local'

@@ -414,14 +414,18 @@ new #[Title('Product Masters')] class extends Component
     <x-slot:actions>
         <x-tables.resource-toolbar filter-target="products-filters">
             @can('products_categories_brands.create')
+                <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'xlsx']) }}" icon="document-arrow-down" variant="subtle">XLSX</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'pdf']) }}" icon="document-arrow-down" variant="subtle">PDF</flux:button>
                 <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
-                <flux:modal.trigger name="product-identity-editor">
-                    <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal" data-guide="products-add-action">{{ __('Manual entry') }}</flux:button>
-                </flux:modal.trigger>
+                <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate>{{ app()->getLocale() === 'ar' ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
+    @can('products_categories_brands.create')
+        <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
+    @endcan
     @if ($activeCategories->isEmpty())
         <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Product entry needs an active category') }}">
             <div class="space-y-2">
@@ -512,6 +516,9 @@ new #[Title('Product Masters')] class extends Component
                 @can('products_categories_brands.create')
                     <div class="flex flex-wrap justify-center gap-2">
                         <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
+                <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'xlsx']) }}" icon="document-arrow-down" variant="subtle">XLSX</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'pdf']) }}" icon="document-arrow-down" variant="subtle">PDF</flux:button>
                         <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
                     </div>
                 @else
@@ -625,6 +632,9 @@ new #[Title('Product Masters')] class extends Component
                     <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</flux:select.option>
                 @endforeach
             </flux:select>
+    @can('products_categories_brands.create')
+        <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
+    @endcan
             @if ($activeCategories->isEmpty())
                 <flux:callout variant="warning" icon="exclamation-triangle">{{ app()->getLocale() === 'ar' ? 'لا توجد فئات نشطة. أضف فئة قبل حفظ المنتج.' : __('No active categories exist yet. Configure a category before saving this product.') }} <a class="font-medium underline" href="{{ route('catalog.categories') }}" wire:navigate>{{ app()->getLocale() === 'ar' ? 'إعداد الفئات' : __('Configure categories') }}</a></flux:callout>
             @endif

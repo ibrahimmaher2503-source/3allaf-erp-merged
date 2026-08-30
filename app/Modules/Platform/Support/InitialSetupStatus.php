@@ -14,7 +14,8 @@ use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
-use App\Modules\Inventory\Models\InventoryAdjustment;
+use App\Modules\Inventory\Models\OpeningInventoryDocument;
+use App\Modules\Inventory\Models\OpeningInventoryZeroDecision;
 use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
@@ -73,7 +74,7 @@ final class InitialSetupStatus
             $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
             $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding product cards.')),
             $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
-            $this->step('opening-configuration', __('Opening inventory'), __('Record the quantity already in each stock store when you start using the system. Use the opening-stock adjustment; never edit balances directly.'), 'inventory.adjustments.create', 'inventory_stock_card.create', $this->openingInventoryReady(), InventoryAdjustment::query()->where('adjustment_type', 'entry')->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
+            $this->step('opening-configuration', __('Opening inventory'), __('Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.'), 'inventory.opening.index', 'inventory_stock_card.create', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
         $steps = array_map(function (array $step) use ($latestDecisions): array {
@@ -272,7 +273,8 @@ final class InitialSetupStatus
 
     private function openingInventoryReady(): bool
     {
-        return InventoryAdjustment::query()->where('status', 'approved')->where('adjustment_type', 'entry')->whereIn('reason_code', ['opening_stock', 'opening_inventory'])->whereNull('reversal_of_id')->exists();
+        return OpeningInventoryDocument::query()->where('status', 'approved')->whereNull('reversal_of_id')->exists()
+            || OpeningInventoryZeroDecision::query()->exists();
     }
 
     private function customerConsentPolicyRecords(): int

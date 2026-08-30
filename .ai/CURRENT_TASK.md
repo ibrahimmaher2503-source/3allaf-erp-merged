@@ -1,18 +1,21 @@
-# Current Task — M51 v0.1.17 Customer and Supplier Data Management
+# Current Task — M52 v0.1.18 Product Cards and Opening Inventory
 
 **Date:** 2026-08-30
-**Branch:** `feature/v0.1.17-customer-supplier-data`
-**Baseline:** published `v0.1.16` commit `0fc39754d5279286a35c00b824e0b59399c7a567`
+**Branch:** `feature/v0.1.18-product-cards-opening-stock`
+**Baseline:** published `v0.1.17` commit `ef840368bea5f4ed67d9ec25f8f7c322bd428e02`
 
 ## Scope
 
-- Hierarchical customer and supplier groups with stable codes, leaf-only new customer assignments, filtering, and counts.
-- Company-wide customer identity with canonical phone normalization and structured Egyptian residence geography.
-- Company-scoped city administration over shared canonical governorates.
-- Fixed supplier financial-settlement methods and readiness based only on an active configured supplier.
-- Staged, auditable XLSX imports with partial valid-row acceptance and downloadable rejection workbooks.
-- Filter-preserving XLSX/PDF exports for customer groups, customers, supplier groups, and suppliers.
+- Product Filters management aligned with the established category interaction.
+- Two-stage Product Card entry with international/local barcode identity and explicit cost/base consumer price contract.
+- Product/category/brand XLSX imports, rejection workbooks, and filtered XLSX/PDF exports.
+- Dedicated draft/preview/approve/reverse Opening Inventory documents plus an audited zero-opening decision.
+- Existing inventory ledger, permissions, audit, Setup context, Cairo PDF, and M51 exchange foundations remain authoritative.
 
 ## Verification directive
 
-The owner authorized the focused M51 PHPUnit file and one genuine authenticated Arabic/English desktop/mobile browser pass against a disposable task-local MariaDB runtime. Production/shared data and runtime remain prohibited.
+The owner explicitly authorizes focused M52 automated tests and one genuine authenticated Arabic/English desktop/mobile pass against an isolated task-local MariaDB runtime. Production/shared data and runtime remain prohibited.
+
+## Closure
+
+Implementation, focused tests, isolated MariaDB migration, Cairo PDF inspection, and genuine Arabic/English desktop/mobile acceptance passed. Frontend sources were unchanged, so the verified v0.1.17 build was retained without rebuilding.

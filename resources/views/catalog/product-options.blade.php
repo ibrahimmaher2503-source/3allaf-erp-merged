@@ -13,6 +13,9 @@ new #[Title('Product Filters')] class extends Component {
     public ?int $editingGroupId = null;
     public ?int $editingValueId = null;
     public ?int $valueGroupId = null;
+    public bool $showGroupForm = false;
+    public string $search = '';
+    public string $statusFilter = 'all';
     public array $groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
     public array $valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'colour_swatch' => '', 'status' => 'active', 'sort_order' => 0];
 
@@ -21,11 +24,21 @@ new #[Title('Product Filters')] class extends Component {
         Gate::authorize('products_categories_brands.view');
     }
 
+    public function startGroup(): void
+    {
+        Gate::authorize('products_categories_brands.create');
+        $this->editingGroupId = null;
+        $this->groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
+        $this->showGroupForm = true;
+        $this->resetValidation();
+    }
+
     public function editGroup(int $id): void
     {
         Gate::authorize('products_categories_brands.edit');
         $group = ProductOptionGroup::query()->findOrFail($id);
         $this->editingGroupId = $group->id;
+        $this->showGroupForm = true;
         $this->groupForm = $group->only(['code', 'name_ar', 'name_en', 'status', 'sort_order']);
         $this->resetValidation();
     }
@@ -61,8 +74,9 @@ new #[Title('Product Filters')] class extends Component {
         try {
             $action->saveGroup($data, $this->editingGroupId);
             $this->editingGroupId = null;
+            $this->showGroupForm = false;
             $this->groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
-            Flux::toast(variant: 'success', text: __('Option group saved successfully.'));
+            Flux::toast(variant: 'success', text: __('Filter group saved successfully.'));
         } catch (\Throwable $exception) {
             $this->addError('groupForm', \App\Support\UserSafeError::message($exception));
         }
@@ -122,7 +136,7 @@ new #[Title('Product Filters')] class extends Component {
             $action->saveValue($this->valueGroupId, $data, $this->editingValueId);
             $this->editingValueId = null;
             $this->valueGroupId = null;
-            Flux::toast(variant: 'success', text: __('Option value saved successfully.'));
+            Flux::toast(variant: 'success', text: __('Filter value saved successfully.'));
         } catch (\Throwable $exception) {
             $this->addError('valueForm', \App\Support\UserSafeError::message($exception));
         }
@@ -131,14 +145,14 @@ new #[Title('Product Filters')] class extends Component {
     public function render()
     {
         return view('catalog.product-options', [
-            'groups' => ProductOptionGroup::query()->with('values')->orderBy('sort_order')->orderBy('code')->get(),
+            'groups' => ProductOptionGroup::query()->with('values')->when(trim($this->search) !== '', fn ($query) => $query->where(fn ($nested) => $nested->where('code', 'like', '%'.trim($this->search).'%')->orWhere('name_ar', 'like', '%'.trim($this->search).'%')->orWhere('name_en', 'like', '%'.trim($this->search).'%')))->when(in_array($this->statusFilter, ['active', 'inactive'], true), fn ($query) => $query->where('status', $this->statusFilter))->orderBy('sort_order')->orderBy('code')->get(),
         ]);
     }
 }; ?>
 
 <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
     <x-page-header :title="__('Product Filters')" :description="__('Build reusable bilingual product filters for explicit standard-product variation families.')">
-        <x-slot:actions><flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left">{{ __('Product Master') }}</flux:button></x-slot:actions>
+        <x-slot:actions>@can('products_categories_brands.create')<flux:button type="button" wire:click="startGroup" variant="primary" icon="plus">{{ app()->getLocale() === 'ar' ? 'إضافة مجموعة فلاتر' : 'Add Filter Group' }}</flux:button>@endcan</x-slot:actions>
     </x-page-header>
 
     @if ($errors->has('groupForm') || $errors->has('valueForm'))
@@ -146,20 +160,23 @@ new #[Title('Product Filters')] class extends Component {
     @endif
 
     @can('products_categories_brands.create')
-        <form wire:submit="saveGroup" class="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:grid-cols-2 lg:grid-cols-6" aria-label="{{ __('Option group editor') }}">
-            <div class="lg:col-span-6"><flux:heading size="lg">{{ $editingGroupId ? __('Edit option group') : __('New option group') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('Codes are permanent. Labels and display order remain editable.') }}</flux:text></div>
+        @if($showGroupForm)
+        <form wire:submit="saveGroup" class="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:grid-cols-2 lg:grid-cols-6" aria-label="{{ __('Filter group editor') }}">
+            <div class="lg:col-span-6"><flux:heading size="lg">{{ $editingGroupId ? __('Edit filter group') : __('New filter group') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('Codes are permanent. Labels and display order remain editable.') }}</flux:text></div>
             <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="groupForm.code" :label="__('Code')" required :disabled="$editingGroupId !== null" />@if ($editingGroupId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateGroupCode" wire:loading.attr="disabled" wire:target="generateGroupCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
             <flux:input wire:model="groupForm.name_ar" :label="__('Arabic label')" dir="rtl" required />
             <flux:input wire:model="groupForm.name_en" :label="__('English label')" dir="ltr" required />
             <flux:select wire:model="groupForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
             <flux:input wire:model="groupForm.sort_order" type="number" min="0" :label="__('Order')" />
-            <div class="flex items-end"><flux:button type="submit" variant="primary" class="w-full" wire:loading.attr="disabled" wire:target="saveGroup">{{ __('Save group') }}</flux:button></div>
+            <div class="flex items-end"><flux:button type="submit" variant="primary" class="w-full" wire:loading.attr="disabled" wire:target="saveGroup">{{ __('Save') }}</flux:button></div>
             <div wire:loading wire:target="saveGroup" class="lg:col-span-6"><div class="h-1.5 animate-pulse rounded-full bg-cyan-200 dark:bg-cyan-900"></div></div>
         </form>
+        @endif
     @endcan
 
     <section class="space-y-4" aria-labelledby="option-library-heading">
-        <div><flux:heading id="option-library-heading" size="xl">{{ __('Option library') }}</flux:heading><flux:text class="mt-1">{{ __('Inactive choices remain readable in historical variation snapshots.') }}</flux:text></div>
+        <div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model.live.debounce.300ms="search" :label="__('Search')" icon="magnifying-glass"/><flux:select wire:model.live="statusFilter" :label="__('Status')"><flux:select.option value="all">{{ __('All') }}</flux:select.option><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select></div>
+        <div><flux:heading id="option-library-heading" size="xl">{{ __('Product Filters') }}</flux:heading><flux:text class="mt-1">{{ __('Inactive choices remain readable in historical variation snapshots.') }}</flux:text></div>
         @forelse ($groups as $group)
             <article class="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
                 <header class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"><div><div class="flex items-center gap-2"><flux:heading size="lg">{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</flux:heading><x-status.badge :status="$group->status" /></div><p class="mt-1 font-mono text-xs text-zinc-500">{{ $group->code }} · {{ $group->name_ar }} / {{ $group->name_en }}</p></div>@can('products_categories_brands.edit')<div class="flex gap-2"><flux:button wire:click="editGroup({{ $group->id }})" size="sm" variant="subtle">{{ __('Edit') }}</flux:button><flux:button wire:click="startValue({{ $group->id }})" size="sm" variant="primary" :disabled="$group->status !== 'active'">{{ __('Add value') }}</flux:button></div>@endcan</header>
@@ -172,12 +189,12 @@ new #[Title('Product Filters')] class extends Component {
                 </div>
             </article>
         @empty
-            <x-state.empty :title="__('No product options yet')" :description="__('Create a bilingual option group such as Colour or Size, then add its values.')" />
+            <x-state.empty :title="__('No product filters yet')" :description="__('Create a bilingual filter group such as Colour or Size, then add its values.')" />
         @endforelse
     </section>
 
     @if ($valueGroupId)
-        <form wire:submit="saveValue" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" aria-label="{{ __('Option value editor') }}">
+        <form wire:submit="saveValue" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" aria-label="{{ __('Filter value editor') }}">
             <div class="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-7"><div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="valueForm.code" :label="__('Value code')" required :disabled="$editingValueId !== null" />@if ($editingValueId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateValueCode" wire:loading.attr="disabled" wire:target="generateValueCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><flux:input wire:model="valueForm.name_ar" :label="__('Arabic label')" dir="rtl" required /><flux:input wire:model="valueForm.name_en" :label="__('English label')" dir="ltr" required /><flux:input wire:model="valueForm.colour_swatch" type="color" :label="__('Optional swatch')" /><flux:select wire:model="valueForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><flux:input wire:model="valueForm.sort_order" type="number" min="0" :label="__('Order')" /><div class="flex items-end gap-2"><flux:button type="submit" variant="primary" class="flex-1">{{ __('Save value') }}</flux:button><flux:button type="button" wire:click="$set('valueGroupId', null)" variant="subtle">{{ __('Cancel') }}</flux:button></div></div>
         </form>
     @endif

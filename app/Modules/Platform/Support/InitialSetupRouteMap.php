@@ -37,7 +37,7 @@ final class InitialSetupRouteMap
             str_starts_with($route, 'catalog.product-options') => 'product-options',
             str_starts_with($route, 'catalog.products') => 'product-masters',
             str_starts_with($route, 'pricing.') => 'prices',
-            str_starts_with($route, 'inventory.adjustments') => 'opening-configuration',
+            str_starts_with($route, 'inventory.opening') => 'opening-configuration',
             str_starts_with($route, 'customers.groups.') => 'customer-groups',
             str_starts_with($route, 'customers.') => 'customers',
             $route === 'party.readiness' => 'party-readiness',

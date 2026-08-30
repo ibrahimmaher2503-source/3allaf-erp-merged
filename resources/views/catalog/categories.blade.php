@@ -181,6 +181,8 @@ new #[Title('Category Masters')] class extends Component
         <x-tables.resource-toolbar>
             @can('products_categories_brands.create')
                 <flux:button href="{{ route('catalog.reference-import') }}" wire:navigate variant="subtle">{{ __('Excel import') }}</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.template', ['type' => 'categories']) }}" variant="subtle" icon="arrow-down-tray">{{ __('Import template') }}</flux:button>
+                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'categories', 'format' => 'xlsx']) }}" variant="subtle" icon="document-arrow-down">XLSX</flux:button><flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'categories', 'format' => 'pdf']) }}" variant="subtle" icon="document-arrow-down">PDF</flux:button>
                 <flux:button icon="plus" variant="primary" wire:click="openCreateCategoryModal" data-guide="categories-add-action">{{ __('Add category') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
@@ -239,7 +241,7 @@ new #[Title('Category Masters')] class extends Component
                         <flux:table.row :key="$category->id">
                             <flux:table.cell class="whitespace-nowrap"><span class="catalog-code-chip">{{ $category->code }}</span></flux:table.cell>
                             <flux:table.cell>
-                                <div class="flex items-start gap-2" style="padding-inline-start: calc({{ min((int) ($category->hierarchy_depth ?? 0), 12) }} * 1.25rem)" aria-level="{{ (int) ($category->hierarchy_depth ?? 0) + 1 }}">
+                                <div class="flex items-start gap-2" style="padding-inline-start: calc({{ min((int) ($category->hierarchy_depth ?? 0), 12) }} * 1.25rem)">
                                     <span class="catalog-tree-marker {{ $category->parent ? 'is-child' : '' }}" aria-hidden="true">{{ $category->parent ? '└─' : '' }}</span>
                                     <div class="min-w-0"><div class="font-medium text-text-primary">{{ app()->getLocale() === 'ar' || blank($category->name_en) ? $category->name_ar : $category->name_en }}</div>@if (filled($category->name_en) && app()->getLocale() === 'ar')<div class="catalog-secondary-line">{{ $category->name_en }}</div>@elseif (filled($category->name_ar) && app()->getLocale() !== 'ar')<div class="catalog-secondary-line">{{ $category->name_ar }}</div>@endif</div>
                                 </div>
@@ -263,7 +265,7 @@ new #[Title('Category Masters')] class extends Component
             <div class="grid gap-4 md:grid-cols-2"><label for="category-name-ar" class="sr-only">{{ __('Arabic name') }}</label><flux:input id="category-name-ar" wire:model="categoryForm.name_ar" :label="__('Arabic name')" required /><label for="category-name-en" class="sr-only">{{ __('English name (optional)') }}</label><flux:input id="category-name-en" wire:model="categoryForm.name_en" :label="__('English name (optional)')" /><p class="text-xs text-text-muted md:col-start-2">{{ __('English name (optional)') }}</p></div>
             <flux:select wire:model="categoryForm.parent_id" :label="__('Parent category')"><flux:select.option value="">{{ __('No parent (root)') }}</flux:select.option>@foreach ($parentOptions as $parent)<flux:select.option :value="$parent->id">{{ $parent->code }} · {{ app()->getLocale() === 'ar' || blank($parent->name_en) ? $parent->name_ar : $parent->name_en }}</flux:select.option>@endforeach</flux:select>
             <flux:select wire:model="categoryForm.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
-            <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end"><flux:button type="button" variant="subtle" wire:click="$set('showCategoryModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveCategory">{{ __('Save category') }}</flux:button></div>
+            <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end"><flux:button type="button" variant="subtle" wire:click="$set('showCategoryModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveCategory">{{ __('Save') }}</flux:button></div>
         </form>
     </flux:modal>
 </x-app.page>

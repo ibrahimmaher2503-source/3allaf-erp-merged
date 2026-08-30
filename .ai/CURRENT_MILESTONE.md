@@ -1,8 +1,6 @@
-# Active Milestone — M51 v0.1.17 Customer and Supplier Data Management
+# Active Milestone — M52 v0.1.18 Product Cards and Opening Inventory
 
 **Date:** 2026-08-30
-**Status:** Complete in development; validated and committed pending owner review.
+**Status:** Complete in development; validated and ready for owner review.
 
-M51 adds one additive customer/supplier data-management migration, hierarchical master-data presentation, canonical phone identity, Egyptian residence references, tenant city administration, fixed supplier settlement methods, and staged XLSX/PDF exchange. Existing legacy root-group assignments, incomplete legacy residence records, consent/merge history, supplier-product links, and historical payment references remain intact.
-
-Focused tests and genuine isolated rendering cover hierarchy, leaf selection, duplicate phones, partial imports, rejection workbooks, geography, settlement/readiness, permissions, exports, Cairo/RTL/LTR, responsive records, accessibility, and external-request isolation. No production deployment or version change is part of this milestone.
+M52 connects the existing catalog, barcode, staged-import, pricing-field, inventory-adjustment, ledger, Setup-readiness, and Cairo export foundations. It adds only the schema and actions needed for explicit Product Card enrichment and an auditable immutable Opening Inventory workflow; it does not deploy, mutate production, or alter historical records.
