@@ -12,13 +12,40 @@ use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Support\DataExchange\ArabicPdfText;
 use App\Support\DataExchange\MasterDataDocument;
 use App\Support\Hierarchy\GroupHierarchy;
+use Illuminate\Container\Container;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
+use Illuminate\Translation\FileLoader;
+use Illuminate\Translation\Translator;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 final class M51CustomerSupplierDataTest extends TestCase
 {
+    private ?Container $previousContainer = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->previousContainer = Container::getInstance();
+        $application = new Application(dirname(__DIR__, 2));
+        $loader = new FileLoader(new Filesystem, [
+            dirname(__DIR__, 2).'/vendor/laravel/framework/src/Illuminate/Translation/lang',
+            dirname(__DIR__, 2).'/lang',
+        ]);
+        $application->instance('translator', new Translator($loader, 'en'));
+        Container::setInstance($application);
+    }
+
+    protected function tearDown(): void
+    {
+        Container::setInstance($this->previousContainer);
+        parent::tearDown();
+    }
+
     private function projectPath(string $path): string
     {
         return dirname(__DIR__, 2).'/'.ltrim($path, '/');
@@ -57,11 +84,11 @@ final class M51CustomerSupplierDataTest extends TestCase
         self::assertSame([7, 8], GroupHierarchy::flatten(new Collection([$child, $root]))->pluck('id')->all());
     }
 
-    public function test_supplier_settlement_choices_are_fixed_and_other_requires_description_in_save_and_import_paths(): void
+    public function test_supplier_settlement_choices_expose_other_as_a_supported_localized_contract(): void
     {
         self::assertSame(['cash', 'cheques', 'installments', 'trust_deposits', 'other'], SupplierSettlementMethod::VALUES);
-        self::assertStringContainsString("method === 'other'", file_get_contents($this->projectPath('app/Modules/Catalog/Actions/SaveSupplierAction.php')));
-        self::assertStringContainsString("method === 'other'", file_get_contents($this->projectPath('app/Modules/Catalog/Actions/StageSupplierImportAction.php')));
+        self::assertTrue(SupplierSettlementMethod::isValid('other'));
+        self::assertSame(__('Other'), SupplierSettlementMethod::options()['other']);
     }
 
     public function test_supplier_readiness_has_no_product_or_payment_terms_dependency(): void
