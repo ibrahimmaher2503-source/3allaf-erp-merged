@@ -6,6 +6,7 @@ namespace App\Support\DataExchange;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Response;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\Common\Creator\WriterFactory;
@@ -40,12 +41,29 @@ final class MasterDataDocument
     /** @param list<string> $headers @param iterable<array<int, mixed>> $rows */
     public function pdf(string $filename, string $title, array $headers, iterable $rows): Response
     {
+        $rows = collect($rows)->map(static fn (array $row): array => array_map(static fn (mixed $value): string => (string) $value, $row));
+        if (app()->getLocale() === 'ar') {
+            $values = array_merge([$title], $headers, $rows->flatten()->all());
+            $visual = app(ArabicPdfText::class)->visualOrder($values);
+            $title = array_shift($visual);
+            $headers = array_splice($visual, 0, count($headers));
+            $columnCount = count($headers);
+            $headers = array_reverse($headers);
+            $rows = collect(array_chunk($visual, $columnCount))->map(static fn (array $row): array => array_reverse($row));
+        }
+
+        $fontCache = storage_path('framework/cache/dompdf');
+        (new Filesystem)->ensureDirectoryExists($fontCache);
         $options = new Options;
         $options->set('isRemoteEnabled', false);
         $options->set('isHtml5ParserEnabled', true);
         $options->setChroot(base_path());
+        $options->setFontDir($fontCache);
+        $options->setFontCache($fontCache);
+        $options->setTempDir($fontCache);
+        $options->setDefaultFont(app()->getLocale() === 'ar' ? 'Cairo PDF Arabic' : 'Cairo PDF Latin');
         $dompdf = new Dompdf($options);
-        $dompdf->loadHtml(view('pages.exports.master-data-pdf', ['title' => $title, 'headers' => $headers, 'rows' => collect($rows)])->render(), 'UTF-8');
+        $dompdf->loadHtml(view('pages.exports.master-data-pdf', ['title' => $title, 'headers' => $headers, 'rows' => $rows])->render(), 'UTF-8');
         $dompdf->setPaper('a4', 'landscape');
         $dompdf->render();
 

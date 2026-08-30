@@ -9,6 +9,7 @@ use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Support\CustomerIdentity;
 use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Support\DataExchange\ArabicPdfText;
 use App\Support\DataExchange\MasterDataDocument;
 use App\Support\Hierarchy\GroupHierarchy;
 use Illuminate\Support\Collection;
@@ -95,5 +96,25 @@ final class M51CustomerSupplierDataTest extends TestCase
         $method = new ReflectionMethod(MasterDataDocument::class, 'safeCell');
         $escaped = $method->invoke(new MasterDataDocument, '=HYPERLINK("https://invalid")');
         self::assertSame("'".'=HYPERLINK("https://invalid")', $escaped);
+    }
+
+    public function test_arabic_pdf_text_is_shaped_in_visual_order_without_changing_stable_codes(): void
+    {
+        $result = (new ArabicPdfText)->visualOrder(['مجموعات العملاء', 'SUP-001']);
+
+        self::assertNotSame('مجموعات العملاء', $result[0]);
+        self::assertMatchesRegularExpression('/[\x{FB50}-\x{FEFF}]/u', $result[0]);
+        self::assertSame('SUP-001', $result[1]);
+    }
+
+    public function test_pdf_styles_register_only_local_cairo_ttf_assets_for_required_weights(): void
+    {
+        $styles = file_get_contents($this->projectPath('resources/views/pages/exports/partials/cairo-pdf-styles.blade.php'));
+        self::assertStringContainsString('cairo-arabic-variable.ttf', $styles);
+        self::assertStringContainsString('cairo-latin-variable.ttf', $styles);
+        self::assertStringContainsString('[400, 500, 600, 700, 800, 900]', $styles);
+        self::assertStringNotContainsString('DejaVu', $styles);
+        self::assertSame("\x00\x01\x00\x00", file_get_contents($this->projectPath('resources/fonts/cairo/pdf/cairo-arabic-variable.ttf'), false, null, 0, 4));
+        self::assertSame("\x00\x01\x00\x00", file_get_contents($this->projectPath('resources/fonts/cairo/pdf/cairo-latin-variable.ttf'), false, null, 0, 4));
     }
 }
