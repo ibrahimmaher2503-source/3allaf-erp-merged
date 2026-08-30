@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class ApplicationVersion
 {
-    public const RELEASE = '0.1.17';
+    public const RELEASE = '0.1.18';
 
     private function __construct() {}
 }
