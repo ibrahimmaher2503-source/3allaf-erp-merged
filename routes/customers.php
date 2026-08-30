@@ -4,49 +4,55 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Customer\Actions\ApproveLoyaltyAdjustmentAction;
-use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
-use App\Modules\Customer\Actions\PostProductWalletEntryAction;
-use App\Modules\Customer\Actions\RequestPartyWalletAdjustmentAction;
-use App\Modules\Customer\Actions\RequestProductWalletAdjustmentAction;
 use App\Modules\Customer\Actions\CreateCustomerAction;
 use App\Modules\Customer\Actions\CreateCustomerGroupAction;
 use App\Modules\Customer\Actions\ExpireLoyaltyAction;
+use App\Modules\Customer\Actions\ImportCustomerGroups;
 use App\Modules\Customer\Actions\MergeCustomersAction;
+use App\Modules\Customer\Actions\PostPartyWalletEntryAction;
+use App\Modules\Customer\Actions\PostProductWalletEntryAction;
 use App\Modules\Customer\Actions\RecordCustomerConsentAction;
 use App\Modules\Customer\Actions\RedeemLoyaltyAction;
 use App\Modules\Customer\Actions\RejectLoyaltyAdjustmentAction;
 use App\Modules\Customer\Actions\RequestLoyaltyAdjustmentAction;
+use App\Modules\Customer\Actions\RequestPartyWalletAdjustmentAction;
+use App\Modules\Customer\Actions\RequestProductWalletAdjustmentAction;
 use App\Modules\Customer\Actions\SaveCustomerChildAction;
+use App\Modules\Customer\Actions\StageCustomerImportAction;
 use App\Modules\Customer\Actions\UpdateCustomerAction;
 use App\Modules\Customer\Actions\UpdateCustomerGroupAction;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerChild;
-use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerConsent;
+use App\Modules\Customer\Models\CustomerGroup;
+use App\Modules\Customer\Models\CustomerImportBatch;
 use App\Modules\Customer\Models\LoyaltyAdjustment;
 use App\Modules\Customer\Models\LoyaltyLedger;
 use App\Modules\Customer\Models\PartyWalletAdjustment;
 use App\Modules\Customer\Models\PartyWalletLedger;
 use App\Modules\Customer\Models\ProductWalletAdjustment;
 use App\Modules\Customer\Models\ProductWalletLedger;
-use App\Modules\Customer\Support\PartyWalletBalance;
-use App\Modules\Customer\Support\ProductWalletBalance;
 use App\Modules\Customer\Support\CustomerPolicy;
+use App\Modules\Customer\Support\PartyWalletBalance;
 use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Customer\Support\ProductWalletBalance;
 use App\Modules\Customer\Support\WalletPolicy;
+use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\City;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Retail\Models\Sale;
+use App\Support\DataExchange\MasterDataDocument;
+use App\Support\Hierarchy\GroupHierarchy;
+use App\Support\UserSafeError;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Modules\Customer\Models\CustomerImportBatch;
-use App\Modules\Customer\Actions\StageCustomerImportAction;
-use Illuminate\Support\Facades\DB;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     $sellingStore = static function (User $user): Store {
@@ -57,41 +63,69 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         $canReview = $user->can('customers.import.approve');
         abort_unless($user->can('customers.create') || $canReview, 403);
-        $batches = CustomerImportBatch::query()->where(function ($query) use ($user, $canReview): void {
+        $companyIds = Store::query()->visibleTo($user)->select('company_id');
+        $batches = CustomerImportBatch::query()->whereIn('company_id', $companyIds)->where(function ($query) use ($user, $canReview): void {
             $query->where('created_by', $user->id);
-            if ($canReview) $query->orWhere('status', 'ready_for_review');
+            if ($canReview) {
+                $query->orWhere('status', 'ready_for_review');
+            }
         });
-        if ($request->integer('batch') > 0 && ! (clone $batches)->whereKey($request->integer('batch'))->exists()) abort(404);
+        if ($request->integer('batch') > 0 && ! (clone $batches)->whereKey($request->integer('batch'))->exists()) {
+            abort(404);
+        }
 
         return view('pages.customers.import', ['batches' => $batches->latest()->paginate(10)]);
     })->name('customers.import');
     Route::get('customers/import/template', function (Request $request) {
         abort_unless($request->user()->can('customers.create'), 403);
-        $base = tempnam(sys_get_temp_dir(), 'customer-template-');
-        $path = $base.'.xlsx';
-        @unlink($base);
-        $writer = new \OpenSpout\Writer\XLSX\Writer;
-        $writer->openToFile($path);
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(StageCustomerImportAction::FIELDS));
-        $writer->close();
 
-        return response()->download($path, 'customers-import-template.xlsx', [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return app(MasterDataDocument::class)->xlsx('customers-import-template.xlsx', StageCustomerImportAction::FIELDS, [['أحمد', 'محمد', 'Ahmed', 'Mohamed', '01012345678', '', 'customer@example.com', 'RETAIL', 'CAI', 'CAI-NASR', '', '', 'service_delivery', 'granted']], [[__('Instructions')], [__('Use stable customer-group, governorate, and city codes. Valid rows are imported; rejected rows remain downloadable separately.')]]);
     })->middleware('can:customers.create')->name('customers.import.template');
     Route::post('customers/import', function (Request $request, StageCustomerImportAction $action) use ($sellingStore) {
-        $user = $request->user(); abort_unless($user->can('customers.create'), 403);
-        $data = $request->validate(['import_file'=>['required','file','mimes:xlsx,csv,ods','max:10240'],'mode'=>['required',Rule::in(['create_only','update_existing'])]]);
-        if ($data['mode']==='update_existing') abort_unless($user->can('customers.edit'),403);
-        try {$rows=StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());} catch (InvalidArgumentException $exception) { throw ValidationException::withMessages(['import_file'=>\App\Support\UserSafeError::message($exception)]); }
-        $batch=$action->stage($rows,$request->file('import_file')->getClientOriginalName(),$data['mode'],$user->id,$sellingStore($user));
-        return to_route('customers.import')->with('success', __('Customer file staged. Review errors before approval.'))->with('batch_id',$batch->id);
+        $user = $request->user();
+        abort_unless($user->can('customers.create'), 403);
+        $data = $request->validate(['import_file' => ['required', 'file', 'mimes:xlsx', 'max:10240'], 'mode' => ['required', Rule::in(['create_only', 'update_existing'])]]);
+        if ($data['mode'] === 'update_existing') {
+            abort_unless($user->can('customers.edit'), 403);
+        }
+        try {
+            $rows = StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['import_file' => UserSafeError::message($exception)]);
+        }
+        $batch = $action->stage($rows, $request->file('import_file')->getClientOriginalName(), $data['mode'], $user->id, $sellingStore($user));
+
+        return to_route('customers.import')->with('success', __('Customer file staged. Review errors before approval.'))->with('batch_id', $batch->id);
     })->middleware('can:customers.create')->name('customers.import.stage');
+    Route::get('customers/import/{batch}/rejections', function (Request $request, CustomerImportBatch $batch, MasterDataDocument $documents) use ($sellingStore) {
+        $store = $sellingStore($request->user());
+        abort_unless((int) $batch->company_id === (int) $store->company_id && ((int) $batch->created_by === (int) $request->user()->id || $request->user()->can('customers.import.approve')), 404);
+        $headers = [__('Original row'), ...StageCustomerImportAction::FIELDS, __('Rejection reason')];
+        $rows = $batch->rows()->where('status', 'invalid')->orderBy('row_number')->get()->map(fn ($row) => [$row->row_number, ...array_map(fn ($field) => $row->raw_data[$field] ?? '', StageCustomerImportAction::FIELDS), collect($row->errors)->join(' | ')]);
+
+        return $documents->xlsx('customer-import-rejections-'.$batch->id.'.xlsx', $headers, $rows);
+    })->name('customers.import.rejections');
     Route::post('customers/import/{batch}/approve', function (Request $request, CustomerImportBatch $batch, CreateCustomerAction $creator, UpdateCustomerAction $updater) {
-        $user=$request->user(); abort_unless($user->can('customers.import.approve'),403); abort_unless($batch->status==='ready_for_review' && $batch->invalid_rows===0,422);
-        abort_if((int)$batch->created_by===(int)$user->id,422,__('The requester cannot approve their own import batch.'));
-        $store=Store::query()->visibleTo($user)->where('type','selling')->where('status','active')->orderBy('id')->firstOrFail(); DB::transaction(function()use($batch,$creator,$updater,$user,$store){foreach($batch->rows()->where('status','valid')->lockForUpdate()->get() as $row){$d=$row->mapped_data;$data=['first_name_ar'=>$d['first_name_ar'],'last_name_ar'=>$d['last_name_ar'],'first_name_en'=>$d['first_name_en'],'last_name_en'=>$d['last_name_en'],'phone'=>$d['phone'],'email'=>$d['email'],'customer_group_id'=>$d['customer_group_id']??null];if($batch->mode==='update_existing'){$customer=$updater->execute($user,Customer::query()->whereKey($d['customer_id'])->where('phone_normalized',PhoneNormalizer::normalize($d['phone']))->firstOrFail(),$store,$data);$status='updated';}else{$customer=$creator->execute($user,$store,$data+['consents'=>[['purpose'=>$d['consent_purpose'],'status'=>$d['consent_status'],'source'=>'customer_import']],'idempotency_key'=>'customer-import:'.$batch->id.':'.$row->id]);$status='created';}$row->update(['status'=>$status,'customer_id'=>$customer->id]);}$batch->update(['status'=>'completed','approved_at'=>now()]);});
-        return to_route('customers.import')->with('success',__('Customer import approved and written.'));
+        $user = $request->user();
+        abort_unless($user->can('customers.import.approve'), 403);
+        abort_unless($batch->status === 'ready_for_review' && $batch->valid_rows > 0, 422);
+        abort_if((int) $batch->created_by === (int) $user->id, 422, __('The requester cannot approve their own import batch.'));
+        $store = Store::query()->visibleTo($user)->where('company_id', $batch->company_id)->where('type', 'selling')->where('status', 'active')->orderBy('id')->firstOrFail();
+        DB::transaction(function () use ($batch, $creator, $updater, $user, $store) {
+            foreach ($batch->rows()->where('status', 'valid')->lockForUpdate()->get() as $row) {
+                $d = $row->mapped_data;
+                $data = ['first_name_ar' => $d['first_name_ar'], 'last_name_ar' => $d['last_name_ar'], 'first_name_en' => $d['first_name_en'], 'last_name_en' => $d['last_name_en'], 'phone' => $d['phone'], 'secondary_phone' => $d['secondary_phone'] ?? null, 'email' => $d['email'], 'customer_group_id' => $d['customer_group_id'] ?? null, 'governorate_id' => $d['governorate_id'] ?? null, 'city_id' => $d['city_id'] ?? null, 'address_ar' => $d['address_ar'] ?? null, 'address_en' => $d['address_en'] ?? null];
+                if ($batch->mode === 'update_existing') {
+                    $customer = $updater->execute($user, Customer::query()->whereKey($d['customer_id'])->where('phone_normalized', PhoneNormalizer::normalize($d['phone']))->firstOrFail(), $store, $data);
+                    $status = 'updated';
+                } else {
+                    $customer = $creator->execute($user, $store, $data + ['consents' => [['purpose' => $d['consent_purpose'], 'status' => $d['consent_status'], 'source' => 'customer_import']], 'idempotency_key' => 'customer-import:'.$batch->id.':'.$row->id]);
+                    $status = 'created';
+                }$row->update(['status' => $status, 'customer_id' => $customer->id]);
+            }$batch->update(['status' => 'completed', 'added_rows' => $batch->valid_rows, 'approved_at' => now()]);
+        });
+
+        return to_route('customers.import')->with('success', __('Customer import approved and written.'));
     })->middleware('can:customers.import.approve')->name('customers.import.approve');
     Route::get('customers/groups', function (Request $request) use ($sellingStore) {
         /** @var User $user */
@@ -99,18 +133,46 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('customers.view'), 403);
         $store = $sellingStore($user);
         $term = trim((string) $request->string('q'));
-        $groups = CustomerGroup::query()
+        $allGroups = CustomerGroup::query()
             ->forCompany((int) $store->company_id)
             ->with('parent:id,name_ar,name_en')
             ->withCount(['customers as active_customers_count' => fn ($query) => $query->where('status', 'active')])
-            ->when($term !== '', fn ($query) => $query->where(fn ($scope) => $scope->where('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%')))
-            ->orderBy('parent_id')->orderBy('name_ar')
-            ->paginate(20)
-            ->withQueryString();
-        $parentOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
+            ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
+            ->when($request->string('hierarchy')->value() === 'root', fn ($query) => $query->whereNull('parent_id'))
+            ->when($request->string('hierarchy')->value() === 'leaf', fn ($query) => $query->whereDoesntHave('children'))
+            ->get();
+        $groups = GroupHierarchy::flatten($allGroups, $term);
+        $parentOptions = GroupHierarchy::flatten(CustomerGroup::query()->forCompany((int) $store->company_id)->active()->get());
 
         return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store'));
     })->middleware('can:customers.view')->name('customers.groups.index');
+    Route::get('customers/groups/export/{format}', function (Request $request, string $format, MasterDataDocument $documents) use ($sellingStore) {
+        abort_unless($request->user()->can('customers.export') && in_array($format, ['xlsx', 'pdf'], true), 403);
+        $store = $sellingStore($request->user());
+        $source = CustomerGroup::query()->forCompany((int) $store->company_id)->withCount('customers')
+            ->when($request->filled('status'), fn ($query) => $query->where('status', (string) $request->string('status')))
+            ->when($request->string('hierarchy')->value() === 'root', fn ($query) => $query->whereNull('parent_id'))
+            ->when($request->string('hierarchy')->value() === 'leaf', fn ($query) => $query->whereDoesntHave('children'))
+            ->get();
+        $groups = GroupHierarchy::flatten($source, (string) $request->string('q'));
+        $headers = [__('Code'), __('Arabic name'), __('English name'), __('Path'), __('Order'), __('Status'), __('Customers')];
+        $rows = $groups->map(fn ($g) => [$g->code, $g->name_ar, $g->name_en, $g->hierarchy_path, $g->sort_order, __($g->status), $g->customers_count]);
+
+        return $format === 'xlsx' ? $documents->xlsx('customer-groups.xlsx', $headers, $rows) : $documents->pdf('customer-groups.pdf', __('Customer groups'), $headers, $rows);
+    })->middleware('can:customers.export')->name('customers.groups.export');
+    Route::get('customers/groups/import/template', fn (MasterDataDocument $documents) => $documents->xlsx('customer-groups-import-template.xlsx', ImportCustomerGroups::HEADERS, [['RETAIL', '', 'عملاء التجزئة', 'Retail customers', 10, 'active'], ['VIP', 'RETAIL', 'عملاء مميزون', 'VIP customers', 20, 'active']], [[__('Instructions')], [__('Parent rows must appear before children and parent_code must use the stable code.')]]))->middleware('can:customers.edit')->name('customers.groups.import.template');
+    Route::post('customers/groups/import', function (Request $request, ImportCustomerGroups $action, MasterDataDocument $documents) use ($sellingStore) {
+        $data = $request->validate(['import_file' => 'required|file|mimes:xlsx|max:10240']);
+        try {
+            $result = $action->execute($request->user(), $sellingStore($request->user()), $request->file('import_file')->getRealPath());
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['import_file' => UserSafeError::message($e)]);
+        }if ($result['rejected'] !== []) {
+            return $documents->xlsx('customer-group-rejections.xlsx', [__('Original row'), ...ImportCustomerGroups::HEADERS, __('Rejection reason')], $result['rejected']);
+        }
+
+return back()->with('success', __('Customer groups imported: :count', ['count' => $result['added']]));
+    })->middleware('can:customers.edit')->name('customers.groups.import');
 
     Route::post('customers/groups', function (Request $request, CreateCustomerGroupAction $action) use ($sellingStore) {
         /** @var User $user */
@@ -119,12 +181,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $validated = $request->validate([
             'name_ar' => ['required', 'string', 'max:190'],
             'name_en' => ['required', 'string', 'max:190'],
+            'code' => ['required', 'alpha_dash:ascii', 'max:50'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
             'parent_id' => ['nullable', 'integer'],
         ]);
         try {
             $action->execute($user, $sellingStore($user), $validated);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
-            return back()->withInput()->withErrors(['group' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['group' => UserSafeError::message($exception)]);
         }
 
         return to_route('customers.groups.index')->with('success', __('Customer group created.'));
@@ -139,13 +203,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $validated = $request->validate([
             'name_ar' => ['required', 'string', 'max:190'],
             'name_en' => ['required', 'string', 'max:190'],
+            'code' => ['required', 'alpha_dash:ascii', 'max:50'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
             'parent_id' => ['nullable', 'integer'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
         ]);
         try {
             $action->execute($user, $group, $store, $validated);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
-            return back()->withInput()->withErrors(['group' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['group' => UserSafeError::message($exception)]);
         }
 
         return to_route('customers.groups.index')->with('success', __('Customer group updated.'));
@@ -160,7 +226,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_if($mode === 'loyalty' && ! $user->can('loyalty.view'), 403);
 
         $store = $sellingStore($user);
-        $query = Customer::query()->visibleTo($user)->active()->with(['scopes.store', 'scopes.branch', 'group.parent'])->withCount(['consents', 'children']);
+        $query = Customer::query()->visibleTo($user)->with(['scopes.store', 'scopes.branch', 'group.parent', 'governorate', 'city'])->withCount(['consents', 'children']);
         $term = trim((string) $request->string('q'));
         if ($term !== '') {
             $digits = preg_replace('/[^0-9]+/', '', $term);
@@ -175,20 +241,28 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $query->when($request->filled('status'), fn ($builder) => $builder->where('status', (string) $request->string('status')));
         $groupId = $request->integer('group_id') ?: null;
         $query->when($groupId !== null, fn ($builder) => $builder->where('customer_group_id', $groupId));
+        $query->when($request->integer('governorate_id') > 0, fn ($builder) => $builder->where('governorate_id', $request->integer('governorate_id')));
+        $query->when($request->integer('city_id') > 0, fn ($builder) => $builder->where('city_id', $request->integer('city_id')));
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
         $customers = $query->latest('id')->paginate($perPage)->withQueryString();
-        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
+        $groupOptions = GroupHierarchy::flatten(CustomerGroup::query()->forCompany((int) $store->company_id)->active()->with('parent')->get());
+        $governorates = Governorate::query()->active()->orderBy('sort_order')->get();
+        $cities = City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get();
 
-        return view('pages.customers.index', ['customers' => $customers, 'term' => $term, 'mode' => $mode, 'groupId' => $groupId, 'groupOptions' => $groupOptions]);
+        $status = (string) $request->string('status');
+        $governorateId = $request->integer('governorate_id') ?: null;
+        $cityId = $request->integer('city_id') ?: null;
+
+        return view('pages.customers.index', compact('customers', 'term', 'mode', 'status', 'groupId', 'governorateId', 'cityId', 'groupOptions', 'governorates', 'cities'));
     })->middleware('can:customers.view')->name('customers.index');
 
-    Route::get('customers/export', function (Request $request) use ($sellingStore) {
+    Route::get('customers/export', function (Request $request, MasterDataDocument $documents) use ($sellingStore) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('customers.export'), 403);
         $store = $sellingStore($user);
         $term = trim((string) $request->string('q'));
-        $query = Customer::query()->visibleFrom($user, (int) $store->branch_id, (int) $store->id)->where('status', 'active')->limit(500);
+        $query = Customer::query()->visibleTo($user)->with(['group.parent', 'governorate', 'city'])->limit(5000);
         if ($term !== '') {
             $digits = preg_replace('/[^0-9]+/', '', $term);
             $query->where(function ($scope) use ($term, $digits): void {
@@ -198,17 +272,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 }
             });
         }
-        $rows = $query->orderBy('id')->get(['id', 'public_id', 'phone_display', 'name_ar', 'name_en', 'email', 'status']);
-        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'customer_exported', branchId: (int) $store->branch_id, storeId: (int) $store->id, metadata: ['row_count' => $rows->count(), 'filter' => $term, 'permission' => 'customers.export', 'scope_limited' => true]);
+        $query->when($request->filled('status'), fn ($q) => $q->where('status', (string) $request->string('status')))->when($request->integer('group_id') > 0, fn ($q) => $q->where('customer_group_id', $request->integer('group_id')))->when($request->integer('governorate_id') > 0, fn ($q) => $q->where('governorate_id', $request->integer('governorate_id')))->when($request->integer('city_id') > 0, fn ($q) => $q->where('city_id', $request->integer('city_id')));
+        $customers = $query->orderBy('id')->get();
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'customer_exported', branchId: (int) $store->branch_id, storeId: (int) $store->id, metadata: ['row_count' => $customers->count(), 'filter' => $term, 'permission' => 'customers.export', 'company_scoped' => true]);
 
-        return response()->streamDownload(static function () use ($rows): void {
-            $handle = fopen('php://output', 'wb');
-            fputcsv($handle, ['public_id', 'phone', 'name_ar', 'name_en', 'email', 'status']);
-            foreach ($rows as $customer) {
-                fputcsv($handle, [$customer->public_id, $customer->phone_display, $customer->name_ar, $customer->name_en, $customer->email, $customer->status]);
-            }
-            fclose($handle);
-        }, 'customers.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        $headers = [__('Reference'), __('Phone'), __('Arabic name'), __('English name'), __('Email'), __('Group path'), __('Governorate'), __('City / locality'), __('Status')];
+        $rows = $customers->map(fn ($c) => [$c->public_id, $c->phone_display, $c->name_ar, $c->name_en, $c->email, collect([$c->group?->parent?->name_ar, $c->group?->name_ar])->filter()->join(' / '), $c->governorate?->name_ar, $c->city?->name_ar, __($c->status)]);
+
+        return $request->string('format')->value() === 'pdf' ? $documents->pdf('customers.pdf', __('Customers'), $headers, $rows) : $documents->xlsx('customers.xlsx', $headers, $rows);
     })->middleware('can:customers.export')->name('customers.export');
 
     Route::get('customers/create', function (Request $request) use ($sellingStore) {
@@ -222,15 +293,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $consentPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
         } catch (InvalidArgumentException $exception) {
-            $consentPolicyError = \App\Support\UserSafeError::message($exception);
+            $consentPolicyError = UserSafeError::message($exception);
         }
         try {
             $childPurposes = CustomerPolicy::childPurposes()['value'];
         } catch (InvalidArgumentException) {
         }
-        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
+        $allGroups = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->with('parent')->get();
+        $groupOptions = GroupHierarchy::flatten(GroupHierarchy::leaves($allGroups));
+        $governorates = Governorate::query()->active()->orderBy('sort_order')->get();
+        $cities = City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get();
 
-        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'consentPolicyError', 'groupOptions'));
+        return view('pages.customers.create', compact('store', 'consentPurposes', 'childPurposes', 'consentPolicyError', 'groupOptions', 'governorates', 'cities'));
     })->middleware('can:customers.create')->name('customers.create');
 
     Route::post('customers', function (Request $request, CreateCustomerAction $action) use ($sellingStore) {
@@ -251,6 +325,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'address_ar' => ['nullable', 'string', 'max:4000'],
             'address_en' => ['nullable', 'string', 'max:4000'],
             'customer_group_id' => ['nullable', 'integer'],
+            'governorate_id' => ['required', 'integer'],
+            'city_id' => ['required', 'integer'],
             'children' => ['nullable', 'array', 'max:10'],
             'children.*.name_ar' => ['nullable', 'string', 'max:190'],
             'children.*.name_en' => ['nullable', 'string', 'max:190'],
@@ -286,7 +362,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->first(['id', 'name_ar', 'name_en', 'phone_display']);
 
             return back()->withInput()
-                ->withErrors(['customer' => \App\Support\UserSafeError::message($exception)])
+                ->withErrors(['customer' => UserSafeError::message($exception)])
                 ->with('duplicate_candidate', $candidate?->toArray());
         }
 
@@ -299,7 +375,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('customers.view'), 403);
         $store = $sellingStore($user);
         $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
-        $customer->load(['scopes.store', 'scopes.branch']);
+        $customer->load(['scopes.store', 'scopes.branch', 'group.parent', 'governorate', 'city']);
         $historyIds = Customer::query()->where(fn ($query) => $query->whereKey($customer->id)->orWhere('merged_into_id', $customer->id))->pluck('id');
         $consents = collect();
         if ($user->can('customers.sensitive')) {
@@ -315,9 +391,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $adjustments = $user->can('loyalty.view') ? LoyaltyAdjustment::query()->visibleTo($user)->whereIn('customer_id', $historyIds)->latest('id')->limit(10)->get() : collect();
         $productWalletBalance = $user->can('product_wallet.view') ? app(ProductWalletBalance::class)->forCustomer($customer, $user) : null;
         $partyWalletBalance = $user->can('party_wallet.view') ? app(PartyWalletBalance::class)->forCustomer($customer, $user) : null;
-        $groupOptions = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('parent_id')->orderBy('name_ar')->limit(200)->get(['id', 'parent_id', 'name_ar', 'name_en']);
+        $allGroups = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->with('parent')->get();
+        $groupOptions = GroupHierarchy::flatten(GroupHierarchy::leaves($allGroups));
+        if ($customer->group && ! $groupOptions->contains('id', $customer->group->id)) {
+            $groupOptions->prepend($customer->group);
+        }
+        $governorates = Governorate::query()->active()->orderBy('sort_order')->get();
+        $cities = City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get();
 
-        return view('pages.customers.show', compact('customer', 'store', 'sales', 'partyBookings', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions'));
+        return view('pages.customers.show', compact('customer', 'store', 'sales', 'partyBookings', 'balance', 'dueExpiry', 'adjustments', 'consents', 'productWalletBalance', 'partyWalletBalance', 'groupOptions', 'governorates', 'cities'));
     })->middleware('can:customers.view')->name('customers.show');
 
     Route::put('customers/{customerId}', function (Request $request, int $customerId, UpdateCustomerAction $action) use ($sellingStore) {
@@ -337,13 +419,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'address_ar' => ['nullable', 'string', 'max:4000'],
             'address_en' => ['nullable', 'string', 'max:4000'],
             'customer_group_id' => ['nullable', 'integer'],
+            'governorate_id' => ['nullable', 'required_with:city_id', 'integer'],
+            'city_id' => ['nullable', 'required_with:governorate_id', 'integer'],
         ]);
         $store = $sellingStore($user);
         $customer = Customer::query()->visibleTo($user)->whereKey($customerId)->where('status', 'active')->firstOrFail();
         try {
             $saved = $action->execute($user, $customer, $store, $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['customer' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['customer' => UserSafeError::message($exception)]);
         }
 
         return to_route('customers.show', $saved)->with('success', __('Customer profile updated.'));
@@ -358,7 +442,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated['purpose'], $validated['status'], 'profile', 'CONSENT:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['consent' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['consent' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Consent history recorded.'));
@@ -373,7 +457,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['child' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['child' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Child profile recorded.'));
@@ -389,7 +473,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated, $child);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['child' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['child' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Child profile updated.'));
@@ -417,7 +501,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $merged = $action->execute($user, $duplicate, $survivor, $store, $validated['reason'], 'MERGE:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['merge' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['merge' => UserSafeError::message($exception)]);
         }
 
         return to_route('customers.show', $merged)->with('success', __('Customer profiles merged with history preserved.'));
@@ -485,7 +569,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $store, $sale, (int) $validated['points'], 'REDEEM:'.$validated['idempotency_key']);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['redeem' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['redeem' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty redemption recorded against the approved sale.'));
@@ -500,7 +584,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), (int) $validated['points'], $validated['reason'], 'ADJUST:'.$validated['idempotency_key'], $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['adjustment' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['adjustment' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment submitted for approval.'));
@@ -525,7 +609,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $approval, $store);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withErrors(['approval' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withErrors(['approval' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment approved and posted.'));
@@ -540,7 +624,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $approval, $validated['decision_note']);
         } catch (ValidationException|InvalidArgumentException $exception) {
-            return back()->withErrors(['approval' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withErrors(['approval' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Loyalty adjustment rejected and audited.'));
@@ -557,7 +641,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('product');
         } catch (InvalidArgumentException $exception) {
-            $policyError = \App\Support\UserSafeError::message($exception);
+            $policyError = UserSafeError::message($exception);
         }
         $adjustmentIds = ProductWalletAdjustment::query()->visibleTo($user)->where('customer_id', $customer->id)->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
         $pendingAdjustments = $user->can('product_wallet.approve') && $adjustmentIds !== []
@@ -588,7 +672,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             WalletPolicy::for('party');
         } catch (InvalidArgumentException $exception) {
-            $policyError = \App\Support\UserSafeError::message($exception);
+            $policyError = UserSafeError::message($exception);
         }
         $adjustmentIds = PartyWalletAdjustment::query()->visibleTo($user)->where('customer_id', $customer->id)->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
         $pendingAdjustments = $user->can('party_wallet.approve') && $adjustmentIds !== []
@@ -656,7 +740,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             app($action::class)->settle($user, $customer, $store, $validated['amount'], $validated['direction'], $validated['source_type'], $validated['source_id'], $validated['idempotency_key'], $validated['source_line_id'] ?? null, $validated['reference'] ?? null, $validated['reason'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['wallet' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Product Wallet settlement posted.'));
@@ -672,7 +756,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->settle($user, $customer, $store, $validated['amount'], $validated['direction'], $validated['source_type'], $validated['source_id'], $validated['idempotency_key'], $validated['source_line_id'] ?? null, $validated['reference'] ?? null, $validated['reason'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['wallet' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party Wallet settlement posted.'));
@@ -687,7 +771,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $sellingStore($user), $validated['operation'], $validated['amount'], $validated['source_type'], $validated['source_id'], $validated['reason'], $validated['idempotency_key'], $validated['target_ledger_id'] ?? null, $validated['source_line_id'] ?? null, $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['wallet' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Product Wallet adjustment submitted for approval.'));
@@ -703,7 +787,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         try {
             $action->execute($user, $customer, $store, $validated['operation'], $validated['amount'], $validated['source_type'], $validated['source_id'], $validated['reason'], $validated['idempotency_key'], $validated['target_ledger_id'] ?? null, $validated['source_line_id'] ?? null, $validated['source_reference'] ?? null);
         } catch (InvalidArgumentException|ValidationException $exception) {
-            return back()->withInput()->withErrors(['wallet' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['wallet' => UserSafeError::message($exception)]);
         }
 
         return back()->with('success', __('Party Wallet adjustment submitted for approval.'));
@@ -742,7 +826,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'purpose' => $validated['consent_purpose'], 'status' => 'granted', 'source' => 'pos',
             ]]]);
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->withErrors(['customer' => \App\Support\UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['customer' => UserSafeError::message($exception)]);
         }
         $request->session()->put('pos.customer_id', $customer->id);
 

@@ -52,9 +52,12 @@
                             </div>
                         </div>
 
-                        <div class="rounded-xl border border-border bg-surface p-4">
+                        <div class="rounded-xl border border-border bg-surface p-4" x-data="{ governorate: @js((string) old('governorate_id', '')), city: @js((string) old('city_id', '')), cityCounts: @js($cities->countBy('governorate_id')->mapWithKeys(fn($count,$id)=>[(string)$id=>$count])) }">
                             <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Address') }}</p>
                             <div class="grid gap-4 sm:grid-cols-2">
+                                <flux:select name="governorate_id" x-model="governorate" x-on:change="city = ''" :label="__('Governorate')" required><flux:select.option value="">{{ __('Select governorate') }}</flux:select.option>@foreach($governorates as $governorate)<flux:select.option value="{{ $governorate->id }}">{{ app()->getLocale()==='ar' ? $governorate->name_ar : $governorate->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <flux:select name="city_id" x-model="city" :label="__('City / locality')" required><flux:select.option value="">{{ __('Select city / locality') }}</flux:select.option>@foreach($cities as $city)<flux:select.option value="{{ $city->id }}" x-show="governorate === '{{ $city->governorate_id }}'">{{ app()->getLocale()==='ar' ? $city->name_ar : $city->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <p class="sm:col-span-2 text-sm text-amber-700" x-cloak x-show="governorate && !cityCounts[governorate]">{{ __('No active city/locality exists for this governorate.') }} @can('company_settings.edit')<a class="font-semibold underline" href="{{ route('admin.settings.cities') }}">{{ __('Manage cities') }}</a>@endcan</p>
                                 <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar')" dir="rtl" />
                                 <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en')" dir="ltr" />
                             </div>

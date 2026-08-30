@@ -1,18 +1,18 @@
-# Current Task — v0.1.16 Setup and Administration Foundation
+# Current Task — M51 v0.1.17 Customer and Supplier Data Management
 
-**Date:** 2026-08-29
-**Branch:** `feature/v0.1.16-setup-admin-foundation`
-**Baseline:** published `v0.1.15` commit `4b385aa081d390c9a5ba3620072423f1e7f46c6c`
+**Date:** 2026-08-30
+**Branch:** `feature/v0.1.17-customer-supplier-data`
+**Baseline:** published `v0.1.16` commit `0fc39754d5279286a35c00b824e0b59399c7a567`
 
 ## Scope
 
-- One authoritative, permission-filtered 21-step Setup sequence: 5 Basics, 5 Settings, 11 Operational Readiness.
-- Persistent direct-route Setup context, factual readiness reasons, and append-only company-scoped skip/defer decisions.
-- Separate Save and navigation controls in Settings; exact loading targets and no implicit save on navigation.
-- Supplier readiness based only on an active supplier with an active financial-settlement method.
-- Idempotent least-privilege Cashier role template using existing permissions and existing location scopes.
-- Shared Save labels on representative create/edit forms; route-specific list actions remain unchanged.
+- Hierarchical customer and supplier groups with stable codes, leaf-only new customer assignments, filtering, and counts.
+- Company-wide customer identity with canonical phone normalization and structured Egyptian residence geography.
+- Company-scoped city administration over shared canonical governorates.
+- Fixed supplier financial-settlement methods and readiness based only on an active configured supplier.
+- Staged, auditable XLSX imports with partial valid-row acceptance and downloadable rejection workbooks.
+- Filter-preserving XLSX/PDF exports for customer groups, customers, supplier groups, and suppliers.
 
 ## Verification directive
 
-Focused unit coverage is owner-authorized for sequence, continuation decisions, direct-route resolution, and Cashier boundaries. The owner-authorized genuine browser pass completed against the loopback-only guarded renderer with task-local writable runtime paths and the shared environment referenced in place. Database access was GET/HEAD-only, session-transaction read-only, write-statement rejected, and rolled back at request termination.
+The owner authorized the focused M51 PHPUnit file and one genuine authenticated Arabic/English desktop/mobile browser pass against a disposable task-local MariaDB runtime. Production/shared data and runtime remain prohibited.

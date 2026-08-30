@@ -15,11 +15,11 @@ use LogicException;
 final class SupplierGroup extends Model
 {
     protected $fillable = [
-        'company_id', 'parent_id', 'name_ar', 'name_en', 'status',
+        'company_id', 'parent_id', 'code', 'name_ar', 'name_en', 'sort_order', 'status',
         'created_by', 'updated_by', 'lock_version',
     ];
 
-    protected $casts = ['lock_version' => 'integer'];
+    protected $casts = ['lock_version' => 'integer', 'sort_order' => 'integer'];
 
     protected static function booted(): void
     {

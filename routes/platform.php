@@ -3,16 +3,21 @@
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Actions\ExportAuditLogs;
 use App\Modules\Platform\Actions\RecordSetupDecision;
+use App\Modules\Platform\Actions\SaveCityAction;
 use App\Modules\Platform\Http\Controllers\DashboardAssistantController;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Models\City;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\PrinterConfiguration;
-use App\Modules\Platform\Support\TutorialRegistry;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Queries\AdministrationDashboard;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use App\Modules\Platform\Support\SetupContinuation;
+use App\Modules\Platform\Support\TutorialRegistry;
 use App\Modules\Platform\Support\UserFlowRegistry;
 use App\Modules\Platform\Support\WorkContext;
-use App\Modules\Platform\Queries\AdministrationDashboard;
+use App\Support\UserSafeError;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -59,6 +64,36 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ->middleware('can:company_settings.view')->name('admin.overview');
     $router->livewire('admin/translations', 'platform::admin.translation-editor')->middleware('can:company_settings.edit')->name('admin.translations');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
+    $router->get('admin/settings/cities', function (Request $request) {
+        $companyId = (int) Store::query()->visibleTo($request->user())->where('status', 'active')->value('company_id');
+        abort_if($companyId < 1, 404);
+        $cities = City::query()->visibleToCompany($companyId)->with('governorate')->when($request->filled('q'), fn ($query) => $query->where(fn ($scope) => $scope->where('name_ar', 'like', '%'.trim((string) $request->q).'%')->orWhere('name_en', 'like', '%'.trim((string) $request->q).'%')->orWhere('code', 'like', '%'.trim((string) $request->q).'%')))->orderBy('governorate_id')->orderBy('sort_order')->paginate(30)->withQueryString();
+        $governorates = Governorate::query()->active()->orderBy('sort_order')->get();
+
+        return view('platform.admin.cities', compact('cities', 'governorates'));
+    })->middleware('can:company_settings.view')->name('admin.settings.cities');
+    $router->post('admin/settings/cities', function (Request $request, SaveCityAction $action) {
+        $companyId = (int) Store::query()->visibleTo($request->user())->where('status', 'active')->value('company_id');
+        $data = $request->validate(['governorate_id' => 'required|integer', 'code' => 'required|alpha_dash:ascii|max:50', 'name_ar' => 'required|string|max:120', 'name_en' => 'required|string|max:120', 'sort_order' => 'nullable|integer|min:0', 'status' => 'required|in:active,inactive']);
+        try {
+            $action->execute($companyId, $data);
+        } catch (Throwable $e) {
+            return back()->withInput()->withErrors(['city' => UserSafeError::message($e)]);
+        }
+
+        return back()->with('success', __('City / locality saved.'));
+    })->middleware('can:company_settings.edit')->name('admin.settings.cities.store');
+    $router->put('admin/settings/cities/{city}', function (Request $request, City $city, SaveCityAction $action) {
+        $companyId = (int) Store::query()->visibleTo($request->user())->where('status', 'active')->value('company_id');
+        $data = $request->validate(['governorate_id' => 'required|integer', 'code' => 'required|alpha_dash:ascii|max:50', 'name_ar' => 'required|string|max:120', 'name_en' => 'required|string|max:120', 'sort_order' => 'nullable|integer|min:0', 'status' => 'required|in:active,inactive']);
+        try {
+            $action->execute($companyId, $data, $city);
+        } catch (Throwable $e) {
+            return back()->withInput()->withErrors(['city' => UserSafeError::message($e)]);
+        }
+
+        return back()->with('success', __('City / locality saved.'));
+    })->middleware('can:company_settings.edit')->name('admin.settings.cities.update');
     foreach ([
         'admin/company' => 'company',
         'admin/payment-methods' => 'payments',

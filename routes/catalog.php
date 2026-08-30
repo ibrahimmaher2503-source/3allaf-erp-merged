@@ -1,11 +1,16 @@
 <?php
 
 use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
+use App\Modules\Catalog\Actions\StageCatalogReferenceImportAction;
+use App\Modules\Catalog\Actions\StageSupplierImportAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
-use App\Modules\Catalog\Actions\StageSupplierImportAction;
+use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Models\SupplierImportBatch;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Models\Store;
+use App\Support\DataExchange\MasterDataDocument;
 use Illuminate\Support\Facades\Gate;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\Common\Creator\WriterFactory;
@@ -94,10 +99,36 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->livewire('catalog/suppliers/import', 'catalog::supplier-import')
         ->middleware('can:suppliers.create')->name('catalog.suppliers.import');
-    $router->get('catalog/suppliers/import/template', function () {
-        $path = tempnam(storage_path('app'), 'supplier-import-').'.xlsx'; $writer = WriterFactory::createFromFile($path); $writer->openToFile($path); $writer->addRow(Row::fromValues(StageSupplierImportAction::templateHeaders())); $writer->close();
-        return response()->download($path, 'supplier-import-template.xlsx')->deleteFileAfterSend(true);
+    $router->get('catalog/suppliers/import/template', function (MasterDataDocument $documents) {
+        return $documents->xlsx('supplier-import-template.xlsx', StageSupplierImportAction::templateHeaders(), [['SUP-0001', 'شركة التوريد', 'Supply Co', 'أحمد', 'supplier@example.com', '01012345678', '', '', 'cash', '', '', 'active', 'LOCAL']], [[__('Instructions')], [__('Settlement values: cash, cheques, installments, trust_deposits, other. Other requires a description. Groups resolve by stable code.')]]);
     })->middleware('can:suppliers.create')->name('catalog.suppliers.import.template');
+    $router->get('catalog/suppliers/import/{batch}/rejections', function (SupplierImportBatch $batch, MasterDataDocument $documents) {
+        $companyIds = Store::query()->visibleTo(auth()->user())->select('company_id');
+        abort_unless(SupplierImportBatch::query()->whereKey($batch->id)->whereIn('company_id', $companyIds)->exists()
+            && ((int) $batch->created_by === (int) auth()->id() || auth()->user()->can('suppliers.edit')), 404);
+        $headers = [__('Original row'), ...StageSupplierImportAction::HEADERS, __('Rejection reason')];
+        $rows = $batch->rows()->where('status', 'invalid')->orderBy('row_number')->get()->map(fn ($row) => [$row->row_number, ...array_map(fn ($field) => $row->raw_data[$field] ?? '', StageSupplierImportAction::HEADERS), collect($row->errors)->join(' | ')]);
+
+        return $documents->xlsx('supplier-import-rejections-'.$batch->id.'.xlsx', $headers, $rows);
+    })->middleware('can:suppliers.view')->name('catalog.suppliers.import.rejections');
+    $router->get('catalog/suppliers/export/{format}', function (string $format, MasterDataDocument $documents) {
+        abort_unless(in_array($format, ['xlsx', 'pdf'], true), 404);
+        $query = Supplier::query()->with('supplierGroup.parent')->limit(5000);
+        $term = trim((string) request('q'));
+        if ($term !== '') {
+            $query->where(fn ($q) => $q->where('code', 'like', '%'.$term.'%')->orWhere('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%')->orWhere('phone', 'like', '%'.$term.'%'));
+        }
+        if (in_array(request('status'), ['active', 'inactive'], true)) {
+            $query->where('status', request('status'));
+        }
+        if ((int) request('group_id') > 0) {
+            $query->whereHas('supplierGroup', fn ($group) => $group->whereKey((int) request('group_id')));
+        }
+        $headers = [__('Code'), __('Arabic name'), __('English name'), __('Phone'), __('Email'), __('Group path'), __('Supplier Settlement Method'), __('Payment terms'), __('Status')];
+        $rows = $query->get()->map(fn ($s) => [$s->code, $s->name_ar, $s->name_en, $s->phone, $s->email, collect([$s->supplierGroup?->parent?->name_ar, $s->supplierGroup?->name_ar])->filter()->join(' / '), __($s->settlement_method), $s->payment_terms, __($s->status)]);
+
+        return $format === 'pdf' ? $documents->pdf('suppliers.pdf', __('Suppliers'), $headers, $rows) : $documents->xlsx('suppliers.xlsx', $headers, $rows);
+    })->middleware('can:suppliers.view')->name('catalog.suppliers.export');
 
     $router->livewire('catalog/reference-import', 'catalog::reference-import')
         ->middleware('can:products_categories_brands.create')
@@ -105,7 +136,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->get('catalog/reference-import/template/{type}', function (string $type) {
         abort_unless(in_array($type, ['category', 'brand', 'age', 'character', 'colour', 'gender'], true), 404);
 
-        $path = tempnam(storage_path('app'), "{$type}-import-").'.xlsx'; $writer = WriterFactory::createFromFile($path); $writer->openToFile($path); $writer->addRow(Row::fromValues(\App\Modules\Catalog\Actions\StageCatalogReferenceImportAction::templateHeaders($type))); $writer->close();
+        $path = tempnam(storage_path('app'), "{$type}-import-").'.xlsx';
+        $writer = WriterFactory::createFromFile($path);
+        $writer->openToFile($path);
+        $writer->addRow(Row::fromValues(StageCatalogReferenceImportAction::templateHeaders($type)));
+        $writer->close();
+
         return response()->download($path, "{$type}-import-template.xlsx")->deleteFileAfterSend(true);
     })->middleware('can:products_categories_brands.create')->name('catalog.reference-import.template');
 

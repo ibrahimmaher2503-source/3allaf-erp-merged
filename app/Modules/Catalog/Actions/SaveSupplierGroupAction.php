@@ -21,6 +21,8 @@ final class SaveSupplierGroupAction
 
         $nameAr = trim((string) ($data['name_ar'] ?? ''));
         $nameEn = trim((string) ($data['name_en'] ?? ''));
+        $code = strtoupper(trim((string) ($data['code'] ?? '')));
+        $sortOrder = max(0, (int) ($data['sort_order'] ?? 0));
         $status = (string) ($data['status'] ?? 'active');
         $parentId = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
 
@@ -35,7 +37,7 @@ final class SaveSupplierGroupAction
         }
 
         try {
-            return DB::transaction(function () use ($companyId, $id, $nameAr, $nameEn, $status, $parentId): SupplierGroup {
+            return DB::transaction(function () use ($companyId, $id, $nameAr, $nameEn, $code, $sortOrder, $status, $parentId): SupplierGroup {
                 $actorId = Auth::id();
                 $group = $id === null
                     ? null
@@ -69,8 +71,10 @@ final class SaveSupplierGroupAction
                 $attributes = [
                     'company_id' => $companyId,
                     'parent_id' => $parent?->id,
+                    'code' => $code,
                     'name_ar' => $nameAr,
                     'name_en' => $nameEn !== '' ? $nameEn : null,
+                    'sort_order' => $sortOrder,
                     'status' => $status,
                     'updated_by' => $actorId,
                 ];

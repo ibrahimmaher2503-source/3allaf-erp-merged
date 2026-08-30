@@ -24,6 +24,8 @@ final class UpdateCustomerGroupAction
 
         $nameAr = trim((string) ($data['name_ar'] ?? $group->name_ar));
         $nameEn = trim((string) ($data['name_en'] ?? $group->name_en));
+        $code = strtoupper(trim((string) ($data['code'] ?? $group->code ?? '')));
+        $sortOrder = max(0, (int) ($data['sort_order'] ?? $group->sort_order ?? 0));
         $status = (string) ($data['status'] ?? $group->status);
         if ($nameAr === '' || $nameEn === '') {
             throw new InvalidArgumentException(__('Customer group Arabic and English names are required.'));
@@ -38,7 +40,7 @@ final class UpdateCustomerGroupAction
         }
 
         try {
-            return DB::transaction(function () use ($actor, $group, $store, $nameAr, $nameEn, $status, $parentId): CustomerGroup {
+            return DB::transaction(function () use ($actor, $group, $store, $nameAr, $nameEn, $code, $sortOrder, $status, $parentId): CustomerGroup {
                 $locked = CustomerGroup::query()->forCompany((int) $store->company_id)->lockForUpdate()->findOrFail($group->id);
                 $parent = $parentId === null
                     ? null
@@ -63,8 +65,10 @@ final class UpdateCustomerGroupAction
                 $before = $locked->only(['parent_id', 'name_ar', 'name_en', 'status', 'lock_version']);
                 $locked->fill([
                     'parent_id' => $parent?->id,
+                    'code' => $code,
                     'name_ar' => $nameAr,
                     'name_en' => $nameEn,
+                    'sort_order' => $sortOrder,
                     'status' => $status,
                     'updated_by' => $actor->id,
                     'lock_version' => ((int) $locked->lock_version) + 1,

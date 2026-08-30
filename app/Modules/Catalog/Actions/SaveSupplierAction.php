@@ -5,9 +5,9 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
+use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Models\PaymentMethod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -60,15 +60,13 @@ class SaveSupplierAction
                 throw new InvalidArgumentException(__('The selected supplier group is not available in the active company.'));
             }
 
-            $preferredPaymentMethodId = filled($data['preferred_payment_method_id'] ?? null) ? (int) $data['preferred_payment_method_id'] : null;
-            if ($preferredPaymentMethodId === null) {
+            $settlementMethod = trim((string) ($data['settlement_method'] ?? ''));
+            if (! SupplierSettlementMethod::isValid($settlementMethod)) {
                 throw new InvalidArgumentException(__('Select an active supplier financial-settlement method.'));
             }
-            $preferredPaymentMethod = $preferredPaymentMethodId === null
-                ? null
-                : PaymentMethod::query()->where('status', 'active')->lockForUpdate()->find($preferredPaymentMethodId);
-            if ($preferredPaymentMethodId !== null && $preferredPaymentMethod === null) {
-                throw new InvalidArgumentException(__('The selected payment method is not active.'));
+            $settlementOther = filled($data['settlement_other_description'] ?? null) ? trim((string) $data['settlement_other_description']) : null;
+            if ($settlementMethod === 'other' && $settlementOther === null) {
+                throw new InvalidArgumentException(__('Describe the supplier settlement method when Other is selected.'));
             }
 
             $attributes = [
@@ -81,7 +79,8 @@ class SaveSupplierAction
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
                 'tax_number' => ! empty($data['tax_number']) ? trim((string) $data['tax_number']) : null,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
-                'preferred_payment_method_id' => $preferredPaymentMethod?->id,
+                'settlement_method' => $settlementMethod,
+                'settlement_other_description' => $settlementMethod === 'other' ? $settlementOther : null,
                 'address' => ! empty($data['address']) ? trim((string) $data['address']) : null,
                 'status' => $status,
                 'supplier_group_id' => $supplierGroup?->id,
@@ -95,7 +94,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -108,7 +107,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'preferred_payment_method_id', 'address', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

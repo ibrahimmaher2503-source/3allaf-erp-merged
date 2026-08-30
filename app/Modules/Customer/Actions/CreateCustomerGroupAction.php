@@ -23,6 +23,8 @@ final class CreateCustomerGroupAction
 
         $nameAr = trim((string) ($data['name_ar'] ?? ''));
         $nameEn = trim((string) ($data['name_en'] ?? ''));
+        $code = strtoupper(trim((string) ($data['code'] ?? '')));
+        $sortOrder = max(0, (int) ($data['sort_order'] ?? 0));
         if ($nameAr === '' || $nameEn === '') {
             throw new InvalidArgumentException(__('Customer group Arabic and English names are required.'));
         }
@@ -30,7 +32,7 @@ final class CreateCustomerGroupAction
         $parentId = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
 
         try {
-            return DB::transaction(function () use ($actor, $store, $nameAr, $nameEn, $parentId): CustomerGroup {
+            return DB::transaction(function () use ($actor, $store, $nameAr, $nameEn, $code, $sortOrder, $parentId): CustomerGroup {
                 $parent = $parentId === null
                     ? null
                     : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->lockForUpdate()->find($parentId);
@@ -47,8 +49,10 @@ final class CreateCustomerGroupAction
                 $group = CustomerGroup::query()->create([
                     'company_id' => $store->company_id,
                     'parent_id' => $parent?->id,
+                    'code' => $code,
                     'name_ar' => $nameAr,
                     'name_en' => $nameEn,
+                    'sort_order' => $sortOrder,
                     'status' => 'active',
                     'created_by' => $actor->id,
                     'updated_by' => $actor->id,

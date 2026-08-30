@@ -45,7 +45,7 @@
                             </div>
                             <span class="font-mono text-xs text-slate-500" dir="ltr">{{ $customer->public_id }}</span>
                         </div>
-                        <form method="POST" action="{{ route('customers.update', $customer) }}" class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <form method="POST" action="{{ route('customers.update', $customer) }}" class="mt-4 grid gap-4 sm:grid-cols-2" x-data="{ governorate: @js((string) old('governorate_id',$customer->governorate_id)), city: @js((string) old('city_id',$customer->city_id)), cityCounts: @js($cities->countBy('governorate_id')->mapWithKeys(fn($count,$id)=>[(string)$id=>$count])) }">
                             @csrf
                             @method('PUT')
                             <flux:input name="phone" :label="__('Primary phone')" :value="old('phone', $customer->phone_display)" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.')" dir="ltr" />
@@ -62,11 +62,13 @@
                             </flux:select>
                             @can('customers.sensitive')
                                 <flux:input name="email" :label="__('Email')" :value="old('email', $customer->email)" type="email" autocomplete="email" />
-                                <div></div>
+                                <flux:select name="governorate_id" x-model="governorate" x-on:change="city=''" :label="__('Governorate')"><flux:select.option value="">{{ __('Legacy — not recorded') }}</flux:select.option>@foreach($governorates as $g)<flux:select.option value="{{ $g->id }}">{{ app()->getLocale()==='ar'?$g->name_ar:$g->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <flux:select name="city_id" x-model="city" :label="__('City / locality')"><flux:select.option value="">{{ __('Legacy — not recorded') }}</flux:select.option>@foreach($cities as $city)<flux:select.option value="{{ $city->id }}" x-show="governorate === '{{ $city->governorate_id }}'">{{ app()->getLocale()==='ar'?$city->name_ar:$city->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <p class="sm:col-span-2 text-sm text-amber-700" x-cloak x-show="governorate && !cityCounts[governorate]">{{ __('No active city/locality exists for this governorate.') }} @can('company_settings.edit')<a class="font-semibold underline" href="{{ route('admin.settings.cities') }}">{{ __('Manage cities') }}</a>@endcan</p>
                                 <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar', $customer->address_ar)" dir="rtl" />
                                 <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en', $customer->address_en)" dir="ltr" />
                             @endcan
-                            <div class="sm:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('Save customer changes') }}</flux:button></div>
+                            <div class="sm:col-span-2 flex justify-end"><flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button></div>
                         </form>
                     </section>
                 @else
@@ -107,7 +109,7 @@
 
                 @can('customers.sensitive')
                     <section class="grid gap-6 xl:grid-cols-2">
-                        <div class="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20">
+                        @if(false)<div class="hidden rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20" aria-hidden="true">
                             <flux:heading size="lg">{{ __('Consent history') }}</flux:heading>
                             <div class="mt-4 space-y-3">
                                 @forelse ($consents as $consent)
@@ -126,7 +128,7 @@
                                 <flux:select name="status" :label="__('Consent response')" :description="__('Granted, withdrawn, or denied.')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select>
                                 <div class="flex items-end"><flux:button type="submit" variant="subtle">{{ __('Record consent') }}</flux:button></div>
                             </form>
-                        </div>
+                        </div>@endif
                         <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
                             <flux:heading size="lg">{{ __('Child profiles') }}</flux:heading>
                             <flux:text class="mt-1 text-sm">{{ __('Purpose-scoped child data is kept separate and is never included in a normal customer export.') }}</flux:text>
@@ -182,18 +184,18 @@
                     </section>
                 @endcan
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <flux:heading size="lg">{{ __('Scope and privacy') }}</flux:heading>
+                    <flux:heading size="lg">{{ __('Creation source metadata') }}</flux:heading>
                     <dl class="mt-4 space-y-3 text-sm">
                         <div><dt class="text-xs font-semibold text-slate-500">{{ __('Selling store') }}</dt><dd class="mt-1">{{ $storeName }}</dd></div>
-                        <div><dt class="text-xs font-semibold text-slate-500">{{ __('Scope records') }}</dt><dd class="mt-1">{{ $customer->scopes->count() }}</dd></div>
+                        <div><dt class="text-xs font-semibold text-slate-500">{{ __('Creation source records') }}</dt><dd class="mt-1">{{ $customer->scopes->count() }}</dd></div>
                         @can('customers.sensitive')
                             <div><dt class="text-xs font-semibold text-slate-500">{{ __('Email') }}</dt><dd class="mt-1 break-all">{{ $customer->email ?? __('Not recorded') }}</dd></div>
                             <div><dt class="text-xs font-semibold text-slate-500">{{ __('Arabic address') }}</dt><dd class="mt-1" dir="rtl">{{ $customer->address_ar ?? __('Not recorded') }}</dd></div>
                         @endcan
                     </dl>
                 </section>
-                @can('customers.merge')
-                    <section class="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 shadow-sm dark:border-rose-900 dark:bg-rose-950/20">
+                @if(false) @can('customers.merge')
+                    <section class="hidden rounded-2xl border border-rose-200 bg-rose-50/50 p-5 shadow-sm dark:border-rose-900 dark:bg-rose-950/20" aria-hidden="true">
                         <flux:heading size="lg">{{ __('Controlled merge') }}</flux:heading>
                         <flux:text class="mt-1 text-sm">{{ __('Merging is blocked when the duplicate has sales, loyalty, or child history. It is never an automatic duplicate resolution.') }}</flux:text>
                         <form method="POST" action="{{ route('customers.merge', $customer) }}" class="mt-4 space-y-3">
@@ -204,7 +206,7 @@
                             <flux:button type="submit" variant="danger">{{ __('Submit controlled merge') }}</flux:button>
                         </form>
                     </section>
-                @endcan
+                @endcan @endif
             </aside>
         </div>
     </div>

@@ -26,6 +26,8 @@ class Supplier extends Model
         'tax_number',
         'payment_terms',
         'preferred_payment_method_id',
+        'settlement_method',
+        'settlement_other_description',
         'address',
         'status',
         'supplier_group_id',

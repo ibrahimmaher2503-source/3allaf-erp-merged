@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
+use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Inventory\Models\InventoryAdjustment;
@@ -22,8 +23,8 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\SetupDecision;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
@@ -68,7 +69,7 @@ final class InitialSetupStatus
             $this->step('customers', __('Customers'), __('Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.'), 'customers.index', 'customers.view', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords, required: false),
             $this->step('party-readiness', __('Party readiness and policies'), __('Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.'), 'party.readiness', 'party_bookings_invoices.view', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.'), required: false),
             $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
-            $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and select an active financial-settlement method for it.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
+            $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
             $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
             $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding product cards.')),
             $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
@@ -133,7 +134,11 @@ final class InitialSetupStatus
         return Branch::query()->where('status', 'active')->exists();
     }
 
-    private function warehousesReady(): bool { return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists(); }
+    private function warehousesReady(): bool
+    {
+        return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+    }
+
     private function retailBranchesHaveOneCurrentValidSellingStoreMapping(): bool
     {
         $retailBranchIds = Branch::query()
@@ -158,6 +163,7 @@ final class InitialSetupStatus
             && $retailBranchIds->count() === $currentMappingCounts->count()
             && $currentMappingCounts->every(static fn (int|string $count): bool => (int) $count === 1);
     }
+
     private function cashDrawersReady(): bool
     {
         return CashDrawer::query()
@@ -174,11 +180,31 @@ final class InitialSetupStatus
                 ->whereColumn('branch_selling_stores.store_id', 'cash_drawers.store_id'))
             ->exists();
     }
-    private function paymentMethodsReady(): bool { return PaymentMethod::query()->where('status', 'active')->exists(); }
-    private function taxesReady(): bool { return TaxSetting::query()->where('status', 'active')->exists(); }
-    private function documentSequencesReady(): bool { return DocumentSequence::query()->where('status', 'active')->exists(); }
-    private function printersReady(): bool { return PrinterConfiguration::query()->where('status', 'active')->exists(); }
-    private function printTemplatesReady(): bool { return PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->exists(); }
+
+    private function paymentMethodsReady(): bool
+    {
+        return PaymentMethod::query()->where('status', 'active')->exists();
+    }
+
+    private function taxesReady(): bool
+    {
+        return TaxSetting::query()->where('status', 'active')->exists();
+    }
+
+    private function documentSequencesReady(): bool
+    {
+        return DocumentSequence::query()->where('status', 'active')->exists();
+    }
+
+    private function printersReady(): bool
+    {
+        return PrinterConfiguration::query()->where('status', 'active')->exists();
+    }
+
+    private function printTemplatesReady(): bool
+    {
+        return PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->exists();
+    }
 
     /** @return list<array<string, mixed>> */
     private function ownerDecisions(): array
@@ -217,12 +243,14 @@ final class InitialSetupStatus
     {
         $administrator = User::query()->where('status', 'active')->where('is_super_admin', true)->whereHas('roles', fn (Builder $query): Builder => $query->where('roles.code', 'system-administrator')->where('roles.status', 'active'))->exists();
         $unscoped = User::query()->where('status', 'active')->where('is_super_admin', false)->where(fn (Builder $query): Builder => $query->whereDoesntHave('roles', fn (Builder $role): Builder => $role->where('roles.status', 'active'))->orWhere(fn (Builder $scope): Builder => $scope->whereDoesntHave('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active'))->whereDoesntHave('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active'))))->exists();
+
         return $administrator && ! $unscoped;
     }
 
     private function catalogReady(): bool
     {
         $broken = Product::query()->whereNull('parent_product_id')->where('has_variations', true)->where('status', 'active')->whereDoesntHave('variants', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+
         return Category::query()->where('status', 'active')->exists() && Product::query()->sellable()->exists() && ! $broken;
     }
 
@@ -230,17 +258,23 @@ final class InitialSetupStatus
     {
         return Supplier::query()
             ->where('status', 'active')
-            ->whereNotNull('preferred_payment_method_id')
-            ->whereHas('preferredPaymentMethod', fn (Builder $query): Builder => $query->where('status', 'active'))
+            ->whereIn('settlement_method', SupplierSettlementMethod::VALUES)
+            ->where(fn (Builder $query): Builder => $query->where('settlement_method', '!=', 'other')->orWhereNotNull('settlement_other_description'))
             ->exists();
     }
 
     private function pricesReady(): bool
     {
-        return PriceLine::query()->whereHas('version', function (Builder $query): void { $query->where('state', PriceVersionState::Approved->value)->where(fn (Builder $from): Builder => $from->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn (Builder $to): Builder => $to->whereNull('effective_to')->orWhere('effective_to', '>', now())); })->whereHas('product', fn (Builder $query): Builder => $query->sellable())->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+        return PriceLine::query()->whereHas('version', function (Builder $query): void {
+            $query->where('state', PriceVersionState::Approved->value)->where(fn (Builder $from): Builder => $from->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn (Builder $to): Builder => $to->whereNull('effective_to')->orWhere('effective_to', '>', now()));
+        })->whereHas('product', fn (Builder $query): Builder => $query->sellable())->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
     }
 
-    private function openingInventoryReady(): bool { return InventoryAdjustment::query()->where('status', 'approved')->where('adjustment_type', 'entry')->whereIn('reason_code', ['opening_stock', 'opening_inventory'])->whereNull('reversal_of_id')->exists(); }
+    private function openingInventoryReady(): bool
+    {
+        return InventoryAdjustment::query()->where('status', 'approved')->where('adjustment_type', 'entry')->whereIn('reason_code', ['opening_stock', 'opening_inventory'])->whereNull('reversal_of_id')->exists();
+    }
+
     private function customerConsentPolicyRecords(): int
     {
         return collect(['customer.consent.purpose', 'customer.consent.wording', 'customer.consent.retention'])

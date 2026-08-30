@@ -6,6 +6,8 @@ namespace App\Modules\Customer\Models;
 
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\City;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,8 +23,8 @@ final class Customer extends Model
 
     protected $fillable = [
         'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email',
-        'secondary_phone', 'address_ar', 'address_en', 'status', 'merged_into_id',
-        'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'customer_group_id', 'idempotency_key', 'lock_version',
+        'secondary_phone', 'secondary_phone_normalized', 'address_ar', 'address_en', 'status', 'merged_into_id',
+        'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'customer_group_id', 'governorate_id', 'city_id', 'idempotency_key', 'lock_version',
     ];
 
     protected $casts = [
@@ -52,6 +54,16 @@ final class Customer extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(CustomerGroup::class, 'customer_group_id');
+    }
+
+    public function governorate(): BelongsTo
+    {
+        return $this->belongsTo(Governorate::class);
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
     }
 
     /** @return BelongsTo<User, $this> */
@@ -151,15 +163,9 @@ final class Customer extends Model
             return $query;
         }
 
-        $branchIds = $user->branchScopes()->where('status', 'active')->select('branch_id');
-        $storeIds = $user->storeScopes()->where('status', 'active')->select('store_id');
+        $companyIds = Store::query()->visibleTo($user)->select('company_id');
 
-        return $query->whereHas('scopes', function (Builder $scope) use ($branchIds, $storeIds): void {
-            $scope->where(function (Builder $visible) use ($branchIds, $storeIds): void {
-                $visible->whereIn('branch_id', $branchIds)
-                    ->orWhereIn('store_id', $storeIds);
-            });
-        });
+        return $query->whereHas('createdStore', fn (Builder $store): Builder => $store->whereIn('company_id', $companyIds));
     }
 
     /**
@@ -168,21 +174,12 @@ final class Customer extends Model
      */
     public function scopeVisibleFrom(Builder $query, User $user, int $branchId, ?int $storeId = null): Builder
     {
-        if ($user->is_super_admin) {
-            return $query->whereHas('scopes', function (Builder $scope) use ($branchId, $storeId): void {
-                $scope->where(function (Builder $visible) use ($branchId, $storeId): void {
-                    $visible->where('branch_id', $branchId)->orWhere('store_id', $storeId);
-                });
-            });
-        }
+        abort_unless($user->is_super_admin || $user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
+        $companyId = $storeId !== null
+            ? Store::query()->whereKey($storeId)->value('company_id')
+            : Branch::query()->whereKey($branchId)->value('company_id');
 
-        abort_unless($user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
-
-        return $query->whereHas('scopes', function (Builder $scope) use ($branchId, $storeId): void {
-            $scope->where(function (Builder $visible) use ($branchId, $storeId): void {
-                $visible->where('branch_id', $branchId)->orWhere('store_id', $storeId);
-            });
-        });
+        return $query->whereHas('createdStore', fn (Builder $store): Builder => $store->where('company_id', $companyId));
     }
 
     /** @param array<string, mixed> $attributes */

@@ -1,10 +1,8 @@
-# Active Milestone — v0.1.16 Setup, Navigation, Settings, Role and Form Actions
+# Active Milestone — M51 v0.1.17 Customer and Supplier Data Management
 
-**Date:** 2026-08-29
+**Date:** 2026-08-30
 **Status:** Complete in development; validated and committed pending owner review.
 
-The milestone removes Product Import as a standalone Setup step while retaining import inside Product Cards, centralizes route ownership and continuation for exactly 21 steps, records auditable skip/defer decisions, separates Settings persistence from navigation, clarifies Product Cards/Product Filters, enforces the supplier settlement readiness condition, and supplies a scoped Cashier role template.
+M51 adds one additive customer/supplier data-management migration, hierarchical master-data presentation, canonical phone identity, Egyptian residence references, tenant city administration, fixed supplier settlement methods, and staged XLSX/PDF exchange. Existing legacy root-group assignments, incomplete legacy residence records, consent/merge history, supplier-product links, and historical payment references remain intact.
 
-One additive append-only `setup_decisions` migration is the smallest available persistence mechanism. No existing business schema, route identifier, calculation, policy, financial posting, or transaction ownership is changed.
-
-Genuine Arabic/English desktop and mobile evidence passed for the 21-step Setup Center, persistent direct-route context, list/create/edit/detail ownership, dual Settings navigation, factual readiness guidance, Cashier template summary, Save actions, Cairo, direction, overflow, and idle loading. The focused evidence record contains zero serious/critical Axe findings, console errors, or external requests.
+Focused tests and genuine isolated rendering cover hierarchy, leaf selection, duplicate phones, partial imports, rejection workbooks, geography, settlement/readiness, permissions, exports, Cairo/RTL/LTR, responsive records, accessibility, and external-request isolation. No production deployment or version change is part of this milestone.

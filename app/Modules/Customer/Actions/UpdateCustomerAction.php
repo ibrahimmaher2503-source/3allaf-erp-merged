@@ -7,11 +7,11 @@ namespace App\Modules\Customer\Actions;
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerGroup;
+use App\Modules\Customer\Support\CustomerIdentity;
 use App\Modules\Customer\Support\CustomerPolicy;
-use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Customer\Support\ResidenceGeography;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -28,10 +28,13 @@ final class UpdateCustomerAction
 
         CustomerPolicy::phoneNormalization();
         $phoneDisplay = trim((string) ($data['phone'] ?? $customer->phone_display));
-        $phone = PhoneNormalizer::normalize($phoneDisplay);
-        $secondaryPhone = filled($data['secondary_phone'] ?? null)
-            ? PhoneNormalizer::normalize((string) $data['secondary_phone'])
-            : null;
+        [$phone, $secondaryPhone] = CustomerIdentity::normalizedPhones($phoneDisplay, $data['secondary_phone'] ?? $customer->secondary_phone_normalized ?? $customer->secondary_phone);
+        $residenceFieldsSubmitted = array_key_exists('governorate_id', $data) || array_key_exists('city_id', $data);
+        $residenceChanging = $residenceFieldsSubmitted
+            && (filled($data['governorate_id'] ?? null) || filled($data['city_id'] ?? null) || $customer->governorate_id !== null || $customer->city_id !== null);
+        [$governorateId, $cityId] = $residenceChanging
+            ? ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null)
+            : [$customer->governorate_id, $customer->city_id];
         [$firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn] = self::normaliseNames($data, $customer);
         if ($firstNameAr === '' || $lastNameAr === '') {
             throw new InvalidArgumentException(__('Customer Arabic first and last names are required.'));
@@ -44,18 +47,12 @@ final class UpdateCustomerAction
             ? (filled($data['customer_group_id']) ? (int) $data['customer_group_id'] : null)
             : (($customer->customer_group_id !== null) ? (int) $customer->customer_group_id : null);
 
-        return DB::transaction(function () use ($actor, $customer, $store, $data, $phone, $phoneDisplay, $secondaryPhone, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $customerGroupId): Customer {
+        return DB::transaction(function () use ($actor, $customer, $store, $data, $phone, $phoneDisplay, $secondaryPhone, $governorateId, $cityId, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $customerGroupId): Customer {
             $locked = Customer::query()->lockForUpdate()->findOrFail($customer->id);
             if ($locked->status !== 'active') {
                 throw new InvalidArgumentException(__('This customer profile is no longer editable.'));
             }
-            $duplicate = Customer::query()
-                ->where('phone_normalized', $phone)
-                ->where('id', '<>', $locked->id)
-                ->first();
-            if ($duplicate !== null) {
-                throw new InvalidArgumentException(__('A customer already exists for this phone number. Review the existing profile instead of creating a duplicate.'));
-            }
+            CustomerIdentity::assertAvailable($phone, $secondaryPhone, (int) $locked->id);
 
             $email = array_key_exists('email', $data) && filled($data['email']) ? strtolower(trim((string) $data['email'])) : null;
             if ($email !== null && Customer::query()->where('id', '<>', $locked->id)->whereRaw('LOWER(email) = ?', [$email])->exists()) {
@@ -64,7 +61,9 @@ final class UpdateCustomerAction
 
             $customerGroup = $customerGroupId === null
                 ? null
-                : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->lockForUpdate()->find($customerGroupId);
+                : CustomerGroup::query()->forCompany((int) $store->company_id)->active()
+                    ->when((int) $locked->customer_group_id !== $customerGroupId, fn ($query) => $query->whereDoesntHave('children'))
+                    ->lockForUpdate()->find($customerGroupId);
             if ($customerGroupId !== null && $customerGroup === null) {
                 throw new InvalidArgumentException(__('The selected customer group is not available in this company.'));
             }
@@ -81,9 +80,12 @@ final class UpdateCustomerAction
                 'name_en' => $nameEn,
                 'email' => array_key_exists('email', $data) ? (filled($data['email']) ? strtolower(trim((string) $data['email'])) : null) : $locked->email,
                 'secondary_phone' => $secondaryPhone,
+                'secondary_phone_normalized' => $secondaryPhone,
                 'address_ar' => array_key_exists('address_ar', $data) ? (filled($data['address_ar']) ? trim((string) $data['address_ar']) : null) : $locked->address_ar,
                 'address_en' => array_key_exists('address_en', $data) ? (filled($data['address_en']) ? trim((string) $data['address_en']) : null) : $locked->address_en,
                 'customer_group_id' => $customerGroup?->id,
+                'governorate_id' => $governorateId,
+                'city_id' => $cityId,
                 'updated_by' => $actor->id,
                 'lock_version' => ((int) $locked->lock_version) + 1,
             ]);
@@ -121,6 +123,7 @@ final class UpdateCustomerAction
         }
         $nameAr = trim($firstAr.' '.$lastAr);
         $englishFull = trim($firstEn.' '.$lastEn);
+
         return [$firstAr, $lastAr, $firstEn, $lastEn, $nameAr, $englishFull !== '' ? $englishFull : $nameAr];
     }
 }

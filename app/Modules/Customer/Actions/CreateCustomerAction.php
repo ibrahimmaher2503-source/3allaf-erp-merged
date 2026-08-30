@@ -8,8 +8,9 @@ use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerScope;
+use App\Modules\Customer\Support\CustomerIdentity;
 use App\Modules\Customer\Support\CustomerPolicy;
-use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Customer\Support\ResidenceGeography;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -26,10 +27,8 @@ final class CreateCustomerAction
         abort_unless($store->status === 'active' && $actor->canAccessStore((int) $store->id), 403);
 
         CustomerPolicy::phoneNormalization();
-        $phone = PhoneNormalizer::normalize((string) ($data['phone'] ?? ''));
-        $secondaryPhone = filled($data['secondary_phone'] ?? null)
-            ? PhoneNormalizer::normalize((string) $data['secondary_phone'])
-            : null;
+        [$phone, $secondaryPhone] = CustomerIdentity::normalizedPhones((string) ($data['phone'] ?? ''), $data['secondary_phone'] ?? null);
+        [$governorateId, $cityId] = ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null);
         [$firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn] = self::normaliseNames($data);
         $email = filled($data['email'] ?? null) ? strtolower(trim((string) $data['email'])) : null;
         if ($firstNameAr === '' || $lastNameAr === '') {
@@ -47,7 +46,7 @@ final class CreateCustomerAction
         $customerGroupId = filled($data['customer_group_id'] ?? null) ? (int) $data['customer_group_id'] : null;
 
         try {
-            return DB::transaction(function () use ($actor, $store, $data, $phone, $secondaryPhone, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $email, $idempotencyKey, $consents, $customerGroupId): Customer {
+            return DB::transaction(function () use ($actor, $store, $data, $phone, $secondaryPhone, $governorateId, $cityId, $firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn, $email, $idempotencyKey, $consents, $customerGroupId): Customer {
                 $existingByKey = Customer::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
                 if ($existingByKey !== null) {
                     if ($existingByKey->phone_normalized !== $phone || $existingByKey->name_ar !== $nameAr || $existingByKey->name_en !== $nameEn) {
@@ -57,10 +56,7 @@ final class CreateCustomerAction
                     return $existingByKey;
                 }
 
-                $duplicate = Customer::query()->where('phone_normalized', $phone)->first();
-                if ($duplicate !== null) {
-                    throw new InvalidArgumentException(__('A customer already exists for this phone number. Review the existing profile instead of creating a duplicate.'));
-                }
+                CustomerIdentity::assertAvailable($phone, $secondaryPhone);
 
                 if ($email !== null && Customer::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
                     throw new InvalidArgumentException(__('A customer already exists for this email address. Review the existing profile instead of creating a duplicate.'));
@@ -68,7 +64,7 @@ final class CreateCustomerAction
 
                 $customerGroup = $customerGroupId === null
                     ? null
-                    : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->lockForUpdate()->find($customerGroupId);
+                    : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->whereDoesntHave('children')->lockForUpdate()->find($customerGroupId);
                 if ($customerGroupId !== null && $customerGroup === null) {
                     throw new InvalidArgumentException(__('The selected customer group is not available in this company.'));
                 }
@@ -84,6 +80,7 @@ final class CreateCustomerAction
                     'name_en' => $nameEn,
                     'email' => $email,
                     'secondary_phone' => $secondaryPhone,
+                    'secondary_phone_normalized' => $secondaryPhone,
                     'address_ar' => filled($data['address_ar'] ?? null) ? trim((string) $data['address_ar']) : null,
                     'address_en' => filled($data['address_en'] ?? null) ? trim((string) $data['address_en']) : null,
                     'status' => 'active',
@@ -92,6 +89,8 @@ final class CreateCustomerAction
                     'created_branch_id' => $store->branch_id,
                     'created_store_id' => $store->id,
                     'customer_group_id' => $customerGroup?->id,
+                    'governorate_id' => $governorateId,
+                    'city_id' => $cityId,
                     'idempotency_key' => $idempotencyKey,
                     'lock_version' => 1,
                 ]);
@@ -177,6 +176,7 @@ final class CreateCustomerAction
         }
         $nameAr = trim($firstAr.' '.$lastAr);
         $englishFull = trim($firstEn.' '.$lastEn);
+
         return [$firstAr, $lastAr, $firstEn, $lastEn, $nameAr, $englishFull !== '' ? $englishFull : $nameAr];
     }
 }

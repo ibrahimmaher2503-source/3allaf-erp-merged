@@ -16,9 +16,9 @@ final class CustomerGroup extends Model
 {
     protected $fillable = [
         'company_id',
-        'parent_id',
+        'parent_id', 'code',
         'name_ar',
-        'name_en',
+        'name_en', 'sort_order',
         'status',
         'created_by',
         'updated_by',
@@ -26,7 +26,7 @@ final class CustomerGroup extends Model
     ];
 
     protected $casts = [
-        'lock_version' => 'integer',
+        'lock_version' => 'integer', 'sort_order' => 'integer',
     ];
 
     protected static function booted(): void
