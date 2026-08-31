@@ -693,3 +693,10 @@
 - **Work completed:** Added the bilingual full-page two-stage invoice/distribution workflow, scanner/search entry, unknown-barcode Product Card modal, duplicate incrementing, independent cost/List 0 editing, drafts, exact destination allocation, price snapshots/labels, locked idempotent posting, audited Product Card updates, state distinctions, reversal, and least-privilege permissions.
 - **Verification actually run:** Focused PHPUnit passed 5 tests/29 assertions. Additive migration `000099` passed on isolated MariaDB `rajeh_m54_20260831`, removed afterward. Focused syntax, routes, Arabic JSON, and diff checks passed. No broad suite ran.
 - **Boundaries:** No production/shared runtime or database, deployment, version bump, tag, push, or remote contact occurred.
+
+## 2026-08-31 — Rajeh ERP v0.1.21 Final Stabilization
+
+- **Task:** Stabilized the exact tagged `v0.1.20` baseline on `feature/v0.1.21-final-stabilization`.
+- **Work completed:** Replaced the unsupported Purchase Invoice `barcode` Flux icon with installed `qr-code`; audited only the M54 invoice, distribution, quick Product Card, state, and destination-label surfaces; found no other invalid Flux reference. Added release-cache exclusion and runtime-user `rajeh` Artisan ownership guidance.
+- **Verification actually run:** The directly related M54 PHPUnit file passed 8 tests / 62 assertions; the purchasing-invoice route subset registered; one isolated Blade/Flux render probe for the six requested UI contracts and all scoped Flux references passed without exception.
+- **Boundaries:** No database or migration verification, broad suite, frontend build, PDF, browser control, production access, deployment, tag, push, remote contact, shared database mutation, or version bump occurred. Code and documentation changed; commit status is recorded in the final handoff.

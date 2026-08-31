@@ -26,3 +26,9 @@
 - Covered posting transaction/idempotency, exact-distribution enforcement, price resolution, permissions, and two-stage/label surfaces.
 - Migration `000099` passed on disposable MariaDB `rajeh_m54_20260831`; no shared database was used.
 - No broad automated suite was run.
+# 2026-08-31 — v0.1.21 Final Stabilization
+
+- Focused M54 PHPUnit: passed 8 tests / 62 assertions.
+- Focused route pass: purchasing-invoice route subset registered successfully.
+- Isolated Blade/Flux render probe: passed for the six requested UI contracts and all scoped M54 Flux components/icons.
+- No database, migration, broad suite, frontend build, PDF, browser-control, or unrelated verification ran.

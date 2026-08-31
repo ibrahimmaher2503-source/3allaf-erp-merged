@@ -1,5 +1,11 @@
 # UI/UX Release Progress
 
+## 2026-08-31 — v0.1.21 Final Stabilization
+
+- Started exactly from tagged `v0.1.20`; replaced the unsupported Purchase Invoice `barcode` Flux icon with supported `qr-code` and confirmed all other scoped M54 Flux references are installed.
+- Added immutable-release cache exclusion and runtime-user `rajeh` Artisan ownership guidance without changing M54 behavior or frontend assets.
+- The focused M54 test file passed 8 tests / 62 assertions; purchasing-invoice routes and the isolated six-contract Flux render probe passed. No database, migration, broad suite, frontend build, PDF, production, deployment, tag, remote contact, shared database mutation, or version bump occurred.
+
 **Updated:** 2026-08-28
 **Branch:** `feature/v0.1.13-guided-setup-admin-ux`
 **Baseline:** published `v0.1.12`

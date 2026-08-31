@@ -45,6 +45,12 @@ Step 4 is the one most often skipped. An unverified backup is not a backup.
 
 ## 4. Deployment Procedure
 
+### Release preparation and runtime ownership guard
+
+Prepare each immutable release from the approved Git commit, not from the working tree. Extract tracked source while excluding the source `storage` tree, then link the approved shared environment and storage paths. Reuse only separately validated locked dependencies and built frontend assets. Never copy generated source `bootstrap/cache/*.php` files into a release; the prepared `bootstrap/cache` directory must contain only its tracked `.gitignore` until runtime cache generation.
+
+All Laravel cache generation, cache clearing, maintenance, queue, and scheduled Artisan commands must execute as the runtime user `rajeh`. The scheduler entry and any deployment automation must invoke Artisan as `rajeh`, never as `root` or the release-preparation account. This keeps generated `bootstrap/cache` files writable by the serving runtime and prevents recurring permission failures.
+
 ```
 1. Announce maintenance window
 2. Verified backup (§5)

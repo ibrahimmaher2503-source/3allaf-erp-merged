@@ -1,6 +1,6 @@
-# Active Milestone — M54 Rajeh ERP v0.1.20 Purchase Receiving Distribution
+# Active Milestone — Rajeh ERP v0.1.21 Final Stabilization
 
 **Date:** 2026-08-31
 **Status:** Complete in development; ready for owner review.
 
-M54 additively extends the approved purchase-invoice, inventory-ledger, Product Card, Opening Inventory, and reusable price-list foundations. New purchase invoices cannot post until every received unit has a valid authorized destination.
+This stabilization starts exactly from tagged `v0.1.20`, corrects the confirmed unsupported Purchase Invoice Flux icon, verifies the scoped M54 view references and routes, and documents safe release-cache ownership. It changes no business behavior, data, schema, permission, pricing, distribution, posting, Product Card, Setup-context, frontend-build, or production state.

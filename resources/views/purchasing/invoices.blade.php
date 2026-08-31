@@ -576,7 +576,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </div>
                     <div class="flex flex-col gap-2 sm:flex-row">
                         <flux:input wire:model="productLookup" class="flex-1" :label="__('Barcode, item code, product name, or model number')" autofocus />
-                        <flux:button type="button" wire:click="addScannedProduct" variant="primary" icon="barcode">{{ __('Add / scan') }}</flux:button>
+                        <flux:button type="button" wire:click="addScannedProduct" variant="primary" icon="qr-code">{{ __('Add / scan') }}</flux:button>
                     </div>
                     @foreach ($lineItems as $index => $line)
                         <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-8" wire:key="invoice-line-{{ $index }}">

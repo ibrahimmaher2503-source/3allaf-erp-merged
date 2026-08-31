@@ -58,4 +58,44 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         self::assertStringContainsString('Base Consumer Price List 0', $view);
         self::assertFileExists(dirname(__DIR__,2).'/resources/views/purchasing/destination-labels.blade.php');
     }
+
+    public function test_m54_flux_references_are_supported(): void
+    {
+        $view = $this->source('resources/views/purchasing/invoices.blade.php');
+
+        self::assertStringNotContainsString('icon="barcode"', $view);
+        self::assertStringContainsString('icon="qr-code"', $view);
+
+        preg_match_all('/icon="([a-z0-9-]+)"/', $view, $matches);
+        foreach (array_unique($matches[1]) as $icon) {
+            self::assertFileExists(dirname(__DIR__, 2).'/vendor/livewire/flux/stubs/resources/views/flux/icon/'.$icon.'.blade.php');
+        }
+
+        foreach (['button/index', 'callout/index', 'card/index', 'checkbox/index', 'heading', 'icon/index', 'input/index', 'label', 'modal/index', 'select/index', 'table/index', 'text', 'textarea'] as $component) {
+            self::assertFileExists(dirname(__DIR__, 2).'/vendor/livewire/flux/stubs/resources/views/flux/'.$component.'.blade.php');
+        }
+    }
+
+    public function test_six_stabilization_render_targets_and_setup_context_are_wired(): void
+    {
+        $view = $this->source('resources/views/purchasing/invoices.blade.php');
+        $routes = $this->source('routes/purchasing.php');
+        $layout = $this->source('resources/views/layouts/app/sidebar.blade.php');
+        $labels = $this->source('resources/views/purchasing/destination-labels.blade.php');
+
+        foreach (['Purchase invoices', 'Stage 1 — Purchase invoice', 'Unknown barcode — create Product Card', 'Stage 2 — Mandatory distribution', 'Invoice transition completed.'] as $contract) {
+            self::assertStringContainsString($contract, $view);
+        }
+        self::assertStringContainsString("name('purchasing.invoices.destination-labels')", $routes);
+        self::assertStringContainsString('Destination barcode labels', $labels);
+        self::assertStringContainsString('<x-setup.route-context />', $layout);
+    }
+
+    public function test_release_cache_and_runtime_user_guard_is_documented(): void
+    {
+        $runbook = $this->source('docs/53-deployment-backup-and-rollback-runbook.md');
+
+        self::assertStringContainsString('Never copy generated source `bootstrap/cache/*.php` files into a release', $runbook);
+        self::assertStringContainsString('must execute as the runtime user `rajeh`', $runbook);
+    }
 }
