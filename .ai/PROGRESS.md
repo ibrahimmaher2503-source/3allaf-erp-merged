@@ -100,3 +100,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added company-bound UAT batches and allowlisted marked records with explicit dry-run seed/purge commands, generated-on-execution credentials, Golden Path, and coverage report.
 - Corrected pending approval source-version synchronization after Stage 2 distribution, found during the isolated UAT journey.
 - Focused tests passed 12/95; isolated MariaDB seed/purge/reseed lifecycle and Node 20.20.2 build passed. Manifest SHA-256: `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`.
+
+# v0.1.21 Purchasing Localization/Layout Hotfix (2026-08-31)
+
+- Completed Purchase Invoice Arabic/English keys, locale-safe names/status/currency/quantities, responsive list records, aligned entry/search controls, and empty-line suppression.
+- Persisted the explicit production UAT environment confirmation and real purchase-sequence reuse safeguards.
+- Focused tests and eight-case desktop/mobile bilingual visual evidence passed; no database or production access occurred.

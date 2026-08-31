@@ -9,6 +9,9 @@
     $formatted = $amount === null || $amount === ''
         ? '—'
         : number_format((float) $amount, (int) $precision, '.', ',');
+    $displayCurrency = strtoupper((string) $currency) === 'EGP'
+        ? (app()->getLocale() === 'ar' ? 'ج.م' : 'EGP')
+        : $currency;
 @endphp
 
 <span
@@ -18,6 +21,6 @@
 >
     <span>{{ $formatted }}</span>
     @if (filled($currency))
-        <span class="text-xs font-medium text-text-muted">{{ $currency }}</span>
+        <span class="text-xs font-medium text-text-muted">{{ $displayCurrency }}</span>
     @endif
 </span>

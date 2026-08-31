@@ -708,3 +708,10 @@
 - **Verification actually run:** Focused PHPUnit passed 12 tests/95 assertions. One isolated MariaDB completed migrate, seed, idempotent repeat, integrity checks, dry-run purge, confirmed purge, and reseed. One Node 20.20.2 build passed with manifest SHA-256 `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`.
 - **Remaining:** Owner review and later separately authorized release preparation. Code, tests, documentation, database checks, and frontend build occurred; commit status is recorded in the final handoff. No browser/PDF checks or push occurred.
 - **Boundary:** Production, shared databases, deployment, tag, version bump, remote contact, and excluded production paths were untouched.
+
+## 2026-08-31 — v0.1.21 Purchasing Localization/Layout Hotfix
+
+- **Task:** Corrected confirmed Purchase Invoice localization/layout defects from exact commit `125bcb705d40f19c3dc17e2af63eb339f024d76c` on `hotfix/v0.1.21-purchasing-localization-layout`.
+- **Work completed:** Added complete purchasing translations and locale-safe status/currency/quantity/name display; replaced the crowded list table with responsive records; aligned scanner/Add/camera/search presentation; suppressed the misleading empty product line; required explicit production UAT confirmation and reused the real purchase sequence without marking it.
+- **Verification:** Directly related source tests completed with the corrected hotfix file passing 4 tests/249 assertions. One build and eight task-local bilingual desktop/mobile visual cases passed without mixed UI copy, raw enums, clipping, overlap, or document overflow.
+- **Boundary:** No production/shared runtime access, database mutation, Artisan, migration, UAT execution, broad suite, PDF, deployment, tag, push, or remote contact occurred.

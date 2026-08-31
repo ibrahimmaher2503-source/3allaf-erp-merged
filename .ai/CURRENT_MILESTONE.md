@@ -1,6 +1,6 @@
-# Active Milestone — Rajeh ERP v0.1.21 Final Stabilization
+# Active Milestone — v0.1.21 Purchasing Localization/Layout Hotfix
 
 **Date:** 2026-08-31
 **Status:** Complete in development; ready for owner review.
 
-This stabilization starts exactly from tagged `v0.1.20` and completes the final Purchase Invoice entry/progression UX, reversible marked UAT dataset, Golden Path, and approval-version synchronization found by the isolated journey. Production state remains unchanged.
+This hotfix starts exactly from release commit `125bcb705d40f19c3dc17e2af63eb339f024d76c`, corrects Purchase Invoice localization and responsive layout, and persists the two production-only UAT safeguards. Production state remains unchanged.

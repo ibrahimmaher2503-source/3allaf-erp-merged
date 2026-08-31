@@ -34,6 +34,12 @@
 - Golden Path integrity: exactly one Draft, Awaiting Distribution, Approved, and Reversed invoice; receiving remainder `0.000000`; two destination price snapshots.
 - The journey exposed and verified a fix for stale pending approval source versions after distribution.
 - Node 20.20.2 Vite build passed; manifest SHA-256 `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`. The host-default Node 16 attempt failed before compilation and changed no application source.
+
+# 2026-08-31 — v0.1.21 Purchasing Localization/Layout Hotfix
+
+- Directly related tests: initial pass 15/16; corrected the sole over-broad test assertion, then the hotfix file passed 4 tests / 249 assertions.
+- Eight task-local visual cases covered list/create, Arabic/English, and 1440px/390px. All passed mixed-language, raw-enum, clipping, overlap, and document-overflow checks; representative captures were visually inspected.
+- One Node 20.20.2 build passed. No database, broad suite, PDF, Artisan, production, or remote operation ran.
 # 2026-08-31 — v0.1.21 Final Stabilization
 
 - Focused M54 PHPUnit: passed 8 tests / 62 assertions.

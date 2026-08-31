@@ -1,7 +1,7 @@
-# Current Task — Rajeh ERP v0.1.21 Final Stabilization
+# Current Task — v0.1.21 Purchasing Localization/Layout Hotfix
 
 **Date:** 2026-08-31
-**Branch:** `feature/v0.1.21-final-stabilization`
+**Branch:** `hotfix/v0.1.21-purchasing-localization-layout`
 **Baseline:** tagged `v0.1.20` commit `b69fbba638f270cf78dbc01a2b51395eca198f4c`
 
 ## Scope
@@ -16,4 +16,4 @@ The focused M54/final-acceptance files passed 12 tests / 95 assertions. One isol
 
 ## Closure
 
-Complete in development and ready for owner review. Evidence: `.ai/V0_1_21_FINAL_ACCEPTANCE_EVIDENCE.md`.
+Complete in development and ready for release preparation. Evidence: `.ai/V0_1_21_PURCHASING_HOTFIX_EVIDENCE.md`.
