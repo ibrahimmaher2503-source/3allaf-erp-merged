@@ -67,6 +67,7 @@ new #[Title('Purchase Invoices')] class extends Component
     public array $lineItems = [];
     public string $itemEntry = '';
     public string $productSearch = '';
+    public int $productSearchRequest = 0;
     public bool $showQuickProduct = false;
     public array $quickProduct = ['barcode'=>'','name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
     public bool $showDistribution = false;
@@ -237,11 +238,28 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->productSearch = '';
     }
 
+    public function updatedProductSearch(): void
+    {
+        $this->productSearchRequest++;
+    }
+
+    public function searchProductsNow(string $term): void
+    {
+        $this->productSearch = trim($term);
+        $this->productSearchRequest++;
+    }
+
     public function openQuickProduct(string $barcode = ''): void
     {
         Gate::authorize('purchase_invoices_supplier_returns.create');
         $this->quickProduct = ['barcode'=>trim($barcode),'name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
         $this->showQuickProduct = true;
+    }
+
+    public function closeQuickProduct(): void
+    {
+        $this->showQuickProduct = false;
+        $this->dispatch('invoice-scanner-focus');
     }
 
     private function insertProduct(Product $product): void
@@ -251,6 +269,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 $this->lineItems[$index]['quantity'] = bcadd((string) $line['quantity'], '1', 6);
                 $this->itemEntry='';
                 $this->dispatch('invoice-line-focus', index: $index);
+                $this->dispatch('invoice-scanner-focus');
                 return;
             }
         }
@@ -412,7 +431,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'invoices' => $invoices,
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('name_en')->get(),
             'stores' => Store::query()->visibleTo($actor)->where('status', 'active')->orderBy('name_en')->get(),
-            'productResults' => mb_strlen(trim($this->productSearch)) >= 3 ? Product::query()->sellable()->with(['barcodes'=>fn($query)=>$query->where('status','active')->orderByDesc('is_primary')])->where(function($query): void { $term=trim($this->productSearch); $query->where('item_code','like',$term.'%')->orWhere('model_number','like',$term.'%')->orWhere('name_ar','like',$term.'%')->orWhere('name_en','like',$term.'%')->orWhereHas('barcodes',fn($barcodes)=>$barcodes->where('status','active')->where('barcode','like',$term.'%')); })->orderBy('item_code')->limit(8)->get() : collect(),
+            'productResults' => $this->searchProducts($actor),
             'lineProducts' => Product::query()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn($id)=>(int)$id))->get()->keyBy('id'),
             'categories' => Category::query()->where('status','active')->orderBy('name_en')->get(),
             'distributionInvoice' => $this->showDistribution && $this->editingInvoiceId ? PurchaseInvoice::query()->with(['lines.product','distributions.destination'])->find($this->editingInvoiceId) : null,
@@ -424,6 +443,42 @@ new #[Title('Purchase Invoices')] class extends Component
         $formatted = number_format((float) ($quantity ?? 0), 6, '.', '');
 
         return rtrim(rtrim($formatted, '0'), '.');
+    }
+
+    private function searchProducts(User $actor): \Illuminate\Support\Collection
+    {
+        $term = trim($this->productSearch);
+        if (mb_strlen($term) < 3) return collect();
+
+        $companyId = Store::query()->visibleTo($actor)
+            ->when(filled($this->invoiceForm['store_id']), fn ($query) => $query->whereKey((int) $this->invoiceForm['store_id']))
+            ->where('status', 'active')->value('company_id');
+        if (! $companyId) return collect();
+
+        $escaped = addcslashes($term, '\\%_');
+        $prefix = $escaped.'%';
+        $contained = '%'.$escaped.'%';
+        $tokens = collect(preg_split('/\s+/u', $term) ?: [])->filter()->take(4);
+
+        return Product::query()->sellable()
+            ->with(['barcodes' => fn ($query) => $query->where('status', 'active')->orderByDesc('is_primary')])
+            ->where(function ($query) use ($term, $prefix, $contained, $tokens): void {
+                $query->where('item_code', $term)->orWhere('model_number', $term)
+                    ->orWhere('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)
+                    ->orWhere('item_code', 'like', $contained)->orWhere('model_number', 'like', $contained)
+                    ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('status', 'active')->where(function ($query) use ($term, $prefix, $contained): void {
+                        $query->where('barcode', $term)->orWhere('barcode', 'like', $prefix)->orWhere('barcode', 'like', $contained);
+                    }))
+                    ->orWhere(function ($names) use ($tokens): void {
+                        foreach ($tokens as $token) {
+                            $escapedToken = addcslashes((string) $token, '\\%_');
+                            $names->orWhere('name_ar', 'like', $escapedToken.'%')->orWhere('name_ar', 'like', '% '.$escapedToken.'%')
+                                ->orWhere('name_en', 'like', $escapedToken.'%')->orWhere('name_en', 'like', '% '.$escapedToken.'%');
+                        }
+                    });
+            })
+            ->orderByRaw('CASE WHEN item_code = ? OR model_number = ? OR EXISTS (SELECT 1 FROM barcodes WHERE barcodes.product_id = products.id AND barcodes.status = ? AND barcodes.barcode = ?) THEN 0 WHEN item_code LIKE ? OR model_number LIKE ? OR EXISTS (SELECT 1 FROM barcodes WHERE barcodes.product_id = products.id AND barcodes.status = ? AND barcodes.barcode LIKE ?) THEN 1 ELSE 2 END', [$term,$term,'active',$term,$prefix,$prefix,'active',$prefix])
+            ->orderBy('item_code')->limit(20)->get();
     }
 
     /** @return array<string, string> */
@@ -626,9 +681,10 @@ new #[Title('Purchase Invoices')] class extends Component
                         </div>
                         <div x-show="camera" x-cloak class="rounded-xl border p-3"><video x-ref="video" autoplay playsinline class="mx-auto max-h-64 rounded-lg"></video><flux:button type="button" class="mt-2" x-on:click="stop">{{ __('Close camera') }}</flux:button></div>
                     </div>
-                    <div class="relative">
-                        <flux:input wire:model.live.debounce.300ms="productSearch" :label="__('Search products')" :description="__('Enter at least 3 characters or digits. Search covers name, model, item code, and barcode.')" autocomplete="off" />
-                        @if(mb_strlen(trim($productSearch)) >= 3)<div class="mt-2 divide-y rounded-xl border bg-surface shadow-sm">@forelse($productResults as $result)<button type="button" wire:click="selectSearchProduct({{$result->id}})" class="grid w-full gap-2 p-3 text-start hover:bg-surface-muted sm:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)] sm:items-center"><strong class="truncate">{{ app()->getLocale()==='ar'?($result->name_ar?:'—'):($result->name_en?:'—') }}</strong><span class="grid gap-1 text-xs text-text-muted sm:grid-cols-3" dir="ltr"><span>{{ __('Model') }}: {{ $result->model_number ?: '—' }}</span><span>{{ __('Item code') }}: {{ $result->item_code }}</span><span>{{ __('Barcode') }}: {{ $result->barcodes->first()?->barcode ?: '—' }}</span></span></button>@empty<div class="p-3 text-sm text-text-muted">{{__('No matching products.')}}</div>@endforelse</div>@endif
+                    <div class="relative" x-data="{timer:null,queue(value){clearTimeout(this.timer);this.timer=setTimeout(()=>$wire.searchProductsNow(value),175)},now(value){clearTimeout(this.timer);$wire.searchProductsNow(value)}}">
+                        <flux:input wire:model="productSearch" x-on:input="queue($event.target.value)" x-on:keydown.enter.prevent="now($event.target.value)" :label="__('Search products')" :description="__('Enter at least 3 characters or digits. Search covers name, model, item code, and barcode.')" autocomplete="off" />
+                        <div wire:loading.flex wire:target="searchProductsNow" class="mt-2 items-center gap-2 rounded-xl border p-3 text-sm text-text-muted"><flux:icon.loading class="size-4" />{{ __('Searching products…') }}</div>
+                        @if(mb_strlen(trim($productSearch)) >= 3)<div wire:key="product-search-{{$productSearchRequest}}" wire:loading.remove wire:target="searchProductsNow" class="mt-2 divide-y rounded-xl border bg-surface shadow-sm">@forelse($productResults as $result)<button type="button" wire:click="selectSearchProduct({{$result->id}})" class="grid w-full gap-2 p-3 text-start hover:bg-surface-muted sm:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)] sm:items-center"><strong class="truncate">{{ app()->getLocale()==='ar'?($result->name_ar?:'—'):($result->name_en?:'—') }}</strong><span class="grid gap-1 text-xs text-text-muted sm:grid-cols-3" dir="ltr"><span>{{ __('Model') }}: {{ $result->model_number ?: '—' }}</span><span>{{ __('Item code') }}: {{ $result->item_code }}</span><span>{{ __('Barcode') }}: {{ $result->barcodes->first()?->barcode ?: '—' }}</span></span></button>@empty<div class="p-3 text-sm text-text-muted">{{__('No matching products.')}}</div>@endforelse</div>@endif
                     </div>
                     @foreach ($lineItems as $index => $line)
                         @continue(empty($line['product_id']))
@@ -680,7 +736,7 @@ new #[Title('Purchase Invoices')] class extends Component
     @endif
 
     @if($showQuickProduct)
-        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-2xl"><form wire:submit="createQuickProduct" class="space-y-4"><flux:heading size="lg">{{__('Unknown barcode — create Product Card')}}</flux:heading><flux:text>{{__('The invoice remains open. Create the product and it will be inserted immediately.')}}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model="quickProduct.barcode" :label="__('Barcode or item code')"/><flux:input wire:model="quickProduct.name_ar" :label="__('Arabic name')" required/><flux:input wire:model="quickProduct.name_en" :label="__('English name')"/><flux:input wire:model="quickProduct.model_number" :label="__('Model number')"/><flux:select wire:model="quickProduct.category_id" :label="__('Category')"><flux:select.option value="">{{__('Select category')}}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{$category->id}}">{{app()->getLocale()==='ar'?($category->name_ar?:'—'):($category->name_en?:'—')}}</flux:select.option>@endforeach</flux:select></div><div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showQuickProduct',false)">{{__('Cancel')}}</flux:button><flux:button type="submit" variant="primary">{{__('Create and add')}}</flux:button></div></form></flux:modal>
+        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-2xl"><form wire:submit="createQuickProduct" class="space-y-4"><flux:heading size="lg">{{__('Unknown barcode — create Product Card')}}</flux:heading><flux:text>{{__('The invoice remains open. Create the product and it will be inserted immediately.')}}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model="quickProduct.barcode" :label="__('Barcode or item code')"/><flux:input wire:model="quickProduct.name_ar" :label="__('Arabic name')" required/><flux:input wire:model="quickProduct.name_en" :label="__('English name')"/><flux:input wire:model="quickProduct.model_number" :label="__('Model number')"/><flux:select wire:model="quickProduct.category_id" :label="__('Category')"><flux:select.option value="">{{__('Select category')}}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{$category->id}}">{{app()->getLocale()==='ar'?($category->name_ar?:'—'):($category->name_en?:'—')}}</flux:select.option>@endforeach</flux:select></div><div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="closeQuickProduct">{{__('Cancel')}}</flux:button><flux:button type="submit" variant="primary">{{__('Create and add')}}</flux:button></div></form></flux:modal>
     @endif
 
     @if ($showTransitionModal)

@@ -16,9 +16,9 @@ final class V021FinalAcceptanceTest extends TestCase
         self::assertStringContainsString('wire:keydown.enter.prevent="addItemEntry"',$view);
         self::assertStringContainsString('invoice-scanner-focus',$view);
         self::assertStringContainsString('invoice-line-focus',$view);
-        self::assertStringContainsString("mb_strlen(trim(\$this->productSearch)) >= 3",$view);
-        self::assertStringContainsString('debounce.300ms="productSearch"',$view);
-        self::assertStringContainsString("->limit(8)->get()",$view);
+        self::assertStringContainsString("mb_strlen(\$term) < 3",$view);
+        self::assertStringContainsString('setTimeout(()=>$wire.searchProductsNow(value),175)',$view);
+        self::assertStringContainsString("->limit(20)->get()",$view);
         self::assertStringNotContainsString("limit(1000)",$view);
         foreach(['item_code','model_number','name_ar','name_en','barcodes'] as $field)self::assertStringContainsString($field,$view);
     }

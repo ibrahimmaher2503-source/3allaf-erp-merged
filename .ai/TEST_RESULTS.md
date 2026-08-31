@@ -40,6 +40,12 @@
 - Directly related tests: initial pass 15/16; corrected the sole over-broad test assertion, then the hotfix file passed 4 tests / 249 assertions.
 - Eight task-local visual cases covered list/create, Arabic/English, and 1440px/390px. All passed mixed-language, raw-enum, clipping, overlap, and document-overflow checks; representative captures were visually inspected.
 - One Node 20.20.2 build passed. No database, broad suite, PDF, Artisan, production, or remote operation ran.
+
+# 2026-08-31 — v0.1.21 Purchasing Search/Barcode Hotfix 2
+
+- Directly related test pass completed 32/33; corrected its sole outdated search-contract assertion, then the affected file passed 4 tests / 33 assertions.
+- Six task-local bilingual visual cases covered Purchase Invoice create and Product Card create/edit. All passed mixed-language, exposed-variable, and horizontal-overflow checks; representative Arabic Product Card edit and English Purchase Invoice create captures were visually inspected.
+- No database cycle, broad regression, PDF, Artisan, migration, UAT execution, production, or remote operation ran.
 # 2026-08-31 — v0.1.21 Final Stabilization
 
 - Focused M54 PHPUnit: passed 8 tests / 62 assertions.

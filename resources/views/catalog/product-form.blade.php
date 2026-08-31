@@ -432,7 +432,9 @@ new #[Title('Product Card')] class extends Component {
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
                     <flux:select.option value="service">{{ __('Service') }}</flux:select.option>
                     <flux:select.option value="composite">{{ __('Composite') }}</flux:select.option>
-                    ($isEditing && $productForm['product_type'] === 'digital')<flux:select.option value="digital">{{ __('Digital product (legacy)') }}</flux:select.option>
+                    @if ($isEditing && $productForm['product_type'] === 'digital')
+                        <flux:select.option value="digital">{{ __('Digital product (legacy)') }}</flux:select.option>
+                    @endif
                 </flux:select>
                 <flux:select wire:model="productForm.status" :label="__('Status')" required>
                     <flux:select.option value="active">{{ __('Active') }}</flux:select.option>

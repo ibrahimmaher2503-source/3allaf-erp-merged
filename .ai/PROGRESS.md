@@ -106,3 +106,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Completed Purchase Invoice Arabic/English keys, locale-safe names/status/currency/quantities, responsive list records, aligned entry/search controls, and empty-line suppression.
 - Persisted the explicit production UAT environment confirmation and real purchase-sequence reuse safeguards.
 - Focused tests and eight-case desktop/mobile bilingual visual evidence passed; no database or production access occurred.
+
+# v0.1.21 Purchasing Search/Barcode Hotfix 2 (2026-08-31)
+
+- Separated exact scanner lookup from a cancellable ranked 175ms smart search with immediate Enter, company context, fragment matching, loading discipline, and a 20-result bound.
+- Replaced the mixed-mode UAT product with separate GTIN and allocator-backed local products; new UAT prefix state is rejected if it would touch an existing real sequence and all created identities are marked for purge.
+- Corrected the malformed Product Card `$isEditing` directive and completed the focused bilingual create/edit audit and evidence.

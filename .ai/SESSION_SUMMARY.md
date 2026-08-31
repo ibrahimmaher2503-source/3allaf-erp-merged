@@ -715,3 +715,10 @@
 - **Work completed:** Added complete purchasing translations and locale-safe status/currency/quantity/name display; replaced the crowded list table with responsive records; aligned scanner/Add/camera/search presentation; suppressed the misleading empty product line; required explicit production UAT confirmation and reused the real purchase sequence without marking it.
 - **Verification:** Directly related source tests completed with the corrected hotfix file passing 4 tests/249 assertions. One build and eight task-local bilingual desktop/mobile visual cases passed without mixed UI copy, raw enums, clipping, overlap, or document overflow.
 - **Boundary:** No production/shared runtime access, database mutation, Artisan, migration, UAT execution, broad suite, PDF, deployment, tag, push, or remote contact occurred.
+
+## 2026-08-31 — v0.1.21 Purchasing Search/Barcode Hotfix 2
+
+- **Task:** Corrected confirmed Purchase Invoice search, UAT barcode fixtures, and Product Card template leakage from exact Hotfix 1 commit `03d513347f58d3abf4814783035a84687aad27f8`.
+- **Work completed:** Preserved exact scanner behavior; added cancellable/ranked bounded smart search; created distinct GTIN/local UAT products through existing services with protected sequence ownership; corrected malformed `$isEditing` Blade syntax and audited Product Card translations/template leakage.
+- **Verification:** Directly related tests completed with one obsolete assertion corrected and its focused file passing 4/33. Six Arabic/English create/edit visual cases passed and representative captures were inspected. No frontend rebuild was required because no new style token or frontend dependency was introduced.
+- **Boundary:** No production/shared runtime access, database mutation, Artisan, migration, UAT command, broad suite, PDF, deployment, tag, push, or remote contact occurred.

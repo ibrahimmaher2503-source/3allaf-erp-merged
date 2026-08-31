@@ -1,6 +1,6 @@
-# Active Milestone — v0.1.21 Purchasing Localization/Layout Hotfix
+# Active Milestone — v0.1.21 Purchasing Search/Barcode Hotfix 2
 
 **Date:** 2026-08-31
 **Status:** Complete in development; ready for owner review.
 
-This hotfix starts exactly from release commit `125bcb705d40f19c3dc17e2af63eb339f024d76c`, corrects Purchase Invoice localization and responsive layout, and persists the two production-only UAT safeguards. Production state remains unchanged.
+This hotfix starts exactly from Hotfix 1 commit `03d513347f58d3abf4814783035a84687aad27f8`, corrects bounded Purchase Invoice search, UAT barcode identity fixtures, and the exposed Product Card Blade expression. Production state remains unchanged.
