@@ -42,8 +42,9 @@ final class InitialSetupStatus
         $companyReady = $this->companyReady();
         $branchesReady = $this->branchesReady();
         $branchStoreSetupReady = $this->branchesAndStoresReady();
-        $catalogReady = $this->catalogReady();
         $activeCompanyId = (int) Company::query()->where('status', 'active')->value('id');
+        $productPricing = app(ProductPricingReadiness::class)->snapshot($activeCompanyId);
+        $catalogReady = $this->catalogReady($productPricing);
         $activeCustomerGroups = CustomerGroup::query()->forCompany($activeCompanyId)->active();
         $activeSupplierGroups = SupplierGroup::query()->forCompany($activeCompanyId)->active();
         $activeProductOptionGroups = ProductOptionGroup::query()
@@ -74,8 +75,8 @@ final class InitialSetupStatus
             $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
             $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
             $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
-            $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding product cards.')),
-            $this->step('prices', __('Approved selling prices'), __('Configure valid reusable price lists from Product Card base prices and assign every active Sales Outlet.'), 'pricing.lists', 'pricing_lists.view', $this->pricesReady(), PriceList::query()->count(), $this->pricingReadinessReason()),
+            $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), $this->productReadinessReason($productPricing), details: $productPricing),
+            $this->step('prices', __('Approved selling prices'), __('Configure valid reusable price lists from Product Card base prices and assign every active Sales Outlet.'), 'pricing.lists', 'pricing_lists.view', $this->pricesReady($productPricing), PriceList::query()->count(), $this->pricingReadinessReason($productPricing), details: $productPricing),
             $this->step('opening-configuration', __('Opening inventory'), __('Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.'), 'inventory.opening.index', 'inventory_stock_card.create', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
@@ -107,17 +108,17 @@ final class InitialSetupStatus
     }
 
     /** @return array<string, mixed> */
-    private function step(string $key, string $label, string $description, ?string $routeName, ?string $permission, bool $complete, int $records, ?string $blockedReason = null, bool $required = true, array $routeParameters = [], ?string $destinationKey = null): array
+    private function step(string $key, string $label, string $description, ?string $routeName, ?string $permission, bool $complete, int $records, ?string $incompleteReason = null, bool $required = true, array $routeParameters = [], ?string $destinationKey = null, array $details = []): array
     {
-        $status = $blockedReason !== null && $required ? 'blocked' : ($complete ? ($required ? 'completed' : 'ready') : ($records === 0 ? 'not_started' : 'incomplete'));
+        $status = $complete ? ($required ? 'completed' : 'ready') : ($records === 0 ? 'not_started' : ($required ? 'requires_completion' : 'incomplete'));
         $route = $routeName === null ? null : route($routeName, $routeParameters);
         $canAccess = $permission !== null && auth()->check() && auth()->user()->can($permission);
 
-        $reason = $blockedReason ?? ($complete ? __('Persisted data meets the current readiness rule.') : $description);
+        $reason = $incompleteReason ?? ($complete ? __('Persisted data meets the current readiness rule.') : $description);
 
         return ['key' => $key, 'destination_key' => $destinationKey ?? $key, 'label' => $label, 'description' => $description, 'reason' => $reason, 'passed_conditions' => $complete ? [$reason] : [], 'failed_conditions' => $complete ? [] : [$reason], 'route' => $route, 'route_name' => $routeName, 'permission' => $permission, 'can_access' => $canAccess, 'complete' => $complete, 'required' => $required, 'records' => $records, 'status' => $status, 'status_label' => __(match ($status) {
-            'not_started' => 'Not started', 'incomplete' => 'Incomplete', 'ready' => 'Ready', 'blocked' => 'Blocked', default => 'Completed',
-        }), 'cta_label' => __($complete ? 'Review' : 'Configure')];
+            'not_started' => 'Not started', 'incomplete' => 'Incomplete', 'requires_completion' => 'Requires completion', 'ready' => 'Ready', default => 'Completed',
+        }), 'cta_label' => __($complete ? 'Review' : 'Configure'), 'details' => $details];
     }
 
     private function companyReady(): bool
@@ -250,11 +251,12 @@ final class InitialSetupStatus
         return $administrator && ! $unscoped;
     }
 
-    private function catalogReady(): bool
+    /** @param array<string,mixed> $productPricing */
+    private function catalogReady(array $productPricing): bool
     {
         $broken = Product::query()->whereNull('parent_product_id')->where('has_variations', true)->where('status', 'active')->whereDoesntHave('variants', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
 
-        return Category::query()->where('status', 'active')->exists() && Product::query()->sellable()->exists() && ! $broken;
+        return Category::query()->where('status', 'active')->exists() && $productPricing['product_cards_complete'] && ! $broken;
     }
 
     private function suppliersReady(): bool
@@ -266,26 +268,36 @@ final class InitialSetupStatus
             ->exists();
     }
 
-    private function pricesReady(): bool
+    /** @param array<string,mixed> $productPricing */
+    private function pricesReady(array $productPricing): bool
     {
         $companyId = (int) Company::query()->where('status', 'active')->value('id');
         $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
-        if (! $base?->isEffective() || Product::query()->sellable()->where(fn (Builder $q) => $q->whereNull('sale_price')->orWhere('sale_price', '<=', 0))->exists()) return false;
+        if (! $productPricing['pricing_prerequisite_complete'] || ! $base?->isEffective()) return false;
         return ! Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->contains(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet));
     }
 
-    private function pricingReadinessReason(): ?string
+    /** @param array<string,mixed> $productPricing */
+    private function pricingReadinessReason(array $productPricing): ?string
     {
-        if ($this->pricesReady()) return null;
+        if ($this->pricesReady($productPricing)) return null;
         $companyId = (int) Company::query()->where('status', 'active')->value('id');
         $reasons = [];
         $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
         if (! $base?->isEffective()) $reasons[] = __('Create and activate Base Price List 0.');
-        $missing = Product::query()->sellable()->where(fn (Builder $q) => $q->whereNull('sale_price')->orWhere('sale_price', '<=', 0))->count();
-        if ($missing) $reasons[] = trans_choice('{1} One sellable Product Card needs a positive base consumer price.|[2,*] :count sellable Product Cards need positive base consumer prices.', $missing, ['count' => $missing]);
+        $missing = (int) $productPricing['invalid_price_count'];
+        if ($missing) $reasons[] = __('Sellable Product Cards needing a positive base consumer price: :count', ['count' => $missing]);
         $invalid = Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->filter(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet))->count();
-        if ($invalid) $reasons[] = trans_choice('{1} One active Sales Outlet needs a valid active price list.|[2,*] :count active Sales Outlets need valid active price lists.', $invalid, ['count' => $invalid]);
+        if ($invalid) $reasons[] = __('Active Sales Outlets needing a valid active price list: :count', ['count' => $invalid]);
         return implode(' ', $reasons);
+    }
+
+    /** @param array<string,mixed> $productPricing */
+    private function productReadinessReason(array $productPricing): ?string
+    {
+        if ($productPricing['product_cards_complete']) return null;
+        $count = (int) $productPricing['affected_count'];
+        return __('Sellable Product Cards requiring completion: :count', ['count' => $count]);
     }
 
     private function openingInventoryReady(): bool

@@ -46,6 +46,13 @@
 - Directly related test pass completed 32/33; corrected its sole outdated search-contract assertion, then the affected file passed 4 tests / 33 assertions.
 - Six task-local bilingual visual cases covered Purchase Invoice create and Product Card create/edit. All passed mixed-language, exposed-variable, and horizontal-overflow checks; representative Arabic Product Card edit and English Purchase Invoice create captures were visually inspected.
 - No database cycle, broad regression, PDF, Artisan, migration, UAT execution, production, or remote operation ran.
+
+# 2026-08-31 — v0.1.21 Hotfix 3 Readiness/Pricing/UAT Consistency
+
+- Focused readiness and retained-Hotfix source tests passed after correcting the new test harness path; no application defect was exposed by the first pass.
+- Sixteen task-local bilingual desktop/mobile visual cases passed mixed-language, exposed-variable/raw-state, and horizontal-overflow checks; two representative captures were inspected.
+- One Node 20.20.2 Vite build passed; manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`.
+- No database, Artisan, migration, seed, purge, broad suite, PDF, production, tag, push, or remote operation ran.
 # 2026-08-31 — v0.1.21 Final Stabilization
 
 - Focused M54 PHPUnit: passed 8 tests / 62 assertions.

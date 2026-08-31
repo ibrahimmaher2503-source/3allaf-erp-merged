@@ -722,3 +722,11 @@
 - **Work completed:** Preserved exact scanner behavior; added cancellable/ranked bounded smart search; created distinct GTIN/local UAT products through existing services with protected sequence ownership; corrected malformed `$isEditing` Blade syntax and audited Product Card translations/template leakage.
 - **Verification:** Directly related tests completed with one obsolete assertion corrected and its focused file passing 4/33. Six Arabic/English create/edit visual cases passed and representative captures were inspected. No frontend rebuild was required because no new style token or frontend dependency was introduced.
 - **Boundary:** No production/shared runtime access, database mutation, Artisan, migration, UAT command, broad suite, PDF, deployment, tag, push, or remote contact occurred.
+
+## 2026-08-31 — v0.1.21 Hotfix 3 Readiness/Pricing/UAT Consistency
+
+- **Task:** Built Hotfix 3 from exact deployed Hotfix 2 source commit `e14eae0316b0063f95e77c2cabaa83f76c60eb13`.
+- **Work completed:** Added one company-keyed current-data Product Card/pricing readiness evaluator; shared its result across Setup Center, persistent module context, Products/Product Card, and Pricing Lists; localized business-incomplete status and remediation; exposed bounded affected-product edit actions; distinguished List 0 inherited/effective prices from explicit overrides; corrected the remaining malformed Product Card `$isEditing` expression; audited every named direct production correction and UAT safety invariant.
+- **Verification:** Focused source/unit checks and 16 bilingual responsive visual cases passed. Two representative captures were inspected. One Node 20.20.2 Vite build passed with manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`.
+- **Remaining:** Production data was deliberately not inspected; an authorized operator must later correct any affected real Product Cards shown by the live evaluator.
+- **Boundary:** Code, focused tests, task-local fixture browser checks, documentation, build, commit, and immutable release preparation occurred. No production/shared runtime or database access, Artisan, migration, seed, purge, deploy, cutover, tag, push, or remote contact occurred.

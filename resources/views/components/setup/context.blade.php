@@ -34,6 +34,9 @@
                     <span>{{ $currentStep['required'] ? __('Required') : __('Optional') }}</span>
                 </div>
                 @if (! $currentStep['complete'])<p class="max-w-3xl text-sm text-amber-800 dark:text-amber-200">{{ $currentStep['reason'] }}</p>@endif
+                @if (in_array($currentKey, ['product-masters', 'prices'], true) && ! empty($currentStep['details']))
+                    <x-setup.product-pricing-readiness :readiness="$currentStep['details']" :show-counts="$currentKey === 'prices'" compact class="max-w-4xl" />
+                @endif
                 <div class="h-1.5 max-w-2xl overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label="{{ __('Setup completion progress') }}" aria-valuenow="{{ $setupContext['progress_percent'] }}" aria-valuemin="0" aria-valuemax="100"><span class="block h-full rounded-full bg-primary" style="width: {{ $setupContext['progress_percent'] }}%"></span></div>
             </div>
             <div class="flex flex-col gap-2">

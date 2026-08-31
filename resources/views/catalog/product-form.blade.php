@@ -333,6 +333,8 @@ new #[Title('Product Card')] class extends Component {
         <flux:button href="{{ route('catalog.products') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to products') }}</flux:button>
     </x-slot:actions>
 
+    <x-setup.product-pricing-readiness :readiness="app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot()" compact />
+
     @if (session('status'))
         <flux:callout variant="success" icon="check-circle" title="{{ __('Saved') }}">{{ session('status') }}</flux:callout>
     @endif
@@ -382,7 +384,9 @@ new #[Title('Product Card')] class extends Component {
                     <flux:text class="self-end text-sm text-text-muted">{{ __('A local barcode is generated after saving from the first four numeric digits in the selected supplier code.') }}</flux:text>
                 @endif
                 <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" required />
-                ($isEditing)<flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled />
+                @if ($isEditing)
+                    <flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled dir="ltr" />
+                @endif
                 <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" />
             </div>

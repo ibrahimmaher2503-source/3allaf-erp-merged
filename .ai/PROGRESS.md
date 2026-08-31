@@ -1,5 +1,11 @@
 # UI/UX Release Progress
 
+## 2026-08-31 — v0.1.21 Hotfix 3 Readiness/Pricing/UAT Consistency
+
+- Unified Product Card and pricing readiness through one current-data evaluator across Setup Center, persistent context, Products/Product Card, and Pricing Lists.
+- Added localized bounded remediation, direct edit/view-all actions, and correct List 0 inherited/effective/manual-override explanations.
+- Audited and retained every named correction through Hotfix 2 and the marked, positive-priced, guard-protected UAT fixtures without accessing or changing production/UAT data.
+
 ## 2026-08-31 — v0.1.21 Final Stabilization
 
 - Started exactly from tagged `v0.1.20`; replaced the unsupported Purchase Invoice `barcode` Flux icon with supported `qr-code` and confirmed all other scoped M54 Flux references are installed.
