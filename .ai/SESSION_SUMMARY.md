@@ -700,3 +700,11 @@
 - **Work completed:** Replaced the unsupported Purchase Invoice `barcode` Flux icon with installed `qr-code`; audited only the M54 invoice, distribution, quick Product Card, state, and destination-label surfaces; found no other invalid Flux reference. Added release-cache exclusion and runtime-user `rajeh` Artisan ownership guidance.
 - **Verification actually run:** The directly related M54 PHPUnit file passed 8 tests / 62 assertions; the purchasing-invoice route subset registered; one isolated Blade/Flux render probe for the six requested UI contracts and all scoped Flux references passed without exception.
 - **Boundaries:** No database or migration verification, broad suite, frontend build, PDF, browser control, production access, deployment, tag, push, remote contact, shared database mutation, or version bump occurred. Code and documentation changed; commit status is recorded in the final handoff.
+
+## 2026-08-31 — Rajeh ERP v0.1.21 Final Acceptance
+
+- **Task:** Completed Purchase Invoice entry/progression acceptance and reversible company-scoped UAT data support on `feature/v0.1.21-final-stabilization`.
+- **Work completed:** Added distinct hardware/manual/camera entry, bounded autocomplete, state-aware draft continuation, marked UAT batch/record storage, explicit dry-run seed/purge commands, Golden Path/coverage, and runtime-user cache guidance. Corrected stale approval source-version synchronization discovered by the Golden Path.
+- **Verification actually run:** Focused PHPUnit passed 12 tests/95 assertions. One isolated MariaDB completed migrate, seed, idempotent repeat, integrity checks, dry-run purge, confirmed purge, and reseed. One Node 20.20.2 build passed with manifest SHA-256 `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`.
+- **Remaining:** Owner review and later separately authorized release preparation. Code, tests, documentation, database checks, and frontend build occurred; commit status is recorded in the final handoff. No browser/PDF checks or push occurred.
+- **Boundary:** Production, shared databases, deployment, tag, version bump, remote contact, and excluded production paths were untouched.

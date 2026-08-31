@@ -26,6 +26,14 @@
 - Covered posting transaction/idempotency, exact-distribution enforcement, price resolution, permissions, and two-stage/label surfaces.
 - Migration `000099` passed on disposable MariaDB `rajeh_m54_20260831`; no shared database was used.
 - No broad automated suite was run.
+
+# 2026-08-31 — v0.1.21 Final Acceptance
+
+- Focused PHPUnit passed 12 tests / 95 assertions after correcting the obsolete icon expectation exposed by the first focused run.
+- Isolated MariaDB `rajeh_v021_uat_20260831`: initial seed created 44 marked records; repeat seed reused the same batch; dry-run purge reported those 44 records; confirmed purge removed them; reseed created a new 44-record batch.
+- Golden Path integrity: exactly one Draft, Awaiting Distribution, Approved, and Reversed invoice; receiving remainder `0.000000`; two destination price snapshots.
+- The journey exposed and verified a fix for stale pending approval source versions after distribution.
+- Node 20.20.2 Vite build passed; manifest SHA-256 `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`. The host-default Node 16 attempt failed before compilation and changed no application source.
 # 2026-08-31 — v0.1.21 Final Stabilization
 
 - Focused M54 PHPUnit: passed 8 tests / 62 assertions.

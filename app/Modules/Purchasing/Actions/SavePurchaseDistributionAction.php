@@ -6,6 +6,8 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Enums\ApprovalState;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\PriceListResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
@@ -48,6 +50,12 @@ final class SavePurchaseDistributionAction
                 }
             }
             $invoice->update(['status' => 'awaiting_distribution', 'lock_version' => $invoice->lock_version + 1, 'updated_by' => $actor->id]);
+            ApprovalRecord::query()
+                ->where('source_type', 'purchase_invoices')
+                ->where('source_id', (string) $invoice->id)
+                ->where('requested_action', 'approve')
+                ->where('approval_state', ApprovalState::Pending->value)
+                ->update(['source_version' => (string) $invoice->lock_version]);
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'save_purchase_distribution', source: $invoice, before: $before, after: $invoice->distributions()->get()->map->only(['purchase_invoice_line_id', 'destination_store_id', 'quantity', 'effective_selling_price'])->all(), storeId: $invoice->store_id);
             return $invoice->fresh(['lines.product', 'distributions.destination', 'distributions.priceList']);
         });

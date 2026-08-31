@@ -6,14 +6,14 @@
 
 ## Scope
 
-- Permanently replace the unsupported M54 Purchase Invoice `barcode` Flux icon with supported `qr-code`.
-- Audit only the M54 invoice, distribution, quick Product Card, state, and destination-label surfaces for unsupported Flux references.
-- Add release-cache and runtime-user ownership safeguards to the deployment runbook.
+- Complete final Purchase Invoice scanner, manual Add, camera, bounded autocomplete, draft-resume, and state-aware progression acceptance.
+- Add explicit company-bound, marked, idempotent and reversible UAT seed/purge commands, Golden Path, and coverage evidence.
+- Preserve the earlier Flux correction and release-cache/runtime-user safeguards.
 
 ## Verification directive and result
 
-Only the existing focused M54 test file, the purchasing-invoice route subset, and one isolated Flux render probe were authorized. They passed without a database, migration, frontend build, PDF generation, broad suite, production access, deployment, tag, remote contact, shared database mutation, or version bump.
+The focused M54/final-acceptance files passed 12 tests / 95 assertions. One isolated MariaDB completed migration, seed, idempotent reseed, Golden Path integrity checks, dry-run purge, confirmed purge, and reseed. One Node 20.20.2 Vite build passed. No broad suite, production access, deployment, tag, remote contact, shared database mutation, or version bump occurred.
 
 ## Closure
 
-Complete in development and ready for owner review. Evidence: `.ai/V0_1_21_EVIDENCE.md`.
+Complete in development and ready for owner review. Evidence: `.ai/V0_1_21_FINAL_ACCEPTANCE_EVIDENCE.md`.

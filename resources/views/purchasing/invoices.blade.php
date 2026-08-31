@@ -65,9 +65,10 @@ new #[Title('Purchase Invoices')] class extends Component
     ];
 
     public array $lineItems = [];
-    public string $productLookup = '';
+    public string $itemEntry = '';
+    public string $productSearch = '';
     public bool $showQuickProduct = false;
-    public array $quickProduct = ['name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
+    public array $quickProduct = ['barcode'=>'','name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
     public bool $showDistribution = false;
     public array $selectedDestinationIds = [];
     public array $distributionMatrix = [];
@@ -218,29 +219,54 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->lineItems[] = $this->emptyLine();
     }
 
-    public function addScannedProduct(): void
+    public function addItemEntry(): void
     {
-        $lookup = trim($this->productLookup);
-        if ($lookup === '') return;
+        $lookup = trim($this->itemEntry);
+        if ($lookup === '') { $this->dispatch('invoice-scanner-focus'); return; }
         $product = Product::query()->sellable()->where(function ($query) use ($lookup): void {
-            $query->where('item_code', $lookup)->orWhere('model_number', $lookup)->orWhere('name_ar', 'like', '%'.$lookup.'%')->orWhere('name_en', 'like', '%'.$lookup.'%')->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', $lookup)->where('status', 'active'));
+            $query->where('item_code', $lookup)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', $lookup)->where('status', 'active'));
         })->first();
-        if (! $product) { $this->showQuickProduct = true; return; }
+        if (! $product) { $this->openQuickProduct($lookup); return; }
+        $this->insertProduct($product);
+    }
+
+    public function selectSearchProduct(int $productId): void
+    {
+        $product = Product::query()->sellable()->findOrFail($productId);
+        $this->insertProduct($product);
+        $this->productSearch = '';
+    }
+
+    public function openQuickProduct(string $barcode = ''): void
+    {
+        Gate::authorize('purchase_invoices_supplier_returns.create');
+        $this->quickProduct = ['barcode'=>trim($barcode),'name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
+        $this->showQuickProduct = true;
+    }
+
+    private function insertProduct(Product $product): void
+    {
         foreach ($this->lineItems as $index => $line) {
-            if ((int) ($line['product_id'] ?? 0) === $product->id) { $this->lineItems[$index]['quantity'] = bcadd((string) $line['quantity'], '1', 6); $this->productLookup=''; return; }
+            if ((int) ($line['product_id'] ?? 0) === $product->id) {
+                $this->lineItems[$index]['quantity'] = bcadd((string) $line['quantity'], '1', 6);
+                $this->itemEntry='';
+                $this->dispatch('invoice-line-focus', index: $index);
+                return;
+            }
         }
         if (count($this->lineItems) === 1 && empty($this->lineItems[0]['product_id'])) $this->lineItems=[];
         $this->lineItems[] = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>(string)($product->average_cost ?? 0), 'base_consumer_price'=>(string)($product->sale_price ?? 0)];
-        $this->productLookup='';
+        $this->itemEntry='';
+        $this->dispatch('invoice-scanner-focus');
     }
 
     public function createQuickProduct(SaveProductAction $save, ReserveProductIdentityAction $identity): void
     {
-        $this->validate(['quickProduct.name_ar'=>'required|string|max:255','quickProduct.name_en'=>'nullable|string|max:255','quickProduct.model_number'=>'nullable|string|max:100','quickProduct.category_id'=>'required|exists:categories,id']);
-        $lookup=trim($this->productLookup);
+        $this->validate(['quickProduct.barcode'=>'nullable|string|max:64','quickProduct.name_ar'=>'required|string|max:255','quickProduct.name_en'=>'nullable|string|max:255','quickProduct.model_number'=>'nullable|string|max:100','quickProduct.category_id'=>'required|exists:categories,id']);
+        $lookup=trim((string)$this->quickProduct['barcode']);
         $product=$save->execute([...$this->quickProduct,'item_code'=>preg_match('/^[A-Z0-9][A-Z0-9._\/-]{0,49}$/i',$lookup)?$lookup:'','product_type'=>'standard','status'=>'active','preferred_supplier_id'=>$this->invoiceForm['supplier_id'] ?: null,'average_cost'=>0,'sale_price'=>0]);
         if (preg_match('/^\d{8}$|^\d{12,14}$/',$lookup) && ! Barcode::query()->where('barcode',$lookup)->exists()) $identity->createPrimaryBarcode($product,app(\App\Modules\Catalog\Support\ProductBarcodePolicy::class)->international($lookup),'international');
-        $this->showQuickProduct=false; $this->addScannedProduct();
+        $this->showQuickProduct=false; $this->insertProduct($product);
     }
 
     public function removeLine(int $index): void
@@ -369,7 +395,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
         $invoices = PurchaseInvoice::query()
             ->whereIn('store_id', $visibleStoreIds)
-            ->with(['supplier', 'store', 'distributions.destination'])
+            ->with(['supplier', 'store', 'lines.distributions', 'distributions.destination'])
             ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                 $query->where('supplier_reference', 'like', '%'.$this->search.'%')
                     ->orWhere('invoice_number', 'like', '%'.$this->search.'%');
@@ -386,7 +412,8 @@ new #[Title('Purchase Invoices')] class extends Component
             'invoices' => $invoices,
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('name_en')->get(),
             'stores' => Store::query()->visibleTo($actor)->where('status', 'active')->orderBy('name_en')->get(),
-            'products' => Product::query()->sellable()->orderBy('item_code')->limit(1000)->get(),
+            'productResults' => mb_strlen(trim($this->productSearch)) >= 3 ? Product::query()->sellable()->with(['barcodes'=>fn($query)=>$query->where('status','active')->orderByDesc('is_primary')])->where(function($query): void { $term=trim($this->productSearch); $query->where('item_code','like',$term.'%')->orWhere('model_number','like',$term.'%')->orWhere('name_ar','like',$term.'%')->orWhere('name_en','like',$term.'%')->orWhereHas('barcodes',fn($barcodes)=>$barcodes->where('status','active')->where('barcode','like',$term.'%')); })->orderBy('item_code')->limit(8)->get() : collect(),
+            'lineProducts' => Product::query()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn($id)=>(int)$id))->get()->keyBy('id'),
             'categories' => Category::query()->where('status','active')->orderBy('name_en')->get(),
             'distributionInvoice' => $this->showDistribution && $this->editingInvoiceId ? PurchaseInvoice::query()->with(['lines.product','distributions.destination'])->find($this->editingInvoiceId) : null,
         ]);
@@ -472,10 +499,15 @@ new #[Title('Purchase Invoices')] class extends Component
                 <flux:table.column>{{ __('Date') }}</flux:table.column>
                 <flux:table.column>{{ __('Total') }}</flux:table.column>
                 <flux:table.column>{{ __('Status') }}</flux:table.column>
+                <flux:table.column>{{ __('Current stage') }}</flux:table.column>
+                <flux:table.column>{{ __('Next required action') }}</flux:table.column>
+                <flux:table.column>{{ __('Remaining quantity') }}</flux:table.column>
                 <flux:table.column>{{ __('Actions') }}</flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
                 @forelse ($invoices as $invoice)
+                    @php($remaining=$invoice->lines->reduce(fn($total,$line)=>bcadd($total,bcsub((string)$line->quantity,$line->distributions->reduce(fn($allocated,$distribution)=>bcadd($allocated,(string)$distribution->quantity,6),'0'),6),6),'0'))
+                    @php($fullyDistributed=$invoice->lines->isNotEmpty()&&bccomp($remaining,'0',6)===0)
                     <flux:table.row :key="$invoice->id">
                         <flux:table.cell data-primary>{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}<div class="text-xs text-text-muted">{{ $invoice->supplier_reference }}</div></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Supplier') }}">{{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:table.cell>
@@ -483,15 +515,20 @@ new #[Title('Purchase Invoices')] class extends Component
                         <flux:table.cell data-label="{{ __('Date') }}">{{ $invoice->invoice_date?->format('Y-m-d') }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Total') }}"><x-money :amount="$invoice->total_amount" :currency="$invoice->currency_code" /></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Status') }}"><x-status.badge :status="$invoice->status" /></flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Current stage') }}">{{ $invoice->status==='draft' ? __('Stage 1 — Purchase invoice') : __('Stage 2 — Mandatory distribution') }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Next required action') }}">{{ $invoice->status==='draft' ? __('Complete invoice') : ($fullyDistributed ? __('Approve and post invoice') : __('Review and distribute quantities')) }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Remaining quantity') }}"><span dir="ltr">{{ $remaining }}</span></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Actions') }}">
                             @can('purchase_invoices_supplier_returns.print')
                                 <x-actions.button semantic="print" :label="__('Print')" :href="route('purchasing.invoices.print', $invoice)" target="_blank">{{ __('Print') }}</x-actions.button>
                             @endcan
                             @if ($invoice->status === 'draft')
                                 <div class="flex flex-wrap gap-2">
-                                    <x-actions.button semantic="edit" :label="__('Edit')" wire:click="openEditModal({{ $invoice->id }})">{{ __('Edit') }}</x-actions.button>
+                                    <flux:button variant="primary" wire:click="openEditModal({{ $invoice->id }})">{{ __('Complete invoice') }}</flux:button>
                                     @can('purchase_invoices_supplier_returns.edit')
-                                        <flux:button size="sm" variant="subtle" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Submit') }}</flux:button>
+                                        <flux:button size="sm" variant="subtle" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Review and distribute quantities') }}</flux:button>
+                                    @else
+                                        <flux:button size="sm" disabled title="{{__('You do not have permission to complete Stage 1.')}}">{{ __('Review and distribute quantities') }}</flux:button>
                                     @endcan
                                     @can('purchase_invoices_supplier_returns.cancel')
                                         <flux:button size="sm" variant="subtle" wire:click="openTransitionModal('cancel', {{ $invoice->id }})">{{ __('Cancel') }}</flux:button>
@@ -499,9 +536,11 @@ new #[Title('Purchase Invoices')] class extends Component
                                 </div>
                             @elseif (in_array($invoice->status, ['submitted','awaiting_distribution'], true))
                                 <div class="flex flex-wrap gap-2">
-                                    @can('purchase_invoices.distribute')
-                                        <flux:button size="sm" variant="primary" wire:click="openDistribution({{ $invoice->id }})">{{ __('Distribute') }}</flux:button>
-                                    @endcan
+                                    @if($fullyDistributed)
+                                        @can('purchase_invoices.approve')<flux:button size="sm" variant="primary" wire:click="approveInvoice({{ $invoice->id }})">{{ __('Approve and post invoice') }}</flux:button>@else<flux:button size="sm" disabled title="{{__('You do not have permission to approve and post this invoice.')}}">{{ __('Approve and post invoice') }}</flux:button>@endcan
+                                    @else
+                                        @can('purchase_invoices.distribute')<flux:button size="sm" variant="primary" wire:click="openDistribution({{ $invoice->id }})">{{ __('Review and distribute quantities') }}</flux:button>@else<flux:button size="sm" disabled title="{{__('You do not have permission to distribute this invoice.')}}">{{ __('Review and distribute quantities') }}</flux:button>@endcan
+                                    @endif
                                     @can('purchase_invoices.approve')
                                         <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal('reject', {{ $invoice->id }})">{{ __('Reject') }}</x-actions.button>
                                     @endcan
@@ -525,7 +564,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7">
+                        <flux:table.cell colspan="10">
                             <div class="flex flex-col items-center gap-2 py-10 text-center">
                                 <flux:icon name="document-text" class="size-8 text-text-muted" />
                                 <flux:heading size="sm">{{ __('No purchase invoices yet.') }}</flux:heading>
@@ -574,18 +613,21 @@ new #[Title('Purchase Invoices')] class extends Component
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
                         <flux:button type="button" size="sm" variant="subtle" wire:click="addLine" icon="plus">{{ __('Add line') }}</flux:button>
                     </div>
-                    <div class="flex flex-col gap-2 sm:flex-row">
-                        <flux:input wire:model="productLookup" class="flex-1" :label="__('Barcode, item code, product name, or model number')" autofocus />
-                        <flux:button type="button" wire:click="addScannedProduct" variant="primary" icon="qr-code">{{ __('Add / scan') }}</flux:button>
+                    <div x-data="{camera:false,stream:null,async start(){if(!('BarcodeDetector' in window)){alert(@js(__('Camera barcode scanning is not supported by this browser.')));return} this.camera=true; this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); this.$nextTick(()=>{this.$refs.video.srcObject=this.stream; this.detect()})},async detect(){if(!this.camera)return; const hits=await (new BarcodeDetector()).detect(this.$refs.video); if(hits[0]){this.stop(); await $wire.set('itemEntry',hits[0].rawValue); await $wire.addItemEntry();return} requestAnimationFrame(()=>this.detect())},stop(){this.camera=false;this.stream?.getTracks().forEach(track=>track.stop());this.stream=null} }" class="space-y-3">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                            <flux:input id="purchase-item-entry" wire:model="itemEntry" wire:keydown.enter.prevent="addItemEntry" class="flex-1" :label="__('Barcode or item code')" autocomplete="off" autofocus x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('input')?.focus())" />
+                            <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus">{{ __('Add') }}</flux:button>
+                            <flux:button type="button" x-on:click="start" variant="subtle" icon="camera">{{ __('Scan with camera') }}</flux:button>
+                        </div>
+                        <div x-show="camera" x-cloak class="rounded-xl border p-3"><video x-ref="video" autoplay playsinline class="mx-auto max-h-64 rounded-lg"></video><flux:button type="button" class="mt-2" x-on:click="stop">{{ __('Close camera') }}</flux:button></div>
+                    </div>
+                    <div class="relative">
+                        <flux:input wire:model.live.debounce.300ms="productSearch" :label="__('Search products')" :description="__('Enter at least 3 characters or digits. Search covers name, model, item code, and barcode.')" autocomplete="off" />
+                        @if(mb_strlen(trim($productSearch)) >= 3)<div class="mt-2 divide-y rounded-xl border bg-surface shadow-sm">@forelse($productResults as $result)<button type="button" wire:click="selectSearchProduct({{$result->id}})" class="block w-full p-3 text-start hover:bg-surface-muted"><strong>{{ app()->getLocale()==='ar'?$result->name_ar:($result->name_en?:$result->name_ar) }}</strong><span class="mt-1 block text-xs text-text-muted" dir="ltr">{{ $result->model_number ?: '—' }} · {{ $result->item_code }} · {{ $result->barcodes->first()?->barcode ?: '—' }}</span></button>@empty<div class="p-3 text-sm text-text-muted">{{__('No matching products.')}}</div>@endforelse</div>@endif
                     </div>
                     @foreach ($lineItems as $index => $line)
                         <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-8" wire:key="invoice-line-{{ $index }}">
-                            <flux:select wire:model="lineItems.{{ $index }}.product_id" class="md:col-span-2" :label="__('Product')">
-                                <flux:select.option value="">{{ __('Select product') }}</flux:select.option>
-                                @foreach ($products as $product)
-                                    <flux:select.option value="{{ $product->id }}">{{ $product->item_code }} — {{ $product->name_en ?: $product->name_ar }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
+                            <div class="md:col-span-2" tabindex="-1" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$el.focus()"><flux:label>{{__('Product')}}</flux:label><div class="mt-2 rounded-lg border p-3">@php($lineProduct=$lineProducts->get((int)($line['product_id']??0)))<strong>{{ $lineProduct ? (app()->getLocale()==='ar'?$lineProduct->name_ar:($lineProduct->name_en?:$lineProduct->name_ar)) : __('Product pending') }}</strong><div class="text-xs text-text-muted" dir="ltr">{{ $lineProduct?->item_code }}</div></div></div>
                             <flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="0.000001" step="0.000001" :label="__('Quantity')" />
                             <flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" />
                             <flux:input wire:model="lineItems.{{ $index }}.base_consumer_price" type="number" min="0" step="0.001" :label="__('Base Consumer Price List 0')" :disabled="!Gate::allows('purchase_invoices.change_list0_price')" />
@@ -632,7 +674,7 @@ new #[Title('Purchase Invoices')] class extends Component
     @endif
 
     @if($showQuickProduct)
-        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-2xl"><form wire:submit="createQuickProduct" class="space-y-4"><flux:heading size="lg">{{__('Unknown barcode — create Product Card')}}</flux:heading><flux:text>{{__('The invoice remains open. Create the product and it will be inserted immediately.')}}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model="quickProduct.name_ar" :label="__('Arabic name')" required/><flux:input wire:model="quickProduct.name_en" :label="__('English name')"/><flux:input wire:model="quickProduct.model_number" :label="__('Model number')"/><flux:select wire:model="quickProduct.category_id" :label="__('Category')"><flux:select.option value="">{{__('Select category')}}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{$category->id}}">{{$category->name_en?:$category->name_ar}}</flux:select.option>@endforeach</flux:select></div><div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showQuickProduct',false)">{{__('Cancel')}}</flux:button><flux:button type="submit" variant="primary">{{__('Create and add')}}</flux:button></div></form></flux:modal>
+        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-2xl"><form wire:submit="createQuickProduct" class="space-y-4"><flux:heading size="lg">{{__('Unknown barcode — create Product Card')}}</flux:heading><flux:text>{{__('The invoice remains open. Create the product and it will be inserted immediately.')}}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model="quickProduct.barcode" :label="__('Barcode or item code')"/><flux:input wire:model="quickProduct.name_ar" :label="__('Arabic name')" required/><flux:input wire:model="quickProduct.name_en" :label="__('English name')"/><flux:input wire:model="quickProduct.model_number" :label="__('Model number')"/><flux:select wire:model="quickProduct.category_id" :label="__('Category')"><flux:select.option value="">{{__('Select category')}}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{$category->id}}">{{$category->name_en?:$category->name_ar}}</flux:select.option>@endforeach</flux:select></div><div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showQuickProduct',false)">{{__('Cancel')}}</flux:button><flux:button type="submit" variant="primary">{{__('Create and add')}}</flux:button></div></form></flux:modal>
     @endif
 
     @if ($showTransitionModal)

@@ -53,7 +53,7 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         $view=$this->source('resources/views/purchasing/invoices.blade.php');
         self::assertStringContainsString('Stage 1 — Purchase invoice', $view);
         self::assertStringContainsString('Stage 2 — Mandatory distribution', $view);
-        self::assertStringContainsString('addScannedProduct', $view);
+        self::assertStringContainsString('addItemEntry', $view);
         self::assertStringContainsString('createQuickProduct', $view);
         self::assertStringContainsString('Base Consumer Price List 0', $view);
         self::assertFileExists(dirname(__DIR__,2).'/resources/views/purchasing/destination-labels.blade.php');
@@ -64,7 +64,7 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         $view = $this->source('resources/views/purchasing/invoices.blade.php');
 
         self::assertStringNotContainsString('icon="barcode"', $view);
-        self::assertStringContainsString('icon="qr-code"', $view);
+        self::assertStringContainsString('icon="camera"', $view);
 
         preg_match_all('/icon="([a-z0-9-]+)"/', $view, $matches);
         foreach (array_unique($matches[1]) as $icon) {

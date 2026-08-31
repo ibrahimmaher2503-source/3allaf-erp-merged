@@ -93,3 +93,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Implemented the full-page two-stage workflow, lookup/scanning, in-context Product Card creation, exact distribution matrix, outlet price snapshots, destination labels, transactional idempotent posting, Product Card cost/List 0 audit updates, reversal, and eight least-privilege permissions.
 - Added one additive migration (`000099`). Existing Setup sequence remains the single context and Product Import remains inside Product Cards.
 - Focused M54 PHPUnit passed 5 tests/29 assertions. Migration `000099` passed on disposable MariaDB `rajeh_m54_20260831`; the database/server were removed. Focused syntax, routes, Arabic JSON, and diff checks passed.
+
+# v0.1.21 Final Acceptance (2026-08-31)
+
+- Added distinct scanner/manual/camera entry, bounded three-character autocomplete, duplicate quantity focus, unknown-barcode Product Card continuation, and explicit draft stage/next-action/remaining-quantity presentation.
+- Added company-bound UAT batches and allowlisted marked records with explicit dry-run seed/purge commands, generated-on-execution credentials, Golden Path, and coverage report.
+- Corrected pending approval source-version synchronization after Stage 2 distribution, found during the isolated UAT journey.
+- Focused tests passed 12/95; isolated MariaDB seed/purge/reseed lifecycle and Node 20.20.2 build passed. Manifest SHA-256: `4d41c4fce936e8ba68f79ec69c89c36178f4481a8fa660774cce61de4894fe3f`.
