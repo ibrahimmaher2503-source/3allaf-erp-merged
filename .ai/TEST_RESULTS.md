@@ -20,3 +20,9 @@
 - Owner-authorized focused PHPUnit passed 6 tests and 28 assertions for formula/rounding, protected List 0, dated overrides/removal, outlet resolution, snapshot integrity, authorization, and Setup reasons. No unrelated suite ran.
 - Isolated task-local MariaDB migration 000098 completed successfully and created the override table, list metadata, assignment foreign keys, and permissions.
 - Genuine authenticated evidence covered Pricing Lists in Arabic desktop and English mobile, Arabic Product Card pricing matrix, English outlet assignment, and Arabic mobile Setup readiness. All returned HTTP 200 with correct direction, local Cairo on Arabic pages, zero serious/critical Axe violations, overflow, console errors, or external requests.
+# 2026-08-31 — M54 focused verification
+
+- Focused PHPUnit: 5 tests / 29 assertions passed.
+- Covered posting transaction/idempotency, exact-distribution enforcement, price resolution, permissions, and two-stage/label surfaces.
+- Migration `000099` passed on disposable MariaDB `rajeh_m54_20260831`; no shared database was used.
+- No broad automated suite was run.

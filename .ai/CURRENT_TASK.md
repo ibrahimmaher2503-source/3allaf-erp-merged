@@ -1,21 +1,20 @@
-# Current Task — M53 v0.1.19 Pricing Lists
+# Current Task — M54 Rajeh ERP v0.1.20 Purchase Receiving Distribution
 
 **Date:** 2026-08-31
-**Branch:** `feature/v0.1.19-price-lists`
-**Baseline:** published `v0.1.18` commit `768b2ad9037f16059dc8a5ec08ba8978d3847514`
+**Branch:** `feature/v0.1.20-purchase-receiving-distribution`
+**Baseline:** published `v0.1.19` commit `6a2d02b6c8e50e6872a41aa5e0f7845b9f76f4cd`
 
 ## Scope
 
-- Company-scoped Base Price List 0 backed directly by Product Card consumer prices.
-- Reusable percentage lists with decimal-safe upward rounding to 5 EGP.
-- Audited product overrides and outlet/branch list assignment.
-- Product pricing matrix and authoritative effective-price resolution contract.
-- Pricing Setup readiness with factual product, list, and outlet conditions.
+- Full-page purchase-invoice entry with barcode/item/name/model lookup and in-context Product Card creation.
+- Mandatory exact destination allocation, transactional receipt/distribution posting, immutable audit, reversal, and idempotency.
+- Product Card latest cost/List 0 updates and effective destination price/label integration.
+- Eight least-privilege permissions and the persistent existing Setup context.
 
 ## Verification directive
 
-The owner authorized focused M53 pricing tests, one isolated MariaDB migration, and one compact genuine authenticated Arabic/English desktop/mobile visual pass. Production/shared runtime and data remain prohibited.
+The owner authorized only focused M54 tests for posting invariants, full distribution, idempotency, price resolution, and permissions, plus one final visual pass. Production/shared runtime and data remain prohibited.
 
 ## Closure
 
-Implementation, focused tests, isolated migration, changed-file checks, route/localization checks, and compact visual acceptance passed. Frontend sources were unchanged, so the existing verified build was retained.
+Implementation and focused verification are complete in development. No production, shared database, deployment, version bump, tag, push, or remote contact occurred.

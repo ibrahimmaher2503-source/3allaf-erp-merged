@@ -26,7 +26,7 @@ final class ReversePurchaseInvoiceAction
 {
     public function execute(int $id, string $reason, ?int $expectedVersion = null): PurchaseInvoice
     {
-        Gate::authorize('purchase_invoices_supplier_returns.reverse');
+        Gate::authorize('purchase_invoices.reverse');
         $actor = Auth::user();
         abort_unless($actor instanceof User, 403);
         $actorId = (int) $actor->getAuthIdentifier();
@@ -52,7 +52,7 @@ final class ReversePurchaseInvoiceAction
             if ($invoice->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved invoices can be reversed.'));
             }
-            $movements = StockMovement::query()->where('source_type', PurchaseInvoice::class)->where('source_id', $invoice->id)->where('movement_type', 'purchase_receipt')->lockForUpdate()->get();
+            $movements = StockMovement::query()->where('source_type', PurchaseInvoice::class)->where('source_id', $invoice->id)->where('movement_type', 'purchase_distribution_in')->lockForUpdate()->get();
             if ($movements->isEmpty()) {
                 throw new InvalidArgumentException(__('No receipt movement exists to reverse.'));
             }
@@ -68,6 +68,8 @@ final class ReversePurchaseInvoiceAction
                     $poLine->mutateApprovedParentLine(['quantity_received' => $this->subtract($poLine->quantity_received, $line->quantity, 6)]);
                 }
                 $line->mutateApprovedParentLine(['quantity_received' => 0]);
+                $product = \App\Modules\Catalog\Models\Product::query()->lockForUpdate()->findOrFail($line->product_id);
+                $product->update(['average_cost' => $line->previous_product_cost, 'sale_price' => $line->previous_base_consumer_price, 'lock_version' => $product->lock_version + 1]);
             }
 
             $before = $invoice->only(['status', 'lock_version']);
@@ -94,7 +96,7 @@ final class ReversePurchaseInvoiceAction
                 $invoice,
                 $actor,
                 [CorrectionType::Reversal],
-                fn (User $user): mixed => Gate::forUser($user)->authorize('purchase_invoices_supplier_returns.reverse'),
+                fn (User $user): mixed => Gate::forUser($user)->authorize('purchase_invoices.reverse'),
                 function () use ($actorId, $invoice, $reason): PurchaseInvoice {
                     $invoice->mutateApprovedDocument(['status' => 'reversed', 'cancelled_at' => now(), 'cancelled_by' => $actorId, 'cancel_reason' => $reason, 'lock_version' => $invoice->lock_version + 1]);
 
@@ -122,9 +124,7 @@ final class ReversePurchaseInvoiceAction
             if (StockMovement::query()->where('idempotency_key', $key)->exists()) {
                 continue;
             }
-            if ((int) $movement->store_id !== (int) $invoice->store_id) {
-                throw new InvalidArgumentException(__('The receipt movement does not belong to the invoice store.'));
-            }
+            if (! Store::query()->whereKey($movement->store_id)->exists()) throw new InvalidArgumentException(__('The distribution destination no longer exists.'));
 
             $balance = StockBalance::query()->where('product_id', $movement->product_id)->where('store_id', $movement->store_id)->lockForUpdate()->firstOrFail();
             if ($this->compare($balance->on_hand, $movement->quantity) < 0) {

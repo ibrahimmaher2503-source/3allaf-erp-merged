@@ -33,9 +33,13 @@ final class PriceListResolver
 
     public function resolve(Product $product, PriceList $list, ?\DateTimeInterface $at = null): ResolvedListPrice
     {
+        return $this->resolveWithBasePrice($product, $list, (string) $product->sale_price, $at);
+    }
+
+    public function resolveWithBasePrice(Product $product, PriceList $list, string $base, ?\DateTimeInterface $at = null): ResolvedListPrice
+    {
         $companyId = (int) Company::query()->where('status', 'active')->value('id');
         if (! $list->isEffective($at) || $list->company_id !== $companyId) throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
-        $base = (string) $product->sale_price;
         if (bccomp($this->normalized($base, 3), '0', 3) <= 0) throw ValidationException::withMessages(['base_price' => __('Add a positive base consumer price to the Product Card.')]);
         $calculation = $list->isBase() ? ['pre_round' => $base, 'rounded' => $base] : $this->calculate($base, (string) $list->percentage_increase);
         $override = ProductPriceOverride::query()->where('company_id', $companyId)->where('price_list_id', $list->id)->where('product_id', $product->id)->first();

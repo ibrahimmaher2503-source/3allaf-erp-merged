@@ -20,7 +20,7 @@ final class RejectPurchaseInvoiceAction
 {
     public function execute(int $id, string $reason, ?int $expectedVersion = null): PurchaseInvoice
     {
-        Gate::authorize('purchase_invoices_supplier_returns.approve');
+        Gate::authorize('purchase_invoices.approve');
         $actor = Auth::user();
         abort_unless($actor instanceof User, 403);
         $actorId = (int) $actor->getAuthIdentifier();
@@ -39,8 +39,8 @@ final class RejectPurchaseInvoiceAction
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session.'));
             }
-            if ($invoice->status !== 'submitted') {
-                throw new InvalidArgumentException(__('Only submitted invoices can be rejected.'));
+            if (! in_array($invoice->status, ['submitted', 'awaiting_distribution'], true)) {
+                throw new InvalidArgumentException(__('Only invoices awaiting distribution can be rejected.'));
             }
             $approval = ApprovalRecord::query()
                 ->where('source_type', 'purchase_invoices')

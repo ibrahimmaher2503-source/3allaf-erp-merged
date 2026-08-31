@@ -36,8 +36,8 @@ final class CancelPurchaseInvoiceAction
             if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This invoice was modified in another session.'));
             }
-            if (! in_array($invoice->status, ['draft', 'submitted'], true)) {
-                throw new InvalidArgumentException(__('Only draft or submitted invoices can be cancelled.'));
+            if (! in_array($invoice->status, ['draft', 'submitted', 'awaiting_distribution'], true)) {
+                throw new InvalidArgumentException(__('Only draft or awaiting-distribution invoices can be cancelled.'));
             }
             $before = $invoice->only(['status', 'lock_version']);
             $invoice->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actorId, 'cancel_reason' => $reason, 'lock_version' => $invoice->lock_version + 1]);

@@ -43,7 +43,7 @@ final class SubmitPurchaseInvoiceAction
 
             $before = $invoice->only(['status', 'lock_version']);
             $invoice->update([
-                'status' => 'submitted',
+                'status' => 'awaiting_distribution',
                 'submitted_at' => now(),
                 'submitted_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,

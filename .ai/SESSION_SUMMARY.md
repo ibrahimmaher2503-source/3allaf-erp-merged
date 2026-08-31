@@ -687,3 +687,9 @@
 - **Verification actually run:** Focused PHPUnit passed 6 tests/28 assertions. Migration 000098 completed on isolated MariaDB. Changed PHP/Blade and Arabic JSON checks, pricing routes, manifest references, and `git diff --check` passed. Five genuine authenticated Arabic/English desktop/mobile cases returned 200 with Cairo/RTL/LTR, one Setup context, zero serious/critical Axe findings, document overflow, console errors, or external requests.
 - **Corrections from visual pass:** Replaced invalid component aliases with the established Setup/state/action components, expanded the Product matrix Blade directives so they compile reliably, removed a duplicate Setup context, and completed Arabic pricing-table labels.
 - **Boundary:** Frontend sources were unchanged, so no build ran. No production/shared data, deployment, version bump, tag, push, remote contact, or excluded-path access occurred.
+# 2026-08-31 — M54 Rajeh ERP v0.1.20 Purchase Receiving Distribution
+
+- **Task:** Implemented M54 from exact `v0.1.19` on `feature/v0.1.20-purchase-receiving-distribution`.
+- **Work completed:** Added the bilingual full-page two-stage invoice/distribution workflow, scanner/search entry, unknown-barcode Product Card modal, duplicate incrementing, independent cost/List 0 editing, drafts, exact destination allocation, price snapshots/labels, locked idempotent posting, audited Product Card updates, state distinctions, reversal, and least-privilege permissions.
+- **Verification actually run:** Focused PHPUnit passed 5 tests/29 assertions. Additive migration `000099` passed on isolated MariaDB `rajeh_m54_20260831`, removed afterward. Focused syntax, routes, Arabic JSON, and diff checks passed. No broad suite ran.
+- **Boundaries:** No production/shared runtime or database, deployment, version bump, tag, push, or remote contact occurred.

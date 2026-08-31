@@ -26,7 +26,10 @@ final class SavePurchaseInvoiceAction
      */
     public function execute(array $data, array $lines, ?int $id = null, ?int $expectedVersion = null): PurchaseInvoice
     {
-        Gate::authorize($id ? 'purchase_invoices_supplier_returns.edit' : 'purchase_invoices_supplier_returns.create');
+        Gate::authorize('purchase_invoices.draft');
+        if (collect($lines)->pluck('product_id')->filter()->duplicates()->isNotEmpty()) throw new InvalidArgumentException(__('A product may appear only once; scan it again to increase quantity.'));
+        if (! Gate::allows('purchase_invoices.change_cost')) throw new InvalidArgumentException(__('You are not allowed to change purchase cost.'));
+        if (! Gate::allows('purchase_invoices.change_list0_price')) throw new InvalidArgumentException(__('You are not allowed to change Base Consumer Price List 0.'));
         $actor = Auth::user();
         abort_unless($actor instanceof User, 403);
 
@@ -163,10 +166,12 @@ final class SavePurchaseInvoiceAction
             }
 
             foreach ($totals['calculated'] as $index => $line) {
+                $product = Product::query()->findOrFail($normalizedLines[$index]['product_id']);
                 $invoice->lines()->create([
                     ...$line,
                     'product_id' => $normalizedLines[$index]['product_id'],
                     'purchase_order_line_id' => $normalizedLines[$index]['purchase_order_line_id'],
+                    'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
                     'quantity_received' => 0,
                 ]);
             }

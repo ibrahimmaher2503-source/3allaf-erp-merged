@@ -98,6 +98,9 @@ final class ProductionSeeder extends Seeder
         }
 
         Permission::query()->updateOrCreate(['code' => 'purchase_returns.approve_over_limit'], ['module' => 'purchase_returns', 'action' => 'approve_over_limit', 'sensitivity' => 'sensitive', 'status' => 'active']);
+        foreach (['draft', 'distribute', 'approve', 'reverse', 'view_cost', 'change_cost', 'change_list0_price', 'print_labels'] as $action) {
+            Permission::query()->updateOrCreate(['code' => 'purchase_invoices.'.$action], ['module' => 'purchase_invoices', 'action' => $action, 'sensitivity' => in_array($action, ['approve', 'reverse', 'change_cost', 'change_list0_price'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
+        }
         foreach ([
             ['code' => 'suppliers.preferred_change', 'module' => 'suppliers', 'action' => 'preferred_change'],
             ['code' => 'inventory_stock_card.cost_view', 'module' => 'inventory_stock_card', 'action' => 'cost_view'],
@@ -199,6 +202,10 @@ final class ProductionSeeder extends Seeder
 
         $rolePermissions['system-administrator'] = [...$rolePermissions['system-administrator'], 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf'];
         $rolePermissions['accountant-reviewer'] = [...$rolePermissions['accountant-reviewer'], 'dashboard_reports.export_xlsx', 'dashboard_reports.export_pdf'];
+        $rolePermissions['system-administrator'] = [...$rolePermissions['system-administrator'], 'purchase_invoices.draft', 'purchase_invoices.distribute', 'purchase_invoices.approve', 'purchase_invoices.reverse', 'purchase_invoices.view_cost', 'purchase_invoices.change_cost', 'purchase_invoices.change_list0_price', 'purchase_invoices.print_labels'];
+        $rolePermissions['purchasing-officer'] = [...$rolePermissions['purchasing-officer'], 'purchase_invoices.draft', 'purchase_invoices.distribute', 'purchase_invoices.view_cost', 'purchase_invoices.change_cost', 'purchase_invoices.change_list0_price', 'purchase_invoices.print_labels'];
+        $rolePermissions['warehouse-manager'] = [...$rolePermissions['warehouse-manager'], 'purchase_invoices.distribute', 'purchase_invoices.approve', 'purchase_invoices.view_cost', 'purchase_invoices.print_labels'];
+        $rolePermissions['accountant-reviewer'] = [...$rolePermissions['accountant-reviewer'], 'purchase_invoices.approve', 'purchase_invoices.reverse', 'purchase_invoices.view_cost'];
 
         $instrumentViewer = ['gift_receipts.view', 'gift_receipts.print', 'gift_receipts.reprint', 'gift_receipts.validate', 'returns.view', 'returns.print', 'gift_cards.view', 'gift_cards.print'];
         $cashierInstrumentPermissions = [...$instrumentViewer, 'gift_receipts.issue', 'returns.create', 'returns.submit', 'returns.complete', 'gift_cards.issue', 'gift_cards.redeem'];

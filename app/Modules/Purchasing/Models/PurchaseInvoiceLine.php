@@ -16,7 +16,7 @@ final class PurchaseInvoiceLine extends Model
 
     protected $fillable = [
         'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'quantity', 'quantity_received',
-        'unit_cost', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_code',
+        'unit_cost', 'base_consumer_price', 'previous_product_cost', 'previous_base_consumer_price', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_code',
         'tax_amount', 'subtotal', 'line_total',
     ];
 
@@ -24,6 +24,9 @@ final class PurchaseInvoiceLine extends Model
         'quantity' => 'decimal:6',
         'quantity_received' => 'decimal:6',
         'unit_cost' => 'decimal:4',
+        'base_consumer_price' => 'decimal:3',
+        'previous_product_cost' => 'decimal:4',
+        'previous_base_consumer_price' => 'decimal:3',
         'discount_value' => 'decimal:4',
         'discount_amount' => 'decimal:4',
         'tax_rate' => 'decimal:4',
@@ -54,6 +57,11 @@ final class PurchaseInvoiceLine extends Model
     public function supplierReturnLines(): HasMany
     {
         return $this->hasMany(PurchaseReturnLine::class, 'purchase_invoice_line_id');
+    }
+
+    public function distributions(): HasMany
+    {
+        return $this->hasMany(PurchaseInvoiceDistribution::class);
     }
 
     protected function approvedParent(): ?Model

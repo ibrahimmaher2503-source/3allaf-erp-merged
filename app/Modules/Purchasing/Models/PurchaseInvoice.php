@@ -62,6 +62,12 @@ final class PurchaseInvoice extends Model implements ImmutableSourceContract
         return $this->hasMany(PurchaseInvoiceLine::class);
     }
 
+    /** @return HasMany<PurchaseInvoiceDistribution, $this> */
+    public function distributions(): HasMany
+    {
+        return $this->hasMany(PurchaseInvoiceDistribution::class);
+    }
+
     /** @return HasMany<PurchaseReturn, $this> */
     public function supplierReturns(): HasMany
     {
