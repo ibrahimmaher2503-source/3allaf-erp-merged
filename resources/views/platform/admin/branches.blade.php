@@ -7,6 +7,7 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
@@ -45,6 +46,7 @@ new #[Title('Branch Management')] class extends Component
 
     public array $branchForm = [
         'code' => '',
+        'default_price_list_id' => '',
         'name_ar' => '',
         'name_en' => '',
         'phone' => '',
@@ -108,6 +110,7 @@ new #[Title('Branch Management')] class extends Component
         $this->editingBranchId = null;
         $this->branchForm = [
             'code' => '',
+            'default_price_list_id' => '',
             'name_ar' => '',
             'name_en' => '',
             'phone' => '',
@@ -129,6 +132,7 @@ new #[Title('Branch Management')] class extends Component
         $this->editingBranchId = $branch->id;
         $this->branchForm = [
             'code' => $branch->code,
+            'default_price_list_id' => (string) ($branch->default_price_list_id ?? ''),
             'name_ar' => $branch->name_ar,
             'name_en' => $branch->name_en,
             'phone' => $branch->phone ?? '',
@@ -163,6 +167,7 @@ new #[Title('Branch Management')] class extends Component
             'branchForm.timezone' => ['required', 'string', 'max:100'],
             'branchForm.status' => ['required', 'in:active,inactive'],
             'branchForm.policy_notes' => ['nullable', 'string'],
+            'branchForm.default_price_list_id' => ['nullable', Rule::exists('price_lists', 'id')->where(fn ($query) => $query->where('status', 'active'))],
         ], [], [
             'branchForm.code' => app()->getLocale() === 'ar' ? 'رمز الفرع' : __('Branch Code'),
             'branchForm.name_ar' => app()->getLocale() === 'ar' ? 'اسم الفرع بالعربية' : __('Arabic Name'),
@@ -314,6 +319,7 @@ new #[Title('Branch Management')] class extends Component
         return view('platform.admin.branches', [
             'branches' => $query->orderBy('code')->paginate(10),
             'companyTimezone' => Company::query()->where('status', 'active')->value('timezone'),
+            'activePriceLists' => PriceList::query()->where('company_id', Company::query()->where('status', 'active')->value('id'))->where('status', 'active')->orderBy('list_number')->get(),
         ]);
     }
 }; ?>
@@ -609,6 +615,7 @@ new #[Title('Branch Management')] class extends Component
                 placeholder="{{ __('Physical branch address details...') }}"
                 rows="2"
             />
+            <flux:select wire:model="branchForm.default_price_list_id" :label="__('Default price list for Sales Outlets')"><flux:select.option value="">{{ __('Base Price List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
 
             <div class="flex justify-end gap-3 pt-4">
                 <flux:button variant="subtle" wire:click="$set('showBranchModal', false)">{{ __('Cancel') }}</x-actions.button>

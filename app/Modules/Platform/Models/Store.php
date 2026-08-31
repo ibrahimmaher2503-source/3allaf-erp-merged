@@ -23,6 +23,7 @@ class Store extends Model
     protected $fillable = [
         'company_id',
         'branch_id',
+        'price_list_id',
         'code',
         'type',
         'name_ar',
@@ -45,6 +46,8 @@ class Store extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function priceList(): BelongsTo { return $this->belongsTo(\App\Modules\Pricing\Models\PriceList::class); }
 
     public function sellingStoreMappings(): HasMany
     {

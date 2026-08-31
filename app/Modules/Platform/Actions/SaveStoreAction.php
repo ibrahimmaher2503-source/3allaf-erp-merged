@@ -6,6 +6,7 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -126,6 +127,7 @@ class SaveStoreAction
             $attributes = [
                 'company_id' => $company->id,
                 'branch_id' => $branch?->id,
+                'price_list_id' => $type === 'selling' && filled($data['price_list_id'] ?? null) ? (int) $data['price_list_id'] : null,
                 'code' => strtoupper(trim($data['code'])),
                 'type' => $type,
                 'name_ar' => trim($data['name_ar']),
@@ -134,6 +136,9 @@ class SaveStoreAction
                 'allows_negative_stock' => (bool) ($data['allows_negative_stock'] ?? false),
                 'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
+            if ($attributes['price_list_id'] !== null && ! PriceList::query()->where('company_id', $company->id)->whereKey($attributes['price_list_id'])->where('status', 'active')->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', today()))->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', today()))->exists()) {
+                throw new InvalidArgumentException(__('Select an active valid price list for this Sales Outlet.'));
+            }
 
             if ($id) {
                 $store = $storeQuery->lockForUpdate()->findOrFail($id);

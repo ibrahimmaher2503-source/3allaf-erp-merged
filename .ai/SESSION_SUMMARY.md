@@ -679,3 +679,11 @@
 - **Correction:** Replaced the unreliable Flux callout title with visible semantic Stage A and Stage B headings on Product Card create/edit rendering, with the exact Arabic and English labels. The two-stage save/enrichment behavior is unchanged.
 - **Focused verification:** Six Product Card tests passed with 16 assertions; changed Blade/PHP and Arabic JSON syntax plus `git diff --check` passed. Genuine inactive-release rendering remains the next release gate.
 - **Boundaries:** No frontend, schema, migration, barcode, import, Opening Inventory, package, lock, production data, tag, remote, ACL, or excluded-path change.
+
+## 2026-08-31 — M53 v0.1.19 Pricing Lists
+
+- **Task:** Implemented M53 from published `v0.1.18` on `feature/v0.1.19-price-lists` without deployment or version change.
+- **Work completed:** Added protected List 0, percentage price lists, upward 5-EGP rounding, dated audited overrides, outlet/branch assignments, Product Card pricing matrix, effective-price snapshot contract, permissions/audit integration, navigation, and factual Setup readiness.
+- **Verification actually run:** Focused PHPUnit passed 6 tests/28 assertions. Migration 000098 completed on isolated MariaDB. Changed PHP/Blade and Arabic JSON checks, pricing routes, manifest references, and `git diff --check` passed. Five genuine authenticated Arabic/English desktop/mobile cases returned 200 with Cairo/RTL/LTR, one Setup context, zero serious/critical Axe findings, document overflow, console errors, or external requests.
+- **Corrections from visual pass:** Replaced invalid component aliases with the established Setup/state/action components, expanded the Product matrix Blade directives so they compile reliably, removed a duplicate Setup context, and completed Arabic pricing-table labels.
+- **Boundary:** Frontend sources were unchanged, so no build ran. No production/shared data, deployment, version bump, tag, push, remote contact, or excluded-path access occurred.

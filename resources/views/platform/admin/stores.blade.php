@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Models\PriceList;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     public array $storeForm = [
         'branch_id' => '',
+        'price_list_id' => '',
         'code' => '',
         'type' => 'selling',
         'name_ar' => '',
@@ -107,6 +109,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         $this->editingStoreId = null;
         $this->storeForm = [
             'branch_id' => '',
+            'price_list_id' => '',
             'code' => '',
             'type' => 'selling',
             'name_ar' => '',
@@ -127,6 +130,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         $this->editingStoreId = $store->id;
         $this->storeForm = [
             'branch_id' => (string) ($store->branch_id ?? ''),
+            'price_list_id' => (string) ($store->price_list_id ?? ''),
             'code' => $store->code,
             'type' => $store->type,
             'name_ar' => $store->name_ar,
@@ -155,6 +159,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 'nullable',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('status', 'active')),
             ],
+            'storeForm.price_list_id' => ['nullable', Rule::exists('price_lists', 'id')->where(fn ($query) => $query->where('status', 'active'))],
             'storeForm.type' => ['required', 'in:'.implode(',', SaveStoreAction::ALLOWED_TYPES)],
             'storeForm.name_ar' => ['required', 'string', 'max:255'],
             'storeForm.name_en' => ['required', 'string', 'max:255'],
@@ -333,6 +338,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 ->whereHas('company', fn ($query) => $query->where('status', 'active'))
                 ->orderBy('code')
                 ->get(),
+            'activePriceLists' => PriceList::query()->where('company_id', Company::query()->where('status', 'active')->value('id'))->where('status', 'active')->orderBy('list_number')->get(),
             'stores' => $query->orderBy('code')->paginate(10),
             'pendingArchiveStoreIds' => ApprovalRecord::query()
                 ->where('source_type', 'platform_settings')
@@ -705,6 +711,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             </flux:select>
             @if ($storeForm['type'] === 'selling')
                 <p class="text-xs text-zinc-500">{{ __('A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists.') }}</p>
+                <flux:select wire:model="storeForm.price_list_id" :label="__('Price list')"><flux:select.option value="">{{ __('Inherit branch default or List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
             @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

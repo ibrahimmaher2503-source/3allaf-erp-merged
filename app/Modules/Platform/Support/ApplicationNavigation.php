@@ -23,7 +23,7 @@ final class ApplicationNavigation
         'inventory.transfers' => ['inventory.transfers*'],
         'inventory.counts' => ['inventory.counts*', 'inventory.adjustments*'],
         'pricing.labels' => ['pricing.labels*', 'barcodes.*'],
-        'pricing.index' => ['pricing.index', 'pricing.approvals', 'pricing.focus'],
+        'pricing.index' => ['pricing.index', 'pricing.approvals', 'pricing.focus', 'pricing.lists'],
         'parties.bookings.index' => ['parties.bookings*'],
         'parties.calendar' => ['parties.calendar*'],
         'parties.invoices.index' => ['parties.invoices*'],

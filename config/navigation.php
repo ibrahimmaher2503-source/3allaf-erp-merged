@@ -28,7 +28,8 @@ return [
         ['route' => 'pricing.labels', 'permission' => 'pricing_labels.view', 'icon' => 'qr-code', 'label' => ['ar' => 'الباركود', 'en' => 'Barcodes']],
     ]],
     ['key' => 'pricing', 'icon' => 'tag', 'label' => ['ar' => 'التسعير', 'en' => 'Pricing'], 'items' => [
-        ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'banknotes', 'label' => ['ar' => 'قوائم وقواعد الأسعار', 'en' => 'Price lists & rules']],
+        ['route' => 'pricing.lists', 'permission' => 'pricing_lists.view', 'icon' => 'banknotes', 'label' => ['ar' => 'قوائم الأسعار', 'en' => 'Pricing Lists']],
+        ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'scale', 'label' => ['ar' => 'اعتمادات الأسعار', 'en' => 'Price approvals']],
     ]],
     ['key' => 'parties', 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
         ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],

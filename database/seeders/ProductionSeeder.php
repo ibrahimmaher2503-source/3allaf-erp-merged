@@ -14,6 +14,7 @@ use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Pricing\Actions\EnsureBasePriceList;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -271,6 +272,7 @@ final class ProductionSeeder extends Seeder
             'currency_code' => 'EGP', 'currency_symbol' => 'E£', 'timezone' => 'Africa/Cairo',
             'locale_default' => 'ar', 'email' => 'admin@instaparty.online', 'status' => 'active',
         ]);
+        app(EnsureBasePriceList::class)->execute($company);
         $branch = Branch::query()->firstOrCreate(['code' => 'MAIN'], [
             'company_id' => $company->id, 'name_ar' => 'الفرع الرئيسي', 'name_en' => 'Main Branch',
             'timezone' => 'Africa/Cairo', 'status' => 'active',

@@ -117,6 +117,8 @@ class Product extends Model
         return $this->hasMany(Barcode::class);
     }
 
+    public function priceOverrides(): HasMany { return $this->hasMany(\App\Modules\Pricing\Models\ProductPriceOverride::class); }
+
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)

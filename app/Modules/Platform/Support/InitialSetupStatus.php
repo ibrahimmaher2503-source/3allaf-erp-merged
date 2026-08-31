@@ -29,6 +29,8 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
+use App\Modules\Pricing\Models\PriceList;
+use App\Modules\Pricing\Services\PriceListResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Schema;
 
@@ -73,7 +75,7 @@ final class InitialSetupStatus
             $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
             $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
             $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), Category::query()->where('status', 'active')->exists() ? null : __('Create an active category before adding product cards.')),
-            $this->step('prices', __('Approved selling prices'), __('Create and approve an effective store price for every sellable SKU before POS use.'), 'pricing.index', 'pricing_labels.view', $this->pricesReady(), PriceLine::query()->count()),
+            $this->step('prices', __('Approved selling prices'), __('Configure valid reusable price lists from Product Card base prices and assign every active Sales Outlet.'), 'pricing.lists', 'pricing_lists.view', $this->pricesReady(), PriceList::query()->count(), $this->pricingReadinessReason()),
             $this->step('opening-configuration', __('Opening inventory'), __('Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.'), 'inventory.opening.index', 'inventory_stock_card.create', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
@@ -266,9 +268,24 @@ final class InitialSetupStatus
 
     private function pricesReady(): bool
     {
-        return PriceLine::query()->whereHas('version', function (Builder $query): void {
-            $query->where('state', PriceVersionState::Approved->value)->where(fn (Builder $from): Builder => $from->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn (Builder $to): Builder => $to->whereNull('effective_to')->orWhere('effective_to', '>', now()));
-        })->whereHas('product', fn (Builder $query): Builder => $query->sellable())->whereHas('store', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
+        $companyId = (int) Company::query()->where('status', 'active')->value('id');
+        $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
+        if (! $base?->isEffective() || Product::query()->sellable()->where(fn (Builder $q) => $q->whereNull('sale_price')->orWhere('sale_price', '<=', 0))->exists()) return false;
+        return ! Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->contains(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet));
+    }
+
+    private function pricingReadinessReason(): ?string
+    {
+        if ($this->pricesReady()) return null;
+        $companyId = (int) Company::query()->where('status', 'active')->value('id');
+        $reasons = [];
+        $base = PriceList::query()->where('company_id', $companyId)->where('list_number', 0)->first();
+        if (! $base?->isEffective()) $reasons[] = __('Create and activate Base Price List 0.');
+        $missing = Product::query()->sellable()->where(fn (Builder $q) => $q->whereNull('sale_price')->orWhere('sale_price', '<=', 0))->count();
+        if ($missing) $reasons[] = trans_choice('{1} One sellable Product Card needs a positive base consumer price.|[2,*] :count sellable Product Cards need positive base consumer prices.', $missing, ['count' => $missing]);
+        $invalid = Store::query()->where('company_id', $companyId)->where('type', 'selling')->where('status', 'active')->with(['priceList','branch.defaultPriceList'])->get()->filter(fn (Store $outlet): bool => ! app(PriceListResolver::class)->assignmentIsValid($outlet))->count();
+        if ($invalid) $reasons[] = trans_choice('{1} One active Sales Outlet needs a valid active price list.|[2,*] :count active Sales Outlets need valid active price lists.', $invalid, ['count' => $invalid]);
+        return implode(' ', $reasons);
     }
 
     private function openingInventoryReady(): bool

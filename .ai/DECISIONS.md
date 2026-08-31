@@ -73,3 +73,10 @@
 - International barcodes remain string identities and use applicable GTIN check digits. Local barcodes are exactly `0` plus the first four numeric supplier-code digits plus a six-digit per-supplier committed sequence, allocated under a database row lock and uniqueness constraint.
 - Product cost and base consumer selling price are separate explicit fields; neither is inferred from the other. The shared pricing contract permits changes only from the corresponding approved explicit input.
 - Opening Inventory is a dedicated immutable ledger document, not a transfer, purchase invoice, or count. It posts all lines transactionally once; corrections use a referenced reversal. Setup readiness requires an approved non-reversed opening document or the audited company zero-opening decision.
+
+## 2026-08-31 — M53 reusable price-list boundary
+
+- Product Card `sale_price` remains the authoritative Base Price List 0 value and is not duplicated into derived lines. Additional list percentages always calculate from that base and round upward to the next 5 EGP with decimal-scaled integer arithmetic.
+- Outlet assignment resolves in the order outlet, branch default, then List 0. Branches remain organizational; only stock-bearing Sales Outlets resolve selling prices.
+- Manual product/list overrides are dated, reasoned, company-scoped, and audited. They never overwrite Product Card prices; removing an override restores derived pricing immediately.
+- Existing approved price versions/lines and historical invoice/sale snapshots remain immutable. The new resolver/DTO is the contract for later sales, transfer, label, and report integration rather than a rewrite of historical records.

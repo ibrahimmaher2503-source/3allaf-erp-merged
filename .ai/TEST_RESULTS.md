@@ -14,3 +14,9 @@
 - Isolated task-local MariaDB migration 000097 completed in batch 2 and created all three Opening Inventory tables.
 - Genuine authenticated evidence: 10 Arabic/English desktop/mobile cases passed with zero serious/critical Axe violations, zero document overflow, no console errors or external requests, and local Cairo loaded.
 - Arabic product, category, and brand PDFs embedded subsetted Cairo-Regular only; no DejaVu reference was present, and all three rendered pages were captured as PNG.
+
+## 2026-08-31 — M53 focused verification
+
+- Owner-authorized focused PHPUnit passed 6 tests and 28 assertions for formula/rounding, protected List 0, dated overrides/removal, outlet resolution, snapshot integrity, authorization, and Setup reasons. No unrelated suite ran.
+- Isolated task-local MariaDB migration 000098 completed successfully and created the override table, list metadata, assignment foreign keys, and permissions.
+- Genuine authenticated evidence covered Pricing Lists in Arabic desktop and English mobile, Arabic Product Card pricing matrix, English outlet assignment, and Arabic mobile Setup readiness. All returned HTTP 200 with correct direction, local Cairo on Arabic pages, zero serious/critical Axe violations, overflow, console errors, or external requests.

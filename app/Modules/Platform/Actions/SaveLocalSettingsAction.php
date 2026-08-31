@@ -14,6 +14,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Pricing\Actions\EnsureBasePriceList;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,8 @@ class SaveLocalSettingsAction
                 before: $before,
                 after: $company->getAttributes(),
             );
+
+            app(EnsureBasePriceList::class)->execute($company);
 
             return [
                 'success' => true,

@@ -603,6 +603,10 @@ new #[Title('Product Card')] class extends Component {
         </div>
     </form>
 
+    @if ($isEditing && $product)
+        @can('pricing_lists.view')<livewire:pricing::product-matrix :product="$product" :key="'product-pricing-'.$product->id" />@endcan
+    @endif
+
     @if ($isEditing && $product && ! $product->isVariant())
         <livewire:catalog::product-variations :product="$product" :key="'product-variations-'.$product->id" />
     @endif

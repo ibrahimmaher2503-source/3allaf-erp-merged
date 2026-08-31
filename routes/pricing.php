@@ -14,6 +14,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:pricing_labels.view')
         ->name('pricing.index');
 
+    $router->livewire('pricing/lists/manage', 'pricing::lists')
+        ->middleware('can:pricing_lists.view')
+        ->name('pricing.lists');
+
     $router->livewire('pricing/approvals', 'pricing::index')
         ->middleware('can:pricing_labels.approve')
         ->name('pricing.approvals');

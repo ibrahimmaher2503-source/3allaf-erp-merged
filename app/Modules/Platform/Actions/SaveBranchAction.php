@@ -5,6 +5,7 @@ namespace App\Modules\Platform\Actions;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -33,6 +34,7 @@ class SaveBranchAction
             $branch = $id ? $branchQuery->findOrFail($id) : null;
             $attributes = [
                 'company_id' => $company->id,
+                'default_price_list_id' => filled($data['default_price_list_id'] ?? null) ? (int) $data['default_price_list_id'] : null,
                 'code' => strtoupper(trim($data['code'])),
                 'name_ar' => trim($data['name_ar']),
                 'name_en' => trim($data['name_en']),
@@ -43,6 +45,7 @@ class SaveBranchAction
                 'status' => $data['status'] ?? 'active',
                 'policy_notes' => isset($data['policy_notes']) && trim((string) $data['policy_notes']) !== '' ? trim((string) $data['policy_notes']) : null,
             ];
+            if ($attributes['default_price_list_id'] !== null && ! PriceList::query()->where('company_id', $company->id)->whereKey($attributes['default_price_list_id'])->where('status', 'active')->exists()) throw new InvalidArgumentException(__('Select an active price list belonging to this company.'));
 
             if ($id) {
                 if ($attributes['status'] === 'inactive' && $branch->status === 'active') {

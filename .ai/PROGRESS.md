@@ -75,3 +75,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added protected partial XLSX import and filtered XLSX/Cairo-PDF exchange for products, categories, and brands.
 - Added dedicated immutable Opening Inventory draft, preview, transactional approval, reversal, and audited zero-opening decision; Setup step 21 now resolves to this workflow.
 - Focused tests passed 11 tests/33 assertions; migration 000097 passed on isolated MariaDB; 10 genuine Arabic/English desktop/mobile captures passed with Cairo, zero serious/critical Axe findings, console errors, external requests, and document overflow. Existing frontend build retained: dabbde0ffadfb86f62400eb67668010949dd1b7eeb931174c7c72a0958e988b0.
+
+## 2026-08-31 — M53 v0.1.19 Pricing Lists
+
+- Added company-scoped protected List 0, reusable percentage lists, decimal-safe ceiling-to-5 pricing, dated manual product overrides, and outlet/branch price-list assignment.
+- Added an authoritative effective-price resolver and snapshot DTO while preserving Product Card base prices, approved price versions/lines, costs, invoices, and completed sales.
+- Added the responsive Pricing Lists workspace, Product Card pricing matrix, assignment controls, least-privilege permissions, audits, navigation, and factual Setup readiness reasons.
+- Focused pricing tests passed 6 tests/28 assertions; migration 000098 passed on isolated MariaDB. Five genuine Arabic/English desktop/mobile cases passed with Cairo/RTL/LTR, zero serious/critical Axe findings, overflow, console errors, or external requests. Frontend sources were unchanged and the existing manifest was retained.

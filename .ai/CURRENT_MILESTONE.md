@@ -1,6 +1,6 @@
-# Active Milestone — M52 v0.1.18 Product Cards and Opening Inventory
+# Active Milestone — M53 v0.1.19 Pricing Lists
 
-**Date:** 2026-08-30
+**Date:** 2026-08-31
 **Status:** Complete in development; validated and ready for owner review.
 
-M52 connects the existing catalog, barcode, staged-import, pricing-field, inventory-adjustment, ledger, Setup-readiness, and Cairo export foundations. It adds only the schema and actions needed for explicit Product Card enrichment and an auditable immutable Opening Inventory workflow; it does not deploy, mutate production, or alter historical records.
+M53 extends the existing approved-pricing domain with reusable outlet price lists. Product Card consumer price remains the authoritative List 0 value, historical approved price records remain intact, and the new resolver exposes stable list identity and effective-price snapshots for later sales/distribution/label integrations.

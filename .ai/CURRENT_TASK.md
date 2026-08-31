@@ -1,21 +1,21 @@
-# Current Task — M52 v0.1.18 Product Cards and Opening Inventory
+# Current Task — M53 v0.1.19 Pricing Lists
 
-**Date:** 2026-08-30
-**Branch:** `feature/v0.1.18-product-cards-opening-stock`
-**Baseline:** published `v0.1.17` commit `ef840368bea5f4ed67d9ec25f8f7c322bd428e02`
+**Date:** 2026-08-31
+**Branch:** `feature/v0.1.19-price-lists`
+**Baseline:** published `v0.1.18` commit `768b2ad9037f16059dc8a5ec08ba8978d3847514`
 
 ## Scope
 
-- Product Filters management aligned with the established category interaction.
-- Two-stage Product Card entry with international/local barcode identity and explicit cost/base consumer price contract.
-- Product/category/brand XLSX imports, rejection workbooks, and filtered XLSX/PDF exports.
-- Dedicated draft/preview/approve/reverse Opening Inventory documents plus an audited zero-opening decision.
-- Existing inventory ledger, permissions, audit, Setup context, Cairo PDF, and M51 exchange foundations remain authoritative.
+- Company-scoped Base Price List 0 backed directly by Product Card consumer prices.
+- Reusable percentage lists with decimal-safe upward rounding to 5 EGP.
+- Audited product overrides and outlet/branch list assignment.
+- Product pricing matrix and authoritative effective-price resolution contract.
+- Pricing Setup readiness with factual product, list, and outlet conditions.
 
 ## Verification directive
 
-The owner explicitly authorizes focused M52 automated tests and one genuine authenticated Arabic/English desktop/mobile pass against an isolated task-local MariaDB runtime. Production/shared data and runtime remain prohibited.
+The owner authorized focused M53 pricing tests, one isolated MariaDB migration, and one compact genuine authenticated Arabic/English desktop/mobile visual pass. Production/shared runtime and data remain prohibited.
 
 ## Closure
 
-Implementation, focused tests, isolated MariaDB migration, Cairo PDF inspection, and genuine Arabic/English desktop/mobile acceptance passed. Frontend sources were unchanged, so the verified v0.1.17 build was retained without rebuilding.
+Implementation, focused tests, isolated migration, changed-file checks, route/localization checks, and compact visual acceptance passed. Frontend sources were unchanged, so the existing verified build was retained.

@@ -23,6 +23,7 @@ class Branch extends Model
 
     protected $fillable = [
         'company_id',
+        'default_price_list_id',
         'code',
         'name_ar',
         'name_en',
@@ -38,6 +39,8 @@ class Branch extends Model
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function defaultPriceList(): BelongsTo { return $this->belongsTo(\App\Modules\Pricing\Models\PriceList::class, 'default_price_list_id'); }
 
     public function stores(): HasMany
     {
