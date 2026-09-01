@@ -31,7 +31,7 @@ Route::middleware('auth')->group(function (): void {
         /** @var User $user */ $user = $request->user();
         $data = $request->validate([
             'source_sale_id' => ['nullable', 'integer'], 'source_gift_receipt_id' => ['nullable', 'integer'], 'source_gift_receipt_reference' => ['nullable', 'string', 'max:80'],
-            'sale_line_id' => ['required', 'integer'], 'quantity' => ['required', 'numeric', 'gt:0'],
+            'sale_line_id' => ['required', 'integer'], 'quantity' => ['required', 'integer', 'min:1'],
             'condition' => ['required', 'in:sellable,non_sellable,damaged,manager_review'], 'disposition' => ['required', 'in:restock,quarantine'],
             'settlement_type' => ['required', 'in:cash_refund,original_tender,gift_card,exchange'], 'original_payment_id' => ['nullable', 'integer'],
             'reason' => ['required', 'string', 'max:2000'], 'inspection_notes' => ['nullable', 'string', 'max:4000'], 'exchange_lines' => ['nullable', 'array'],

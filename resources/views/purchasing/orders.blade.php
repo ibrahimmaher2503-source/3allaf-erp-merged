@@ -204,7 +204,7 @@ new #[Title('Purchase Orders')] class extends Component
             'orderForm.expected_delivery_date' => 'nullable|date|after_or_equal:orderForm.order_date',
             'lineItems' => 'required|array|min:1',
             'lineItems.*.product_id' => 'required|exists:products,id',
-            'lineItems.*.quantity_ordered' => 'required|numeric|gt:0',
+            'lineItems.*.quantity_ordered' => 'required|integer|min:1',
             'lineItems.*.unit_cost' => 'required|numeric|gte:0',
         ]);
 

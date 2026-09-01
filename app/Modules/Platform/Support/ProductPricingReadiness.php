@@ -56,6 +56,7 @@ final class ProductPricingReadiness
                 'name_en' => (string) $value('name_en'),
                 'sale_price' => $price,
                 'issues' => $issues,
+                'issue_message' => in_array('invalid_base_price', $issues, true) ? __('Base consumer price is required and must be greater than zero.') : null,
             ];
         })->values();
         $affected = $rows->filter(fn (array $row): bool => $row['issues'] !== [])->values();

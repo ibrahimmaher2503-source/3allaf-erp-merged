@@ -132,7 +132,7 @@ new #[Title('System Settings')] class extends Component
     public array $templateForm = [
         'id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '',
         'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual',
-        'header_text' => '', 'footer_text' => '', 'status' => 'active',
+        'header_text' => '', 'footer_text' => '', 'layout_settings' => ['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true], 'status' => 'active',
     ];
 
     /**
@@ -586,6 +586,16 @@ new #[Title('System Settings')] class extends Component
             'templateForm.language' => ['required', Rule::in(SavePrintTemplateAction::LANGUAGES)],
             'templateForm.header_text' => ['nullable', 'string', 'max:2000'],
             'templateForm.footer_text' => ['nullable', 'string', 'max:2000'],
+            'templateForm.layout_settings.width_mm' => ['required_if:templateForm.document_type,barcode_label','numeric','min:20','max:210'],
+            'templateForm.layout_settings.height_mm' => ['required_if:templateForm.document_type,barcode_label','numeric','min:15','max:297'],
+            'templateForm.layout_settings.dpi' => ['required_if:templateForm.document_type,barcode_label','integer','in:203,300'],
+            'templateForm.layout_settings.orientation' => ['required_if:templateForm.document_type,barcode_label','in:portrait,landscape'],
+            'templateForm.layout_settings.margin_mm' => ['nullable','numeric','min:0','max:20'],
+            'templateForm.layout_settings.gap_mm' => ['nullable','numeric','min:0','max:20'],
+            'templateForm.layout_settings.a4_rows' => ['nullable','integer','min:1','max:20'],
+            'templateForm.layout_settings.a4_columns' => ['nullable','integer','min:1','max:10'],
+            'templateForm.layout_settings.symbology' => ['required_if:templateForm.document_type,barcode_label','in:auto,ean13,code128'],
+            'templateForm.layout_settings.show_name' => ['boolean'], 'templateForm.layout_settings.show_price' => ['boolean'], 'templateForm.layout_settings.show_item_code' => ['boolean'], 'templateForm.layout_settings.show_list_code' => ['boolean'], 'templateForm.layout_settings.show_outlet' => ['boolean'],
             'templateForm.status' => ['required', 'in:active,inactive'],
         ]);
         $action->execute($validated['templateForm'], $this->templateForm['id'] ?? null);
@@ -596,11 +606,12 @@ new #[Title('System Settings')] class extends Component
     public function editPrintTemplate(int $id): void
     {
         $this->templateForm = PrintTemplate::visibleTo(auth()->user())->findOrFail($id)->toArray();
+        $this->templateForm['layout_settings'] = array_replace(['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true],$this->templateForm['layout_settings']??[]);
     }
 
     public function resetPrintTemplateForm(): void
     {
-        $this->templateForm = ['id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '', 'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual', 'header_text' => '', 'footer_text' => '', 'status' => 'active'];
+        $this->templateForm = ['id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '', 'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual', 'header_text' => '', 'footer_text' => '', 'layout_settings'=>['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true], 'status' => 'active'];
     }
 
     public function resetPrinterForm(): void
@@ -1516,12 +1527,13 @@ new #[Title('System Settings')] class extends Component
                     <flux:textarea wire:model="templateForm.header_text" :label="__('Header text')" />
                     <flux:textarea wire:model="templateForm.footer_text" :label="__('Footer text')" />
                     <flux:select wire:model="templateForm.status" :label="__('Status')"><option value="active">{{ __('Active') }}</option><option value="inactive">{{ __('Inactive') }}</option></flux:select>
+                    @if($templateForm['document_type']==='barcode_label')<div class="md:col-span-2 xl:col-span-3 grid gap-3 sm:grid-cols-3"><flux:input wire:model="templateForm.layout_settings.width_mm" type="number" step="0.1" :label="__('Label width (mm)')"/><flux:input wire:model="templateForm.layout_settings.height_mm" type="number" step="0.1" :label="__('Label height (mm)')"/><flux:select wire:model="templateForm.layout_settings.dpi" :label="__('Printer DPI')"><option value="203">203 DPI</option><option value="300">300 DPI</option></flux:select><flux:select wire:model="templateForm.layout_settings.orientation" :label="__('Orientation')"><option value="portrait">{{__('Portrait')}}</option><option value="landscape">{{__('Landscape')}}</option></flux:select><flux:input wire:model="templateForm.layout_settings.margin_mm" type="number" step="0.1" :label="__('Margin (mm)')"/><flux:input wire:model="templateForm.layout_settings.gap_mm" type="number" step="0.1" :label="__('Roll / grid gap (mm)')"/><flux:input wire:model="templateForm.layout_settings.a4_rows" type="number" step="1" :label="__('A4 rows')"/><flux:input wire:model="templateForm.layout_settings.a4_columns" type="number" step="1" :label="__('A4 columns')"/><flux:select wire:model="templateForm.layout_settings.symbology" :label="__('Barcode symbology')"><option value="auto">{{__('Automatic EAN-13 / Code 128')}}</option><option value="ean13">EAN-13</option><option value="code128">Code 128</option></flux:select></div><div class="md:col-span-2 xl:col-span-3 flex flex-wrap gap-4"><flux:checkbox wire:model="templateForm.layout_settings.show_name" :label="__('Product name')"/><flux:checkbox wire:model="templateForm.layout_settings.show_price" :label="__('Price')"/><flux:checkbox wire:model="templateForm.layout_settings.show_item_code" :label="__('Item code')"/><flux:checkbox wire:model="templateForm.layout_settings.show_list_code" :label="__('Price-list code')"/><flux:checkbox wire:model="templateForm.layout_settings.show_outlet" :label="__('Outlet')"/></div>@endif
                     <div class="flex items-end justify-end gap-2 md:col-span-2 xl:col-span-3">@if($templateForm['id'])<flux:button type="button" wire:click="resetPrintTemplateForm" variant="subtle">{{ __('Cancel Edit') }}</flux:button>@endif<x-actions.loading-button type="submit" action="savePrintTemplate" :label="__('Save')" /></div>
                 </form>
                 @php($templates = PrintTemplate::visibleTo(auth()->user())->withCount('printers')->orderBy('document_type')->orderBy('code')->paginate(25, ['*'], 'templates_page'))
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     @forelse($templates as $template)
-                        <article class="rounded-xl border border-border-subtle p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ app()->getLocale()==='ar' ? $template->name_ar : $template->name_en }}</h3><p class="font-mono text-xs text-text-muted">{{ $template->code }}</p></div><flux:badge size="sm" :color="$template->status==='active'?'green':'zinc'">{{ __($template->status) }}</flux:badge></div><dl class="mt-3 grid grid-cols-2 gap-2 text-sm"><dt>{{ __('Document type') }}</dt><dd>{{ __(Str::headline($template->document_type)) }}</dd><dt>{{ __('Paper size') }}</dt><dd>{{ $template->paper_size }}</dd><dt>{{ __('Language') }}</dt><dd>{{ __($template->language) }}</dd><dt>{{ __('Assigned printers') }}</dt><dd>{{ $template->printers_count }}</dd></dl><div class="mt-4 flex flex-wrap gap-2"><flux:button size="sm" type="button" wire:click="editPrintTemplate({{ $template->id }})">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" href="{{ route('admin.settings.template-preview', $template) }}" target="_blank">{{ __('Preview') }}</flux:button></div></article>
+                        <article class="rounded-xl border border-border-subtle p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ app()->getLocale()==='ar' ? $template->name_ar : $template->name_en }}</h3><p class="font-mono text-xs text-text-muted">{{ $template->code }}</p></div><flux:badge size="sm" :color="$template->status==='active'?'green':'zinc'">{{ \App\Modules\Platform\Support\UiLabel::status($template->status) }}</flux:badge></div><dl class="mt-3 grid grid-cols-2 gap-2 text-sm"><dt>{{ __('Document type') }}</dt><dd>{{ __(Str::headline($template->document_type)) }}</dd><dt>{{ __('Paper size') }}</dt><dd>{{ __(strtoupper($template->paper_size)) }}</dd><dt>{{ __('Language') }}</dt><dd>{{ __($template->language) }}</dd><dt>{{ __('Assigned printers') }}</dt><dd>{{ $template->printers_count }}</dd></dl><div class="mt-4 flex flex-wrap gap-2"><flux:button size="sm" type="button" wire:click="editPrintTemplate({{ $template->id }})">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" href="{{ route('admin.settings.template-preview', $template) }}" target="_blank">{{ __('Preview') }}</flux:button></div></article>
                     @empty<x-state.empty :title="__('No print templates yet')" :description="__('Add the first reusable print template.')" icon="document-text" />@endforelse
                 </div>
                 {{ $templates->links() }}

@@ -130,7 +130,7 @@ class SaveProductAction
                     'key_points_en' => $this->nullableString($data['key_points_en'] ?? null),
                     'keywords_ar' => $this->nullableString($data['keywords_ar'] ?? null),
                     'keywords_en' => $this->nullableString($data['keywords_en'] ?? null),
-                    'fractional_quantity' => (bool) ($data['fractional_quantity'] ?? false),
+                    'fractional_quantity' => false,
                     'sale_price' => $pricing['sale_price'],
                     'open_price' => (bool) ($data['open_price'] ?? false),
                     'sell_online' => (bool) ($data['sell_online'] ?? false),
@@ -300,4 +300,3 @@ class SaveProductAction
         $family->variants()->update($fields);
     }
 }
-

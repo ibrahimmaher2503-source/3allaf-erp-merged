@@ -43,7 +43,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })->middleware('can:inventory_stock_card.create')->name('inventory.opening.rejections');
     $router->post('inventory/opening', function (SaveOpeningInventoryDraftAction $action) {
         request()->merge(['lines' => collect(request()->input('lines', []))->filter(fn (array $line): bool => collect($line)->contains(fn ($value): bool => filled($value)))->values()->all()]);
-        $data = request()->validate(['notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:5000'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.store_id' => ['required', 'integer'], 'lines.*.quantity' => ['required', 'numeric', 'gt:0']]);
+        $data = request()->validate(['notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:5000'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.store_id' => ['required', 'integer'], 'lines.*.quantity' => ['required', 'integer', 'min:1']]);
         $document = $action->execute($data['lines'], notes: $data['notes'] ?? null);
         return redirect()->route('inventory.opening.show', $document)->with('success', __('Opening inventory draft saved. Review totals before approval.'));
     })->middleware('can:inventory_stock_card.create')->name('inventory.opening.store');

@@ -37,7 +37,7 @@ final class SavePurchaseDistributionAction
                 $line = $invoice->lines->firstWhere('id', (int) $lineId);
                 if (! $line || ! in_array((int) $lineId, $lineIds, true)) throw new InvalidArgumentException(__('The distribution contains a line outside this invoice.'));
                 foreach ($destinations as $storeId => $quantity) {
-                    if (! is_numeric($quantity) || bccomp((string) $quantity, '0', 6) < 0) throw new InvalidArgumentException(__('Distribution quantities cannot be negative.'));
+                    $quantity = \App\Support\ProductQuantity::normalize($quantity, 'distribution.'.$line->id.'.'.$storeId, true);
                     if (bccomp((string) $quantity, '0', 6) === 0) continue;
                     $destination = Store::query()->visibleTo($actor)->where('status', 'active')->whereKey((int) $storeId)->firstOrFail();
                     if ((int) $destination->id === (int) $invoice->store_id) throw new InvalidArgumentException(__('The temporary receiving warehouse cannot be a final destination.'));

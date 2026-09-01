@@ -85,3 +85,9 @@ This is the final source-and-verification ledger for the owner-authorized cumula
 - Migration: complete 96-migration chain passed in temporary socket-only MariaDB; v0.1.22 columns, FK, uniqueness, rollback/remigrate passed and the database/server/directory were removed. The preceding `000101` legacy-template preservation and constraints also passed in its isolated run.
 - New printing browser matrix: eight Playwright checks passed (Arabic/English × desktop/mobile × library/printer), with correct direction, no overflow/mixed-language leak, and minimum 44 px controls.
 - Only item 4 remains BLOCKED, solely for physical-printer output. No production/shared database or symlink target was accessed.
+
+## v0.1.22-hotfix1 post-deployment correction addendum — 2026-09-01
+
+The post-deployment review preserved all 54 outcomes and corrected cross-cutting presentation/data-entry defects found after candidate preparation. Items 4, 25, 39, 41, 44–49 and 52–54 now additionally carry the evidence in `.ai/V0_1_22_HOTFIX1_POST_DEPLOYMENT_EVIDENCE.md`: complete Arabic labels without affected raw enums, unambiguous Setup `Completed` semantics and required-only counters, safe Product Filter deletion/remediation, Inventory Balance filter reset, whole-unit product quantities with monetary decimals retained, a complete manual Barcode Label workspace, exact Product Card List 0 remediation, real EAN-13/Code 128 SVGs, thermal/label/A4 physical template wiring, labeled Purchase Invoice remaining units, and canonical `0.1.22-hotfix1` identity.
+
+The final focused correction gate passed 4 tests / 59 assertions, PHP syntax, locale JSON and diff checks plus the single Node 20 build. The previously completed eight-case bilingual responsive printing matrix was preserved rather than repeated. The matrix remains **49 PASS, 4 FIXED, 1 BLOCKED**; item 4 is blocked only on physical-device print/measure/scan acceptance.

@@ -27,10 +27,22 @@
         </flux:callout>
     @endif
 
+    @can('pricing_labels.create')
+    <flux:card class="space-y-5" data-label-workspace>
+        <div><flux:heading size="lg">{{ __('Create barcode labels') }}</flux:heading><flux:subheading>{{ __('Search products, choose their actual barcode and output context, then preview or download exact labels.') }}</flux:subheading></div>
+        <form method="GET" action="{{ route('pricing.labels') }}" class="flex flex-col gap-3 sm:flex-row"><flux:input name="search" :value="$search" :label="__('Product search')" :placeholder="__('Arabic/English name, item code, model, or exact barcode')" class="flex-1"/><div class="flex items-end"><flux:button type="submit" variant="subtle" icon="magnifying-glass">{{ __('Search') }}</flux:button></div></form>
+        <form method="POST" action="{{ route('pricing.labels.preview') }}" target="_blank" class="space-y-4">@csrf
+            <div class="grid gap-3 md:grid-cols-3"><flux:select name="store_id" :label="__('Selling outlet')" required><flux:select.option value="">{{ __('Select outlet') }}</flux:select.option>@foreach($stores as $store)<flux:select.option value="{{ $store->id }}">{{ app()->getLocale()==='ar'?$store->name_ar:$store->name_en }} · {{ $store->code }}</flux:select.option>@endforeach</flux:select><flux:select name="template_id" :label="__('Print template')" required><flux:select.option value="">{{ __('Select template') }}</flux:select.option>@foreach($templates as $template)<flux:select.option value="{{ $template->id }}">{{ app()->getLocale()==='ar'?$template->name_ar:$template->name_en }} · {{ __(strtoupper($template->paper_size)) }}</flux:select.option>@endforeach</flux:select><flux:select name="printer_id" :label="__('Printer profile')"><flux:select.option value="">{{ __('PDF / browser print') }}</flux:select.option>@foreach($printers as $printer)<flux:select.option value="{{ $printer->id }}">{{ $printer->name }} · {{ __(strtoupper($printer->paper_size)) }}</flux:select.option>@endforeach</flux:select></div>
+            <div class="grid gap-3 lg:grid-cols-2">@forelse($products as $index=>$product)<article class="rounded-xl border border-border p-3"><label class="flex items-start gap-3"><input type="checkbox" name="selected[]" value="{{ $index }}" class="mt-1"><input type="hidden" name="products[{{ $index }}][id]" value="{{ $product->id }}"><span class="min-w-0"><strong>{{ app()->getLocale()==='ar'?$product->name_ar:$product->name_en }}</strong><small class="block text-text-muted" dir="ltr">{{ $product->item_code }} · {{ $product->model_number }}</small></span></label><div class="mt-3 grid grid-cols-2 gap-2"><flux:select name="products[{{ $index }}][barcode_id]" :label="__('Barcode')">@foreach($product->barcodes as $barcode)<flux:select.option value="{{ $barcode->id }}" :selected="$barcode->is_primary">{{ $barcode->barcode }}{{ $barcode->is_primary?' · '.__('Default'):'' }}</flux:select.option>@endforeach</flux:select><flux:input name="products[{{ $index }}][copies]" type="number" min="1" max="500" step="1" value="1" :label="__('Copies')"/></div></article>@empty<x-state.empty :title="__('No active products match the search')"/>@endforelse</div>
+            <div class="flex flex-wrap justify-end gap-2"><flux:button type="submit" name="output" value="html" variant="primary" icon="eye">{{ __('Preview labels') }}</flux:button><flux:button type="submit" name="output" value="pdf" variant="subtle" icon="arrow-down-tray">{{ __('Download PDF') }}</flux:button></div>
+        </form>
+    </flux:card>
+    @endcan
+
     <flux:card class="space-y-4">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <flux:heading size="lg">{{ __('Label queue readiness') }}</flux:heading>
+                <flux:heading size="lg">{{ __('Generated label queue') }}</flux:heading>
                 <flux:subheading>{{ __('Review the saved output context before an authorized print action. This screen does not test hardware.') }}</flux:subheading>
             </div>
             <flux:badge size="sm" color="zinc">{{ $queues->count() }} {{ __('queued jobs') }}</flux:badge>
@@ -63,7 +75,7 @@
                             <flux:table.cell data-label="{{ __('Branch / store') }}">{{ $queue->store?->code ?? __('Store unavailable') }}</flux:table.cell>
                             <flux:table.cell data-label="{{ __('Printer profile') }}">{{ $queue->printer?->name ?? __('Not assigned') }}</flux:table.cell>
                             <flux:table.cell data-label="{{ __('Print template key') }}" class="font-mono text-xs">{{ $queue->template_name ?: ($queue->printer?->template_name ?? __('Not assigned')) }}</flux:table.cell>
-                            <flux:table.cell data-label="{{ __('Status') }}"><flux:badge size="sm" color="zinc">{{ __(str_replace('_', ' ', ucfirst((string) $queue->status))) }}</flux:badge></flux:table.cell>
+                            <flux:table.cell data-label="{{ __('Status') }}"><flux:badge size="sm" color="zinc">{{ \App\Modules\Platform\Support\UiLabel::status($queue->status) }}</flux:badge></flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

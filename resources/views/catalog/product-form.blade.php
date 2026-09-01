@@ -294,7 +294,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.key_points_en' => ['nullable', 'string', 'max:4000'],
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
-            'productForm.fractional_quantity' => ['boolean'],
+            'productForm.fractional_quantity' => ['prohibited'],
             'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [$this->productForm['barcode_registration_type'] === 'local' ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
@@ -458,8 +458,8 @@ new #[Title('Product Card')] class extends Component {
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" />
-                <flux:input wire:model="productForm.sale_price" type="number" min="0" step="0.01" :label="__('Sale price')" />
+                <flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Average inventory cost')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />
+                <div id="base-consumer-price"><flux:input wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" :description="__('Required for sellable products and must be greater than zero.')" /></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
@@ -480,7 +480,7 @@ new #[Title('Product Card')] class extends Component {
             <div class="catalog-product-disclosure__content">
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
-                    <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="0.001" :disabled="in_array($productForm['product_type'], ['service', 'digital'], true)" />
+                    <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="1" :disabled="in_array($productForm['product_type'], ['service', 'digital'], true)" />
                     <flux:input wire:model="productForm.weight" :label="__('Weight')" type="number" min="0" step="0.001" />
                     <flux:select wire:model="productForm.weight_unit" :label="__('Weight unit')"><flux:select.option value="kg">kg</flux:select.option><flux:select.option value="g">g</flux:select.option></flux:select>
                 </div>
@@ -515,7 +515,7 @@ new #[Title('Product Card')] class extends Component {
                         </flux:select>
                     @endunless
                 </div>
-                <div class="mt-4"><flux:checkbox wire:model="productForm.fractional_quantity" :label="__('Allow fractional quantity')" description="{{ __('Use this for products sold by weight, length, or another fractional unit.') }}" /></div>
+                <input type="hidden" wire:model="productForm.fractional_quantity" value="0">
                 <div class="mt-4 grid gap-4 md:grid-cols-2"><flux:checkbox wire:model="productForm.sell_online" :label="__('Sell online')" /><flux:checkbox wire:model="productForm.battery_required" :label="__('Uses battery')" /><flux:input wire:model="productForm.battery_details" :label="__('Battery details')" /></div>
             </div>
         </details>

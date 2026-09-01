@@ -67,3 +67,11 @@
 - Focused route pass: purchasing-invoice route subset registered successfully.
 - Isolated Blade/Flux render probe: passed for the six requested UI contracts and all scoped M54 Flux components/icons.
 - No database, migration, broad suite, frontend build, PDF, browser-control, or unrelated verification ran.
+# 2026-09-01 — v0.1.22-hotfix1 post-deployment focused gate
+
+- `tests/Unit/V022Hotfix1PostDeploymentTest.php`: 4 passed, 59 assertions.
+- Changed/new PHP syntax, Arabic/English JSON parsing (`5541`/`2360` keys), and `git diff --check`: passed.
+- Barcode assertions: valid EAN-13 checksum/pattern output and Code 128-B start/data/checksum/stop SVG structure passed for `4006381333931` and `TJ-ABC-001`.
+- Preserved visual evidence: 8 previously completed Arabic/English desktop/mobile printing cases; not repeated under the one-pass rule.
+- Node 20.20.2/npm 10.8.2 Vite 8.2.0 build: passed. Manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`.
+- Database: no migration executed in this correction pass. Production/shared databases were not accessed. Physical-printer acceptance remains outstanding.

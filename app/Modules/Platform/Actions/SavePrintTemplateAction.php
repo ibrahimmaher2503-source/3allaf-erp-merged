@@ -21,8 +21,21 @@ class SavePrintTemplateAction
         $companyId = (int) Store::visibleTo($user)->where('status', 'active')->value('company_id');
         abort_unless($companyId > 0, 403);
 
-        if (($data['document_type'] === 'barcode_label') !== str_starts_with($data['paper_size'], 'label_')) {
+        if ($data['document_type'] !== 'barcode_label' && str_starts_with($data['paper_size'], 'label_')) {
             throw ValidationException::withMessages(['templateForm.paper_size' => __('The paper size is not compatible with the document type.')]);
+        }
+        if ($data['document_type'] === 'barcode_label') {
+            $layout = $data['layout_settings'] ?? [];
+            [$width, $height] = match ($data['paper_size']) {
+                'label_50x30mm' => [50, 30],
+                'label_40x25mm' => [40, 25],
+                '58mm' => [58, (float) ($layout['height_mm'] ?? 30)],
+                '80mm' => [80, (float) ($layout['height_mm'] ?? 30)],
+                default => [(float) ($layout['width_mm'] ?? 50), (float) ($layout['height_mm'] ?? 30)],
+            };
+            $data['layout_settings'] = array_replace($layout, ['width_mm' => $width, 'height_mm' => $height]);
+        } else {
+            $data['layout_settings'] = null;
         }
         if (PrintTemplate::query()->where('company_id', $companyId)->where('code', $data['code'])->when($id, fn ($query) => $query->whereKeyNot($id))->exists()) {
             throw ValidationException::withMessages(['templateForm.code' => __('The print template code is already in use.')]);

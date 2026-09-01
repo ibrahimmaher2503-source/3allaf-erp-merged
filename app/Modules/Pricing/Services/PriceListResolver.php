@@ -40,7 +40,7 @@ final class PriceListResolver
     {
         $companyId = (int) Company::query()->where('status', 'active')->value('id');
         if (! $list->isEffective($at) || $list->company_id !== $companyId) throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
-        if (bccomp($this->normalized($base, 3), '0', 3) <= 0) throw ValidationException::withMessages(['base_price' => __('Add a positive base consumer price to the Product Card.')]);
+        if (bccomp($this->normalized($base, 3), '0', 3) <= 0) throw ValidationException::withMessages(['base_price' => __('Base consumer price is required and must be greater than zero.')]);
         $calculation = $list->isBase() ? ['pre_round' => $base, 'rounded' => $base] : $this->calculate($base, (string) $list->percentage_increase);
         $override = ProductPriceOverride::query()->where('company_id', $companyId)->where('price_list_id', $list->id)->where('product_id', $product->id)->first();
         $active = $override?->isEffective($at) ? $override : null;

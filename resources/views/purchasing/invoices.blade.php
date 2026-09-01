@@ -308,7 +308,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'invoiceForm.notes' => 'nullable|string|max:5000',
             'lineItems' => 'required|array|min:1',
             'lineItems.*.product_id' => 'required|exists:products,id',
-            'lineItems.*.quantity' => 'required|numeric|gt:0',
+            'lineItems.*.quantity' => 'required|integer|min:1',
             'lineItems.*.unit_cost' => 'required|numeric|gte:0',
             'lineItems.*.base_consumer_price' => 'required|numeric|gte:0',
             'lineItems.*.discount_type' => 'nullable|in:percentage,amount',
@@ -440,9 +440,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function formatQuantity(string|int|float|null $quantity): string
     {
-        $formatted = number_format((float) ($quantity ?? 0), 6, '.', '');
-
-        return rtrim(rtrim($formatted, '0'), '.');
+        return \App\Support\ProductQuantity::format($quantity);
     }
 
     private function searchProducts(User $actor): \Illuminate\Support\Collection
@@ -579,7 +577,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </dl>
                     <dl class="grid grid-cols-2 gap-3 text-sm lg:grid-cols-1">
                         <div><dt class="text-xs text-text-muted">{{ __('Current stage') }}</dt><dd class="font-medium">{{ $stage }}</dd></div>
-                        <div><dt class="text-xs text-text-muted">{{ __('Remaining quantity') }}</dt><dd class="tabular-nums" dir="ltr">{{ $this->formatQuantity($remaining) }}</dd></div>
+                        <div><dt class="text-xs text-text-muted">{{ __('Remaining quantity') }}</dt><dd class="tabular-nums" dir="ltr">{{ __(':quantity units', ['quantity'=>$this->formatQuantity($remaining)]) }}</dd></div>
                     </dl>
                     <div class="min-w-0 space-y-3 lg:border-s lg:ps-5">
                         <div><div class="text-xs text-text-muted">{{ __('Next required action') }}</div><div class="font-medium">{{ $nextAction }}</div></div>
@@ -690,7 +688,7 @@ new #[Title('Purchase Invoices')] class extends Component
                         @continue(empty($line['product_id']))
                         <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-8" wire:key="invoice-line-{{ $index }}">
                             <div class="md:col-span-2" tabindex="-1" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$el.focus()"><flux:label>{{__('Product')}}</flux:label><div class="mt-2 rounded-lg border p-3">@php($lineProduct=$lineProducts->get((int)$line['product_id']))<strong>{{ app()->getLocale()==='ar' ? ($lineProduct?->name_ar ?: '—') : ($lineProduct?->name_en ?: '—') }}</strong><div class="text-xs text-text-muted" dir="ltr">{{ $lineProduct?->item_code }}</div></div></div>
-                            <flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="0.000001" step="0.000001" :label="__('Quantity')" />
+                            <flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" />
                             <flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" />
                             <flux:input wire:model="lineItems.{{ $index }}.base_consumer_price" type="number" min="0" step="0.001" :label="__('Base Consumer Price List 0')" :disabled="!Gate::allows('purchase_invoices.change_list0_price')" />
                             <flux:select wire:model.live="lineItems.{{ $index }}.discount_type" :label="__('Discount type')">
@@ -727,7 +725,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 <table class="min-w-full text-sm"><thead><tr><th class="p-2 text-start">{{__('Product')}}</th><th class="p-2">{{__('Purchased')}}</th>@foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<th class="p-2">{{ app()->getLocale()==='ar'?$store->name_ar:($store->name_en?:$store->name_ar) }}@if($store->type==='selling')<div class="text-xs text-text-muted">{{__('Effective destination price')}}</div>@endif</th>@endforeach<th class="p-2">{{__('Distributed')}}</th><th class="p-2">{{__('Remaining')}}</th></tr></thead>
                 <tbody>@foreach($distributionInvoice->lines as $line) @php($distributed=collect($distributionMatrix[$line->id]??[])->reduce(fn($t,$q)=>bcadd($t,is_numeric($q)?(string)$q:'0',6),'0'))
                     <tr class="border-t"><td class="p-2"><strong>{{ app()->getLocale()==='ar'?($line->product->name_ar?:'—'):($line->product->name_en?:'—') }}</strong><div dir="ltr">{{ $line->product->model_number }} · {{ $line->product->item_code }}</div></td><td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($line->quantity) }}</td>
-                    @foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<td class="p-2"><flux:input wire:model.live="distributionMatrix.{{ $line->id }}.{{ $store->id }}" type="number" min="0" step="0.000001" aria-label="{{__('Distribution quantity')}}" />@php($saved=$distributionInvoice->distributions->first(fn($d)=>$d->purchase_invoice_line_id===$line->id&&$d->destination_store_id===$store->id))@if($saved?->effective_selling_price)<div class="mt-1 text-center"><x-money :amount="$saved->effective_selling_price" :currency="$distributionInvoice->currency_code" /></div>@endif</td>@endforeach
+                    @foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<td class="p-2"><flux:input wire:model.live="distributionMatrix.{{ $line->id }}.{{ $store->id }}" type="number" min="0" step="1" aria-label="{{__('Distribution quantity')}}" />@php($saved=$distributionInvoice->distributions->first(fn($d)=>$d->purchase_invoice_line_id===$line->id&&$d->destination_store_id===$store->id))@if($saved?->effective_selling_price)<div class="mt-1 text-center"><x-money :amount="$saved->effective_selling_price" :currency="$distributionInvoice->currency_code" /></div>@endif</td>@endforeach
                     <td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($distributed) }}</td><td class="p-2 text-center {{ bccomp(bcsub((string)$line->quantity,$distributed,6),'0',6)!==0?'text-red-600':'text-green-700' }}" dir="ltr">{{ $this->formatQuantity(bcsub((string)$line->quantity,$distributed,6)) }}</td></tr>
                 @endforeach</tbody></table>
                 <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showDistribution', false)">{{__('Back to invoices')}}</flux:button><flux:button type="submit" variant="primary">{{__('Save distribution')}}</flux:button>@can('purchase_invoices.approve')<flux:button type="button" wire:click="approveInvoice({{$distributionInvoice->id}})" variant="primary">{{__('Approve & post')}}</flux:button>@endcan</div>

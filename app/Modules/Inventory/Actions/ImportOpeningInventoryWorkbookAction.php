@@ -39,7 +39,7 @@ final class ImportOpeningInventoryWorkbookAction
                     if ($product && ($product->product_type === 'service' || $product->isFamily())) $errors[] = __('Service products and variation families cannot receive opening inventory.');
                     if ($product && $product->average_cost === null) $errors[] = __('The Product Card does not have a valid unit cost.');
                     if ($product && $store && StockMovement::query()->where('product_id', $product->id)->where('store_id', $store->id)->exists()) $errors[] = __('This product and location already have inventory movements.');
-                    if ($product && preg_match('/\.\d*[1-9]/', $source['opening_quantity']) && ! $product->fractional_quantity) $errors[] = __('This product does not allow fractional quantities.');
+                    if ($product && preg_match('/\.\d*[1-9]/', $source['opening_quantity'])) $errors[] = __('Product quantities must be whole numbers.');
                     $key = ($product?->id ?? 'x').':'.($store?->id ?? 'x'); if (isset($seen[$key])) $errors[] = __('Duplicate product and inventory location in this workbook.'); $seen[$key] = true;
                     if ($errors) { $rejections[] = [$number, ...array_values($source), implode(' | ', array_unique($errors))]; continue; }
                     $rows[] = ['product_id' => $product->id, 'store_id' => $store->id, 'quantity' => $source['opening_quantity']];

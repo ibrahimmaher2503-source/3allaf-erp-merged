@@ -110,7 +110,7 @@ final class InitialSetupStatus
     /** @return array<string, mixed> */
     private function step(string $key, string $label, string $description, ?string $routeName, ?string $permission, bool $complete, int $records, ?string $incompleteReason = null, bool $required = true, array $routeParameters = [], ?string $destinationKey = null, array $details = []): array
     {
-        $status = $complete ? ($required ? 'completed' : 'ready') : ($records === 0 ? 'not_started' : ($required ? 'requires_completion' : 'incomplete'));
+        $status = $complete ? 'completed' : ($records === 0 ? 'not_started' : ($required ? 'requires_completion' : 'incomplete'));
         $route = $routeName === null ? null : route($routeName, $routeParameters);
         $canAccess = $permission !== null && auth()->check() && auth()->user()->can($permission);
 

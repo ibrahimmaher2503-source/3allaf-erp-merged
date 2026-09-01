@@ -37,7 +37,7 @@ final class RecordStockCountLineAction
                     throw new InvalidArgumentException(__('Counted quantity must be a non-negative decimal with up to 6 places.'));
                 }
                 $quantity = bcadd($quantity, '0', 6);
-                if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0 && ! $product->fractional_quantity) {
+                if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0) {
                     throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
                 }
                 $line = $count->lines()->where('product_id', $product->id)->lockForUpdate()->first();

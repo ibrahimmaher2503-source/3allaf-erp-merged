@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use App\Support\ProductQuantity;
 
 final class SavePurchaseInvoiceAction
 {
@@ -30,6 +31,7 @@ final class SavePurchaseInvoiceAction
         if (collect($lines)->pluck('product_id')->filter()->duplicates()->isNotEmpty()) throw new InvalidArgumentException(__('A product may appear only once; scan it again to increase quantity.'));
         if (! Gate::allows('purchase_invoices.change_cost')) throw new InvalidArgumentException(__('You are not allowed to change purchase cost.'));
         if (! Gate::allows('purchase_invoices.change_list0_price')) throw new InvalidArgumentException(__('You are not allowed to change Base Consumer Price List 0.'));
+        foreach ($lines as $index => $line) ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
         $actor = Auth::user();
         abort_unless($actor instanceof User, 403);
 

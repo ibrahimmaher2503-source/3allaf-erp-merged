@@ -45,7 +45,7 @@
                             @endforeach
                         @endforeach
                     </flux:select>
-                    <flux:input name="quantity" type="number" min="0.000001" step="0.000001" value="{{ old('quantity', 1) }}" label="{{ __('Quantity') }}" required />
+                    <flux:input name="quantity" type="number" min="1" step="1" value="{{ old('quantity', 1) }}" label="{{ __('Quantity') }}" required />
 
                     <flux:select name="settlement_type" label="{{ __('Settlement') }}" required x-model="settlement">
                         <option value="cash_refund">{{ __('Cash refund record') }}</option>
@@ -75,7 +75,7 @@
                                     <option value="{{ $product->id }}">{{ $product->item_code }} · {{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</option>
                                 @endforeach
                             </flux:select>
-                            <flux:input name="exchange_lines[0][quantity]" type="number" min="0.000001" step="0.000001" value="1" label="{{ __('Quantity') }}" />
+                            <flux:input name="exchange_lines[0][quantity]" type="number" min="1" step="1" value="1" label="{{ __('Quantity') }}" />
                         </div>
                         <template x-for="(line, index) in extraLines" :key="index">
                             <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
@@ -90,7 +90,7 @@
                                 </label>
                                 <label class="grid gap-1 text-sm font-medium">
                                     <span>{{ __('Quantity') }}</span>
-                                    <input class="rounded-lg border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900" :name="`exchange_lines[${index + 1}][quantity]`" x-model="line.quantity" type="number" min="0.000001" step="0.000001">
+                                    <input class="rounded-lg border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900" :name="`exchange_lines[${index + 1}][quantity]`" x-model="line.quantity" type="number" min="1" step="1">
                                 </label>
                                 <button type="button" class="self-end text-sm text-red-700 underline" @click="extraLines.splice(index, 1)">{{ __('Remove') }}</button>
                             </div>

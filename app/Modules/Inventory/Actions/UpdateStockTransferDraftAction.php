@@ -88,7 +88,7 @@ final class UpdateStockTransferDraftAction
                 throw new InvalidArgumentException(__('Invalid transfer quantity.'));
             }
             $quantity = bcadd($quantity, '0', 6);
-            if (bccomp($quantity, '0', 6) <= 0 || (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0 && ! $product->fractional_quantity)) {
+            if (bccomp($quantity, '0', 6) <= 0 || bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0) {
                 throw new InvalidArgumentException(__('Transfer quantity is invalid for this product.'));
             }
             if (isset($normalized[$product->id])) {

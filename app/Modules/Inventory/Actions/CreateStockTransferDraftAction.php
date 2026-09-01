@@ -160,7 +160,7 @@ final class CreateStockTransferDraftAction
             if (bccomp($quantity, '0', 6) <= 0) {
                 throw new InvalidArgumentException(__('Transfer quantity must be greater than zero.'));
             }
-            if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0 && ! $product->fractional_quantity) {
+            if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0) {
                 throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
             }
             if (array_key_exists($productId, $normalized)) {

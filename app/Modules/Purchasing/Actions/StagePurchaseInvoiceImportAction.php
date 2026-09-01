@@ -292,7 +292,7 @@ final class StagePurchaseInvoiceImportAction
         if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', trim((string) ($raw['invoice_date'] ?? '')))) {
             $errors[] = (string) __('Invoice date must use YYYY-MM-DD.');
         }
-        if (! is_numeric($raw['quantity'] ?? null) || (float) $raw['quantity'] <= 0) {
+        if (filter_var($raw['quantity'] ?? null, FILTER_VALIDATE_INT) === false || (int) $raw['quantity'] <= 0) {
             $errors[] = (string) __('Quantity must be greater than zero.');
         }
         if (! is_numeric($raw['unit_cost'] ?? null) || (float) $raw['unit_cost'] < 0) {

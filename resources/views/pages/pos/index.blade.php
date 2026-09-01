@@ -159,7 +159,7 @@
                     </div>
 
                     @if ($productQuery !== '' && $otherStoreAvailability->isNotEmpty())
-                        <section class="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800"><flux:heading size="sm">{{ __('Other store availability') }}</flux:heading><div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach ($otherStoreAvailability as $availability) @php $availableQuantity = bcsub((string) $availability->on_hand, (string) $availability->reserved, 3); @endphp <div class="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800"><span>{{ app()->getLocale() === 'ar' ? $availability->store?->name_ar : $availability->store?->name_en }}</span><span class="font-bold tabular-nums">{{ rtrim(rtrim($availableQuantity, '0'), '.') }}</span></div>@endforeach</div></section>
+                        <section class="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800"><flux:heading size="sm">{{ __('Other store availability') }}</flux:heading><div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach ($otherStoreAvailability as $availability) @php $availableQuantity = bcsub((string) $availability->on_hand, (string) $availability->reserved, 3); @endphp <div class="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800"><span>{{ app()->getLocale() === 'ar' ? $availability->store?->name_ar : $availability->store?->name_en }}</span><span class="font-bold tabular-nums" dir="ltr">{{ \App\Support\ProductQuantity::format($availableQuantity) }}</span></div>@endforeach</div></section>
                     @endif
                 </div>
             </section>
@@ -171,12 +171,12 @@
                         @php
                             $cartLine = $line['cart'];
                             $computed = $preview['lines'][$loop->index] ?? null;
-                            $quantityStep = $line['product']->fractional_quantity ? '0.001' : '1';
-                            $minimumQuantity = $line['product']->fractional_quantity ? '0.001' : '1';
+                            $quantityStep = '1';
+                            $minimumQuantity = '1';
                             $incrementedQuantity = bcadd($line['quantity'], $quantityStep, 6);
                             $decrementedQuantity = bcsub($line['quantity'], $quantityStep, 6);
                             $canDecreaseQuantity = bccomp($decrementedQuantity, '0', 6) === 1;
-                            $quantityDisplay = $line['product']->fractional_quantity ? rtrim(rtrim(number_format((float) $line['quantity'], 3, '.', ''), '0'), '.') : number_format((float) $line['quantity'], 0, '.', '');
+                            $quantityDisplay = \App\Support\ProductQuantity::format($line['quantity']);
                         @endphp
                         <article class="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200 dark:bg-zinc-950/60 dark:ring-zinc-800" data-cart-line="{{ $line['product']->id }}">
                             <div class="flex gap-3"><div class="flex size-14 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-400 dark:bg-zinc-800"><flux:icon name="cube" class="size-6" /></div><div class="min-w-0 flex-1"><div class="flex items-start justify-between gap-2"><div><h3 class="line-clamp-2 text-sm font-bold">{{ app()->getLocale() === 'ar' ? $line['product']->name_ar : $line['product']->name_en }}</h3><p class="mt-0.5 text-xs text-zinc-500">{{ $line['product']->item_code }}</p></div><div class="shrink-0 text-end text-sm font-extrabold tabular-nums"><x-money :amount="$computed['net_amount'] ?? '0.00'" :currency="$currency" /></div></div>

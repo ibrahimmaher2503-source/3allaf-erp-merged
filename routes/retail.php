@@ -1341,7 +1341,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::post('pos/cart/add', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
-        $data = $request->validate(['product_id' => ['required', 'integer'], 'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999']]);
+        $data = $request->validate(['product_id' => ['required', 'integer'], 'quantity' => ['required', 'integer', 'min:1', 'max:999999']]);
         try {
             app(PosCartAction::class)->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
         } catch (InvalidArgumentException $exception) {
@@ -1367,7 +1367,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.create'), 403);
         $data = $request->validate([
             'product_id' => ['required', 'integer'],
-            'quantity' => ['required', 'numeric', 'min:0.000001', 'max:999999'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:999999'],
         ]);
         try {
             app(PosCartAction::class)->quantity($request, $user, (int) $data['product_id'], (string) $data['quantity']);

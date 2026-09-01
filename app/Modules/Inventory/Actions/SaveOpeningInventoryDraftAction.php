@@ -39,7 +39,7 @@ final class SaveOpeningInventoryDraftAction
                 app(AssertInventoryStoreScope::class)->execute($store->id);
                 $quantity = $this->quantity($row['quantity'] ?? null);
                 if (bccomp($quantity, '0', 6) <= 0) throw new InvalidArgumentException(__('Opening quantity must be greater than zero.'));
-                if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0 && ! $product->fractional_quantity) throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
+                if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0) throw new InvalidArgumentException(__('Product quantities must be whole numbers.'));
                 $key = $product->id.':'.$store->id;
                 if (isset($seen[$key])) throw new InvalidArgumentException(__('The same product and inventory location may appear only once.'));
                 $seen[$key] = true;

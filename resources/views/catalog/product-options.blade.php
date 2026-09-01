@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Catalog\Actions\SaveProductOptionAction;
+use App\Modules\Catalog\Actions\DeleteProductOptionAction;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\ProductOptionValue;
 use Flux\Flux;
@@ -18,6 +19,8 @@ new #[Title('Product Filters')] class extends Component {
     public string $statusFilter = 'all';
     public array $groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
     public array $valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'colour_swatch' => '', 'status' => 'active', 'sort_order' => 0];
+    public string $deleteMode = 'archive';
+    public ?int $replacementValueId = null;
 
     public function mount(): void
     {
@@ -142,6 +145,18 @@ new #[Title('Product Filters')] class extends Component {
         }
     }
 
+    public function deleteValue(int $id, DeleteProductOptionAction $action): void
+    {
+        try { $action->value($id,$this->deleteMode,$this->replacementValueId); Flux::toast(variant:'success',text:__('Filter value deletion completed safely.')); }
+        catch (\Throwable $e) { $this->addError('deletion',\App\Support\UserSafeError::message($e)); }
+    }
+
+    public function deleteGroup(int $id, DeleteProductOptionAction $action): void
+    {
+        try { $action->group($id,$this->deleteMode); Flux::toast(variant:'success',text:__('Filter group deletion completed safely.')); }
+        catch (\Throwable $e) { $this->addError('deletion',\App\Support\UserSafeError::message($e)); }
+    }
+
     public function render()
     {
         return view('catalog.product-options', [
@@ -155,8 +170,8 @@ new #[Title('Product Filters')] class extends Component {
         <x-slot:actions>@can('products_categories_brands.create')<flux:button type="button" wire:click="startGroup" variant="primary" icon="plus">{{ app()->getLocale() === 'ar' ? 'إضافة مجموعة فلاتر' : 'Add Filter Group' }}</flux:button>@endcan</x-slot:actions>
     </x-page-header>
 
-    @if ($errors->has('groupForm') || $errors->has('valueForm'))
-        <flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first('groupForm') ?: $errors->first('valueForm') }}</flux:callout>
+    @if ($errors->has('groupForm') || $errors->has('valueForm') || $errors->has('deletion'))
+        <flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first('groupForm') ?: ($errors->first('valueForm') ?: $errors->first('deletion')) }}</flux:callout>
     @endif
 
     @can('products_categories_brands.create')
@@ -179,10 +194,10 @@ new #[Title('Product Filters')] class extends Component {
         <div><flux:heading id="option-library-heading" size="xl">{{ __('Product Filters') }}</flux:heading><flux:text class="mt-1">{{ __('Inactive choices remain readable in historical variation snapshots.') }}</flux:text></div>
         @forelse ($groups as $group)
             <article class="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"><div><div class="flex items-center gap-2"><flux:heading size="lg">{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</flux:heading><x-status.badge :status="$group->status" /></div><p class="mt-1 font-mono text-xs text-zinc-500">{{ $group->code }} · {{ $group->name_ar }} / {{ $group->name_en }}</p></div>@can('products_categories_brands.edit')<div class="flex gap-2"><flux:button wire:click="editGroup({{ $group->id }})" size="sm" variant="subtle">{{ __('Edit') }}</flux:button><flux:button wire:click="startValue({{ $group->id }})" size="sm" variant="primary" :disabled="$group->status !== 'active'">{{ __('Add value') }}</flux:button></div>@endcan</header>
+                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"><div><div class="flex items-center gap-2"><flux:heading size="lg">{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</flux:heading><x-status.badge :status="$group->status" /></div><p class="mt-1 font-mono text-xs text-zinc-500" dir="ltr">{{ $group->code }} · {{ $group->name_ar }} / {{ $group->name_en }}</p></div><div class="flex gap-2">@can('products_categories_brands.edit')<flux:button wire:click="editGroup({{ $group->id }})" size="sm" variant="subtle">{{ __('Edit') }}</flux:button><flux:button wire:click="startValue({{ $group->id }})" size="sm" variant="primary" :disabled="$group->status !== 'active'">{{ __('Add value') }}</flux:button>@endcan @can('products_categories_brands.delete')<flux:button wire:click="deleteGroup({{ $group->id }})" wire:confirm="{{ __('Delete filter :name? Referenced groups will be archived to preserve history.', ['name'=>app()->getLocale()==='ar'?$group->name_ar:$group->name_en]) }}" size="sm" variant="danger">{{ __('Delete') }}</flux:button>@endcan</div></header>
                 <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
                     @forelse ($group->values as $value)
-                        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3"><div class="flex items-center gap-3">@if($value->colour_swatch)<span class="size-7 rounded-full border border-zinc-300" style="background-color: {{ $value->colour_swatch }}" aria-label="{{ __('Colour swatch') }} {{ $value->colour_swatch }}"></span>@endif<div><div class="font-semibold">{{ app()->getLocale() === 'ar' ? $value->name_ar : $value->name_en }} <x-status.badge :status="$value->status" /></div><div class="font-mono text-xs text-zinc-500">{{ $value->code }} · {{ $value->name_ar }} / {{ $value->name_en }}</div></div></div>@can('products_categories_brands.edit')<flux:button wire:click="editValue({{ $value->id }})" size="sm" variant="ghost">{{ __('Edit') }}</flux:button>@endcan</div>
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3"><div class="flex items-center gap-3">@if($value->colour_swatch)<span class="size-7 rounded-full border border-zinc-300" style="background-color: {{ $value->colour_swatch }}" aria-label="{{ __('Colour swatch') }} {{ $value->colour_swatch }}"></span>@endif<div><div class="font-semibold">{{ app()->getLocale() === 'ar' ? $value->name_ar : $value->name_en }} <x-status.badge :status="$value->status" /></div><div class="font-mono text-xs text-zinc-500" dir="ltr">{{ $value->code }} · {{ $value->name_ar }} / {{ $value->name_en }}</div></div></div><div class="flex gap-2">@can('products_categories_brands.edit')<flux:button wire:click="editValue({{ $value->id }})" size="sm" variant="ghost">{{ __('Edit') }}</flux:button>@endcan @can('products_categories_brands.delete')<flux:button wire:click="deleteValue({{ $value->id }})" wire:confirm="{{ __('Delete filter value :name? Product assignments will be handled using the selected remediation.', ['name'=>app()->getLocale()==='ar'?$value->name_ar:$value->name_en]) }}" size="sm" variant="danger">{{ __('Delete') }}</flux:button>@endcan</div></div>
                     @empty
                         <div class="p-5"><x-state.empty :title="__('No values in this group')" :description="__('Add at least one bilingual value before using this group in a product family.')" /></div>
                     @endforelse
@@ -192,6 +207,8 @@ new #[Title('Product Filters')] class extends Component {
             <x-state.empty :title="__('No product filters yet')" :description="__('Create a bilingual filter group such as Colour or Size, then add its values.')" />
         @endforelse
     </section>
+
+    @can('products_categories_brands.delete')<flux:card class="space-y-3"><flux:heading size="lg">{{ __('Deletion remediation') }}</flux:heading><flux:text>{{ __('Unused records are deleted. For referenced records choose replacement, remove non-historical family assignments, or archive to preserve historical variants.') }}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:select wire:model="deleteMode" :label="__('Referenced-record action')"><flux:select.option value="archive">{{ __('Archive / deactivate') }}</flux:select.option><flux:select.option value="remove">{{ __('Remove assignments then delete') }}</flux:select.option><flux:select.option value="replace">{{ __('Replace with another value') }}</flux:select.option></flux:select><flux:select wire:model="replacementValueId" :label="__('Replacement value')"><flux:select.option value="">{{ __('Select replacement when required') }}</flux:select.option>@foreach($groups as $candidateGroup) @foreach($candidateGroup->values->where('status','active') as $candidate)<flux:select.option value="{{ $candidate->id }}">{{ app()->getLocale()==='ar'?$candidate->name_ar:$candidate->name_en }} · <span dir="ltr">{{ $candidate->code }}</span></flux:select.option>@endforeach @endforeach</flux:select></div></flux:card>@endcan
 
     @if ($valueGroupId)
         <form wire:submit="saveValue" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" aria-label="{{ __('Filter value editor') }}">

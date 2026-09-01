@@ -51,7 +51,7 @@ final class PostInventoryMovement
                 throw new InvalidArgumentException(__('A variation family cannot receive an inventory movement. Select a child SKU.'));
             }
             $isFractional = bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0;
-            if ($isFractional && ! $product->fractional_quantity) {
+            if ($isFractional) {
                 throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
             }
 

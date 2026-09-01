@@ -746,3 +746,10 @@
 - **Verification actually run:** 70 focused PHPUnit tests/692 assertions passed. Node 20.20.2/npm 10.8.2 ran the single Vite production build. Eight Arabic/English desktop/mobile printing visual checks passed and representative images were inspected. A fresh temporary socket-only MariaDB applied all 96 migrations; FK, uniqueness, rollback and remigrate passed; the database/server/directory were removed.
 - **Remaining:** A human operator must print one test page on each configured physical printer class. Final commit and new immutable candidate details are recorded in the handoff.
 - **Boundaries:** Code, tests, browser checks, documentation and isolated database verification occurred. Production/shared database and symlink targets, UAT data, active symlink, deployment/cutover, tags, pushes and remotes were untouched.
+
+## 2026-09-01 — v0.1.22-hotfix1 post-deployment correction
+
+- **Task:** Resumed the preserved correction work from tagged v0.1.22 without restarting or discarding completed changes.
+- **Work completed:** Closed the listed Arabic/raw-enum, Setup status/counter, safe Product Filter deletion, Inventory Balance reset, whole-unit product quantity, manual Barcode Label, Product Card pricing, EAN-13/Code 128, thermal/label/A4 physical layout, Purchase Invoice remaining-unit and canonical version corrections. Fixed replacement de-duplication and profile-aware PDF page sizing found during final review.
+- **Verification actually run:** One consolidated focused pass passed 4 tests/59 assertions, all changed PHP syntax, Arabic/English JSON and diff hygiene. One Node 20.20.2/npm 10.8.2 Vite 8.2.0 build passed; manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`. Preserved eight-case bilingual responsive printing evidence was not repeated. The only remaining check is physical-printer print/measure/scan acceptance.
+- **Boundary:** Code, focused assertions, documentation, build, commit and immutable release preparation occurred. No production/shared runtime or database, migration execution, deploy/cutover, active symlink, tag, push or remote contact occurred.

@@ -154,7 +154,7 @@ new #[Title('Supplier Returns')] class extends Component
             'selectedReasonId' => 'required|integer|exists:supplier_return_reasons,id',
             'returnLines' => 'required|array|min:1',
             'returnLines.*.purchase_invoice_line_id' => 'required|integer',
-            'returnLines.*.quantity' => 'required|numeric|gt:0',
+            'returnLines.*.quantity' => 'required|integer|min:1',
         ]);
         $existingReturn = $this->selectedReturnId === null
             ? null
@@ -458,7 +458,7 @@ new #[Title('Supplier Returns')] class extends Component
                                     <flux:text class="font-medium">{{ $line['product'] }}</flux:text>
                                     <flux:text size="sm">{{ __('Eligible quantity') }}: {{ $line['available'] }}</flux:text>
                                 </div>
-                                <flux:input wire:model="returnLines.{{ $index }}.quantity" type="number" min="0.000001" step="0.000001" :label="__('Return quantity')" />
+                                <flux:input wire:model="returnLines.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Return quantity')" />
                                 <flux:input wire:model="returnLines.{{ $index }}.unit_cost" type="text" readonly :label="__('Original unit cost')" />
                             </div>
                         @endforeach

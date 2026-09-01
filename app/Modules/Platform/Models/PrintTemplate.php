@@ -10,7 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PrintTemplate extends Model
 {
-    protected $fillable = ['company_id', 'code', 'name_ar', 'name_en', 'document_type', 'paper_size', 'language', 'header_text', 'footer_text', 'status'];
+    protected $fillable = ['company_id', 'code', 'name_ar', 'name_en', 'document_type', 'paper_size', 'language', 'header_text', 'footer_text', 'layout_settings', 'status'];
+    protected $casts = ['layout_settings' => 'array'];
 
     public function company(): BelongsTo { return $this->belongsTo(Company::class); }
     public function printers(): HasMany { return $this->hasMany(PrinterConfiguration::class); }

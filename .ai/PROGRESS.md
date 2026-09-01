@@ -1,5 +1,11 @@
 # UI/UX Release Progress
 
+## 2026-09-01 — v0.1.22-hotfix1 post-deployment correction
+
+- Completed the owner-listed Arabic/raw-enum, Setup semantics, Product Filter deletion, balance reset, whole-unit quantity, Barcode Label, Product Card pricing, barcode graphics, printer sizing/template, Purchase Invoice card and version corrections.
+- One focused gate passed 4 tests/59 assertions, PHP/JSON/diff checks, and the single Node 20 Vite build; prior eight-case bilingual print visuals were preserved. Only physical-printer output acceptance remains.
+- Prepared an immutable local release without production/shared data, active symlink, deployment, tags, pushes or remotes.
+
 ## 2026-08-31 — v0.1.21 Hotfix 3 Readiness/Pricing/UAT Consistency
 
 - Unified Product Card and pricing readiness through one current-data evaluator across Setup Center, persistent context, Products/Product Card, and Pricing Lists.

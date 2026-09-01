@@ -29,7 +29,8 @@
                         <strong class="block truncate">{{ $isArabic ? ($product['name_ar'] ?: __('Name not provided')) : ($product['name_en'] ?: __('Name not provided')) }}</strong>
                         <span class="text-xs text-text-muted"><span dir="ltr">{{ $product['item_code'] }}</span> · {{ __('Current base consumer price') }}: <span dir="ltr">{{ $product['sale_price'] === null ? __('Not set') : $product['sale_price'] }}</span></span>
                     </span>
-                    <flux:button :href="route('catalog.products.edit', ['product' => $product['id']])" size="sm" variant="subtle" wire:navigate>{{ __('Edit Product Card') }}</flux:button>
+                    @if($product['issue_message'] ?? null)<p class="text-xs text-rose-700">{{ $product['issue_message'] }}</p>@endif
+                    <flux:button :href="route('catalog.products.edit', ['product' => $product['id'], 'focus' => 'base-consumer-price']) . '#base-consumer-price'" size="sm" variant="subtle" wire:navigate>{{ __('Edit base consumer price') }}</flux:button>
                 </li>
             @endforeach
         </ul>
