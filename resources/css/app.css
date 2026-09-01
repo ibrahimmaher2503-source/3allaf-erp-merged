@@ -111,7 +111,7 @@
         .app-layout {
             display: grid;
             grid-template-columns: 16rem minmax(0, 1fr);
-            align-items: start;
+            align-items: stretch;
         }
 
         .app-layout > [data-flux-sidebar] {
@@ -140,8 +140,8 @@
     }
 
     .app-sidebar [data-flux-sidebar-nav] {
-        flex: 1 1 0% !important;
-        min-height: 0;
+        flex: 0 0 auto !important;
+        min-height: max-content;
         gap: 0.35rem !important;
     }
 

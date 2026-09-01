@@ -11,7 +11,8 @@ final class ApplicationNavigation
 {
     private const ACTIVE_ROUTES = [
         'sales.invoices' => ['sales.invoices', 'sales.show', 'sales.print', 'sales.receipt.*'],
-        'customers.index' => ['customers.*'],
+        'customers.index' => ['customers.index', 'customers.create', 'customers.show'],
+        'customers.groups.index' => ['customers.groups.*'],
         'pos.shift' => ['pos.shift*'],
         'purchasing.orders' => ['purchasing.orders*'],
         'purchasing.invoices' => ['purchasing.invoices*', 'purchasing.receiv*'],

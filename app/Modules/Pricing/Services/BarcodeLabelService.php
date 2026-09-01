@@ -10,6 +10,10 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\PriceListResolver;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\Response;
 
 final class BarcodeLabelService
 {
@@ -65,5 +69,25 @@ final class BarcodeLabelService
         if ($labels === []) throw ValidationException::withMessages(['products' => __('Select at least one product with an active barcode.')]);
 
         return ['labels' => $labels, ...$profile];
+    }
+
+    public function pdfResponse(array $document): Response
+    {
+        $fontCache = storage_path('framework/cache/dompdf');
+        (new Filesystem)->ensureDirectoryExists($fontCache);
+        $options = new Options;
+        $options->set('isRemoteEnabled', false);
+        $options->set('isHtml5ParserEnabled', true);
+        $options->setChroot(base_path());
+        $options->setFontDir($fontCache); $options->setFontCache($fontCache); $options->setTempDir($fontCache);
+        $options->setDefaultFont(app()->getLocale() === 'ar' ? 'Cairo PDF Arabic' : 'Cairo PDF Latin');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(view('pricing.label-print', $document + ['toolbar' => false, 'pdf' => true])->render(), 'UTF-8');
+        $settings = $document['settings'];
+        $paper = $document['paper_size'] === 'a4' ? 'a4' : [0, 0, (float) $settings['width_mm'] * 72 / 25.4, (float) $settings['height_mm'] * 72 / 25.4];
+        $dompdf->setPaper($paper, (string) $settings['orientation']);
+        $dompdf->render();
+        $filename = app()->getLocale() === 'ar' ? 'ملصقات-الباركود.pdf' : 'barcode-labels.pdf';
+        return response($dompdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => "attachment; filename*=UTF-8''".rawurlencode($filename)]);
     }
 }

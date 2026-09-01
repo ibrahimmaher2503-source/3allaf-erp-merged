@@ -5,7 +5,7 @@
 <style>
     @media (max-width: 1023px) {
         body.app-layout { display: block !important; grid-template-columns: none !important; }
-        .app-layout > .app-sidebar { position: fixed !important; inset-block: 0 !important; }
+        .app-layout > .app-sidebar { position: static !important; min-height: 100vh !important; height: auto !important; overflow: visible !important; align-self: stretch; }
         .app-layout > .app-layout__content { display: flex !important; flex-direction: column !important; grid-area: auto !important; width: 100% !important; min-width: 0 !important; margin: 0 !important; }
     }
     .app-sidebar [data-flux-sidebar-item], .app-sidebar [data-sidebar-expandable] > button { color: #d2dde7 !important; }
@@ -43,7 +43,7 @@
     $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp
-<flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! h-dvh w-[272px] gap-2 overflow-hidden border-e p-3">
+<flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:overflow-visible">
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:tooltip :content="$isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar'" :position="$isArabic ? 'left' : 'right'">

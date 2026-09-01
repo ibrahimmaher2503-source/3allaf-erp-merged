@@ -6,7 +6,8 @@
     @php($width=(float)$settings['width_mm']) @php($height=(float)$settings['height_mm']) @php($a4=$paper_size==='a4')
     <style>
         @page{size:{{ $a4?'A4':$width.'mm '.$height.'mm' }};margin:{{ (float)$settings['margin_mm'] }}mm}
-        *{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Cairo,Arial,sans-serif;background:#f4f4f5;color:#111827}
+        @include('pages.exports.partials.cairo-pdf-styles')
+        *{box-sizing:border-box}html,body{margin:0;padding:0;font-family:{{ app()->getLocale()==='ar'?'Cairo PDF Arabic':'Cairo PDF Latin' }},Arial,sans-serif;background:#f4f4f5;color:#111827}
         .toolbar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:12px;background:#fff;border-bottom:1px solid #d4d4d8}
         .toolbar a,.toolbar button{min-height:44px;border:1px solid #0f766e;border-radius:8px;padding:8px 14px;background:#fff;color:#0f766e;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}.toolbar .primary{background:#0f766e;color:#fff}
         .preview-shell{margin:18px auto;width:max-content;max-width:100%;overflow:auto;background:#fff;box-shadow:0 8px 30px #0002}
@@ -24,7 +25,7 @@
 @foreach($page as $label)
     <article class="label" data-barcode-symbol data-barcode-value="{{ $label['barcode']->barcode }}" data-copy="{{ $label['copy'] }}">
         @if($settings['show_name'])<div class="name">{{ app()->getLocale()==='ar'?$label['product']->name_ar:($label['product']->name_en?:$label['product']->name_ar) }}</div>@endif
-        {!! app(\App\Modules\Pricing\Services\BarcodeSvgRenderer::class)->render($label['barcode']->barcode,$settings['symbology']??'auto') !!}
+        @if($pdf??false)<img class="barcode-svg" alt="{{ $label['barcode']->barcode }}" src="{{ app(\App\Modules\Pricing\Services\BarcodeSvgRenderer::class)->renderPngDataUri($label['barcode']->barcode,$settings['symbology']??'auto') }}">@else{!! app(\App\Modules\Pricing\Services\BarcodeSvgRenderer::class)->render($label['barcode']->barcode,$settings['symbology']??'auto') !!}@endif
         <div class="meta technical" data-human-barcode>{{ $label['barcode']->barcode }}</div>
         @if($settings['show_item_code'])<div class="meta"><span>{{ __('Item code') }}:</span> <span class="technical">{{ $label['product']->item_code }}</span></div>@endif
         @if($settings['show_list_code']&&$label['list'])<div class="meta"><span>{{ __('Price list') }}:</span> <span class="technical">{{ $label['list']->code }}</span></div>@endif

@@ -29,6 +29,20 @@ final class BarcodeSvgRenderer
         return (10 - ($sum % 10)) % 10 === (int) $value[12];
     }
 
+    public function renderPngDataUri(string $value, string $symbology = 'auto', int $height = 180): string
+    {
+        $svg = $this->render($value, $symbology, $height);
+        preg_match('/viewBox="0 0 (\d+) (\d+)"/', $svg, $box);
+        preg_match_all('/<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"\/>/', $svg, $matches, PREG_SET_ORDER);
+        $scale = 3;
+        $image = imagecreatetruecolor(((int) $box[1]) * $scale, ((int) $box[2]) * $scale);
+        $white = imagecolorallocate($image, 255, 255, 255); $black = imagecolorallocate($image, 0, 0, 0);
+        imagefill($image, 0, 0, $white);
+        foreach ($matches as $bar) imagefilledrectangle($image, (int) $bar[1] * $scale, (int) $bar[2] * $scale, (((int) $bar[1] + (int) $bar[3]) * $scale) - 1, (((int) $bar[2] + (int) $bar[4]) * $scale) - 1, $black);
+        ob_start(); imagepng($image, null, 0); $png = (string) ob_get_clean(); imagedestroy($image);
+        return 'data:image/png;base64,'.base64_encode($png);
+    }
+
     private function code128(string $value, int $height): string
     {
         $codes = [104]; $checksum = 104;

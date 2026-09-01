@@ -49,6 +49,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         abort(403);
     }
     $movementType = trim((string) request()->query('movement_type', ''));
+    abort_unless(in_array($movementType, ['', 'purchase_distribution_in','purchase_distribution_out','purchase_receipt','purchase_receipt_reversal','purchase_return','purchase_return_reversal','sale','sale_reversal','transfer_in','transfer_out'], true), 422);
     $stockState = trim((string) request()->query('stock_state', ''));
     abort_unless(in_array($stockState, ['', 'available', 'low', 'out', 'negative'], true), 422);
     $canViewCost = Gate::allows('inventory_stock_card.cost_view');
@@ -169,7 +170,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             fputcsv($output, $canViewCost ? ['product', 'store', 'on_hand', 'reserved', 'available', 'in_transit', 'average_cost'] : ['product', 'store', 'on_hand', 'reserved', 'available', 'in_transit']);
             foreach ($rows as $row) {
                 $available = bcsub((string) $row->on_hand, (string) $row->reserved, 6);
-                $values = [$row->product?->item_code, $row->store?->code, $row->on_hand, $row->reserved, $available, $row->in_transit];
+                $values = [$row->product?->item_code, $row->store?->code, \App\Support\ProductQuantity::format($row->on_hand), \App\Support\ProductQuantity::format($row->reserved), \App\Support\ProductQuantity::format($available), \App\Support\ProductQuantity::format($row->in_transit)];
                 if ($canViewCost) {
                     $values[] = $row->average_cost;
                 }

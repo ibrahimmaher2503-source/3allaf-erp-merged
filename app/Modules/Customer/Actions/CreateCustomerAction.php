@@ -64,7 +64,7 @@ final class CreateCustomerAction
 
                 $customerGroup = $customerGroupId === null
                     ? null
-                    : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->whereDoesntHave('children')->lockForUpdate()->find($customerGroupId);
+                    : CustomerGroup::query()->forCompany((int) $store->company_id)->active()->lockForUpdate()->find($customerGroupId);
                 if ($customerGroupId !== null && $customerGroup === null) {
                     throw new InvalidArgumentException(__('The selected customer group is not available in this company.'));
                 }

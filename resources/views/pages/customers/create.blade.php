@@ -73,7 +73,7 @@
                             <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
                                 <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
                                 @foreach ($groupOptions as $group)
-                                    <flux:select.option value="{{ $group->id }}">{{ $group->parent ? '↳ ' : '' }}{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }} · {{ app()->getLocale() === 'ar' ? $group->name_en : $group->name_ar }}</flux:select.option>
+                                    <flux:select.option value="{{ $group->id }}">{{ app()->getLocale() === 'ar' ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
                                 @endforeach
                             </flux:select>
                         </div>

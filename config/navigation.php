@@ -10,6 +10,7 @@ return [
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
         ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'user-group', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
+        ['route' => 'customers.groups.index', 'permission' => 'customers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات العملاء', 'en' => 'Customer groups']],
         ['route' => 'pos.shift', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'الورديات والتحصيل', 'en' => 'Shifts & collections']],
     ]],
     ['key' => 'purchasing', 'icon' => 'truck', 'label' => ['ar' => 'المشتريات والموردون', 'en' => 'Purchasing & suppliers'], 'items' => [

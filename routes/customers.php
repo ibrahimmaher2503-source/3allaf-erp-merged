@@ -300,7 +300,7 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         } catch (InvalidArgumentException) {
         }
         $allGroups = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->with('parent')->get();
-        $groupOptions = GroupHierarchy::flatten(GroupHierarchy::leaves($allGroups));
+        $groupOptions = GroupHierarchy::flatten($allGroups);
         $governorates = Governorate::query()->active()->orderBy('sort_order')->get();
         $cities = City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get();
 
@@ -392,7 +392,7 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $productWalletBalance = $user->can('product_wallet.view') ? app(ProductWalletBalance::class)->forCustomer($customer, $user) : null;
         $partyWalletBalance = $user->can('party_wallet.view') ? app(PartyWalletBalance::class)->forCustomer($customer, $user) : null;
         $allGroups = CustomerGroup::query()->forCompany((int) $store->company_id)->active()->with('parent')->get();
-        $groupOptions = GroupHierarchy::flatten(GroupHierarchy::leaves($allGroups));
+        $groupOptions = GroupHierarchy::flatten($allGroups);
         if ($customer->group && ! $groupOptions->contains('id', $customer->group->id)) {
             $groupOptions->prepend($customer->group);
         }

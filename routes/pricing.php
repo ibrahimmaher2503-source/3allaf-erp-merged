@@ -87,10 +87,13 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->get('pricing/labels/download', function (BarcodeLabelService $service) {
         $actor = request()->user(); abort_unless($actor instanceof \App\Models\User, 403);
         $data = session('barcode_label_preview'); abort_unless(is_array($data), 404);
-        $document = $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null);
-        $html = view('pricing.label-print', $document + ['toolbar' => false])->render();
-        $settings = $document['settings']; $paper = $document['paper_size'] === 'a4' ? 'a4' : [0,0,(float)$settings['width_mm']*72/25.4,(float)$settings['height_mm']*72/25.4];
-        return \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper($paper, (string) $settings['orientation'])->download('barcode-labels.pdf');
+        try {
+            $document = $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null);
+            return $service->pdfResponse($document);
+        } catch (\Throwable $exception) {
+            report($exception);
+            return redirect()->route('pricing.labels.preview.show')->with('error', __('The barcode PDF could not be generated. Verify the label settings and try again.'));
+        }
     })->middleware('auth')->name('pricing.labels.download');
 
     $router->post('pricing/labels/barcodes', function (AddBarcodeAction $action) {

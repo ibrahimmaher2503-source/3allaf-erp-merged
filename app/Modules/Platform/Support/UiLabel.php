@@ -42,6 +42,16 @@ final class UiLabel
         'submitted' => 'Submitted',
         'suspended' => 'Suspended',
         'void' => 'Voided',
+        'purchase_distribution_in' => 'Purchase distribution in',
+        'purchase_distribution_out' => 'Purchase distribution out',
+        'purchase_receipt' => 'Purchase receipt',
+        'purchase_receipt_reversal' => 'Purchase receipt reversal',
+        'purchase_return' => 'Purchase return',
+        'purchase_return_reversal' => 'Purchase return reversal',
+        'sale' => 'Sale',
+        'sale_reversal' => 'Sale reversal',
+        'transfer_out' => 'Transfer out',
+        'transfer_in' => 'Transfer in',
     ];
 
     public static function status(?string $value): string
