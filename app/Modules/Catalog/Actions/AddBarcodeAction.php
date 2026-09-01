@@ -14,6 +14,43 @@ use InvalidArgumentException;
 
 class AddBarcodeAction
 {
+    public function addManualCode128(int $productId, string $value): Barcode
+    {
+        $this->authorizeWorkspaceBarcode();
+        $value = trim($value);
+        if (! preg_match('/^[\x20-\x7E]{1,48}$/', $value)) throw new InvalidArgumentException(__('Code 128 must contain 1 to 48 supported letters, numbers, spaces, or symbols.'));
+        return $this->createWorkspaceBarcode($productId, $value, 'manual');
+    }
+
+    public function generateWorkspaceCode128(int $productId): Barcode
+    {
+        $this->authorizeWorkspaceBarcode();
+        $product = Product::query()->findOrFail($productId);
+        for ($attempt = 0; $attempt < 20; $attempt++) {
+            $value = 'TJ-'.preg_replace('/[^A-Z0-9]/', '', strtoupper($product->item_code)).'-'.strtoupper(bin2hex(random_bytes(3)));
+            if (! Barcode::query()->where('barcode', $value)->exists()) return $this->createWorkspaceBarcode($productId, $value, 'local');
+        }
+        throw new InvalidArgumentException(__('A unique local barcode could not be generated. Please try again.'));
+    }
+
+    private function createWorkspaceBarcode(int $productId, string $value, string $source): Barcode
+    {
+        return DB::transaction(function () use ($productId, $value, $source): Barcode {
+            $product = Product::query()->lockForUpdate()->findOrFail($productId);
+            if ($product->isFamily()) throw new InvalidArgumentException(__('A variation family is not sellable and cannot own a barcode. Add the barcode to a child SKU.'));
+            if (Barcode::query()->where('barcode', $value)->exists() || Product::query()->where('item_code', $value)->exists()) throw new InvalidArgumentException(__('This barcode is already assigned and cannot be silently reassigned.'));
+            $barcode = Barcode::query()->create(['product_id' => $product->id, 'barcode' => $value, 'source' => $source, 'status' => 'active', 'is_primary' => ! $product->barcodes()->active()->exists()]);
+            $this->syncProductMode($product);
+            app(RecordAuditEvent::class)->execute(category: 'master_data', event: 'create_workspace_barcode', source: $barcode, after: $barcode->only(['product_id','barcode','source','status','is_primary']));
+            return $barcode;
+        });
+    }
+
+    private function authorizeWorkspaceBarcode(): void
+    {
+        abort_unless(Gate::allows('products_categories_brands.edit') || Gate::allows('pricing_labels.create'), 403);
+    }
+
     public function addSupplierBarcode(int $productId, string $barcode): Barcode
     {
         Gate::authorize('products_categories_brands.edit');

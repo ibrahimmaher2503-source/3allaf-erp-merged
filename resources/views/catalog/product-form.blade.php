@@ -14,6 +14,7 @@ use App\Modules\Catalog\Models\Gender;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -93,12 +94,15 @@ new #[Title('Product Card')] class extends Component {
     {
         Gate::authorize($this->isEditing ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
-        $validated = $this->validate([
-            ...$this->rules(),
-            'supplierBarcode' => [Rule::requiredIf(fn (): bool => ! $this->isEditing && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
-        ])['productForm'];
-
         try {
+            $this->productForm['fractional_quantity'] = filter_var(
+                $this->productForm['fractional_quantity'] ?? false,
+                FILTER_VALIDATE_BOOLEAN,
+            );
+            $validated = $this->validate([
+                ...$this->rules(),
+                'supplierBarcode' => [Rule::requiredIf(fn (): bool => ! $this->isEditing && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
+            ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
             $product = DB::transaction(function () use ($action, $barcodeAction, $validated) {
                 $product = $action->execute($validated, $this->productId, $this->productVersion);
                 if (! $this->isEditing && $validated['barcode_registration_type'] === 'local') {
@@ -119,9 +123,15 @@ new #[Title('Product Card')] class extends Component {
                 return;
             }
 
-            $this->productVersion = $product->lock_version;
-            $this->loadProduct($product);
+            $persisted = Product::query()->findOrFail($product->id);
+            $this->loadProduct($persisted);
+            app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot();
             Flux::toast(variant: 'success', text: __('Product card saved successfully.'));
+        } catch (ValidationException $exception) {
+            $this->setErrorBag($exception->validator->errors());
+            $field = str((string) $exception->validator->errors()->keys()[0])->afterLast('.')->toString();
+            $this->dispatch('product-validation-failed', field: $field);
+            Flux::toast(variant: 'danger', text: __('Please correct the highlighted field.'));
         } catch (\Throwable $exception) {
             $this->addError('productForm', \App\Support\UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
@@ -294,14 +304,43 @@ new #[Title('Product Card')] class extends Component {
             'productForm.key_points_en' => ['nullable', 'string', 'max:4000'],
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
-            'productForm.fractional_quantity' => ['prohibited'],
-            'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0'],
+            'productForm.fractional_quantity' => ['required', 'boolean'],
+            'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [$this->productForm['barcode_registration_type'] === 'local' ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
             'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
             'productForm.colour_ids' => ['array'], 'productForm.colour_ids.*' => ['integer', 'exists:colours,id'],
             'productForm.gender_ids' => ['array'], 'productForm.gender_ids.*' => ['integer', 'exists:genders,id'],
+        ];
+    }
+
+    private function productValidationMessages(): array
+    {
+        return app()->getLocale() === 'ar' ? [
+            'required' => 'حقل :attribute مطلوب.',
+            'numeric' => 'يجب أن يحتوي حقل :attribute على رقم صحيح.',
+            'integer' => 'يجب أن يحتوي حقل :attribute على عدد صحيح.',
+            'boolean' => 'قيمة :attribute غير صحيحة.',
+            'min.numeric' => 'يجب ألا تقل قيمة :attribute عن :min.',
+            'exists' => 'القيمة المختارة في حقل :attribute غير متاحة.',
+            'unique' => 'قيمة :attribute مستخدمة بالفعل.',
+            'regex' => 'صيغة :attribute غير صحيحة.',
+            'in' => 'القيمة المختارة في حقل :attribute غير صحيحة.',
+        ] : [];
+    }
+
+    private function productValidationAttributes(): array
+    {
+        if (app()->getLocale() !== 'ar') return [];
+        return [
+            'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
+            'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
+            'productForm.model_number' => 'رقم الموديل', 'productForm.product_type' => 'نوع المنتج',
+            'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية',
+            'productForm.average_cost' => 'متوسط تكلفة المخزون', 'productForm.sale_price' => 'سعر البيع الأساسي للمستهلك',
+            'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
+            'supplierBarcode' => 'الباركود الدولي',
         ];
     }
 
@@ -360,7 +399,7 @@ new #[Title('Product Card')] class extends Component {
         @endforeach
     </nav>
 
-    <form wire:submit="save" class="flex flex-col gap-4 sm:gap-5" novalidate>
+    <form wire:submit="save" class="flex flex-col gap-4 sm:gap-5" novalidate x-data x-on:product-validation-failed.window="$nextTick(() => { const field = document.getElementById('product-field-' + $event.detail.field); if (field) { field.scrollIntoView({ behavior: 'smooth', block: 'center' }); field.focus(); } })">
         <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30">
             <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage A — Required basic data') }}</h2>
             <p class="mt-1 text-sm text-text-muted">{{ __('Save the required barcode, model, identity, cost, consumer price, category, brand, price behavior, and product type before adding optional details.') }}</p>
@@ -383,11 +422,11 @@ new #[Title('Product Card')] class extends Component {
                 @else
                     <flux:text class="self-end text-sm text-text-muted">{{ __('A local barcode is generated after saving from the first four numeric digits in the selected supplier code.') }}</flux:text>
                 @endif
-                <flux:input wire:model="productForm.model_number" :label="__('Model / item number')" required />
+                <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" required />
                 @if ($isEditing)
                     <flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled dir="ltr" />
                 @endif
-                <flux:input wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
+                <flux:input id="product-field-name_ar" wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
@@ -408,7 +447,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the category and product type used for this item.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <flux:select wire:model="productForm.category_id" :label="__('Category / subcategory')" required>
+                <flux:select id="product-field-category_id" wire:model="productForm.category_id" :label="__('Category / subcategory')" required>
                     <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
                     @foreach ($categories as $category)
                         <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->getLocale() === 'ar' ? $category->name_ar : $category->name_en }}</flux:select.option>
@@ -458,8 +497,8 @@ new #[Title('Product Card')] class extends Component {
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Average inventory cost')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />
-                <div id="base-consumer-price"><flux:input wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" :description="__('Required for sellable products and must be greater than zero.')" /></div>
+                <flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Average inventory cost')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />
+                <div id="base-consumer-price"><flux:input id="product-field-sale_price" wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" :description="__('Required for sellable products and must be greater than zero.')" /></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">

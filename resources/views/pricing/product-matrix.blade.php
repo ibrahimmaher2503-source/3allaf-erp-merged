@@ -21,9 +21,9 @@ new class extends Component {
                     <td>{{ $row['list']->code }} · {{ app()->isLocale('ar') ? $row['list']->name_ar : $row['list']->name_en }}</td>
                     <td dir="ltr">{{ $row['list']->percentage_increase }}%</td>
                     @if ($row['resolved'])
-                        <td dir="ltr">{{ $row['resolved']->basePrice }} EGP</td>
-                        <td dir="ltr">{{ $row['resolved']->calculatedPrice }} EGP</td>
-                        <td dir="ltr"><strong>{{ $row['resolved']->finalPrice }} EGP</strong></td>
+                        <td dir="ltr">{{ $row['resolved']->basePrice }} {{ __('EGP') }}</td>
+                        <td dir="ltr">{{ $row['resolved']->calculatedPrice }} {{ __('EGP') }}</td>
+                        <td dir="ltr"><strong>{{ $row['resolved']->finalPrice }} {{ __('EGP') }}</strong></td>
                         <td>{{ $row['resolved']->overridden ? __('Manual override') : __('Calculated') }}</td>
                     @else
                         <td colspan="4" class="text-amber-700">{{ $row['error'] }}</td>

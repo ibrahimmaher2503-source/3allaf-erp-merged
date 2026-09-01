@@ -14,8 +14,7 @@ final class BarcodeSvgRenderer
     {
         $value = trim($value);
         if ($value === '') throw new InvalidArgumentException(__('A barcode value is required.'));
-        if ($symbology === 'ean13' && ! $this->validEan13($value)) throw new InvalidArgumentException(__('EAN-13 requires a valid 13-digit GTIN checksum.'));
-        if (($symbology === 'ean13' || ($symbology === 'auto' && preg_match('/^\d{13}$/', $value))) && $this->validEan13($value)) {
+        if ($symbology !== 'code128' && $this->validEan13($value)) {
             return $this->ean13($value, $height);
         }
         if (! preg_match('/^[\x20-\x7E]{1,48}$/', $value)) throw new InvalidArgumentException(__('The selected barcode cannot be encoded as EAN-13 or Code 128.'));
@@ -35,9 +34,9 @@ final class BarcodeSvgRenderer
         $codes = [104]; $checksum = 104;
         foreach (str_split($value) as $index => $char) { $code = ord($char) - 32; $codes[] = $code; $checksum += $code * ($index + 1); }
         $codes[] = $checksum % 103; $codes[] = 106;
-        $bars = ''; $x = 10;
+        $bars = ''; $x = 20;
         foreach ($codes as $code) foreach (str_split(self::CODE128[$code]) as $i => $width) { $w=(int)$width*2; if ($i%2===0) $bars.='<rect x="'.$x.'" y="2" width="'.$w.'" height="'.$height.'"/>'; $x += $w; }
-        return $this->svg($value, $bars, $x + 10, $height);
+        return $this->svg($value, $bars, $x + 20, $height);
     }
 
     private function ean13(string $value, int $height): string
@@ -49,12 +48,12 @@ final class BarcodeSvgRenderer
         $bits='101'; $p=$parity[(int)$value[0]];
         for($i=1;$i<=6;$i++) $bits.=($p[$i-1]==='L'?$l:$g)[(int)$value[$i]];
         $bits.='01010'; for($i=7;$i<=12;$i++) $bits.=$r[(int)$value[$i]]; $bits.='101';
-        $bars=''; foreach(str_split($bits) as $i=>$bit) if($bit==='1') $bars.='<rect x="'.(10+$i*2).'" y="2" width="2" height="'.$height.'"/>';
-        return $this->svg($value,$bars,210,$height);
+        $bars=''; foreach(str_split($bits) as $i=>$bit) if($bit==='1') $bars.='<rect x="'.(24+$i*2).'" y="2" width="2" height="'.$height.'"/>';
+        return $this->svg($value,$bars,230,$height);
     }
 
     private function svg(string $value,string $bars,int $width,int $height): string
     {
-        return '<svg class="barcode-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'.e($value).'" viewBox="0 0 '.$width.' '.($height+20).'" preserveAspectRatio="none"><g fill="#000">'.$bars.'</g><text x="50%" y="'.($height+16).'" text-anchor="middle" font-family="monospace" font-size="12">'.e($value).'</text></svg>';
+        return '<svg class="barcode-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'.e($value).'" viewBox="0 0 '.$width.' '.($height+4).'" preserveAspectRatio="none"><g fill="#000">'.$bars.'</g></svg>';
     }
 }

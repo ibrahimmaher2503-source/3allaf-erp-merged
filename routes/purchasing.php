@@ -170,9 +170,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         Gate::authorize('purchase_invoices.print_labels');
         $actor = Auth::user(); abort_unless($actor instanceof User, 403);
         $destination = Store::query()->visibleTo($actor)->where('type','selling')->whereKey((int) $store)->firstOrFail();
-        $invoice = PurchaseInvoice::query()->where('status','approved')->with(['distributions'=>fn($q)=>$q->where('destination_store_id',$destination->id),'distributions.line.product','distributions.priceList'])->findOrFail((int)$invoice);
+        $invoice = PurchaseInvoice::query()->where('status','approved')->with(['distributions'=>fn($q)=>$q->where('destination_store_id',$destination->id)])->findOrFail((int)$invoice);
         abort_if($invoice->distributions->isEmpty(),404);
-        return view('purchasing.destination-labels', compact('invoice','destination'));
+        return redirect()->route('pricing.labels', ['invoice' => $invoice->id, 'store' => $destination->id]);
     })->whereNumber('invoice')->whereNumber('store')->name('purchasing.invoices.destination-labels');
 
     $router->get('purchasing/invoices/export', function () {

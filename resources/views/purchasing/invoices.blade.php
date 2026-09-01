@@ -618,7 +618,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             @elseif ($invoice->status === 'approved')
                                 @can('purchase_invoices.print_labels')
                                     @foreach($invoice->distributions->whereNotNull('effective_selling_price')->unique('destination_store_id') as $allocation)
-                                        <x-actions.button semantic="print" :label="__('Print labels')" :href="route('purchasing.invoices.destination-labels',[$invoice,$allocation->destination_store_id])" target="_blank">{{ __('Labels') }} · {{ app()->getLocale()==='ar'?$allocation->destination?->name_ar:($allocation->destination?->name_en?:$allocation->destination?->name_ar) }}</x-actions.button>
+                                        <x-actions.button semantic="print" :label="__('Print labels')" :href="route('purchasing.invoices.destination-labels',[$invoice,$allocation->destination_store_id])">{{ __('Labels') }} · {{ app()->getLocale()==='ar'?$allocation->destination?->name_ar:($allocation->destination?->name_en?:$allocation->destination?->name_ar) }}</x-actions.button>
                                     @endforeach
                                 @endcan
                                 @can('purchase_invoices.reverse')

@@ -70,6 +70,7 @@
 # 2026-09-01 — v0.1.22-hotfix1 post-deployment focused gate
 
 - `tests/Unit/V022Hotfix1PostDeploymentTest.php`: 4 passed, 59 assertions.
+- `tests/Unit/V0122Hotfix2CorrectiveTest.php`: 4 passed, 26 assertions. Isolated authenticated browser evidence: Product Card save/reload `25.00`, readiness ready, EAN-13 `4006381333931` decoded twice, Code 128 `TESTLOCAL0001` decoded once, no-barcode state preservation, invoice canonical redirect, 50×30 mm thermal and A4 visuals; no console errors/overflow. Disposable MariaDB only (97 migrations); no shared or production data.
 - Changed/new PHP syntax, Arabic/English JSON parsing (`5541`/`2360` keys), and `git diff --check`: passed.
 - Barcode assertions: valid EAN-13 checksum/pattern output and Code 128-B start/data/checksum/stop SVG structure passed for `4006381333931` and `TJ-ABC-001`.
 - Preserved visual evidence: 8 previously completed Arabic/English desktop/mobile printing cases; not repeated under the one-pass rule.
