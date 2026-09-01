@@ -1,6 +1,6 @@
-# Active Milestone — v0.1.21 Hotfix 3 Readiness/Pricing/UAT Consistency
+# Active Milestone — v0.1.22 Cumulative Stabilization
 
-**Date:** 2026-08-31
-**Status:** Complete in development; ready for owner review.
+**Date:** 2026-09-01
+**Status:** Prepared source candidate with explicit verification blockers.
 
-This hotfix starts exactly from Hotfix 2 commit `e14eae0316b0063f95e77c2cabaa83f76c60eb13`, unifies Product Card and pricing readiness, corrects localized remediation/count explanations, and preserves audited Hotfix 2/UAT safety behavior. Production state remains unchanged.
+This stabilization preserves Hotfix 1–3 and adds the missing reusable Printing Template Library plus corrected printer scope and real paper-size contracts. It does not claim all 54 requirements passed: the authoritative matrix records 8 PASS, 3 FIXED, and 43 BLOCKED pending direct operator/database/browser evidence.

@@ -95,7 +95,7 @@ final class M51CustomerSupplierDataTest extends TestCase
     {
         $source = file_get_contents($this->projectPath('app/Modules/Platform/Support/InitialSetupStatus.php'));
         $start = strpos($source, 'private function suppliersReady');
-        $end = strpos($source, 'private function pricesReady', $start);
+        $end = strpos($source, '/**', $start);
         $method = substr($source, $start, $end - $start);
         self::assertStringContainsString('settlement_method', $method);
         self::assertStringNotContainsString('payment_terms', $method);

@@ -10,6 +10,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\City;
 use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Queries\AdministrationDashboard;
 use App\Modules\Platform\Support\InitialSetupStatus;
@@ -112,6 +113,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
 
         return view('platform.admin.printer-preview', compact('printer'));
     })->name('admin.settings.printer-preview');
+    $router->get('admin/settings/print-templates/{template}/preview', function (PrintTemplate $template) {
+        abort_unless(auth()->user()?->can('company_settings.view'), 403);
+        $template = PrintTemplate::visibleTo(auth()->user())->findOrFail($template->id);
+        return view('platform.admin.print-template-preview', compact('template'));
+    })->name('admin.settings.template-preview');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');
     $router->livewire('admin/stores', 'platform::admin.stores')->middleware('can:branches_stores.view')->name('admin.stores');
     $router->livewire('admin/cash-drawers', 'platform::admin.drawers')->middleware('can:drawers_payments_tax_numbering_printers.view')->name('admin.cash-drawers');

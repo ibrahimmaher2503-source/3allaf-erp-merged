@@ -2,12 +2,14 @@
 
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
+use App\Modules\Platform\Actions\SavePrintTemplateAction;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\TaxSetting;
 use Flux\Flux;
@@ -118,12 +120,19 @@ new #[Title('System Settings')] class extends Component
         'printer_type' => 'thermal',
         'paper_size' => '80mm',
         'template_name' => 'default_thermal',
+        'print_template_id' => null,
         'connection_type' => 'network',
         'ip_address' => '',
         'port' => 9100,
         'is_default' => false,
         'status' => 'active',
         'notes' => '',
+    ];
+
+    public array $templateForm = [
+        'id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '',
+        'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual',
+        'header_text' => '', 'footer_text' => '', 'status' => 'active',
     ];
 
     /**
@@ -505,8 +514,9 @@ new #[Title('System Settings')] class extends Component
             'printerForm.branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'printerForm.store_id' => ['nullable', 'integer', 'exists:stores,id'],
             'printerForm.printer_type' => ['required', 'string', 'in:thermal,a4,label,pdf'],
-            'printerForm.paper_size' => ['required', 'string', 'in:80mm,58mm,a4,label'],
+            'printerForm.paper_size' => ['required', 'string', 'in:80mm,58mm,a4,a5,label_50x30mm,label_40x25mm'],
             'printerForm.template_name' => ['required', 'string', 'max:100'],
+            'printerForm.print_template_id' => ['nullable', 'integer', 'exists:print_templates,id'],
             'printerForm.connection_type' => ['required', 'string', 'in:network,usb,bluetooth,browser'],
             'printerForm.ip_address' => ['nullable', 'string', 'max:50'],
             'printerForm.port' => ['nullable', 'integer', 'min:1', 'max:65535'],
@@ -537,6 +547,62 @@ new #[Title('System Settings')] class extends Component
         $this->printerForm['scope_type'] = $printer->store_id !== null ? 'store' : ($printer->branch_id !== null ? 'branch' : 'global');
     }
 
+    public function updatedPrinterFormScopeType(string $scope): void
+    {
+        if ($scope === 'global') {
+            $this->printerForm['branch_id'] = null;
+            $this->printerForm['store_id'] = null;
+        } elseif ($scope === 'branch') {
+            $this->printerForm['store_id'] = null;
+        }
+    }
+
+    public function updatedPrinterFormBranchId(): void
+    {
+        $this->printerForm['store_id'] = null;
+    }
+
+    public function updatedPrinterFormPrinterType(string $type): void
+    {
+        $this->printerForm['paper_size'] = match ($type) {
+            'thermal' => '80mm', 'label' => 'label_50x30mm', default => 'a4',
+        };
+        $this->printerForm['print_template_id'] = null;
+    }
+
+    public function updatedPrinterFormPaperSize(): void
+    {
+        $this->printerForm['print_template_id'] = null;
+    }
+
+    public function savePrintTemplate(SavePrintTemplateAction $action): void
+    {
+        $validated = $this->validate([
+            'templateForm.code' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9_-]+$/'],
+            'templateForm.name_ar' => ['required', 'string', 'max:255'],
+            'templateForm.name_en' => ['required', 'string', 'max:255'],
+            'templateForm.document_type' => ['required', Rule::in(SavePrintTemplateAction::DOCUMENT_TYPES)],
+            'templateForm.paper_size' => ['required', Rule::in(SavePrintTemplateAction::PAPER_SIZES)],
+            'templateForm.language' => ['required', Rule::in(SavePrintTemplateAction::LANGUAGES)],
+            'templateForm.header_text' => ['nullable', 'string', 'max:2000'],
+            'templateForm.footer_text' => ['nullable', 'string', 'max:2000'],
+            'templateForm.status' => ['required', 'in:active,inactive'],
+        ]);
+        $action->execute($validated['templateForm'], $this->templateForm['id'] ?? null);
+        $this->resetPrintTemplateForm();
+        Flux::toast(variant: 'success', text: __('Print template saved successfully.'));
+    }
+
+    public function editPrintTemplate(int $id): void
+    {
+        $this->templateForm = PrintTemplate::visibleTo(auth()->user())->findOrFail($id)->toArray();
+    }
+
+    public function resetPrintTemplateForm(): void
+    {
+        $this->templateForm = ['id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '', 'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual', 'header_text' => '', 'footer_text' => '', 'status' => 'active'];
+    }
+
     public function resetPrinterForm(): void
     {
         $this->printerForm = [
@@ -548,6 +614,7 @@ new #[Title('System Settings')] class extends Component
             'printer_type' => 'thermal',
             'paper_size' => '80mm',
             'template_name' => 'default_thermal',
+            'print_template_id' => null,
             'connection_type' => 'network',
             'ip_address' => '',
             'port' => 9100,
@@ -1306,13 +1373,13 @@ new #[Title('System Settings')] class extends Component
                             required
                         />
 
-                        <flux:select wire:model="printerForm.scope_type" :label="__('Printer location')">
+                        <flux:select wire:model.live="printerForm.scope_type" :label="__('Printer location')">
                             <option value="global">{{ __('Entire company') }}</option>
                             <option value="branch">{{ __('Branch') }}</option>
                             <option value="store">{{ __('Store / point of sale') }}</option>
                         </flux:select>
 
-                        <flux:select wire:model="printerForm.branch_id" :label="__('Branch')" :disabled="$printerForm['scope_type'] === 'global'">
+                        <flux:select wire:model.live="printerForm.branch_id" :label="__('Branch')" :disabled="$printerForm['scope_type'] === 'global'">
                             <option value="">{{ __('Select branch') }}</option>
                             @foreach ($printerBranches as $branch)
                                 <option value="{{ $branch->id }}">{{ $branch->code }} · {{ app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en }}</option>
@@ -1321,27 +1388,37 @@ new #[Title('System Settings')] class extends Component
 
                         <flux:select wire:model="printerForm.store_id" :label="__('Store / point of sale')" :disabled="$printerForm['scope_type'] !== 'store'">
                             <option value="">{{ __('Select a store or point of sale') }}</option>
-                            @foreach ($printerStores as $store)
+                            @foreach ($printerStores->when(filled($printerForm['branch_id']), fn ($stores) => $stores->where('branch_id', (int) $printerForm['branch_id'])) as $store)
                                 <option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>
                             @endforeach
                         </flux:select>
 
-                        <flux:select wire:model="printerForm.printer_type" :label="__('Printer Type')">
+                        <flux:select wire:model.live="printerForm.printer_type" :label="__('Printer Type')">
                             <option value="thermal">{{ __('Thermal Receipt') }}</option>
                             <option value="a4">{{ __('A4 Document') }}</option>
                             <option value="label">{{ __('Barcode / Label') }}</option>
                             <option value="pdf">{{ __('PDF Virtual') }}</option>
                         </flux:select>
 
-                        <flux:select wire:model="printerForm.paper_size" :label="__('Paper Size')">
+                        <flux:select wire:model.live="printerForm.paper_size" :label="__('Paper Size')">
                             <?php if (($printerForm['printer_type'] ?? 'thermal') === 'thermal'): ?>
                                 <option value="80mm">{{ __('80mm Thermal') }}</option>
                                 <option value="58mm">{{ __('58mm Thermal') }}</option>
                             <?php elseif (($printerForm['printer_type'] ?? '') === 'label'): ?>
-                                <option value="label">{{ __('Standard Label') }}</option>
+                                <option value="label_50x30mm">{{ __('50 × 30 mm label') }}</option>
+                                <option value="label_40x25mm">{{ __('40 × 25 mm label') }}</option>
                             <?php else: ?>
                                 <option value="a4">{{ __('A4 Sheet') }}</option>
+                                <option value="a5">{{ __('A5 Sheet') }}</option>
                             <?php endif; ?>
+                        </flux:select>
+
+                        @php($compatibleTemplates = PrintTemplate::visibleTo(auth()->user())->where('status', 'active')->where('paper_size', $printerForm['paper_size'])->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')->get())
+                        <flux:select wire:model="printerForm.print_template_id" :label="__('Print template')">
+                            <option value="">{{ __('No template assigned') }}</option>
+                            @foreach ($compatibleTemplates as $template)
+                                <option value="{{ $template->id }}">{{ app()->getLocale() === 'ar' ? $template->name_ar : $template->name_en }}</option>
+                            @endforeach
                         </flux:select>
 
                     </div>
@@ -1422,6 +1499,32 @@ new #[Title('System Settings')] class extends Component
 
             <?php if ($printerSection === 'print-templates'): ?>
             <flux:card id="print-templates" class="scroll-mt-24 space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div><flux:heading size="lg">{{ __('Printing Template Library') }}</flux:heading><flux:subheading>{{ __('Create reusable document layouts by document type, paper size, and language, then assign compatible templates to printers.') }}</flux:subheading></div>
+                </div>
+                <form wire:submit="savePrintTemplate" class="grid gap-4 rounded-xl border border-border-subtle p-4 md:grid-cols-2 xl:grid-cols-3">
+                    <flux:input wire:model="templateForm.code" :label="__('Code')" required />
+                    <flux:input wire:model="templateForm.name_ar" :label="__('Arabic name')" dir="rtl" required />
+                    <flux:input wire:model="templateForm.name_en" :label="__('English name')" dir="ltr" required />
+                    <flux:select wire:model.live="templateForm.document_type" :label="__('Document type')">
+                        @foreach (SavePrintTemplateAction::DOCUMENT_TYPES as $type)<option value="{{ $type }}">{{ __(Str::headline($type)) }}</option>@endforeach
+                    </flux:select>
+                    <flux:select wire:model="templateForm.paper_size" :label="__('Paper size')">
+                        @foreach (SavePrintTemplateAction::PAPER_SIZES as $size)<option value="{{ $size }}">{{ __(match($size) {'58mm'=>'58 mm','80mm'=>'80 mm','a4'=>'A4','a5'=>'A5','label_50x30mm'=>'50 × 30 mm','label_40x25mm'=>'40 × 25 mm'}) }}</option>@endforeach
+                    </flux:select>
+                    <flux:select wire:model="templateForm.language" :label="__('Language')"><option value="ar">{{ __('Arabic') }}</option><option value="en">{{ __('English') }}</option><option value="bilingual">{{ __('Arabic and English') }}</option></flux:select>
+                    <flux:textarea wire:model="templateForm.header_text" :label="__('Header text')" />
+                    <flux:textarea wire:model="templateForm.footer_text" :label="__('Footer text')" />
+                    <flux:select wire:model="templateForm.status" :label="__('Status')"><option value="active">{{ __('Active') }}</option><option value="inactive">{{ __('Inactive') }}</option></flux:select>
+                    <div class="flex items-end justify-end gap-2 md:col-span-2 xl:col-span-3">@if($templateForm['id'])<flux:button type="button" wire:click="resetPrintTemplateForm" variant="subtle">{{ __('Cancel Edit') }}</flux:button>@endif<x-actions.loading-button type="submit" action="savePrintTemplate" :label="__('Save')" /></div>
+                </form>
+                @php($templates = PrintTemplate::visibleTo(auth()->user())->withCount('printers')->orderBy('document_type')->orderBy('code')->paginate(25, ['*'], 'templates_page'))
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    @forelse($templates as $template)
+                        <article class="rounded-xl border border-border-subtle p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ app()->getLocale()==='ar' ? $template->name_ar : $template->name_en }}</h3><p class="font-mono text-xs text-text-muted">{{ $template->code }}</p></div><flux:badge size="sm" :color="$template->status==='active'?'green':'zinc'">{{ __($template->status) }}</flux:badge></div><dl class="mt-3 grid grid-cols-2 gap-2 text-sm"><dt>{{ __('Document type') }}</dt><dd>{{ __(Str::headline($template->document_type)) }}</dd><dt>{{ __('Paper size') }}</dt><dd>{{ $template->paper_size }}</dd><dt>{{ __('Language') }}</dt><dd>{{ __($template->language) }}</dd><dt>{{ __('Assigned printers') }}</dt><dd>{{ $template->printers_count }}</dd></dl><div class="mt-4 flex flex-wrap gap-2"><flux:button size="sm" type="button" wire:click="editPrintTemplate({{ $template->id }})">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" href="{{ route('admin.settings.template-preview', $template) }}" target="_blank">{{ __('Preview') }}</flux:button></div></article>
+                    @empty<x-state.empty :title="__('No print templates yet')" :description="__('Add the first reusable print template.')" icon="document-text" />@endforelse
+                </div>
+                {{ $templates->links() }}
                 <?php
                     $printers = PrinterConfiguration::visibleTo(auth()->user())
                         ->with(['branch', 'store'])
@@ -1429,79 +1532,79 @@ new #[Title('System Settings')] class extends Component
                         ->limit(100)
                         ->get();
                     $printMappings = [
-                        'default_thermal' => ['document' => 'فاتورة المبيعات', 'template' => 'فاتورة حرارية'],
-                        'gift_receipt' => ['document' => 'إيصال الهدية', 'template' => 'إيصال هدية'],
-                        'return_receipt' => ['document' => 'المرتجع والاستبدال', 'template' => 'إيصال مرتجع حراري'],
-                        'shift_closing' => ['document' => 'إغلاق الوردية', 'template' => 'إيصال إغلاق الوردية'],
-                        'barcode_label' => ['document' => 'ملصقات الباركود', 'template' => 'ملصق باركود'],
+                        'default_thermal' => ['document' => 'Sales invoice', 'template' => 'Thermal sales invoice'],
+                        'gift_receipt' => ['document' => 'Gift receipt', 'template' => 'Thermal gift receipt'],
+                        'return_receipt' => ['document' => 'Sales return', 'template' => 'Thermal return receipt'],
+                        'shift_closing' => ['document' => 'Shift closing', 'template' => 'Thermal shift closing receipt'],
+                        'barcode_label' => ['document' => 'Barcode labels', 'template' => 'Barcode label'],
                     ];
                 ?>
 
                 <div class="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <flux:heading size="lg">{{ __('تعيينات الطباعة') }}</flux:heading>
-                            <flux:subheading>{{ __('حدّد المستند، ثم القالب المناسب، والطابعة التي ستخرجه.') }}</flux:subheading>
+                            <flux:heading size="lg">{{ __('Print assignments') }}</flux:heading>
+                            <flux:subheading>{{ __('Choose the document, a compatible template, and the printer that will output it.') }}</flux:subheading>
                         </div>
                         <flux:button size="sm" variant="primary" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}">
-                            {{ __('إدارة الطابعات') }}
+                            {{ __('Manage printers') }}
                         </flux:button>
                     </div>
 
-                    <div class="mt-4 grid gap-3 md:grid-cols-3" aria-label="{{ __('مسار إعداد الطباعة') }}">
+                    <div class="mt-4 grid gap-3 md:grid-cols-3" aria-label="{{ __('Print setup path') }}">
                         <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
                             <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">1</span>
                             <div>
-                                <p class="font-medium">{{ __('المستند') }}</p>
-                                <p class="text-xs text-text-muted">{{ __('ما الذي سيُطبع؟') }}</p>
+                                <p class="font-medium">{{ __('Document') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('What will be printed?') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
                             <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">2</span>
                             <div>
-                                <p class="font-medium">{{ __('القالب') }}</p>
-                                <p class="text-xs text-text-muted">{{ __('الشكل ومقاس الورق') }}</p>
+                                <p class="font-medium">{{ __('Template') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('Layout and paper size') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
                             <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 font-semibold text-cyan-200">3</span>
                             <div>
-                                <p class="font-medium">{{ __('الطابعة والمكان') }}</p>
-                                <p class="text-xs text-text-muted">{{ __('أين سيخرج المستند؟') }}</p>
+                                <p class="font-medium">{{ __('Printer and location') }}</p>
+                                <p class="text-xs text-text-muted">{{ __('Where will the document be printed?') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700">
-                    <flux:table class="min-w-[52rem]" aria-label="{{ __('تعيينات الطباعة') }}">
+                    <flux:table class="min-w-[52rem]" aria-label="{{ __('Print assignments') }}">
                         <flux:table.columns>
-                            <flux:table.column>{{ __('المستند') }}</flux:table.column>
-                            <flux:table.column>{{ __('القالب ومقاس الورق') }}</flux:table.column>
-                            <flux:table.column>{{ __('الطابعة والمكان') }}</flux:table.column>
-                            <flux:table.column>{{ __('الحالة') }}</flux:table.column>
-                            <flux:table.column>{{ __('الإجراء') }}</flux:table.column>
+                            <flux:table.column>{{ __('Document') }}</flux:table.column>
+                            <flux:table.column>{{ __('Template and paper size') }}</flux:table.column>
+                            <flux:table.column>{{ __('Printer and location') }}</flux:table.column>
+                            <flux:table.column>{{ __('Status') }}</flux:table.column>
+                            <flux:table.column>{{ __('Action') }}</flux:table.column>
                         </flux:table.columns>
 
                         <flux:table.rows>
                             <?php if ($printers->isNotEmpty()): ?>
                                 <?php foreach ($printers as $printer): ?>
                                     <?php
-                                        $mapping = $printMappings[(string) $printer->template_name] ?? ['document' => 'مستند تشغيلي', 'template' => 'القالب المعتمد'];
+                                        $mapping = $printMappings[(string) $printer->template_name] ?? ['document' => 'Operational document', 'template' => 'Approved template'];
                                         $paperSize = match (strtolower(trim((string) $printer->paper_size))) {
-                                            '58mm', '58 mm' => '58 مم',
-                                            '80mm', '80 mm' => '80 مم',
+                                            '58mm', '58 mm' => __('58 mm'),
+                                            '80mm', '80 mm' => __('80 mm'),
                                             'a4' => 'A4',
-                                            default => (string) $printer->paper_size ?: 'حسب إعداد الطابعة',
+                                            default => (string) $printer->paper_size ?: __('Printer setting'),
                                         };
                                         $printerName = preg_match('/^default[-_]/i', (string) $printer->name)
-                                            ? 'طابعة افتراضية'
+                                            ? __('Default printer')
                                             : $printer->name;
                                         $location = $printer->store
                                             ? (app()->getLocale() === 'ar' ? $printer->store->name_ar : $printer->store->name_en)
                                             : ($printer->branch
                                                 ? (app()->getLocale() === 'ar' ? $printer->branch->name_ar : $printer->branch->name_en)
-                                                : 'كل الشركة');
+                                                : __('Entire company'));
                                     ?>
                                     <flux:table.row key="printer-{{ $printer->id }}">
                                         <flux:table.cell class="font-medium">{{ __($mapping['document']) }}</flux:table.cell>
@@ -1520,18 +1623,18 @@ new #[Title('System Settings')] class extends Component
                                         <flux:table.cell>
                                             <div class="flex flex-wrap gap-1.5">
                                                 <?php if ($printer->status === 'active'): ?>
-                                                    <flux:badge size="sm" color="green">{{ __('نشطة') }}</flux:badge>
+                                                    <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
                                                 <?php else: ?>
-                                                    <flux:badge size="sm" color="red">{{ __('غير نشطة') }}</flux:badge>
+                                                    <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
                                                 <?php endif; ?>
                                                 <?php if ($printer->is_default): ?>
-                                                    <flux:badge size="sm" color="zinc">{{ __('افتراضية') }}</flux:badge>
+                                                    <flux:badge size="sm" color="zinc">{{ __('Default') }}</flux:badge>
                                                 <?php endif; ?>
                                             </div>
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             <flux:button size="sm" variant="subtle" type="button" wire:click="editPrinter({{ $printer->id }})">
-                                                {{ __('تعديل الإعداد') }}
+                                                {{ __('Edit assignment') }}
                                             </flux:button>
                                         </flux:table.cell>
                                     </flux:table.row>
@@ -1540,8 +1643,8 @@ new #[Title('System Settings')] class extends Component
                                 <flux:table.row>
                                     <flux:table.cell colspan="5" class="py-8 text-center">
                                         <x-state.empty
-                                            :title="__('لا توجد تعيينات طباعة بعد')"
-                                            :description="__('أضف طابعة أولاً، ثم اختر القالب المناسب لكل مستند.')"
+                                            :title="__('No print assignments yet')"
+                                            :description="__('Add a printer, then choose a compatible template for each document.')"
                                             icon="printer"
                                         />
                                     </flux:table.cell>

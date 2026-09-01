@@ -2,6 +2,8 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Modules\Platform\Models\PrintTemplate;
+
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Enums\TaxTreatment;
@@ -431,9 +433,9 @@ class SaveLocalSettingsAction
             $paperSize = (string) ($data['paper_size'] ?? '80mm');
             $compatiblePaperSizes = [
                 'thermal' => ['80mm', '58mm'],
-                'a4' => ['a4'],
-                'label' => ['label'],
-                'pdf' => ['a4'],
+                'a4' => ['a4', 'a5'],
+                'label' => ['label_50x30mm', 'label_40x25mm'],
+                'pdf' => ['a4', 'a5'],
             ];
             if (! in_array($paperSize, $compatiblePaperSizes[$printerType] ?? [], true)) {
                 throw ValidationException::withMessages([
@@ -462,13 +464,22 @@ class SaveLocalSettingsAction
                 }
                 $branchId = (int) $store->branch_id;
             }
+            $templateId = filled($data['print_template_id'] ?? null) ? (int) $data['print_template_id'] : null;
+            $template = $templateId === null ? null : PrintTemplate::visibleTo($user)->whereKey($templateId)->where('status', 'active')->first();
+            if ($template !== null && $template->paper_size !== $paperSize) {
+                throw ValidationException::withMessages(['printerForm.print_template_id' => __('The selected template is not compatible with this printer paper size.')]);
+            }
+            if ($templateId !== null && $template === null) {
+                throw ValidationException::withMessages(['printerForm.print_template_id' => __('Select an active compatible print template.')]);
+            }
             $attributes = [
                 'name' => $data['name'],
                 'branch_id' => $branchId,
                 'store_id' => $storeId,
                 'printer_type' => $printerType,
                 'paper_size' => $paperSize,
-                'template_name' => $data['template_name'] ?? 'default_thermal',
+                'template_name' => $template?->code ?? ($data['template_name'] ?? 'default_thermal'),
+                'print_template_id' => $template?->id,
                 'connection_type' => $data['connection_type'] ?? 'network',
                 'ip_address' => $data['ip_address'] ?? null,
                 'port' => ($data['port'] ?? null) !== null && ($data['port'] ?? '') !== '' ? (int) $data['port'] : null,

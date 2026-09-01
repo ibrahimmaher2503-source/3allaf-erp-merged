@@ -16,6 +16,7 @@ class PrinterConfiguration extends Model
         'printer_type',
         'paper_size',
         'template_name',
+        'print_template_id',
         'connection_type',
         'ip_address',
         'port',
@@ -37,6 +38,11 @@ class PrinterConfiguration extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function printTemplate(): BelongsTo
+    {
+        return $this->belongsTo(PrintTemplate::class);
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
