@@ -10,7 +10,10 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Actions\PostInventoryMovement;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
@@ -65,9 +68,9 @@ final class ApprovePurchaseInvoiceAction
             $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute();
             foreach ($invoice->lines as $line) {
                 $this->postLine($invoice, $line, $actorId);
-                $this->distributeLine($invoice, $line, $actorId);
                 $this->updateProductCard($invoice, $line, $actorId);
             }
+            $this->createDestinationTransfers($invoice, $actorId);
             $this->updatePurchaseOrderState($invoice);
 
             $invoice->update([
@@ -119,27 +122,45 @@ final class ApprovePurchaseInvoiceAction
         $this->validatePurchaseOrderRules($invoice);
     }
 
-    private function distributeLine(PurchaseInvoice $invoice, PurchaseInvoiceLine $line, int $actorId): void
+    private function createDestinationTransfers(PurchaseInvoice $invoice, int $actorId): void
     {
-        $unitCost = $this->divide($line->subtotal, $line->quantity, 4);
-        foreach ($line->distributions as $allocation) {
-            $outKey = 'purchase-invoice:'.$invoice->id.':line:'.$line->id.':destination:'.$allocation->destination_store_id.':out';
-            $inKey = 'purchase-invoice:'.$invoice->id.':line:'.$line->id.':destination:'.$allocation->destination_store_id.':in';
-            if (StockMovement::query()->where('idempotency_key', $inKey)->exists()) continue;
-            $source = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $invoice->store_id)->lockForUpdate()->firstOrFail();
-            if ($this->compare($source->on_hand, $allocation->quantity) < 0) throw new InvalidArgumentException(__('The receiving warehouse cannot distribute more than it received.'));
-            $cost = bcmul($this->decimal($allocation->quantity), $unitCost, 4);
-            StockMovement::query()->create(['product_id'=>$line->product_id,'store_id'=>$invoice->store_id,'movement_type'=>'purchase_distribution_out','quantity'=>bcmul($this->decimal($allocation->quantity),'-1',6),'unit_cost'=>$unitCost,'total_cost'=>bcmul($cost,'-1',4),'consumed_cost'=>$cost,'source_type'=>PurchaseInvoice::class,'source_id'=>$invoice->id,'source_line_id'=>$line->id,'idempotency_key'=>$outKey,'posted_at'=>now(),'created_by'=>$actorId]);
-            $source->update(['on_hand'=>$this->add($source->on_hand, bcmul($this->decimal($allocation->quantity),'-1',6), 6),'total_value'=>$this->add($source->total_value, bcmul($cost,'-1',4), 4),'version'=>$source->version+1]);
-            $destination = StockBalance::query()->where('product_id',$line->product_id)->where('store_id',$allocation->destination_store_id)->lockForUpdate()->first();
-            if (! $destination) $destination = StockBalance::query()->create(['product_id'=>$line->product_id,'store_id'=>$allocation->destination_store_id,'on_hand'=>0,'reserved'=>0,'in_transit'=>0,'average_cost'=>0,'total_value'=>0,'version'=>0]);
-            $destination = StockBalance::query()->whereKey($destination->id)->lockForUpdate()->firstOrFail();
-            $newQty = $this->add($destination->on_hand,$allocation->quantity,6); $newValue=$this->add($destination->total_value,$cost,4);
-            StockMovement::query()->create(['product_id'=>$line->product_id,'store_id'=>$allocation->destination_store_id,'movement_type'=>'purchase_distribution_in','quantity'=>$allocation->quantity,'unit_cost'=>$unitCost,'total_cost'=>$cost,'consumed_cost'=>0,'source_type'=>PurchaseInvoice::class,'source_id'=>$invoice->id,'source_line_id'=>$line->id,'idempotency_key'=>$inKey,'posted_at'=>now(),'created_by'=>$actorId]);
-            $destination->update(['on_hand'=>$newQty,'total_value'=>$newValue,'average_cost'=>$this->divide($newValue,$newQty,4),'version'=>$destination->version+1]);
+        $poster = app(PostInventoryMovement::class);
+        foreach ($invoice->distributions->groupBy('destination_store_id') as $destinationId => $allocations) {
+            $transfer = StockTransfer::query()->where('purchase_invoice_id', $invoice->id)->where('destination_store_id', $destinationId)->lockForUpdate()->first();
+            if ($transfer !== null) {
+                if ($transfer->status !== 'in_transit') throw new InvalidArgumentException(__('The linked destination transfer is not in the expected state.'));
+                continue;
+            }
+            $transfer = StockTransfer::query()->create([
+                'purchase_invoice_id' => $invoice->id,
+                'transfer_number' => app(AllocateDocumentNumber::class)->execute('stock_transfer'),
+                'source_store_id' => $invoice->store_id,
+                'destination_store_id' => (int) $destinationId,
+                'status' => 'approved',
+                'reason_code' => 'purchase_distribution',
+                'requested_by' => $actorId,
+                'approved_by' => $actorId,
+                'approved_at' => now(),
+                'idempotency_key' => 'purchase-distribution:'.$invoice->id.':destination:'.$destinationId,
+                'notes' => __('Automatically created from approved purchase invoice :invoice.', ['invoice' => $invoice->invoice_number ?: $invoice->id]),
+            ]);
+            foreach ($allocations as $allocation) {
+                $line = $invoice->lines->firstWhere('id', $allocation->purchase_invoice_line_id);
+                if (! $line) throw new InvalidArgumentException(__('The distribution contains a line outside this invoice.'));
+                $unitCost = $this->divide($line->subtotal, $line->quantity, 4);
+                $transferLine = $transfer->lines()->create(['product_id'=>$line->product_id,'quantity_requested'=>$allocation->quantity,'quantity_dispatched'=>0,'quantity_received'=>0,'unit_cost'=>$unitCost]);
+                $quantity = $this->decimal($allocation->quantity);
+                $poster->execute($line->product_id, $invoice->store_id, '-'.$quantity, 'transfer_dispatch', $unitCost, 'PURCHASE-TRANSFER-DISPATCH:'.$transfer->id.':'.$transferLine->id, StockTransfer::class, $transfer->id, $transferLine->id);
+                $poster->adjustInTransit($line->product_id, (int) $destinationId, $quantity);
+                $transferLine->mutateApprovedParentLine(['quantity_dispatched' => $quantity]);
+            }
+            $transfer->mutateApprovedDocument(['status'=>'in_transit','dispatched_by'=>$actorId,'dispatched_at'=>now(),'lock_version'=>$transfer->lock_version+1]);
+            app(RecordAuditEvent::class)->execute('inventory', 'dispatch_purchase_distribution_transfer', $transfer, ['status'=>'approved'], $transfer->only(['status','dispatched_by','dispatched_at','lock_version']), storeId:$invoice->store_id, metadata:['purchase_invoice_id'=>$invoice->id,'destination_store_id'=>(int)$destinationId]);
         }
-        $remaining = StockBalance::query()->where('product_id',$line->product_id)->where('store_id',$invoice->store_id)->lockForUpdate()->firstOrFail();
-        if ($this->compare($remaining->on_hand, '0') !== 0) throw new InvalidArgumentException(__('The temporary receiving warehouse must finish with zero remaining quantity for this receipt.'));
+        foreach ($invoice->lines as $line) {
+            $remaining = StockBalance::query()->where('product_id',$line->product_id)->where('store_id',$invoice->store_id)->lockForUpdate()->firstOrFail();
+            if ($this->compare($remaining->on_hand, '0') !== 0) throw new InvalidArgumentException(__('The temporary receiving warehouse must finish with zero remaining quantity for this receipt.'));
+        }
     }
 
     private function updateProductCard(PurchaseInvoice $invoice, PurchaseInvoiceLine $line, int $actorId): void

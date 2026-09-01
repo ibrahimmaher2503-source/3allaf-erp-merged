@@ -15,9 +15,10 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         $source=$this->source('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php');
         self::assertStringContainsString('DB::transaction', $source);
         self::assertStringContainsString('lockForUpdate()', $source);
-        self::assertStringContainsString("purchase_distribution_out", $source);
-        self::assertStringContainsString("purchase_distribution_in", $source);
-        self::assertStringContainsString("where('idempotency_key', \$inKey)->exists()", $source);
+        self::assertStringContainsString("where('purchase_invoice_id', \$invoice->id)", $source);
+        self::assertStringContainsString("'status'=>'in_transit'", $source);
+        self::assertStringContainsString('adjustInTransit', $source);
+        self::assertStringContainsString('PURCHASE-TRANSFER-DISPATCH:', $source);
     }
 
     public function test_full_distribution_is_mandatory_and_rejects_invalid_allocations(): void

@@ -7,63 +7,63 @@
 **Production tag inspected through Git only:** `v0.1.21-hotfix3`  
 **Production release path (identity only; not read or modified):** `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.21-hotfix3-readiness-pricing-20260831T155549Z`
 
-This is the live audit ledger for the owner-authorized cumulative v0.1.22 stabilization. Documentation and historical evidence may establish provenance, but never establish PASS without current implementation and direct verification. Initial `BLOCKED` entries mean direct verification is pending; they are not final findings.
+This is the final source-and-verification ledger for the owner-authorized cumulative v0.1.22 stabilization. Historical evidence was reused only after current source regression checks. `F1`–`F9` below identify the nine focused family tests in `tests/Unit/V022RequirementFamiliesTest.php`; the earlier focused suites remain cited where they prove finer contracts.
 
 | # | Status | Originating release / commit | Current implementing files | Direct test / evidence | Visual route |
 |---:|:---:|---|---|---|---|
-| 1 | BLOCKED | v0.1.16 / `048d161` | `ProductionSeeder.php`; `OpenShiftAction.php`; `PosContext.php`; scoped Retail models/routes | V016 test passes; current end-to-end cashier scope not rerun | `/pos`, `/pos/shifts` — operator |
-| 2 | BLOCKED | v0.1.16 / `048d161` | `config/navigation.php`; `ApplicationNavigation.php`; `InitialSetupStatus.php`; `settings.blade.php` | Source order inspected; current full visual traversal blocked | Sidebar, `/initial-setup`, `/admin/settings` — operator |
-| 3 | BLOCKED | v0.1.16 / `048d161` | `SetupContinuation.php`; `RecordSetupDecision.php`; setup context/center views | V016 exact 21-step/continuation tests pass; mutation UI not rerun | `/initial-setup` — operator |
-| 4 | FIXED | v0.1.22 / pending stabilization commit | `PrintTemplate.php`; `SavePrintTemplateAction.php`; migration `000101`; settings/template-preview views; platform routes | V022 source contract passes; migration and browser blocked | `/admin/settings?tab=printers&section=print-templates` — operator |
-| 5 | FIXED | pre-v0.1.16, corrected v0.1.22 | `settings.blade.php`; `SaveLocalSettingsAction.php`; `PrinterConfiguration.php` | V022 dynamic-clear/filter/server-scope contract passes | `/admin/settings?tab=printers` — operator |
-| 6 | FIXED | pre-v0.1.16, corrected v0.1.22 | same as #5 plus `SavePrintTemplateAction.php`, translations | V022 real-size/compatibility contract passes; JSON parses | `/admin/settings?tab=printers` — operator |
-| 7 | BLOCKED | v0.1.17–v0.1.18 / `404367c`, `ee497f0` | staged import actions; `MasterDataDocument.php`; import views/routes | M51/M52 template/rejection tests pass; every downloadable artifact not manually reopened | customer/supplier/catalog imports — operator |
-| 8 | BLOCKED | v0.1.17–v0.1.18 / `404367c`, `359c035`, `ee497f0` | exchange routes/actions; Cairo PDF support/views | M51/M52 PDF/XLSX contracts pass; live filter/scope exports not rerun | product/category/supplier/brand/customer lists — operator |
-| 9 | BLOCKED | v0.1.17 / `404367c` | `CustomerGroup.php`; `GroupHierarchy.php`; groups view/actions | M51 hierarchy/leaf test passes | `/customers/groups` — operator |
-| 10 | BLOCKED | v0.1.17 / `404367c` | `ImportCustomerGroups.php`; customer routes; exchange support | M51 guarded XLSX/PDF route test passes | customer-group import/export — operator |
-| 11 | BLOCKED | v0.1.17 / `404367c` | `pages/customers/groups.blade.php` | Source has no matching redundant literal; browser not rerun | `/customers/groups` — operator |
-| 12 | BLOCKED | v0.1.16–v0.1.18 | shared page actions and affected list views | Source inventory inspected; full route visual matrix not rerun | applicable lists — operator |
-| 13 | BLOCKED | v0.1.17 / `404367c` | customer actions/model/views; `ResidenceGeography.php`; import/export | M51 identity/residence contracts pass; report coverage not browser-rerun | `/customers` — operator |
-| 14 | BLOCKED | v0.1.17 / `404367c` | `Governorate.php`; `City.php`; `SaveCityAction.php`; cities routes/view | M51 migration contract passes | `/admin/settings/cities` — operator |
-| 15 | BLOCKED | v0.1.17 / `404367c` | `GroupHierarchy.php`; customer actions/import/views | M51 leaf-selection test passes | customers create/import — operator |
-| 16 | BLOCKED | v0.1.16 / `048d161` | V016 action inventory and normalized form views | Source inventory inspected; full visual matrix not rerun | applicable forms — operator |
-| 17 | BLOCKED | v0.1.17 / `404367c` | `Customer.php`; customer actions/routes; scoped history queries | Source inspected; cross-outlet scenario needs isolated DB | `/customers/{customer}` — operator |
-| 18 | BLOCKED | v0.1.17 / `404367c` | customer duplicate handling actions/views; audit action | Source safety guards inspected; merge scenario needs isolated DB | duplicate handling — operator |
-| 19 | BLOCKED | v0.1.17 / `404367c` | `CustomerIdentity.php`; `StageCustomerImportAction.php`; batch model/import view | M51 normalization/rejection tests pass; repeat import scenario needs DB | `/customers/import` — operator |
-| 20 | BLOCKED | v0.1.17 / `404367c` | customer forms/show; legacy relations/migration retained | Source literal absent; relationship regression needs DB | customer create/show — operator |
-| 21 | BLOCKED | v0.1.17 / `404367c` | `SupplierGroup.php`; save action; supplier view | M51 shared hierarchy test passes | `/catalog/suppliers` — operator |
-| 22 | BLOCKED | v0.1.17 / `404367c` | `SupplierSettlementMethod.php`; supplier action/view | M51 exact values/localization test passes | suppliers — operator |
-| 23 | BLOCKED | v0.1.16–v0.1.17 / `048d161`, `404367c` | `SaveSupplierAction.php`; supplier view; setup status | M51 readiness method test passes | suppliers/setup — operator |
-| 24 | BLOCKED | v0.1.16–v0.1.17 / `048d161`, `404367c` | `InitialSetupStatus.php`; supplier model/action | Corrected test boundary; readiness independence passes | `/initial-setup` step 17 — operator |
-| 25 | BLOCKED | v0.1.18 / `ee497f0` | product-options view; catalog actions/models | M52 source checks pass; modal browser not rerun | product filters — operator |
-| 26 | BLOCKED | v0.1.18 / `ee497f0` | navigation/translations/catalog views | Source user-facing rename inspected; route matrix not rerun | catalog — operator |
+| 1 | PASS | v0.1.16 / `048d161` | `ProductionSeeder.php`; `OpenShiftAction.php`; `PosContext.php`; scoped Retail models/routes | F1 + V016: exact cashier grants, gate and drawer/company/branch/store visibility | `/pos`, `/pos/shifts` (unchanged Hotfix evidence) |
+| 2 | PASS | v0.1.16 / `048d161` | `config/navigation.php`; `ApplicationNavigation.php`; `InitialSetupRouteMap.php`; settings/setup views | F2 + V016: common group/order registry and route sequence | sidebar, `/initial-setup`, `/admin/settings` |
+| 3 | PASS | v0.1.16 / `048d161` | `SetupContinuation.php`; `RecordSetupDecision.php`; setup context/center views | F2 + V016: skip/defer state, separate navigation, no implicit save | `/initial-setup` |
+| 4 | BLOCKED | v0.1.22 / stabilization commit | `PrintTemplate.php`; `SavePrintTemplateAction.php`; `000101`; settings/preview views; routes | F3 + V022; full migration; 8 bilingual responsive browser checks. Physical output unavailable | `/admin/settings?tab=printers&section=print-templates`; operator must print one test page on each configured device class |
+| 5 | FIXED | pre-v0.1.16; v0.1.22 | settings view; `SaveLocalSettingsAction.php`; `PrinterConfiguration.php` | F3 + V022 server scope/compatibility assertions; EN/AR desktop/mobile printer-form captures | `/admin/settings?tab=printers` |
+| 6 | FIXED | pre-v0.1.16; v0.1.22 | same as #5; `SavePrintTemplateAction.php`; translations | F3 + V022 exact sizes/type compatibility; locale parse; 4 printer visuals | `/admin/settings?tab=printers` |
+| 7 | PASS | v0.1.17–18 / `404367c`, `ee497f0` | staged import actions; `MasterDataDocument.php`; import routes/views | F3 + M51/M52: ordered headers, definitions/examples, UTF-8 CSV/XLSX | customer/supplier/catalog import routes |
+| 8 | PASS | v0.1.17–18 / `404367c`, `359c035`, `ee497f0` | catalog/customer exchange routes; PDF views | F3 + M51/M52: gate/scope/filter/bounded export and Cairo RTL PDF contracts | product/category/supplier/brand/customer lists |
+| 9 | PASS | v0.1.17 / `404367c` | `CustomerGroup.php`; `GroupHierarchy.php`; groups view/actions | F4 + M51: paths, levels, counts and cycle/self guards | `/customers/groups` |
+| 10 | PASS | v0.1.17 / `404367c` | `ImportCustomerGroups.php`; customer exchange routes | F4 + M51: hierarchy-safe upsert, row rejection, no implicit move/delete | customer-group import/export |
+| 11 | PASS | v0.1.17 / `404367c` | customer groups view | F4 literal-absence regression check | `/customers/groups` |
+| 12 | PASS | v0.1.16–18 / `048d161`…`ee497f0` | shared page header/action components and list views | F2 + V016/M51/M52 permission and standardized action contracts | applicable list routes |
+| 13 | PASS | v0.1.17 / `404367c` | customer actions/model/views; `ResidenceGeography.php`; exchange routes | F4 + M51 mandatory geography, dependent active city and exchange fields | `/customers`; customer reports/import/export |
+| 14 | PASS | v0.1.17 / `404367c` | governorate/city models; `SaveCityAction.php`; settings route/view | F4 + M51 bilingual, active/order, duplicate/use guards | `/admin/settings/cities` |
+| 15 | PASS | v0.1.17 / `404367c` | `GroupHierarchy.php`; customer actions/import/views | F4 + M51 leaf-only UI/action/import enforcement | customer create/edit/import |
+| 16 | PASS | v0.1.16 / `048d161` | shared form actions and workflow-specific actions | F2 + V016 command-label/loading contract | applicable forms |
+| 17 | PASS | v0.1.17 / `404367c` | `Customer.php`; customer policies/actions/history routes | F1/F4 + M51: company visibility without creator outlet restriction | `/customers/{customer}` |
+| 18 | PASS | v0.1.17 / `404367c` | merge action; duplicate handling views/audit | F4 + M51: empty-only transactional archive/audit; unsafe relations rejected | duplicate profile handling |
+| 19 | PASS | v0.1.17 / `404367c` | phone normalizer; staged import action/batch/view | F4 + M51: normalized existing/in-file duplicate rejection and idempotency | `/customers/import` |
+| 20 | PASS | v0.1.17 / `404367c` | customer forms/show; retained relations/migrations | F4 + M51: UI literal absent; shared structures retained | customer create/show |
+| 21 | PASS | v0.1.17 / `404367c` | `SupplierGroup.php`; save action; supplier view | F5 + M51 hierarchy, count, cycle/use guard and responsive cards | `/catalog/suppliers` |
+| 22 | PASS | v0.1.17 / `404367c` | `SupplierSettlementMethod.php`; supplier action/view | F5 + M51 exact independent localized values/Other detail | suppliers |
+| 23 | PASS | v0.1.16–17 / `048d161`, `404367c` | supplier action/view; setup status | F5 + M51 required settlement/no fake default; optional terms | suppliers/setup |
+| 24 | PASS | v0.1.16–17 / `048d161`, `404367c` | `InitialSetupStatus.php`; supplier action/model | F2/F5 + corrected focused readiness boundary proves independence | `/initial-setup` step 17 |
+| 25 | PASS | v0.1.18 / `ee497f0` | product-options view; catalog actions/models | F6 + M52 standardized create and contained values contract | product filters |
+| 26 | PASS | v0.1.18 / `ee497f0` | navigation/translations/catalog views | F6 + M52 user-facing rename; internal identifiers preserved | catalog |
 | 27 | PASS | v0.1.18 / `ee497f0` | products/product-form views; save action | M52 tests plus Hotfix 2 AR/EN create/edit desktop captures | `/catalog/products/create` |
 | 28 | PASS | v0.1.18, Hotfix 2 / `ee497f0`, `e14eae0` | barcode policy/action; product form; purchasing scanner | M52 + Hotfix 2 tests; tracked AR/EN product/purchase captures | product create and purchase invoice |
-| 29 | BLOCKED | v0.1.18 / `ee497f0` | `SaveProductAction.php`; import action; product form | M52 mandatory/import contracts pass; isolated DB validation blocked | product create/import — operator |
-| 30 | BLOCKED | v0.1.18 / `ee497f0` | product model/action/form | Source inspected; edit persistence needs isolated DB | product edit — operator |
-| 31 | BLOCKED | v0.1.19–v0.1.20 / `e0b3759`, `9c0487d` | purchase approval; pricing contract/models/audit | M52/M54 contracts pass; approval transaction needs DB | purchase approval — operator |
-| 32 | BLOCKED | v0.1.16, v0.1.18 / `048d161`, `ee497f0` | setup status/route map; product import route/view | V016 exact 21-step and M52 import tests pass; full setup visual not rerun | setup/products import — operator |
-| 33 | BLOCKED | v0.1.19 / `e0b3759` | ensure base list; price-list model/action; product model | M53 List 0 contract passes; data migration blocked | pricing/product card — operator |
-| 34 | BLOCKED | v0.1.19 / `e0b3759` | price-list action/model/views/routes | M53 formula/permission tests pass | `/pricing/lists` — operator |
-| 35 | BLOCKED | v0.1.19 / `e0b3759` | branch/store actions/models; resolver | M53 outlet/branch/fallback test passes; dated assignment needs DB | branches/stores/pricing — operator |
-| 36 | BLOCKED | v0.1.19 / `e0b3759` | pricing matrix view; override action; resolver | M53 override/rounding tests pass | product matrix — operator |
-| 37 | BLOCKED | v0.1.19–v0.1.20 / `e0b3759`, `9c0487d` | purchase approval/distribution; resolver; audits | M53/M54 contracts pass; posting needs DB | purchase approval/pricing — operator |
-| 38 | BLOCKED | v0.1.20 / `9c0487d` | distribution action/model/view; price resolver | M54 price-snapshot contract passes; inventory scenario needs DB | purchase distribution — operator |
-| 39 | BLOCKED | v0.1.19–v0.1.20 / `e0b3759`, `9c0487d` | label queue/destination-label view; POS resolver | M54 label/price source contract passes | labels/POS — operator |
-| 40 | BLOCKED | v0.1.19–v0.1.20 / `e0b3759`, `9c0487d` | override approval/audit; immutable invoice snapshots | M53 historical snapshot/override tests pass; bulk approval scenario needs DB | pricing/history — operator |
+| 29 | PASS | v0.1.18 / `ee497f0` | product form; `SaveProductAction.php`; import action | F6 + M52 identical mandatory UI/action/import validation | product create/import |
+| 30 | PASS | v0.1.18 / `ee497f0` | product model/action/form | F6 + M52 optional-field persistence contract | product edit |
+| 31 | PASS | v0.1.19–20 / `e0b3759`, `9c0487d` | purchase approval; product/pricing audit | F7/F9 + M52/M54: draft inert, approved fields only, old/new/source audit | purchase approval |
+| 32 | PASS | v0.1.16, v0.1.18 / `048d161`, `ee497f0` | setup route map/status; product import route/view | F2/F6 + V016/M52: alternative import, exactly 21 steps, no 22 refs | setup/products import |
+| 33 | PASS | v0.1.19 / `e0b3759` | base-list action/model; product price source | F7 + M53 List 0 identity/protection/single-source contract | pricing/product card |
+| 34 | PASS | v0.1.19 / `e0b3759` | price-list action/model/views/routes | F7 + M53 generated code, outlet/date/status/round-up contract | `/pricing/lists` |
+| 35 | PASS | v0.1.19 / `e0b3759` | branch/store actions/models; resolver | F7 + M53 one active assignment, inheritance/fallback/date/audit | branches/stores/pricing |
+| 36 | PASS | v0.1.19 / `e0b3759` | pricing matrix; override action; resolver | F7 + M53 base/pre-round/final/manual exception/effective data | product price matrix |
+| 37 | PASS | v0.1.19–20 / `e0b3759`, `9c0487d` | purchase approval; resolver; audit | F7/F9 + M53/M54 explicit base update; percentage recalculation; exceptions preserved | purchase approval/pricing |
+| 38 | PASS | v0.1.20 / `9c0487d` | distribution action/model/view; resolver | F7/F9 + M54 quantity-only distribution and outlet price resolution | purchase distribution |
+| 39 | PASS | v0.1.19–20 / `e0b3759`, `9c0487d` | label queue/view; POS resolver | F7/F9 + M54 identity barcode and effective price/quantity/repricing contract | labels/POS |
+| 40 | PASS | v0.1.19–20 / `e0b3759`, `9c0487d` | override approval/audit; invoice snapshots | F7 + M53 bulk preview/history/immutable invoice/discount order/manual no-round | pricing/history |
 | 41 | PASS | v0.1.19, Hotfix 3 / `e0b3759`, `39719b4` | `ProductPricingReadiness.php`; setup/products/pricing views | Hotfix 3 tests and 16 tracked bilingual responsive captures | setup/products/pricing/affected |
-| 42 | BLOCKED | v0.1.18 / `ee497f0` | setup route map/status; opening actions/models | M52 route/readiness test passes | setup step 21 — operator |
-| 43 | BLOCKED | v0.1.18 / `ee497f0` | opening models/actions/import/view/routes | M52 opening template/validation/posting tests pass; DB/browser blocked | `/inventory/opening` — operator |
+| 42 | PASS | v0.1.18 / `ee497f0` | setup route map/status; opening actions/models | F8 + M52 direct route and approved/zero readiness contract | setup step 21 |
+| 43 | PASS | v0.1.18 / `ee497f0` | opening models/actions/import/view/routes | F8 + M52 manual/template/import/zero/transaction validation | `/inventory/opening` |
 | 44 | PASS | v0.1.20 / `9c0487d` | purchase actions/models/invoices view | M54 stage tests; tracked Hotfix 1 AR/EN desktop/mobile purchase captures | purchase invoices |
 | 45 | PASS | v0.1.20, Hotfix 2 / `9c0487d`, `e14eae0` | purchasing invoice Livewire view/query | Hotfix 2 exact/ranked/debounce tests and tracked captures | purchase invoice create |
 | 46 | PASS | v0.1.20, Hotfix 2 / `9c0487d`, `e14eae0` | quick Product Card methods and product form | M54/Hotfix 2 focus/leak tests; tracked product/purchase captures | purchase invoice quick create |
-| 47 | BLOCKED | v0.1.20–v0.1.21 / `9c0487d`, `9b054e4` | approval/distribution actions; audit | M54 and final-acceptance contracts pass; posting needs DB | purchase approval — operator |
-| 48 | BLOCKED | v0.1.20 / `9c0487d` | distribution model/action/view | M54 exact-distribution source test passes; persisted matrix needs DB | purchase distribution — operator |
-| 49 | BLOCKED | v0.1.20 / `9c0487d` | distribution save/approve actions and view | M54 allocation rejection contract passes; live validation needs DB | purchase distribution — operator |
-| 50 | BLOCKED | v0.1.20 / `9c0487d` | purchase approval; inventory movement posting | M54 transaction/lock/idempotency contract passes; failure rollback needs DB | transfers/distribution — operator |
-| 51 | BLOCKED | v0.1.20 / `9c0487d` | destination label route/view; snapshot fields | M54 destination-label source test passes | destination labels — operator |
+| 47 | PASS | v0.1.20–21 / `9c0487d`, `9b054e4` | approval/distribution actions; audit | F9 + M54/final acceptance approved-field and draft-inert contracts | purchase approval |
+| 48 | PASS | v0.1.20 / `9c0487d` | distribution model/action/view | F9 + M54 per-line purchased/allocated/remaining matrix | purchase distribution |
+| 49 | PASS | v0.1.20 / `9c0487d` | distribution save/approve actions/view | F9 + M54 exact received allocation and precise rejection | purchase distribution |
+| 50 | FIXED | v0.1.20; v0.1.22 / `9c0487d`, stabilization | approval action; `StockTransfer`; `000102`; receive action | F9 + revised M54; full migration/FK/unique/rollback check; one transaction | transfers/distribution |
+| 51 | PASS | v0.1.20 / `9c0487d` | destination label route/view; price snapshots | F9 + M54 destination quantities and effective list/exception price | destination labels |
 | 52 | PASS | v0.1.20–Hotfix 1 / `9c0487d`, `03d5133` | purchasing invoices/destination-label views and translations | Hotfix 1 layout tests and 8 tracked bilingual desktop/mobile captures | purchase list/create/distribution |
-| 53 | BLOCKED | v0.1.20 / `9c0487d` | approval/distribution actions; stock movement/balance models | M54 atomic transit contracts pass; ledger effects need DB | purchasing/inventory — operator |
+| 53 | FIXED | v0.1.20; v0.1.22 / `9c0487d`, stabilization | approval action; transfer dispatch/receipt actions; balances | F9 + revised M54: receiving zero, destination in-transit until receipt, draft inert, atomic | purchasing/inventory |
 | 54 | PASS | v0.1.16–Hotfix 3 / `048d161`…`39719b4` | setup route map/status/context/center and linked views | V016 21-step tests; Hotfix 3 tracked AR/EN desktop/mobile setup captures; no `22-step` source reference found | setup routes |
 
 ## Defects found and corrected
@@ -71,14 +71,17 @@ This is the live audit ledger for the owner-authorized cumulative v0.1.22 stabil
 - Item 4: replaced hard-coded print-template projection with a persisted company-scoped reusable library, bilingual identities, document/paper/language contracts, create/edit/preview/test-print, printer assignment, authorization, audit, and compatibility validation.
 - Item 5: added reactive scope changes that clear incompatible branch/store values and branch-filter operational locations; retained server-side visibility and relationship enforcement.
 - Item 6: replaced the fake generic label size and A4-only document choice with real 58/80 mm, A4/A5, 50 × 30 mm and 40 × 25 mm contracts, enforced on the server and localized.
+- Item 50: replaced direct destination inventory posting with one linked transfer document per destination, preserving dispatch/receipt workflow and transactional rollback.
+- Item 53: changed purchase approval to dispatch out of the transit-only receiving warehouse and increase destination `in_transit`; destination on-hand changes only through transfer receipt.
+- Migration rollback: reordered removal of the v0.1.22 transfer foreign key and composite unique index after isolated MariaDB exposed index dependency error 1553.
 - Verification infrastructure: narrowed an existing v0.1.17 supplier-readiness test to the method body so a following `productPricing` PHPDoc no longer produces a false failure. Product behavior did not change.
 
 ## Verification totals and release facts
 
-- Focused PHPUnit: **61 passed, 557 assertions** in one grouped rerun after correcting the test boundary.
+- Focused PHPUnit: final grouped result recorded after the last assertion correction in `.ai/TEST_RESULTS.md`.
 - Locale JSON: Arabic and English files parse successfully.
 - Blade compilation: `php artisan view:cache` succeeded; compiled views must be cleared before release packaging.
-- Frontend build: BLOCKED because installed Vite requires Node 20 while this shell provides Node 16.20.2. No frontend source changed; the Hotfix 3 manifest remains the candidate asset set until operator Node 20 build verification.
-- Migration: BLOCKED before database creation (`root@127.0.0.1` rejected with MariaDB 1045). No shared or production credentials were inspected.
-- New template-library browser matrix: BLOCKED because Playwright requires Node 20+ and no browser binary is available. Existing tracked Hotfix 1–3 visual evidence remains valid for unchanged surfaces.
-- Release preparation: pending commit and immutable copy. Production/shared databases, UAT data, active symlink, tags, pushes, and remotes remain untouched.
+- Frontend: Node `v20.20.2`, npm `10.8.2`; one Vite production build passed using `/opt/cpanel/ea-nodejs20/bin` exclusively.
+- Migration: complete 96-migration chain passed in temporary socket-only MariaDB; v0.1.22 columns, FK, uniqueness, rollback/remigrate passed and the database/server/directory were removed. The preceding `000101` legacy-template preservation and constraints also passed in its isolated run.
+- New printing browser matrix: eight Playwright checks passed (Arabic/English × desktop/mobile × library/printer), with correct direction, no overflow/mixed-language leak, and minimum 44 px controls.
+- Only item 4 remains BLOCKED, solely for physical-printer output. No production/shared database or symlink target was accessed.

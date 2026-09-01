@@ -53,6 +53,14 @@
 - Sixteen task-local bilingual desktop/mobile visual cases passed mixed-language, exposed-variable/raw-state, and horizontal-overflow checks; two representative captures were inspected.
 - One Node 20.20.2 Vite build passed; manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`.
 - No database, Artisan, migration, seed, purge, broad suite, PDF, production, tag, push, or remote operation ran.
+
+# 2026-09-01 — v0.1.22 cumulative stabilization final verification
+
+- Focused grouped PHPUnit: 70 tests, 692 assertions, all passed across the 11 named V016/M51–M54/V021/V022 files; no broad suite ran.
+- Node runtime: `/opt/cpanel/ea-nodejs20/bin/node` v20.20.2 and `/opt/cpanel/ea-nodejs20/bin/npm` 10.8.2. One production Vite build passed using the mandated Node 20 PATH.
+- Printing visuals: eight local Playwright fixture cases passed for Arabic/English, desktop/mobile, and template-library/printer-scope families; correct RTL/LTR, no mixed-language leakage, no document overflow, and minimum 44 px controls. Four representative captures were visually inspected.
+- Isolated MariaDB: complete 96-migration chain passed in a temporary user-owned socket-only MariaDB. Migration `000102` column, FK, composite uniqueness, rollback and remigrate passed. A first rollback exposed MariaDB error 1553 and the down migration was corrected; the fresh repeat passed. The earlier `000101` run verified schema, FKs, uniqueness and preservation of legacy `template_name` through rollback/remigrate.
+- Cleanup: both exact temporary databases, MariaDB processes and data directories were removed. No production/shared database or symlink target was accessed.
 # 2026-08-31 — v0.1.21 Final Stabilization
 
 - Focused M54 PHPUnit: passed 8 tests / 62 assertions.

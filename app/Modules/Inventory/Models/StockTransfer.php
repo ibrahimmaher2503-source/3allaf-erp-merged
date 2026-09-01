@@ -16,7 +16,7 @@ final class StockTransfer extends Model implements ImmutableSourceContract
 {
     use GuardsApprovedDocument;
 
-    protected $fillable = ['transfer_number', 'source_store_id', 'destination_store_id', 'status', 'difference_status', 'reason_code', 'reason_notes', 'requested_by', 'approved_by', 'dispatched_by', 'received_by', 'approved_at', 'dispatched_at', 'received_at', 'idempotency_key', 'lock_version', 'notes'];
+    protected $fillable = ['purchase_invoice_id', 'transfer_number', 'source_store_id', 'destination_store_id', 'status', 'difference_status', 'reason_code', 'reason_notes', 'requested_by', 'approved_by', 'dispatched_by', 'received_by', 'approved_at', 'dispatched_at', 'received_at', 'idempotency_key', 'lock_version', 'notes'];
 
     protected $casts = ['approved_at' => 'datetime', 'dispatched_at' => 'datetime', 'received_at' => 'datetime', 'lock_version' => 'integer'];
 
