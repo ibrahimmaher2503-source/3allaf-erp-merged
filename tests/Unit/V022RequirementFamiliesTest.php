@@ -40,7 +40,9 @@ final class V022RequirementFamiliesTest extends TestCase
     public function test_customer_geography_hierarchy_duplicate_and_approval_family(): void
     {
         $create=$this->s('app/Modules/Customer/Actions/CreateCustomerAction.php'); $update=$this->s('app/Modules/Customer/Actions/UpdateCustomerAction.php'); $import=$this->s('app/Modules/Customer/Actions/StageCustomerImportAction.php'); $merge=$this->s('app/Modules/Customer/Actions/MergeCustomersAction.php'); $routes=$this->s('routes/customers.php'); $views=$this->s('resources/views/pages/customers/show.blade.php').$this->s('resources/views/pages/customers/groups.blade.php');
-        foreach(['ResidenceGeography::validate','whereDoesntHave(\'children\')','customer_group_id'] as $v) self::assertStringContainsString($v,$create.$update);
+        foreach(['ResidenceGeography::validate','customer_group_id','forCompany((int) $store->company_id)','active()'] as $v) self::assertStringContainsString($v,$create.$update);
+        self::assertStringNotContainsString("whereDoesntHave('children')", $create.$update);
+        self::assertGreaterThanOrEqual(2, substr_count($routes, 'GroupHierarchy::flatten($allGroups)'));
         foreach(['duplicate_existing','duplicate_file','PhoneNormalizer','active()'] as $v) self::assertStringContainsString($v,$import);
         foreach(['sales','loyalty','wallet','children','CustomerMergeEvent','DB::transaction'] as $v) self::assertStringContainsString($v,$merge);
         foreach(['governorate_id','city_id','address_ar','address_en','limit(5000)'] as $v) self::assertStringContainsString($v,$routes);
@@ -84,11 +86,12 @@ final class V022RequirementFamiliesTest extends TestCase
 
     public function test_purchasing_distribution_transfer_label_and_transit_family(): void
     {
-        $invoice=$this->s('resources/views/purchasing/invoices.blade.php'); $save=$this->s('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php'); $approve=$this->s('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php'); $receive=$this->s('app/Modules/Inventory/Actions/ReceiveStockTransferAction.php'); $labels=$this->s('resources/views/purchasing/destination-labels.blade.php'); $migration=$this->s('database/migrations/2026_09_01_000102_link_purchase_distributions_to_transfers.php');
+        $invoice=$this->s('resources/views/purchasing/invoices.blade.php'); $save=$this->s('app/Modules/Purchasing/Actions/SavePurchaseDistributionAction.php'); $approve=$this->s('app/Modules/Purchasing/Actions/ApprovePurchaseInvoiceAction.php'); $receive=$this->s('app/Modules/Inventory/Actions/ReceiveStockTransferAction.php'); $labelRoute=$this->s('routes/pricing.php'); $labelService=$this->s('app/Modules/Pricing/Services/BarcodeLabelService.php'); $labelView=$this->s('resources/views/pricing/label-print.blade.php'); $migration=$this->s('database/migrations/2026_09_01_000102_link_purchase_distributions_to_transfers.php');
         foreach(['175','limit(20)','productSearchRequest','Stage 1','Stage 2','Remaining','createQuickProduct'] as $v) self::assertStringContainsString($v,$invoice);
         foreach(['visibleTo($actor)','temporary receiving warehouse cannot be a final destination','resolveWithBasePrice'] as $v) self::assertStringContainsString($v,$save);
         foreach(['DB::transaction','purchase_invoice_id','StockTransfer','adjustInTransit',"'status'=>'in_transit'",'zero remaining quantity'] as $v) self::assertStringContainsString($v,$approve.$migration);
         foreach(['transfer_receipt','adjustInTransit','difference_review'] as $v) self::assertStringContainsString($v,$receive);
-        foreach(['effective_selling_price','price_is_override','@for'] as $v) self::assertStringContainsString($v,$labels);
+        foreach(['barcode_label_invoice_context','purchase_invoices.print_labels','PurchaseInvoice','destination_store_id'] as $v) self::assertStringContainsString($v,$labelRoute);
+        foreach(['PriceListResolver','active product barcode','copies','labels'] as $v) self::assertStringContainsStringIgnoringCase($v,$labelService.$labelView);
     }
 }

@@ -21,8 +21,9 @@
     .app-navigation__rail-link { color: #d5e0e9; }
     .app-navigation__rail-link.is-active { color: #f7fffe !important; }
     @media (max-width: 767px) {
-        .app-topbar { grid-template-columns: minmax(0, 1fr) 2.75rem auto; gap: .25rem; }
-        .app-topbar__identity { min-width: 0; overflow: hidden; }
+        .app-topbar { display: flex; gap: .25rem; }
+        .app-topbar__identity { min-width: 0; overflow: hidden; flex: 0 0 7.5rem; }
+        .app-topbar__search { flex: 0 0 2.75rem; }
         .app-topbar__mobile-brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .app-topbar__actions { flex: none; }
         .app-topbar__actions > form { display: none !important; }

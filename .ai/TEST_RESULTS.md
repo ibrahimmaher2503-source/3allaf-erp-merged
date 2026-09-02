@@ -76,3 +76,8 @@
 - Preserved visual evidence: 8 previously completed Arabic/English desktop/mobile printing cases; not repeated under the one-pass rule.
 - Node 20.20.2/npm 10.8.2 Vite 8.2.0 build: passed. Manifest SHA-256 `cc095c1ecdfd4690ed5e500b18c78c63d74043ae0933e548c72f5111a92fdf78`.
 - Database: no migration executed in this correction pass. Production/shared databases were not accessed. Physical-printer acceptance remains outstanding.
+# 2026-09-02 — v0.1.22-hotfix3 post-review closure
+
+- Focused correction test passed 9 tests / 143 assertions with zero failures.
+- Authenticated isolated-browser verification passed 3 real-route PDFs and 11 Arabic desktop/mobile route cases. Raster decoding passed 3/3 Code 128 copies and 1/1 thermal plus 1/1 A4 EAN-13 copies; all generated pages were rasterized. Zero console errors and zero horizontal document overflow were recorded.
+- Disposable MariaDB `rajeh_hotfix3_verify` reports all 97 migrations ran. PHP syntax, Blade compilation, Arabic/English JSON, and diff checks passed once. No broad suite or repeat Vite build ran.
