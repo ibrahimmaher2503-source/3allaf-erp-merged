@@ -86,7 +86,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     };
     $scopedBalances = StockBalance::query()->whereIn('store_id', $visibleStoreIds);
     $scopedMovements = StockMovement::query()->whereIn('store_id', $visibleStoreIds);
-    $inventoryOverview = [
+    $inventoryOverview = $focus === null ? [
         'active_products' => Product::query()->active()->whereNull('parent_product_id')->count(),
         'active_variants' => Product::query()->active()->whereNotNull('parent_product_id')->count(),
         'visible_products' => (clone $scopedBalances)->distinct()->count('product_id'),
@@ -95,7 +95,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         'low_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= COALESCE((SELECT reorder_threshold FROM products WHERE products.id = stock_balances.product_id), 0)')->count(),
         'out_of_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) = 0')->count(),
         'negative_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) < 0')->count(),
-        'today_movements' => (clone $scopedMovements)->whereDate('posted_at', today())->count(),
+        'today_movements' => (clone $scopedMovements)->whereBetween('posted_at', [today()->startOfDay(), today()->endOfDay()])->count(),
         'missing_barcodes' => Product::query()->sellable()->whereDoesntHave('barcodes', fn ($barcode) => $barcode->where('status', 'active'))->count(),
         'missing_catalog_data' => Product::query()->active()->where(function ($product): void {
             $product->whereNull('category_id')->orWhereNull('unit_of_measure')->orWhere('unit_of_measure', '');
@@ -107,7 +107,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         'pending_adjustments' => InventoryAdjustment::query()->whereIn('store_id', $visibleStoreIds)->whereIn('status', ['draft', 'submitted'])->count(),
         'stock_distribution' => StockBalance::query()->join('stores', 'stores.id', '=', 'stock_balances.store_id')->whereIn('stock_balances.store_id', $visibleStoreIds)->select(['stores.id', 'stores.code', 'stores.name_ar', 'stores.name_en'])->selectRaw('SUM(stock_balances.on_hand) as on_hand')->groupBy('stores.id', 'stores.code', 'stores.name_ar', 'stores.name_en')->orderByDesc('on_hand')->limit(6)->get(),
         'top_moving_products' => StockMovement::query()->join('products', 'products.id', '=', 'stock_movements.product_id')->whereIn('stock_movements.store_id', $visibleStoreIds)->where('posted_at', '>=', now()->subDays(7))->select(['products.id', 'products.item_code', 'products.name_ar', 'products.name_en'])->selectRaw('SUM(ABS(stock_movements.quantity)) as moved_quantity')->groupBy('products.id', 'products.item_code', 'products.name_ar', 'products.name_en')->orderByDesc('moved_quantity')->limit(6)->get(),
-    ];
+    ] : [];
     $balances = $balancesQuery->paginate(25, ['*'], 'balance_page')->withQueryString();
     $movements = $movementsQuery->paginate(50, ['*'], 'movement_page')->withQueryString();
     $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->where(function ($query) use ($visibleStoreIds): void {

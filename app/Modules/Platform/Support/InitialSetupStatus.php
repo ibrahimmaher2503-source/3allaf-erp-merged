@@ -32,12 +32,38 @@ use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\PriceListResolver;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 final class InitialSetupStatus
 {
+    private ?array $requestSnapshot = null;
+
     /** @return array{steps: list<array<string, mixed>>, owner_decisions: list<array<string, mixed>>, completed_count: int, required_count: int, progress_percent: int, needs_attention: bool, complete: bool} */
     public function snapshot(): array
+    {
+        if (app()->bound('request') && request()->attributes->has('initial_setup_snapshot')) {
+            return request()->attributes->get('initial_setup_snapshot');
+        }
+        if ($this->requestSnapshot !== null) {
+            return $this->requestSnapshot;
+        }
+
+        $actor = auth()->user();
+        $companyId = (int) Company::query()->where('status', 'active')->value('id');
+        $permissions = $actor instanceof User ? array_keys(app(RequestPermissionLookup::class)->for($actor)) : [];
+        sort($permissions);
+        $version = (int) Cache::get('setup-readiness-version', 1);
+        $key = sprintf('setup-ready:v%d:c%d:u%d:p%s:l%s', $version, $companyId, (int) ($actor?->id ?? 0), hash('xxh3', implode('|', $permissions)), app()->getLocale());
+        $this->requestSnapshot = Cache::remember($key, now()->addMinutes(10), fn (): array => $this->buildSnapshot());
+        if (app()->bound('request')) {
+            request()->attributes->set('initial_setup_snapshot', $this->requestSnapshot);
+        }
+
+        return $this->requestSnapshot;
+    }
+
+    private function buildSnapshot(): array
     {
         $companyReady = $this->companyReady();
         $branchesReady = $this->branchesReady();

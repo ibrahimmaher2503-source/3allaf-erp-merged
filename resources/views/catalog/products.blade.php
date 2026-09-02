@@ -349,9 +349,9 @@ new #[Title('Product Masters')] class extends Component
         if ($term !== '') {
             $like = '%'.$term.'%';
             $query->where(function ($scope) use ($term, $like): void {
-                $scope->whereRaw('LOWER(item_code) = ?', [$term])
-                    ->orWhereHas('barcodes', fn ($barcode) => $barcode->whereRaw('LOWER(barcode) = ?', [$term]))
-                    ->orWhereRaw('LOWER(model_number) = ?', [$term])
+                $scope->where('item_code', $term)
+                    ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('barcode', $term))
+                    ->orWhere('model_number', $term)
                     ->orWhereRaw('LOWER(name_ar) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(name_en) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(COALESCE(keywords_ar, \'\')) LIKE ?', [$like])
@@ -387,7 +387,7 @@ new #[Title('Product Masters')] class extends Component
 
         if ($term !== '') {
             $query->orderByRaw(
-                'CASE WHEN LOWER(item_code) = ? THEN 0 WHEN EXISTS (SELECT 1 FROM barcodes WHERE barcodes.product_id = products.id AND LOWER(barcodes.barcode) = ?) THEN 1 ELSE 2 END',
+                'CASE WHEN item_code = ? THEN 0 WHEN EXISTS (SELECT 1 FROM barcodes WHERE barcodes.product_id = products.id AND barcodes.barcode = ?) THEN 1 ELSE 2 END',
                 [$term, $term],
             );
         }

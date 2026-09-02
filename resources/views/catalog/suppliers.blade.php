@@ -517,7 +517,9 @@ new #[Title('Supplier Masters')] class extends Component
             $viewingSupplier = $this->viewingSupplierId
                 ? Supplier::query()->with(['productSuppliers.product', 'supplierGroup', 'preferredPaymentMethod', 'contacts'])->find($this->viewingSupplierId)
                 : null;
-            $availableProducts = Product::query()->where('status', 'active')->orderBy('item_code')->get(['id', 'item_code', 'name_ar', 'name_en']);
+            if ($this->showLinkProductModal) {
+                $availableProducts = Product::query()->where('status', 'active')->orderBy('item_code')->limit(200)->get(['id', 'item_code', 'name_ar', 'name_en']);
+            }
         }
 
         return view('catalog.suppliers', [

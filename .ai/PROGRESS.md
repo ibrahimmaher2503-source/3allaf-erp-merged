@@ -129,3 +129,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Centralized strict whole-number product quantity presentation and validation across affected inventory, purchasing, retail, Party-consumable, reporting, and print flows; genuine fractions now fail rather than round, while monetary precision remains unchanged.
 - Centralized inventory movement labels in Arabic and English, rebuilt barcode-label selection around bounded server search and preserved multi-selection/remediation state, corrected document-scrolling desktop sidebar behavior, and made positive Product Card base consumer price the immediate selling fallback.
 - Focused PHPUnit, PHP/Blade/JSON/routes/diff checks, authenticated Arabic desktop/mobile browser checks, barcode PDFs, and isolated MariaDB migration status passed. Immutable release preparation remains the final packaging action; production remains untouched.
+
+## 2026-09-02 — v0.1.22-hotfix5 performance
+
+- Profiled 20 authenticated workflows against the exact Hotfix4 source and candidate using the same isolated 10,000-product/100,000-movement MariaDB fixture.
+- Removed shared-render permission/translation/readiness duplication, overview-only inventory aggregates from child pages, the suppliers' 10,000-row response payload, and unbounded pricing-readiness materialization; added bounded index-friendly exact/prefix search.
+- Added four measured reversible indexes. Warm candidate medians remained below 800 ms for standard routes and below 1.5 seconds for Reports; the largest gains were Suppliers (71%) and inventory child pages (40–51%).

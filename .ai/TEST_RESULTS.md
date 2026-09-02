@@ -1,5 +1,12 @@
 # Test and Verification Results
 
+## 2026-09-02 — v0.1.22-hotfix5 performance
+
+- Exact-baseline/candidate benchmark covered 20 authenticated routes with one warm-up and five samples each on the same isolated MariaDB fixture; full results and method are in `.ai/evidence/v0.1.22-hotfix5/PERFORMANCE.md`.
+- Focused regression passed 5 tests / 55 assertions. The separate legacy readiness unit file has one pre-existing translator-bootstrap error and 3 passing tests / 25 assertions; no broad suite ran.
+- Changed PHP syntax, Blade/config/route/event cache compilation, Arabic/English JSON, reversible migration up/down/up, MariaDB query plans, 20-route Arabic desktop journey, POS search, mobile navigation, and diff checks passed.
+- Browser result: 20/20 HTTP 200, 20/20 RTL, zero console/page errors, zero overflow; mobile drawer opened without overflow.
+
 ## 2026-08-27 — M50A.1 focused local visual verification
 
 - Owner-authorized local Playwright rendering only; no automated application test suite was run.

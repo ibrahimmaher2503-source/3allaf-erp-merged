@@ -137,11 +137,14 @@ final class ProductBrowser extends Component
             $query->where('category_id', $this->categoryId);
         }
         if (trim($this->search) !== '') {
-            $term = '%'.trim($this->search).'%';
-            $query->where(function ($q) use ($term): void {
-                $q->where('item_code', 'like', $term)->orWhere('name_ar', 'like', $term)->orWhere('name_en', 'like', $term)
-                    ->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $term))
-                    ->orWhereHas('variants', fn ($v) => $v->where('item_code', 'like', $term)->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $term))->orWhereHas('variantValues.value', fn ($value) => $value->where('name_ar', 'like', $term)->orWhere('name_en', 'like', $term)));
+            $raw = trim($this->search);
+            $prefix = addcslashes($raw, '%_\\').'%';
+            $contains = '%'.addcslashes($raw, '%_\\').'%';
+            $query->where(function ($q) use ($prefix, $contains): void {
+                $q->where('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)
+                    ->orWhere('name_ar', 'like', $contains)->orWhere('name_en', 'like', $contains)
+                    ->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $prefix))
+                    ->orWhereHas('variants', fn ($v) => $v->where('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $prefix))->orWhereHas('variantValues.value', fn ($value) => $value->where('name_ar', 'like', $contains)->orWhere('name_en', 'like', $contains)));
             });
         }
         $products = $query->get();

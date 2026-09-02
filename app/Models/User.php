@@ -9,6 +9,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\UserBranchScope;
 use App\Modules\Platform\Models\UserStoreScope;
 use App\Modules\Platform\Models\UserUiPreference;
+use App\Modules\Platform\Support\RequestPermissionLookup;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -47,9 +48,6 @@ class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
-
-    /** @var array<string, true>|null */
-    protected ?array $activePermissionLookup = null;
 
     /**
      * Get the attributes that should be cast.
@@ -114,23 +112,7 @@ class User extends Authenticatable implements PasskeyUser
     /** @return array<string, true> */
     private function activePermissionLookup(): array
     {
-        if ($this->activePermissionLookup !== null) {
-            return $this->activePermissionLookup;
-        }
-
-        $roles = $this->roles()
-            ->where('roles.status', 'active')
-            ->with([
-                'permissions' => fn (BelongsToMany $query) => $query
-                    ->where('permissions.status', 'active')
-                    ->select(['permissions.id', 'permissions.code']),
-            ])
-            ->get(['roles.id']);
-
-        return $this->activePermissionLookup = $roles
-            ->flatMap(fn (Role $role) => $role->permissions->pluck('code'))
-            ->mapWithKeys(fn (string $code): array => [$code => true])
-            ->all();
+        return app(RequestPermissionLookup::class)->for($this);
     }
 
     public function canAccessBranch(int $branchId): bool

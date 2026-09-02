@@ -13,10 +13,18 @@ final class WorkContext
 {
     public const SESSION_KEY = 'ui.work_store_id';
 
+    /** @var array<int, Collection<int, Store>> */
+    private array $requestStores = [];
+
     /** @return Collection<int, Store> */
     public function stores(User $actor): Collection
     {
-        return Store::query()->visibleTo($actor)->where('status', 'active')->orderBy('code')->get(['id', 'company_id', 'code', 'name_ar', 'name_en']);
+        return $this->requestStores[$actor->id] ??= Store::query()
+            ->with('company:id,name_ar,name_en')
+            ->visibleTo($actor)
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get(['id', 'company_id', 'code', 'name_ar', 'name_en']);
     }
 
     public function selected(User $actor): ?Store
@@ -28,7 +36,7 @@ final class WorkContext
             return null;
         }
 
-        $store = Store::query()->visibleTo($actor)->where('status', 'active')->find((int) $storeId, ['id', 'company_id', 'code', 'name_ar', 'name_en']);
+        $store = $this->stores($actor)->firstWhere('id', (int) $storeId);
         if ($store === null) {
             session()->forget(self::SESSION_KEY);
         }

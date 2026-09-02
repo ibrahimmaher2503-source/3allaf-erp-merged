@@ -40,7 +40,7 @@
     $contextStore = $workContext->selected($actor) ?? ($contextStores->count() === 1 ? $contextStores->first() : null);
     $contextName = $contextStore ? ($isArabic ? $contextStore->name_ar : $contextStore->name_en) : ($isArabic ? 'كل المتاجر المصرح بها' : 'All authorized stores');
     $companyStore = $contextStore ?? $contextStores->first();
-    $company = $companyStore?->company()->first(['id', 'name_ar', 'name_en']);
+    $company = $companyStore?->company;
     $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp

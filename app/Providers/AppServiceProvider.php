@@ -9,6 +9,10 @@ use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
 use App\Modules\Platform\Policies\AuditLogPolicy;
 use App\Modules\Platform\Support\TranslationOverrideLoader;
+use App\Modules\Platform\Support\RequestPermissionLookup;
+use App\Modules\Platform\Support\InitialSetupStatus;
+use App\Modules\Platform\Support\ProductPricingReadiness;
+use App\Modules\Platform\Support\WorkContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
@@ -16,6 +20,8 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -29,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(RequestPermissionLookup::class);
+        $this->app->scoped(InitialSetupStatus::class);
+        $this->app->scoped(ProductPricingReadiness::class);
+        $this->app->scoped(WorkContext::class);
         $this->app->singleton(LoginResponseContract::class, PosAwareLoginResponse::class);
 
         // The framework registers this provider lazily; register it before replacing
@@ -50,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addNamespace('catalog', viewPath: resource_path('views/catalog'));
         Livewire::addNamespace('purchasing', viewPath: resource_path('views/purchasing'));
         Livewire::addNamespace('pricing', viewPath: resource_path('views/pricing'));
+        foreach (['saved', 'deleted', 'restored'] as $event) {
+            Event::listen("eloquent.{$event}: *", static function (): void {
+                if (! Cache::add('setup-readiness-version', 1)) {
+                    Cache::increment('setup-readiness-version');
+                }
+            });
+        }
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(ApprovalRecord::class, ApprovalRecordPolicy::class);
 

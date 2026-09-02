@@ -67,8 +67,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $exact = request()->boolean('exact');
         $query = Product::query()->sellable()->with(['barcodes' => fn ($q) => $q->active()->orderByDesc('is_primary')->orderBy('id')]);
         $query->where(function ($scope) use ($term, $exact): void {
-            $scope->whereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $exact ? '=' : 'like', $exact ? $term : '%'.$term.'%'));
-            if (! $exact) $scope->orWhere('item_code', 'like', '%'.$term.'%')->orWhere('model_number', 'like', '%'.$term.'%')->orWhere('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%');
+            $prefix = addcslashes($term, '%_\\').'%';
+            $contains = '%'.addcslashes($term, '%_\\').'%';
+            $scope->whereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $exact ? '=' : 'like', $exact ? $term : $prefix));
+            if (! $exact) $scope->orWhere('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)->orWhere('name_ar', 'like', $contains)->orWhere('name_en', 'like', $contains);
         });
         $rows = $query->orderByRaw('CASE WHEN item_code = ? THEN 0 ELSE 1 END', [$term])->orderBy('item_code')->forPage($page, 21)->get();
         $more = $rows->count() > 20;

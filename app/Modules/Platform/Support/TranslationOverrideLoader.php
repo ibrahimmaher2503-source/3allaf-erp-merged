@@ -9,6 +9,9 @@ use Throwable;
 
 final class TranslationOverrideLoader extends FileLoader
 {
+    /** @var array<string, array<string, array<string, string>>> */
+    private array $requestOverrides = [];
+
     public function load($locale, $group, $namespace = null): array
     {
         $lines = parent::load($locale, $group, $namespace);
@@ -18,11 +21,20 @@ final class TranslationOverrideLoader extends FileLoader
         }
 
         try {
-            foreach (TranslationOverride::query()->where('locale', $locale)->where('group', $group)->get() as $override) {
+            $requestId = app()->bound('request') ? (string) request()->attributes->get('request_id', spl_object_id(request())) : 'console';
+            $cacheKey = $requestId.':'.$locale;
+            $overrides = $this->requestOverrides[$cacheKey] ??= TranslationOverride::query()
+                ->where('locale', $locale)
+                ->get(['group', 'translation_key', 'value'])
+                ->groupBy('group')
+                ->map(fn ($rows): array => $rows->mapWithKeys(fn (TranslationOverride $override): array => [$override->translation_key => $override->value])->all())
+                ->all();
+
+            foreach ($overrides[$group] ?? [] as $translationKey => $value) {
                 if ($group === '*') {
-                    $lines[$override->translation_key] = $override->value;
+                    $lines[$translationKey] = $value;
                 } else {
-                    Arr::set($lines, $override->translation_key, $override->value);
+                    Arr::set($lines, $translationKey, $value);
                 }
             }
         } catch (Throwable $exception) {
