@@ -125,6 +125,11 @@ new #[Title('Product Card')] class extends Component {
 
             $persisted = Product::query()->findOrFail($product->id);
             $this->loadProduct($persisted);
+            if (bccomp((string) $persisted->sale_price, '0', 4) > 0) {
+                \App\Modules\Reporting\Models\Alert::query()
+                    ->where('alert_type', 'unpriced_product')->where('source_id', (string) $persisted->id)
+                    ->where('status', '!=', 'resolved')->update(['status' => 'resolved', 'resolved_at' => now()]);
+            }
             app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot();
             Flux::toast(variant: 'success', text: __('Product card saved successfully.'));
         } catch (ValidationException $exception) {

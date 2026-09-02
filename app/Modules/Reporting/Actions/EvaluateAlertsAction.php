@@ -9,8 +9,6 @@ use App\Modules\Assets\Actions\EvaluateAssetAlertsAction;
 use App\Modules\Reporting\Models\Alert;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Pricing\Models\PriceLine;
-use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Platform\Models\Store;
 
 final class EvaluateAlertsAction
@@ -40,19 +38,18 @@ final class EvaluateAlertsAction
             ]);
             if ($alert->wasRecentlyCreated) $count++;
 
-            $priced = PriceLine::query()
-                ->where('product_id', $balance->product_id)
-                ->where('store_id', $balance->store_id)
-                ->whereHas('version', fn ($version): mixed => $version->where('state', PriceVersionState::Approved->value))
-                ->exists();
+            $priced = $balance->product !== null && bccomp((string) ($balance->product->sale_price ?? '0'), '0', 4) > 0;
             if (! $priced) {
                 $unpriced = Alert::query()->firstOrCreate(['alert_key' => 'unpriced:'.$balance->product_id.':'.$balance->store_id], [
                     'alert_type' => 'unpriced_product', 'severity' => 'warning', 'title' => 'Unpriced product',
-                    'description' => 'No approved sale price exists for this product in this store.',
+                    'description' => 'The canonical base consumer selling price is missing or not positive.',
                     'source_type' => Product::class, 'source_id' => (string) $balance->product_id, 'branch_id' => $store->branch_id, 'store_id' => $store->id,
                     'status' => 'open', 'metadata' => ['product_id' => $balance->product_id],
                 ]);
                 if ($unpriced->wasRecentlyCreated) $count++;
+            } else {
+                Alert::query()->where('alert_key', 'unpriced:'.$balance->product_id.':'.$balance->store_id)
+                    ->where('status', '!=', 'resolved')->update(['status' => 'resolved', 'resolved_at' => now()]);
             }
             }
         });

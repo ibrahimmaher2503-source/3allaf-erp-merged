@@ -32,7 +32,7 @@
                     @foreach ($sale->lines as $line)
                         <tr>
                             <td><div class="font-medium">{{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>
-                            <td class="text-end tabular-nums">{{ $line->quantity }}</td>
+                            <td class="text-end tabular-nums"><x-product-quantity :value="$line->quantity" /></td>
                             <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) ($line->reference_price ?? $line->unit_price))" :currency="$sale->currency_code" /></td>
                             <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) $line->unit_price)" :currency="$sale->currency_code" /></td>
                             <td class="text-end"><x-money :amount="$line->gross_amount" :currency="$sale->currency_code" /></td>

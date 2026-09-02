@@ -42,15 +42,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             session()->forget('barcode_label_invoice_context');
         }
         $restored = session()->pull('barcode_label_workspace', []);
-        $query = Product::query()->sellable()->with(['barcodes' => fn ($q) => $q->active()->orderByDesc('is_primary')->orderBy('id')]);
-        if ($prefill !== []) $query->whereKey(array_keys($prefill));
-        elseif ($search !== '') $query->where(fn ($q) => $q->where('item_code', 'like', '%'.$search.'%')->orWhere('model_number', 'like', '%'.$search.'%')->orWhere('name_ar', 'like', '%'.$search.'%')->orWhere('name_en', 'like', '%'.$search.'%')->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', $search)));
-        else $query->orderBy('item_code');
+        $products = $prefill === [] ? collect() : Product::query()->sellable()->with(['barcodes' => fn ($q) => $q->active()->orderByDesc('is_primary')->orderBy('id')])->whereKey(array_keys($prefill))->get();
         $profile = $labels->profile($actor);
         return view('layouts.app', [
             'title' => __('Barcode labels'),
             'slot' => new HtmlString(view('pricing.labels', [
-                'products' => $query->limit(30)->get(),
+                'products' => $products,
                 'stores' => Store::query()->visibleTo($actor)->where('status','active')->where('type','selling')->orderBy('code')->get(),
                 'templates' => PrintTemplate::visibleTo($actor)->where('status','active')->where('document_type','barcode_label')->orderBy('code')->get(),
                 'printers' => PrinterConfiguration::visibleTo($actor)->where('status','active')->with('printTemplate')->orderBy('name')->get(),
@@ -61,6 +58,26 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ]);
     })
         ->name('pricing.labels');
+
+    $router->get('pricing/labels/search', function () {
+        \Illuminate\Support\Facades\Gate::authorize('pricing_labels.view');
+        $term = trim((string) request('q'));
+        if ($term === '') return response()->json(['data' => [], 'next_page' => null]);
+        $page = max(1, min(100, (int) request('page', 1)));
+        $exact = request()->boolean('exact');
+        $query = Product::query()->sellable()->with(['barcodes' => fn ($q) => $q->active()->orderByDesc('is_primary')->orderBy('id')]);
+        $query->where(function ($scope) use ($term, $exact): void {
+            $scope->whereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $exact ? '=' : 'like', $exact ? $term : '%'.$term.'%'));
+            if (! $exact) $scope->orWhere('item_code', 'like', '%'.$term.'%')->orWhere('model_number', 'like', '%'.$term.'%')->orWhere('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%');
+        });
+        $rows = $query->orderByRaw('CASE WHEN item_code = ? THEN 0 ELSE 1 END', [$term])->orderBy('item_code')->forPage($page, 21)->get();
+        $more = $rows->count() > 20;
+        return response()->json(['data' => $rows->take(20)->map(fn (Product $product): array => [
+            'id' => $product->id, 'name_ar' => $product->name_ar, 'name_en' => $product->name_en,
+            'item_code' => $product->item_code, 'model_number' => $product->model_number,
+            'barcodes' => $product->barcodes->map(fn ($barcode): array => ['id' => $barcode->id, 'barcode' => $barcode->barcode, 'is_primary' => (bool) $barcode->is_primary])->values(),
+        ])->values(), 'next_page' => $more ? $page + 1 : null]);
+    })->name('pricing.labels.search');
 
     $router->post('pricing/labels/preview', function () {
         $invoiceContext = session('barcode_label_invoice_context');

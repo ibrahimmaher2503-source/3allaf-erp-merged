@@ -281,21 +281,7 @@ new #[Title('Pricing Workspace')] class extends Component
         $versions = $query->orderBy($this->sort, $this->direction)->orderBy('id', $this->direction)->paginate($this->perPage);
         $products = Product::query()->sellable()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id']);
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
-        $pricedProductIds = PriceLine::query()
-            ->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))
-            ->when($selectedStoreId !== null, fn ($scope) => $scope->where('store_id', $selectedStoreId))
-            ->whereHas('version', function ($version): void {
-                $version->where('state', PriceVersionState::Approved->value)
-                    ->where(function ($dates): void {
-                        $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now());
-                    })
-                    ->where(function ($dates): void {
-                        $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now());
-                    });
-            })
-            ->pluck('product_id')
-            ->unique();
-        $unpricedQuery = Product::query()->sellable()->whereNotIn('id', $pricedProductIds);
+        $unpricedQuery = Product::query()->sellable()->where(fn ($query) => $query->whereNull('sale_price')->orWhere('sale_price', '<=', 0));
         if ($this->search !== '') {
             $unpricedQuery->where(function ($query): void {
                 $query->where('item_code', 'like', '%'.$this->search.'%')
@@ -326,7 +312,7 @@ new #[Title('Pricing Workspace')] class extends Component
     <div class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $modeTitles[$mode] }}</h1>
-            <flux:text class="mt-1 max-w-3xl">{{ __('Create immutable price proposals, submit them through approval, and resolve only approved effective prices. Cost changes never rewrite sale prices.') }}</flux:text>
+            <flux:text class="mt-1 max-w-3xl">{{ __('The Product Card base consumer price is immediately sellable. Optional active price lists override it only when applicable. Cost changes never rewrite sale prices.') }}</flux:text>
         </div>
         <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="printer" wire:navigate>{{ app()->getLocale() === 'ar' ? 'ملصقات الأسعار' : 'Price labels' }}</flux:button>
     </div>
@@ -358,7 +344,7 @@ new #[Title('Pricing Workspace')] class extends Component
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <flux:heading size="lg">{{ __('Unpriced products') }}</flux:heading>
-                    <flux:text class="mt-1">{{ __('These active products have no approved effective price in the visible stores. Receiving may continue, but POS sale and label generation remain blocked until pricing is approved.') }}</flux:text>
+                    <flux:text class="mt-1">{{ __('These active products have no positive base consumer selling price. Add a positive base price to make them immediately sellable.') }}</flux:text>
                 </div>
                 <flux:badge color="amber">{{ __('Pricing pending') }}</flux:badge>
             </div>

@@ -41,7 +41,7 @@ final class PricingDashboard
             'visible_store_count' => (clone $storeIds)->count(),
             'effective_prices' => (clone $effectiveLines)->count(),
             'unpriced_products' => Product::query()->sellable()
-                ->whereNotIn('products.id', (clone $effectiveLines)->select('price_lines.product_id'))
+                ->where(fn (Builder $query) => $query->whereNull('sale_price')->orWhere('sale_price', '<=', 0))
                 ->count(),
             'pending_approvals' => (clone $visibleVersions)->where('price_versions.state', PriceVersionState::Submitted->value)->count(),
             'scheduled_prices' => (clone $futureVersions)->count(),

@@ -690,7 +690,7 @@ final class ReportSnapshot
                 'product' => app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en,
                 'options_ar' => $this->snapshotOptions($line->variant_snapshot, 'ar'),
                 'options_en' => $this->snapshotOptions($line->variant_snapshot, 'en'),
-                'quantity' => (float) $line->quantity,
+                'quantity' => \App\Support\ProductQuantity::format($line->quantity),
                 'net' => (float) $line->net_amount,
             ]));
         }
@@ -727,8 +727,8 @@ final class ReportSnapshot
             $section('inventory_balances', __('Stock balances'), $balanceColumns, $balances->map(function (StockBalance $balance) use ($canViewCost): array {
                 $row = [
                     'product' => $balance->product?->item_code, 'store' => $balance->store?->code,
-                    'on_hand' => (float) $balance->on_hand, 'reserved' => (float) $balance->reserved,
-                    'available' => round((float) $balance->on_hand - (float) $balance->reserved, 6), 'in_transit' => (float) $balance->in_transit,
+                    'on_hand' => \App\Support\ProductQuantity::format($balance->on_hand), 'reserved' => \App\Support\ProductQuantity::format($balance->reserved),
+                    'available' => \App\Support\ProductQuantity::format(bcsub((string)$balance->on_hand,(string)$balance->reserved,6)), 'in_transit' => \App\Support\ProductQuantity::format($balance->in_transit),
                 ];
                 if ($canViewCost) {
                     $row += ['average_cost' => (float) $balance->average_cost, 'value' => (float) $balance->total_value];
@@ -767,7 +767,7 @@ final class ReportSnapshot
             $section('inventory_movements', __('Stock movements'), $movementColumns, $movements->map(function (StockMovement $movement) use ($canViewCost): array {
                 $row = [
                     'posted_at' => $movement->posted_at?->toIso8601String(), 'product' => $movement->product?->item_code,
-                    'store' => $movement->store?->code, 'type' => $movement->movement_type, 'quantity' => (float) $movement->quantity,
+                    'store' => $movement->store?->code, 'type' => \App\Modules\Inventory\Support\InventoryMovementLabel::label($movement->movement_type), 'quantity' => \App\Support\ProductQuantity::format($movement->quantity),
                     'source' => class_basename((string) $movement->source_type).':'.$movement->source_id,
                 ];
                 if ($canViewCost) {

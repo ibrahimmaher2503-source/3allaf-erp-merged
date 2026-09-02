@@ -65,7 +65,7 @@ final class UpdatePurchaseReturnDraftAction
             $normalized = [];
             $subtotal = '0';
             foreach ($indexed as $sourceId => $input) {
-                $quantity = $this->decimal($input['quantity'] ?? '0');
+                $quantity = bcadd((string) \App\Support\ProductQuantity::normalize($input['quantity'] ?? null), '0', 6);
                 $source = $invoice->lines->firstWhere('id', $sourceId);
                 if ($source === null || bccomp($quantity, '0', 6) <= 0 || (isset($input['product_id']) && (int) $input['product_id'] !== (int) $source->product_id)) {
                     throw new InvalidArgumentException(__('Every line must reference an approved invoice line with positive quantity.'));

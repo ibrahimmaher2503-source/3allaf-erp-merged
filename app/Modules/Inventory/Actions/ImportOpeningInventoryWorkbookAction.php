@@ -35,7 +35,7 @@ final class ImportOpeningInventoryWorkbookAction
                     $store = Store::query()->visibleTo(auth()->user())->where('code', $source['inventory_location_code'])->where('status', 'active')->whereIn('type', ['warehouse', 'selling'])->first();
                     if (! $product) $errors[] = __('Unknown product barcode or code.');
                     if (! $store) $errors[] = __('Unknown, inactive, or non-stock inventory location code.');
-                    if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $source['opening_quantity']) || (float) $source['opening_quantity'] <= 0) $errors[] = __('Opening quantity must be greater than zero with up to six decimal places.');
+                    if (! preg_match('/^\d+$/', $source['opening_quantity']) || bccomp($source['opening_quantity'], '0', 0) <= 0) $errors[] = __('Product quantities must be whole numbers.');
                     if ($product && ($product->product_type === 'service' || $product->isFamily())) $errors[] = __('Service products and variation families cannot receive opening inventory.');
                     if ($product && $product->average_cost === null) $errors[] = __('The Product Card does not have a valid unit cost.');
                     if ($product && $store && StockMovement::query()->where('product_id', $product->id)->where('store_id', $store->id)->exists()) $errors[] = __('This product and location already have inventory movements.');

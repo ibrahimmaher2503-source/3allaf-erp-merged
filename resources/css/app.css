@@ -1310,3 +1310,12 @@ select:focus[data-flux-control] {
         main table.data-table :where(th, td), main table.resource-table :where(th, td) { padding-inline:.875rem; }
     }
 }
+
+@media (min-width: 1024px) {
+    body.app-layout { position:relative; align-items:stretch!important; }
+    body.app-layout::before { content:''; position:absolute; inset-block:0; inset-inline-start:0; width:17rem; background:linear-gradient(180deg,#10253d 0%,#0b1c30 100%); z-index:0; }
+    html[data-sidebar-mode="collapsed"] body.app-layout::before { width:5rem; }
+    body.app-layout > .app-sidebar { position:sticky!important; inset-block-start:0!important; align-self:start!important; height:auto!important; max-height:none!important; min-height:100vh!important; overflow:visible!important; z-index:1; }
+    body.app-layout > .app-sidebar .app-navigation { flex:0 0 auto!important; min-height:auto!important; overflow:visible!important; overscroll-behavior:auto!important; }
+    body.app-layout > .app-sidebar .app-sidebar__footer { margin-top:auto; }
+}

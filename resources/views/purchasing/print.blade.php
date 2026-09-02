@@ -110,7 +110,7 @@
                                 <div class="font-medium text-zinc-900 dark:text-white">{{ app()->getLocale() === 'ar' ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
                                 <div class="text-xs font-mono text-zinc-500">{{ $line->product->sku ?: $line->product->code }}</div>
                             </td>
-                            <td class="px-4 py-2.5 text-end font-mono">{{ number_format((float)$line->quantity_ordered, 2) }}</td>
+                            <td class="px-4 py-2.5 text-end font-mono"><x-product-quantity :value="$line->quantity_ordered" /></td>
                             <td class="px-4 py-2.5 text-end font-mono">{{ number_format((float)$line->unit_cost, 2) }}</td>
                             <td class="px-4 py-2.5 text-end font-mono font-semibold">{{ number_format((float)$line->subtotal, 2) }}</td>
                         </tr>

@@ -44,7 +44,7 @@
     $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp
-<flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:overflow-visible">
+<flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:h-auto lg:max-h-none lg:overflow-visible">
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:tooltip :content="$isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar'" :position="$isArabic ? 'left' : 'right'">

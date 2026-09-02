@@ -33,13 +33,7 @@ final class RecordStockCountLineAction
             foreach ($countedQuantities as $productId => $value) {
                 $product = Product::query()->sellable()->whereKey((int) $productId)->firstOrFail();
                 $quantity = trim((string) $value);
-                if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity)) {
-                    throw new InvalidArgumentException(__('Counted quantity must be a non-negative decimal with up to 6 places.'));
-                }
-                $quantity = bcadd($quantity, '0', 6);
-                if (bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0) {
-                    throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
-                }
+                $quantity = bcadd((string) \App\Support\ProductQuantity::normalize($quantity, 'counted_quantity', true), '0', 6);
                 $line = $count->lines()->where('product_id', $product->id)->lockForUpdate()->first();
                 if ($line === null) {
                     $reference = StockBalance::query()->where('product_id', $product->id)->where('store_id', $count->store_id)->value('on_hand') ?? '0';

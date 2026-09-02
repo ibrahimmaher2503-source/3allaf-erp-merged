@@ -16,6 +16,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
+use App\Support\ProductQuantity;
 
 final class ReturnPartyConsumableAction
 {
@@ -70,8 +71,8 @@ final class ReturnPartyConsumableAction
 
     private function quantity(string $value): string
     {
-        $value = trim($value);
-        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $value) || bccomp($value, '0', 6) <= 0) throw new InvalidArgumentException(__('Party return quantity must be positive.'));
-        return bcadd($value, '0', 6);
+        $value = ProductQuantity::normalize($value);
+        if (bccomp($value, '0', 0) <= 0) throw new InvalidArgumentException(__('Party return quantity must be positive.'));
+        return (string) $value;
     }
 }

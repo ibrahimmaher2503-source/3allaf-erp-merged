@@ -162,7 +162,7 @@ final class UserFlowRegistry
                     ['ar' => 'أنشئ متجر البيع واربطه بالفرع كمتجر بيع فعلي.', 'en' => 'Create the selling store and map it to the branch as an active selling store.'],
                     ['ar' => 'عيّن درجًا نقديًا متاحًا للكاشير ضمن الفرع والمتجر الصحيحين.', 'en' => 'Assign an available cash drawer to the cashier in the correct branch and store.'],
                     ['ar' => 'أضف منتجًا بلغتيه العربية والإنجليزية مع كود أو باركود صالح.', 'en' => 'Add a product with Arabic and English names plus a valid item code or barcode.'],
-                    ['ar' => 'اعتمد سعر البيع قبل عرضه في نقطة البيع. المنتج غير المسعّر غير قابل للبيع.', 'en' => 'Approve the selling price before exposing it in POS. An unpriced product is not sellable.'],
+                    ['ar' => 'احفظ سعر بيع أساسيًا موجبًا في بطاقة المنتج ليصبح متاحًا فورًا في نقطة البيع.', 'en' => 'Save a positive base selling price on the Product Card to make it immediately available in POS.'],
                     ['ar' => 'تحقق من رصيد قابل للبيع في متجر البيع، وليس في متجر أو فرع آخر.', 'en' => 'Verify sellable stock in the selling store, not in another store or branch.'],
                     ['ar' => 'إذا استُخدم عميل اختياري، أنشئه وسجّل الموافقة المطلوبة قبل استخدام بياناته أو ولائه.', 'en' => 'When an optional customer is used, create the customer and record required consent before using personal or loyalty data.'],
                     ['ar' => 'راجع شاشة الجاهزية المالية كمرجع فقط. لا تستخدم صفحة الجاهزية لتنفيذ بيع أو لتجاوز قرار المالك.', 'en' => 'Review the financial readiness screen as reference only. Do not use a readiness page to make a sale or bypass an owner decision.'],

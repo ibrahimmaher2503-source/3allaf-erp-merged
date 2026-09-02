@@ -149,7 +149,13 @@ final class ProductBrowser extends Component
         $simplePrices = $store ? $prices->resolveForStore($simpleIds->all(), $store->id) : collect();
         $simpleStock = $store ? StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $simpleIds)->get()->keyBy('product_id') : collect();
         $familyIds = $products->where('has_variations', true)->pluck('id');
-        $familyRanges = $store ? DB::table('price_lines')->join('products', 'products.id', '=', 'price_lines.product_id')->whereIn('products.parent_product_id', $familyIds)->where('products.status', 'active')->where('price_lines.store_id', $store->id)->whereNotNull('price_lines.active_key')->groupBy('products.parent_product_id')->selectRaw('products.parent_product_id, MIN(price_lines.amount) min_price, MAX(price_lines.amount) max_price')->get()->keyBy('parent_product_id') : collect();
+        $familyVariants = Product::query()->whereIn('parent_product_id', $familyIds)->where('status', 'active')->get(['id', 'parent_product_id']);
+        $variantPrices = $store ? $prices->resolveForStore($familyVariants->pluck('id')->all(), $store->id) : collect();
+        $familyRanges = $familyVariants->groupBy('parent_product_id')->map(function ($variants) use ($variantPrices): ?object {
+            $amounts = $variants->map(fn (Product $variant): mixed => $variantPrices->get($variant->id)?->amount)->filter()->values();
+
+            return $amounts->isEmpty() ? null : (object) ['min_price' => $amounts->sort(fn ($a, $b): int => bccomp((string) $a, (string) $b, 4))->first(), 'max_price' => $amounts->sort(fn ($a, $b): int => bccomp((string) $b, (string) $a, 4))->first()];
+        })->filter();
         $familyStock = $store ? DB::table('stock_balances')->join('products', 'products.id', '=', 'stock_balances.product_id')->whereIn('products.parent_product_id', $familyIds)->where('stock_balances.store_id', $store->id)->whereRaw('(stock_balances.on_hand - stock_balances.reserved) > 0')->pluck('products.parent_product_id')->flip() : collect();
         $familyChildImages = ProductImage::query()->with(['attachment', 'product:id,parent_product_id'])->where('status', 'active')->whereHas('product', fn ($q) => $q->whereIn('parent_product_id', $familyIds)->where('status', 'active'))->orderByRaw("CASE WHEN role = 'main' THEN 0 ELSE 1 END")->orderBy('sort_order')->get()->groupBy(fn (ProductImage $image) => $image->product?->parent_product_id)->map->first();
         $drawer = null;

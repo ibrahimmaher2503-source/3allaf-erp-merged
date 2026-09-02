@@ -11,6 +11,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use App\Support\ProductQuantity;
 
 final class PostInventoryMovement
 {
@@ -35,7 +36,7 @@ final class PostInventoryMovement
     private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative, ?int $reversalOfId): StockMovement
     {
         return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId): StockMovement {
-            $quantity = $this->decimal($quantity);
+            $quantity = (string) ProductQuantity::normalizeSigned($quantity);
 
             $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
@@ -46,15 +47,10 @@ final class PostInventoryMovement
                 throw new InvalidArgumentException(__('Inventory movement quantity cannot be zero.'));
             }
 
-            $product = Product::query()->select(['id', 'fractional_quantity', 'has_variations', 'parent_product_id'])->findOrFail($productId);
+            $product = Product::query()->select(['id', 'has_variations', 'parent_product_id'])->findOrFail($productId);
             if ($product->isFamily()) {
                 throw new InvalidArgumentException(__('A variation family cannot receive an inventory movement. Select a child SKU.'));
             }
-            $isFractional = bccomp(bcmod($quantity, '1', 6), '0', 6) !== 0;
-            if ($isFractional) {
-                throw new InvalidArgumentException(__('This product does not allow fractional quantities.'));
-            }
-
             $balance = StockBalance::query()->where('product_id', $productId)->where('store_id', $storeId)->lockForUpdate()->first();
             if ($balance === null) {
                 $balance = StockBalance::query()->create(['product_id' => $productId, 'store_id' => $storeId, 'on_hand' => 0, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 0, 'total_value' => 0, 'version' => 0]);
@@ -132,7 +128,7 @@ final class PostInventoryMovement
             throw new InvalidArgumentException(__('This idempotency key was already used with a different request payload.'));
         }
 
-        return $this->assertReplaySafe($existing, $productId, $storeId, $this->decimal($quantity), $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId, $reversalOfId);
+        return $this->assertReplaySafe($existing, $productId, $storeId, (string) ProductQuantity::normalizeSigned($quantity), $movementType, $unitCost, $sourceType, $sourceId, $sourceLineId, $reversalOfId);
     }
 
     public function adjustInTransit(int $productId, int $storeId, string $quantity): void
@@ -142,7 +138,7 @@ final class PostInventoryMovement
             $balance = StockBalance::query()->create(['product_id' => $productId, 'store_id' => $storeId, 'on_hand' => 0, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 0, 'total_value' => 0, 'version' => 0]);
             $balance = StockBalance::query()->whereKey($balance->id)->lockForUpdate()->firstOrFail();
         }
-        $newTransit = bcadd($this->decimal($balance->in_transit), $this->decimal($quantity), 6);
+        $newTransit = bcadd((string) ProductQuantity::normalize($balance->in_transit, allowZero: true), (string) ProductQuantity::normalizeSigned($quantity), 0);
         if (bccomp($newTransit, '0', 6) < 0) {
             throw new InvalidArgumentException(__('In-transit stock cannot become negative.'));
         }

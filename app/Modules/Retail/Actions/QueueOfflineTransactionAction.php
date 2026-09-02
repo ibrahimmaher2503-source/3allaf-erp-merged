@@ -107,7 +107,7 @@ final class QueueOfflineTransactionAction
             $priceVersionId = (int) ($line['price_version_id'] ?? 0);
             $quantity = (string) ($line['quantity'] ?? '');
             $unitPrice = (string) ($line['unit_price'] ?? '');
-            if ($productId < 1 || $priceVersionId < 1 || ! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0 || ! preg_match('/^\d+(?:\.\d{1,3})?$/', $unitPrice)) {
+            if ($productId < 1 || $priceVersionId < 1 || ! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0 || ! preg_match('/^\d+(?:\.\d{1,3})?$/', $unitPrice)) {
                 throw new InvalidArgumentException('Offline lines require a standard cached product, price, and positive quantity.');
             }
             $price = PriceLine::query()->where('product_id', $productId)->where('store_id', $device->store_id)->where('price_version_id', $priceVersionId)->first();

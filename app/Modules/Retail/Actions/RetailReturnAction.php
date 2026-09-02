@@ -212,7 +212,7 @@ final class RetailReturnAction
             $saleLine = $sale->lines->firstWhere('id', (int) ($input['sale_line_id'] ?? 0));
             if ($saleLine === null || ($allowed !== null && ! $allowed->has($saleLine->id))) throw ValidationException::withMessages(['lines.'.$index => __('A return line is not eligible from this source.')]);
             $quantity = (string) ($input['quantity'] ?? '0');
-            if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('Enter a valid positive return quantity.')]);
+            if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('Product quantities must be whole numbers.')]);
             $condition = (string) ($input['condition'] ?? 'sellable');
             $disposition = (string) ($input['disposition'] ?? ($condition === 'sellable' ? 'restock' : 'quarantine'));
             if (! in_array($condition, ['sellable', 'non_sellable', 'damaged', 'manager_review'], true) || ! in_array($disposition, ['restock', 'quarantine'], true)) throw ValidationException::withMessages(['lines.'.$index => __('The condition or stock disposition is invalid.')]);
@@ -232,7 +232,7 @@ final class RetailReturnAction
             $product = Product::query()->sellable()->whereKey((int) ($input['product_id'] ?? 0))->first();
             $price = $product === null ? null : app(EffectivePriceResolver::class)->resolve((int) $product->id, $storeId);
             $quantity = (string) ($input['quantity'] ?? '0');
-            if ($product === null || $price === null || ! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) throw ValidationException::withMessages(['exchange_lines.'.$index => __('The replacement product is not currently priced or the quantity is invalid.')]);
+            if ($product === null || $price === null || ! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) throw ValidationException::withMessages(['exchange_lines.'.$index => __('The replacement product is not currently priced or the quantity is invalid.')]);
             $value = bcmul($quantity, (string) $price->amount, 2);
             $exchange->lines()->create(['product_id' => $product->id, 'direction' => 'outbound', 'quantity' => $quantity, 'unit_value' => $price->amount, 'item_code' => $product->item_code, 'name_ar' => $product->name_ar, 'name_en' => $product->name_en]);
             $replacement = bcadd($replacement, $value, 2);

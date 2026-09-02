@@ -49,7 +49,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         abort(403);
     }
     $movementType = trim((string) request()->query('movement_type', ''));
-    abort_unless(in_array($movementType, ['', 'purchase_distribution_in','purchase_distribution_out','purchase_receipt','purchase_receipt_reversal','purchase_return','purchase_return_reversal','sale','sale_reversal','transfer_in','transfer_out'], true), 422);
+    abort_unless($movementType === '' || array_key_exists($movementType, \App\Modules\Inventory\Support\InventoryMovementLabel::options()), 422);
     $stockState = trim((string) request()->query('stock_state', ''));
     abort_unless(in_array($stockState, ['', 'available', 'low', 'out', 'negative'], true), 422);
     $canViewCost = Gate::allows('inventory_stock_card.cost_view');

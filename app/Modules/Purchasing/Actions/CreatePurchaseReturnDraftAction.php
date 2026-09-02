@@ -62,7 +62,7 @@ final class CreatePurchaseReturnDraftAction
             $aggregated = [];
             foreach ($lines as $lineData) {
                 $sourceLineId = (int) ($lineData['purchase_invoice_line_id'] ?? 0);
-                $quantity = $this->decimal($lineData['quantity'] ?? '0');
+                $quantity = bcadd((string) \App\Support\ProductQuantity::normalize($lineData['quantity'] ?? null), '0', 6);
                 if ($this->compare($quantity, '0') <= 0) {
                     throw new InvalidArgumentException(__('Return quantity must be greater than zero.'));
                 }
@@ -187,8 +187,8 @@ final class CreatePurchaseReturnDraftAction
         foreach ($lines as $lineData) {
             $sourceLineId = (int) ($lineData['purchase_invoice_line_id'] ?? 0);
             try {
-                $quantity = $this->decimal($lineData['quantity'] ?? '0');
-            } catch (InvalidArgumentException) {
+                $quantity = bcadd((string) \App\Support\ProductQuantity::normalize($lineData['quantity'] ?? null), '0', 6);
+            } catch (InvalidArgumentException|\Illuminate\Validation\ValidationException) {
                 return false;
             }
 

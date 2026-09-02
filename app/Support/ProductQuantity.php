@@ -12,17 +12,35 @@ final class ProductQuantity
         if ($value === null || $value === '') return '0';
         $raw = trim((string) $value);
         if (! preg_match('/^[+-]?\d+(?:\.\d+)?$/', $raw)) throw new UnexpectedValueException(__('Invalid product quantity data. Please review the source document.'));
-        [$whole, $fraction] = array_pad(explode('.', ltrim($raw, '+'), 2), 2, '');
+        $negative = str_starts_with($raw, '-');
+        [$whole, $fraction] = array_pad(explode('.', ltrim($raw, '+-'), 2), 2, '');
         if ($fraction !== '' && trim($fraction, '0') !== '') throw new UnexpectedValueException(__('A non-integral product quantity was found. Correct the source data before continuing.'));
-        return (string) ((int) $whole);
+        $whole = ltrim($whole, '0');
+        if ($whole === '') return '0';
+        return ($negative ? '-' : '').$whole;
     }
 
     public static function normalize(mixed $value, string $field = 'quantity', bool $allowZero = false): int
     {
-        if (filter_var($value, FILTER_VALIDATE_INT) === false || (!$allowZero && (int) $value < 1) || ($allowZero && (int) $value < 0)) {
+        $raw = trim((string) $value);
+        if (! preg_match('/^\d+$/', $raw) || (!$allowZero && bccomp($raw, '1', 0) < 0) || ($allowZero && bccomp($raw, '0', 0) < 0)) {
             throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
         }
-        return (int) $value;
+        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) throw ValidationException::withMessages([$field => __('Product quantity exceeds the allowed limit.')]);
+        return (int) $raw;
+    }
+
+    public static function normalizeSigned(mixed $value, string $field = 'quantity', bool $allowZero = false): int
+    {
+        $raw = trim((string) $value);
+        if (! preg_match('/^-?\d+$/', $raw) || (! $allowZero && bccomp($raw, '0', 0) === 0)) {
+            throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
+        }
+        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0 || bccomp($raw, (string) PHP_INT_MIN, 0) < 0) {
+            throw ValidationException::withMessages([$field => __('Product quantity exceeds the allowed limit.')]);
+        }
+
+        return (int) $raw;
     }
 
     /** @return array<int|string, string> */

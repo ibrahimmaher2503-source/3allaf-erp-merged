@@ -407,8 +407,8 @@ final class RetailSaleAction
         $resolved = [];
         foreach ($requestedLines as $requested) {
             $quantity = trim((string) ($requested['quantity'] ?? ''));
-            if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0) {
-                throw new InvalidArgumentException(__('Quantity must be greater than zero.'));
+            if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) {
+                throw new InvalidArgumentException(__('Product quantities must be whole numbers.'));
             }
 
             $product = isset($requested['product_id'])
@@ -420,7 +420,7 @@ final class RetailSaleAction
 
             $price = $this->prices->resolve($product->id, $store->id);
             if (! $price instanceof PriceLine) {
-                throw new InvalidArgumentException(__('Product has no approved effective price for this store.'));
+                throw new InvalidArgumentException(__('Product has no positive selling price for this store.'));
             }
 
             $standardPrice = DecimalMoney::normalize((string) $price->amount, 4);

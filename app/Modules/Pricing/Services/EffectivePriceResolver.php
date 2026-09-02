@@ -7,6 +7,8 @@ use App\Modules\Pricing\Models\PriceLine;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Query\JoinClause;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Platform\Models\Store;
 
 final class EffectivePriceResolver
 {
@@ -14,7 +16,7 @@ final class EffectivePriceResolver
     {
         $at ??= now();
 
-        return PriceLine::query()
+        $special = PriceLine::query()
             ->with(['version.priceList', 'product', 'store'])
             ->where('product_id', $productId)
             ->where('store_id', $storeId)
@@ -29,6 +31,15 @@ final class EffectivePriceResolver
             })
             ->orderByDesc('price_version_id')
             ->first();
+        if ($special !== null) return $special;
+
+        $product = Product::query()->sellable()->find($productId);
+        if ($product === null || $product->sale_price === null || bccomp((string) $product->sale_price, '0', 2) <= 0) return null;
+        $store = Store::query()->find($storeId);
+        if ($store === null) return null;
+        $fallback = new PriceLine(['product_id'=>$product->id,'store_id'=>$store->id,'amount'=>(string)$product->sale_price,'reference_amount'=>(string)$product->sale_price,'open_price_allowed'=>(bool)$product->open_price]);
+        $fallback->setRelation('product',$product); $fallback->setRelation('store',$store);
+        return $fallback;
     }
 
     public function isPriced(int $productId, int $storeId, ?Carbon $at = null): bool
@@ -64,7 +75,7 @@ final class EffectivePriceResolver
             ->where(fn ($query) => $query->whereNull('price_versions.effective_to')->orWhere('price_versions.effective_to', '>', $at))
             ->groupBy('price_lines.product_id');
 
-        return PriceLine::query()
+        $resolved = PriceLine::query()
             ->select('price_lines.*')
             ->joinSub($effectiveVersions, 'effective_price_versions', function (JoinClause $join): void {
                 $join->on('effective_price_versions.product_id', '=', 'price_lines.product_id')
@@ -73,5 +84,10 @@ final class EffectivePriceResolver
             ->where('price_lines.store_id', $storeId)
             ->get()
             ->keyBy('product_id');
+        $missing = array_values(array_diff($productIds, $resolved->keys()->map(fn ($id)=>(int)$id)->all()));
+        if ($missing !== []) Product::query()->sellable()->whereKey($missing)->whereNotNull('sale_price')->where('sale_price','>',0)->get()->each(function(Product $product) use ($resolved,$storeId): void {
+            $resolved->put($product->id, new PriceLine(['product_id'=>$product->id,'store_id'=>$storeId,'amount'=>(string)$product->sale_price,'reference_amount'=>(string)$product->sale_price,'open_price_allowed'=>(bool)$product->open_price]));
+        });
+        return $resolved;
     }
 }

@@ -11,6 +11,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
+use App\Support\ProductQuantity;
 
 final class RecordPartyConsumableActualAction
 {
@@ -58,11 +59,11 @@ final class RecordPartyConsumableActualAction
 
     private function quantity(string $value): string
     {
-        $value = trim($value);
-        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $value)) {
+        $value = ProductQuantity::normalize($value);
+        if (bccomp($value, '0', 0) < 0) {
             throw new InvalidArgumentException(__('Actual consumption must be a non-negative quantity.'));
         }
 
-        return bcadd($value, '0', 6);
+        return (string) $value;
     }
 }

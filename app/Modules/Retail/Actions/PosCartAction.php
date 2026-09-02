@@ -30,7 +30,7 @@ final class PosCartAction
             throw new InvalidArgumentException(__('Select an active simple product or a fully resolved variation SKU. Product families cannot be added.'));
         }
         if ($this->prices->resolve($product->id, $store->id) === null) {
-            throw new InvalidArgumentException(__('The selected SKU has no approved effective price for this store.'));
+            throw new InvalidArgumentException(__('The selected SKU has no positive selling price for this store.'));
         }
 
         $cart = collect($request->session()->get('pos.cart', []));
@@ -101,7 +101,7 @@ final class PosCartAction
 
     private function assertQuantity(string $quantity): void
     {
-        if (! preg_match('/^\d+(?:\.\d{1,6})?$/', $quantity) || bccomp($quantity, '0', 6) <= 0 || bccomp($quantity, '999999', 6) > 0) {
+        if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0 || bccomp($quantity, '999999', 0) > 0) {
             throw new InvalidArgumentException(__('Quantity must be greater than zero and within the allowed limit.'));
         }
     }

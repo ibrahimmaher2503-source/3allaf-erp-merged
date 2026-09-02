@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Services;
 
 use InvalidArgumentException;
+use App\Support\ProductQuantity;
 
 final class PurchaseInvoiceCalculator
 {
@@ -14,7 +15,7 @@ final class PurchaseInvoiceCalculator
      */
     public function calculateLine(array $line): array
     {
-        $quantity = $this->decimal($line['quantity'] ?? null, 6, 'Quantity');
+        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 6);
         $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost');
         $discountType = ($line['discount_type'] ?? '') !== '' ? ($line['discount_type'] ?? null) : null;
         $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, 'Discount');

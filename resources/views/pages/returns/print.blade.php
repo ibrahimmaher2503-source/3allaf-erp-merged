@@ -11,7 +11,7 @@
             @foreach($return->lines as $line)
                 <tr>
                     <td>{{ app()->getLocale() === 'ar' ? $line->product?->name_ar : $line->product?->name_en }}<div><small>{{ $line->saleLine?->item_code }}</small></div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="block" /></td>
-                    <td>{{ $line->quantity }}</td><td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td><td>{{ $line->inspection_notes ?: '—' }}</td><td>{{ number_format((float)$line->eligible_value, 2) }}</td>
+                    <td><x-product-quantity :value="$line->quantity" /></td><td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td><td>{{ $line->inspection_notes ?: '—' }}</td><td>{{ number_format((float)$line->eligible_value, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>

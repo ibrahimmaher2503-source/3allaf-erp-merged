@@ -191,7 +191,7 @@ new class extends Component {
         return view('catalog.product-variations', [
             'family' => $family,
             'optionGroups' => ProductOptionGroup::query()->with('values')->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', array_map('intval', $this->selectedGroups)))->orderBy('sort_order')->limit(20)->get(),
-            'priceReady' => DB::table('price_lines')->whereIn('product_id', $variantIds)->whereNotNull('active_key')->pluck('product_id')->flip(),
+            'priceReady' => Product::query()->whereIn('id', $variantIds)->where('sale_price', '>', 0)->pluck('id')->flip(),
             'stockReady' => DB::table('stock_balances')->whereIn('product_id', $variantIds)->whereRaw('(on_hand - reserved) > 0')->pluck('product_id')->flip(),
             'detailVariant' => $this->detailVariantId ? $family->variants->firstWhere('id', $this->detailVariantId) : null,
         ]);
