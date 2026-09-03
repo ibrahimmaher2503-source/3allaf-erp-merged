@@ -12,7 +12,6 @@ return new class extends Migration
             $table->index(['store_id', 'posted_at', 'id'], 'sm_store_posted_id_idx');
         });
         Schema::table('products', function (Blueprint $table): void {
-            $table->index(['status', 'parent_product_id', 'item_code'], 'prod_status_parent_code_idx');
             $table->index(['model_number', 'status'], 'prod_model_status_idx');
         });
         Schema::table('notifications', function (Blueprint $table): void {
@@ -24,7 +23,6 @@ return new class extends Migration
     {
         Schema::table('notifications', fn (Blueprint $table) => $table->dropIndex('notif_owner_read_idx'));
         Schema::table('products', function (Blueprint $table): void {
-            $table->dropIndex('prod_status_parent_code_idx');
             $table->dropIndex('prod_model_status_idx');
         });
         Schema::table('stock_movements', fn (Blueprint $table) => $table->dropIndex('sm_store_posted_id_idx'));

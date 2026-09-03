@@ -135,3 +135,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Profiled 20 authenticated workflows against the exact Hotfix4 source and candidate using the same isolated 10,000-product/100,000-movement MariaDB fixture.
 - Removed shared-render permission/translation/readiness duplication, overview-only inventory aggregates from child pages, the suppliers' 10,000-row response payload, and unbounded pricing-readiness materialization; added bounded index-friendly exact/prefix search.
 - Added four measured reversible indexes. Warm candidate medians remained below 800 ms for standard routes and below 1.5 seconds for Reports; the largest gains were Suppliers (71%) and inventory child pages (40–51%).
+
+## 2026-09-03 — v0.1.22-hotfix5 corrective no-regression follow-up
+
+- Proved that the original product status/parent/code index caused a full active-product index scan and filesort on the shared sellable-product query; removed it while retaining the three beneficial Hotfix5 indexes.
+- Made pricing proposal options, dashboard work and version pagination conditional, reused the unpriced paginator count, and added version-invalidated readiness metadata reuse without caching effective prices.
+- Focused exact-baseline benchmarks now improve Products, Pricing and Unpriced response and SQL medians. Affected tests pass 9/9 with 88 assertions and zero errors.

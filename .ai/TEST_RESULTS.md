@@ -1,5 +1,11 @@
 # Test and Verification Results
 
+## 2026-09-03 — v0.1.22-hotfix5 corrective no-regression pass
+
+- Only Products, Pricing and Unpriced were re-benchmarked against exact Hotfix4 under identical isolated conditions. All three corrected medians, p95 values, query counts and SQL medians improved; see `.ai/evidence/v0.1.22-hotfix5/CORRECTIVE.md`.
+- Affected PHPUnit passed 9 tests / 88 assertions with zero errors, failures or skips after explicitly supplying the translator dependency in the readiness test harness.
+- Four affected PHP/migration files passed syntax. Migrations 000104/000105 report Ran, the harmful product index is absent, and diff checks passed. No broad, visual or PDF checks were repeated.
+
 ## 2026-09-02 — v0.1.22-hotfix5 performance
 
 - Exact-baseline/candidate benchmark covered 20 authenticated routes with one warm-up and five samples each on the same isolated MariaDB fixture; full results and method are in `.ai/evidence/v0.1.22-hotfix5/PERFORMANCE.md`.

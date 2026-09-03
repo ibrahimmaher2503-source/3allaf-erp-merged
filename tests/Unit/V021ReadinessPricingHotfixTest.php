@@ -5,10 +5,24 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Modules\Platform\Support\ProductPricingReadiness;
+use Illuminate\Container\Container;
 use PHPUnit\Framework\TestCase;
 
 final class V021ReadinessPricingHotfixTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Container::getInstance()->instance('translator', new class
+        {
+            public function get(string $key, array $replace = [], ?string $locale = null): string
+            {
+                return $key;
+            }
+        });
+    }
+
     private function source(string $path): string
     {
         return (string) file_get_contents(dirname(__DIR__, 2).'/'.$path);

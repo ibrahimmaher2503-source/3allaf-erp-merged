@@ -9,6 +9,8 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\ProductPriceOverride;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
+
 final class ProductPricingReadiness
 {
     /** @return array<string,mixed> */
@@ -19,6 +21,21 @@ final class ProductPricingReadiness
         if (app()->bound('request') && request()->attributes->has($requestKey)) {
             return request()->attributes->get($requestKey);
         }
+
+        $version = (int) Cache::get('setup-readiness-version', 1);
+        $cacheKey = sprintf('product-pricing-readiness:v%d:c%d:l%s:n%d', $version, $companyId, app()->getLocale(), $displayLimit);
+        $snapshot = Cache::remember($cacheKey, now()->addMinutes(10), fn (): array => $this->buildSnapshot($companyId, $displayLimit));
+
+        if (app()->bound('request')) {
+            request()->attributes->set($requestKey, $snapshot);
+        }
+
+        return $snapshot;
+    }
+
+    /** @return array<string,mixed> */
+    private function buildSnapshot(int $companyId, int $displayLimit): array
+    {
         $products = Product::query()->sellable();
         $invalid = static fn (Builder $query): Builder => $query->where(function (Builder $issues): void {
             $issues->whereNull('sale_price')->orWhere('sale_price', '<=', 0)
@@ -61,7 +78,7 @@ final class ProductPricingReadiness
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', today()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', today()))->count() : 0;
 
-        $snapshot = [
+        return [
             ...$assessment,
             'company_id' => $companyId,
             'base_list_complete' => (bool) $base?->isEffective(),
@@ -71,11 +88,6 @@ final class ProductPricingReadiness
             'manual_override_count' => $overrideCount,
         ];
 
-        if (app()->bound('request')) {
-            request()->attributes->set($requestKey, $snapshot);
-        }
-
-        return $snapshot;
     }
 
     /** @param iterable<int,Product|array<string,mixed>> $products @return array<string,mixed> */

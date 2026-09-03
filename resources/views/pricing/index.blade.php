@@ -16,6 +16,7 @@ use App\Modules\Platform\Support\UiLabel;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -278,8 +279,12 @@ new #[Title('Pricing Workspace')] class extends Component
         }
         abort_unless(in_array($this->perPage, [12, 24, 48], true), 422);
         abort_unless(in_array($this->sort, ['id', 'effective_from', 'approved_at'], true) && in_array($this->direction, ['asc', 'desc'], true), 422);
-        $versions = $query->orderBy($this->sort, $this->direction)->orderBy('id', $this->direction)->paginate($this->perPage);
-        $products = Product::query()->sellable()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id']);
+        $versions = in_array($this->mode, ['workspace', 'versions', 'history'], true)
+            ? $query->orderBy($this->sort, $this->direction)->orderBy('id', $this->direction)->paginate($this->perPage)
+            : new LengthAwarePaginator([], 0, $this->perPage);
+        $products = $this->showProposalForm
+            ? Product::query()->sellable()->orderBy('item_code')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en', 'parent_product_id'])
+            : collect();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
         $unpricedQuery = Product::query()->sellable()->where(fn ($query) => $query->whereNull('sale_price')->orWhere('sale_price', '<=', 0));
         if ($this->search !== '') {
@@ -299,7 +304,9 @@ new #[Title('Pricing Workspace')] class extends Component
             ->with(['lines' => fn ($lines) => $lines->whereIn('store_id', Store::query()->visibleTo($user)->select('id'))->with(['product', 'store'])])
             ->where('price_list_id', $diffVersion->price_list_id)->where('version', '<', $diffVersion->version)->latest('version')->first();
 
-        $dashboard = app(PricingDashboard::class)->for($user, $selectedStoreId);
+        $dashboard = $this->mode === 'workspace'
+            ? app(PricingDashboard::class)->for($user, $selectedStoreId, $unpricedProducts->total())
+            : [];
 
         return view('pricing.index', compact('versions', 'products', 'stores', 'unpricedProducts', 'diffVersion', 'diffPrevious', 'dashboard'));
     }

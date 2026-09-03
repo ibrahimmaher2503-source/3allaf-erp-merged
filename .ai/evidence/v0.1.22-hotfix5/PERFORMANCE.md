@@ -1,5 +1,7 @@
 # v0.1.22-hotfix5 Performance Evidence
 
+> Historical evidence for commit `8c5ccbac20a8382eefc3a5532705c903850890c9`. Its prepared artifact was rejected because Pricing and Unpriced regressed. The authoritative corrective evidence is `CORRECTIVE.md`.
+
 ## Method
 
 - Exact baseline: `1f181b08f3291e4eee71220afb84f5a0702a4220`; candidate: the current Hotfix5 tree.
@@ -38,7 +40,7 @@ Small absolute changes on Customers, Pricing, and Unpriced remained below 340 ms
 - Suppliers embedded up to 10,000 full product rows in every response (about 1.42 MB); link data is now loaded only when the modal is open and capped at 200, reducing the response to about 0.27 MB.
 - Pricing readiness materialized the entire sellable catalog and ran duplicate counts; it now uses one aggregate and one bounded remediation query.
 - Exact/prefix product code, model and barcode paths applied functions or contains matching; exact and prefix branches now preserve index use while multilingual contains search remains bounded and paginated.
-- MariaDB `EXPLAIN` selected all four new indexes and reported `Using index` for the measured projections.
+- MariaDB selected the original product composite index for sellable-product ordering, but corrective `ANALYZE FORMAT=JSON` proved that choice harmful; see `CORRECTIVE.md`.
 
 ## Focused verification
 

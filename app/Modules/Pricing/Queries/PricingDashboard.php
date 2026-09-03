@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 final class PricingDashboard
 {
     /** @return array<string, mixed> */
-    public function for(User $actor, ?int $storeId = null): array
+    public function for(User $actor, ?int $storeId = null, ?int $unpricedProductCount = null): array
     {
         $visibleStores = Store::query()->visibleTo($actor)->select('id');
         $storeIds = Store::query()->visibleTo($actor)
@@ -40,7 +40,7 @@ final class PricingDashboard
                 ->count(),
             'visible_store_count' => (clone $storeIds)->count(),
             'effective_prices' => (clone $effectiveLines)->count(),
-            'unpriced_products' => Product::query()->sellable()
+            'unpriced_products' => $unpricedProductCount ?? Product::query()->sellable()
                 ->where(fn (Builder $query) => $query->whereNull('sale_price')->orWhere('sale_price', '<=', 0))
                 ->count(),
             'pending_approvals' => (clone $visibleVersions)->where('price_versions.state', PriceVersionState::Submitted->value)->count(),
