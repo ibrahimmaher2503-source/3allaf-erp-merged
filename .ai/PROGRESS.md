@@ -164,3 +164,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 
 - Removed confirmed Hotfix7 inventory child-route over-fetching while preserving counting and scoping behavior; balances production-read median improved from 263.9 ms/30 queries to 182.4 ms/18 queries.
 - Corrected the balances filters for one balanced desktop row and stacked no-overflow mobile layout. Evidence is under `.ai/evidence/v0.1.22-hotfix8`.
+
+## 2026-09-03 — v0.1.22-hotfix9 PHP 8.5 view-cache correction
+
+- Replaced the oversized `resources/views/pricing/labels.blade.php` body with seven bounded Blade partials while preserving its form, scanner search, barcode remediation, advanced settings, Alpine state, authorization branches, and Hotfix9 navigation.
+- PHP 8.5.9 `optimize:clear` and `view:cache` passed with task-local file cache/session overrides. Authenticated Arabic and English browser verification passed from isolated `toyjoy_hotfix9_viewcache_verify` with zero console/page errors or overflow.
+- Preserved Hotfix8 performance source, vendor, Livewire compilation, PCRE configuration, `.env`, storage and public-storage boundaries; `storage/storage` was not created. Production was untouched and promotion was not executed.

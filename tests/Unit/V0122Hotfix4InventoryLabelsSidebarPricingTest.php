@@ -21,6 +21,16 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
         \Illuminate\Support\Facades\Facade::setFacadeApplication($container);
     }
     private function source(string $path): string { return (string) file_get_contents(dirname(__DIR__, 2).'/'.$path); }
+    private function labelWorkspaceSource(): string
+    {
+        $source = $this->source('resources/views/pricing/labels.blade.php');
+
+        foreach (glob(dirname(__DIR__, 2).'/resources/views/pricing/labels/*.blade.php') as $partial) {
+            $source .= (string) file_get_contents($partial);
+        }
+
+        return $source;
+    }
 
     public function test_product_quantity_is_central_strict_and_integer_only(): void
     {
@@ -46,15 +56,15 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
 
     public function test_label_workspace_is_bounded_stateful_and_scanner_ready(): void
     {
-        $routes = $this->source('routes/pricing.php'); $view = $this->source('resources/views/pricing/labels.blade.php');
+        $routes = $this->source('routes/pricing.php'); $view = $this->labelWorkspaceSource();
         self::assertStringContainsString("forPage(\$page, 21)", $routes);
         self::assertStringContainsString("\$products = \$prefill === [] ? collect()", $routes);
         self::assertStringContainsString('x-on:input.debounce.350ms', $view);
         self::assertStringContainsString('x-on:keydown.enter.prevent="search(true)"', $view);
-        self::assertStringContainsString("if(exact&&j.data.length===1)this.select", $view);
-        self::assertStringContainsString('if(!this.has(p.id))', $view);
-        self::assertStringContainsString('min="1" max="500" step="1"', $view);
-        self::assertStringContainsString("formaction=\"{{route('pricing.labels.barcodes.store')}}\"", $view);
+        self::assertStringContainsString('if (exact && payload.data.length === 1)', $view);
+        self::assertStringContainsString('if (!this.has(product.id))', $view);
+        self::assertMatchesRegularExpression('/min="1"\s+max="500"\s+step="1"/', $view);
+        self::assertStringContainsString("formaction=\"{{ route('pricing.labels.barcodes.store') }}\"", $view);
     }
 
     public function test_base_consumer_price_is_immediate_fallback_and_unpriced_definition(): void
@@ -70,7 +80,7 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
     public function test_desktop_sidebar_uses_document_scroll_and_mobile_keeps_drawer_scroll(): void
     {
         $css=$this->source('resources/css/app.css'); $layout=$this->source('resources/views/layouts/app/sidebar.blade.php'); $navigation=$this->source('config/navigation.php');
-        self::assertStringContainsString('body.app-layout > .app-sidebar .app-navigation { flex:0 0 auto!important', $css);
+        self::assertStringContainsString('body.app-layout .app-sidebar .app-navigation { flex:0 0 auto!important', $css);
         self::assertStringContainsString('overflow:visible!important', $css);
         self::assertStringContainsString('@media(max-width:1023px)', $css);
         self::assertStringContainsString('overflow-y:auto!important', $css);

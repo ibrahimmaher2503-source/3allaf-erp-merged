@@ -124,3 +124,10 @@
 - Disposable MariaDB database `toyjoy_hotfix9_verify` migrated through `000106`. No Hotfix9 migration exists or was required. Demo seeding stopped on its pre-existing supplier-settlement fixture incompatibility after the canonical production seed had completed; this did not affect the focused authenticated checks.
 - Authenticated Chromium passed Arabic and English desktop sidebars, Arabic mobile drawer, 20-card Setup Center, and Pricing Lists setup context with one retained top pricing summary. Results: zero console/page errors, zero horizontal overflow, no Party/System Settings/duplicate administration/footer-profile navigation, and all five Essentials leaves plus Roles & Permissions present.
 - Isolated route profiling recorded dashboard 89 queries, Pricing Lists setup 76, Initial Setup 72, and inventory balances 13. Hotfix9 adds no query-producing sidebar code; it removes the Party policy/booking readiness reads from source and removes the page-level duplicate pricing-readiness consumer. Inventory route source is unchanged from Hotfix8.
+
+# 2026-09-03 — v0.1.22-hotfix9 view-cache correction
+
+- PHP 8.5.9 `optimize:clear` passed with task-local `CACHE_STORE=file`, `SESSION_DRIVER=file`, and `QUEUE_CONNECTION=sync` overrides; the worktree has no `.env`, and the initial unoverridden attempt failed by defaulting the cache store to unavailable `root@localhost` database credentials.
+- PHP 8.5.9 `view:cache` passed with the same isolated overrides after the pricing-label view was decomposed into seven bounded partials. No vendor, Livewire compiler, PCRE-limit, or environment configuration change was made.
+- Preserved authenticated Chromium artifact covers Arabic RTL and English LTR pricing labels, Pricing Lists and navigation: 20 unique setup leaves, Party deferred, one readiness summary, zero console/page errors and zero horizontal overflow.
+- No automated suite or repeated frontend build was run for this correction. No production/shared runtime or database was accessed, and `storage/storage` remained absent.

@@ -1,18 +1,53 @@
 @php
-$initial=$products->map(function($p)use($restored,$prefill){$s=collect($restored)->first(fn($r)=>(int)($r['product_id']??0)===$p->id)??[];return['id'=>$p->id,'name_ar'=>$p->name_ar,'name_en'=>$p->name_en,'item_code'=>$p->item_code,'model_number'=>$p->model_number,'barcodes'=>$p->barcodes->map(fn($b)=>['id'=>$b->id,'barcode'=>$b->barcode,'is_primary'=>(bool)$b->is_primary])->values(),'copies'=>(int)($s['copies']??($prefill[$p->id]??1)),'barcode_id'=>(int)($s['barcode_id']??$p->barcodes->first()?->id)];})->values();
+    $initial = $products->map(function ($product) use ($restored, $prefill) {
+        $selection = collect($restored)->first(
+            fn ($row) => (int) ($row['product_id'] ?? 0) === $product->id
+        ) ?? [];
+
+        return [
+            'id' => $product->id,
+            'name_ar' => $product->name_ar,
+            'name_en' => $product->name_en,
+            'item_code' => $product->item_code,
+            'model_number' => $product->model_number,
+            'barcodes' => $product->barcodes->map(fn ($barcode) => [
+                'id' => $barcode->id,
+                'barcode' => $barcode->barcode,
+                'is_primary' => (bool) $barcode->is_primary,
+            ])->values(),
+            'copies' => (int) ($selection['copies'] ?? ($prefill[$product->id] ?? 1)),
+            'barcode_id' => (int) ($selection['barcode_id'] ?? $product->barcodes->first()?->id),
+        ];
+    })->values();
 @endphp
-<x-app.page :title="__('Barcode labels')" :description="__('Search for products, select label copies, then preview the real barcode labels.')" :breadcrumbs="__('Products & inventory')" max-width="6xl" class="pricing-screen">
-<x-slot:actions><flux:button href="{{route('pricing.labels')}}" variant="subtle" icon="arrow-path">{{__('Reset')}}</flux:button><flux:button href="{{route('pricing.index')}}" variant="subtle" icon="arrow-left">{{__('Back to pricing')}}</flux:button></x-slot:actions>
-@if($errors->any())<flux:callout variant="danger" icon="exclamation-triangle" title="{{__('Labels could not be prepared')}}"><ul class="list-disc ps-5">@foreach($errors->all() as $error)<li>{{$error}}</li>@endforeach</ul></flux:callout>@endif
-<flux:card class="space-y-5" data-label-workspace x-data="labelWorkspace(@js($initial),@js(route('pricing.labels.search')))" x-init="init()">
-<div><flux:heading size="lg">{{__('Find and select products')}}</flux:heading><flux:subheading>{{__('Nothing is loaded until you search. Selected products and print settings remain while you continue searching.')}}</flux:subheading></div>
-<div><label for="product-search" class="mb-1 block text-sm font-semibold">{{__('Product search')}}</label><div class="flex gap-2"><input id="product-search" x-model="query" x-on:input.debounce.350ms="search()" x-on:keydown.enter.prevent="search(true)" type="search" class="min-h-11 w-full rounded-lg border border-border bg-surface px-3" placeholder="{{__('Arabic/English name, barcode, item code, or model number')}}"><flux:button type="button" x-on:click="search()" icon="magnifying-glass">{{__('Search')}}</flux:button></div><p class="mt-1 text-xs text-text-muted">{{__('Scan a barcode and press Enter to select its exact product immediately.')}}</p></div>
-<div x-show="loading" class="rounded-lg bg-surface-muted p-3">{{__('Searching…')}}</div><div x-show="error" x-text="error" class="rounded-lg bg-red-50 p-3 text-red-800"></div>
-<section x-show="results.length"><h2 class="mb-2 font-semibold">{{__('Search results')}}</h2><div class="divide-y divide-border rounded-xl border border-border"><template x-for="p in results" :key="p.id"><button type="button" class="flex min-h-14 w-full items-center justify-between gap-3 p-3 text-start hover:bg-surface-muted disabled:opacity-50" x-on:click="select(p)" :disabled="has(p.id)"><span class="min-w-0"><strong class="block truncate" x-text="name(p)"></strong><small class="text-text-muted" dir="ltr" x-text="p.item_code+(p.model_number?' · '+p.model_number:'')"></small></span><span class="text-end"><small class="block font-mono" dir="ltr" x-text="primary(p)?.barcode||@js(__('No active barcode'))"></small><span class="text-xs text-primary" x-text="has(p.id)?@js(__('Selected')):@js(__('Select'))"></span></span></button></template></div><flux:button x-show="nextPage" type="button" class="mt-3" variant="subtle" x-on:click="more()">{{__('Load more')}}</flux:button></section>
-<section><div class="mb-2 flex justify-between"><h2 class="font-semibold">{{__('Selected products')}}</h2><flux:badge x-text="selected.length"></flux:badge></div><div x-show="!selected.length" class="rounded-xl border border-dashed border-border p-5 text-center text-text-muted">{{__('Search and select one or more products to prepare labels.')}}</div>
-@if($canCreateLabels)<form method="POST" action="{{route('pricing.labels.preview')}}" class="space-y-4">@csrf<input type="hidden" name="barcode_action" value="manual"><input type="hidden" name="return_search" x-model="query">
-<div class="grid gap-3 lg:grid-cols-2"><template x-for="p in selected" :key="p.id"><article class="rounded-xl border border-border p-4"><input type="hidden" :name="`products[${p.id}][product_id]`" :value="p.id"><input type="hidden" :name="`products[${p.id}][selected]`" value="1"><div class="flex justify-between gap-3"><span class="min-w-0"><strong class="block truncate" x-text="name(p)"></strong><small dir="ltr" class="text-text-muted" x-text="p.item_code+(p.model_number?' · '+p.model_number:'')"></small></span><button type="button" class="min-h-11 text-red-700" x-on:click="remove(p.id)">{{__('Remove')}}</button></div>
-<template x-if="primary(p)"><div class="mt-3 grid grid-cols-2 gap-3"><label>{{__('Barcode')}}<select :name="`products[${p.id}][barcode_id]`" x-model="p.barcode_id" class="mt-1 min-h-11 w-full rounded-lg border border-border bg-surface"><template x-for="b in p.barcodes" :key="b.id"><option :value="b.id" x-text="b.barcode"></option></template></select></label><label>{{__('Label copies')}}<input :name="`products[${p.id}][copies]`" x-model="p.copies" type="number" min="1" max="500" step="1" required class="mt-1 min-h-11 w-full rounded-lg border border-border bg-surface px-3"></label></div></template>
-<template x-if="!primary(p)"><div class="mt-3 rounded-lg bg-amber-50 p-3 text-amber-900"><p class="font-semibold">{{__('This product cannot be printed until it has an active barcode.')}}</p><input type="hidden" :name="`products[${p.id}][barcode_id]`" value=""><input type="hidden" :name="`products[${p.id}][copies]`" :value="p.copies">@if($canManageBarcodes)<label class="mt-2 block">{{__('Manual EAN-13 or Code 128 barcode')}}<input :name="`barcode_values[${p.id}]`" dir="ltr" class="mt-1 min-h-11 w-full rounded-lg border border-amber-300 px-3"></label><div class="mt-2 flex gap-2"><flux:button type="submit" formaction="{{route('pricing.labels.barcodes.store')}}" name="barcode_product_id" x-bind:value="p.id" variant="primary">{{__('Add barcode')}}</flux:button><flux:button type="submit" formaction="{{route('pricing.labels.barcodes.store')}}" name="barcode_product_id" x-bind:value="p.id" x-on:click="$el.form.querySelector('[name=barcode_action]').value='generate'">{{__('Generate local Code 128')}}</flux:button></div>@endif</div></template></article></template></div>
-<div class="rounded-xl border border-border p-4" x-data="{open:false}"><button type="button" class="min-h-11 w-full text-start font-semibold" x-on:click="open=!open">{{__('Advanced print settings')}}</button><div x-show="open" class="mt-3 grid gap-3 md:grid-cols-3"><flux:select name="store_id" :label="__('Selling outlet — optional')"><flux:select.option value="">{{__('Use Product Card price')}}</flux:select.option>@foreach($stores as $s)<flux:select.option value="{{$s->id}}">{{app()->getLocale()==='ar'?$s->name_ar:$s->name_en}}</flux:select.option>@endforeach</flux:select><flux:select name="template_id" :label="__('Label template — optional')"><flux:select.option value="">{{__('Automatic default')}}</flux:select.option>@foreach($templates as $t)<flux:select.option value="{{$t->id}}">{{app()->getLocale()==='ar'?$t->name_ar:$t->name_en}}</flux:select.option>@endforeach</flux:select><flux:select name="printer_id" :label="__('Printer profile — optional')"><flux:select.option value="">{{__('Automatic / browser print')}}</flux:select.option>@foreach($printers as $p)<flux:select.option value="{{$p->id}}">{{$p->name}}</flux:select.option>@endforeach</flux:select></div></div><div class="flex justify-end"><flux:button type="submit" variant="primary" icon="eye" x-bind:disabled="!selected.length">{{__('Preview labels')}}</flux:button></div></form>@endif</section></flux:card></x-app.page>
-<script>function labelWorkspace(initial,endpoint){return{query:'',results:[],selected:initial,nextPage:null,loading:false,error:'',init(){this.selected=this.selected.map(p=>({...p,copies:String(p.copies||1),barcode_id:p.barcode_id||this.primary(p)?.id||''}))},name(p){return document.documentElement.lang.startsWith('ar')?p.name_ar:(p.name_en||p.name_ar)},primary(p){return(p.barcodes||[]).find(b=>b.is_primary)||(p.barcodes||[])[0]},has(id){return this.selected.some(p=>p.id===id)},select(p){if(!this.has(p.id))this.selected.push({...p,copies:'1',barcode_id:this.primary(p)?.id||''})},remove(id){this.selected=this.selected.filter(p=>p.id!==id)},async search(exact=false,page=1,append=false){let q=this.query.trim();if(!q){this.results=[];this.nextPage=null;return}this.loading=true;this.error='';try{let r=await fetch(endpoint+'?q='+encodeURIComponent(q)+'&page='+page+(exact?'&exact=1':''),{headers:{Accept:'application/json'}});if(!r.ok)throw 0;let j=await r.json();this.results=append?[...this.results,...j.data]:j.data;this.nextPage=j.next_page;if(exact&&j.data.length===1)this.select(j.data[0])}catch(e){this.error=@js(__('Product search could not be completed. Try again.'))}finally{this.loading=false}},more(){if(this.nextPage)this.search(false,this.nextPage,true)}}}</script>
+
+<x-app.page
+    :title="__('Barcode labels')"
+    :description="__('Search for products, select label copies, then preview the real barcode labels.')"
+    :breadcrumbs="__('Products & inventory')"
+    max-width="6xl"
+    class="pricing-screen"
+>
+    <x-slot:actions>
+        <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="arrow-path">
+            {{ __('Reset') }}
+        </flux:button>
+        <flux:button href="{{ route('pricing.index') }}" variant="subtle" icon="arrow-left">
+            {{ __('Back to pricing') }}
+        </flux:button>
+    </x-slot:actions>
+
+    @if ($errors->any())
+        <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Labels could not be prepared') }}">
+            <ul class="list-disc ps-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </flux:callout>
+    @endif
+
+    @include('pricing.labels.workspace')
+</x-app.page>
+
+@include('pricing.labels.workspace-script')

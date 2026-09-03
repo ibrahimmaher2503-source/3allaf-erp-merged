@@ -9,6 +9,16 @@ use PHPUnit\Framework\TestCase;
 final class V022Hotfix1PostDeploymentTest extends TestCase
 {
     private function source(string $path):string{return file_get_contents(dirname(__DIR__,2).'/'.$path);}
+    private function labelWorkspaceSource(): string
+    {
+        $source = $this->source('resources/views/pricing/labels.blade.php');
+
+        foreach (glob(dirname(__DIR__, 2).'/resources/views/pricing/labels/*.blade.php') as $partial) {
+            $source .= (string) file_get_contents($partial);
+        }
+
+        return $source;
+    }
 
     public function test_quantity_contract_is_integer_and_diagnostic_is_read_only():void
     {
@@ -28,7 +38,7 @@ final class V022Hotfix1PostDeploymentTest extends TestCase
     {
         self::assertStringContainsString("\$status = \$complete ? 'completed'",$this->source('app/Modules/Platform/Support/InitialSetupStatus.php'));
         $filter=$this->source('resources/views/catalog/product-options.blade.php').$this->source('app/Modules/Catalog/Actions/DeleteProductOptionAction.php');foreach(['products_categories_brands.delete','wire:confirm','archive','replace','RecordAuditEvent'] as $needle)self::assertStringContainsString($needle,$filter);
-        $labels=$this->source('routes/pricing.php').$this->source('resources/views/pricing/labels.blade.php').$this->source('resources/views/pricing/label-print.blade.php');foreach(['name_ar','name_en','item_code','model_number','barcode_id','template_id','printer_id','copies','BarcodeSvgRenderer','show_price','finalPrice'] as $needle)self::assertStringContainsString($needle,$labels);
+        $labels=$this->source('routes/pricing.php').$this->labelWorkspaceSource().$this->source('resources/views/pricing/label-print.blade.php');foreach(['name_ar','name_en','item_code','model_number','barcode_id','template_id','printer_id','copies','BarcodeSvgRenderer','show_price','finalPrice'] as $needle)self::assertStringContainsString($needle,$labels);
         self::assertStringContainsString("0.1.22-hotfix1",$this->source('app/Support/ApplicationVersion.php'));
         $ar=json_decode($this->source('lang/ar.json'),true,512,JSON_THROW_ON_ERROR);foreach(['Cities and localities','Stable code','Legacy — not recorded','Reset filters','PurchaseInvoice','purchase_distribution_in'] as $key)self::assertNotSame($key,$ar[$key]??$key);
     }
