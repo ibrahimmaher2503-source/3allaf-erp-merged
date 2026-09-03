@@ -16,7 +16,6 @@ use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Inventory\Models\OpeningInventoryDocument;
 use App\Modules\Inventory\Models\OpeningInventoryZeroDecision;
-use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
@@ -76,7 +75,6 @@ final class InitialSetupStatus
             ->active()
             ->whereHas('values', fn (Builder $query): Builder => $query->active());
         $customerConsentPolicyRecords = $this->customerConsentPolicyRecords();
-        $partyPolicyRecords = $this->partyPolicyRecords();
         $latestDecisions = $activeCompanyId > 0 && Schema::hasTable('setup_decisions')
             ? SetupDecision::query()->where('company_id', $activeCompanyId)->latest('id')->get()->unique('step_key')->keyBy('step_key')
             : collect();
@@ -96,7 +94,6 @@ final class InitialSetupStatus
             $this->step('brands', Brand::query()->where('status', 'active')->exists(), Brand::query()->count()),
             $this->step('customer-groups', $activeCustomerGroups->exists(), $activeCustomerGroups->count()),
             $this->step('customers', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords),
-            $this->step('party-readiness', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.')),
             $this->step('supplier-groups', $activeSupplierGroups->exists(), $activeSupplierGroups->count()),
             $this->step('suppliers', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.')),
             $this->step('product-options', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count()),
@@ -314,15 +311,4 @@ final class InitialSetupStatus
             ->count();
     }
 
-    private function partyPolicyRecords(): int
-    {
-        return CustomerPolicySettingVersion::query()
-            ->where('key', 'like', 'party.%')
-            ->orderBy('key')
-            ->orderByDesc('version')
-            ->get(['key', 'value'])
-            ->unique('key')
-            ->filter(static fn (CustomerPolicySettingVersion $setting): bool => trim((string) $setting->value) !== '')
-            ->count();
-    }
 }

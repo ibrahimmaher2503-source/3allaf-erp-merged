@@ -1,8 +1,8 @@
-# Current Task — v0.1.22-hotfix8 Performance/UI Correction
+# Current Task — v0.1.22-hotfix9 Navigation Cleanup
 
 **Date:** 2026-09-03
-**Baseline:** exact clean Hotfix6 commit `c607a30f82dd30a5a889b526882c141ad874b783`
-**Branch:** `hotfix/v0.1.22-hotfix7-inventory-counting-ux`
-**Status:** Implementation and focused verification complete; immutable release preparation follows the single Hotfix8 commit.
+**Baseline:** exact deployed Hotfix8 commit `90180c270f2ba2425877fe095c7a1c82c049989f`
+**Branch:** `hotfix/v0.1.22-hotfix9-navigation-cleanup`
+**Status:** Implementation and focused verification complete; immutable release preparation and unexecuted promotion script follow the Hotfix9 commit.
 
-Hotfix8 preserves Hotfix7 and removes route-inappropriate inventory queries/eager loads, reuses paginator totals, adds complete profiler metrics, and corrects the bilingual balances filter layout. Production access was read-only; isolated verification used `toyjoy_hotfix8_verify` and local Chromium.
+Hotfix9 removes duplicated sidebar/profile and pricing presentation, keeps canonical Basic Data navigation, and centrally defers Party navigation/setup readiness while preserving routes, permissions, data, and functionality. The active setup workflow contains 20 steps. Production is not authorized for mutation or deployment.

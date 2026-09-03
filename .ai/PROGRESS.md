@@ -1,5 +1,11 @@
 # UI/UX Release Progress
 
+## 2026-09-03 — v0.1.22-hotfix9 navigation cleanup
+
+- Removed the duplicated sidebar user/status footer, standalone System Settings link, three upper administration duplicates, the Party navigation group, and the second Pricing Lists readiness summary while preserving their underlying routes and behavior.
+- Retained canonical Basic Data → Essentials destinations and Roles & Permissions. The canonical setup registry preserves `party-readiness` as disabled and exposes 20 active steps; readiness, adjacent navigation, numbering, and sidebar leaves exclude it.
+- Focused source tests, syntax, Blade, locale JSON, Node 20 Vite build, isolated MariaDB route profiling, and authenticated Arabic/English desktop plus Arabic mobile browser checks passed without production/shared access.
+
 ## 2026-09-01 — v0.1.22-hotfix1 post-deployment correction
 
 - Completed the owner-listed Arabic/raw-enum, Setup semantics, Product Filter deletion, balance reset, whole-unit quantity, Barcode Label, Product Card pricing, barcode graphics, printer sizing/template, Purchase Invoice card and version corrections.

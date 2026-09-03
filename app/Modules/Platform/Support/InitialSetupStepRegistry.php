@@ -6,7 +6,7 @@ namespace App\Modules\Platform\Support;
 
 final class InitialSetupStepRegistry
 {
-    /** @return array<string, array{label:string,description:string,route:string,permission:string,parameters:array<string,string>,destination_key:string,required:bool}> */
+    /** @return array<string, array{label:string,description:string,route:string,permission:string,parameters:array<string,string>,destination_key:string,required:bool,enabled:bool}> */
     public static function steps(): array
     {
         return [
@@ -24,7 +24,7 @@ final class InitialSetupStepRegistry
             'brands' => self::step('Brand masters', 'Brand masters are optional. Create active brands only where the catalog needs branded products.', 'catalog.brands', 'products_categories_brands.view', required: false),
             'customer-groups' => self::step('Customer groups', 'Maintain the persisted customer-group hierarchy before customer registration.', 'customers.groups.index', 'customers.view'),
             'customers' => self::step('Customers', 'Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.', 'customers.index', 'customers.view', required: false),
-            'party-readiness' => self::step('Party readiness and policies', 'Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.', 'party.readiness', 'party_bookings_invoices.view', required: false),
+            'party-readiness' => self::step('Party readiness and policies', 'Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.', 'party.readiness', 'party_bookings_invoices.view', required: false, enabled: false),
             'supplier-groups' => self::step('Supplier groups', 'Maintain the persisted supplier-group hierarchy before supplier registration.', 'catalog.suppliers', 'suppliers.view', ['section' => 'supplier-groups'], 'supplier-groups'),
             'suppliers' => self::step('Suppliers', 'Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.', 'suppliers.index', 'suppliers.view', ['section' => 'supplier-masters'], 'supplier-masters'),
             'product-options' => self::step('Product Filters', 'Configure reusable product filters, such as sizes and colours, before building products with variations.', 'catalog.product-options', 'products_categories_brands.view', required: false),
@@ -37,16 +37,29 @@ final class InitialSetupStepRegistry
     /** @return array<string, list<string>> */
     public static function groups(): array
     {
-        return [
+        $groups = [
             'basics' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes'],
             'settings' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates'],
             'operations' => ['categories', 'brands', 'customer-groups', 'customers', 'party-readiness', 'supplier-groups', 'suppliers', 'product-options', 'product-masters', 'prices', 'opening-configuration'],
         ];
+
+        $steps = self::steps();
+
+        return array_map(
+            static fn (array $keys): array => array_values(array_filter($keys, static fn (string $key): bool => $steps[$key]['enabled'])),
+            $groups,
+        );
     }
 
-    /** @param array<string,string> $parameters @return array{label:string,description:string,route:string,permission:string,parameters:array<string,string>,destination_key:string,required:bool} */
-    private static function step(string $label, string $description, string $route, string $permission, array $parameters = [], ?string $destinationKey = null, bool $required = true): array
+    /** @return array<string, array{label:string,description:string,route:string,permission:string,parameters:array<string,string>,destination_key:string,required:bool,enabled:bool}> */
+    public static function activeSteps(): array
     {
-        return compact('label', 'description', 'route', 'permission', 'parameters') + ['destination_key' => $destinationKey ?? '', 'required' => $required];
+        return array_filter(self::steps(), static fn (array $step): bool => $step['enabled']);
+    }
+
+    /** @param array<string,string> $parameters @return array{label:string,description:string,route:string,permission:string,parameters:array<string,string>,destination_key:string,required:bool,enabled:bool} */
+    private static function step(string $label, string $description, string $route, string $permission, array $parameters = [], ?string $destinationKey = null, bool $required = true, bool $enabled = true): array
+    {
+        return compact('label', 'description', 'route', 'permission', 'parameters', 'enabled') + ['destination_key' => $destinationKey ?? '', 'required' => $required];
     }
 }

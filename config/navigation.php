@@ -32,7 +32,7 @@ return [
         ['route' => 'pricing.lists', 'permission' => 'pricing_lists.view', 'icon' => 'banknotes', 'label' => ['ar' => 'قوائم الأسعار', 'en' => 'Pricing Lists']],
         ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'scale', 'label' => ['ar' => 'اعتمادات الأسعار', 'en' => 'Price approvals']],
     ]],
-    ['key' => 'parties', 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
+    ['key' => 'parties', 'enabled' => false, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
         ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],
         ['route' => 'parties.calendar', 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'التقويم والأجندة', 'en' => 'Calendar & agenda']],
         ['route' => 'parties.invoices.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير ومدفوعات الحفلات', 'en' => 'Party invoices & payments']],
@@ -57,12 +57,8 @@ return [
     ]],
     ['key' => 'administration', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'الإدارة والإعدادات', 'en' => 'Administration & settings'], 'items' => [
         ['route' => 'admin.overview', 'permission' => 'company_settings.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
-        ['route' => 'admin.branches', 'permission' => 'branches_stores.view', 'icon' => 'building-office', 'label' => ['ar' => 'الشركة والفروع ومنافذ البيع', 'en' => 'Company, branches & Sales Outlets']],
-        ['route' => 'admin.stores', 'permission' => 'branches_stores.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'المخازن ومنافذ البيع', 'en' => 'Warehouses & Sales Outlets']],
-        ['route' => 'admin.authorization-baseline', 'permission' => 'users_roles_permissions.view', 'icon' => 'users', 'label' => ['ar' => 'المستخدمون والأدوار', 'en' => 'Users & roles']],
         ['route' => 'admin.roles', 'permission' => 'users_roles_permissions.view', 'icon' => 'shield-check', 'label' => ['ar' => 'الأدوار والصلاحيات', 'en' => 'Roles & permissions']],
         ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],
-        ['route' => 'admin.settings', 'permission' => 'company_settings.view', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'إعدادات النظام', 'en' => 'System settings']],
         ['route' => 'admin.audit', 'permission' => 'audit_logs.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
         ['route' => 'admin.approvals', 'permission' => 'company_settings.view', 'icon' => 'check-badge', 'label' => ['ar' => 'صندوق الاعتمادات', 'en' => 'Approval inbox']],
     ]],

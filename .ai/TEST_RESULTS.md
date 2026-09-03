@@ -116,3 +116,11 @@
 - Focused correction test passed 9 tests / 143 assertions with zero failures.
 - Authenticated isolated-browser verification passed 3 real-route PDFs and 11 Arabic desktop/mobile route cases. Raster decoding passed 3/3 Code 128 copies and 1/1 thermal plus 1/1 A4 EAN-13 copies; all generated pages were rasterized. Zero console errors and zero horizontal document overflow were recorded.
 - Disposable MariaDB `rajeh_hotfix3_verify` reports all 97 migrations ran. PHP syntax, Blade compilation, Arabic/English JSON, and diff checks passed once. No broad suite or repeat Vite build ran.
+# 2026-09-03 — v0.1.22-hotfix9 focused verification
+
+- PHPUnit: 12 tests, 78 assertions passed across Hotfix9 navigation cleanup plus Hotfix6/Hotfix7 preservation contracts.
+- PHP syntax passed for every changed PHP/config/Blade/test file; Blade cache compilation passed; Arabic and English locale JSON parsed successfully; `git diff --check` passed.
+- Vite 8.2.0 production build passed with Node 20; `public/build/manifest.json` SHA-256: `b0d6e69cb067407c8ecc07e72eed30f06fb88a4050a3bd55f4f526c5c20606df`. The host-default Node 16 attempt failed before asset emission because Vite 8 requires a newer Node runtime.
+- Disposable MariaDB database `toyjoy_hotfix9_verify` migrated through `000106`. No Hotfix9 migration exists or was required. Demo seeding stopped on its pre-existing supplier-settlement fixture incompatibility after the canonical production seed had completed; this did not affect the focused authenticated checks.
+- Authenticated Chromium passed Arabic and English desktop sidebars, Arabic mobile drawer, 20-card Setup Center, and Pricing Lists setup context with one retained top pricing summary. Results: zero console/page errors, zero horizontal overflow, no Party/System Settings/duplicate administration/footer-profile navigation, and all five Essentials leaves plus Roles & Permissions present.
+- Isolated route profiling recorded dashboard 89 queries, Pricing Lists setup 76, Initial Setup 72, and inventory balances 13. Hotfix9 adds no query-producing sidebar code; it removes the Party policy/booking readiness reads from source and removes the page-level duplicate pricing-readiness consumer. Inventory route source is unchanged from Hotfix8.

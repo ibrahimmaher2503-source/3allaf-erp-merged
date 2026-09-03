@@ -23,9 +23,9 @@ final class V0122Hotfix6AdminNavigationLocalizationTest extends TestCase
         self::assertSame(['basics', 'settings', 'operations'], array_keys($groups));
         self::assertCount(5, $groups['basics']);
         self::assertCount(5, $groups['settings']);
-        self::assertCount(11, $groups['operations']);
-        self::assertCount(21, $keys);
-        self::assertCount(21, array_unique($keys));
+        self::assertCount(10, $groups['operations']);
+        self::assertCount(20, $keys);
+        self::assertCount(20, array_unique($keys));
         self::assertContains('company', $groups['basics']);
     }
 
@@ -35,6 +35,7 @@ final class V0122Hotfix6AdminNavigationLocalizationTest extends TestCase
         $view = $this->source('resources/views/components/app-navigation.blade.php');
 
         self::assertCount(21, InitialSetupStepRegistry::steps());
+        self::assertCount(20, InitialSetupStepRegistry::activeSteps());
         self::assertStringNotContainsString('InitialSetupStatus::class)->snapshot()', $navigation);
         self::assertStringContainsString('$user->is_super_admin ? null : app(RequestPermissionLookup::class)->for($user)', $navigation);
         self::assertStringContainsString('InitialSetupStepRegistry::groups()', $navigation);
@@ -72,6 +73,6 @@ final class V0122Hotfix6AdminNavigationLocalizationTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/مستودع|المستودعات/u', $arabic);
         self::assertStringContainsString('إضافة مخزن / منفذ بيع', $arabic);
         self::assertStringContainsString('Add Warehouse / Point of Sale', $english);
-        self::assertStringContainsString("0.1.22-hotfix6", $this->source('app/Support/ApplicationVersion.php'));
+        self::assertStringContainsString("0.1.22-hotfix9", $this->source('app/Support/ApplicationVersion.php'));
     }
 }

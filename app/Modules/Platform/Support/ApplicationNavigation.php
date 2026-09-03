@@ -43,6 +43,7 @@ final class ApplicationNavigation
     public function for(User $user, string $locale): array
     {
         return collect(config('navigation', []))
+            ->filter(static fn (array $group): bool => $group['enabled'] ?? true)
             ->map(function (array $group) use ($user, $locale): array {
                 $group['label'] = $group['label'][$locale] ?? $group['label']['en'];
                 $group['items'] = collect($group['items'])
@@ -72,7 +73,7 @@ final class ApplicationNavigation
     /** @param array<string,mixed> $item @return array<string,mixed> */
     private function withSetupSteps(array $item, User $user): array
     {
-        $steps = collect(InitialSetupStepRegistry::steps());
+        $steps = collect(InitialSetupStepRegistry::activeSteps());
         $permissions = $user->is_super_admin ? null : app(RequestPermissionLookup::class)->for($user);
         $labels = ['basics' => __('Essentials'), 'settings' => __('Settings'), 'operations' => __('Operational Readiness')];
         $icons = ['basics' => 'building-office', 'settings' => 'cog-6-tooth', 'operations' => 'check-circle'];

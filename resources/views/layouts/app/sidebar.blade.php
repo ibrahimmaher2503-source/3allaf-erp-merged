@@ -69,7 +69,6 @@
     </flux:sidebar.header>
     <div class="app-company-context" title="{{ $companyName }}"><span class="app-company-context__dot" aria-hidden="true"></span><span class="min-w-0"><strong>{{ $companyName }}</strong><small>{{ $contextName ?: ($isArabic ? 'كل المواقع المصرح بها' : 'All authorized locations') }}</small></span></div>
     <x-app-navigation id="application-navigation" :groups="$navigationGroups" />
-    <div class="app-sidebar__footer"><div class="sidebar-status"><div x-data="{ online: navigator.onLine }" x-on:online.window="online = true" x-on:offline.window="online = false" class="flex items-center gap-2"><span class="size-2 rounded-full" :class="online ? 'bg-emerald-400' : 'bg-amber-400'"></span><span data-status-label x-text="online ? '{{ $isArabic ? 'متصل' : 'Online' }}' : '{{ $isArabic ? 'غير متصل' : 'Offline' }}'"></span></div></div><x-desktop-user-menu class="hidden lg:block" :name="$actor->name" /></div>
 </flux:sidebar>
 <div class="app-layout__content min-w-0">
     <header class="app-topbar" aria-label="{{ $isArabic ? 'شريط التطبيق' : 'Application header' }}">

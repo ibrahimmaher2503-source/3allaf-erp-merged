@@ -5,7 +5,7 @@
     $affected = collect($readiness['affected_products'] ?? []);
 @endphp
 
-<section {{ $attributes->class(['rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 sm:p-4', 'text-sm' => $compact]) }} aria-label="{{ __('Product and pricing readiness') }}">
+<section {{ $attributes->class(['rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 sm:p-4', 'text-sm' => $compact]) }} aria-label="{{ __('Product and pricing readiness') }}" data-pricing-readiness>
     @if ($showCounts)
         <div class="grid gap-2 sm:grid-cols-3">
             <div><span class="block text-xs text-text-muted">{{ __('Inherited prices') }}</span><strong dir="ltr">{{ $readiness['inherited_count'] }}</strong></div>
