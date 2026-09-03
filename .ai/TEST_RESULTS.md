@@ -1,5 +1,11 @@
 # Test and Verification Results
 
+## 2026-09-03 — v0.1.22-hotfix8 focused pass
+
+- Hotfix7 regression contract passed 5 tests / 26 assertions after updating only its release-version assertion. A combined historical Hotfix4/Hotfix7 run passed 9/10; the sole failure is the documented obsolete Hotfix4 sidebar CSS source-string expectation.
+- PHP syntax, Blade compilation, Arabic/English JSON, Vite 8.2.0 production build, diff hygiene, and authenticated Arabic/English desktop plus Arabic 390px balances checks passed. Browser console errors and horizontal overflow were zero.
+- Disposable MariaDB `toyjoy_hotfix8_verify` applied migrations through 000106. No Hotfix8 migration or index was added.
+
 ## 2026-09-03 — v0.1.22-hotfix7 focused pass
 
 - Hotfix7 PHPUnit passed 5 tests / 26 assertions. PHP syntax, Blade compilation, both locale JSON files, focused routes, diff hygiene and the Node 20 Vite production build passed.

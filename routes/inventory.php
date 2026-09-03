@@ -40,6 +40,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 $router = app('router');
 $renderInventory = static function (?int $productId = null, ?string $focus = null, ?StockTransfer $transfer = null, ?InventoryAdjustment $adjustment = null, ?StockCount $count = null) {
@@ -59,6 +60,10 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $includeZero = request()->boolean('include_zero');
     abort_unless(in_array($stockState, ['', 'available', 'low', 'out', 'negative'], true), 422);
     $canViewCost = Gate::allows('inventory_stock_card.cost_view');
+    $showBalances = in_array($focus, [null, 'balances', 'stock-card'], true);
+    $showMovements = $focus !== 'balances';
+    $showTransfers = $focus === null || str_starts_with((string) $focus, 'transfer');
+    $showCountWorkspace = $focus === null || str_starts_with((string) $focus, 'count') || str_starts_with((string) $focus, 'adjustment');
     $balancesQuery = StockBalance::query()->with(['product.barcodes', 'store.branch'])->whereIn('store_id', $visibleStoreIds)->orderBy('store_id')->orderBy('product_id');
     $movementsQuery = StockMovement::query()->with(['product', 'store.branch', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
     if(!$includeZero)$balancesQuery->where(fn($q)=>$q->where('on_hand','!=',0)->orWhere('reserved','!=',0)->orWhere('in_transit','!=',0));
@@ -115,31 +120,46 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         'stock_distribution' => StockBalance::query()->join('stores', 'stores.id', '=', 'stock_balances.store_id')->whereIn('stock_balances.store_id', $visibleStoreIds)->select(['stores.id', 'stores.code', 'stores.name_ar', 'stores.name_en'])->selectRaw('SUM(stock_balances.on_hand) as on_hand')->groupBy('stores.id', 'stores.code', 'stores.name_ar', 'stores.name_en')->orderByDesc('on_hand')->limit(6)->get(),
         'top_moving_products' => StockMovement::query()->join('products', 'products.id', '=', 'stock_movements.product_id')->whereIn('stock_movements.store_id', $visibleStoreIds)->where('posted_at', '>=', now()->subDays(7))->select(['products.id', 'products.item_code', 'products.name_ar', 'products.name_en'])->selectRaw('SUM(ABS(stock_movements.quantity)) as moved_quantity')->groupBy('products.id', 'products.item_code', 'products.name_ar', 'products.name_en')->orderByDesc('moved_quantity')->limit(6)->get(),
     ] : [];
-    $balances = $balancesQuery->paginate(25, ['*'], 'balance_page')->withQueryString();
-    $movements = $movementsQuery->paginate(50, ['*'], 'movement_page')->withQueryString();
-    $transfers = StockTransfer::query()->with(['sourceStore', 'destinationStore', 'lines.product'])->where(function ($query) use ($visibleStoreIds): void {
+    $transferQuery = StockTransfer::query()->where(function ($query) use ($visibleStoreIds): void {
         $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
-    })->latest('id')->limit(20)->get();
-    $transferApprovals = ApprovalRecord::query()
+    });
+    $adjustmentQuery = InventoryAdjustment::query()->whereIn('store_id', $visibleStoreIds);
+    $countQuery = StockCount::query()->where(function ($query) use ($visibleStoreIds): void {
+        $query->whereIn('store_id', $visibleStoreIds)->orWhereHas('locations', fn ($locations) => $locations->whereIn('store_id', $visibleStoreIds));
+    });
+    $inventorySummary = [
+        'transfers' => (clone $transferQuery)->count(),
+        'adjustments' => (clone $adjustmentQuery)->count(),
+        'counts' => (clone $countQuery)->count(),
+    ];
+    $balanceTotal = $showBalances ? null : (clone $balancesQuery)->count();
+    $movementTotal = $showMovements ? null : (clone $movementsQuery)->count();
+    $balances = $showBalances ? $balancesQuery->paginate(25, ['*'], 'balance_page')->withQueryString() : new LengthAwarePaginator([], $balanceTotal, 25);
+    $movements = $showMovements ? $movementsQuery->paginate(50, ['*'], 'movement_page')->withQueryString() : new LengthAwarePaginator([], $movementTotal, 50);
+    $inventorySummary['balances'] = $balances->total();
+    $inventorySummary['movements'] = $movements->total();
+    $transfers = $showTransfers ? (clone $transferQuery)->with(['sourceStore', 'destinationStore', 'lines.product'])->latest('id')->limit(20)->get() : collect();
+    $transferApprovals = $showTransfers ? ApprovalRecord::query()
         ->where('source_type', 'stock_transfers')
         ->whereIn('source_id', $transfers->pluck('id')->map(fn (int $id): string => (string) $id))
         ->latest('requested_at')
         ->limit(50)->get()
         ->unique('source_id')
-        ->keyBy('source_id');
-    $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
-    $counts = StockCount::query()->with(['store','locations.store','members.user','lines.product'])->where(function($query)use($visibleStoreIds){$query->whereIn('store_id',$visibleStoreIds)->orWhereHas('locations',fn($q)=>$q->whereIn('store_id',$visibleStoreIds));})->latest('id')->limit(20)->get();
-    $products = Product::query()->sellable()->select(['id', 'item_code', 'name_en', 'name_ar', 'fractional_quantity', 'parent_product_id'])->when($search !== '', static function ($query) use ($search): void {
+        ->keyBy('source_id') : collect();
+    $adjustments = $showCountWorkspace ? (clone $adjustmentQuery)->with(['store', 'lines.product'])->latest('id')->limit(20)->get() : collect();
+    $counts = $showCountWorkspace ? (clone $countQuery)->with(['store', 'lines:id,stock_count_id,is_counted'])->latest('id')->limit(20)->get() : collect();
+    $needsProductOptions = str_starts_with((string) $focus, 'transfer') || str_starts_with((string) $focus, 'adjustment');
+    $products = $needsProductOptions ? Product::query()->sellable()->select(['id', 'item_code', 'name_en', 'name_ar', 'fractional_quantity', 'parent_product_id'])->when($search !== '', static function ($query) use ($search): void {
         $like = '%'.addcslashes($search, '%_\\').'%';
         $query->where(static function ($nested) use ($like): void {
             $nested->where('item_code', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('name_ar', 'like', $like);
         });
-    })->when(in_array($focus,['count-create','count-entry','count-reconcile'],true),fn($query)=>$query->whereRaw('1 = 0'))->orderBy('item_code')->limit(200)->get();
-    $countAssignees = User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit') || $candidate->hasPermission('stock_counts.close'))->values();
-    $countCategories = Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']);
-    $countSuppliers = Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']);
+    })->orderBy('item_code')->limit(200)->get() : collect();
+    $countAssignees = $focus === 'count-create' ? User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit') || $candidate->hasPermission('stock_counts.close'))->values() : collect();
+    $countCategories = $focus === 'count-create' ? Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
+    $countSuppliers = $focus === 'count-create' ? Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost'));
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost'));
 };
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {

@@ -153,3 +153,8 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added authorized store navigation, centralized localized human-name-first rendering, bounded balance/product lookup, improved store filters, and name-first exports.
 - Extended stock counts additively with immutable location snapshots, teams/assignments, append-only idempotent contributions and corrections, explicit zero/completion, transfer locks, cutoff-aware reconciliation, per-location adjustments, permissions, audit events and bilingual reporting.
 - Focused verification used disposable MariaDB and local Chromium only; evidence is under `.ai/evidence/v0.1.22-hotfix7`.
+
+## 2026-09-03 — v0.1.22-hotfix8 performance/UI
+
+- Removed confirmed Hotfix7 inventory child-route over-fetching while preserving counting and scoping behavior; balances production-read median improved from 263.9 ms/30 queries to 182.4 ms/18 queries.
+- Corrected the balances filters for one balanced desktop row and stacked no-overflow mobile layout. Evidence is under `.ai/evidence/v0.1.22-hotfix8`.

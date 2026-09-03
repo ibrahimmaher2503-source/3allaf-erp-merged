@@ -12,13 +12,24 @@ use Illuminate\Support\Facades\DB;
 $basePath = rtrim((string) (getenv('BENCHMARK_BASE_PATH') ?: dirname(__DIR__)), '/');
 require $basePath.'/vendor/autoload.php';
 
+$environmentPath = (string) (getenv('BENCHMARK_ENV_PATH') ?: '');
+if ($environmentPath !== '') {
+    Dotenv\Dotenv::createImmutable(dirname($environmentPath), basename($environmentPath))->safeLoad();
+}
+
 $app = require $basePath.'/bootstrap/app.php';
 $kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 $path = (string) ($argv[1] ?? '/dashboard');
 $locale = (string) ($argv[2] ?? 'ar');
-$user = User::query()->where('username', 'admin')->firstOrFail();
+$userId = filter_var(getenv('BENCHMARK_USER_ID'), FILTER_VALIDATE_INT);
+$user = User::query()
+    ->when($userId !== false, fn ($query) => $query->whereKey($userId))
+    ->when($userId === false, fn ($query) => $query
+        ->where('status', 'active')
+        ->where('is_super_admin', true))
+    ->firstOrFail();
 
 $request = Request::create($path, 'GET', [], ['locale' => $locale]);
 $request->headers->set('Accept', 'text/html');
@@ -31,6 +42,7 @@ DB::listen(static function (QueryExecuted $query) use (&$queries): void {
 });
 
 $started = hrtime(true);
+$memoryBefore = memory_get_usage(true);
 $response = $kernel->handle($request);
 $elapsedMs = (hrtime(true) - $started) / 1_000_000;
 $kernel->terminate($request, $response);
@@ -54,6 +66,7 @@ echo json_encode([
     'query_count' => count($queries),
     'sql_ms' => round(array_sum(array_column($queries, 'time_ms')), 3),
     'response_bytes' => strlen((string) $response->getContent()),
+    'peak_memory_mb' => round((memory_get_peak_usage(true) - $memoryBefore) / 1_048_576, 3),
     'error' => $response->getStatusCode() >= 500 ? substr(strip_tags((string) $response->getContent()), 0, 500) : null,
     'slowest_queries' => array_slice($queries, 0, 5),
     'duplicate_queries' => array_slice($duplicates, 0, 10, true),

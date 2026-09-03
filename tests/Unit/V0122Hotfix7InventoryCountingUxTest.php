@@ -24,6 +24,6 @@ final class V0122Hotfix7InventoryCountingUxTest extends TestCase
   foreach(['CreateStockTransferDraftAction','UpdateStockTransferDraftAction','SubmitStockTransferAction','ApproveStockTransferAction','DispatchStockTransferAction','ReceiveStockTransferAction'] as $class)self::assertStringContainsString('AssertNoOpenStockCountTransfer',$this->source("app/Modules/Inventory/Actions/{$class}.php"));
  }
  public function test_human_names_navigation_and_bounded_search_are_present():void{
-  self::assertStringContainsString('Warehouses & Sales Outlets',$this->source('config/navigation.php'));self::assertStringContainsString('HumanName::name',$this->source('resources/views/inventory/index.blade.php'));self::assertStringContainsString("limit(20)",$this->source('routes/inventory.php'));self::assertStringContainsString("0.1.22-hotfix7",$this->source('app/Support/ApplicationVersion.php'));
+  self::assertStringContainsString('Warehouses & Sales Outlets',$this->source('config/navigation.php'));self::assertStringContainsString('HumanName::name',$this->source('resources/views/inventory/index.blade.php'));self::assertStringContainsString("limit(20)",$this->source('routes/inventory.php'));self::assertStringContainsString("0.1.22-hotfix8",$this->source('app/Support/ApplicationVersion.php'));
  }
 }
