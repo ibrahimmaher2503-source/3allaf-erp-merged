@@ -46,21 +46,70 @@ final class ApplicationNavigation
                 $group['label'] = $group['label'][$locale] ?? $group['label']['en'];
                 $group['items'] = collect($group['items'])
                     ->filter(fn (array $item): bool => Route::has($item['route']) && $user->can($item['permission']))
-                    ->map(function (array $item) use ($locale): array {
+                    ->map(function (array $item) use ($locale, $user): array {
                         $item['label'] = $item['label'][$locale] ?? $item['label']['en'];
                         $item['url'] = route($item['route'], $item['parameters'] ?? []);
                         $activeRoutes = $item['active_routes'] ?? self::ACTIVE_ROUTES[$item['route']] ?? [$item['route']];
                         $item['active'] = request()->routeIs(...$activeRoutes)
                             && collect($item['parameters'] ?? [])->every(fn (mixed $value, string $key): bool => (string) request($key, request()->route($key)) === (string) $value);
 
+                        if ($item['route'] === 'initial-setup') {
+                            $item = $this->withSetupSteps($item, $user);
+                        }
+
                         return $item;
                     })->values()->all();
 
-                $group['active'] = collect($group['items'])->contains('active', true);
+                $group['active'] = collect($group['items'])->contains(fn (array $item): bool => $item['active'] || ($item['children_active'] ?? false));
 
                 return $group;
             })
             ->filter(fn (array $group): bool => $group['items'] !== [])
             ->values()->all();
+    }
+
+    /** @param array<string,mixed> $item @return array<string,mixed> */
+    private function withSetupSteps(array $item, User $user): array
+    {
+        $steps = collect(InitialSetupStepRegistry::steps());
+        $permissions = $user->is_super_admin ? null : app(RequestPermissionLookup::class)->for($user);
+        $labels = ['basics' => __('Essentials'), 'settings' => __('Settings'), 'operations' => __('Operational Readiness')];
+        $icons = ['basics' => 'building-office', 'settings' => 'cog-6-tooth', 'operations' => 'check-circle'];
+
+        $item['label'] = __('Basic Data');
+        $item['subgroups'] = collect(InitialSetupStepRegistry::groups())->map(function (array $keys, string $key) use ($steps, $permissions, $labels, $icons): array {
+            $children = collect($keys)->map(function (string $stepKey) use ($steps, $permissions): ?array {
+                $step = $steps->get($stepKey);
+                if ($step === null || ! Route::has($step['route']) || ($permissions !== null && ! isset($permissions[$step['permission']]))) {
+                    return null;
+                }
+
+                $url = route($step['route'], $step['parameters'] + [
+                    'setup' => 'true',
+                    'setup_step' => $stepKey,
+                ]);
+
+                return [
+                    'key' => $stepKey,
+                    'label' => __($step['label']),
+                    'url' => $url,
+                    'active' => request()->routeIs($step['route'])
+                        && request()->boolean('setup')
+                        && request()->query('setup_step') === $stepKey,
+                ];
+            })->filter()->values()->all();
+
+            return [
+                'key' => $key,
+                'label' => $labels[$key],
+                'icon' => $icons[$key],
+                'items' => $children,
+                'active' => collect($children)->contains('active', true),
+            ];
+        })->filter(fn (array $group): bool => $group['items'] !== [])->values()->all();
+        $item['children_active'] = collect($item['subgroups'])->contains('active', true);
+        $item['active'] = request()->routeIs('initial-setup');
+
+        return $item;
     }
 }

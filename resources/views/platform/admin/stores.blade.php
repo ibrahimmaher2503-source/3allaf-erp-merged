@@ -718,7 +718,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <flux:input
                     wire:model="storeForm.name_ar"
                     :label="__('Arabic Name')"
-                    placeholder="مستودع المعرض الرئيسي"
+                    placeholder="مخزن المعرض الرئيسي"
                     required
                 />
 

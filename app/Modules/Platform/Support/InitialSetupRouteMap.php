@@ -11,11 +11,7 @@ final class InitialSetupRouteMap
     /** @return array<string, list<string>> */
     public static function groups(): array
     {
-        return [
-            'basics' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes'],
-            'settings' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates'],
-            'operations' => ['categories', 'brands', 'customer-groups', 'customers', 'party-readiness', 'supplier-groups', 'suppliers', 'product-options', 'product-masters', 'prices', 'opening-configuration'],
-        ];
+        return InitialSetupStepRegistry::groups();
     }
 
     public function resolve(Request $request): ?string

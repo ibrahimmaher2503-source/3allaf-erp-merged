@@ -64,7 +64,7 @@ final class ProductionSeeder extends Seeder
             'branch-manager' => ['مدير الفرع', 'Branch Manager', null, null],
             'cashier' => ['أمين الصندوق', 'Cashier', 'تشغيل نقطة البيع والتحصيل والوردية المعيّنة فقط ضمن الفرع ومنفذ البيع وخزينة الكاشير المصرح بها.', 'Operates POS sales, collections, and assigned shifts only within authorized branch, Sales Outlet, and Cashier Till scopes.'],
             'purchasing-officer' => ['مسؤول المشتريات', 'Purchasing Officer', null, null],
-            'warehouse-manager' => ['مدير المستودع', 'Warehouse Manager', null, null],
+            'warehouse-manager' => ['مدير المخزن', 'Warehouse Manager', null, null],
             'pricing-officer' => ['مسؤول التسعير', 'Pricing Officer', null, null],
             'party-manager' => ['مدير الحفلات', 'Party Manager', null, null],
             'stock-counter' => ['مراقب المخزون', 'Stock Counter', null, null],
@@ -291,7 +291,7 @@ final class ProductionSeeder extends Seeder
         ]);
         Store::query()->firstOrCreate(['code' => 'MAIN-WAREHOUSE'], [
             'company_id' => $company->id, 'branch_id' => $branch->id, 'type' => 'warehouse',
-            'name_ar' => 'المستودع الرئيسي', 'name_en' => 'Main Warehouse', 'status' => 'active',
+            'name_ar' => 'المخزن الرئيسي', 'name_en' => 'Main Warehouse', 'status' => 'active',
             'allows_negative_stock' => false,
         ]);
         BranchSellingStore::query()->firstOrCreate(['branch_id' => $branch->id, 'store_id' => $sellingStore->id], [

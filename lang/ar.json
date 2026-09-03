@@ -309,7 +309,7 @@
     "Add at least one active stock store linked to an active branch.": "أضف مخزنًا نشطًا واحدًا على الأقل مرتبطًا بفرع نشط.",
     "Create an active category before adding products.": "أضف تصنيفًا نشطًا واحدًا على الأقل قبل إضافة المنتجات.",
     "Record the quantity already in each stock store when you start using the system. Use the opening-stock adjustment; never edit balances directly.": "سجّل الكمية الموجودة فعليًا في كل مخزن عند بدء استخدام النظام. استخدم تسوية رصيد البداية ولا تعدّل الأرصدة مباشرة.",
-    "Maintain at least one active warehouse store linked to an active branch.": "حافظ على مستودع نشط واحد على الأقل مرتبط بفرع نشط.",
+    "Maintain at least one active warehouse store linked to an active branch.": "حافظ على مخزن نشط واحد على الأقل مرتبط بفرع نشط.",
     "Assign active cash drawers to the stores that will receive controlled payments.": "اربط أدراج النقدية النشطة بالمخازن التي تستقبل المدفوعات الخاضعة للرقابة.",
     "Define the persisted payment methods staff may recognize and reconcile.": "حدّد طرق الدفع المحفوظة التي يمكن للموظفين استخدامها وتسويتها.",
     "Review the saved tax treatment before any invoice or POS tax choice is enabled.": "راجع المعالجة الضريبية المحفوظة قبل تفعيل أي اختيار ضريبي في الفواتير أو نقطة البيع.",
@@ -341,7 +341,7 @@
     "Location Name (AR / EN)": "اسم المخزن (عربي / إنجليزي)",
     "Branch → POS selling location / stock source": "الفرع ← موقع بيع نقطة البيع / مصدر المخزون",
     "Use Deactivate for a reversible status change, or Request archive for the approval-backed Inactive / Archived transition.": "استخدم التعطيل لتغيير حالة قابل للعكس، أو اطلب الأرشفة للانتقال المعتمد إلى غير نشط / مؤرشف.",
-    "Add location": "إضافة مخزن",
+    "Add location": "إضافة مخزن / منفذ بيع",
     "Optional hierarchy used to filter suppliers and keep purchasing contacts organized.": "تسلسل هرمي اختياري لتصفية الموردين وتنظيم جهات اتصال المشتريات.",
     "Company settings": "إعدادات الشركة",
     "Enter the approved bilingual identity, legal details, currency, timezone, and contact information.": "أدخل الهوية المعتمدة باللغتين والبيانات القانونية والعملة والمنطقة الزمنية ومعلومات التواصل.",
@@ -778,7 +778,6 @@
     "Audit and scope protected": "التدقيق والنطاق محميان",
     "Audit event details": "تفاصيل حدث التدقيق",
     "Audit events": "أحداث التدقيق",
-    "Audit export is blocked until an approved positive AUDIT_EXPORT_MAX_ROWS value is configured.": "تصدير التدقيق محظور حتى إعداد قيمة موجبة ومعتمدة لـ AUDIT_EXPORT_MAX_ROWS.",
     "Audit export is blocked until an approved row limit is configured.": "Audit تصدير is blocked until an معتمد row limit is configured.",
     "Audit filters and immutable history": "مرشحات التدقيق والسجل غير القابل للتعديل",
     "Audit panel": "لوحة التدقيق",
@@ -1942,7 +1941,7 @@
     "Loyalty redemption recorded against the approved sale.": "Loyalty redemption recorded against the معتمد عملية البيع.",
     "Loyalty rounding must be configured as floor for earn and redeem.": "Loyalty rounding must be configured as floor لـ earn و redeem.",
     "Loyalty rounding policy": "سياسة تقريب الولاء",
-    "Main Warehouse": "مستودع رئيسي",
+    "Main Warehouse": "مخزن رئيسي",
     "Main image": "الصورة الرئيسية",
     "Main image updated successfully.": "تم تحديث الصورة الرئيسية بنجاح.",
     "Maintain a bounded, ordered category hierarchy with server-side cycle and dependency guards.": "إدارة هيكل تصنيفات محدود ومرتب، مع قواعد للدورات والتبعيات على الخادم.",
@@ -1963,7 +1962,7 @@
     "Manage commercial branch locations and their authorized POS selling store assignments.": "إدارة مواقع الفروع التجارية وتعيينات متاجر البيع المعتمدة لنقاط البيع.",
     "Manage company identity, payment methods, tax rules, document numbering, printers, and audit history.": "إدارة هوية الشركة وطرق الدفع والضرائب وترقيم المستندات والطابعات وسجل المراجعة.",
     "Manage customers, permissions, approvals, reports, and system settings within your role.": "أدر العملاء والصلاحيات والاعتمادات والتقارير وإعدادات النظام ضمن دورك.",
-    "Manage physical/logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit) and POS branch assignments.": "إدارة المواقع الفعلية والمنطقية (نقطة بيع، مستودع رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات فروع نقاط البيع.",
+    "Manage physical/logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit) and POS branch assignments.": "إدارة المواقع الفعلية والمنطقية (نقطة بيع، مخزن رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات فروع نقاط البيع.",
     "Manage procurement lifecycle, draft order lines, and order state actions.": "إدارة دورة الشراء وبنود المسودة وإجراءات حالات الطلب.",
     "Manage shift": "إدارة الوردية",
     "Manage your passkeys for passwordless sign-in": "إدارة مفاتيح المرور لتسجيل الدخول دون كلمة مرور",
@@ -2278,7 +2277,7 @@
     "Observed local configuration, read-only": "الإعداد المحلي المرصود — للقراءة فقط",
     "Observed scoped readiness, read-only": "الجاهزية المرصودة ضمن النطاق — للقراءة فقط",
     "Office printer": "طابعة مكتبية",
-    "Official store list, warehouse categories, selling-store assignments, and negative-stock flags are TBD pending owner approval. Negative stock is blocked by default.": "قائمة المتاجر الرسمية وفئات المستودعات وتعيينات متاجر البيع وإعدادات المخزون السالب قيد التحديد حتى اعتماد المالك. المخزون السالب محظور افتراضيًا.",
+    "Official store list, warehouse categories, selling-store assignments, and negative-stock flags are TBD pending owner approval. Negative stock is blocked by default.": "قائمة المتاجر الرسمية وفئات المخازن وتعيينات متاجر البيع وإعدادات المخزون السالب قيد التحديد حتى اعتماد المالك. المخزون السالب محظور افتراضيًا.",
     "Offline": "غير متصل",
     "Offline Eligible": "مؤهل للعمل دون اتصال",
     "Offline POS & sync": "نقطة البيع والمزامنة دون اتصال",
@@ -4419,7 +4418,7 @@
     ,"Store unavailable": "المخزن غير متاح"
     ,"Not assigned": "غير معين"
     ,"Branches and stores": "الفروع والمخازن"
-    ,"Warehouses": "المستودعات"
+    ,"Warehouses": "المخازن"
     ,"Taxes": "الضرائب"
     ,"Printers": "الطابعات"
     ,"Print templates": "قوالب الطباعة"
@@ -4453,7 +4452,7 @@
     ,"A customer-group data model and authorized configuration surface are not available yet.": "لا يتوفر نموذج بيانات أو شاشة إعداد معتمدة لمجموعات العملاء حتى الآن."
     ,"A supplier-group data model and authorized configuration surface are not available yet.": "لا يتوفر نموذج بيانات أو شاشة إعداد معتمدة لمجموعات الموردين حتى الآن."
     ,"Complete Company identity before configuring branches and stores.": "أكمل هوية الشركة قبل إعداد الفروع والمخازن."
-    ,"Complete active branches and stores before configuring warehouses.": "أكمل الفروع والمخازن النشطة قبل إعداد المستودعات."
+    ,"Complete active branches and stores before configuring warehouses.": "أكمل الفروع والمخازن النشطة قبل إعداد المخازن."
     ,"Complete active branches and stores before assigning cash drawers.": "أكمل الفروع والمخازن النشطة قبل ربط أدراج النقدية."
     ,"Create at least one active category before product masters.": "أنشئ تصنيفًا نشطًا واحدًا على الأقل قبل المنتجات الرئيسية."
     ,"Complete active branches, stores, categories, and product masters before opening configuration.": "أكمل الفروع والمخازن والتصنيفات والمنتجات الرئيسية قبل إعداد الافتتاح."
@@ -4784,8 +4783,8 @@
     ,"Open decisions with an entry or review surface": "قرارات مفتوحة مع صفحة إدخال أو مراجعة"
     ,"Each card stays pending until the owner confirms the policy. Use the linked screen to enter or review the decision; this page never records an approval by itself.": "تبقى كل بطاقة معلقة حتى يؤكد المالك السياسة. استخدم الصفحة المرتبطة لإدخال القرار أو مراجعته؛ لا تسجل هذه الصفحة اعتمادًا بمفردها."
     ,"Requires owner decision": "يتطلب قرار المالك"
-    ,"Warehouse taxonomy": "تصنيف المستودعات"
-    ,"Confirm which stores are physical warehouses and which are selling or service locations before inventory routing.": "أكد أي المواقع مستودعات فعلية وأيها مواقع بيع أو خدمة قبل توجيه المخزون."
+    ,"Warehouse taxonomy": "تصنيف المخازن"
+    ,"Confirm which stores are physical warehouses and which are selling or service locations before inventory routing.": "أكد أي المواقع مخازن فعلية وأيها مواقع بيع أو خدمة قبل توجيه المخزون."
     ,"Review stores": "مراجعة المخازن"
     ,"Timezone provenance and branch override": "مصدر المنطقة الزمنية وتجاوز الفرع"
     ,"Confirm the company timezone source and whether each branch may override it.": "أكد مصدر المنطقة الزمنية للشركة وما إذا كان يمكن لكل فرع تجاوزها."
@@ -4878,15 +4877,15 @@
     ,"No Locations Configured": "لا توجد مخازن مُعدّة"
     ,"Location and warehouse table": "جدول المخازن"
     ,"Branch directory table": "جدول دليل الفروع"
-    ,"Manage branch locations, active warehouses, and authorized POS selling store assignments.": "أدر مواقع الفروع والمستودعات النشطة وتعيينات موقع البيع في نقطة البيع المصرّح بها."
+    ,"Manage branch locations, active warehouses, and authorized POS selling store assignments.": "أدر مواقع الفروع والمخازن النشطة وتعيينات موقع البيع في نقطة البيع المصرّح بها."
     ,"Add a location to make it available for sales, inventory, or service operations.": "أضف مخزنًا ليصبح متاحًا للمبيعات أو المخزون أو عمليات الخدمة."
     ,"Create Location Master": "إضافة مخزن"
     ,"Edit Location Master": "تعديل المخزن"
     ,"Location code": "رمز المخزن"
     ,"Location name": "اسم المخزن"
     ,"Location / store": "المخزن"
-    ,"Location created successfully.": "تم إنشاء المخزن بنجاح."
-    ,"Location updated successfully.": "تم تحديث المخزن بنجاح."
+    ,"Location created successfully.": "تم إنشاء المخزن / منفذ البيع بنجاح."
+    ,"Location updated successfully.": "تم تحديث المخزن / منفذ البيع بنجاح."
     ,"Define a location code, location type, bilingual names, branch context, and negative stock policy.": "حدّد رمز المخزن ونوع المخزن واسمه بالعربية والإنجليزية والفرع المرتبط به وسياسة المخزون السالب."
     ,"Select location": "اختر مخزنًا"
     ,"Select POS selling location / stock source": "اختر موقع البيع في نقطة البيع / مصدر المخزون"
@@ -5194,19 +5193,19 @@
     ,"Select an active branch for this point of sale.": "اختر فرعًا نشطًا لنقطة البيع."
     ,"Only points of sale can be set as a branch primary point of sale.": "يمكن تعيين نقطة بيع فقط كنقطة البيع الأساسية للفرع."
     ,"Point of sale must be active to set it as primary.": "يجب أن تكون نقطة البيع نشطة لتعيينها كنقطة أساسية."
-    ,"Create warehouse or point of sale": "إنشاء مخزن أو نقطة بيع"
+    ,"Create warehouse or point of sale": "إضافة مخزن / منفذ بيع"
     ,"Edit warehouse or point of sale": "تعديل مخزن أو نقطة بيع"
     ,"Location type": "نوع الموقع"
-    ,"Save location": "حفظ الموقع"
+    ,"Save location": "حفظ المخزن / منفذ البيع"
     ,"A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists.": "يجب أن تتبع نقطة البيع فرعًا نشطًا. وتُعيّن نقطة البيع النشطة الجديدة كأساسية عندما لا توجد نقطة بيع أساسية للفرع."
-    ,"Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.": "أضف مستودعًا فعليًا نشطًا واحدًا على الأقل مرتبطًا بفرع نشط، ثم تأكد أن لكل فرع تجزئة نشط نقطة بيع أساسية واحدة حالية وصالحة."
+    ,"Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.": "أضف مخزنًا فعليًا نشطًا واحدًا على الأقل مرتبطًا بفرع نشط، ثم تأكد أن لكل فرع تجزئة نشط نقطة بيع أساسية واحدة حالية وصالحة."
     ,"Back to catalog master": "العودة إلى بيانات الكتالوج"
     ,"Back to suppliers": "العودة إلى الموردين"
     ,"Back to settings": "العودة إلى الإعدادات"
     ,"Back to returns": "العودة إلى المرتجعات"
     ,"Super Admin action completed without separate approval.": "اكتمل إجراء المدير الأعلى دون موافقة منفصلة."
     ,"Manage warehouses and selling stores, including physical inventory and POS operations, with their branch context.": "أدر المخازن ونقاط البيع، بما يشمل المخزون الفعلي وعمليات نقاط البيع، مع سياق الفروع التابعة لها."
-    ,"Add warehouse": "إضافة مخزن"
+    ,"Add warehouse": "إضافة مخزن / منفذ بيع"
     ,"Search warehouse code or name...": "ابحث عن رمز المخزن أو اسمه..."
     ,"Warehouse Type": "نوع المخزن"
     ,"All Warehouse Types": "كل أنواع المخازن"
@@ -5668,4 +5667,5 @@
     ,"A non-integral product quantity was found. Correct the source data before continuing.": "عُثر على كمية منتج غير صحيحة كوحدة كاملة. صحّح البيانات المصدر قبل المتابعة."
     ,"Opening inventory reversal":"عكس المخزون الافتتاحي","Transfer dispatch":"إرسال تحويل","Transfer receipt":"استلام تحويل","Inventory entry":"إدخال مخزون","Inventory exit":"إخراج مخزون","Inventory adjustment":"تسوية مخزون","Inventory reversal":"عكس حركة مخزون","Count reconciliation":"مطابقة جرد","Retail sale":"بيع تجزئة","Retail return":"مرتجع بيع","Damaged retail return":"مرتجع بيع تالف","Retail exchange out":"صرف استبدال بيع","Party consumable issue":"صرف مستهلك حفلة","Party consumable return":"إرجاع مستهلك حفلة","Unknown movement":"حركة غير معروفة"
     ,"Nothing is loaded until you search. Selected products and print settings remain while you continue searching.":"لن تُحمّل أي منتجات قبل البحث. تبقى المنتجات المحددة وإعدادات الطباعة محفوظة أثناء البحث.","Scan a barcode and press Enter to select its exact product immediately.":"امسح الباركود واضغط Enter لتحديد المنتج المطابق فورًا.","Selected products":"المنتجات المحددة","Label copies":"عدد نسخ الملصق","Load more":"تحميل المزيد","This product cannot be printed until it has an active barcode.":"لا يمكن طباعة هذا المنتج حتى تتم إضافة باركود نشط.","Product search could not be completed. Try again.":"تعذر إكمال بحث المنتجات. حاول مرة أخرى.","These active products have no positive base consumer selling price. Add a positive base price to make them immediately sellable.":"هذه المنتجات النشطة ليس لها سعر بيع أساسي موجب للمستهلك. أضف سعرًا موجبًا لتصبح قابلة للبيع فورًا.","No selling price":"لا يوجد سعر بيع","Product quantity exceeds the allowed limit.":"تتجاوز كمية المنتج الحد المسموح.","Product has no positive selling price for this store.":"لا يوجد للمنتج سعر بيع موجب في هذا المتجر.","The selected SKU has no positive selling price for this store.":"لا يوجد لرمز SKU المحدد سعر بيع موجب في هذا المتجر.","The Product Card base consumer price is immediately sellable. Optional active price lists override it only when applicable. Cost changes never rewrite sale prices.":"سعر المستهلك الأساسي في بطاقة المنتج قابل للبيع فورًا. تتجاوزه قوائم الأسعار النشطة الاختيارية فقط عند انطباقها. لا تعيد تغييرات التكلفة كتابة سعر البيع."
+    ,"Basic Data":"البيانات الأساسية","Basic Data Overview":"نظرة عامة على البيانات الأساسية","Essentials":"الأساسيات","Operational Readiness":"الجاهزية التشغيلية","Audit logs":"سجل التدقيق","Audit export is unavailable until an administrator approves and configures a positive export row limit.":"تصدير سجل التدقيق غير متاح حتى يعتمد المسؤول حدًا موجبًا لعدد صفوف التصدير ويضبطه.","Other audit event":"حدث تدقيق آخر","Other source record":"سجل مصدر آخر","Other audit category":"فئة تدقيق أخرى","Source record ID":"معرّف سجل المصدر","Store created":"تم إنشاء المخزن / منفذ البيع","Store updated":"تم تحديث المخزن / منفذ البيع","Store archived":"تمت أرشفة المخزن / منفذ البيع","Store status changed":"تغيرت حالة المخزن / منفذ البيع","Branch point of sale mapped":"تم ربط منفذ بيع بالفرع","Branch point of sale mapping":"ربط منفذ البيع بالفرع","Branch created":"تم إنشاء الفرع","Branch updated":"تم تحديث الفرع","Branch archived":"تمت أرشفة الفرع","Branch status changed":"تغيرت حالة الفرع","Payment method created":"تم إنشاء طريقة الدفع","Payment method updated":"تم تحديث طريقة الدفع","Local settings updated":"تم تحديث الإعدادات المحلية","Cash drawer created":"تم إنشاء درج النقدية","Cash drawer updated":"تم تحديث درج النقدية","Cash drawer archived":"تمت أرشفة درج النقدية","Cash drawer status changed":"تغيرت حالة درج النقدية","User authorization updated":"تم تحديث صلاحيات المستخدم","Role permissions updated":"تم تحديث صلاحيات الدور","Product created":"تم إنشاء المنتج","Product updated":"تم تحديث المنتج","Product status changed":"تغيرت حالة المنتج","Category created":"تم إنشاء التصنيف","Category updated":"تم تحديث التصنيف","Brand created":"تم إنشاء العلامة التجارية","Brand updated":"تم تحديث العلامة التجارية","Supplier created":"تم إنشاء المورد","Supplier updated":"تم تحديث المورد","Supplier activated":"تم تفعيل المورد","Supplier deactivated":"تم تعطيل المورد","Approval requested":"طُلب الاعتماد","Approval approved":"تم الاعتماد","Approval rejected":"رُفض الاعتماد","Approval cancelled":"أُلغي الاعتماد","Approval withdrawn":"سُحب طلب الاعتماد","Approval expired":"انتهت صلاحية طلب الاعتماد","Attachment stored":"تم حفظ المرفق","Attachment linked":"تم ربط المرفق","Attachment accessed":"تم الوصول إلى المرفق","Attachment revoked":"تم إلغاء المرفق","Sale finalized":"تم اعتماد البيع","Shift opened":"تم فتح الوردية","Shift close submitted":"تم تقديم إغلاق الوردية","Cash movement recorded":"تم تسجيل حركة نقدية","Price proposal created":"تم إنشاء مقترح السعر","Price proposal submitted":"تم تقديم مقترح السعر","Price version approved":"تم اعتماد إصدار السعر","Price version rejected":"رُفض إصدار السعر","Store":"مخزن / منفذ بيع","Payment method":"طريقة دفع","Company":"شركة","Branch":"فرع","Cash drawer":"درج نقدية","User":"مستخدم","Role":"دور","Product":"منتج","Category":"تصنيف","Brand":"علامة تجارية","Supplier":"مورد","Audit log":"سجل تدقيق","Approval record":"سجل اعتماد","Printer profile":"ملف طابعة","Document sequence":"تسلسل مستند","Tax setting":"إعداد ضريبي","Master data":"البيانات الأساسية","Platform":"المنصة","Security":"الأمان","Inventory":"المخزون","Purchasing":"المشتريات","Pricing":"التسعير","Retail":"التجزئة","Customers":"العملاء","Parties":"الحفلات"
 }

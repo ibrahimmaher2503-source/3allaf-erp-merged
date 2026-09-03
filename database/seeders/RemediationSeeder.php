@@ -200,7 +200,7 @@ final class RemediationSeeder extends Seeder
     {
         $branch = $this->branch('REM-BRANCH', 'فرع المعالجة', 'Remediation Branch');
         $sales = $this->store($branch, 'REM-SALES', 'selling', 'مبيعات المعالجة', 'Remediation Sales');
-        $warehouse = $this->store($branch, 'REM-WAREHOUSE', 'warehouse', 'مستودع المعالجة', 'Remediation Warehouse');
+        $warehouse = $this->store($branch, 'REM-WAREHOUSE', 'warehouse', 'مخزن المعالجة', 'Remediation Warehouse');
         $party = $this->store($branch, 'REM-PARTY', 'party', 'حفلات المعالجة', 'Remediation Party');
         app(SaveBranchSellingStoreMappingAction::class)->execute($branch->id, $sales->id, 'Remediation fixture POS mapping.');
 

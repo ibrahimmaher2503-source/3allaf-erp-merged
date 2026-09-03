@@ -141,3 +141,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Proved that the original product status/parent/code index caused a full active-product index scan and filesort on the shared sellable-product query; removed it while retaining the three beneficial Hotfix5 indexes.
 - Made pricing proposal options, dashboard work and version pagination conditional, reused the unpriced paginator count, and added version-invalidated readiness metadata reuse without caching effective prices.
 - Focused exact-baseline benchmarks now improve Products, Pricing and Unpriced response and SQL medians. Affected tests pass 9/9 with 88 assertions and zero errors.
+
+## 2026-09-03 — v0.1.22-hotfix6 admin navigation/localization
+
+- Centralized the 21 real routable setup definitions (5 Essentials, 5 Settings, 11 Operational Readiness) and rendered every authorized leaf in the desktop/mobile Basic Data sidebar while preserving the existing overview and setup workflow.
+- Standardized user-facing Arabic warehouse terminology to مخزن/مخازن, clarified the combined Warehouse / Point of Sale create workflow, and corrected bilingual Audit Log event/source presentation, dates, warning copy and responsive layout.
+- The sidebar uses static canonical metadata and the existing request permission lookup, never readiness/catalog evaluation. Shared-layout profiling retained 5 queries with no duplicates and no meaningful latency regression.

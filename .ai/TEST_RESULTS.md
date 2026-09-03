@@ -1,5 +1,12 @@
 # Test and Verification Results
 
+## 2026-09-03 — v0.1.22-hotfix6 focused pass
+
+- Focused PHPUnit passed 4 tests / 34 assertions with zero errors or failures. Changed PHP syntax, Blade compilation, Arabic/English JSON parsing and diff hygiene passed.
+- Authenticated isolated-browser verification passed Arabic desktop with all Basic Data groups expanded and the mobile drawer; 21 unique leaves appeared in category counts 5/5/11, exact setup links and active expansion passed, and no horizontal overflow or browser errors occurred.
+- Arabic and English Audit Logs exposed no tested raw event keys, model class names or configuration key; the combined store create wording passed. Isolated MariaDB `rajeh_hotfix6_verify` reports migrations through 000105 Ran; Hotfix6 adds no migration.
+- Shared-layout `/settings/profile` retained 5 queries and zero duplicates. Five-sample median was 140.345 ms versus Hotfix5 evidence 136.458 ms (+2.8%); app-only median improved from 130.258 to 124.455 ms. Node 20.20.0 Vite build passed after the desktop sidebar stylesheet correction; manifest SHA-256 is `baed65ad827593d44cbc8352a62c8807ea1a95b924945fbade1b68852302bb3c`.
+
 ## 2026-09-03 — v0.1.22-hotfix5 corrective no-regression pass
 
 - Only Products, Pricing and Unpriced were re-benchmarked against exact Hotfix4 under identical isolated conditions. All three corrected medians, p95 values, query counts and SQL medians improved; see `.ai/evidence/v0.1.22-hotfix5/CORRECTIVE.md`.

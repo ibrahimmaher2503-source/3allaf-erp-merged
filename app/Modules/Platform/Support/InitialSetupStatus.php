@@ -83,27 +83,27 @@ final class InitialSetupStatus
             : collect();
 
         $steps = [
-            $this->step('company', __('Company identity'), __('Use the approved bilingual identity, legal details, currency, timezone, and contact information.'), 'admin.settings', 'company_settings.view', $companyReady, Company::query()->count(), routeParameters: ['tab' => 'company'], destinationKey: 'company-identity'),
-            $this->step('branches-stores', __('Branches'), __('Create active branches and complete their basic details.'), 'admin.branches', 'branches_stores.view', $branchesReady, Branch::query()->count()),
-            $this->step('warehouses', __('Warehouses & Points of Sale'), __('Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.'), 'admin.stores', 'branches_stores.view', $this->warehousesReady() && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping(), Store::query()->where('type', 'warehouse')->count() + BranchSellingStore::query()->where('status', 'active')->count()),
-            $this->step('cash-drawers', __('Cash drawers'), __('Assign active cash drawers to the stores that will receive controlled payments.'), 'admin.cash-drawers', 'drawers_payments_tax_numbering_printers.view', $this->cashDrawersReady(), CashDrawer::query()->count()),
-            $this->step('users-scopes', __('Users, roles, and scopes'), __('Create the opening team, assign roles, and scope every non-administrator to approved branches or stores.'), 'admin.authorization-baseline', 'users_roles_permissions.view', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
-            $this->step('payment-methods', __('Payment methods'), __('Define the persisted payment methods staff may recognize and reconcile.'), 'admin.settings', 'company_settings.view', $this->paymentMethodsReady(), PaymentMethod::query()->count(), routeParameters: ['tab' => 'payments'], destinationKey: 'payment-methods'),
-            $this->step('taxes', __('Taxes'), __('Review the saved tax treatment before any invoice or POS tax choice is enabled.'), 'admin.settings', 'company_settings.view', $this->taxesReady(), TaxSetting::query()->count(), routeParameters: ['tab' => 'tax'], destinationKey: 'tax-settings'),
-            $this->step('document-sequences', __('Document sequences'), __('Configure persisted prefixes, counters, scope, and reset rules without changing posted history.'), 'admin.settings', 'company_settings.view', $this->documentSequencesReady(), DocumentSequence::query()->count(), routeParameters: ['tab' => 'sequences'], destinationKey: 'document-sequences'),
-            $this->step('printers', __('Printer profiles'), __('Review an active printer profile and its saved destination; hardware acceptance remains separate.'), 'admin.settings', 'company_settings.view', $this->printersReady(), PrinterConfiguration::query()->count(), routeParameters: ['tab' => 'printers', 'section' => 'printer-profiles'], destinationKey: 'printer-profiles'),
-            $this->step('print-templates', __('Print-template assignments'), __('Review the existing template key assigned to each printer profile. Template layouts are not edited in this workspace.'), 'admin.settings', 'company_settings.view', $this->printTemplatesReady(), PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->count(), routeParameters: ['tab' => 'printers', 'section' => 'print-templates'], destinationKey: 'print-templates'),
-            $this->step('categories', __('Categories'), __('Create the approved active category hierarchy before adding product masters.'), 'catalog.categories', 'products_categories_brands.view', Category::query()->where('status', 'active')->exists(), Category::query()->count()),
-            $this->step('brands', __('Brand masters'), __('Brand masters are optional. Create active brands only where the catalog needs branded products.'), 'catalog.brands', 'products_categories_brands.view', Brand::query()->where('status', 'active')->exists(), Brand::query()->count(), required: false),
-            $this->step('customer-groups', __('Customer groups'), __('Maintain the persisted customer-group hierarchy before customer registration.'), 'customers.groups.index', 'customers.view', $activeCustomerGroups->exists(), $activeCustomerGroups->count()),
-            $this->step('customers', __('Customers'), __('Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.'), 'customers.index', 'customers.view', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords, required: false),
-            $this->step('party-readiness', __('Party readiness and policies'), __('Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.'), 'party.readiness', 'party_bookings_invoices.view', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.'), required: false),
-            $this->step('supplier-groups', __('Supplier groups'), __('Maintain the persisted supplier-group hierarchy before supplier registration.'), 'catalog.suppliers', 'suppliers.view', $activeSupplierGroups->exists(), $activeSupplierGroups->count(), routeParameters: ['section' => 'supplier-groups'], destinationKey: 'supplier-groups'),
-            $this->step('suppliers', __('Suppliers'), __('Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.'), 'suppliers.index', 'suppliers.view', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.'), routeParameters: ['section' => 'supplier-masters'], destinationKey: 'supplier-masters'),
-            $this->step('product-options', __('Product Filters'), __('Configure reusable product filters, such as sizes and colours, before building products with variations.'), 'catalog.product-options', 'products_categories_brands.view', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count(), required: false),
-            $this->step('product-masters', __('Product Cards'), __('Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.'), 'catalog.products', 'products_categories_brands.view', $catalogReady, Product::query()->where('status', 'active')->count(), $this->productReadinessReason($productPricing), details: $productPricing),
-            $this->step('prices', __('Approved selling prices'), __('Configure valid reusable price lists from Product Card base prices and assign every active Sales Outlet.'), 'pricing.lists', 'pricing_lists.view', $this->pricesReady($productPricing), PriceList::query()->count(), $this->pricingReadinessReason($productPricing), details: $productPricing),
-            $this->step('opening-configuration', __('Opening inventory'), __('Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.'), 'inventory.opening.index', 'inventory_stock_card.create', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
+            $this->step('company', $companyReady, Company::query()->count()),
+            $this->step('branches-stores', $branchesReady, Branch::query()->count()),
+            $this->step('warehouses', $this->warehousesReady() && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping(), Store::query()->where('type', 'warehouse')->count() + BranchSellingStore::query()->where('status', 'active')->count()),
+            $this->step('cash-drawers', $this->cashDrawersReady(), CashDrawer::query()->count()),
+            $this->step('users-scopes', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
+            $this->step('payment-methods', $this->paymentMethodsReady(), PaymentMethod::query()->count()),
+            $this->step('taxes', $this->taxesReady(), TaxSetting::query()->count()),
+            $this->step('document-sequences', $this->documentSequencesReady(), DocumentSequence::query()->count()),
+            $this->step('printers', $this->printersReady(), PrinterConfiguration::query()->count()),
+            $this->step('print-templates', $this->printTemplatesReady(), PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->count()),
+            $this->step('categories', Category::query()->where('status', 'active')->exists(), Category::query()->count()),
+            $this->step('brands', Brand::query()->where('status', 'active')->exists(), Brand::query()->count()),
+            $this->step('customer-groups', $activeCustomerGroups->exists(), $activeCustomerGroups->count()),
+            $this->step('customers', $customerConsentPolicyRecords === 3, $customerConsentPolicyRecords),
+            $this->step('party-readiness', false, max($partyPolicyRecords, PartyBooking::query()->count()), __('Party policy completion remains pending an owner decision; persisted policy values do not authorize bookings.')),
+            $this->step('supplier-groups', $activeSupplierGroups->exists(), $activeSupplierGroups->count()),
+            $this->step('suppliers', $this->suppliersReady(), Supplier::query()->count(), $this->suppliersReady() ? null : __('Add an active supplier and choose Cash, Cheques, Installments, Trust Deposits, or Other. Other also requires a description.')),
+            $this->step('product-options', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count()),
+            $this->step('product-masters', $catalogReady, Product::query()->where('status', 'active')->count(), $this->productReadinessReason($productPricing), $productPricing),
+            $this->step('prices', $this->pricesReady($productPricing), PriceList::query()->count(), $this->pricingReadinessReason($productPricing), $productPricing),
+            $this->step('opening-configuration', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
         $steps = array_map(function (array $step) use ($latestDecisions): array {
@@ -134,15 +134,21 @@ final class InitialSetupStatus
     }
 
     /** @return array<string, mixed> */
-    private function step(string $key, string $label, string $description, ?string $routeName, ?string $permission, bool $complete, int $records, ?string $incompleteReason = null, bool $required = true, array $routeParameters = [], ?string $destinationKey = null, array $details = []): array
+    private function step(string $key, bool $complete, int $records, ?string $incompleteReason = null, array $details = []): array
     {
+        $definition = InitialSetupStepRegistry::steps()[$key];
+        $label = __($definition['label']);
+        $description = __($definition['description']);
+        $routeName = $definition['route'];
+        $permission = $definition['permission'];
+        $required = $definition['required'];
         $status = $complete ? 'completed' : ($records === 0 ? 'not_started' : ($required ? 'requires_completion' : 'incomplete'));
-        $route = $routeName === null ? null : route($routeName, $routeParameters);
-        $canAccess = $permission !== null && auth()->check() && auth()->user()->can($permission);
+        $route = route($routeName, $definition['parameters']);
+        $canAccess = auth()->check() && auth()->user()->can($permission);
 
         $reason = $incompleteReason ?? ($complete ? __('Persisted data meets the current readiness rule.') : $description);
 
-        return ['key' => $key, 'destination_key' => $destinationKey ?? $key, 'label' => $label, 'description' => $description, 'reason' => $reason, 'passed_conditions' => $complete ? [$reason] : [], 'failed_conditions' => $complete ? [] : [$reason], 'route' => $route, 'route_name' => $routeName, 'permission' => $permission, 'can_access' => $canAccess, 'complete' => $complete, 'required' => $required, 'records' => $records, 'status' => $status, 'status_label' => __(match ($status) {
+        return ['key' => $key, 'destination_key' => $definition['destination_key'] ?: $key, 'label' => $label, 'description' => $description, 'reason' => $reason, 'passed_conditions' => $complete ? [$reason] : [], 'failed_conditions' => $complete ? [] : [$reason], 'route' => $route, 'route_name' => $routeName, 'permission' => $permission, 'can_access' => $canAccess, 'complete' => $complete, 'required' => $required, 'records' => $records, 'status' => $status, 'status_label' => __(match ($status) {
             'not_started' => 'Not started', 'incomplete' => 'Incomplete', 'requires_completion' => 'Requires completion', 'ready' => 'Ready', default => 'Completed',
         }), 'cta_label' => __($complete ? 'Review' : 'Configure'), 'details' => $details];
     }

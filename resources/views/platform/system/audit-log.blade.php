@@ -5,6 +5,7 @@ use App\Modules\Platform\Actions\AuditLogValueRedactor;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\AuditLogPresentation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
@@ -107,6 +108,7 @@ new #[Title('Audit Logs')] class extends Component {
         }
 
         $redactor = app(AuditLogValueRedactor::class);
+        $presentation = app(AuditLogPresentation::class);
 
         return view('platform.system.audit-log', [
             'logs' => $logs,
@@ -123,6 +125,7 @@ new #[Title('Audit Logs')] class extends Component {
             'selectedAfterValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->after_values, $user),
             'canExport' => Gate::allows('export', AuditLog::class),
             'exportConfigured' => filter_var(config('audit.export_max_rows'), FILTER_VALIDATE_INT) !== false && (int) config('audit.export_max_rows') > 0,
+            'presentation' => $presentation,
             'exportUrl' => route('admin.audit.export', array_filter([
                 'mode' => $this->mode === 'all' ? null : $this->mode,
                 'search' => $this->search,
@@ -159,8 +162,8 @@ new #[Title('Audit Logs')] class extends Component {
             ->when($this->actorId !== '', fn (Builder $query) => $query->where('actor_id', (int) $this->actorId))
             ->when($this->branchId !== '', fn (Builder $query) => $query->where('branch_id', (int) $this->branchId))
             ->when($this->storeId !== '', fn (Builder $query) => $query->where('store_id', (int) $this->storeId))
-            ->when($this->dateFrom !== '', fn (Builder $query) => $query->whereDate('created_at', '>=', $this->dateFrom))
-            ->when($this->dateTo !== '', fn (Builder $query) => $query->whereDate('created_at', '<=', $this->dateTo));
+            ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->dateFrom) === 1, fn (Builder $query) => $query->whereDate('created_at', '>=', $this->dateFrom))
+            ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->dateTo) === 1, fn (Builder $query) => $query->whereDate('created_at', '<=', $this->dateTo));
     }
 }; ?>
 
@@ -176,7 +179,7 @@ new #[Title('Audit Logs')] class extends Component {
             @if($exportConfigured)
                 <flux:button :href="$exportUrl" icon="arrow-down-tray">{{ __('Export filtered audit log') }}</flux:button>
             @else
-                <flux:callout variant="warning" icon="exclamation-triangle">{{ __('Audit export is blocked until an approved positive AUDIT_EXPORT_MAX_ROWS value is configured.') }}</flux:callout>
+                <flux:callout class="min-w-0 w-full" variant="warning" icon="exclamation-triangle">{{ __('Audit export is unavailable until an administrator approves and configures a positive export row limit.') }}</flux:callout>
             @endif
         </div>
     @endif
@@ -188,13 +191,13 @@ new #[Title('Audit Logs')] class extends Component {
                     <flux:select wire:model.live="category" :label="__('Category')">
                         <option value="">{{ __('All categories') }}</option>
                         @foreach ($categories as $option)
-                            <option value="{{ $option }}">{{ str($option)->headline() }}</option>
+                            <option value="{{ $option }}">{{ $presentation->category($option) }}</option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="event" :label="__('Event')">
                         <option value="">{{ __('All events') }}</option>
                         @foreach ($events as $option)
-                            <option value="{{ $option }}">{{ $option }}</option>
+                            <option value="{{ $option }}">{{ $presentation->event($option) }}</option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="actorId" :label="__('Actor')">
@@ -215,8 +218,8 @@ new #[Title('Audit Logs')] class extends Component {
                             <option value="{{ $store->id }}">{{ $store->code }} - {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>
                         @endforeach
                     </flux:select>
-                    <flux:input wire:model.live="dateFrom" type="date" :label="__('From date')" />
-                    <flux:input wire:model.live="dateTo" type="date" :label="__('To date')" />
+                    <flux:input wire:model.live="dateFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" dir="ltr" :label="__('From date')" />
+                    <flux:input wire:model.live="dateTo" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" dir="ltr" :label="__('To date')" />
                 </div>
             </x-tables.filter-bar>
         </x-slot:toolbar>
@@ -224,8 +227,8 @@ new #[Title('Audit Logs')] class extends Component {
         @if ($logs->isEmpty())
             <x-state.empty :title="__('No audit events found')" :description="__('No visible events match the current filters.')" icon="clock" />
         @else
-        <div class="hidden sm:block">
-            <flux:table aria-label="{{ __('Audit events') }}">
+        <div class="hidden max-w-full overflow-x-auto sm:block">
+            <flux:table class="min-w-[64rem]" aria-label="{{ __('Audit events') }}">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Time') }}</flux:table.column>
                     <flux:table.column>{{ __('Event') }}</flux:table.column>
@@ -239,9 +242,9 @@ new #[Title('Audit Logs')] class extends Component {
                     @foreach ($logs as $log)
                         <flux:table.row key="audit-{{ $log->id }}" class="data-table-row">
                             <flux:table.cell class="whitespace-nowrap font-mono text-xs">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
-                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ $log->event }}</flux:badge></flux:table.cell>
+                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ $presentation->event($log->event) }}</flux:badge></flux:table.cell>
                             <flux:table.cell>{{ $log->actor_name ?? __('System') }}</flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">{{ class_basename((string) $log->source_type) }}{{ $log->source_id ? ' #'.$log->source_id : '' }}</flux:table.cell>
+                            <flux:table.cell><span>{{ $presentation->source($log->source_type) }}</span>@if($log->source_id)<span class="ms-1 font-mono text-xs text-text-muted" dir="ltr">#{{ $log->source_id }}</span>@endif</flux:table.cell>
                             <flux:table.cell class="font-mono text-xs">{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</flux:table.cell>
                             <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
                             <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
@@ -253,14 +256,14 @@ new #[Title('Audit Logs')] class extends Component {
 
         <div class="space-y-3 sm:hidden">
             @foreach ($logs as $log)
-                <x-cards.section-card class="space-y-3" :title="$log->event">
+                <x-cards.section-card class="space-y-3" :title="$presentation->event($log->event)">
                     <div class="flex items-center justify-between gap-3">
-                        <flux:badge size="sm" color="zinc">{{ $log->event }}</flux:badge>
+                        <flux:badge size="sm" color="zinc">{{ $presentation->event($log->event) }}</flux:badge>
                         <span class="whitespace-nowrap font-mono text-xs text-text-muted">{{ $log->created_at->format('Y-m-d H:i') }}</span>
                     </div>
                     <dl class="grid gap-2 text-sm">
                         <div><dt class="text-text-muted">{{ __('Actor') }}</dt><dd>{{ $log->actor_name ?? __('System') }}</dd></div>
-                        <div><dt class="text-text-muted">{{ __('Source') }}</dt><dd class="break-all font-mono text-xs">{{ class_basename((string) $log->source_type) }}{{ $log->source_id ? ' #'.$log->source_id : '' }}</dd></div>
+                        <div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ $presentation->source($log->source_type) }}@if($log->source_id)<span class="ms-1 font-mono text-xs" dir="ltr">#{{ $log->source_id }}</span>@endif</dd></div>
                         <div><dt class="text-text-muted">{{ __('Scope') }}</dt><dd>{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</dd></div>
                     </dl>
                     <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</x-actions.button>
@@ -298,8 +301,10 @@ new #[Title('Audit Logs')] class extends Component {
                 </div>
                 <x-audit-panel :created-by-name="$selectedAudit->actor_name" :created-at="$selectedAudit->created_at->format('Y-m-d H:i:s')" :request-id="$selectedAudit->request_id">
                     <div class="grid gap-3 text-sm sm:grid-cols-2">
-                        <div><span class="text-text-muted">{{ __('Category') }}</span><p>{{ str($selectedAudit->category)->headline() }}</p></div>
-                        <div><span class="text-text-muted">{{ __('Source') }}</span><p class="font-mono text-xs">{{ $selectedAudit->source_type }}{{ $selectedAudit->source_id ? ' #'.$selectedAudit->source_id : '' }}</p></div>
+                        <div><span class="text-text-muted">{{ __('Event') }}</span><p>{{ $presentation->event($selectedAudit->event) }}</p></div>
+                        <div><span class="text-text-muted">{{ __('Category') }}</span><p>{{ $presentation->category($selectedAudit->category) }}</p></div>
+                        <div><span class="text-text-muted">{{ __('Source') }}</span><p>{{ $presentation->source($selectedAudit->source_type) }}</p></div>
+                        <div><span class="text-text-muted">{{ __('Source record ID') }}</span><p class="font-mono text-xs" dir="ltr">{{ $selectedAudit->source_id ?: '—' }}</p></div>
                         @if ($selectedAudit->reason_code || $selectedAudit->reason_text)
                             <div class="sm:col-span-2"><span class="text-text-muted">{{ __('Reason') }}</span><p>{{ trim(($selectedAudit->reason_code ? $selectedAudit->reason_code.': ' : '').$selectedAudit->reason_text) }}</p></div>
                         @endif

@@ -20,6 +20,15 @@
     [dir=rtl] .app-navigation__item.is-active { box-shadow: inset -3px 0 #2dd4bf; }
     .app-navigation__rail-link { color: #d5e0e9; }
     .app-navigation__rail-link.is-active { color: #f7fffe !important; }
+    .app-navigation__nested summary, .app-navigation__subcategory summary { display: flex; min-height: 44px; cursor: pointer; list-style: none; align-items: center; gap: .65rem; border-radius: .75rem; padding: .55rem .75rem; color: #cbd8e3; font-size: .875rem; font-weight: 650; }
+    .app-navigation__nested summary::-webkit-details-marker, .app-navigation__subcategory summary::-webkit-details-marker { display: none; }
+    .app-navigation__nested summary span, .app-navigation__subcategory summary span { min-width: 0; flex: 1; }
+    .app-navigation__nested-content { display: grid; gap: .2rem; padding-inline-start: .65rem; }
+    .app-navigation__subcategory-items { display: grid; gap: .15rem; padding-inline-start: .6rem; }
+    .app-navigation__setup-item { min-height: 40px !important; padding-block: .45rem !important; }
+    .app-navigation__setup-item span { white-space: normal !important; line-height: 1.35; }
+    .app-navigation__overview { padding-inline-start: .75rem; }
+    .app-navigation__nested[open] > summary > .app-navigation__chevron, .app-navigation__subcategory[open] > summary > .app-navigation__chevron { transform: rotate(180deg); }
     @media (max-width: 767px) {
         .app-topbar { display: flex; gap: .25rem; }
         .app-topbar__identity { min-width: 0; overflow: hidden; flex: 0 0 7.5rem; }
@@ -44,7 +53,11 @@
     $companyName = $company ? ($isArabic ? $company->name_ar : $company->name_en) : config('app.name');
     $unreadNotifications = $actor->unreadNotifications()->count();
 @endphp
-<flux:sidebar collapsible="mobile" sticky class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:h-auto lg:max-h-none lg:overflow-visible">
+<flux:sidebar
+    collapsible="mobile"
+    x-init="if (window.matchMedia('(min-width: 1024px)').matches) { $el.style.setProperty('display', 'block', 'important'); $el.style.setProperty('height', 'auto', 'important'); $el.style.setProperty('max-height', 'none', 'important'); $el.style.setProperty('overflow', 'visible', 'important'); }"
+    class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:h-auto lg:max-h-none lg:overflow-visible"
+>
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
         <flux:tooltip :content="$isArabic ? 'توسيع أو طي الشريط الجانبي' : 'Expand or collapse sidebar'" :position="$isArabic ? 'left' : 'right'">

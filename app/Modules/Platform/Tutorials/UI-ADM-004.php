@@ -64,11 +64,11 @@ return [
                 'key' => 'step-1',
                 'selector' => '[data-guide="stores-header"]',
                 'title' => [
-                    'ar' => 'رأس سجل المتاجر والمستودعات',
+                    'ar' => 'رأس سجل المتاجر والمخازن',
                     'en' => 'Store Masters & Mapping Header',
                 ],
                 'body' => [
-                    'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مستودع رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
+                    'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مخزن رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
                     'en' => 'Manage physical and logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit).',
                 ],
             ],
@@ -141,7 +141,7 @@ return [
                     'en' => 'Location Code & Type',
                 ],
                 'body' => [
-                    'ar' => 'كود موقع التخزين ونوع الموقع (نقطة بيع / مستودع رئيسي / مركز خدمات / مخزون تالف ومعيب / مخزون قيد النقل).',
+                    'ar' => 'كود موقع التخزين ونوع الموقع (نقطة بيع / مخزن رئيسي / مركز خدمات / مخزون تالف ومعيب / مخزون قيد النقل).',
                     'en' => 'Stock location code and location type (point of sale / main warehouse / service center / damaged & defective stock / stock in transit).',
                 ],
             ],
@@ -183,11 +183,11 @@ return [
             'key' => 'step-1',
             'selector' => '[data-guide="stores-header"]',
             'title' => [
-                'ar' => 'رأس سجل المتاجر والمستودعات',
+                'ar' => 'رأس سجل المتاجر والمخازن',
                 'en' => 'Store Masters & Mapping Header',
             ],
             'body' => [
-                'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مستودع رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
+                'ar' => 'إدارة المواقع الفعلية والمنطقية (نقطة بيع، مخزن رئيسي، مركز خدمات، مخزون تالف ومعيب، مخزون قيد النقل) وتعيينات الفروع.',
                 'en' => 'Manage physical and logical locations (point of sale, main warehouse, service center, damaged & defective stock, stock in transit).',
             ],
         ],

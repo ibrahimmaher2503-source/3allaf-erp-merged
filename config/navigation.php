@@ -60,7 +60,7 @@ return [
         ['route' => 'admin.branches', 'permission' => 'branches_stores.view', 'icon' => 'building-office', 'label' => ['ar' => 'الشركة والفروع ومنافذ البيع', 'en' => 'Company, branches & Sales Outlets']],
         ['route' => 'admin.authorization-baseline', 'permission' => 'users_roles_permissions.view', 'icon' => 'users', 'label' => ['ar' => 'المستخدمون والأدوار', 'en' => 'Users & roles']],
         ['route' => 'admin.roles', 'permission' => 'users_roles_permissions.view', 'icon' => 'shield-check', 'label' => ['ar' => 'الأدوار والصلاحيات', 'en' => 'Roles & permissions']],
-        ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Master data']],
+        ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],
         ['route' => 'admin.settings', 'permission' => 'company_settings.view', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'إعدادات النظام', 'en' => 'System settings']],
         ['route' => 'admin.audit', 'permission' => 'audit_logs.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
         ['route' => 'admin.approvals', 'permission' => 'company_settings.view', 'icon' => 'check-badge', 'label' => ['ar' => 'صندوق الاعتمادات', 'en' => 'Approval inbox']],

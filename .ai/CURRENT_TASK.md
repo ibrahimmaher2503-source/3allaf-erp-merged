@@ -1,7 +1,7 @@
-# Current Task — v0.1.22-hotfix5 Performance Hotfix
+# Current Task — v0.1.22-hotfix6 Admin Navigation and Localization
 
-**Date:** 2026-09-02
-**Baseline:** exact clean Hotfix4 commit `1f181b08f3291e4eee71220afb84f5a0702a4220`
-**Status:** Corrective no-regression follow-up implemented and focused verification completed on `hotfix/v0.1.22-hotfix5-performance`; the original Hotfix5 artifact is rejected and a new immutable release is the remaining closure action.
+**Date:** 2026-09-03
+**Baseline:** exact clean deployed Hotfix5 commit `84554a303c979a314180b32516546debc567a053`
+**Status:** Implementation and focused verification completed on `hotfix/v0.1.22-hotfix6-admin-navigation-localization`; commit and immutable release preparation remain.
 
-The active owner-authorized slice measures and corrects authenticated route, shared layout, database-query, search, and payload bottlenecks without changing business behavior or infrastructure. The isolated database is `rajeh_hotfix5_perf_20260902`; production and shared data are excluded.
+The owner-authorized slice adds every real canonical setup step to the shared sidebar, standardizes user-facing Arabic warehouse terminology, clarifies the combined store workflow, and localizes/responsively corrects Audit Logs. Focused verification uses isolated database `rajeh_hotfix6_verify`; production and shared data are excluded.
