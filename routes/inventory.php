@@ -8,11 +8,16 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
+use App\Modules\Inventory\Actions\CompleteStockCountLineAction;
+use App\Modules\Inventory\Actions\CancelStockCountSessionAction;
 use App\Modules\Inventory\Actions\AssertInventoryStoreScope;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
+use App\Modules\Inventory\Actions\OpenStockCountSessionAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
+use App\Modules\Inventory\Actions\RecordStockCountContributionAction;
+use App\Modules\Inventory\Actions\RequestStockCountRecountAction;
 use App\Modules\Inventory\Actions\RecordStockCountLineAction;
 use App\Modules\Inventory\Actions\RequestStockTransferApprovalAction;
 use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
@@ -41,7 +46,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     Gate::authorize('inventory_stock_card.view');
     $user = Auth::user();
     abort_unless($user instanceof User, 403);
-    $visibleStores = Store::query()->with(['branch.activeSellingStoreMapping.store'])->visibleTo($user)->orderBy('branch_id')->orderBy('code')->limit(200)->get();
+    $visibleStores = Store::query()->with('branch')->visibleTo($user)->orderBy('branch_id')->orderBy('name_ar')->orderBy('code')->limit(200)->get();
     $visibleStoreIds = $visibleStores->modelKeys();
     $search = trim((string) request()->query('q', ''));
     $filterStoreId = request()->integer('store_id') ?: app(\App\Modules\Platform\Support\WorkContext::class)->id($user);
@@ -51,10 +56,12 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $movementType = trim((string) request()->query('movement_type', ''));
     abort_unless($movementType === '' || array_key_exists($movementType, \App\Modules\Inventory\Support\InventoryMovementLabel::options()), 422);
     $stockState = trim((string) request()->query('stock_state', ''));
+    $includeZero = request()->boolean('include_zero');
     abort_unless(in_array($stockState, ['', 'available', 'low', 'out', 'negative'], true), 422);
     $canViewCost = Gate::allows('inventory_stock_card.cost_view');
-    $balancesQuery = StockBalance::query()->with(['product', 'store.branch.activeSellingStoreMapping.store'])->whereIn('store_id', $visibleStoreIds)->orderBy('store_id')->orderBy('product_id');
-    $movementsQuery = StockMovement::query()->with(['product', 'store.branch.activeSellingStoreMapping.store', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
+    $balancesQuery = StockBalance::query()->with(['product.barcodes', 'store.branch'])->whereIn('store_id', $visibleStoreIds)->orderBy('store_id')->orderBy('product_id');
+    $movementsQuery = StockMovement::query()->with(['product', 'store.branch', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
+    if(!$includeZero)$balancesQuery->where(fn($q)=>$q->where('on_hand','!=',0)->orWhere('reserved','!=',0)->orWhere('in_transit','!=',0));
     if ($filterStoreId !== null) {
         $balancesQuery->where('store_id', $filterStoreId);
         $movementsQuery->where('store_id', $filterStoreId);
@@ -62,7 +69,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     if ($search !== '') {
         $like = '%'.addcslashes($search, '%_\\').'%';
         $balancesQuery->whereHas('product', static function ($query) use ($like): void {
-            $query->where('item_code', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('name_ar', 'like', $like)
+            $query->where('item_code', 'like', $like)->orWhere('model_number', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('name_ar', 'like', $like)
                 ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('barcode', 'like', $like));
         });
         $movementsQuery->whereHas('product', static function ($query) use ($like): void {
@@ -121,18 +128,18 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         ->unique('source_id')
         ->keyBy('source_id');
     $adjustments = InventoryAdjustment::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
-    $counts = StockCount::query()->with(['store', 'lines.product'])->whereIn('store_id', $visibleStoreIds)->latest('id')->limit(20)->get();
+    $counts = StockCount::query()->with(['store','locations.store','members.user','lines.product'])->where(function($query)use($visibleStoreIds){$query->whereIn('store_id',$visibleStoreIds)->orWhereHas('locations',fn($q)=>$q->whereIn('store_id',$visibleStoreIds));})->latest('id')->limit(20)->get();
     $products = Product::query()->sellable()->select(['id', 'item_code', 'name_en', 'name_ar', 'fractional_quantity', 'parent_product_id'])->when($search !== '', static function ($query) use ($search): void {
         $like = '%'.addcslashes($search, '%_\\').'%';
         $query->where(static function ($nested) use ($like): void {
             $nested->where('item_code', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('name_ar', 'like', $like);
         });
-    })->orderBy('item_code')->limit(200)->get();
-    $countAssignees = User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.submit'))->values();
+    })->when(in_array($focus,['count-create','count-entry','count-reconcile'],true),fn($query)=>$query->whereRaw('1 = 0'))->orderBy('item_code')->limit(200)->get();
+    $countAssignees = User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit') || $candidate->hasPermission('stock_counts.close'))->values();
     $countCategories = Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']);
     $countSuppliers = Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']);
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'inventoryOverview', 'canViewCost'));
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost'));
 };
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {
@@ -155,7 +162,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         if ($storeId !== null && ! in_array($storeId, $visibleStoreIds, true)) {
             abort(403);
         }
-        $query = StockBalance::query()->with(['product', 'store'])->whereIn('store_id', $visibleStoreIds)->when($storeId !== null, fn ($builder) => $builder->where('store_id', $storeId));
+        $query = StockBalance::query()->with(['product', 'store.branch'])->whereIn('store_id', $visibleStoreIds)->when($storeId !== null, fn ($builder) => $builder->where('store_id', $storeId));
         $search = trim((string) request()->query('q', ''));
         if ($search !== '') {
             $like = '%'.addcslashes($search, '%_\\').'%';
@@ -167,10 +174,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
         return response()->streamDownload(static function () use ($rows, $canViewCost): void {
             $output = fopen('php://output', 'wb');
-            fputcsv($output, $canViewCost ? ['product', 'store', 'on_hand', 'reserved', 'available', 'in_transit', 'average_cost'] : ['product', 'store', 'on_hand', 'reserved', 'available', 'in_transit']);
+            fputcsv($output, $canViewCost ? ['product_name', 'product_code', 'location_name', 'location_code', 'location_type', 'branch_name', 'branch_code', 'on_hand', 'reserved', 'available', 'in_transit', 'average_cost'] : ['product_name', 'product_code', 'location_name', 'location_code', 'location_type', 'branch_name', 'branch_code', 'on_hand', 'reserved', 'available', 'in_transit']);
             foreach ($rows as $row) {
                 $available = bcsub((string) $row->on_hand, (string) $row->reserved, 6);
-                $values = [$row->product?->item_code, $row->store?->code, \App\Support\ProductQuantity::format($row->on_hand), \App\Support\ProductQuantity::format($row->reserved), \App\Support\ProductQuantity::format($available), \App\Support\ProductQuantity::format($row->in_transit)];
+                $values = [\App\Support\HumanName::name($row->product), $row->product?->item_code, \App\Support\HumanName::name($row->store), $row->store?->code, $row->store?->type, \App\Support\HumanName::name($row->store?->branch), $row->store?->branch?->code, \App\Support\ProductQuantity::format($row->on_hand), \App\Support\ProductQuantity::format($row->reserved), \App\Support\ProductQuantity::format($available), \App\Support\ProductQuantity::format($row->in_transit)];
                 if ($canViewCost) {
                     $values[] = $row->average_cost;
                 }
@@ -213,12 +220,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     $router->get('inventory/counts/{count}/entry', function (StockCount $count) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->execute((int) $count->store_id);
 
-        return $renderInventory(null, 'count-entry', null, null, $count->load(['store', 'lines.product']));
+        return $renderInventory(null, 'count-entry', null, null, $count->load(['store','locations.store','members.user','lines.product']));
     })->middleware('can:stock_counts.view')->name('inventory.counts.entry');
     $router->get('inventory/counts/{count}/reconcile', function (StockCount $count) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->execute((int) $count->store_id);
 
-        return $renderInventory(null, 'count-reconcile', null, null, $count->load(['store', 'lines.product']));
+        return $renderInventory(null, 'count-reconcile', null, null, $count->load(['store','locations.store','members.user','lines.product']));
     })->middleware('can:stock_counts.reconcile')->name('inventory.counts.reconcile-page');
 
     $router->post('inventory/transfers', function (CreateStockTransferDraftAction $action) {
@@ -442,11 +449,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('count')->middleware('can:stock_counts.submit')->name('inventory.counts.submit');
 
     $router->post('inventory/counts', function (SaveStockCountAction $action) {
-        $validated = request()->validate(['store_id' => ['required', 'integer'], 'assigned_to' => ['required', 'integer'], 'count_type' => ['required', 'in:full,partial'], 'scope_type' => ['required', 'in:store,category,supplier,partial'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'notes' => ['nullable', 'string', 'max:1000'], 'product_ids' => ['required', 'array', 'min:1'], 'product_ids.*' => ['required', 'integer']]);
+        $validated = request()->validate(['branch_id'=>['required','integer','exists:branches,id'],'location_ids'=>['required','array','min:1'],'location_ids.*'=>['integer','distinct','exists:stores,id'],'member_ids'=>['required','array','min:1'],'member_ids.*'=>['integer','distinct','exists:users,id'],'manager_id'=>['required','integer','exists:users,id'],'count_type'=>['required','in:full,partial'],'scope_type'=>['required','in:full,category,supplier,partial'],'category_id'=>['nullable','integer'],'supplier_id'=>['nullable','integer'],'notes'=>['nullable','string','max:1000'],'assignments'=>['nullable','array'],'assignments.*.store_id'=>['integer'],'assignments.*.user_id'=>['integer'],'assignments.*.zone'=>['nullable','string','max:120']]);
         try {
-            $count = $action->execute($validated, $validated['product_ids']);
+            $count = $action->execute($validated);
 
-            return redirect()->route('inventory.counts.entry', $count)->with('success', __('Stock count created and assigned.'));
+            return redirect()->route('inventory.counts.entry', $count)->with('success', __('Count session created. Review its scope and open it when the team is ready.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -455,6 +462,14 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return back()->withInput()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->middleware('can:stock_counts.create')->name('inventory.counts.store');
+
+    $router->post('inventory/counts/{count}/open', function(StockCount $count, OpenStockCountSessionAction $action){$action->execute($count->id);return back()->with('success',__('Count session opened with immutable location snapshots.'));})->whereNumber('count')->middleware('can:stock_counts.open')->name('inventory.counts.open');
+    $router->post('inventory/counts/{count}/contributions', function(StockCount $count, RecordStockCountContributionAction $action){$v=request()->validate(['store_id'=>['required','integer'],'lookup'=>['required','string','max:255'],'quantity'=>['required','numeric'],'request_id'=>['required','uuid'],'device_id'=>['required','string','max:120'],'input_method'=>['required','in:scan,batch,manual']]);$entry=$action->execute($count->id,(int)$v['store_id'],$v['lookup'],(string)$v['quantity'],$v['request_id'],$v['device_id'],$v['input_method']);return back()->with('success',__('Quantity added. Updated counted total: :total',['total'=>$entry->count->contributions()->where('store_id',$entry->store_id)->where('product_id',$entry->product_id)->sum('quantity')]));})->whereNumber('count')->middleware('can:stock_counts.participate')->name('inventory.counts.contribute');
+    $router->post('inventory/count-lines/{line}/complete', function(\App\Modules\Inventory\Models\StockCountLine $line,CompleteStockCountLineAction $action){$action->execute($line->id,request()->boolean('explicit_zero'));return back()->with('success',__('Product/location count marked complete.'));})->whereNumber('line')->middleware('can:stock_counts.participate')->name('inventory.counts.complete-line');
+    $router->post('inventory/counts/{count}/recount',function(StockCount $count,RequestStockCountRecountAction $action){$v=request()->validate(['line_ids'=>['required','array','min:1'],'line_ids.*'=>['integer'],'reason'=>['required','string','max:1000']]);$action->execute($count->id,$v['line_ids'],$v['reason']);return redirect()->route('inventory.counts.entry',$count)->with('success',__('Recount requested with history preserved.'));})->whereNumber('count')->middleware('can:stock_counts.request_recount')->name('inventory.counts.request-recount');
+    $router->post('inventory/counts/{count}/cancel',function(StockCount $count,CancelStockCountSessionAction $action){$v=request()->validate(['reason'=>['required','string','max:1000']]);$action->execute($count->id,$v['reason']);return redirect()->route('inventory.counts')->with('success',__('Count session cancelled and transfer locks released.'));})->whereNumber('count')->middleware('can:stock_counts.cancel')->name('inventory.counts.cancel');
+    $router->get('inventory/counts/{count}/products',function(StockCount $count){$user=Auth::user();abort_unless($user instanceof User&&$count->members()->where('user_id',$user->id)->exists(),404);$term=trim((string)request('q'));abort_if(mb_strlen($term)<2,422);$like='%'.addcslashes($term,'%_\\').'%';return Product::query()->sellable()->where(fn($q)=>$q->where('item_code','like',$like)->orWhere('model_number','like',$like)->orWhere('name_ar','like',$like)->orWhere('name_en','like',$like))->orderBy('item_code')->limit(20)->get(['id','item_code','name_ar','name_en','model_number']);})->whereNumber('count')->middleware('can:stock_counts.participate')->name('inventory.counts.products');
+    $router->get('inventory/counts/{count}/report',function(StockCount $count){$user=Auth::user();abort_unless($user instanceof User,403);$visible=Store::query()->visibleTo($user)->select('id');abort_if($count->locations()->whereNotIn('store_id',$visible)->exists()||!$count->locations()->exists(),404);$count->load(['locations.store.branch','members.user','contributions.product','contributions.store','contributions.counter','lines.product','lines.store','creator']);return view('inventory.count-report',compact('count'));})->whereNumber('count')->middleware('can:stock_counts.view')->name('inventory.counts.report');
 
     $router->post('inventory/counts/{count}/entry', function (StockCount $count, RecordStockCountLineAction $action) {
         $validated = request()->validate(['counted_quantities' => ['required', 'array'], 'counted_quantities.*' => ['required', 'numeric', 'min:0'], 'input_methods' => ['nullable', 'array'], 'recount' => ['nullable', 'boolean']]);

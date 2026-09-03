@@ -42,6 +42,7 @@ final class UpdateStockTransferDraftAction
             }
             $this->scope->execute($sourceStoreId);
             $this->scope->execute($destinationStoreId);
+            app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
             $normalized = $this->normalizeLines($lines);
             $before = $transfer->only(['source_store_id', 'destination_store_id', 'reason_code', 'notes', 'status', 'lock_version']);
             $transfer->mutateApprovedDocument([

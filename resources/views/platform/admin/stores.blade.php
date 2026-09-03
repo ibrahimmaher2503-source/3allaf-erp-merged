@@ -21,12 +21,16 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 {
     use WithPagination;
 
+    #[Url(as: 'q', except: '')]
     public string $search = '';
 
+    #[Url(as: 'branch', except: 'all')]
     public string $branchFilter = 'all';
 
+    #[Url(as: 'type', except: 'all')]
     public string $typeFilter = 'all';
 
+    #[Url(as: 'status', except: 'all')]
     public string $statusFilter = 'all';
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
@@ -251,6 +255,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     public function openStoreMappingModal(int $storeId): void
     {
+        abort(410, __('Company-wide primary sales outlets are obsolete. Select the exact outlet when opening a shift.'));
         Gate::authorize('branches_stores.edit');
 
         $store = Store::visibleTo(auth()->user())->with('branch')->findOrFail($storeId);
@@ -283,6 +288,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     public function saveStoreMapping(SaveBranchSellingStoreMappingAction $action): void
     {
+        abort(410, __('Company-wide primary sales outlets are obsolete. Select the exact outlet when opening a shift.'));
         Gate::authorize('branches_stores.edit');
 
         $validated = $this->validate([
@@ -305,7 +311,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     public function render()
     {
-        $query = Store::visibleTo(auth()->user())->with(['branch', 'sellingStoreMappings.branch']);
+        $query = Store::visibleTo(auth()->user())->with('branch');
         $term = trim($this->search);
 
         if ($term !== '') {
@@ -339,7 +345,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 ->orderBy('code')
                 ->get(),
             'activePriceLists' => PriceList::query()->where('company_id', Company::query()->where('status', 'active')->value('id'))->where('status', 'active')->orderBy('list_number')->get(),
-            'stores' => $query->orderBy('code')->paginate(10),
+            'stores' => $query->orderByRaw("COALESCE(NULLIF(name_ar,''), NULLIF(name_en,''), code)")->orderBy('code')->paginate(10),
             'pendingArchiveStoreIds' => ApprovalRecord::query()
                 ->where('source_type', 'platform_settings')
                 ->whereIn('requested_action', ['store_archive', 'store_delete'])
@@ -427,7 +433,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         <div class="space-y-3 md:hidden" data-guide="stores-cards" aria-label="{{ __('Warehouse list') }}">
             @foreach ($stores as $st)
                 <?php
-                    $activeBranchMapping = $st->sellingStoreMappings->firstWhere('status', 'active');
                     $isPendingArchive = in_array($st->id, $pendingArchiveStoreIds, true);
                 ?>
                 <flux:card wire:key="store-card-{{ $st->id }}" class="space-y-4 p-4">
@@ -471,21 +476,12 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                         <div>
                             <div class="text-xs text-zinc-500">{{ __('Branch Context') }}</div>
                             @if ($st->branch)
-                                <div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ $st->branch->code }} · {{ app()->getLocale() === 'ar' ? $st->branch->name_ar : $st->branch->name_en }}</div>
+                                <div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ \App\Support\HumanName::name($st->branch) }}</div><div class="font-mono text-xs text-zinc-500" dir="ltr">{{ $st->branch->code }}</div>
                             @else
                                 <div class="mt-0.5 text-zinc-600 dark:text-zinc-300">{{ __('Central / Unassigned') }}</div>
                             @endif
                         </div>
-                        @if ($st->type === 'selling')
-                            <div>
-                                <div class="text-xs text-zinc-500">{{ __('Mapped POS Branch') }}</div>
-                                @if ($activeBranchMapping && $activeBranchMapping->branch)
-                                    <div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ $activeBranchMapping->branch->code }} · {{ app()->getLocale() === 'ar' ? $activeBranchMapping->branch->name_ar : $activeBranchMapping->branch->name_en }}</div>
-                                @else
-                                    <div class="mt-0.5"><flux:badge size="sm" variant="outline" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Unmapped') }}</span></flux:badge></div>
-                                @endif
-                            </div>
-                        @endif
+                        <div><div class="text-xs text-zinc-500">{{ __('Linked Sales Outlet') }}</div>@if($st->type === 'selling')<div class="mt-0.5 font-medium text-zinc-700 dark:text-zinc-300">{{ \App\Support\HumanName::name($st) }}</div><div class="font-mono text-xs text-zinc-500" dir="ltr">{{ $st->code }}</div>@else<div class="mt-0.5">{{ __('Unlinked') }}</div>@endif</div>
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-xs text-zinc-500">{{ __('Negative Stock') }}</span>
                             @if ($st->allows_negative_stock)
@@ -499,7 +495,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                     <div class="grid grid-cols-2 gap-2">
                         @can('branches_stores.edit')
                             <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})">{{ __('Edit') }}</x-actions.button>
-                            @if ($st->type === 'selling' && $st->status === 'active')
+                            @if (false)
                                 <x-actions.button semantic="assign" :label="__('Assign')" size="sm" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})">{{ __('Set as primary point of sale') }}</x-actions.button>
                             @endif
                             @if ($st->status === 'active' && ! $isPendingArchive)
@@ -524,7 +520,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <flux:table.column class="min-w-52"><span class="block whitespace-normal leading-tight">{{ __('Location identity') }}</span></flux:table.column>
                 <flux:table.column class="min-w-36 whitespace-nowrap">{{ __('Type') }}</flux:table.column>
                 <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Branch Context') }}</span></flux:table.column>
-                <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Mapped Sales Outlet') }}</span></flux:table.column>
+                <flux:table.column class="min-w-40"><span class="block whitespace-normal leading-tight">{{ __('Linked Sales Outlet') }}</span></flux:table.column>
                 <flux:table.column class="min-w-32"><span class="block whitespace-normal leading-tight">{{ __('Negative Stock') }}</span></flux:table.column>
                 <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
                 <flux:table.column class="min-w-44 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
@@ -533,7 +529,6 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             <flux:table.rows>
                 @foreach ($stores as $st)
                     <?php
-                $activeBranchMapping = $st->sellingStoreMappings->firstWhere('status', 'active');
                 $isPendingArchive = in_array($st->id, $pendingArchiveStoreIds, true);
 ?>
                     <flux:table.row :key="$st->id">
@@ -567,8 +562,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
                         <flux:table.cell class="align-top text-xs">
                             @if ($st->branch)
-                                <span class="block font-mono font-medium text-zinc-700 dark:text-zinc-300">{{ $st->branch->code }}</span>
-                                <span class="block leading-relaxed text-zinc-500">({{ app()->getLocale() === 'ar' ? $st->branch->name_ar : $st->branch->name_en }})</span>
+                                <span class="block font-medium text-zinc-700 dark:text-zinc-300">{{ \App\Support\HumanName::name($st->branch) }}</span>
+                                <span class="block font-mono leading-relaxed text-zinc-500" dir="ltr">{{ $st->branch->code }}</span>
                             @else
                                 <span class="font-italic text-zinc-600 dark:text-zinc-300">{{ __('Central / Unassigned') }}</span>
                             @endif
@@ -576,24 +571,9 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
                         <flux:table.cell>
                             @if ($st->type === 'selling')
-                                @if ($activeBranchMapping && $activeBranchMapping->branch)
-                                    <div class="space-y-0.5">
-                                        <div class="flex items-center gap-1.5">
-                                            <flux:badge size="sm" variant="solid" color="emerald" class="!bg-emerald-700 !text-white">
-                                                {{ $activeBranchMapping->branch->code }}
-                                            </flux:badge>
-                                        </div>
-                                        <span class="block text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                            {{ app()->getLocale() === 'ar' ? $activeBranchMapping->branch->name_ar : $activeBranchMapping->branch->name_en }}
-                                        </span>
-                                    </div>
-                                @else
-                                    <flux:badge size="sm" variant="outline" color="amber">
-                                        {{ __('Unmapped') }}
-                                    </flux:badge>
-                                @endif
+                                <div class="font-medium">{{ \App\Support\HumanName::name($st) }}</div><div class="font-mono text-xs text-zinc-500" dir="ltr">{{ $st->code }}</div>
                             @else
-                                <span class="text-xs text-zinc-600 dark:text-zinc-300">—</span>
+                                <span class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('Unlinked') }}</span>
                             @endif
                         </flux:table.cell>
 
@@ -619,7 +599,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                             <div class="flex flex-wrap items-center justify-end gap-2">
                                 @can('branches_stores.edit')
                                     <x-actions.button semantic="edit" :label="__('Edit')" size="xs" variant="subtle" icon="pencil" wire:click="openEditStoreModal({{ $st->id }})" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
-                                    @if ($st->type === 'selling' && $st->status === 'active')
+                                    @if (false)
                                         <x-actions.button semantic="assign" :label="__('Assign')" size="xs" variant="subtle" icon="arrows-right-left" wire:click="openStoreMappingModal({{ $st->id }})" aria-label="{{ __('Set as primary point of sale') }}" title="{{ __('Set as primary point of sale') }}" />
                                     @endif
                                     @if ($st->status === 'active' && ! $isPendingArchive)
@@ -644,6 +624,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         </div>
 
         <div class="pt-4" data-guide="stores-pagination">
+            <p class="mb-2 text-sm text-zinc-500">{{ __('Showing :from–:to of :total locations', ['from'=>$stores->firstItem()??0,'to'=>$stores->lastItem()??0,'total'=>$stores->total()]) }}</p>
             {{ $stores->links() }}
         </div>
     @endif
@@ -710,7 +691,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endforeach
             </flux:select>
             @if ($storeForm['type'] === 'selling')
-                <p class="text-xs text-zinc-500">{{ __('A point of sale must belong to an active branch. A new active point of sale becomes primary when no primary point of sale exists.') }}</p>
+                <p class="text-xs text-zinc-500">{{ __('A sales outlet must belong to an active branch. Its own linked cash drawer identifies the exact POS stock source.') }}</p>
                 <flux:select wire:model="storeForm.price_list_id" :label="__('Price list')"><flux:select.option value="">{{ __('Inherit branch default or List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
             @endif
 
@@ -769,6 +750,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         </div>
     </flux:modal>
 
+    {{-- Historical primary-outlet mapping UI intentionally retired in Hotfix7. --}}
+    @if(false)
     <!-- Set primary point of sale modal -->
     <flux:modal wire:model="showStoreMappingModal" class="md:w-140 space-y-6">
         <div>
@@ -792,4 +775,5 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             </div>
         </form>
     </flux:modal>
+    @endif
 </x-app.page>

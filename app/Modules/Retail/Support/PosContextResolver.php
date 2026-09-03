@@ -47,38 +47,8 @@ final class PosContextResolver
             return new PosContext(null, null, null, null, __('POS is disabled because the active shift assignment is no longer available to this cashier.'));
         }
 
-        // BranchSellingStore is the authoritative POS selling and stock-source
-        // assignment. The shift must be opened against that exact location;
-        // there is intentionally no separate warehouse relationship here.
-        $branch->loadMissing('activeSellingStoreMapping.store');
-        $mapping = $branch->activeSellingStoreMapping;
-        $assignedStore = $mapping?->store;
-        if ($assignedStore === null) {
-            return new PosContext(
-                null,
-                null,
-                null,
-                null,
-                __('POS is disabled because :branch has no active POS selling & stock location assignment. Configure the branch assignment before opening a shift.', [
-                    'branch' => $branch->code.' - '.(app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en),
-                ]),
-            );
-        }
-
-        if ((int) $assignedStore->id !== (int) $store->id) {
-            return new PosContext(
-                null,
-                null,
-                null,
-                null,
-                __('POS is disabled because the active shift uses :shift_store, while :branch is assigned to :assigned_store as its POS selling & stock location. Open a shift from the assigned location.', [
-                    'shift_store' => $store->code.' - '.(app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en),
-                    'branch' => $branch->code.' - '.(app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en),
-                    'assigned_store' => $assignedStore->code.' - '.(app()->getLocale() === 'ar' ? $assignedStore->name_ar : $assignedStore->name_en),
-                ]),
-            );
-        }
-
+        // The open shift's explicit selling outlet is the only stock source.
+        // Historical branch-wide primary mappings are deliberately ignored.
         return new PosContext($branch, $store, $drawer, $shift);
     }
 }

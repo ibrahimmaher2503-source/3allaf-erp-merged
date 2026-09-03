@@ -147,3 +147,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Centralized the 21 real routable setup definitions (5 Essentials, 5 Settings, 11 Operational Readiness) and rendered every authorized leaf in the desktop/mobile Basic Data sidebar while preserving the existing overview and setup workflow.
 - Standardized user-facing Arabic warehouse terminology to مخزن/مخازن, clarified the combined Warehouse / Point of Sale create workflow, and corrected bilingual Audit Log event/source presentation, dates, warning copy and responsive layout.
 - The sidebar uses static canonical metadata and the existing request permission lookup, never readiness/catalog evaluation. Shared-layout profiling retained 5 queries with no duplicates and no meaningful latency regression.
+## 2026-09-03 — v0.1.22-hotfix7 inventory counting UX
+
+- Removed active company-wide sales-outlet fallback from POS/readiness; shifts require an explicit authorized outlet/cash-drawer context and confirmation.
+- Added authorized store navigation, centralized localized human-name-first rendering, bounded balance/product lookup, improved store filters, and name-first exports.
+- Extended stock counts additively with immutable location snapshots, teams/assignments, append-only idempotent contributions and corrections, explicit zero/completion, transfer locks, cutoff-aware reconciliation, per-location adjustments, permissions, audit events and bilingual reporting.
+- Focused verification used disposable MariaDB and local Chromium only; evidence is under `.ai/evidence/v0.1.22-hotfix7`.

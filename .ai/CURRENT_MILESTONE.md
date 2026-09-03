@@ -1,6 +1,6 @@
-# Active Milestone — v0.1.22 Cumulative Stabilization
+# Current Milestone
 
-**Date:** 2026-09-01
-**Status:** v0.1.22-hotfix6 admin navigation/localization correction and focused verification completed from the exact deployed Hotfix5 baseline; immutable release preparation remains, without deployment.
+**Date:** 2026-09-03
+**Status:** v0.1.22-hotfix7 inventory-counting operational correction is implemented and focused verification is complete from the exact Hotfix6 baseline. Production deployment is not authorized.
 
-This stabilization preserves Hotfix 1–3 and the completed 54-point source audit, then adds the post-deployment localization, readiness, deletion, quantity, barcode-label, pricing, print-layout, invoice-card and version corrections. The authoritative matrix records 49 PASS, 4 FIXED and 1 BLOCKED solely for physical-printer output.
+The release preserves historical count and outlet-mapping data, adds only upgrade-safe schema, and makes explicit outlet/location selection authoritative for new operations.

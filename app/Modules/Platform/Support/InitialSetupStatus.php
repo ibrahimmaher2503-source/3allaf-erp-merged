@@ -18,7 +18,6 @@ use App\Modules\Inventory\Models\OpeningInventoryDocument;
 use App\Modules\Inventory\Models\OpeningInventoryZeroDecision;
 use App\Modules\Party\Models\PartyBooking;
 use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
@@ -85,7 +84,7 @@ final class InitialSetupStatus
         $steps = [
             $this->step('company', $companyReady, Company::query()->count()),
             $this->step('branches-stores', $branchesReady, Branch::query()->count()),
-            $this->step('warehouses', $this->warehousesReady() && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping(), Store::query()->where('type', 'warehouse')->count() + BranchSellingStore::query()->where('status', 'active')->count()),
+            $this->step('warehouses', $this->warehousesReady() && Store::query()->where('type','selling')->where('status','active')->whereNotNull('branch_id')->exists(), Store::query()->whereIn('type',['warehouse','selling'])->count()),
             $this->step('cash-drawers', $this->cashDrawersReady(), CashDrawer::query()->count()),
             $this->step('users-scopes', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
             $this->step('payment-methods', $this->paymentMethodsReady(), PaymentMethod::query()->count()),
@@ -162,7 +161,7 @@ final class InitialSetupStatus
     {
         return Branch::query()->where('status', 'active')->exists()
             && Store::query()->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists()
-            && $this->retailBranchesHaveOneCurrentValidSellingStoreMapping();
+            && Store::query()->where('type','selling')->where('status','active')->whereNotNull('branch_id')->exists();
     }
 
     private function branchesReady(): bool
@@ -175,31 +174,6 @@ final class InitialSetupStatus
         return Store::query()->where('type', 'warehouse')->where('status', 'active')->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
     }
 
-    private function retailBranchesHaveOneCurrentValidSellingStoreMapping(): bool
-    {
-        $retailBranchIds = Branch::query()
-            ->where('status', 'active')
-            ->whereHas('stores', fn (Builder $query): Builder => $query->where('status', 'active')->where('type', 'selling'))
-            ->pluck('id');
-
-        $currentMappingCounts = BranchSellingStore::query()
-            ->whereIn('branch_id', $retailBranchIds)
-            ->where('status', 'active')
-            ->where(fn (Builder $query): Builder => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
-            ->where(fn (Builder $query): Builder => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->whereHas('store', fn (Builder $query): Builder => $query
-                ->where('status', 'active')
-                ->where('type', 'selling')
-                ->whereColumn('stores.branch_id', 'branch_selling_stores.branch_id'))
-            ->selectRaw('branch_id, count(*) as mappings')
-            ->groupBy('branch_id')
-            ->pluck('mappings', 'branch_id');
-
-        return $retailBranchIds->isNotEmpty()
-            && $retailBranchIds->count() === $currentMappingCounts->count()
-            && $currentMappingCounts->every(static fn (int|string $count): bool => (int) $count === 1);
-    }
-
     private function cashDrawersReady(): bool
     {
         return CashDrawer::query()
@@ -209,11 +183,6 @@ final class InitialSetupStatus
                 ->where('status', 'active')
                 ->where('type', 'selling')
                 ->whereColumn('stores.branch_id', 'cash_drawers.branch_id'))
-            ->whereHas('branch.sellingStoreMappings', fn (Builder $query): Builder => $query
-                ->where('status', 'active')
-                ->where(fn (Builder $dates): Builder => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
-                ->where(fn (Builder $dates): Builder => $dates->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-                ->whereColumn('branch_selling_stores.store_id', 'cash_drawers.store_id'))
             ->exists();
     }
 

@@ -58,6 +58,7 @@ return [
     ['key' => 'administration', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'الإدارة والإعدادات', 'en' => 'Administration & settings'], 'items' => [
         ['route' => 'admin.overview', 'permission' => 'company_settings.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
         ['route' => 'admin.branches', 'permission' => 'branches_stores.view', 'icon' => 'building-office', 'label' => ['ar' => 'الشركة والفروع ومنافذ البيع', 'en' => 'Company, branches & Sales Outlets']],
+        ['route' => 'admin.stores', 'permission' => 'branches_stores.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'المخازن ومنافذ البيع', 'en' => 'Warehouses & Sales Outlets']],
         ['route' => 'admin.authorization-baseline', 'permission' => 'users_roles_permissions.view', 'icon' => 'users', 'label' => ['ar' => 'المستخدمون والأدوار', 'en' => 'Users & roles']],
         ['route' => 'admin.roles', 'permission' => 'users_roles_permissions.view', 'icon' => 'shield-check', 'label' => ['ar' => 'الأدوار والصلاحيات', 'en' => 'Roles & permissions']],
         ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],

@@ -24,21 +24,24 @@ final class SubmitStockCountAction
 
         return DB::transaction(function () use ($id): StockCount {
             $count = StockCount::query()->with('lines')->lockForUpdate()->findOrFail($id);
-            if ($count->store_id === null) {
-                throw new InvalidArgumentException(__('This Local Demo count must target a store before submission.'));
-            }
-            $this->scope->execute($count->store_id);
-            if (! in_array($count->status, ['draft', 'in_progress'], true)) {
+            if ($count->status !== 'in_progress') {
                 throw new InvalidArgumentException(__('Only an open stock count can be submitted.'));
             }
+            if ($count->manager_id !== null && (int) $count->manager_id !== (int) auth()->id() && ! auth()->user()?->can('stock_counts.close')) abort(403);
+            if ($count->lines->contains(fn ($line): bool => ! $line->is_counted || $line->completed_at === null)) {
+                throw new InvalidArgumentException(__('Every scoped product/location must be counted or explicitly confirmed as zero before entry can close.'));
+            }
             foreach ($count->lines as $line) {
-                $movementQuantity = StockMovement::query()->where('product_id', $line->product_id)->where('store_id', $count->store_id)->where('posted_at', '>', $count->reference_at)->sum('quantity');
-                $expected = bcadd((string) $line->reference_on_hand, (string) $movementQuantity, 6);
-                $variance = $line->is_counted && $line->counted_quantity !== null ? bcsub((string) $line->counted_quantity, $expected, 6) : null;
-                $line->update(['movement_quantity_after_reference' => $movementQuantity, 'expected_quantity' => $expected, 'variance_quantity' => $variance]);
+                $this->scope->execute((int) $line->store_id);
+                $toCutoff = StockMovement::query()->where('product_id',$line->product_id)->where('store_id',$line->store_id)->where('posted_at','>',$count->reference_at)->where('posted_at','<=',$line->completed_at)->sum('quantity');
+                $afterCutoff = StockMovement::query()->where('product_id',$line->product_id)->where('store_id',$line->store_id)->where('posted_at','>',$line->completed_at)->sum('quantity');
+                $expectedAtCutoff=bcadd((string)$line->reference_on_hand,(string)$toCutoff,6);
+                $expectedClosing=bcadd($expectedAtCutoff,(string)$afterCutoff,6);
+                $normalizedClosing=bcadd((string)$line->counted_quantity,(string)$afterCutoff,6);
+                $line->update(['movement_quantity_after_reference'=>bcadd((string)$toCutoff,(string)$afterCutoff,6),'movement_after_completion'=>$afterCutoff,'expected_quantity'=>$expectedClosing,'normalized_closing_quantity'=>$normalizedClosing,'variance_quantity'=>bcsub($normalizedClosing,$expectedClosing,6)]);
             }
             $before = $count->only(['status', 'lock_version']);
-            $count->update(['status' => 'submitted', 'submitted_at' => now(), 'lock_version' => $count->lock_version + 1]);
+            $count->update(['status' => 'submitted', 'entry_closed_at'=>now(), 'submitted_at' => now(), 'lock_version' => $count->lock_version + 1]);
             $branchId = Store::query()->whereKey($count->store_id)->value('branch_id');
             app(RequestApproval::class)->execute(new ApprovalRequestData(
                 sourceType: 'stock_counts',
@@ -49,7 +52,7 @@ final class SubmitStockCountAction
                 decisionPermission: 'stock_counts.reconcile',
                 branchId: $branchId === null ? null : (int) $branchId,
                 storeId: $count->store_id,
-                limitContext: ['uncounted_lines' => $count->lines->where('is_counted', false)->count()],
+                limitContext: ['uncounted_lines' => 0, 'locations'=>$count->locations()->count()],
                 idempotencyKey: 'stock-count-reconciliation:'.$count->id.':'.$count->lock_version,
             ));
             app(RecordAuditEvent::class)->execute('inventory', 'submit_stock_count', $count, $before, $count->only(['status', 'submitted_at', 'lock_version']), storeId: $count->store_id, metadata: ['uncounted_lines' => $count->lines->where('is_counted', false)->count()]);

@@ -79,16 +79,13 @@ new #[Title('Branch Management')] class extends Component
 
     public function mount(): void
     {
+        $this->section = 'branch-masters';
         Gate::authorize('branches_stores.view');
-        $section = (string) request()->query('section', 'branch-masters');
-        if (in_array($section, ['branch-masters', 'selling-store-mapping'], true)) {
-            $this->section = $section;
-        }
     }
 
     public function rendering(): void
     {
-        if (! in_array($this->section, ['branch-masters', 'selling-store-mapping'], true)) {
+        if ($this->section !== 'branch-masters') {
             $this->section = 'branch-masters';
         }
     }
@@ -325,8 +322,8 @@ new #[Title('Branch Management')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="$section === 'selling-store-mapping' ? __('Primary point of sale per branch') : __('Branch Masters')"
-    :description="$section === 'selling-store-mapping' ? __('Choose the point of sale used by each branch. Sales stock is taken from this point of sale.') : __('Manage branch locations, active warehouses, and authorized POS selling store assignments.')"
+    :title="__('Branch Masters')"
+    :description="__('Manage branches and open Warehouses & Sales Outlets to configure explicit stock locations.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="branches-header"
@@ -344,7 +341,7 @@ new #[Title('Branch Management')] class extends Component
     <x-slot:actions>
         <div class="flex flex-wrap items-center gap-2" data-guide="branches-workspace-navigation">
             @if ($section === 'branch-masters')
-                <flux:button size="sm" icon="building-storefront" variant="primary" href="{{ route('admin.branches', ['section' => 'selling-store-mapping']) }}">{{ __('Primary point of sale') }}</flux:button>
+                <flux:button size="sm" icon="building-storefront" variant="primary" href="{{ route('admin.stores') }}">{{ __('Warehouses & Sales Outlets') }}</flux:button>
                 <div data-guide="branch-masters-actions">
                     <x-tables.resource-toolbar>
                         @can('branches_stores.create')

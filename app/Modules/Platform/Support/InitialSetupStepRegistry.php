@@ -12,7 +12,7 @@ final class InitialSetupStepRegistry
         return [
             'company' => self::step('Company identity', 'Use the approved bilingual identity, legal details, currency, timezone, and contact information.', 'admin.settings', 'company_settings.view', ['tab' => 'company'], 'company-identity'),
             'branches-stores' => self::step('Branches', 'Create active branches and complete their basic details.', 'admin.branches', 'branches_stores.view'),
-            'warehouses' => self::step('Warehouses & Points of Sale', 'Add at least one active physical warehouse linked to an active branch, then ensure every active retail branch has exactly one current valid primary point of sale.', 'admin.stores', 'branches_stores.view'),
+            'warehouses' => self::step('Warehouses & Sales Outlets', 'Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.', 'admin.stores', 'branches_stores.view'),
             'cash-drawers' => self::step('Cash drawers', 'Assign active cash drawers to the stores that will receive controlled payments.', 'admin.cash-drawers', 'drawers_payments_tax_numbering_printers.view'),
             'users-scopes' => self::step('Users, roles, and scopes', 'Create the opening team, assign roles, and scope every non-administrator to approved branches or stores.', 'admin.authorization-baseline', 'users_roles_permissions.view'),
             'payment-methods' => self::step('Payment methods', 'Define the persisted payment methods staff may recognize and reconcile.', 'admin.settings', 'company_settings.view', ['tab' => 'payments'], 'payment-methods'),

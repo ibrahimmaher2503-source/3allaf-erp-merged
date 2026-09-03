@@ -826,7 +826,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.pos.shift', [
             'shift' => $shift,
             'closedShifts' => $closedShifts,
-            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->with(['branch', 'store'])->orderBy('code')->get(),
+            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))->with(['branch', 'store'])->orderBy('code')->get(),
             'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
             'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,
@@ -844,6 +844,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'cash_drawer_id' => ['required', 'integer', 'exists:cash_drawers,id'],
             'opening_float' => ['required', 'numeric', 'gte:0'],
             'idempotency_key' => ['required', 'uuid'],
+            'confirm_outlet' => ['accepted'],
         ]);
 
         try {

@@ -60,6 +60,7 @@ final class CreateStockTransferDraftAction
     ): StockTransfer {
         return DB::transaction(function () use ($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $idempotencyKey): StockTransfer {
             $this->assertStores($sourceStoreId, $destinationStoreId);
+            app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
             $normalizedLines = $this->normalizeLines($lines, $sourceStoreId);
 
             $existing = StockTransfer::query()->with('lines')->where('idempotency_key', $idempotencyKey)->first();

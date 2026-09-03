@@ -31,11 +31,17 @@
                     <form method="POST" action="{{ route('pos.shift.open') }}" class="mt-4 grid gap-3">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $openToken }}">
-                        <flux:select name="cash_drawer_id" :label="__('Cash drawer')" required>
+                        <flux:select name="cash_drawer_id" :label="__('Sales outlet and cash drawer')" required>
                             @foreach ($drawers as $drawer)
-                                <flux:select.option value="{{ $drawer->id }}">{{ $drawer->code }} — {{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }} · {{ $drawer->branch?->code }} → {{ $drawer->store?->code ?? __('No POS location') }}</flux:select.option>
+                                <flux:select.option value="{{ $drawer->id }}">{{ \App\Support\HumanName::name($drawer->store) }} — {{ \App\Support\HumanName::code($drawer->store) }} · {{ \App\Support\HumanName::name($drawer) }}</flux:select.option>
                             @endforeach
                         </flux:select>
+                        @if($drawers->count() === 1)
+                            <flux:callout variant="info" icon="building-storefront">{{ __('Your authorized sales outlet is :outlet.', ['outlet'=>\App\Support\HumanName::name($drawers->first()->store)]) }}</flux:callout>
+                        @else
+                            <flux:text>{{ __('Select the exact authorized sales outlet before opening the shift.') }}</flux:text>
+                        @endif
+                        <flux:checkbox name="confirm_outlet" value="1" :label="__('I confirm this sales outlet and its stock source for the shift.')" required />
                         <flux:input type="number" step="0.01" min="0" name="opening_float" :label="__('Opening float')" value="0.00" required />
                         @error('cash_drawer_id')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
                         <flux:button type="submit" variant="primary" icon="lock-open">{{ __('Open shift') }}</flux:button>

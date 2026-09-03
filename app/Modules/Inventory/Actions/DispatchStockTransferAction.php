@@ -22,6 +22,7 @@ final class DispatchStockTransferAction
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer, source: true, destination: false);
+            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
             if ($transfer->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved transfers can be dispatched.'));
             }

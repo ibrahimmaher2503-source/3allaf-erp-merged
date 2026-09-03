@@ -23,6 +23,7 @@ final class ReceiveStockTransferAction
         return DB::transaction(function () use ($id, $receivedQuantities, $differenceType, $differenceReason): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer, source: false, destination: true);
+            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
             if ($transfer->status !== 'in_transit') {
                 throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));
             }

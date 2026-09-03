@@ -60,13 +60,8 @@ class SaveCashDrawerAction
                         throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
                     }
 
-                    $mapping = $branch->activeSellingStoreMapping()->with('store')->first();
-                    if ($mapping?->store === null) {
-                        throw new InvalidArgumentException(__('This branch has no active POS selling location / stock source assignment. Configure the branch assignment before saving an active drawer.'));
-                    }
-                    if ((int) $mapping->store_id !== (int) $store->id) {
-                        throw new InvalidArgumentException(__('The POS selling location / stock source must match the branch\'s active POS location assignment.'));
-                    }
+                    // The drawer's explicit selling outlet is authoritative. A
+                    // historical branch-wide primary mapping is never a fallback.
                 }
 
                 $attributes = [

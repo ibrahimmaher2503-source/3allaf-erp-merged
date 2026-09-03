@@ -1,5 +1,14 @@
 # Test and Verification Results
 
+## 2026-09-03 — v0.1.22-hotfix7 focused pass
+
+- Hotfix7 PHPUnit passed 5 tests / 26 assertions. PHP syntax, Blade compilation, both locale JSON files, focused routes, diff hygiene and the Node 20 Vite production build passed.
+- Fresh disposable MariaDB applied all migrations; migration `2026_09_03_000106_add_inventory_count_sessions` passed down/up, creating four session tables and nine permissions.
+- Mandatory reconciliation passed: opening 10, counted 10, sale-after-cutoff -2, expected 8, normalized 8, variance 0; transfer lock rejected the counted location.
+- Two parallel counters produced exactly two contributions totaling 2; request replay remained idempotent. Product-code and model searches used `products_item_code_unique` and `prod_model_status_idx` under EXPLAIN.
+- Authenticated Arabic/English desktop and Arabic 390px checks covered balances, stores, count creation and active entry with zero console errors and zero horizontal overflow. Route query samples were balances 41, stores 93 on cold readiness-cache creation, count creation 41 and active counting 49; duplicates observed were shared session/translation/permission/layout loads, not unbounded product preload.
+- A broader historical source-contract selection reported 26/33 passing: failures were obsolete Hotfix4/Hotfix6 version/CSS expectations and pre-existing missing M54 fixture/view contracts, not runtime failures. They are not represented as passing.
+
 ## 2026-09-03 — v0.1.22-hotfix6 focused pass
 
 - Focused PHPUnit passed 4 tests / 34 assertions with zero errors or failures. Changed PHP syntax, Blade compilation, Arabic/English JSON parsing and diff hygiene passed.

@@ -23,6 +23,9 @@ final class RecordStockCountLineAction
 
         return DB::transaction(function () use ($id, $countedQuantities, $inputMethods, $recount): StockCount {
             $count = StockCount::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            if ($count->locations()->exists()) {
+                throw new InvalidArgumentException(__('This count session uses append-only contributions. Use barcode or batch-add entry.'));
+            }
             app(AssertInventoryStoreScope::class)->execute((int) $count->store_id);
             if (! in_array($count->status, ['draft', 'in_progress'], true)) {
                 throw new InvalidArgumentException(__('Only open stock counts can record quantities.'));
