@@ -61,15 +61,16 @@ Keep TSK-009 at its actual recorded status. Do not claim Phase 1 or Phase 2 gate
 For every coding or documentation task, read only:
 
 1. `AGENTS.md`
-2. `AI_INDEX.md`
-3. `.ai/CURRENT_TASK.md`
-4. `.ai/CURRENT_MILESTONE.md`
-5. The relevant task section in `TASKS.md`
-6. The task-referenced entries in `.ai/BLOCKERS.md`
-7. The task-referenced entries in `.ai/DECISIONS.md`
-8. The latest relevant section of `.ai/HANDOFF.md`
-9. The latest relevant session in `.ai/SESSION_SUMMARY.md`
-10. The task-specific sources in the routing matrix below
+2. `.ai/ERP_CHANGE_POLICY.md`
+3. `AI_INDEX.md`
+4. `.ai/CURRENT_TASK.md`
+5. `.ai/CURRENT_MILESTONE.md`
+6. The relevant task section in `TASKS.md`
+7. The task-referenced entries in `.ai/BLOCKERS.md`
+8. The task-referenced entries in `.ai/DECISIONS.md`
+9. The latest relevant section of `.ai/HANDOFF.md`
+10. The latest relevant session in `.ai/SESSION_SUMMARY.md`
+11. The task-specific sources in the routing matrix below
 
 Read latest relevant entries, not complete histories, when safe. Do not require full `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, `.ai/UI_SCREENS.md`, or the complete decision register unless the task requires them.
 

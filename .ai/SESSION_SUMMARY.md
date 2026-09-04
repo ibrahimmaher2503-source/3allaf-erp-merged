@@ -835,3 +835,10 @@
 - **Work completed:** Removed the standalone upper Roles & Permissions navigation item and the lower Product Catalog readiness summary only; retained the canonical Basic Data/Essentials users-and-scopes link, active highlighting, and upper setup/readiness summary. Updated the release version to `0.1.22-hotfix10` and the focused source contracts.
 - **Verification actually run:** PHP 8.5.9 syntax, database-fail-closed Blade cache compilation, Arabic/English JSON, direct source contracts, diff hygiene, storage-link guard, and all Vite/font manifest references passed. No frontend source changed, so no Vite build ran. Focused PHPUnit and browser automation were blocked by execution policy before launch and are not claimed.
 - **Boundary:** Code, documentation, evidence, commit, and immutable release preparation occurred only in the isolated worktree and `/tmp`. No database, production/shared runtime, original dirty file, deployment, migration, service, symlink, tag, push, or remote modification occurred.
+
+## 2026-09-04 — ERP change-classification and execution governance
+
+- **Task:** Added permanent repository governance for proportional ERP change classification, execution, escalation, batching, verification, source control, and reporting.
+- **Work completed:** Added `.ai/ERP_CHANGE_POLICY.md`, made it mandatory from root `AGENTS.md` for every Codex account and SSH user in every future worktree based on this commit, and routed it through `AI_INDEX.md`. No application, version, release, test, generated asset, or deployment file changed.
+- **Verification actually run:** Markdown structure and one `git diff --check` pass. No application tests, Vite, Composer, browser automation, artifact generation, database operation, production access, deployment, tag, push, or remote change occurred.
+- **Remaining blockers or next action:** None for this governance task. One focused documentation commit accompanies this entry.
