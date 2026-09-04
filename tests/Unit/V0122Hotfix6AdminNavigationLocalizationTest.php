@@ -73,6 +73,6 @@ final class V0122Hotfix6AdminNavigationLocalizationTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/مستودع|المستودعات/u', $arabic);
         self::assertStringContainsString('إضافة مخزن / منفذ بيع', $arabic);
         self::assertStringContainsString('Add Warehouse / Point of Sale', $english);
-        self::assertStringContainsString("0.1.22-hotfix11", $this->source('app/Support/ApplicationVersion.php'));
+        self::assertStringContainsString("0.1.22-hotfix12", $this->source('app/Support/ApplicationVersion.php'));
     }
 }

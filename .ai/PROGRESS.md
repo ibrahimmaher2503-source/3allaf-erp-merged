@@ -183,3 +183,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Finalized the approved D3 company-owner RBAC and Approval Inbox navigation source as `0.1.22-hotfix11`; no D3 functional file changed after its focused 4-test/49-assertion pass.
 - Preserved super-admin-only Administration Center and Activity Log access, company-bound owner permissions, one correctly positioned Approval Inbox item, and the unchanged secure interactive Karim provisioner.
 - Reused the focused authorization, PHP syntax, and Blade compilation results and ran the single direct PHP 8.5 version assertion. No Composer, Vite, database, production, deployment, provisioning, migration, service, HTTP, tag, push, or remote action occurred.
+
+## 2026-09-04 — v0.1.22-hotfix12 POS shift-opening route
+
+- Corrected the `/pos/shift/open` GET 404 with a permission-gated compatibility redirect to the existing shift page, separated the canonical POST route name, and redirected successful creation to POS.
+- Preserved the unchanged shift action and its outlet/drawer authorization, transactions, idempotency, opening-balance rules, and duplicate-active-shift prevention.
+- One focused database-free feature test passed with 1 test / 24 assertions. No Composer, Vite, database, browser, production, deployment, migration, seeder, service, HTTP, tag, push, or remote action occurred.

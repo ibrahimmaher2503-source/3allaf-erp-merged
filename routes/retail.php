@@ -835,6 +835,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
     })->middleware('can:shifts_cash_movements.view')->name('pos.shift');
 
+    Route::get('pos/shift/open', fn () => to_route('pos.shift'))
+        ->middleware([
+            'can:pos_sales.view',
+            'can:shifts_cash_movements.view',
+            'can:shifts_cash_movements.create',
+        ])->name('pos.shift.open');
+
     Route::post('pos/shift/open', function (Request $request, OpenShiftAction $action) {
         /** @var User $user */
         $user = $request->user();
@@ -860,8 +867,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $request->session()->forget('pos.shift.open_token');
 
-        return redirect()->route('pos.shift')->with('success', __('Shift opened.'));
-    })->middleware('can:shifts_cash_movements.create')->name('pos.shift.open');
+        return to_route('pos')->with('success', __('Shift opened.'));
+    })->middleware('can:shifts_cash_movements.create')->name('pos.shift.store');
 
     Route::post('pos/shift/{shift}/cash-movement', function (Request $request, PosShift $shift, RecordCashMovementAction $action) {
         /** @var User $user */

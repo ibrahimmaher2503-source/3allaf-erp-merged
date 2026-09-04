@@ -865,3 +865,11 @@
 - **Verification actually run:** One direct PHP 8.5 release-version assertion passed. The completed D3 focused PHPUnit pass (4 tests / 49 assertions), PHP syntax pass, and database-fail-closed Blade compilation were reused and not repeated.
 - **Remaining blockers or next action:** An authorized root operator may later run the prepared promotion and activation workflow, then create a fresh backup before interactively provisioning Karim with owner-supplied company and identity values.
 - **Boundary:** Source finalization and local release preparation only. Karim provisioning, databases, production/shared runtime, promotion, activation, backup execution, migrations, seeders, services, HTTP requests, tags, pushes, remotes, and global Git configuration remained untouched.
+
+## 2026-09-04 — v0.1.22-hotfix12 POS shift-opening route
+
+- **Task:** Corrected the production-blocking POS shift-opening GET 404 from exact Hotfix11 commit `405c0a2a667438f4383e41ca538234f8be54e05c` on the isolated `hotfix/v0.1.22-hotfix12-pos-shift-open-route` branch.
+- **Work completed:** Separated the shift form POST as `pos.shift.store`, added an authenticated and permission-gated GET compatibility redirect at `/pos/shift/open`, and redirected successful creation to the intended POS destination. Existing shift accounting, outlet/drawer authorization, state transitions, transactions, idempotency, and duplicate prevention remain unchanged. Version is `0.1.22-hotfix12`.
+- **Verification actually run:** One focused database-free feature test passed with 1 test / 24 assertions. Final PHP syntax, route registration, artifact, manifest, and operator-script integrity checks are recorded in the release handoff.
+- **Remaining blockers or next action:** An authorized root operator may later run the prepared promotion and activation scripts. Karim provisioning remains prepared and unexecuted.
+- **Boundary:** Code, one focused test, documentation, commit, and local immutable release preparation occurred. No browser check, Composer install, Vite build, database operation, migration, seeder, production HTTP request, promotion, activation, backup, provisioning, service, tag, push, remote, or production change occurred.

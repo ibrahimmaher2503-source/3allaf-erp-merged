@@ -28,7 +28,7 @@
                 @if ($drawers->isEmpty())
                     <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('No active cash drawer is assigned to you.') }}</flux:callout>
                 @else
-                    <form method="POST" action="{{ route('pos.shift.open') }}" class="mt-4 grid gap-3">
+                    <form method="POST" action="{{ route('pos.shift.store') }}" class="mt-4 grid gap-3">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $openToken }}">
                         <flux:select name="cash_drawer_id" :label="__('Sales outlet and cash drawer')" required>
