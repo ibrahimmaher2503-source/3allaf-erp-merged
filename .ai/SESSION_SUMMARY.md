@@ -842,3 +842,10 @@
 - **Work completed:** Added `.ai/ERP_CHANGE_POLICY.md`, made it mandatory from root `AGENTS.md` for every Codex account and SSH user in every future worktree based on this commit, and routed it through `AI_INDEX.md`. No application, version, release, test, generated asset, or deployment file changed.
 - **Verification actually run:** Markdown structure and one `git diff --check` pass. No application tests, Vite, Composer, browser automation, artifact generation, database operation, production access, deployment, tag, push, or remote change occurred.
 - **Remaining blockers or next action:** None for this governance task. One focused documentation commit accompanies this entry.
+
+## 2026-09-04 — ERP governance baseline, pending batch, and release freeze
+
+- **Task:** Added the final lightweight operational rules for separate source/production baselines, the pending V0/V1 UI batch, and immutable release artifacts.
+- **Work completed:** Updated `.ai/ERP_CHANGE_POLICY.md` and `AI_INDEX.md`; created `.ai/PENDING_CHANGE_BATCH.md` as an empty open post-Hotfix10 batch; recorded Hotfix10 commit `18dc631123cebf278906d663134a7faf9d60eff5` as already deployed and outside the batch. `AGENTS.md` required no correction and was not changed.
+- **Verification actually run:** One `git diff --check` run identified four Markdown hard-break trailing spaces in the new ledger; those exact spaces were removed without rerunning the check, as instructed. No tests, Composer, Vite, browser automation, artifact generation, database operation, production access, or deployment occurred.
+- **Remaining blockers or next action:** The batch remains open until explicit user closure instruction. Documentation was committed; no code, test, browser, artifact, deployment, tag, push, or remote change occurred.

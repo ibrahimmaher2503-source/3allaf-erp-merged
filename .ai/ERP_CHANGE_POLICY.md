@@ -101,6 +101,15 @@ Execution:
 - Never modify global Git `safe.directory`.
 - Do not push or modify remotes unless explicitly requested.
 
+## Mandatory Baseline Separation
+
+Every implementation task must distinguish these two baselines before editing:
+
+- `SOURCE_BASELINE` is the exact commit used to create the working branch.
+- `PRODUCTION_BASELINE` is the exact active release path, version, and commit.
+
+Never assume the two baselines are identical. V0 and V1 work must start from the latest governance-bearing development baseline. Deployment preflight must independently verify the exact production baseline; do not infer it from the source branch, a tag, a pending-batch entry, or an earlier deployment record.
+
 ## Mandatory Escalation Rule
 
 If a task begins as V0 or V1 but requires logic, queries, permissions, routes, models, database, or workflow changes:
@@ -113,12 +122,23 @@ If a task begins as V0 or V1 but requires logic, queries, permissions, routes, m
 
 ## Batching and Release Rules
 
-- Accumulate V0 and compatible V1 changes into a single UI batch.
-- Do not create a release, artifact, manifest, browser evidence set, or deployment script for every small edit.
-- Perform the version bump, full build, artifact creation, release verification, backup, and deployment once after the user closes and approves the batch.
+- Record every completed, undeployed V0 or V1 change in `.ai/PENDING_CHANGE_BATCH.md`, including its classification, short description, commit, affected files, and status.
+- Accumulate V0 and compatible V1 changes into that single pending UI batch.
+- Do not create a version, artifact, manifest, deployment script, or release for each entry.
+- Close the batch only after explicit user instruction.
+- At batch closure, perform one combined version bump, verification, build, artifact, and deployment workflow.
+- Clear or archive the batch only after production success is confirmed.
 - Batch L2 changes only when they affect the same domain and release safely together.
 - D3 and I4 changes require explicit release handling.
 - Do not mix unrelated sensitive domains in one release.
+
+## Immutable Release Freeze
+
+- Once an artifact and manifest receive their final SHA-256 values, both are immutable.
+- Never patch, replace, or silently rebuild the same artifact.
+- Any source change after artifact creation belongs to a new version or the next batch.
+- Every deployment script must reference one exact immutable artifact and its exact manifest.
+- A documentation-only governance commit does not invalidate or rebuild an already prepared application artifact.
 
 ## Verification Budget
 
@@ -147,6 +167,8 @@ CHANGE_CLASS=<V0|V1|L2|D3|I4>
 SCOPE=<one sentence>
 RELEASE_NOW=<YES|NO>
 VERIFICATION=<one sentence>
+SOURCE_BASELINE=<exact working-branch source commit>
+PRODUCTION_BASELINE=<exact active release path, version, and commit>
 ```
 
 Then implement immediately.

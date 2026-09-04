@@ -22,6 +22,11 @@ This is the mandatory task-aware documentation router for every AI coding agent.
 
 No lower-priority document may silently override a higher-priority source. Record a real conflict in `.ai/DECISIONS.md` and stop before implementing contradictory behavior.
 
+## Operational Governance Files
+
+- `.ai/ERP_CHANGE_POLICY.md` is mandatory for task classification, separate source/production baselines, escalation, proportional verification, pending UI batching, immutable releases, source control, and reporting.
+- `.ai/PENDING_CHANGE_BATCH.md` is the authoritative open ledger for completed, undeployed V0/V1 changes. Read and update it for V0/V1 work, and read it before any batch-closure or release workflow.
+
 ## Current Routing Override — Client Feedback Remediation (Expanded Master Request)
 
 The active owner-directed work is the expanded client-feedback remediation request. Read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, the Client Feedback Remediation status-sync section in `TASKS.md`, `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, `docs/client-feedback-remediation-checklist.md`, and DEC-085/DEC-086 in `.ai/DECISIONS.md`. Route only the requirement, acceptance, screen, blocker, and evidence entries needed by the active remediation slice. The simplified CF queue is the factual status ledger; it does not narrow the expanded request. TSK-045 remains historical local implementation traceability and is not the active routing override.
@@ -202,6 +207,7 @@ The canonical numbered files are `docs/37-ui-screen-specifications.md` and `docs
 | Authorization | 04 and 16 |
 | Retail/party boundary | PRD separation rule, 27, 28, 33 |
 | Contradiction | PRD, relevant decision, blocker; then stop and report |
+| V0/V1 implementation or pending-batch closure | `.ai/PENDING_CHANGE_BATCH.md` |
 
 ## Inspection Strategy and Prohibitions
 
