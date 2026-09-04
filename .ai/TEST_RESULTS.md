@@ -1,5 +1,15 @@
 # Test and Verification Results
 
+## 2026-09-04 — v0.1.22-hotfix10 focused verification
+
+- PHP 8.5.9 syntax passed for all five changed PHP/config/test files. Blade `view:cache` passed using the documented translation database-outage fallback, query observability disabled, an intentionally invalid database driver, task-local compiled-view output, and no `.env`.
+- Two earlier fail-closed Blade attempts stopped before compilation: first at the query-observability listener and then at the translation override loader under `APP_ENV=testing`. Neither connected to a database or changed data.
+- Arabic and English JSON parsing, focused source contracts, diff hygiene, absence of frontend-source changes, and the `storage/storage` guard passed.
+- `public/build/manifest.json` SHA-256 is `b0d6e69cb067407c8ecc07e72eed30f06fb88a4050a3bd55f4f526c5c20606df`; all 12 Vite references are regular, non-symlink, non-empty files.
+- `public/build/fonts-manifest.json` SHA-256 is `66edf17c93351fe01158be7414a441a762f106417c74351881876b405b8b10ca`; all 7 unique font-manifest and embedded CSS references are regular, non-symlink, non-empty files.
+- No Vite build ran because application frontend sources and both dependency lockfiles are unchanged from the verified Hotfix9 source/build identity.
+- Focused PHPUnit and Arabic desktop, English desktop, and Arabic mobile browser automation were requested but blocked by the execution policy before launch. No test/browser pass, console-error result, or overflow result is claimed.
+
 ## 2026-09-03 — v0.1.22-hotfix8 focused pass
 
 - Hotfix7 regression contract passed 5 tests / 26 assertions after updating only its release-version assertion. A combined historical Hotfix4/Hotfix7 run passed 9/10; the sole failure is the documented obsolete Hotfix4 sidebar CSS source-string expectation.

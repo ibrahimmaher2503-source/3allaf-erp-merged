@@ -1,5 +1,12 @@
 # UI/UX Release Progress
 
+## 2026-09-04 — v0.1.22-hotfix10 UI deduplication
+
+- Removed only the upper standalone Roles & Permissions navigation item and the lower duplicate Product Catalog readiness summary.
+- Retained the nested Basic Data → Essentials → Users, roles, and scopes entry, exact setup query parameters and active-state logic, plus the identical upper setup/readiness summary.
+- PHP 8.5 syntax, database-fail-closed Blade cache compilation, locale JSON, source contracts, Vite/font manifest references, and diff/storage boundaries passed. No application frontend source changed, so the verified lock-matched Hotfix9 build was not rebuilt.
+- PHPUnit and browser automation were blocked by the execution policy before launch and are not claimed. No database or production access occurred.
+
 ## 2026-09-03 — v0.1.22-hotfix9 navigation cleanup
 
 - Removed the duplicated sidebar user/status footer, standalone System Settings link, three upper administration duplicates, the Party navigation group, and the second Pricing Lists readiness summary while preserving their underlying routes and behavior.

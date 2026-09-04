@@ -423,8 +423,6 @@ new #[Title('Product Masters')] class extends Component
         </x-tables.resource-toolbar>
     </x-slot:actions>
 
-    <x-setup.product-pricing-readiness :readiness="app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot()" />
-
     @can('products_categories_brands.create')
         <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
     @endcan

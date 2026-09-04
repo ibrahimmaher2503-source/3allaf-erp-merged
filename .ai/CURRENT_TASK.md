@@ -1,10 +1,10 @@
-# Current Task — v0.1.22-hotfix9 Navigation Cleanup
+# Current Task — v0.1.22-hotfix10 UI Deduplication
 
-**Date:** 2026-09-03
-**Baseline:** exact deployed Hotfix8 commit `90180c270f2ba2425877fe095c7a1c82c049989f`
-**Branch:** `hotfix/v0.1.22-hotfix9-navigation-cleanup`
-**Status:** Hotfix9 and its PHP 8.5 view-cache source correction are implemented and focused verification is complete; corrected immutable release preparation and an unexecuted promotion script follow the correction commit.
+**Date:** 2026-09-04
+**Baseline:** exact final Hotfix9 source commit `b19bdf37d4a4fa05bf381e5eaf12ccfbf09c9f07`
+**Branch:** `hotfix/v0.1.22-hotfix10-ui-dedup`
+**Status:** The two UI-only duplicate presentations are removed in an isolated worktree. PHP syntax, database-fail-closed Blade compilation, locale JSON, source contracts, diff hygiene, and complete Vite/font asset checks pass. PHPUnit and browser automation were blocked by the execution policy before launch and are not claimed.
 
-Hotfix9 removes duplicated sidebar/profile and pricing presentation, keeps canonical Basic Data navigation, and centrally defers Party navigation/setup readiness while preserving routes, permissions, data, and functionality. The active setup workflow contains 20 steps. Production is not authorized for mutation or deployment.
+Hotfix10 removes only the upper standalone Roles & Permissions sidebar item and the lower page-level Product Catalog readiness summary. The canonical Basic Data → Essentials → Users, roles, and scopes entry and the upper setup/readiness header remain unchanged, including exact active-state routing.
 
-The view-cache correction decomposes the oversized pricing-label Blade source into bounded partials without changing Livewire compilation, PCRE limits, vendor code, or Hotfix8/Hotfix9 behavior. PHP 8.5 `optimize:clear` and `view:cache` pass with task-local file cache/session overrides because this worktree intentionally has no `.env`.
+Routes, controllers, authorization, permissions, readiness calculations, queries, catalog behavior, Hotfix8 performance changes, and Hotfix9 view-cache/navigation corrections are unchanged. No database, migration, production, deployment, service, symlink, tag, push, or remote operation is authorized or performed.
