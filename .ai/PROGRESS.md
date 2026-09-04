@@ -177,3 +177,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Replaced the oversized `resources/views/pricing/labels.blade.php` body with seven bounded Blade partials while preserving its form, scanner search, barcode remediation, advanced settings, Alpine state, authorization branches, and Hotfix9 navigation.
 - PHP 8.5.9 `optimize:clear` and `view:cache` passed with task-local file cache/session overrides. Authenticated Arabic and English browser verification passed from isolated `toyjoy_hotfix9_viewcache_verify` with zero console/page errors or overflow.
 - Preserved Hotfix8 performance source, vendor, Livewire compilation, PCRE configuration, `.env`, storage and public-storage boundaries; `storage/storage` was not created. Production was untouched and promotion was not executed.
+
+## 2026-09-04 — v0.1.22-hotfix11 company-owner RBAC release
+
+- Finalized the approved D3 company-owner RBAC and Approval Inbox navigation source as `0.1.22-hotfix11`; no D3 functional file changed after its focused 4-test/49-assertion pass.
+- Preserved super-admin-only Administration Center and Activity Log access, company-bound owner permissions, one correctly positioned Approval Inbox item, and the unchanged secure interactive Karim provisioner.
+- Reused the focused authorization, PHP syntax, and Blade compilation results and ran the single direct PHP 8.5 version assertion. No Composer, Vite, database, production, deployment, provisioning, migration, service, HTTP, tag, push, or remote action occurred.

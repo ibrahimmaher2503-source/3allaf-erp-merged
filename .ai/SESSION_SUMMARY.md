@@ -857,3 +857,11 @@
 - **Verification actually run:** One database-free focused PHPUnit pass completed with 4 tests / 49 assertions; one PHP 8.5.9 syntax pass covered all 15 changed PHP/Blade/config/route/test files; one database-fail-closed Blade cache compilation passed with task-local compiled output.
 - **Remaining blockers or next action:** Provisioning `karim` still requires an authorized root operator to execute the interactive command with the exact active company identity, Karim identity fields, and a temporary password supplied out of band. No provisioning or database mutation occurred.
 - **Boundary:** Code, one focused test, documentation, and one focused commit occurred. No browser check, production/shared database or runtime access, migration, Composer install, Vite rebuild, artifact, deployment script, tag, push, remote contact, service, or production change occurred.
+
+## 2026-09-04 — v0.1.22-hotfix11 company-owner RBAC release finalization
+
+- **Task:** Finalized the approved D3 company-owner RBAC and Approval Inbox navigation change from exact commit `e53decafea915820e09d251d247b6b1f37787b24` on `feature/company-owner-rbac-approval-navigation`.
+- **Work completed:** Updated only the application release version, its two direct source assertions, and directly required release/status/evidence records for `0.1.22-hotfix11`. The company-owner RBAC, navigation, authorization, Blade, route, and secure idempotent Karim provisioner remain unchanged.
+- **Verification actually run:** One direct PHP 8.5 release-version assertion passed. The completed D3 focused PHPUnit pass (4 tests / 49 assertions), PHP syntax pass, and database-fail-closed Blade compilation were reused and not repeated.
+- **Remaining blockers or next action:** An authorized root operator may later run the prepared promotion and activation workflow, then create a fresh backup before interactively provisioning Karim with owner-supplied company and identity values.
+- **Boundary:** Source finalization and local release preparation only. Karim provisioning, databases, production/shared runtime, promotion, activation, backup execution, migrations, seeders, services, HTTP requests, tags, pushes, remotes, and global Git configuration remained untouched.
