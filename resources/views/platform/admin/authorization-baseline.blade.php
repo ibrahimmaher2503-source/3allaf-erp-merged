@@ -2,9 +2,7 @@
 
 use App\Models\User;
 use App\Modules\Platform\Actions\SaveUserAction;
-use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\Role;
-use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\UserManagementScope;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
@@ -45,11 +43,13 @@ new #[Title('Authorization Baseline')] class extends Component
         $this->resetPage();
     }
 
-    public function editAuthorization(int $userId): void
+    public function editAuthorization(int $userId, UserManagementScope $scope): void
     {
         Gate::authorize('users_roles_permissions.edit');
 
-        $user = User::findOrFail($userId);
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
+        $user = $scope->visibleUsers($actor)->findOrFail($userId);
 
         $this->editingUserId = $user->id;
         $this->authorizationModalOpen = true;
@@ -79,7 +79,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
     public function saveAuthorization(SaveUserAction $action): void
     {
-        Gate::authorize('users_roles_permissions.edit');
+        Gate::authorize($this->editingUserId === null ? 'users_roles_permissions.create' : 'users_roles_permissions.edit');
 
         $validated = $this->validate([
             'editingUserId' => ['nullable', 'exists:users,id'],
@@ -96,12 +96,16 @@ new #[Title('Authorization Baseline')] class extends Component
             'storeIds.*' => ['integer', 'exists:stores,id'],
         ]);
 
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
+        $scope = app(UserManagementScope::class);
+
         $action->execute(
             $validated['userForm'],
             array_map('intval', $validated['roleIds']),
             array_map('intval', $validated['branchIds']),
             array_map('intval', $validated['storeIds']),
-            $this->editingUserId === null ? null : User::findOrFail($this->editingUserId),
+            $this->editingUserId === null ? null : $scope->visibleUsers($actor)->findOrFail($this->editingUserId),
         );
 
         $this->closeAuthorization();
@@ -119,8 +123,12 @@ new #[Title('Authorization Baseline')] class extends Component
 
     public function render(): mixed
     {
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
+        $scope = app(UserManagementScope::class);
+
         return view('platform.admin.authorization-baseline', [
-            'users' => User::query()
+            'users' => $scope->visibleUsers($actor)
                 ->with('roles:id,name_ar,name_en')
                 ->when($this->search !== '', fn ($query) => $query->where(function ($query): void {
                     $query->where('name', 'like', '%'.$this->search.'%')
@@ -129,10 +137,10 @@ new #[Title('Authorization Baseline')] class extends Component
                 }))
                 ->latest()
                 ->paginate(15),
-            'roleCount' => Role::query()->where('status', 'active')->count(),
-            'roles' => $this->authorizationModalOpen ? Role::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
-            'branches' => $this->authorizationModalOpen ? Branch::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
-            'stores' => $this->authorizationModalOpen ? Store::query()->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en', 'branch_id']) : [],
+            'roleCount' => $scope->roles($actor)->where('status', 'active')->count(),
+            'roles' => $this->authorizationModalOpen ? $scope->assignableRoles($actor) : [],
+            'branches' => $this->authorizationModalOpen ? $scope->branches($actor)->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
+            'stores' => $this->authorizationModalOpen ? $scope->stores($actor)->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en', 'branch_id']) : [],
         ]);
     }
 }; ?>
@@ -145,7 +153,9 @@ new #[Title('Authorization Baseline')] class extends Component
     data-guide="auth-header"
 >
     <x-slot:actions>
-        <flux:button variant="subtle" icon="shield-check" :href="route('admin.roles')" wire:navigate>{{ __('Manage roles') }}</flux:button>
+        @can('manage-global-role-catalog')
+            <flux:button variant="subtle" icon="shield-check" :href="route('admin.roles')" wire:navigate>{{ __('Manage roles') }}</flux:button>
+        @endcan
     </x-slot:actions>
 
     <div class="grid gap-4 sm:grid-cols-2">

@@ -3,9 +3,11 @@
 namespace App\Modules\Platform\Actions;
 
 use App\Models\User;
+use App\Modules\Platform\Support\UserManagementScope;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +18,7 @@ final class SaveUserAction
     public function execute(array $data, array $roleIds, array $branchIds, array $storeIds, ?User $user = null): User
     {
         Gate::authorize($user === null ? 'users_roles_permissions.create' : 'users_roles_permissions.edit');
+        $creating = $user === null;
 
         $status = (string) ($data['status'] ?? 'active');
         if (! in_array($status, ['active', 'inactive'], true)) {
@@ -28,7 +31,7 @@ final class SaveUserAction
         }
 
         try {
-            return DB::transaction(function () use ($data, $roleIds, $branchIds, $storeIds, $user, $status, $username): User {
+            return DB::transaction(function () use ($data, $roleIds, $branchIds, $storeIds, $user, $status, $username, $creating): User {
                 $attributes = [
                     'name' => trim((string) $data['name']),
                     'username' => $username,
@@ -45,12 +48,15 @@ final class SaveUserAction
                     $before = null;
                 } else {
                     $saved = User::query()->lockForUpdate()->findOrFail($user->id);
+                    $actor = Auth::user();
+                    abort_unless($actor instanceof User, 403);
+                    app(UserManagementScope::class)->assertTargetIsManageable($actor, $saved);
                     $before = $saved->only(['name', 'username', 'email', 'status']);
                     $saved->update($attributes);
                     $event = 'update_user';
                 }
 
-                app(SaveUserAuthorizationAction::class)->execute($saved, $roleIds, $branchIds, $storeIds, $status);
+                app(SaveUserAuthorizationAction::class)->execute($saved, $roleIds, $branchIds, $storeIds, $status, $creating);
 
                 app(RecordAuditEvent::class)->execute(
                     category: 'authorization',

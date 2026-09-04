@@ -14,6 +14,7 @@ use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\CompanyOwnerPermissionProfile;
 use App\Modules\Pricing\Actions\EnsureBasePriceList;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -225,6 +226,7 @@ final class ProductionSeeder extends Seeder
             $role->permissions()->sync(Permission::query()->whereIn('code', $codes)->pluck('id')->all());
         }
 
+        app(CompanyOwnerPermissionProfile::class)->synchronize();
     }
 
     private function seedBootstrapAdministrator(): void

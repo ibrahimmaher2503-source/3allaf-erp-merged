@@ -8,10 +8,12 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
 use App\Modules\Platform\Policies\AuditLogPolicy;
-use App\Modules\Platform\Support\TranslationOverrideLoader;
-use App\Modules\Platform\Support\RequestPermissionLookup;
+use App\Modules\Platform\Support\ApprovalInboxAccess;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use App\Modules\Platform\Support\ProductPricingReadiness;
+use App\Modules\Platform\Support\RequestPermissionLookup;
+use App\Modules\Platform\Support\TranslationOverrideLoader;
+use App\Modules\Platform\Support\UserManagementScope;
 use App\Modules\Platform\Support\WorkContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +77,10 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
+            if (in_array($ability, ['access-administration-center', 'access-activity-log'], true)) {
+                return $user->is_super_admin;
+            }
+
             if ($user->is_super_admin) {
                 return true;
             }
@@ -112,6 +118,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-authorization', fn (?User $user): bool => $user?->hasPermission('users_roles_permissions.edit') ?? false);
         Gate::define('view-platform-status', fn (?User $user): bool => $user?->hasPermission('audit_logs.view') ?? false);
         Gate::define('view-ui-showcase', fn (?User $user): bool => $user?->hasPermission('dashboard_reports.view') ?? false);
+        Gate::define('access-administration-center', fn (?User $user): bool => $user?->is_super_admin ?? false);
+        Gate::define('access-activity-log', fn (?User $user): bool => $user?->is_super_admin ?? false);
+        Gate::define('view-approval-inbox', fn (?User $user): bool => $user instanceof User && app(ApprovalInboxAccess::class)->allows($user));
+        Gate::define('manage-global-role-catalog', fn (?User $user): bool => $user instanceof User && app(UserManagementScope::class)->canManageGlobalRoles($user));
     }
 
     protected function configureQueryObservability(): void

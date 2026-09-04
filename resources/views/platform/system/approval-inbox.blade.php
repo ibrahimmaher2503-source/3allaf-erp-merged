@@ -48,22 +48,7 @@ new #[Title('Approval Inbox')] class extends Component
 
     public function mount(): void
     {
-        $user = auth()->user();
-        abort_unless($user instanceof User && ($user->is_super_admin
-            || $user->hasPermission('audit_logs.view')
-            || collect([
-                'pricing_labels.submit', 'pricing_labels.approve',
-                'purchase_orders.edit', 'purchase_orders.approve',
-                'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.approve',
-                'purchase_returns.edit', 'purchase_returns.approve',
-                'inventory_stock_card.submit', 'inventory_stock_card.approve',
-                'stock_counts.submit', 'stock_counts.reconcile',
-                'transfers.submit', 'transfers.approve',
-                'shifts_cash_movements.submit', 'shifts_cash_movements.approve', 'shifts_cash_movements.reject',
-                'pos_sales.open_price_approve',
-                'pos_sales.discount_approve',
-                'company_settings.approve',
-            ])->contains(fn (string $permission): bool => $user->hasPermission($permission))), 403);
+        Gate::authorize('view-approval-inbox');
     }
 
     public function updated(string $property): void
@@ -191,6 +176,7 @@ new #[Title('Approval Inbox')] class extends Component
 
     public function render()
     {
+        Gate::authorize('view-approval-inbox');
         $user = auth()->user();
         abort_unless($user instanceof User, 403);
 

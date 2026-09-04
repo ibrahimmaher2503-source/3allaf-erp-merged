@@ -30,7 +30,7 @@ new #[Title('Audit Logs')] class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('audit_logs.view');
+        Gate::authorize('access-activity-log');
         abort_unless(in_array($this->mode, ['all', 'override', 'print'], true), 404);
     }
 
@@ -76,7 +76,7 @@ new #[Title('Audit Logs')] class extends Component {
 
     public function showAudit(int $auditId): void
     {
-        Gate::authorize('audit_logs.view');
+        Gate::authorize('access-activity-log');
 
         $auditLog = AuditLog::query()->findOrFail($auditId);
 
@@ -91,7 +91,7 @@ new #[Title('Audit Logs')] class extends Component {
 
     public function render()
     {
-        Gate::authorize('audit_logs.view');
+        Gate::authorize('access-activity-log');
         $user = auth()->user();
         $baseQuery = AuditLog::query()->visibleTo($user);
         $logs = $this->applyFilters(clone $baseQuery)

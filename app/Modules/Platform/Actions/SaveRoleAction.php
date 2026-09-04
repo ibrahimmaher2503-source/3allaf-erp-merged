@@ -2,9 +2,10 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
-use App\Models\User;
+use App\Modules\Platform\Support\UserManagementScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 final class SaveRoleAction
 {
     private const CANONICAL_CODES = [
-        'system-administrator', 'branch-manager', 'cashier', 'purchasing-officer',
+        'system-administrator', 'company-owner', 'branch-manager', 'cashier', 'purchasing-officer',
         'warehouse-manager', 'pricing-officer', 'party-manager', 'stock-counter', 'accountant-reviewer',
     ];
 
@@ -22,6 +23,10 @@ final class SaveRoleAction
     public function execute(array $data, ?Role $role = null): Role
     {
         Gate::authorize($role === null ? 'users_roles_permissions.create' : 'users_roles_permissions.edit');
+        $actor = Auth::user();
+        if (! ($actor instanceof User && app(UserManagementScope::class)->canManageGlobalRoles($actor))) {
+            throw new AuthorizationException(__('Global role definitions may be managed only by an authorized system administrator.'));
+        }
 
         if ($role !== null && self::isCanonical($role)) {
             throw new AuthorizationException(__('Canonical roles are managed by the approved authorization baseline and cannot be edited here.'));
@@ -71,11 +76,7 @@ final class SaveRoleAction
         $canManageAll = $actor instanceof User && self::canManagePermissions($actor, $role);
 
         if (! $canManageAll) {
-            Gate::authorize('users_roles_permissions.edit');
-        }
-
-        if (self::isCanonical($role) && ! $canManageAll) {
-            throw new AuthorizationException(__('Canonical role permissions are read-only in this screen.'));
+            throw new AuthorizationException(__('Global role permissions may be managed only by an authorized system administrator.'));
         }
 
         $permissionIds = array_values(array_unique(array_map('intval', $permissionIds)));
@@ -112,7 +113,7 @@ final class SaveRoleAction
     public static function canManagePermissions(User $actor, Role $target): bool
     {
         return $actor->status === 'active'
-            && $target->code !== 'system-administrator'
+            && ! in_array($target->code, ['system-administrator', 'company-owner'], true)
             && ($actor->is_super_admin || $actor->roles()->where('code', 'system-administrator')->where('status', 'active')->exists());
     }
 

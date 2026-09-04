@@ -62,7 +62,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
             : redirect()->route('initial-setup');
     })->middleware('can:company_settings.edit')->name('setup.decisions.store');
     $router->get('admin', fn (AdministrationDashboard $dashboard) => view('platform.admin.overview', ['dashboard' => $dashboard->for(auth()->user())]))
-        ->middleware('can:company_settings.view')->name('admin.overview');
+        ->middleware('can:access-administration-center')->name('admin.overview');
     $router->livewire('admin/translations', 'platform::admin.translation-editor')->middleware('can:company_settings.edit')->name('admin.translations');
     $router->livewire('admin/settings', 'platform::admin.settings')->middleware('can:company_settings.view')->name('admin.settings');
     $router->get('admin/settings/cities', function (Request $request) {
@@ -126,12 +126,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ->middleware('can:drawers_payments_tax_numbering_printers.view')
         ->name('admin.drawers.compatibility');
     $router->livewire('admin/authorization-baseline', 'platform::admin.authorization-baseline')->middleware('can:users_roles_permissions.view')->name('admin.authorization-baseline');
-    $router->livewire('admin/roles', 'platform::admin.roles')->middleware('can:users_roles_permissions.view')->name('admin.roles');
-    $router->livewire('admin/roles/{role}/permissions', 'platform::admin.role-permissions')->whereNumber('role')->middleware('can:users_roles_permissions.view')->name('admin.role-permissions');
+    $router->livewire('admin/roles', 'platform::admin.roles')->middleware('can:manage-global-role-catalog')->name('admin.roles');
+    $router->livewire('admin/roles/{role}/permissions', 'platform::admin.role-permissions')->whereNumber('role')->middleware('can:manage-global-role-catalog')->name('admin.role-permissions');
 
     $router->livewire('admin/system/health', 'platform::system.health')->middleware('can:audit_logs.view')->name('system.health');
     $router->livewire('admin/system/backups', 'platform::system.backups')->middleware('can:audit_logs.view')->name('system.backups');
-    $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:audit_logs.view')->name('admin.audit');
+    $router->livewire('admin/audit', 'platform::system.audit-log')->middleware('can:access-activity-log')->name('admin.audit');
     $router->get('admin/audit/export', function (Request $request) {
         $filters = $request->validate([
             'mode' => ['nullable', 'string', 'in:all,override,print'],
@@ -146,8 +146,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
         ]);
 
         return app(ExportAuditLogs::class)->execute($filters);
-    })->name('admin.audit.export');
-    $router->livewire('approvals', 'platform::system.approval-inbox')->name('admin.approvals');
+    })->middleware('can:access-activity-log')->name('admin.audit.export');
+    $router->livewire('approvals', 'platform::system.approval-inbox')->middleware('can:view-approval-inbox')->name('admin.approvals');
     $router->get('approvals/{approval}/attachments/{attachment}', function (ApprovalRecord $approval, Attachment $attachment) {
         abort_unless($attachment->purpose === 'approval_evidence'
             && $attachment->source_type === ApprovalRecord::class

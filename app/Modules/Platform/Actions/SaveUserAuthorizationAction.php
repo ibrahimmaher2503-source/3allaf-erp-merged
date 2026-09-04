@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\UserManagementScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -13,11 +15,12 @@ use Illuminate\Validation\ValidationException;
 class SaveUserAuthorizationAction
 {
     /** @param array<int, int> $roleIds @param array<int, int> $branchIds @param array<int, int> $storeIds */
-    public function execute(User $user, array $roleIds, array $branchIds, array $storeIds, ?string $status = null): void
+    public function execute(User $user, array $roleIds, array $branchIds, array $storeIds, ?string $status = null, bool $creating = false): void
     {
-        if (! Gate::allows('users_roles_permissions.edit')) {
-            Gate::authorize('users_roles_permissions.create');
-        }
+        Gate::authorize($creating ? 'users_roles_permissions.create' : 'users_roles_permissions.edit');
+
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
 
         $roleIds = array_values(array_unique(array_map('intval', $roleIds)));
         $branchIds = array_values(array_unique(array_map('intval', $branchIds)));
@@ -26,8 +29,14 @@ class SaveUserAuthorizationAction
             throw ValidationException::withMessages(['status' => __('The user status is invalid.')]);
         }
 
-        DB::transaction(function () use ($user, $roleIds, $branchIds, $storeIds, $status): void {
+        DB::transaction(function () use ($user, $roleIds, $branchIds, $storeIds, $status, $creating, $actor): void {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
+            $scope = app(UserManagementScope::class);
+            if (! $creating) {
+                $scope->assertTargetIsManageable($actor, $user);
+            }
+            $scope->assertAssignmentsAreManageable($actor, $roleIds, $branchIds, $storeIds);
+
             $systemAdministratorId = Role::query()->where('code', 'system-administrator')->value('id');
 
             if (Role::query()->whereIn('id', $roleIds)->where('status', 'active')->count() !== count($roleIds)) {

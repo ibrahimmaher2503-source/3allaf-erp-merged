@@ -4,6 +4,7 @@ return [
     ['key' => 'home', 'icon' => 'home', 'label' => ['ar' => 'الرئيسية', 'en' => 'Home'], 'items' => [
         ['route' => 'dashboard', 'permission' => 'dashboard_reports.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'لوحة القيادة', 'en' => 'Dashboard']],
         ['route' => 'alerts.index', 'permission' => 'dashboard_reports.view', 'icon' => 'bell-alert', 'label' => ['ar' => 'التنبيهات والمهام', 'en' => 'Alerts & tasks']],
+        ['route' => 'admin.approvals', 'permission' => 'view-approval-inbox', 'icon' => 'check-badge', 'label' => ['ar' => 'صندوق الاعتمادات', 'en' => 'Approval inbox']],
     ]],
     ['key' => 'sales', 'icon' => 'shopping-cart', 'label' => ['ar' => 'المبيعات ونقطة البيع', 'en' => 'Sales & POS'], 'items' => [
         ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
@@ -56,9 +57,8 @@ return [
         ['route' => 'reports.assets', 'permission' => 'rental_assets.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأصول والتأجير', 'en' => 'Assets & rental']],
     ]],
     ['key' => 'administration', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'الإدارة والإعدادات', 'en' => 'Administration & settings'], 'items' => [
-        ['route' => 'admin.overview', 'permission' => 'company_settings.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
+        ['route' => 'admin.overview', 'permission' => 'access-administration-center', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
         ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],
-        ['route' => 'admin.audit', 'permission' => 'audit_logs.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
-        ['route' => 'admin.approvals', 'permission' => 'company_settings.view', 'icon' => 'check-badge', 'label' => ['ar' => 'صندوق الاعتمادات', 'en' => 'Approval inbox']],
+        ['route' => 'admin.audit', 'permission' => 'access-activity-log', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
     ]],
 ];
