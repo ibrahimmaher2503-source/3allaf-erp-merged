@@ -1,5 +1,13 @@
 # Test and Verification Results
 
+## 2026-09-05 — v0.1.22-hotfix13 focused verification
+
+- Pure database-free PHPUnit regression: `tests/Feature/V0122Hotfix13CashDrawerIntegrityTest.php` passed 4 tests / 43 assertions covering retained valid shift opening, store-derived ownership and mismatch rejection, deterministic legacy backfill/fail-closed reporting/constraints, invalid-selector exclusion, and company/branch/store scope enforcement.
+- Changed PHP syntax passed for the 11 changed/new PHP files. After the test harness was converted to pure PHPUnit, that test file was linted again and passed.
+- The exact `pos.shift` GET, `pos.shift.open` GET, and `pos.shift.store` POST route registrations passed a database-free router probe. Arabic and English JSON parsing and `git diff --check` passed.
+- One initial combined attempt reported 5 errors / 0 assertions because the standard Laravel test/route harness tried to query `translation_overrides` through the deliberately unreachable MySQL endpoint. It did not connect to or mutate any database. The Hotfix13 suite was then made framework-boot-free; no application behavior changed for this harness correction.
+- No migration, seeder, database, Composer, Vite, browser, broad test suite, production path, service, active symlink, tag, push, or remote operation ran.
+
 ## 2026-09-04 — v0.1.22-hotfix10 focused verification
 
 - PHP 8.5.9 syntax passed for all five changed PHP/config/test files. Blade `view:cache` passed using the documented translation database-outage fallback, query observability disabled, an intentionally invalid database driver, task-local compiled-view output, and no `.env`.

@@ -26,6 +26,8 @@ use InvalidArgumentException;
  */
 final class OpenShiftAction
 {
+    private const INVALID_DRAWER_CONFIGURATION = 'The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.';
+
     public function execute(User $cashier, CashDrawer $drawer, string $openingFloat, string $idempotencyKey): PosShift
     {
         abort_unless($cashier->can('shifts_cash_movements.create'), 403);
@@ -59,7 +61,10 @@ final class OpenShiftAction
 
             // Lock the drawer row first: it is the shared resource both the
             // drawer-collision and cashier-collision checks depend on.
-            $drawer = CashDrawer::query()->lockForUpdate()->findOrFail((int) $drawer->getKey());
+            $drawer = CashDrawer::query()->lockForUpdate()->find((int) $drawer->getKey());
+            if ($drawer === null) {
+                throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
+            }
 
             abort_unless($drawer->visibleTo($cashier)->whereKey($drawer->getKey())->exists(), 403);
 
@@ -72,11 +77,19 @@ final class OpenShiftAction
                 throw new InvalidArgumentException(__('The opening float cannot be negative.'));
             }
 
-            $company = Company::query()->findOrFail((int) $drawer->getAttribute('company_id'));
-            $branch = Branch::query()->findOrFail((int) $drawer->getAttribute('branch_id'));
-            $store = Store::query()->findOrFail((int) $drawer->getAttribute('store_id'));
-            if ((int) $store->company_id !== (int) $company->id || (int) $store->branch_id !== (int) $branch->id) {
-                throw new InvalidArgumentException(__('The drawer, branch, store, and company configuration is inconsistent.'));
+            $companyId = (int) $drawer->getAttribute('company_id');
+            $branchId = (int) $drawer->getAttribute('branch_id');
+            $storeId = (int) $drawer->getAttribute('store_id');
+            $company = $companyId > 0 ? Company::query()->find($companyId) : null;
+            $branch = $branchId > 0 ? Branch::query()->find($branchId) : null;
+            $store = $storeId > 0 ? Store::query()->find($storeId) : null;
+            if ($company === null
+                || $branch === null
+                || $store === null
+                || (int) $branch->company_id !== $companyId
+                || (int) $store->company_id !== $companyId
+                || (int) $store->branch_id !== $branchId) {
+                throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
             $currency = strtoupper(trim((string) $company->getAttribute('currency_code')));
             if (! preg_match('/^[A-Z]{3}$/', $currency) || $currency === 'TBD') {

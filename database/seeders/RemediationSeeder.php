@@ -259,9 +259,16 @@ final class RemediationSeeder extends Seeder
     private function drawersAndShifts(Company $company, Branch $branch, Store $sales, array $users): void
     {
         foreach ([['REM-DRAWER-01', 'rem-cashier', 'remediation-shift-cashier-001'], ['REM-DRAWER-02', 'rem-close-cashier', 'remediation-shift-close-cashier-001']] as [$code, $username, $idempotencyKey]) {
-            $drawer = CashDrawer::query()->where('code', $code)->first()
-                ?? app(SaveCashDrawerAction::class)->execute(['branch_id' => $branch->id, 'store_id' => $sales->id, 'assigned_user_id' => $users[$username]->id, 'code' => $code, 'name_ar' => 'درج معالجة', 'name_en' => $code, 'status' => 'active']);
-            $drawer->update(['company_id' => $company->id]);
+            $existingDrawer = CashDrawer::query()->where('code', $code)->first();
+            $drawer = app(SaveCashDrawerAction::class)->execute([
+                'branch_id' => $sales->branch_id,
+                'store_id' => $sales->id,
+                'assigned_user_id' => $users[$username]->id,
+                'code' => $code,
+                'name_ar' => 'درج معالجة',
+                'name_en' => $code,
+                'status' => 'active',
+            ], $existingDrawer?->id);
 
             if (! PosShift::query()->where('idempotency_key', $idempotencyKey)->exists()) {
                 $cashier = $users[$username];

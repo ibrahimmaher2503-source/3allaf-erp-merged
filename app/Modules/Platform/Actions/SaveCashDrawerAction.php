@@ -40,7 +40,10 @@ class SaveCashDrawerAction
                 $status = $data['status'] ?? 'active';
                 $store = null;
                 if (! empty($data['store_id'])) {
-                    $store = Store::query()->findOrFail((int) $data['store_id']);
+                    $store = Store::query()->find((int) $data['store_id']);
+                    if ($store === null) {
+                        throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+                    }
                     if ((int) $store->branch_id !== (int) $branch->id) {
                         throw new InvalidArgumentException(__('Selected store does not belong to the chosen branch.'));
                     }
@@ -65,9 +68,10 @@ class SaveCashDrawerAction
                 }
 
                 $attributes = [
-                    // Company is derived from the authorized branch; callers cannot
-                    // create a cross-company drawer by submitting a foreign ID.
-                    'company_id' => $branch->company_id,
+                    // Prefer the selected store as the authoritative owner. The
+                    // model repeats this derivation so Eloquent seed/update paths
+                    // cannot persist an independently supplied company ID.
+                    'company_id' => $store?->company_id ?? $branch->company_id,
                     'branch_id' => $branch->id,
                     'store_id' => $store?->id,
                     'assigned_user_id' => ! empty($data['assigned_user_id']) ? (int) $data['assigned_user_id'] : null,

@@ -1,6 +1,8 @@
 # Current Milestone
 
-**Date:** 2026-09-04
-**Status:** v0.1.22-hotfix12 corrects the POS shift-opening route collision from exact Hotfix11 commit `405c0a2a667438f4383e41ca538234f8be54e05c`. The functional diff is limited to canonical route names, an authenticated and permission-gated compatibility redirect, the existing form action, and the successful post-create destination.
+**Date:** 2026-09-05
+**Status:** v0.1.22-hotfix13 is a focused D3 cash-drawer data-integrity correction from exact Hotfix12 commit `287693218aded875749b643e9427f63318088b05`.
 
-Hotfix11 remains the exact production and rollback baseline. Existing verified Hotfix11 vendor and compiled frontend assets are reused without Composer or Vite. Promotion and activation are prepared only; production remains untouched unless an authorized root operator executes them.
+The correction closes the raw UAT drawer-insertion gap, makes store ownership authoritative for drawer company context, validates company/branch/store consistency on every Eloquent drawer save, adds deterministic fail-closed legacy repair and database constraints, filters invalid drawers from shift opening, and replaces misleading context-related 404 behavior with localized validation. Existing POS authorization, accounting, concurrency, route, idempotency, duplicate-shift, and permission behavior is preserved.
+
+Focused database-free verification passed. Production deployment remains unexecuted; exact Hotfix12 is the required prerequisite and rollback release for the prepared Hotfix13 flow.

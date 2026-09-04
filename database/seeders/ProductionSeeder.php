@@ -299,8 +299,8 @@ final class ProductionSeeder extends Seeder
         BranchSellingStore::query()->firstOrCreate(['branch_id' => $branch->id, 'store_id' => $sellingStore->id], [
             'status' => 'active', 'effective_from' => now(),
         ]);
-        CashDrawer::query()->firstOrCreate(['branch_id' => $branch->id, 'code' => 'MAIN-01'], [
-            'company_id' => $company->id, 'store_id' => $sellingStore->id,
+        CashDrawer::query()->firstOrCreate(['branch_id' => $sellingStore->branch_id, 'code' => 'MAIN-01'], [
+            'company_id' => $sellingStore->company_id, 'store_id' => $sellingStore->id,
             'name_ar' => 'درج النقدية الرئيسي', 'name_en' => 'Main Cash Drawer', 'status' => 'active',
         ]);
 

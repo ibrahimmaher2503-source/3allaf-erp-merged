@@ -1,11 +1,13 @@
-# Current Task — v0.1.22-hotfix12 POS Shift-opening Route
+# Current Task — v0.1.22-hotfix13 Cash Drawer Context Integrity
 
-**Date:** 2026-09-04
+**Date:** 2026-09-05
 **Change class:** D3
-**Source baseline:** exact Hotfix11 commit `405c0a2a667438f4383e41ca538234f8be54e05c` (tree `03f2c2a6f73b688719fe4336f512174da87cee6b`)
-**Branch:** `hotfix/v0.1.22-hotfix12-pos-shift-open-route`
-**Status:** The production-blocking POS shift-opening 404 is corrected with a minimal route-only functional change and release version `0.1.22-hotfix12`.
+**Source baseline:** exact Hotfix12 commit `287693218aded875749b643e9427f63318088b05` (tree `bb4e615935a246b85aa5437346d6a86bb4f10b14`)
+**Branch:** `hotfix/v0.1.22-hotfix13-cash-drawer-integrity`
+**Status:** The cash-drawer context defect is corrected in source and focused database-free verification is complete; immutable release preparation follows the release commit.
 
-The shift form posts through the dedicated canonical `pos.shift.store` route. A permission-equivalent authenticated compatibility GET at `/pos/shift/open` redirects to the existing canonical `pos.shift` page, and successful shift creation redirects to the intended `pos` destination. The existing `OpenShiftAction` remains unchanged, preserving outlet and drawer scope, opening balance, transactions, idempotency, and duplicate-active-shift prevention.
+The exact insertion path was `App\Modules\Platform\Services\UatDataset`: its raw insert created `TEST-REG-0001` with branch/store ownership but omitted `cash_drawers.company_id`, bypassing `SaveCashDrawerAction`. Hotfix13 derives company ownership from the selected store, rejects mismatched company/branch/store contexts before Eloquent saves, corrects all known seeding paths, excludes inconsistent drawers from shift selection, and returns a localized safe validation message rather than a company/branch/store `ModelNotFound` 404.
 
-One focused database-free feature test passed with 1 test / 24 assertions. No migration, seeder, Composer install, Vite build, broad or repeated test, browser check, database operation, production HTTP request, deployment, service, tag, push, or production change occurred.
+Migration `2026_09_04_000107_enforce_cash_drawer_context_integrity` audits drawers deterministically by ID. It backfills only when an existing store, its branch, and their company resolve to one consistent owner. Any missing or contradictory relationship raises an exception listing drawer ID, code, and reason before any drawer is changed. After a clean audit it makes `company_id` non-null, retains a restrictive company foreign key, and adds `company_id > 0` enforcement.
+
+Karim/company-owner permissions, permission-search presentation, routes, OpenShiftAction accounting/idempotency/duplicate-shift rules, and the pending V0 UI batch are unchanged. No database, production path, active symlink, service, tag, push, or remote was accessed or mutated.

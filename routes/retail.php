@@ -826,7 +826,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return view('pages.pos.shift', [
             'shift' => $shift,
             'closedShifts' => $closedShifts,
-            'drawers' => CashDrawer::query()->visibleTo($user)->where('status', 'active')->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))->with(['branch', 'store'])->orderBy('code')->get(),
+            'drawers' => CashDrawer::query()->visibleTo($user)->operationallyConsistent()->where('status', 'active')->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))->with(['branch', 'store'])->orderBy('code')->get(),
             'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
             'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,
@@ -855,9 +855,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
 
         try {
+            $drawer = CashDrawer::query()->find((int) $validated['cash_drawer_id']);
+            if ($drawer === null) {
+                throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+            }
+
             $action->execute(
                 $user,
-                CashDrawer::query()->findOrFail($validated['cash_drawer_id']),
+                $drawer,
                 (string) $validated['opening_float'],
                 'SHIFT-OPEN:'.$validated['idempotency_key'],
             );

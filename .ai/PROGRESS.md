@@ -189,3 +189,12 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Corrected the `/pos/shift/open` GET 404 with a permission-gated compatibility redirect to the existing shift page, separated the canonical POST route name, and redirected successful creation to POS.
 - Preserved the unchanged shift action and its outlet/drawer authorization, transactions, idempotency, opening-balance rules, and duplicate-active-shift prevention.
 - One focused database-free feature test passed with 1 test / 24 assertions. No Composer, Vite, database, browser, production, deployment, migration, seeder, service, HTTP, tag, push, or remote action occurred.
+
+## 2026-09-05 — v0.1.22-hotfix13 cash drawer context integrity
+
+- Traced production drawer code `TEST-REG-0001` to the raw UAT dataset insert, which omitted `cash_drawers.company_id` while inserting its valid store and branch and bypassed the guarded drawer action.
+- Made selected-store ownership authoritative, added model-level company/branch/store validation for Eloquent creates and updates, corrected the UAT/production/remediation seeding paths, and found no cash-drawer import path.
+- Added migration `000107`: it audits all drawers in deterministic ID order, backfills company only from an unambiguous valid store/branch/company chain, reports all ambiguous IDs/codes/reasons before changing anything, then enforces non-null positive company IDs and the restrictive company foreign key.
+- Invalid drawers are excluded from shift/setup readiness selection; shift opening retains scope checks, accounting, locking, idempotency, and duplicate guards while returning a localized configuration-validation message instead of context `findOrFail` 404s.
+- Focused Hotfix13 regression passed 4 tests / 43 assertions. Changed PHP syntax, database-free route registration, Arabic/English JSON, and diff hygiene passed. The earlier combined harness attempt reached zero assertions because the translation override loader attempted the deliberately unreachable database; no database connection or mutation occurred.
+- Karim/company-owner permissions, the permission-search display defect, and the pending V0 UI batch were untouched. Production, database, active symlink, services, tags, pushes, and remotes were untouched.
