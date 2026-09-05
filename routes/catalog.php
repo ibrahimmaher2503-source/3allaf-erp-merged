@@ -10,10 +10,9 @@ use App\Modules\Catalog\Models\SupplierImportBatch;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Store;
+use App\Support\DataExchange\ImportTemplateFactory;
 use App\Support\DataExchange\MasterDataDocument;
 use Illuminate\Support\Facades\Gate;
-use OpenSpout\Common\Entity\Row;
-use OpenSpout\Writer\Common\Creator\WriterFactory;
 
 $router = app('router');
 
@@ -99,9 +98,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->livewire('catalog/suppliers/import', 'catalog::supplier-import')
         ->middleware('can:suppliers.create')->name('catalog.suppliers.import');
-    $router->get('catalog/suppliers/import/template', function (MasterDataDocument $documents) {
-        return $documents->xlsx('supplier-import-template.xlsx', StageSupplierImportAction::templateHeaders(), [['SUP-0001', 'شركة التوريد', 'Supply Co', 'أحمد', 'supplier@example.com', '01012345678', '', '', 'cash', '', '', 'active', 'LOCAL']], [[__('Instructions')], [__('Settlement values: cash, cheques, installments, trust_deposits, other. Other requires a description. Groups resolve by stable code.')]]);
-    })->middleware('can:suppliers.create')->name('catalog.suppliers.import.template');
+    $router->get('catalog/suppliers/import/template', fn (ImportTemplateFactory $templates) => $templates->supplier(auth()->user(), request('company_id')))->middleware('can:suppliers.create')->name('catalog.suppliers.import.template');
     $router->get('catalog/suppliers/import/{batch}/rejections', function (SupplierImportBatch $batch, MasterDataDocument $documents) {
         $companyIds = Store::query()->visibleTo(auth()->user())->select('company_id');
         abort_unless(SupplierImportBatch::query()->whereKey($batch->id)->whereIn('company_id', $companyIds)->exists()
@@ -133,17 +130,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('catalog/reference-import', 'catalog::reference-import')
         ->middleware('can:products_categories_brands.create')
         ->name('catalog.reference-import');
-    $router->get('catalog/reference-import/template/{type}', function (string $type) {
-        abort_unless(in_array($type, ['category', 'brand', 'age', 'character', 'colour', 'gender'], true), 404);
-
-        $path = tempnam(storage_path('app'), "{$type}-import-").'.xlsx';
-        $writer = WriterFactory::createFromFile($path);
-        $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(StageCatalogReferenceImportAction::templateHeaders($type)));
-        $writer->close();
-
-        return response()->download($path, "{$type}-import-template.xlsx")->deleteFileAfterSend(true);
-    })->middleware('can:products_categories_brands.create')->name('catalog.reference-import.template');
+    $router->get('catalog/reference-import/template/{type}', fn (string $type, ImportTemplateFactory $templates) => $templates->catalogReference(auth()->user(), $type, request('company_id')))->middleware('can:products_categories_brands.create')->name('catalog.reference-import.template');
 
     $router->livewire('suppliers', 'catalog::suppliers')
         ->middleware('can:suppliers.view')

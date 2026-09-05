@@ -2,8 +2,11 @@
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\{AgeLabel, Brand, CatalogReferenceImportBatch, CatalogReferenceImportRow, Category, Character, Colour, Gender};
 use App\Modules\Platform\Actions\{NotifyImportReviewers, RecordAuditEvent};
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\{DB, Gate, Storage};
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -24,17 +27,20 @@ class StageCatalogReferenceImportAction
         if (! is_string($hash)) throw new InvalidArgumentException(__('The import file could not be fingerprinted.'));
         if (CatalogReferenceImportBatch::query()->where(['created_by' => $userId, 'type' => $type, 'mode' => $mode, 'sha256' => $hash])->where('status', '!=', 'cancelled')->exists()) throw new InvalidArgumentException(__('This import file was already staged by this user.'));
 
+        $actor = auth()->user(); abort_unless($actor instanceof User && $actor->id === $userId, 403);
+        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $reader = ReaderFactory::createFromFile($path); $reader->open($path); $headers = []; $rows = []; $number = 0;
         try {
-            foreach ($reader->getSheetIterator() as $sheet) foreach ($sheet->getRowIterator() as $row) {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.catalog-'.$type.'.v2', $company->code);
+            $sheet = ImportWorkbook::dataSheet($reader); foreach ($sheet->getRowIterator() as $row) {
                 $number++; $cells = $row->getCells(); $values = array_map(fn ($cell) => $cell->getValue(), $cells);
-                if ($number === 1) { $headers = array_map(fn ($value) => strtolower(trim((string) $value)), $values); if ($headers !== self::templateHeaders($type)) throw new InvalidArgumentException(__('The spreadsheet headers do not match this template.')); continue; }
+                if ($number === 1) { $headers = array_map(fn ($value) => strtolower(trim((string) $value)), $values); ImportWorkbook::assertHeaders($headers, self::templateHeaders($type), __('The spreadsheet headers do not match this template.')); continue; }
                 if ($number > 5001) throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
                 if (collect($values)->every(fn ($value) => trim((string) $value) === '')) continue;
                 $raw = array_combine($headers, array_pad($values, count($headers), null));
                 $errors = collect($cells)->contains(fn ($cell) => $cell instanceof FormulaCell || (is_string($cell->getValue()) && str_starts_with(trim($cell->getValue()), '='))) ? [__('Spreadsheet formulas are not allowed.')] : [];
                 $rows[] = new CatalogReferenceImportRow(['row_number' => $number, 'raw_data' => $raw, 'errors' => $errors, 'status' => $errors ? 'invalid' : 'staged']);
-            break; }
+            }
             $batch = CatalogReferenceImportBatch::create(['type' => $type, 'mode' => $mode, 'created_by' => $userId, 'original_filename' => $name, 'storage_path' => $file, 'sha256' => $hash, 'status' => 'staged', 'headers' => $headers, 'total_rows' => count($rows)]);
             $batch->rows()->saveMany($rows); app(RecordAuditEvent::class)->execute(category: 'catalog_import', event: 'stage_catalog_reference_import', source: $batch, after: $batch->only(['id', 'type', 'mode', 'total_rows', 'status'])); return $batch->fresh();
         } finally { $reader->close(); }

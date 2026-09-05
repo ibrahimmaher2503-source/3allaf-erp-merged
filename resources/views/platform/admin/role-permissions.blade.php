@@ -167,13 +167,13 @@ new #[Title('Role Permissions')] class extends Component
                             <div class="grid gap-3 border-t border-border p-3 md:grid-cols-2 lg:grid-cols-3">
                                 @foreach ($modulePermissions as $permission)
                                     @php($editable = $canEdit && $permission->status === 'active' && ($canAssignSensitive || $permission->sensitivity !== 'sensitive'))
-                                    <article class="rounded-lg border border-border p-4 transition-colors hover:border-cyan-400/60">
+                                    <article wire:key="role-permission-{{ $role->id }}-{{ $permission->id }}" class="rounded-lg border border-border p-4 transition-colors hover:border-cyan-400/60">
                                         <div class="flex items-start justify-between gap-3">
                                             <div class="min-w-0">
                                                 <h3 class="text-base font-medium">{{ $actionName($permission->action) }}</h3>
                                                 <p class="mt-1 truncate font-mono text-xs text-text-muted" dir="ltr" title="{{ $permission->code }}">{{ $permission->code }}</p>
                                             </div>
-                                            <flux:checkbox wire:model="permissionIds" value="{{ $permission->id }}" :disabled="! $editable" :label="$isArabic ? 'تفعيل' : 'Granted'" />
+                                            <flux:checkbox wire:key="role-permission-checkbox-{{ $role->id }}-{{ $permission->id }}" wire:model="permissionIds" value="{{ $permission->id }}" :checked="in_array((int) $permission->id, array_map('intval', $permissionIds), true)" :disabled="! $editable" :label="$isArabic ? 'تفعيل' : 'Granted'" />
                                         </div>
                                         <div class="mt-3 flex flex-wrap items-center gap-2">
                                             @if ($permission->sensitivity === 'sensitive')

@@ -1,13 +1,14 @@
-# Current Task — v0.1.22-hotfix14 Pricing and POS Cash Rounding
+# Current Task — v0.1.22-hotfix15 Complete Batch
 
 **Date:** 2026-09-05
-**Change class:** D3 / I4
-**Source baseline:** exact Hotfix13 commit `1c0519dc57b9c5b9af1aa6963dbbb448fce56bbe` (tree `b46016b660a560dad786d22018c38243efc9a8a9`)
-**Branch:** `hotfix/v0.1.22-hotfix14-pricing-cash-rounding`
-**Status:** Scoped source implementation and the one focused database-free verification pass are complete; immutable release preparation remains.
+**Change class:** D3 / I4 (includes the explicitly closed V0/V1 UI batch)
+**Source baseline:** exact Hotfix14 commit `32c13a8e54f8dad45691a88318f9b475ff944f15` (tree `141e620ef70ab92095893e36a6182d6c6433250a`)
+**Branch:** `hotfix/v0.1.22-hotfix15-complete-batch`
+**Production baseline:** operator-verified active release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix14-pricing-cash-rounding`, commit `32c13a8e54f8dad45691a88318f9b475ff944f15`, tree `141e620ef70ab92095893e36a6182d6c6433250a`; migrations 000104–000108 Ran, maintenance OFF, HTTPS smoke passed.
+**Status:** All four requested Hotfix15 scopes are implemented. One focused database-free verification pass, final records, commit, and immutable local release preparation remain; deployment is not authorized.
 
-The canonical percentage-derived price resolver retains BC Math arithmetic and now names its approved 5 EGP increment explicitly. Only non-base automatically derived values use ceiling-to-5; Product Card base prices and effective manual overrides remain verbatim, and no existing price, sale, invoice, accounting, cost, or inventory record is recalculated.
+Hotfix15 closes the owner-directed batch without reducing scope: shared UI/navigation cleanup and exact Arabic workflow labels; dynamic company-scoped XLSX import workbooks; scalable product-to-location assignment and opening-inventory draft/import/approval/reversal workflows; and guarded product archive/dependency-free deletion with separate unexecuted QA/UAT audit and cleanup commands.
 
-Migration `2026_09_05_000108_configure_pos_cash_rounding_denomination` appends the owner-approved `5.0000` value to the canonical versioned POS setting only when that value is not already effective. It never rewrites or deletes setting history. POS cash settlement retains nearest-denomination arithmetic while non-cash-only settlement retains the exact invoice total. Missing or invalid configuration disables cash with one localized user-safe message instead of an unhandled rendering or checkout exception.
+The new migration creates only the product/location assignment configuration table. Opening quantities remain separate immutable inventory documents whose costs come from Product Cards and whose approval/reversal effects use the stock ledger, transactions, locks, idempotency keys, scope guards, and audit records. Product removal enumerates database dependencies and fails closed; operational or historical dependencies prohibit physical deletion.
 
-Hotfix13 drawer integrity, authorization, company/store scope, price precedence, taxes, discounts, promotions, accounting, inventory, shift lifecycle, locking, idempotency, audit behavior, and posted-document immutability remain unchanged. Pending UI/navigation/permission/printer/initial-setup work is excluded. Production deployment and mutation are not authorized in this worktree.
+Automated suites and browser control remain prohibited for this task. Verification is limited to the requested database-free syntax, Blade compilation, locale, route-source, workbook structure/round-trip, focused source contracts, and final diff hygiene. No database, migration, seeder, QA audit, cleanup, production access, deployment, tag, push, or remote operation is authorized.

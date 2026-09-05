@@ -62,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addNamespace('catalog', viewPath: resource_path('views/catalog'));
         Livewire::addNamespace('purchasing', viewPath: resource_path('views/purchasing'));
         Livewire::addNamespace('pricing', viewPath: resource_path('views/pricing'));
+        Livewire::addNamespace('inventory', viewPath: resource_path('views/inventory'));
         foreach (['saved', 'deleted', 'restored'] as $event) {
             Event::listen("eloquent.{$event}: *", static function (): void {
                 if (! Cache::add('setup-readiness-version', 1)) {

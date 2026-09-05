@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
+use App\Support\DataExchange\ImportWorkbook;
 use InvalidArgumentException;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
@@ -25,15 +26,14 @@ final class ImportCustomerGroups
         $raw = [];
         $number = 0;
         try {
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.customer-groups.v2', (string) $store->company()->value('code'));
+            $sheet = ImportWorkbook::dataSheet($reader);
+            foreach ($sheet->getRowIterator() as $row) {
                     $number++;
                     $cells = $row->getCells();
                     $values = array_map(fn ($c) => (string) ($c->getValue() ?? ''), $cells);
                     if ($number === 1) {
-                        if (array_map(fn ($v) => strtolower(trim($v)), $values) !== self::HEADERS) {
-                            throw new InvalidArgumentException(__('The import headers must exactly match the downloaded template.'));
-                        }
+                        ImportWorkbook::assertHeaders($values, self::HEADERS, __('The import headers must exactly match the downloaded template.'));
 
 continue;
                     }if ($number > 5001) {
@@ -45,7 +45,6 @@ continue;
                             throw new InvalidArgumentException(__('Formula cells are not allowed in import files.'));
                         }
                     }$raw[] = ['row' => $number, 'data' => array_combine(self::HEADERS, array_pad($values, count(self::HEADERS), ''))];
-                }break;
             }
         } finally {
             $reader->close();

@@ -1,8 +1,10 @@
 # Current Milestone
 
 **Date:** 2026-09-05
-**Status:** v0.1.22-hotfix14 is the focused D3/I4 pricing and POS cash-rounding correction from exact Hotfix13 commit `1c0519dc57b9c5b9af1aa6963dbbb448fce56bbe`.
+**Status:** v0.1.22-hotfix15 is the complete D3/I4 closure candidate for the explicitly requested four-scope batch from exact Hotfix14 commit `32c13a8e54f8dad45691a88318f9b475ff944f15`.
 
-The release confirms decimal-safe ceiling-to-5 only for automatically percentage-derived selling prices, establishes the canonical append-only POS cash denomination at exactly 5 EGP, keeps nearest rounding limited to cash settlement, and converts missing/invalid cash configuration into a localized fail-closed cash-only state. Base/manual prices, non-cash totals, historical and posted documents, Hotfix13 drawer integrity, authorization, company/store scope, accounting, inventory, and POS lifecycle controls are preserved.
+The candidate removes only the named duplicate navigation/readiness/settings UI, preserves canonical routes and sidebar destinations, fixes permission selection state and required Arabic printer/POS approval text, replaces static XLSX import downloads with current company-scoped schema-identified workbooks, adds bounded server-side product/location assignment and opening-inventory workflows, and centralizes safe product archive/dependency-free removal.
 
-The root operator supplied conclusive exact-Hotfix13 production baseline evidence. No further production access is permitted. The focused database-free verification pass is complete; local immutable release preparation completes this milestone; deployment remains unexecuted and exact Hotfix13 is the prerequisite and rollback release.
+Hotfix14 pricing/cash rounding and Hotfix13 drawer integrity remain preserved. The production prerequisite is the operator-verified exact Hotfix14 release with migrations through 000108 Ran, maintenance OFF, and HTTPS smoke passing. Hotfix15 adds migration 000109. The QA/UAT product audit and destructive cleanup remain separate root-only operator activities and were not run.
+
+One focused database-free release verification pass, documentation closure, commit, and immutable artifact/operator-script preparation finish the local milestone. Production access, backup, migration execution, promotion, activation, cleanup, tag, push, and remote contact remain unexecuted.

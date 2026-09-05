@@ -13,6 +13,8 @@ use App\Modules\Catalog\Models\ProductImportBatch;
 use App\Modules\Catalog\Models\ProductImportRow;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Support\DataExchange\ImportWorkbook;
 use App\Modules\Platform\Actions\LinkAttachmentToSource;
 use App\Modules\Platform\Actions\NotifyImportReviewers;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -72,20 +74,24 @@ class StageProductImportAction
             throw new InvalidArgumentException(__('This import file was already staged by this user.'));
         }
 
+        $actor = auth()->user(); abort_unless($actor instanceof User && $actor->id === $userId, 403);
+        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $reader = ReaderFactory::createFromFile($absolutePath);
         $reader->open($absolutePath);
 
         try {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.products.staged.v2', $company->code);
             $headers = null;
             $rows = [];
             $rowNumber = 0;
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
+            $sheet = ImportWorkbook::dataSheet($reader);
+            foreach ($sheet->getRowIterator() as $row) {
                     $rowNumber++;
                     $values = array_map(static fn ($cell): mixed => $cell->getValue(), $row->getCells());
 
                     if ($rowNumber === 1) {
                         $headers = array_map(fn (mixed $value): string => $this->normalizeHeader($value), $values);
+                        ImportWorkbook::assertHeaders($headers, self::ALLOWED_FIELDS, __('The spreadsheet headers do not match the current Product import template.'));
                         $this->assertUniqueSourceHeaders($headers);
 
                         continue;
@@ -118,8 +124,6 @@ class StageProductImportAction
                         $this->persistRows($rows, $userId, $originalFilename, $storagePath, $hash, $mode, $headers);
                         $rows = [];
                     }
-                }
-                break;
             }
 
             $batch = $this->persistRows($rows, $userId, $originalFilename, $storagePath, $hash, $mode, $headers ?? []);
@@ -172,8 +176,10 @@ class StageProductImportAction
     {
         Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
         abort_unless($batch->created_by === auth()->id(), 404);
+        $actor = auth()->user(); abort_unless($actor instanceof User, 403);
+        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
 
-        return DB::transaction(function () use ($batch, $mapping): ProductImportBatch {
+        return DB::transaction(function () use ($batch, $mapping, $company): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
             abort_unless($batch->created_by === auth()->id(), 404);
 
@@ -187,7 +193,7 @@ class StageProductImportAction
             $invalidRows = 0;
             $categoryCodes = Category::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $brandCodes = Brand::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
-            $supplierCodes = Supplier::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
+            $supplierCodes = Supplier::query()->where('status', 'active')->where(fn ($query) => $query->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id)))->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $lookupCodes = [
                 'age' => AgeLabel::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
                 'character' => Character::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),

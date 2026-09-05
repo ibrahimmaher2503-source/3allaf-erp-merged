@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class OpeningInventoryDocument extends Model
+final class OpeningInventoryDocument extends Model implements ImmutableSourceContract
 {
+    use GuardsApprovedDocument;
+
     protected $fillable = ['company_id', 'document_number', 'status', 'notes', 'created_by', 'approved_by', 'reversed_by', 'reversal_of_id', 'approved_at', 'reversed_at', 'reversal_reason', 'idempotency_key', 'lock_version'];
     protected $casts = ['approved_at' => 'datetime', 'reversed_at' => 'datetime', 'lock_version' => 'integer'];
 

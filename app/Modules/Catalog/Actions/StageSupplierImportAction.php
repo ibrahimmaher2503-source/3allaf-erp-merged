@@ -11,6 +11,8 @@ use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\NotifyImportReviewers;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -39,14 +41,18 @@ class StageSupplierImportAction
         } $hash = hash_file('sha256', $path);
         if (SupplierImportBatch::where('created_by', $userId)->where('sha256', $hash)->where('status', '!=', 'cancelled')->exists()) {
             throw new InvalidArgumentException(__('This import file was already staged by this user.'));
-        } $reader = ReaderFactory::createFromFile($path);
+        }
+        $actor = auth()->user(); abort_unless($actor instanceof \App\Models\User && $actor->id === $userId, 403);
+        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
+        $reader = ReaderFactory::createFromFile($path);
         $reader->open($path);
         $headers = [];
         $rows = [];
         $n = 0;
         try {
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.suppliers.v2', $company->code);
+            $sheet = ImportWorkbook::dataSheet($reader);
+            foreach ($sheet->getRowIterator() as $row) {
                     $n++;
                     $cells = $row->getCells();
                     $v = array_map(function ($c) {
@@ -59,9 +65,7 @@ class StageSupplierImportAction
                     }, $cells);
                     if ($n === 1) {
                         $headers = array_map(fn ($x) => strtolower(trim((string) $x)), $v);
-                        if ($headers !== self::HEADERS) {
-                            throw new InvalidArgumentException(__('The import headers must exactly match the downloaded template.'));
-                        }
+                        ImportWorkbook::assertHeaders($headers, self::HEADERS, __('The import headers must exactly match the downloaded template.'));
 
                         continue;
                     }if ($n > 5001) {
@@ -74,9 +78,8 @@ class StageSupplierImportAction
                             $raw[$h] = $v[$i] ?? null;
                         }
                     }$rows[] = new SupplierImportRow(['row_number' => $n, 'raw_data' => $raw, 'status' => 'staged', 'errors' => []]);
-                }break;
-            } $companyId = Store::query()->visibleTo(auth()->user())->where('status', 'active')->orderBy('id')->value('company_id');
-            abort_unless($companyId !== null, 403);
+            }
+            $companyId = $company->id;
             $batch = SupplierImportBatch::create(['company_id' => $companyId, 'created_by' => $userId, 'original_filename' => $name, 'storage_path' => $file, 'sha256' => $hash, 'mode' => $mode, 'status' => 'mapping_required', 'headers' => $headers, 'total_rows' => count($rows)]);
             $batch->rows()->saveMany($rows);
             app(RecordAuditEvent::class)->execute(category: 'catalog_import', event: 'stage_supplier_import', source: $batch, after: $batch->only(['id', 'mode', 'total_rows', 'status']));

@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Models\User;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\ProductOptionValue;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
 use OpenSpout\Reader\Common\Creator\ReaderFactory;
@@ -24,13 +28,16 @@ final class ImportProductCardsWorkbookAction
     public function execute(string $path): array
     {
         Gate::authorize('products_categories_brands.create');
+        $actor = Auth::user(); abort_unless($actor instanceof User, 403);
+        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $reader = ReaderFactory::createFromFile($path); $reader->open($path);
         $staged = []; $rejections = []; $seenModels = []; $seenBarcodes = []; $number = 0;
         try {
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.product-card.v2', $company->code);
+            $sheet = ImportWorkbook::dataSheet($reader);
+            foreach ($sheet->getRowIterator() as $row) {
                     $number++; $cells = $row->getCells(); $values = array_map(fn ($cell) => trim((string) $cell->getValue()), $cells);
-                    if ($number === 1) { if (array_slice($values, 0, count(self::HEADERS)) !== self::HEADERS) throw new InvalidArgumentException(__('The spreadsheet headers do not match the Product Card template.')); continue; }
+                    if ($number === 1) { ImportWorkbook::assertHeaders($values, self::HEADERS, __('The spreadsheet headers do not match the Product Card template.')); continue; }
                     if ($number > 5001) throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
                     if (collect($values)->every(fn ($value) => $value === '')) continue;
                     $source = array_combine(self::HEADERS, array_pad(array_slice($values, 0, count(self::HEADERS)), count(self::HEADERS), ''));
@@ -46,14 +53,12 @@ final class ImportProductCardsWorkbookAction
                     if (Product::query()->where('item_code', $model)->orWhereHas('barcodes', fn ($q) => $q->where('barcode', $barcode))->exists()) $errors[] = __('The product model or barcode already exists and will not be overwritten.');
                     $category = Category::query()->where('code', strtoupper($source['category_code']))->where('status', 'active')->first(); if (! $category) $errors[] = __('Unknown or inactive category code.');
                     $brand = $source['brand_code'] === '' ? null : Brand::query()->where('code', strtoupper($source['brand_code']))->where('status', 'active')->first(); if ($source['brand_code'] !== '' && ! $brand) $errors[] = __('Unknown or inactive brand code.');
-                    $supplier = $source['supplier_code'] === '' ? null : Supplier::query()->where('code', strtoupper($source['supplier_code']))->where('status', 'active')->first(); if ($mode === 'local' && ! $supplier) $errors[] = __('Unknown or inactive supplier code.');
+                    $supplier = $source['supplier_code'] === '' ? null : Supplier::query()->where('code', strtoupper($source['supplier_code']))->where('status', 'active')->where(fn ($query) => $query->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id)))->first(); if ($mode === 'local' && ! $supplier) $errors[] = __('Unknown, inactive, or out-of-scope supplier code.');
                     $filterValues = $this->filterValues($source['filter_codes'], $errors);
                     if (! preg_match('/^\d+(?:\.\d{1,4})?$/', $source['unit_cost']) || ! preg_match('/^\d+(?:\.\d{1,4})?$/', $source['base_consumer_price'])) $errors[] = __('Unit cost and base consumer price must be valid non-negative amounts.');
                     if (! in_array($source['product_type'], ['standard', 'composite', 'service'], true)) $errors[] = __('Product type must be standard, composite, or service.');
                     if ($errors) { $rejections[] = [$number, ...array_values($source), implode(' | ', array_unique($errors))]; continue; }
                     $staged[] = compact('source', 'category', 'brand', 'supplier', 'filterValues', 'mode', 'barcode', 'model');
-                }
-                break;
             }
         } finally { $reader->close(); }
         $added = 0;

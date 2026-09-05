@@ -137,7 +137,6 @@ new #[Title('Product Import')] class extends Component {
         @endcan
     </x-slot:actions>
 
-    @php($productImportTemplate = "item_code,name_ar,name_en,category_code,brand_code,preferred_supplier_code,sale_price,average_cost,unit_of_measure,weight,dimension_length,dimension_width,dimension_height,dimension_unit,battery_required,battery_details,age_codes,character_codes,colour_codes,gender_codes\n,Example product,Example product,CAT-001,,SUP-001,,,piece,,,,,false,,,,")
     <flux:callout variant="info" icon="information-circle" title="{{ __('Two ways to add products') }}">
         <div class="space-y-3">
             <p>{{ __('Manual entry is best for one product. Excel import is for a reviewed batch: upload, validate, review errors, then approve. Nothing is written to products during staging.') }}</p>
@@ -145,7 +144,7 @@ new #[Title('Product Import')] class extends Component {
                 @can('products_categories_brands.create')
                     <flux:button href="{{ route('catalog.products.create') }}" variant="subtle" icon="plus" wire:navigate>{{ __('Use manual entry') }}</flux:button>
                 @endcan
-                <flux:button href="data:text/csv;charset=utf-8,{{ rawurlencode($productImportTemplate) }}" download="products-import-template.csv" variant="subtle" icon="arrow-down-tray">{{ __('Download spreadsheet template') }}</flux:button>
+                <flux:button href="{{ route('catalog.products.import.staged-template.xlsx') }}" variant="subtle" icon="arrow-down-tray">{{ __('Download spreadsheet template') }}</flux:button>
             </div>
         </div>
     </flux:callout>

@@ -76,6 +76,10 @@ final class DemoErpSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \LogicException('DemoErpSeeder is local/testing only and cannot generate products in production.');
+        }
+
         DB::transaction(function (): void {
             $administrator = User::query()->where('username', 'admin')->firstOrFail();
             $approver = $this->workflowApprover();

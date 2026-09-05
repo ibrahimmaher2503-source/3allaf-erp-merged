@@ -1,6 +1,8 @@
 <?php
 
+use App\Modules\Catalog\Actions\RemoveProductAction;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Services\ProductDependencyService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -20,11 +22,26 @@ new #[Title('Product Details')] class extends Component {
         ]);
     }
 
+    public function removeProduct(bool $permanent, RemoveProductAction $action): mixed
+    {
+        $result = $action->execute($this->product->id, $permanent);
+        if ($result['outcome'] === 'deleted') {
+            return $this->redirectRoute('catalog.products', navigate: true);
+        }
+        $this->product->refresh();
+        session()->flash('success', __('Product archived. Historical and operational records remain unchanged.'));
+
+        return null;
+    }
+
     public function render()
     {
+        $canRemove = Gate::allows('products_categories_brands.logical_delete');
         return view('catalog.product-detail', [
             'canEdit' => Gate::allows('products_categories_brands.edit'),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
+            'canRemove' => $canRemove,
+            'removalReport' => $canRemove ? app(ProductDependencyService::class)->inspect($this->product) : null,
         ]);
     }
 }; ?>
@@ -159,6 +176,21 @@ new #[Title('Product Details')] class extends Component {
                     @endforelse
                 </div>
             </flux:card>
+
+            @if ($canRemove)
+                <flux:card class="space-y-4 p-5" data-product-removal>
+                    <flux:heading size="lg">{{ __('Safe product removal') }}</flux:heading>
+                    <p class="text-sm text-text-muted">{{ __('Product: :code — :name', ['code' => $product->item_code, 'name' => app()->isLocale('ar') ? $product->name_ar : $product->name_en]) }}</p>
+                    @error('product')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
+                    @if (($removalReport['operational_total'] ?? 0) > 0)
+                        <flux:callout variant="warning" icon="archive-box">{{ __('This product has :count operational or historical dependencies. It can only be archived; every dependency remains intact.', ['count' => $removalReport['operational_total']]) }}</flux:callout>
+                        <flux:button variant="danger" wire:click="removeProduct(false)" wire:confirm="{{ __('Archive :code? It will be unavailable for new transactions, while all history remains unchanged.', ['code' => $product->item_code]) }}">{{ __('Archive product') }}</flux:button>
+                    @else
+                        <flux:callout variant="info" icon="trash">{{ __('No operational or historical dependency was found. Permanent deletion removes only this product and its non-historical catalog configuration.') }}</flux:callout>
+                        <div class="flex flex-wrap gap-2"><flux:button variant="subtle" wire:click="removeProduct(false)" wire:confirm="{{ __('Archive :code? It will be unavailable for new transactions.', ['code' => $product->item_code]) }}">{{ __('Archive product') }}</flux:button><flux:button variant="danger" wire:click="removeProduct(true)" wire:confirm="{{ __('Permanently delete dependency-free product :code? This cannot be undone.', ['code' => $product->item_code]) }}">{{ __('Delete permanently') }}</flux:button></div>
+                    @endif
+                </flux:card>
+            @endif
 
             <flux:callout variant="success" icon="shield-check" title="{{ __('Audit and scope protected') }}">{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</flux:callout>
         </aside>

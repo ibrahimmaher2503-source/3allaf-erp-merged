@@ -91,13 +91,21 @@ final class ApplicationNavigation
                     'setup_step' => $stepKey,
                 ]);
 
+                $canonicalRoutes = match ($stepKey) {
+                    'categories' => ['catalog.categories*', 'catalog.brands*', 'catalog.product-options*'],
+                    'customers' => ['customers.index', 'customers.create', 'customers.show', 'customers.import*'],
+                    default => [$step['route']],
+                };
+                $isCanonicalDestination = in_array($stepKey, ['categories', 'customers'], true)
+                    && request()->routeIs(...$canonicalRoutes);
+
                 return [
                     'key' => $stepKey,
                     'label' => __($step['label']),
                     'url' => $url,
-                    'active' => request()->routeIs($step['route'])
+                    'active' => $isCanonicalDestination || (request()->routeIs($step['route'])
                         && request()->boolean('setup')
-                        && request()->query('setup_step') === $stepKey,
+                        && request()->query('setup_step') === $stepKey),
                 ];
             })->filter()->values()->all();
 

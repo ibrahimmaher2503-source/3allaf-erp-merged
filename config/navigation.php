@@ -10,7 +10,6 @@ return [
         ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
-        ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'user-group', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
         ['route' => 'customers.groups.index', 'permission' => 'customers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات العملاء', 'en' => 'Customer groups']],
         ['route' => 'pos.shift', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'الورديات والتحصيل', 'en' => 'Shifts & collections']],
     ]],
@@ -23,7 +22,6 @@ return [
     ['key' => 'inventory', 'icon' => 'archive-box', 'label' => ['ar' => 'المنتجات والمخزون', 'en' => 'Products & inventory'], 'items' => [
         ['route' => 'inventory.index', 'permission' => 'inventory_stock_card.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'نظرة عامة على المخزون', 'en' => 'Inventory overview']],
         ['route' => 'catalog.products', 'permission' => 'products_categories_brands.view', 'icon' => 'cube', 'label' => ['ar' => 'المنتجات', 'en' => 'Products']],
-        ['route' => 'catalog.categories', 'permission' => 'products_categories_brands.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'التصنيفات والخيارات', 'en' => 'Categories & options']],
         ['route' => 'inventory.balances', 'permission' => 'inventory_stock_card.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأرصدة وحركة المخزون', 'en' => 'Balances & movements']],
         ['route' => 'inventory.transfers', 'permission' => 'transfers.view', 'icon' => 'arrows-right-left', 'label' => ['ar' => 'التحويلات', 'en' => 'Transfers']],
         ['route' => 'inventory.counts', 'permission' => 'inventory_stock_card.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'الجرد والتسويات', 'en' => 'Counts & adjustments']],

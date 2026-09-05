@@ -11,6 +11,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\City;
 use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\Store;
+use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -22,7 +23,7 @@ final class StageCustomerImportAction
     public const FIELDS = ['first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'phone', 'secondary_phone', 'email', 'customer_group_code', 'governorate_code', 'city_code', 'address_ar', 'address_en', 'consent_purpose', 'consent_status'];
 
     /** @return list<array<string, string>> */
-    public static function readSpreadsheet(string $path): array
+    public static function readSpreadsheet(string $path, string $companyCode): array
     {
         $reader = ReaderFactory::createFromFile($path);
         $reader->open($path);
@@ -30,16 +31,15 @@ final class StageCustomerImportAction
         $rows = [];
         $number = 0;
         try {
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
+            ImportWorkbook::assertMetadata($reader, 'toyjoy.customers.v2', $companyCode);
+            $sheet = ImportWorkbook::dataSheet($reader);
+            foreach ($sheet->getRowIterator() as $row) {
                     $number++;
                     $cells = $row->getCells();
                     $values = array_map(fn ($cell) => (string) ($cell->getValue() ?? ''), $cells);
                     if ($number === 1) {
                         $headers = array_map(fn ($value) => strtolower(trim($value)), $values);
-                        if ($headers !== self::FIELDS) {
-                            throw new InvalidArgumentException(__('The customer template headers must match the configured template exactly.'));
-                        }
+                        ImportWorkbook::assertHeaders($headers, self::FIELDS, __('The customer template headers must match the configured template exactly.'));
 
                         continue;
                     }if ($number > 5001) {
@@ -51,7 +51,6 @@ final class StageCustomerImportAction
                             throw new InvalidArgumentException(__('Formula-like cell values are not accepted in customer imports.'));
                         }
                     }$rows[] = array_combine($headers, array_slice(array_pad($values, count($headers), ''), 0, count($headers)));
-                }break;
             }
 
             return $rows;

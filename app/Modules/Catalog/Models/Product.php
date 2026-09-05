@@ -2,6 +2,7 @@
 
 namespace App\Modules\Catalog\Models;
 
+use App\Modules\Catalog\Services\ProductDependencyService;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -16,6 +17,27 @@ use Illuminate\Support\Collection;
 class Product extends Model
 {
     use HasFactory;
+
+    private bool $permanentRemovalAuthorized = false;
+
+    protected static function booted(): void
+    {
+        self::deleting(function (self $product): void {
+            if (! $product->permanentRemovalAuthorized) {
+                throw new \LogicException('Products must be archived or removed through the guarded product-removal action.');
+            }
+            if (app(ProductDependencyService::class)->inspect($product)['operational_total'] > 0) {
+                throw new \LogicException('Products with operational or historical dependencies cannot be permanently deleted.');
+            }
+        });
+    }
+
+    public function authorizePermanentRemoval(): self
+    {
+        $this->permanentRemovalAuthorized = true;
+
+        return $this;
+    }
 
     protected static function newFactory(): Factory
     {
@@ -118,6 +140,8 @@ class Product extends Model
     }
 
     public function priceOverrides(): HasMany { return $this->hasMany(\App\Modules\Pricing\Models\ProductPriceOverride::class); }
+
+    public function storeAssignments(): HasMany { return $this->hasMany(\App\Modules\Inventory\Models\ProductStoreAssignment::class); }
 
     public function images(): HasMany
     {

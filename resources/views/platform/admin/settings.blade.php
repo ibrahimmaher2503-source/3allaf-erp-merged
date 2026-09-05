@@ -680,18 +680,6 @@ new #[Title('System Settings')] class extends Component
         ][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
     ?>
 
-    @php
-        $settingsSections = [
-            'company' => ['label' => __('Company Identity')],
-            'payments' => ['label' => __('Payment Methods')],
-            'tax' => ['label' => __('Tax rules')],
-            'sequences' => ['label' => __('Document numbering')],
-            'printers' => ['label' => __('Printers & Print Profiles')],
-            'audit' => ['label' => __('Configuration Change History')],
-        ];
-    @endphp
-    <x-setup.section-navigator :sections="$settingsSections" :current="$activeTab" />
-
     <flux:card class="settings-screen__summary space-y-1 border-s-4 border-primary bg-surface shadow-card" data-settings-section-summary="{{ $activeTab }}">
         <flux:heading size="lg">{{ $sectionMeta[0] }}</flux:heading>
         <flux:subheading>{{ $sectionMeta[1] }}</flux:subheading>

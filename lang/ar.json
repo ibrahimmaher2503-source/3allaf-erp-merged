@@ -443,7 +443,7 @@
     "A reason is required for a branch exception.": "A السبب is مطلوب لـ a الفرع exception.",
     "A reason is required for an open price.": "A السبب is مطلوب لـ an فتح السعر.",
     "A reason is required to revoke an attachment.": "يلزم سبب لإلغاء مرفق.",
-    "A recount request requires a reason.": "A recount request requires a السبب.",
+    "A recount request requires a reason.":"يجب إدخال سبب لإعادة الجرد.",
     "A redaction reason is required.": "مطلوب سبب لإخفاء البيانات.",
     "A rejection reason is required.": "سبب الرفض مطلوب.",
     "A rental Party line must select an actual rental asset.": "A تأجير الحفلة سطر must select an actual تأجير أصل.",
@@ -681,7 +681,7 @@
     "Approve": "اعتماد",
     "Approve & post": "اعتماد وترحيل",
     "Approve Order": "اعتماد الطلب",
-    "Approve and close": "Approve و إغلاق",
+    "Approve and close":"اعتماد وإغلاق",
     "Approve this source record and execute its domain effects?": "هل تريد اعتماد سجل المصدر وتنفيذ آثاره في المجال؟",
     "Approve valid rows": "اعتماد الصفوف الصحيحة",
     "Approved": "معتمد",
@@ -1174,7 +1174,7 @@
     "Cost source: original approved purchase invoice line. No WAC fallback.": "التكلفة source: original معتمد فاتورة مشتريات سطر. لا wac fallback.",
     "Cost value": "التكلفة القيمة",
     "Could not save settings; they remain applied locally": "تعذر حفظ الإعدادات، لكنها ما تزال مطبقة محليًا",
-    "Count submitted for review.": "Count submitted لـ review.",
+    "Count submitted for review.":"تم إرسال الجرد للمراجعة.",
     "Count the drawer and enter the actual amounts. Expected totals are not shown before you submit.": "اعدّ درج النقدية وأدخل المبالغ الفعلية. لا تظهر الإجماليات المتوقعة قبل الإرسال.",
     "Counted cash": "النقدية المعدودة",
     "Counted quantity must be a non-negative decimal with up to 6 places.": "Counted الكمية must be a non-negative decimal مع أعلى إلى 6 places.",
@@ -1720,7 +1720,7 @@
     "Import row :row references an unknown product or store.": "استيراد row :row references an unknown الصنف أو المخزن.",
     "Import row review": "مراجعة صفوف الاستيراد",
     "Importer and approver separation, scoped approval, immutable evidence, and audit records remain pending.": "يبقى فصل المستورد عن المعتمد والاعتماد ضمن النطاق والأدلة غير القابلة للتعديل وسجلات التدقيق معلقًا.",
-    "In Review": "قيد المراجعة",
+    "In Review":"بانتظار المراجعة",
     "In progress": "قيد التنفيذ",
     "In transit": "قيد النقل",
     "In-Transit": "مخزون قيد النقل",
@@ -2311,7 +2311,7 @@
     "Only a submitted proposal can be rejected.": "Only a submitted proposal can be مرفوض.",
     "Only a submitted proposal with a pending approval can be approved.": "Only a submitted proposal مع a قيد الانتظار اعتماد can be معتمد.",
     "Only a submitted return can be approved.": "Only a submitted return can be معتمد.",
-    "Only a submitted shift can be returned for recount.": "Only a submitted وردية can be returned لـ recount.",
+    "Only a submitted shift can be returned for recount.":"يمكن إعادة الوردية المرسلة فقط للجرد.",
     "Only active customer profiles can be merged.": "Only مفعل العميل profiles can be merged.",
     "Only active products with an approved effective store price can enter the basket.": "تظهر فقط الأصناف النشطة ذات سعر متجر معتمد وساري.",
     "Only an active Party operating order can be completed.": "Only an مفعل الحفلة operating طلب can be اكتمل.",
@@ -2940,7 +2940,7 @@
     "Recorded by": "سجلها",
     "Recorded with the discount audit event.": "يُسجل مع حدث تدقيق الخصم.",
     "Records: :count": "السجلات: :count",
-    "Recount reason": "Recount السبب",
+    "Recount reason":"سبب إعادة الجرد",
     "Recounts requested": "إعادات العد المطلوبة",
     "Recoverable error": "خطأ قابل للاستعادة",
     "Recovery code": "رمز الاسترداد",
@@ -3034,7 +3034,7 @@
     "Request a new decision before checkout.": "Request a جديد decision before checkout.",
     "Request adjustment": "طلب تسوية",
     "Request could not be completed": "تعذر إكمال الطلب",
-    "Request recount": "طلب إعادة جرد",
+    "Request recount":"إعادة الجرد",
     "Request sensitive adjustment": "طلب تسوية حساسة",
     "Requested": "مطلوب",
     "Requested action": "الإجراء المطلوب",
@@ -3114,7 +3114,7 @@
     "Return settings": "إعدادات المرتجع",
     "Return stock only against an approved purchase invoice line. Cost is always copied from the original invoice line.": "لا يمكن إرجاع المخزون إلا مقابل بند معتمد من فاتورة شراء، وتُنقل التكلفة من بند الفاتورة الأصلي.",
     "Return submitted for approval.": "Return submitted لـ اعتماد.",
-    "Return this shift for recount?": "Return هذا وردية لـ recount?",
+    "Return this shift for recount?":"هل تريد إعادة هذه الوردية للجرد؟",
     "Return to Dashboard": "العودة إلى لوحة التحكم",
     "Return to Party store": "Return إلى الحفلة المخزن",
     "Return to pricing to review approved prices.": "عد إلى التسعير لمراجعة الأسعار المعتمدة.",
@@ -3125,7 +3125,7 @@
     "Return, condition & damages": "الاستلام وفحص الحالة والأضرار",
     "Returned": "تم الإرجاع",
     "Returned quantity exceeds unused issued Party consumables.": "Returned الكمية exceeds unused issued الحفلة consumables.",
-    "Returning a shift for recount rejects this exact approval request and preserves its history.": "Returning a وردية لـ recount rejects هذا exact اعتماد request و preserves its history.",
+    "Returning a shift for recount rejects this exact approval request and preserves its history.":"إعادة الوردية للجرد ترفض طلب الاعتماد الحالي مع الاحتفاظ بسجله.",
     "Returns": "المرتجعات",
     "Returns and Exchanges": "المرتجعات والاستبدالات",
     "Returns and Exchanges Readiness": "جاهزية المرتجعات والاستبدال",
@@ -5672,4 +5672,76 @@
     ,"Linked Sales Outlet":"منفذ البيع المرتبط","Unlinked":"غير مرتبط"
     ,"The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.":"إعداد الشركة أو الفرع أو منفذ البيع لدرج النقدية المحدد غير صالح. اطلب من مسؤول النظام تصحيح إعداد الدرج قبل فتح الوردية."
     ,"Cash payment is unavailable because POS cash rounding is missing or invalid. Ask an administrator to set the cash rounding denomination to 5.":"الدفع النقدي غير متاح لأن إعداد تقريب النقد في نقطة البيع مفقود أو غير صالح. اطلب من مسؤول النظام ضبط فئة تقريب النقد على 5."
+    ,"Count submitted":"تم إرسال الجرد"
+    ,"Closing submitted":"تم إرسال الإغلاق"
+    ,"POS shift #:id":"وردية نقطة البيع رقم :id"
+    ,"POS shifts":"ورديات نقطة البيع"
+    ,"Approve shift close":"اعتماد إغلاق الوردية"
+    ,"Recount":"إعادة الجرد"
+    ,"Print assignments":"تعيينات الطباعة"
+    ,"Choose the document, a compatible template, and the printer that will output it.":"اختر المستند والقالب المتوافق والطابعة التي ستخرجه."
+    ,"Print setup path":"مسار إعداد الطباعة"
+    ,"What will be printed?":"ما الذي ستتم طباعته؟"
+    ,"Layout and paper size":"التخطيط وحجم الورق"
+    ,"Printer and location":"الطابعة والموقع"
+    ,"Where will the document be printed?":"أين ستتم طباعة المستند؟"
+    ,"Template and paper size":"القالب وحجم الورق"
+    ,"Edit assignment":"تعديل التعيين"
+    ,"Printer DPI":"دقة الطابعة (DPI)"
+    ,"Label width (mm)":"عرض الملصق (مم)"
+    ,"Label height (mm)":"ارتفاع الملصق (مم)"
+    ,"Margin (mm)":"الهامش (مم)"
+    ,"Orientation":"اتجاه الصفحة"
+    ,"Portrait":"عمودي"
+    ,"Landscape":"أفقي"
+    ,"A4 rows":"صفوف A4"
+    ,"A4 columns":"أعمدة A4"
+    ,"Barcode symbology":"ترميز الباركود"
+    ,"Automatic EAN-13 / Code 128":"تلقائي EAN-13 / Code 128"
+    ,"Outlet":"منفذ البيع"
+    ,"Price-list code":"كود قائمة الأسعار"
+    ,"Printer type":"نوع الطابعة"
+    ,"Printer workspace":"مساحة عمل الطابعات"
+    ,":count product/location assignments saved.":"تم حفظ :count تعيينًا بين المنتجات والمواقع."
+    ,":count product/location assignments copied.":"تم نسخ :count تعيينًا بين المنتجات والمواقع."
+    ,"For manual quantity entry, select up to 500 individual products. Use XLSX for the full filtered result.":"للإدخال اليدوي للكميات، حدد حتى 500 منتج منفرد. استخدم XLSX للنتيجة المصفاة كاملة."
+    ,"Select between 1 and 500 products for manual quantity entry.":"حدد من منتج واحد إلى 500 منتج لإدخال الكميات يدويًا."
+    ,"Paste at most 500 product codes or barcodes for manual entry.":"الصق بحد أقصى 500 كود منتج أو باركود للإدخال اليدوي."
+    ,"Some pasted codes or barcodes were not eligible products.":"بعض الأكواد أو الباركودات الملصقة لا تخص منتجات مؤهلة."
+    ,"Product/location assignment":"تعيين المنتجات للمواقع"
+    ,"Choose company, branch, and inventory locations once; assignments never create inventory quantities.":"اختر الشركة والفرع ومواقع المخزون مرة واحدة؛ التعيينات لا تُنشئ كميات مخزون."
+    ,"Select branch":"اختر الفرع"
+    ,"Opening inventory location":"موقع المخزون الافتتاحي"
+    ,"Bulk assignment locations":"مواقع التعيين الجماعي"
+    ,"Copy assortment from":"نسخ التشكيلة من"
+    ,"Select source location":"اختر الموقع المصدر"
+    ,"Copy assortment":"نسخ التشكيلة"
+    ,"Search / scan":"بحث / مسح باركود"
+    ,"Name, item code, SKU, or barcode":"الاسم أو كود الصنف أو SKU أو الباركود"
+    ,"Not assigned to opening location":"غير معين للموقع الافتتاحي"
+    ,"Select all :count filtered":"تحديد كل النتائج المصفاة وعددها :count"
+    ,"All :count filtered products are selected except :excluded exclusions.":"تم تحديد كل المنتجات المصفاة وعددها :count باستثناء :excluded."
+    ,"No matching products":"لا توجد منتجات مطابقة"
+    ,"Change the search or filters and try again.":"غيّر البحث أو عوامل التصفية وحاول مرة أخرى."
+    ,"Assign selected products":"تعيين المنتجات المحددة"
+    ,"Add selected to quantity grid":"إضافة المحدد إلى جدول الكميات"
+    ,"Manual opening quantities":"كميات افتتاحية يدوية"
+    ,"Paste one code or barcode per line, optionally followed by a quantity. Manual entry is limited to 500 rows; use the current-data XLSX workbook for larger work.":"الصق كودًا أو باركودًا واحدًا في كل سطر ويمكن إتباعه بكمية. الإدخال اليدوي محدود بـ500 صف؛ استخدم ملف XLSX الحالي للدفعات الأكبر."
+    ,"Paste codes / barcodes and quantities":"لصق الأكواد / الباركودات والكميات"
+    ,"Add pasted rows":"إضافة الصفوف الملصقة"
+    ,"Opening quantity":"الكمية الافتتاحية"
+    ,"Product Card cost":"تكلفة كارت الصنف"
+    ,"Automatic":"تلقائي"
+    ,"Save opening inventory draft":"حفظ مسودة المخزون الافتتاحي"
+    ,"58 mm":"58 مم"
+    ,"80 mm":"80 مم"
+    ,"Default printer":"الطابعة الافتراضية"
+    ,"Printer setting":"إعداد الطابعة"
+    ,"Thermal gift receipt":"إيصال هدية حراري"
+    ,"Sales return":"مرتجع بيع"
+    ,"Shift closing":"إغلاق الوردية"
+    ,"Operational document":"مستند تشغيلي"
+    ,"Approved template":"قالب معتمد"
+    ,"No print assignments yet":"لا توجد تعيينات طباعة بعد"
+    ,"Add a printer, then choose a compatible template for each document.":"أضف طابعة ثم اختر قالبًا متوافقًا لكل مستند."
 }

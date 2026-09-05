@@ -15,10 +15,10 @@ use App\Support\ProductQuantity;
 
 final class PostInventoryMovement
 {
-    public function execute(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType = null, ?int $sourceId = null, ?int $sourceLineId = null, bool $allowNegative = false, ?int $reversalOfId = null): StockMovement
+    public function execute(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType = null, ?int $sourceId = null, ?int $sourceLineId = null, bool $allowNegative = false, ?int $reversalOfId = null, bool $requireFirstMovement = false): StockMovement
     {
         try {
-            return $this->attempt($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId);
+            return $this->attempt($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId, $requireFirstMovement);
         } catch (UniqueConstraintViolationException $e) {
             if (! str_contains($e->getMessage(), 'idempotency_key')) {
                 throw $e;
@@ -33,9 +33,9 @@ final class PostInventoryMovement
         }
     }
 
-    private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative, ?int $reversalOfId): StockMovement
+    private function attempt(int $productId, int $storeId, string $quantity, string $movementType, ?string $unitCost, string $idempotencyKey, ?string $sourceType, ?int $sourceId, ?int $sourceLineId, bool $allowNegative, ?int $reversalOfId, bool $requireFirstMovement): StockMovement
     {
-        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId): StockMovement {
+        return DB::transaction(function () use ($productId, $storeId, $quantity, $movementType, $unitCost, $idempotencyKey, $sourceType, $sourceId, $sourceLineId, $allowNegative, $reversalOfId, $requireFirstMovement): StockMovement {
             $quantity = (string) ProductQuantity::normalizeSigned($quantity);
 
             $existing = StockMovement::query()->where('idempotency_key', $idempotencyKey)->first();
@@ -55,6 +55,9 @@ final class PostInventoryMovement
             if ($balance === null) {
                 $balance = StockBalance::query()->create(['product_id' => $productId, 'store_id' => $storeId, 'on_hand' => 0, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 0, 'total_value' => 0, 'version' => 0]);
                 $balance = StockBalance::query()->whereKey($balance->id)->lockForUpdate()->firstOrFail();
+            }
+            if ($requireFirstMovement && StockMovement::query()->where('product_id', $productId)->where('store_id', $storeId)->lockForUpdate()->exists()) {
+                throw new InvalidArgumentException(__('Opening inventory is blocked because this product and location already have inventory movements.'));
             }
 
             $newOnHand = bcadd($this->decimal($balance->on_hand), $quantity, 6);

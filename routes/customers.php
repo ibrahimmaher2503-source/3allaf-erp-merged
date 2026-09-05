@@ -44,6 +44,7 @@ use App\Modules\Platform\Models\City;
 use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\Sale;
+use App\Support\DataExchange\ImportTemplateFactory;
 use App\Support\DataExchange\MasterDataDocument;
 use App\Support\Hierarchy\GroupHierarchy;
 use App\Support\UserSafeError;
@@ -76,10 +77,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return view('pages.customers.import', ['batches' => $batches->latest()->paginate(10)]);
     })->name('customers.import');
-    Route::get('customers/import/template', function (Request $request) {
+    Route::get('customers/import/template', function (Request $request, ImportTemplateFactory $templates) {
         abort_unless($request->user()->can('customers.create'), 403);
-
-        return app(MasterDataDocument::class)->xlsx('customers-import-template.xlsx', StageCustomerImportAction::FIELDS, [['أحمد', 'محمد', 'Ahmed', 'Mohamed', '01012345678', '', 'customer@example.com', 'RETAIL', 'CAI', 'CAI-NASR', '', '', 'service_delivery', 'granted']], [[__('Instructions')], [__('Use stable customer-group, governorate, and city codes. Valid rows are imported; rejected rows remain downloadable separately.')]]);
+        return $templates->customers($request->user(), $request->input('company_id'));
     })->middleware('can:customers.create')->name('customers.import.template');
     Route::post('customers/import', function (Request $request, StageCustomerImportAction $action) use ($sellingStore) {
         $user = $request->user();
@@ -88,12 +88,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         if ($data['mode'] === 'update_existing') {
             abort_unless($user->can('customers.edit'), 403);
         }
+        $store = $sellingStore($user);
         try {
-            $rows = StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath());
+            $rows = StageCustomerImportAction::readSpreadsheet($request->file('import_file')->getRealPath(), (string) $store->company()->value('code'));
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['import_file' => UserSafeError::message($exception)]);
         }
-        $batch = $action->stage($rows, $request->file('import_file')->getClientOriginalName(), $data['mode'], $user->id, $sellingStore($user));
+        $batch = $action->stage($rows, $request->file('import_file')->getClientOriginalName(), $data['mode'], $user->id, $store);
 
         return to_route('customers.import')->with('success', __('Customer file staged. Review errors before approval.'))->with('batch_id', $batch->id);
     })->middleware('can:customers.create')->name('customers.import.stage');
@@ -160,7 +161,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return $format === 'xlsx' ? $documents->xlsx('customer-groups.xlsx', $headers, $rows) : $documents->pdf('customer-groups.pdf', __('Customer groups'), $headers, $rows);
     })->middleware('can:customers.export')->name('customers.groups.export');
-    Route::get('customers/groups/import/template', fn (MasterDataDocument $documents) => $documents->xlsx('customer-groups-import-template.xlsx', ImportCustomerGroups::HEADERS, [['RETAIL', '', 'عملاء التجزئة', 'Retail customers', 10, 'active'], ['VIP', 'RETAIL', 'عملاء مميزون', 'VIP customers', 20, 'active']], [[__('Instructions')], [__('Parent rows must appear before children and parent_code must use the stable code.')]]))->middleware('can:customers.edit')->name('customers.groups.import.template');
+    Route::get('customers/groups/import/template', fn (Request $request, ImportTemplateFactory $templates) => $templates->customerGroups($request->user(), $request->input('company_id')))->middleware('can:customers.edit')->name('customers.groups.import.template');
     Route::post('customers/groups/import', function (Request $request, ImportCustomerGroups $action, MasterDataDocument $documents) use ($sellingStore) {
         $data = $request->validate(['import_file' => 'required|file|mimes:xlsx|max:10240']);
         try {
