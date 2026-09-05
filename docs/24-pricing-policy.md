@@ -5,7 +5,7 @@
 **Status:** Derived implementation policy based on the approved PRD  
 **Authority:** PRC-03–PRC-08  
 **Owner-configurable values:** Approval thresholds, open-price limits, branch exceptions, and label settings  
-**Production decision pending:** Final price authority, rounding, effective timing, and label hardware/layouts
+**Production decision pending:** Final price authority, effective timing, and label hardware/layouts
 
 ---
 
@@ -28,7 +28,7 @@ This policy defines local implementation conventions for price proposals, price 
 | Open price requires authorization and configured bounds | PRD Requirement |
 | Exact approval limit | Owner-Configurable Value |
 | Exact min/max deviation | Owner-Configurable Value |
-| Exact rounding precision | Owner-Configurable Value |
+| Automatically percentage-derived selling-price rounding | Owner Approved — upward to the next 5 EGP using decimal-safe arithmetic |
 | Exact label dimensions/printer | Production Decision Pending |
 
 ---
@@ -66,6 +66,7 @@ A source price remains a proposal until approved where approval is configured.
 4. Effective date/time is configurable.
 5. Branch exceptions require explicit authorization.
 6. Stale or concurrent approval must be blocked safely.
+7. A positive automatically percentage-derived selling price rounds upward with `ceiling(calculated_price / 5) × 5`; Product Card base prices and explicit manual overrides remain verbatim.
 
 ---
 

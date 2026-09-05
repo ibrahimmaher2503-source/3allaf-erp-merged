@@ -466,7 +466,7 @@ final class RemediationSeeder extends Seeder
         if (! PosFinancialSettingVersion::query()->where('key', PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION)->exists()) {
             app(SavePosFinancialSettingAction::class)->execute(
                 PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
-                '0.01',
+                '5.0000',
                 'Remediation-only cash sale prerequisite.',
             );
         }

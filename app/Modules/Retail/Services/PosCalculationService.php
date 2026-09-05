@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Retail\Services;
 
-use App\Modules\Retail\Support\PosFinancialSettingRegistry;
+use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Support\DecimalMoney;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use InvalidArgumentException;
 
 /**
@@ -228,10 +229,21 @@ final class PosCalculationService
      */
     public function cashRoundingAdjustment(string $total): string
     {
-        $denomination = $this->cashRoundingDenomination();
+        return $this->cashRoundingAdjustmentForDenomination($total, $this->cashRoundingDenomination());
+    }
 
+    /**
+     * Pure decimal arithmetic seam. Settlement callers must use
+     * cashRoundingAdjustment(), which obtains the approved denomination.
+     *
+     * @param  numeric-string  $total
+     * @param  numeric-string  $denomination
+     * @return numeric-string
+     */
+    public function cashRoundingAdjustmentForDenomination(string $total, string $denomination): string
+    {
         if (bccomp($denomination, '0', self::MONEY_SCALE) <= 0) {
-            throw new InvalidArgumentException(__('The configured cash rounding denomination must be greater than zero.'));
+            throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 
         $units = bcdiv($total, $denomination, 0);
@@ -258,22 +270,34 @@ final class PosCalculationService
      */
     public function cashRoundingIsUnresolved(string $total): bool
     {
-        return ! PosFinancialSettingRegistry::isConfigured(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+        try {
+            $this->cashRoundingDenomination();
+
+            return false;
+        } catch (PosFinancialConfigurationException) {
+            return true;
+        }
     }
 
     /** @return numeric-string */
     public function cashRoundingDenomination(): string
     {
-        $denomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
-        if ($denomination === null) {
-            throw new InvalidArgumentException(__('Cash tender is unavailable because the cash rounding denomination is not configured.'));
+        try {
+            $denomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+        } catch (InvalidArgumentException $exception) {
+            throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage(), previous: $exception);
         }
 
-        if (bccomp($denomination, '0', self::RATE_SCALE) <= 0) {
-            throw new InvalidArgumentException(__('The configured cash rounding denomination must be greater than zero.'));
+        if ($denomination === null || bccomp($denomination, '0', self::RATE_SCALE) <= 0) {
+            throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 
         return $denomination;
+    }
+
+    private function cashRoundingConfigurationMessage(): string
+    {
+        return __('Cash payment is unavailable because POS cash rounding is missing or invalid. Ask an administrator to set the cash rounding denomination to 5.');
     }
 
     /**

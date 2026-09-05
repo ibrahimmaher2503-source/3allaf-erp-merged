@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-05
-**Status:** v0.1.22-hotfix13 is a focused D3 cash-drawer data-integrity correction from exact Hotfix12 commit `287693218aded875749b643e9427f63318088b05`.
+**Status:** v0.1.22-hotfix14 is the focused D3/I4 pricing and POS cash-rounding correction from exact Hotfix13 commit `1c0519dc57b9c5b9af1aa6963dbbb448fce56bbe`.
 
-The correction closes the raw UAT drawer-insertion gap, makes store ownership authoritative for drawer company context, validates company/branch/store consistency on every Eloquent drawer save, adds deterministic fail-closed legacy repair and database constraints, filters invalid drawers from shift opening, and replaces misleading context-related 404 behavior with localized validation. Existing POS authorization, accounting, concurrency, route, idempotency, duplicate-shift, and permission behavior is preserved.
+The release confirms decimal-safe ceiling-to-5 only for automatically percentage-derived selling prices, establishes the canonical append-only POS cash denomination at exactly 5 EGP, keeps nearest rounding limited to cash settlement, and converts missing/invalid cash configuration into a localized fail-closed cash-only state. Base/manual prices, non-cash totals, historical and posted documents, Hotfix13 drawer integrity, authorization, company/store scope, accounting, inventory, and POS lifecycle controls are preserved.
 
-Focused database-free verification passed. Production deployment remains unexecuted; exact Hotfix12 is the required prerequisite and rollback release for the prepared Hotfix13 flow.
+The root operator supplied conclusive exact-Hotfix13 production baseline evidence. No further production access is permitted. The focused database-free verification pass is complete; local immutable release preparation completes this milestone; deployment remains unexecuted and exact Hotfix13 is the prerequisite and rollback release.

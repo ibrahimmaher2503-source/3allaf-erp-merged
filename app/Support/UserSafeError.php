@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use Throwable;
 use WeakMap;
 
@@ -21,6 +22,8 @@ final class UserSafeError
             self::$reported[$exception] = true;
         }
 
-        return __('Unable to complete the request. Please review the data and try again.');
+        return $exception instanceof PosFinancialConfigurationException
+            ? $exception->getMessage()
+            : __('Unable to complete the request. Please review the data and try again.');
     }
 }

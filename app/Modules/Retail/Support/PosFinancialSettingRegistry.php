@@ -10,10 +10,9 @@ use InvalidArgumentException;
 /**
  * Owner-configurable POS financial values (DEC-066, DEC-065).
  *
- * DEC-066 adopted `docs/48` but deliberately left POSF-02 (cash rounding
- * denomination) undecided. It lives here as an unset value: the calculation
- * service must refuse to round a cash tender until the owner sets it. There is
- * no default and no silent fallback.
+ * POSF-02 is owner-approved at 5 EGP. The value remains append-only database
+ * configuration so invalid or missing state fails closed instead of silently
+ * changing settlement arithmetic.
  */
 final class PosFinancialSettingRegistry
 {
@@ -31,7 +30,7 @@ final class PosFinancialSettingRegistry
         return [
             self::CASH_ROUNDING_DENOMINATION => [
                 'title' => 'Cash rounding denomination',
-                'description' => 'Smallest cash denomination used to round the payable amount. When unset, cash payment is blocked explicitly; no denomination is inferred.',
+                'description' => 'Cash tender payable amounts round to the nearest configured denomination (5 EGP); missing or invalid configuration blocks cash safely.',
             ],
             self::DISCOUNT_APPROVAL_LIMIT => [
                 'title' => 'Discount approval limit (percent)',

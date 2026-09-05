@@ -44,6 +44,7 @@ use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Actions\SyncOfflineTransactionsAction;
 use App\Modules\Retail\Enums\ShiftState;
+use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\OfflineConflict;
@@ -766,14 +767,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $request->session()->put('pos.checkout_token', $checkoutToken);
         }
 
-        $cashDenomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+        $cashRoundingConfigurationError = null;
+        try {
+            $cashDenomination = app(PosCalculationService::class)->cashRoundingDenomination();
+        } catch (PosFinancialConfigurationException $exception) {
+            $cashDenomination = null;
+            $cashRoundingConfigurationError = \App\Support\UserSafeError::message($exception);
+        }
         $openPriceApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::OPEN_PRICE_APPROVAL_LIMIT);
         $discountApprovalLimit = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::DISCOUNT_APPROVAL_LIMIT);
 
         return view('pages.pos.index', compact(
             'context', 'store', 'shift', 'cart', 'cartProducts', 'availableProducts', 'priceMap', 'suspendedCount',
             'paymentMethods', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'previewLines', 'preview', 'previewError', 'checkoutToken',
-            'cashDenomination', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
+            'cashDenomination', 'cashRoundingConfigurationError', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
             'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
         ));
     })->middleware('can:pos_sales.view')->name('pos');
@@ -1828,9 +1835,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $resumeToken = (string) Str::uuid();
             $request->session()->put($resumeTokenKey, $resumeToken);
         }
-        $cashDenomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+        $cashRoundingConfigurationError = null;
+        try {
+            $cashDenomination = app(PosCalculationService::class)->cashRoundingDenomination();
+        } catch (PosFinancialConfigurationException $exception) {
+            $cashDenomination = null;
+            $cashRoundingConfigurationError = \App\Support\UserSafeError::message($exception);
+        }
 
-        return view('pages.pos.resume', compact('sale', 'preview', 'cashMethod', 'electronicMethods', 'resumeToken', 'cashDenomination'));
+        return view('pages.pos.resume', compact('sale', 'preview', 'cashMethod', 'electronicMethods', 'resumeToken', 'cashDenomination', 'cashRoundingConfigurationError'));
     })->middleware('can:pos_sales.create')->name('pos.suspended.resume');
 
     Route::post('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {

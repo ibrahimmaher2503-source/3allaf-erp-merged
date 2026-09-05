@@ -222,7 +222,7 @@ final class DemoErpSeeder extends Seeder
         if (! PosFinancialSettingVersion::query()->where('key', PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION)->exists()) {
             app(SavePosFinancialSettingAction::class)->execute(
                 PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
-                '0.05',
+                '5.0000',
                 'DEMO: local ERP seed prerequisite.',
             );
         }

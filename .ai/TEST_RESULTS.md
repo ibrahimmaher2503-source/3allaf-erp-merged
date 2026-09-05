@@ -1,5 +1,11 @@
 # Test and Verification Results
 
+## 2026-09-05 — v0.1.22-hotfix14 focused verification
+
+- Direct database-free arithmetic/source verification passed 20 assertions covering all required upward-derived-price examples, nearest-5 cash examples, unchanged base/manual price boundaries, exact non-cash settlement, append-only setting migration, and safe missing/invalid configuration handling.
+- PHP 8.5 syntax passed for all 14 changed/new PHP files. The POS route subset, Arabic/English JSON parsing, and `git diff --check` passed.
+- Per the standing current-task directive, no new automated test file was created and no PHPUnit suite was run. No database, migration, seeder, browser, Composer, Vite, production, backup, tag, push, or remote operation ran.
+
 ## 2026-09-05 — v0.1.22-hotfix13 focused verification
 
 - Pure database-free PHPUnit regression: `tests/Feature/V0122Hotfix13CashDrawerIntegrityTest.php` passed 4 tests / 43 assertions covering retained valid shift opening, store-derived ownership and mismatch rejection, deterministic legacy backfill/fail-closed reporting/constraints, invalid-selector exclusion, and company/branch/store scope enforcement.

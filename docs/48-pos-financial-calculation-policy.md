@@ -29,7 +29,7 @@ The same rule as `docs/41` applies — rounding must be defined once and applied
 | Cash and manually recorded electronic payment with evidence | PRD Requirement (POS-03) |
 | Cashier never sees expected values before closing | PRD Requirement (CSH-02) |
 | Rounding level (line vs receipt) | **PENDING — POSF-01** |
-| Cash rounding / smallest denomination | **PENDING — POSF-02** |
+| Cash rounding / smallest denomination | **Owner Approved — POSF-02: 5 EGP, nearest denomination, cash tender only** |
 | Split payment ordering and residual | **PENDING — POSF-03** |
 | Discount replacement behaviour | **PENDING — POSF-04** |
 
@@ -53,6 +53,8 @@ Proposed canonical order:
 Rounding is applied at step 3 and step 7 only. Intermediate values are not re-rounded.
 
 Step 8 is critical: cash rounding adjusts **what is collected**, not the invoice total. The difference is posted as a distinct rounding line so that the drawer reconciles and the invoice remains arithmetically intact. Absorbing it into the total makes the receipt total disagree with the sum of its lines.
+
+POSF-02 uses an exact 5 EGP denomination and the existing nearest-denomination rule (`37 → 35`, `38 → 40`, `35 → 35`). It applies only when a cash tender participates in settlement; electronic and other non-cash-only settlements retain the exact invoice total. Missing or invalid configuration blocks cash with a localized safe message and must not prevent non-cash checkout.
 
 ---
 

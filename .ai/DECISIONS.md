@@ -80,3 +80,9 @@
 - Outlet assignment resolves in the order outlet, branch default, then List 0. Branches remain organizational; only stock-bearing Sales Outlets resolve selling prices.
 - Manual product/list overrides are dated, reasoned, company-scoped, and audited. They never overwrite Product Card prices; removing an override restores derived pricing immediately.
 - Existing approved price versions/lines and historical invoice/sale snapshots remain immutable. The new resolver/DTO is the contract for later sales, transfer, label, and report integration rather than a rewrite of historical records.
+
+## 2026-09-05 — Hotfix14 pricing and POS cash rounding
+
+- The M53 automatic percentage-derived selling-price rule is confirmed as decimal-safe upward rounding to the next 5 EGP. Base List 0 prices, explicit manual overrides, costs, and historical or posted document snapshots never enter that rounding path.
+- POSF-02 is owner-approved at exactly 5 EGP using the existing nearest-denomination algorithm. It applies to cash tender settlement only; electronic and other non-cash-only settlement retains the exact invoice total.
+- `pos.cash_rounding_denomination` remains append-only versioned configuration. Hotfix14 appends `5.0000` only when it is not already the effective value. Missing or invalid state disables cash with a localized safe message rather than an unhandled exception; it does not disable a valid non-cash tender.

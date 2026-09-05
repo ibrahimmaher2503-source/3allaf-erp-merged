@@ -2,7 +2,7 @@
     @php
         $currency = $store?->branch?->currency ?? 'EGP';
         $cashAdjustment = $cashMethod && $preview && $cashDenomination !== null
-            ? app(\App\Modules\Retail\Services\PosCalculationService::class)->cashRoundingAdjustment($preview['total'], $cashDenomination)
+            ? app(\App\Modules\Retail\Services\PosCalculationService::class)->cashRoundingAdjustment($preview['total'])
             : null;
         $cashPayable = $cashAdjustment === null || ! $preview ? null : bcadd($preview['total'], $cashAdjustment, 2);
         $electronicIndex = $cashMethod ? 1 : 0;
@@ -16,7 +16,7 @@
                     : (! $preview ? ($previewError ?: __('Review the cart before checkout.')) : null)));
         $totalValue = (string) ($cashPayable ?? ($preview['total'] ?? '0.00'));
         $initialTender = old('payment_mode')
-            ?: ($cashMethod ? 'cash' : ($electronicMethods->isNotEmpty() ? 'electronic' : ($giftCardMethods->isNotEmpty() ? 'gift_card' : '')));
+            ?: ($cashMethod && $cashDenomination !== null ? 'cash' : ($electronicMethods->isNotEmpty() ? 'electronic' : ($giftCardMethods->isNotEmpty() ? 'gift_card' : '')));
         $supportedTenderCount = ($cashMethod ? 1 : 0) + ($electronicMethods->isNotEmpty() ? 1 : 0) + ($giftCardMethods->isNotEmpty() ? 1 : 0);
     @endphp
 

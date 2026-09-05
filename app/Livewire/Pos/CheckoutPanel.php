@@ -6,9 +6,11 @@ namespace App\Livewire\Pos;
 
 use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
+use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -41,9 +43,21 @@ final class CheckoutPanel extends Component
             $token = (string) Str::uuid();
             request()->session()->put('pos.checkout_token', $token);
         }
-        $rounding = $cashMethod && ($data['preview'] ?? null) ? app(PosCalculationService::class)->cashRoundingAdjustment($data['preview']['total']) : null;
-        $total = ($data['preview'] ?? null) ? ($rounding === null ? $data['preview']['total'] : bcadd($data['preview']['total'], $rounding, 2)) : '0.00';
+        $invoiceTotal = (string) (($data['preview']['total'] ?? null) ?: '0.00');
+        $cashPayable = null;
+        $cashRoundingError = null;
+        if ($cashMethod && ($data['preview'] ?? null)) {
+            try {
+                $rounding = app(PosCalculationService::class)->cashRoundingAdjustment($invoiceTotal);
+                $cashPayable = bcadd($invoiceTotal, $rounding, 2);
+            } catch (PosFinancialConfigurationException $exception) {
+                $cashRoundingError = UserSafeError::message($exception);
+            }
+        }
 
-        return view('livewire.pos.checkout-panel', array_merge($data, compact('context', 'store', 'shift', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'token', 'total')));
+        return view('livewire.pos.checkout-panel', array_merge($data, compact(
+            'context', 'store', 'shift', 'cashMethod', 'electronicMethods', 'giftCardMethods', 'token',
+            'invoiceTotal', 'cashPayable', 'cashRoundingError',
+        )));
     }
 }

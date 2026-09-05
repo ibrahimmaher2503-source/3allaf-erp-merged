@@ -48,7 +48,7 @@
                 </dl>
 
                 @if ($cashDenomination === null)
-                    <flux:callout class="mt-3" variant="warning" icon="exclamation-triangle">{{ __('Cash is unavailable until the cash-rounding denomination is configured.') }}</flux:callout>
+                    <flux:callout class="mt-3" variant="warning" icon="exclamation-triangle">{{ $cashRoundingConfigurationError }}</flux:callout>
                 @endif
 
                 <form method="POST" action="{{ route('pos.suspended.finalize', $sale) }}" enctype="multipart/form-data" class="mt-4 grid gap-4">

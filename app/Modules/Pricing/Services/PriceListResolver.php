@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 final class PriceListResolver
 {
+    private const DERIVED_PRICE_INCREMENT = '5';
+
     /** @return array{pre_round:string,rounded:string} */
     public function calculate(string $basePrice, string $percentage): array
     {
@@ -19,15 +21,15 @@ final class PriceListResolver
         $percent = $this->normalized($percentage, 4);
         $factor = bcadd('1', bcdiv($percent, '100', 8), 8);
         $calculated = bcmul($base, $factor, 8);
-        $multiples = bcdiv($calculated, '5', 0);
+        $multiples = bcdiv($calculated, self::DERIVED_PRICE_INCREMENT, 0);
 
-        if (bccomp($calculated, bcmul($multiples, '5', 8), 8) > 0) {
+        if (bccomp($calculated, bcmul($multiples, self::DERIVED_PRICE_INCREMENT, 8), 8) > 0) {
             $multiples = bcadd($multiples, '1', 0);
         }
 
         return [
             'pre_round' => bcadd($calculated, '0', 3),
-            'rounded' => bcadd(bcmul($multiples, '5', 3), '0', 3),
+            'rounded' => bcadd(bcmul($multiples, self::DERIVED_PRICE_INCREMENT, 3), '0', 3),
         ];
     }
 

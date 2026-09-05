@@ -198,3 +198,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Invalid drawers are excluded from shift selection; shift opening retains scope checks, accounting, locking, idempotency, and duplicate guards while returning a localized configuration-validation message instead of context `findOrFail` 404s.
 - Focused Hotfix13 regression passed 4 tests / 43 assertions. Changed PHP syntax, database-free route registration, Arabic/English JSON, and diff hygiene passed. The earlier combined harness attempt reached zero assertions because the translation override loader attempted the deliberately unreachable database; no database connection or mutation occurred.
 - Karim/company-owner permissions, the permission-search display defect, and the pending V0 UI batch were untouched. Production, database, active symlink, services, tags, pushes, and remotes were untouched.
+## 2026-09-05 — v0.1.22-hotfix14 pricing and POS cash rounding
+
+- Confirmed the canonical M53 percentage-derived price resolver already used BC Math ceiling-to-5 while base prices and effective manual overrides bypassed it; named the 5 EGP increment explicitly and left all materialized/historical prices untouched.
+- Added append-only migration `000108` to establish `pos.cash_rounding_denomination=5.0000` only when needed, retaining setting history and exact Hotfix13 rollback compatibility.
+- Preserved nearest-denomination rounding for cash settlement only, kept non-cash totals exact, and converted missing/invalid cash configuration into a localized cash-only disabled state instead of an unhandled checkout/render exception.
+- One database-free focused pass completed 20 arithmetic/source assertions; changed PHP syntax, POS routes, Arabic/English JSON, and diff hygiene passed. No database, production, browser, Composer, Vite, tag, push, or remote operation occurred.
+
