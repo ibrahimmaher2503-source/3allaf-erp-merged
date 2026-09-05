@@ -174,7 +174,6 @@ final class InitialSetupStatus
     private function cashDrawersReady(): bool
     {
         return CashDrawer::query()
-            ->operationallyConsistent()
             ->where('status', 'active')
             ->whereHas('branch', fn (Builder $query): Builder => $query->where('status', 'active'))
             ->whereHas('store', fn (Builder $query): Builder => $query

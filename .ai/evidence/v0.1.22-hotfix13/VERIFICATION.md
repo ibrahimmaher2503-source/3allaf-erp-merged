@@ -13,8 +13,9 @@ The complete source inventory found drawer writes in `SaveCashDrawerAction`, `Ua
 
 ## Focused checks actually run
 
-- Changed/new PHP syntax: passed for 11 files; the subsequently simplified pure test harness was linted and passed.
+- Changed/new PHP syntax: passed for the 10 final files; the subsequently simplified pure test harness was linted and passed.
 - Focused Hotfix13 PHPUnit: 4 tests, 43 assertions, all passed.
+- Preserved Hotfix12 shift-route PHPUnit: 1 test, 24 assertions, passed database-free with locale `zz` and a disposable process-only application key. Before the passing invocation, one command used the absent `phpunit.xml` name and one reached 19 assertions before reporting the absent isolated application key; neither accessed a database.
 - Database-free route probe: `GET pos/shift` (`pos.shift`), `GET pos/shift/open` (`pos.shift.open`), and `POST pos/shift/open` (`pos.shift.store`) registered exactly.
 - `lang/en.json` and `lang/ar.json`: parsed successfully.
 - `git diff --check`: passed.
