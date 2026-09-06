@@ -794,7 +794,7 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         return back()->with('success', __('Party Wallet adjustment submitted for approval.'));
     })->middleware('can:party_wallet.adjust')->name('customers.party-wallet.adjustments.store');
 
-    Route::post('pos/customer/select', function (Request $request) use ($sellingStore) {
+    Route::post('pos/session-legacy/customer/select', function (Request $request) use ($sellingStore) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create') && $user->can('customers.view'), 403);
@@ -804,16 +804,16 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $request->session()->put('pos.customer_id', $customer->id);
 
         return back()->with('success', __('Customer selected for this sale.'));
-    })->middleware(['can:pos_sales.create', 'can:customers.view'])->name('pos.customer.select');
+    })->middleware(['can:pos_sales.create', 'can:customers.view'])->name('pos.customer.select.legacy');
 
-    Route::post('pos/customer/clear', function (Request $request) {
+    Route::post('pos/session-legacy/customer/clear', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $request->session()->forget('pos.customer_id');
 
         return back();
-    })->middleware('can:pos_sales.create')->name('pos.customer.clear');
+    })->middleware('can:pos_sales.create')->name('pos.customer.clear.legacy');
 
-    Route::post('pos/customer/create', function (Request $request, CreateCustomerAction $action) use ($sellingStore) {
+    Route::post('pos/session-legacy/customer/create', function (Request $request, CreateCustomerAction $action) use ($sellingStore) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create') && $user->can('customers.create'), 403);
@@ -832,5 +832,5 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $request->session()->put('pos.customer_id', $customer->id);
 
         return back()->with('success', __('Customer registered and selected for this sale.'));
-    })->middleware(['can:pos_sales.create', 'can:customers.create'])->name('pos.customer.create');
+    })->middleware(['can:pos_sales.create', 'can:customers.create'])->name('pos.customer.create.legacy');
 });

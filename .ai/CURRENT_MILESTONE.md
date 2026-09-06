@@ -1,10 +1,8 @@
 # Current Milestone
 
-**Date:** 2026-09-05
-**Status:** v0.1.22-hotfix15 is the complete D3/I4 closure candidate for the explicitly requested four-scope batch from exact Hotfix14 commit `32c13a8e54f8dad45691a88318f9b475ff944f15`.
+**Date:** 2026-09-06
+**Status:** v0.1.22-hotfix16 is the D3/I4 POS checkout and multi-customer release candidate from exact Hotfix15 commit `68699be35880dc154519c4e293c1a32bb69ef967`.
 
-The candidate removes only the named duplicate navigation/readiness/settings UI, preserves canonical routes and sidebar destinations, fixes permission selection state and required Arabic printer/POS approval text, replaces static XLSX import downloads with current company-scoped schema-identified workbooks, adds bounded server-side product/location assignment and opening-inventory workflows, and centralizes safe product archive/dependency-free removal.
+The milestone provides durable scoped simultaneous POS orders; per-order customer, cart, approval, tax, note, payment-draft, and total state; bounded customer/product lookup; cash, electronic, multi-card, and mixed settlement; exact Hotfix14 cash rounding; atomic idempotent sale posting through the existing domain services; an Arabic-first responsive checkout and success workflow; and company/outlet/document-safe receipt preview routing.
 
-Hotfix14 pricing/cash rounding and Hotfix13 drawer integrity remain preserved. The production prerequisite is the operator-verified exact Hotfix14 release with migrations through 000108 Ran, maintenance OFF, and HTTPS smoke passing. Hotfix15 adds migration 000109. The QA/UAT product audit and destructive cleanup remain separate root-only operator activities and were not run.
-
-One focused database-free release verification pass, documentation closure, commit, and immutable artifact/operator-script preparation finish the local milestone. Production access, backup, migration execution, promotion, activation, cleanup, tag, push, and remote contact remain unexecuted.
+Hotfix15 behavior and migration 000109 remain prerequisites. Hotfix16 adds migration 000110. The consolidated database-free verification gate passed with only failed checks rerun after correction. A clean commit and immutable operator package remain. Production access, deployment, production backup, migration execution, active-symlink change, service operation, tag, push, and remote contact remain prohibited.

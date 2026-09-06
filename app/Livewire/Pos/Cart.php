@@ -26,7 +26,9 @@ final class Cart extends Component
     public function quantity(int $productId, string $quantity, PosCartAction $cart): void
     {
         Gate::authorize('pos_sales.create');
-        try { /** @var User $user */ $user = auth()->user();
+        try {
+            /** @var User $user */
+            $user = auth()->user();
             $cart->quantity(request(), $user, $productId, $quantity);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
@@ -37,20 +39,33 @@ final class Cart extends Component
     public function remove(int $productId, PosCartAction $cart): void
     {
         Gate::authorize('pos_sales.create');
-        $cart->remove(request(), $productId);
-        $this->dispatch('pos-cart-updated');
+        try {
+            /** @var User $user */
+            $user = auth()->user();
+            $cart->remove(request(), $user, $productId);
+            $this->dispatch('pos-cart-updated');
+        } catch (\Throwable $exception) {
+            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+        }
     }
 
     public function clear(PosCartAction $cart): void
     {
         Gate::authorize('pos_sales.create');
-        $cart->clear(request());
-        $this->dispatch('pos-cart-updated');
+        try {
+            /** @var User $user */
+            $user = auth()->user();
+            $cart->clear(request(), $user);
+            $this->dispatch('pos-cart-updated');
+        } catch (\Throwable $exception) {
+            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+        }
     }
 
     public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver): View
     {
-        /** @var User $user */ $user = auth()->user();
+        /** @var User $user */
+        $user = auth()->user();
         $context = $contextResolver->resolve($user);
         $store = $context->store;
         $data = $snapshot->build($context);

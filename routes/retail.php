@@ -69,6 +69,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    require __DIR__.'/pos-hotfix16.php';
+    require __DIR__.'/pos-hotfix16-customers.php';
     Route::get('pos/products/{product}/thumbnail/{attachment}', function (Request $request, Product $product, Attachment $attachment) {
         abort_unless($request->user()?->can('pos_sales.view'), 403);
         $authorized = $attachment->purpose === 'product_image'
@@ -588,7 +590,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', __('Party Wallet adjustment rejected and audited.'));
     })->middleware('can:party_wallet.approve')->name('wallets.party.adjustments.reject');
 
-    Route::get('pos', function (Request $request, PosContextResolver $contextResolver) {
+    Route::get('pos/session-legacy', function (Request $request, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.view'), 403);
@@ -736,6 +738,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             }
         }
         $request->session()->put('pos.cart', $cart->values()->all());
+        app(\App\Modules\Retail\Support\PosOpenOrderManager::class)->persistSession($request, $user, $context);
         $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
         $effectiveTaxes = TaxSetting::query()
             ->where('status', 'active')
@@ -783,7 +786,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'cashDenomination', 'cashRoundingConfigurationError', 'openPriceApprovalLimit', 'discountApprovalLimit', 'taxApplicable', 'taxSetting', 'selectedCustomer', 'customerSearchResults', 'customerQuery', 'customerPurposes', 'customerPolicyError',
             'productQuery', 'categoryId', 'availableCategories', 'otherStoreAvailability', 'stockByProduct',
         ));
-    })->middleware('can:pos_sales.view')->name('pos');
+    })->middleware('can:pos_sales.view')->name('pos.legacy');
 
     // TSK-025 - real shift/cash workflow (DEC-066, docs/32). Replaces the
     // previous read-only readiness boundary.
@@ -1359,7 +1362,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', __('A new POS financial setting version was saved.'));
     })->middleware('can:company_settings.edit')->name('admin.settings.pos-financial.save');
 
-    Route::post('pos/cart/add', function (Request $request) {
+    Route::post('pos/session-legacy/cart/add', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $data = $request->validate(['product_id' => ['required', 'integer'], 'quantity' => ['required', 'integer', 'min:1', 'max:999999']]);
         try {
@@ -1369,19 +1372,19 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
 
         return back()->with('success', __('Product added to cart.'));
-    })->middleware('can:pos_sales.create')->name('pos.cart.add');
+    })->middleware('can:pos_sales.create')->name('pos.cart.add.legacy');
 
-    Route::post('pos/cart/remove', function (Request $request) {
+    Route::post('pos/session-legacy/cart/remove', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $data = $request->validate(['product_id' => ['required', 'integer']]);
         /** @var array<int, array{product_id: int, quantity: numeric-string}> $sessionCart */
         $sessionCart = $request->session()->get('pos.cart', []);
-        app(PosCartAction::class)->remove($request, (int) $data['product_id']);
+        app(PosCartAction::class)->remove($request, $request->user(), (int) $data['product_id']);
 
         return back();
-    })->middleware('can:pos_sales.create')->name('pos.cart.remove');
+    })->middleware('can:pos_sales.create')->name('pos.cart.remove.legacy');
 
-    Route::post('pos/cart/quantity', function (Request $request) {
+    Route::post('pos/session-legacy/cart/quantity', function (Request $request) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
@@ -1396,7 +1399,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
 
         return back()->with('success', __('Cart quantity updated.'));
-    })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
+    })->middleware('can:pos_sales.create')->name('pos.cart.quantity.legacy');
 
     Route::post('pos/cart/discount', function (Request $request, DiscountPolicy $policy, PosContextResolver $contextResolver) {
         /** @var User $user */
@@ -1505,6 +1508,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $line['discount_approval_state'] = $approval?->approval_state->value;
         $cart[$index] = $line;
         $request->session()->put('pos.cart', $cart->values()->all());
+        app(\App\Modules\Retail\Support\PosOpenOrderManager::class)->persistSession($request, $user, $context);
 
         app(RecordAuditEvent::class)->execute(
             category: 'retail',
@@ -1610,6 +1614,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $line['pricing_revision'] = $before['revision'] + 1;
         $cart[$index] = $line;
         $request->session()->put('pos.cart', $cart->values()->all());
+        app(\App\Modules\Retail\Support\PosOpenOrderManager::class)->persistSession($request, $user, $context);
 
         app(RecordAuditEvent::class)->execute(
             category: 'pricing',
@@ -1652,7 +1657,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
 
         $before = (bool) $request->session()->get('pos.tax_applicable', false);
-        $request->session()->put('pos.tax_applicable', $applicable);
+        app(\App\Modules\Retail\Support\PosOpenOrderManager::class)->setTax($request, $user, $context, $applicable);
         app(RecordAuditEvent::class)->execute(
             category: 'retail', event: 'pos_cart_tax_selection_changed',
             before: ['tax_applicable' => $before],
@@ -1666,15 +1671,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return back()->with('success', $applicable ? __('Tax enabled for this basket.') : __('Tax disabled for this basket.'));
     })->middleware('can:pos_sales.apply_tax')->name('pos.cart.tax');
 
-    Route::post('pos/cart/clear', function (Request $request) {
+    Route::post('pos/session-legacy/cart/clear', function (Request $request) {
         abort_unless($request->user()?->can('pos_sales.create'), 403);
         $request->session()->forget('pos.cart');
         $request->session()->forget('pos.tax_applicable');
 
         return back();
-    })->middleware('can:pos_sales.create')->name('pos.cart.clear');
+    })->middleware('can:pos_sales.create')->name('pos.cart.clear.legacy');
 
-    Route::post('pos/suspend', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
+    Route::post('pos/session-legacy/suspend', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
@@ -1702,9 +1707,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $request->session()->forget('pos.customer_id');
 
         return redirect()->route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->getAttribute('resume_code')]));
-    })->middleware('can:pos_sales.create')->name('pos.suspend');
+    })->middleware('can:pos_sales.create')->name('pos.suspend.legacy');
 
-    Route::post('pos/checkout', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
+    Route::post('pos/session-legacy/checkout', function (Request $request, RetailSaleAction $action, PosContextResolver $contextResolver) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('pos_sales.create'), 403);
@@ -1803,7 +1808,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $request->session()->forget('pos.customer_id');
 
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
-    })->middleware('can:pos_sales.create')->name('pos.checkout');
+    })->middleware('can:pos_sales.create')->name('pos.checkout.legacy');
 
     Route::get('pos/suspended', function (Request $request) {
         /** @var User $user */
@@ -2072,7 +2077,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($user->can('pos_sales.print'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
         abort_unless($sale->status === 'approved', 422);
-        $sale->load(['store.company', 'cashier', 'lines', 'payments.paymentMethod']);
+        $sale->load(['store.company', 'branch', 'customer', 'cashier', 'lines', 'payments.paymentMethod']);
         app(RecordAuditEvent::class)->execute(
             category: 'retail', event: 'sale_a4_printed', source: $sale,
             branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,
@@ -2087,7 +2092,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('pos_sales.print'), 403);
         abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->where('status', 'approved')->exists(), 404);
-        $sale->load(['store.company', 'cashier', 'lines', 'payments.paymentMethod']);
+        $sale->load(['store.company', 'branch', 'customer', 'cashier', 'lines', 'payments.paymentMethod']);
         app(RecordAuditEvent::class)->execute(
             category: 'retail', event: 'sale_thermal_receipt_printed', source: $sale,
             branchId: (int) $sale->branch_id, storeId: (int) $sale->store_id,

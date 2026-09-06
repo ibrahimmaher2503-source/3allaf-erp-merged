@@ -156,3 +156,12 @@
 - PHP 8.5.9 `view:cache` passed with the same isolated overrides after the pricing-label view was decomposed into seven bounded partials. No vendor, Livewire compiler, PCRE-limit, or environment configuration change was made.
 - Preserved authenticated Chromium artifact covers Arabic RTL and English LTR pricing labels, Pricing Lists and navigation: 20 unique setup leaves, Party deferred, one readiness summary, zero console/page errors and zero horizontal overflow.
 - No automated suite or repeated frontend build was run for this correction. No production/shared runtime or database was accessed, and `storage/storage` remained absent.
+
+
+## 2026-09-06 — v0.1.22-hotfix16 focused verification
+
+- The single authorized database-free source-contract file completed with passing results for all four methods. The initial consolidated run passed three methods and exposed one over-specific status-scope assertion; only that method was corrected and rerun, ultimately passing 1 test / 28 assertions.
+- All changed/new PHP files passed PHP 8.4 syntax. The four changed Blade templates compiled through Laravel's registered Blade/Flux component environment with a verification-only file translation loader and each compiled file passed PHP syntax.
+- Database-free route registration found 45 POS routes, all required Hotfix16 canonical names, and zero duplicate POS route names. The failed expectation used stale names and inspection also removed one unused customer-search closure capture before the route-only rerun passed.
+- Arabic and English JSON parsed; all 133 newly added English Hotfix16 keys have present, nonblank Arabic counterparts and no unintended identity values. Git diff hygiene passed.
+- No Vite input changed, so no build ran. No broad suite, database, migration, browser, HTTP, production access, deployment, backup, service, tag, push, or remote operation ran.

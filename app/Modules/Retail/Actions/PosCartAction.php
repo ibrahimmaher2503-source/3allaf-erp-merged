@@ -10,7 +10,9 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Support\PosContextResolver;
+use App\Modules\Retail\Support\PosOpenOrderManager;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -19,12 +21,15 @@ final class PosCartAction
     public function __construct(
         private readonly EffectivePriceResolver $prices,
         private readonly PosContextResolver $contextResolver,
+        private readonly PosOpenOrderManager $openOrders,
+        private readonly \App\Modules\Retail\Support\PosCartSnapshot $snapshot,
     ) {}
 
     public function add(Request $request, User $user, int $productId, string $quantity): void
     {
         $this->assertQuantity($quantity);
-        $store = $this->store($user);
+        $context = $this->context($request, $user);
+        $store = $this->store($context);
         $product = Product::query()->sellable()->with('parent')->find($productId);
         if (! $product?->isSellable()) {
             throw new InvalidArgumentException(__('Select an active simple product or a fully resolved variation SKU. Product families cannot be added.'));
@@ -51,12 +56,14 @@ final class PosCartAction
             $cart[$key] = $line;
         }
         $request->session()->put('pos.cart', $cart->values()->all());
+        $this->persist($request, $user, $context);
     }
 
     public function quantity(Request $request, User $user, int $productId, string $quantity): void
     {
         $this->assertQuantity($quantity);
-        $store = $this->store($user);
+        $context = $this->context($request, $user);
+        $store = $this->store($context);
         $product = Product::query()->sellable()->find($productId);
         if (! $product) {
             throw new InvalidArgumentException(__('The cart SKU is no longer sellable. The cart was preserved.'));
@@ -77,24 +84,45 @@ final class PosCartAction
         $line['quantity'] = $quantity;
         $cart[$index] = $line;
         $request->session()->put('pos.cart', $cart->values()->all());
+        $this->persist($request, $user, $context);
         app(RecordAuditEvent::class)->execute(category: 'retail', event: 'pos_cart_quantity_updated', explicitSourceId: 'cart:'.$productId, before: ['quantity' => $before], after: ['quantity' => $quantity], branchId: $store->branch_id, storeId: $store->id, metadata: ['product_id' => $productId, 'actor_id' => $user->id]);
     }
 
-    public function remove(Request $request, int $productId): void
+    public function remove(Request $request, User $user, int $productId): void
     {
+        $context = $this->context($request, $user);
         $cart = collect($request->session()->get('pos.cart', []))->reject(fn (array $line): bool => (int) ($line['product_id'] ?? 0) === $productId);
         $request->session()->put('pos.cart', $cart->values()->all());
+        $this->persist($request, $user, $context);
     }
 
-    public function clear(Request $request): void
+    public function clear(Request $request, User $user): void
     {
+        $context = $this->context($request, $user);
         $request->session()->forget('pos.cart');
+        $this->persist($request, $user, $context);
     }
 
-    private function store(User $user): Store
+    private function persist(Request $request, User $user, PosContext $context): void
+    {
+        $order = $this->openOrders->persistSession($request, $user, $context);
+        $data = $this->snapshot->build($context);
+        $this->openOrders->updateTotals($order, $data['preview'] ?? null);
+    }
+
+    private function context(Request $request, User $user): PosContext
     {
         $context = $this->contextResolver->resolve($user);
+        $order = $this->openOrders->active($request, $user, $context);
+        if ($order !== null) {
+            $this->openOrders->hydrateSession($request, $order);
+        }
 
+        return $context;
+    }
+
+    private function store(PosContext $context): Store
+    {
         return $context->store
             ?? throw new InvalidArgumentException($context->disabledReason ?? __('POS is disabled until you open an assigned cashier shift.'));
     }

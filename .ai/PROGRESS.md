@@ -205,3 +205,12 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Preserved nearest-denomination rounding for cash settlement only, kept non-cash totals exact, and converted missing/invalid cash configuration into a localized cash-only disabled state instead of an unhandled checkout/render exception.
 - One database-free focused pass completed 20 arithmetic/source assertions; changed PHP syntax, POS routes, Arabic/English JSON, and diff hygiene passed. No database, production, browser, Composer, Vite, tag, push, or remote operation occurred.
 
+
+
+## 2026-09-06 — v0.1.22-hotfix16 POS checkout and multi-customer workflow
+
+- Replaced the session-only POS cart with durable open orders scoped to company, branch, selling outlet, cash drawer, shift, cashier, and idempotency token; each order independently retains its customer, cart/approval payload, tax choice, notes, payment draft, totals, and lifecycle.
+- Added bounded indexed customer lookup and compact in-POS customer creation/attachment, responsive Arabic-first order tabs, cash/electronic/multi-card/mixed payment flows, safe references, success modal, and scoped configured receipt preview with explicit browser-print fallback.
+- Sale completion locks the open order and active shift, rehydrates its durable lines, and delegates inside one transaction to the existing sale/payment/inventory/tax/accounting/audit/receipt contracts; Hotfix14 cash rounding remains cash-only.
+- Focused database-free verification passed after correcting only failed checks: all four authorized source-contract methods have passing results, 28 assertions passed in the corrected method, all changed/new PHP syntax passed, four changed Blade templates compiled and linted, 45 POS routes registered without duplicate names, 133 Hotfix16 locale keys have Arabic parity, diff hygiene passed, and Vite inputs were unchanged.
+- No database, migration execution, browser, live HTTP, production access or mutation, backup execution, deployment, activation, service action, Composer install, Vite build, tag, push, or remote contact occurred.
