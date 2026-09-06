@@ -172,3 +172,10 @@
 - Syntax passed for all 17 changed/new non-Blade PHP files under available PHP 8.5.9. All changed/new Blade templates compiled and their compiled PHP passed syntax.
 - Required POS/refund route contracts, duplicate-name guard, compact desktop/order/customer/product/payment/checkout contracts, refund authorization/quantity/payment/locking/idempotency/inventory/shift/receipt contracts, Arabic/English JSON parity, and diff hygiene passed.
 - No frontend input changed, so Vite was not run. No broad suite, browser, database, migration, production/live HTTP, service, backup, deployment, activation, tag, push, or remote operation ran.
+
+# 2026-09-07 — v0.1.22-hotfix18 focused verification
+
+- The real Laravel Blade compiler with registered Flux and Livewire extensions compiled every application Blade template, and all compiled PHP passed syntax; the repaired POS view passed explicitly with no literal Blade directive remaining.
+- Changed PHP syntax, Arabic/English JSON parsing, POS/refund route registration, duplicate-name detection, Git diff hygiene, and both operator scripts’ Bash syntax passed. Hotfix18 changes no locale key or value.
+- The existing database-free route harness supports route registration and middleware contracts but not authenticated POS rendering without persisted POS context. No route-render PASS is claimed and no database was accessed.
+- No frontend input changed, so Vite was not run. No broad suite, browser, Composer, database, migration, production access, backup, deployment, activation, service, tag, push, sudo, or remote operation ran.

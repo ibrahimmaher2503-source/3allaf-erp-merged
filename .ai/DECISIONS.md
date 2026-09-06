@@ -112,3 +112,9 @@
 - Any refund allocation using cash requires the cashier's current active assignment to the exact original branch, selling outlet, and drawer. Card/electronic portions never expose cash received, denominations, or change, and safe references pass the existing PAN/CVV guard.
 - The current retail sale architecture has no general-ledger journal posting service. Hotfix17 therefore does not invent or duplicate a ledger: it preserves the established operational accounting contract through immutable source-linked refund settlements, reversing inventory movements, shift expected-total deductions, and a financial reversal snapshot for gross revenue, discount, tax, cash rounding, settlement allocation, and returned inventory cost.
 - Refund printing resolves only an active `sales_return` template/printer matching the return company, permitted branch/outlet, paper size, and locale/bilingual setting. Browser print remains explicit fallback; cross-scope silent printing is prohibited.
+
+## 2026-09-07 — Hotfix18 corrective activation boundary
+
+- Hotfix18 changes no POS or refund behavior: it retains exact Hotfix17 functionality and repairs only compiler-confirmed Blade/PHP structures in the POS page, cart, checkout panel, and purchasing-return print fallback.
+- The owner-verified production baseline is exact Hotfix16 while additive migration 000111 is already Ran. Activation must accept 000111 as either Ran or Pending, run the normal idempotent migration command as `rajeh`, and require it to be Ran afterward; no new migration is permitted.
+- Promotion and activation must prepare `bootstrap/cache` with `rajeh:rajeh` ownership and mode `0770` before every possible Artisan call. Exact Hotfix16 remains both the required active release and failure rollback target.

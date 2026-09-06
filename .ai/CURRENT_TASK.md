@@ -1,14 +1,14 @@
-# Current Task — v0.1.22-hotfix17 POS compact redesign and refund workflow
+# Current Task — v0.1.22-hotfix18 POS Blade and runtime-preparation repair
 
-**Date:** 2026-09-06
+**Date:** 2026-09-07
 **Change class:** D3 / I4
-**Source baseline:** exact operator-verified Hotfix16 commit `31883f5c823458d30738708ec96e1d02337f4c9b`
-**Branch:** `hotfix/v0.1.22-hotfix17-pos-compact-refunds`
-**Production baseline:** owner supplied and not re-checked: version `0.1.22-hotfix16`, commit `31883f5c823458d30738708ec96e1d02337f4c9b`, migration 000110 Ran, maintenance OFF, smoke PASS.
-**Status:** Implementation complete in the isolated Hotfix17 worktree; one owner-authorized consolidated database-free verification pass, release commit, and immutable operator package remain.
+**Source baseline:** exact Hotfix17 commit `6f47db7a62b38e8bac2aa9a4983a63611a8c17e4`
+**Branch:** `hotfix/v0.1.22-hotfix18-pos-blade-repair`
+**Production baseline:** owner-verified and not re-checked: exact Hotfix16 commit `31883f5c823458d30738708ec96e1d02337f4c9b`, migration 000111 already Ran, maintenance OFF.
+**Status:** The confirmed POS Blade structural defect and release runtime-preparation gap are corrected; one focused verification, release commit, and immutable operator package are being finalized.
 
-Hotfix17 compacts the desktop POS while preserving Hotfix16 durable exact-scope open orders, customer switching, product/cart approvals, cash/card/mixed settlement, Hotfix14 rounding, atomic checkout, success, and receipt routing. Open-order tabs now live in the cart header; customer/product search is icon-only and automatic/server-bounded; payment choices are compact cards; and checkout uses a wide responsive cash/card/split modal.
+Hotfix18 retains every Hotfix17 compact POS and refund change. It separates the nested refund authorization directives in the POS page and checkout panel, replaces the cart’s invalid multi-statement inline PHP directive with valid single-expression directives, and parenthesizes one confirmed PHP 8.5 purchasing-return print fallback. The real Livewire-aware compiler now produces valid PHP for every application Blade template.
 
-The in-POS refund wizard verifies a visible posted source sale, reserves remaining refundable whole quantities, records condition and an authorized same-company/branch inventory return location, defaults to safe original-payment allocations, requires an active exact-outlet shift/drawer for every cash refund portion, preserves independent approval, and posts inventory plus immutable refund settlements atomically under source-sale locking and completion idempotency. Migration 000111 extends the existing return tables with reversal values, location, refund shift/drawer, completion idempotency, rejection evidence, safe payment snapshots, and an immutable financial reversal snapshot.
+The operator scripts create `bootstrap/cache` with `rajeh:rajeh` ownership and mode `0770` before any Artisan command, and every Artisan invocation uses `runuser` as `rajeh`. Activation requires exact active Hotfix16, accepts migration 000111 as already Ran or Pending, safely runs the idempotent migration command, and retains exact Hotfix16 as the rollback target. No migration is added.
 
-The owner authorized one final focused database-free pass: changed PHP syntax, changed Blade compilation, POS/refund route and source-contract checks, Arabic/English JSON parity, `git diff --check`, and Vite only if frontend input assets changed. Broad tests, browser control, databases, production, deployment, backup execution, migration execution, tags, pushes, and remote contact remain prohibited.
+The owner authorized one focused database-free pass: all Blade templates through the real Laravel compiler, compiled POS PHP syntax, the existing focused route/render contract when supported without a database, changed PHP syntax, locale JSON, diff hygiene, and operator-script Bash syntax. Broad tests, browser loops, databases, production, deployment, backup execution, migration execution, Composer, tags, pushes, and remote contact remain prohibited. Vite is skipped because no frontend input changes.

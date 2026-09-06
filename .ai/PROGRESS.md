@@ -223,3 +223,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Implementation is complete. The one authorized consolidated database-free verification pass and release packaging remain; no test, browser, database, production, migration, deployment, backup, service, tag, push, or remote operation has run during implementation.
 - The single Hotfix17 consolidated database-free verification passed: 17 changed/new PHP sources linted, all changed/new Blade sources compiled and linted, focused POS/refund route and source contracts passed, Arabic/English locale parity and diff hygiene passed, and Vite was skipped because no frontend input changed.
 - Hotfix17 is ready for the clean release commit and offline immutable operator package. Migration 000111 remains unexecuted and production remains untouched.
+
+## 2026-09-07 — v0.1.22-hotfix18 POS Blade repair
+
+- Retained exact Hotfix17 UI and refund behavior while repairing the compiler-confirmed nested POS/checkout return-permission directives, cart inline PHP assignments, and PHP 8.5 purchasing-return print fallback.
+- Hardened the derived operator scripts so `bootstrap/cache` is created with `rajeh:rajeh` ownership and mode `0770` before Artisan, all Artisan commands execute through `runuser` as `rajeh`, exact active Hotfix16 is required, and migration 000111 may already be Ran.
+- The single focused database-free verification passed all real Blade compilation and compiled-PHP syntax checks, including the POS view; changed PHP syntax, locale JSON, diff hygiene, route registration, and operator-script Bash syntax passed. The existing harness does not support authenticated POS rendering without a database, so no render PASS is claimed.
+- No frontend input changed, so Vite was not run. No Composer, broad suite, browser, database, production access, migration, backup, deployment, service action, tag, push, or remote operation occurred.

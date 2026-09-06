@@ -36,7 +36,7 @@
         <thead><tr><th>{{ __('Product') }}</th><th class="numeric">{{ __('Quantity') }}</th><th class="numeric">{{ __('Original unit cost') }}</th><th class="numeric">{{ __('Total cost') }}</th></tr></thead>
         <tbody>
             @foreach($return->lines as $line)
-                <tr><td>{{ app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) ?: '#'.$line->product_id }}</td><td class="numeric"><x-product-quantity :value="$line->quantity" /></td><td class="numeric">{{ number_format((float) $line->unit_cost, 2) }}</td><td class="numeric">{{ number_format((float) $line->total_cost, 2) }}</td></tr>
+                <tr><td>{{ (app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar)) ?: '#'.$line->product_id }}</td><td class="numeric"><x-product-quantity :value="$line->quantity" /></td><td class="numeric">{{ number_format((float) $line->unit_cost, 2) }}</td><td class="numeric">{{ number_format((float) $line->total_cost, 2) }}</td></tr>
             @endforeach
         </tbody>
     </table>
