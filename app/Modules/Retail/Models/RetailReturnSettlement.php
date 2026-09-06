@@ -12,7 +12,7 @@ use LogicException;
 
 final class RetailReturnSettlement extends Model
 {
-    protected $fillable = ['retail_return_id', 'payment_method_id', 'gift_card_id', 'original_payment_id', 'direction', 'amount', 'settlement_type', 'idempotency_key', 'created_by', 'reason'];
+    protected $fillable = ["retail_return_id", "payment_method_id", "gift_card_id", "original_payment_id", "allocation_position", "method_code_snapshot", "method_type_snapshot", "safe_reference", "direction", "amount", "settlement_type", "idempotency_key", "created_by", "reason"];
     protected $casts = ['amount' => 'decimal:2'];
     protected static function booted(): void
     {

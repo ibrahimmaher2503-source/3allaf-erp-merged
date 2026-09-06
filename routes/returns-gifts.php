@@ -13,6 +13,7 @@ use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\GiftReceipt;
 use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\PosReturnReceiptProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -48,20 +49,31 @@ Route::middleware('auth')->group(function (): void {
         /** @var User $user */ $user = $request->user(); abort_unless($user->is_super_admin || $user->can('returns.view') || $user->can('returns_exchanges_gift_instruments.view'), 403);
         $document = RetailReturn::query()->visibleTo($user)->whereKey($return)->firstOrFail();
         $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->get();
-        return view('pages.returns.show', ['return' => $document->load(['sourceSale.payments.paymentMethod', 'sourceGiftReceipt', 'lines.product', 'lines.saleLine', 'exchange.lines.product', 'settlements.giftCard', 'settlements.paymentMethod', 'settlements.originalPayment']), 'paymentMethods' => $paymentMethods]);
+        $loaded = $document->load(['sourceSale.payments.paymentMethod', 'sourceGiftReceipt', 'lines.product', 'lines.saleLine', 'lines.returnStore', 'exchange.lines.product', 'settlements.giftCard', 'settlements.paymentMethod', 'settlements.originalPayment']);
+        $refundAllocations = [];
+        $refundAllocationError = null;
+        if (in_array($loaded->status, ['draft', 'inspection', 'submitted', 'approved'], true) && $loaded->settlement_type === 'original_tender') {
+            try {
+                $refundAllocations = app(\App\Modules\Retail\Support\RetailRefundCalculator::class)->defaultAllocations($loaded->sourceSale, (string) $loaded->settlement_value);
+            } catch (Throwable $exception) {
+                $refundAllocationError = \App\Support\UserSafeError::message($exception);
+            }
+        }
+        return view('pages.returns.show', ['return' => $loaded, 'paymentMethods' => $paymentMethods, 'refundAllocations' => $refundAllocations, 'refundAllocationError' => $refundAllocationError]);
     })->whereNumber('return')->name('returns.show');
 
     Route::post('returns/{return}/submit', function (Request $request, int $return, RetailReturnAction $action) { try { $action->submit($request->user(), RetailReturn::query()->findOrFail($return)); return back()->with('success', __('Return submitted for approval.')); } catch (Throwable $e) { return back()->withErrors(['return' => \App\Support\UserSafeError::message($e)]); } })->whereNumber('return')->name('returns.submit');
     Route::post('returns/{return}/approve', function (Request $request, int $return, RetailReturnAction $action) { try { $action->approve($request->user(), RetailReturn::query()->findOrFail($return)); return back()->with('success', __('Return approved. It can now be completed.')); } catch (Throwable $e) { return back()->withErrors(['return' => \App\Support\UserSafeError::message($e)]); } })->whereNumber('return')->name('returns.approve');
+    Route::post('returns/{return}/reject', function (Request $request, int $return, RetailReturnAction $action) { try { $validated = $request->validate(['rejection_reason' => ['required', 'string', 'max:2000']]); $action->reject($request->user(), RetailReturn::query()->findOrFail($return), $validated['rejection_reason']); return back()->with('success', __('Refund rejected with an audit reason.')); } catch (Throwable $e) { return back()->withErrors(['return' => \App\Support\UserSafeError::message($e)]); } })->whereNumber('return')->name('returns.reject');
     Route::post('returns/{return}/complete', function (Request $request, int $return, RetailReturnAction $action) {
         try {
-            $validated = $request->validate(['idempotency_key' => ['nullable', 'string', 'max:190'], 'payment_method_id' => ['nullable', 'integer'], 'original_payment_id' => ['nullable', 'integer']]);
+            $validated = $request->validate(['idempotency_key' => ['nullable', 'string', 'max:190'], 'payment_method_id' => ['nullable', 'integer'], 'original_payment_id' => ['nullable', 'integer'], 'allocations' => ['nullable', 'array', 'max:12'], 'allocations.*.original_payment_id' => ['nullable', 'integer'], 'allocations.*.method_id' => ['nullable', 'integer'], 'allocations.*.amount' => ['required_with:allocations', 'numeric', 'gt:0'], 'allocations.*.safe_reference' => ['nullable', 'string', 'max:190']]);
             $document = RetailReturn::query()->findOrFail($return);
-            $action->complete($request->user(), $document, (string) ($validated['idempotency_key'] ?? 'return-complete:'.$document->id), isset($validated['payment_method_id']) ? (int) $validated['payment_method_id'] : null, isset($validated['original_payment_id']) ? (int) $validated['original_payment_id'] : null);
+            $action->complete($request->user(), $document, (string) ($validated['idempotency_key'] ?? 'return-complete:'.$document->id), isset($validated['payment_method_id']) ? (int) $validated['payment_method_id'] : null, isset($validated['original_payment_id']) ? (int) $validated['original_payment_id'] : null, $validated['allocations'] ?? []);
             return back()->with('success', __('Return completed and settlement recorded.'));
         } catch (Throwable $e) { return back()->withErrors(['return' => \App\Support\UserSafeError::message($e)]); }
     })->whereNumber('return')->name('returns.complete');
-    Route::get('returns/{return}/print', function (Request $request, int $return) { /** @var User $user */ $user = $request->user(); abort_unless($user->is_super_admin || $user->can('returns.print'), 403); $document = RetailReturn::query()->visibleTo($user)->whereKey($return)->firstOrFail(); return view('pages.returns.print', ['return' => $document->load(['sourceSale', 'sourceGiftReceipt', 'lines.product', 'lines.saleLine', 'settlements.giftCard'])]); })->whereNumber('return')->name('returns.print');
+    Route::get('returns/{return}/print', function (Request $request, int $return, PosReturnReceiptProfile $profiles) { /** @var User $user */ $user = $request->user(); $document = RetailReturn::query()->visibleTo($user)->whereKey($return)->firstOrFail(); $receiptProfile = $profiles->resolve($user, $document); return view('pages.returns.print', ['return' => $document->load(['store.company', 'branch', 'customer', 'sourceSale', 'sourceGiftReceipt', 'lines.product', 'lines.saleLine', 'lines.returnStore', 'settlements.giftCard', 'settlements.paymentMethod']), 'receiptProfile' => $receiptProfile, 'receiptPreview' => true, 'returnToPos' => false]); })->whereNumber('return')->middleware('can:returns.print')->name('returns.print');
 
     Route::get('gift-receipts', function (Request $request) { /** @var User $user */ $user = $request->user(); abort_unless($user->is_super_admin || $user->can('gift_receipts.view') || $user->can('returns_exchanges_gift_instruments.view'), 403); $receipts = GiftReceipt::query()->visibleTo($user)->with(['sale', 'lines'])->withCount('printEvents')->latest('id')->paginate(20)->withQueryString(); $sales = Sale::query()->visibleTo($user)->approved()->with('lines')->latest('id')->limit(50)->get(); $selectedSaleId = $request->integer('sale_id'); $selectedSale = $selectedSaleId > 0 ? $sales->firstWhere('id', $selectedSaleId) : null; return view('pages.gift-instruments.index', compact('receipts', 'sales', 'selectedSaleId', 'selectedSale')); })->name('gift.receipts.index');
     Route::post('gift-receipts', function (Request $request, GiftReceiptAction $action) { $data = $request->validate(['sale_id' => ['required', 'integer'], 'sale_line_ids' => ['nullable', 'array'], 'sale_line_ids.*' => ['integer']]); try { $receipt = $action->issue($request->user(), Sale::query()->findOrFail($data['sale_id']), (string) ($request->input('idempotency_key') ?: Str::uuid()), array_map('intval', $data['sale_line_ids'] ?? [])); return to_route('gift.receipts.print', $receipt)->with('success', __('Gift Receipt issued without prices.')); } catch (Throwable $e) { return back()->withInput()->withErrors(['receipt' => \App\Support\UserSafeError::message($e)]); } })->name('gift.receipts.store');

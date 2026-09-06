@@ -1,14 +1,14 @@
-# Current Task — v0.1.22-hotfix16 POS checkout and multi-customer workflow
+# Current Task — v0.1.22-hotfix17 POS compact redesign and refund workflow
 
 **Date:** 2026-09-06
 **Change class:** D3 / I4
-**Source baseline:** exact operator-verified Hotfix15 commit `68699be35880dc154519c4e293c1a32bb69ef967`
-**Branch:** `hotfix/v0.1.22-hotfix16-pos-checkout-workflow`
-**Production baseline:** owner supplied and not re-checked: version `0.1.22-hotfix15`, commit `68699be35880dc154519c4e293c1a32bb69ef967`, migration 000109 Ran, maintenance OFF, smoke PASS.
-**Status:** Implementation, documentation, and focused verification complete in the isolated worktree. The local release commit, immutable archive, manifest, and unexecuted operator scripts remain.
+**Source baseline:** exact operator-verified Hotfix16 commit `31883f5c823458d30738708ec96e1d02337f4c9b`
+**Branch:** `hotfix/v0.1.22-hotfix17-pos-compact-refunds`
+**Production baseline:** owner supplied and not re-checked: version `0.1.22-hotfix16`, commit `31883f5c823458d30738708ec96e1d02337f4c9b`, migration 000110 Ran, maintenance OFF, smoke PASS.
+**Status:** Implementation complete in the isolated Hotfix17 worktree; one owner-authorized consolidated database-free verification pass, release commit, and immutable operator package remain.
 
-Hotfix16 replaces the session-only POS cart with server-persisted open orders scoped to the exact company, branch, selling outlet, cash drawer, shift, cashier, and checkout token. It adds bounded customer search and in-POS customer creation, compact Arabic-first responsive cart/payment UX, cash/card/mixed payment portions, atomic completion through the existing sale/payment/inventory/accounting services, a stay-on-POS success modal, and scope-safe receipt profile resolution with browser-print fallback.
+Hotfix17 compacts the desktop POS while preserving Hotfix16 durable exact-scope open orders, customer switching, product/cart approvals, cash/card/mixed settlement, Hotfix14 rounding, atomic checkout, success, and receipt routing. Open-order tabs now live in the cart header; customer/product search is icon-only and automatic/server-bounded; payment choices are compact cards; and checkout uses a wide responsive cash/card/split modal.
 
-Migration 000110 adds durable open-order, line, and payment-draft tables plus two reversible customer search indexes. Existing sale, payment, inventory, tax, accounting, audit, shift, drawer, approval, rounding, receipt, and immutable-snapshot contracts remain authoritative.
+The in-POS refund wizard verifies a visible posted source sale, reserves remaining refundable whole quantities, records condition and an authorized same-company/branch inventory return location, defaults to safe original-payment allocations, requires an active exact-outlet shift/drawer for every cash refund portion, preserves independent approval, and posts inventory plus immutable refund settlements atomically under source-sale locking and completion idempotency. Migration 000111 extends the existing return tables with reversal values, location, refund shift/drawer, completion idempotency, rejection evidence, safe payment snapshots, and an immutable financial reversal snapshot.
 
-The owner explicitly requested one consolidated focused Hotfix16 verification pass. The only automated test authorized for this task is `tests/Unit/V0122Hotfix16PosCheckoutWorkflowTest.php`, a database-free source-contract test for the named POS scope. No broad suite, browser control, live HTTP, database operation, production access, deployment, production backup, migration execution, tag, push, or remote contact is authorized.
+The owner authorized one final focused database-free pass: changed PHP syntax, changed Blade compilation, POS/refund route and source-contract checks, Arabic/English JSON parity, `git diff --check`, and Vite only if frontend input assets changed. Broad tests, browser control, databases, production, deployment, backup execution, migration execution, tags, pushes, and remote contact remain prohibited.

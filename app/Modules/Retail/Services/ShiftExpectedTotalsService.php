@@ -78,7 +78,12 @@ final class ShiftExpectedTotalsService
             ->join('retail_returns', 'retail_returns.id', '=', 'retail_return_settlements.retail_return_id')
             ->join('sales', 'sales.id', '=', 'retail_returns.source_sale_id')
             ->join('payment_methods', 'payment_methods.id', '=', 'retail_return_settlements.payment_method_id')
-            ->where('sales.shift_id', $shift->getKey())
+            ->where(function ($query) use ($shift): void {
+                $query->where('retail_returns.shift_id', $shift->getKey())
+                    ->orWhere(function ($legacy) use ($shift): void {
+                        $legacy->whereNull('retail_returns.shift_id')->where('sales.shift_id', $shift->getKey());
+                    });
+            })
             ->where('retail_returns.status', 'completed')
             ->where('retail_return_settlements.direction', 'refund')
             ->groupBy('payment_methods.code', 'payment_methods.type')

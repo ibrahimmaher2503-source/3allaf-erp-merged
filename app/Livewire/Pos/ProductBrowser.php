@@ -51,9 +51,10 @@ final class ProductBrowser extends Component
 
             return;
         }
-        $variant = Product::query()->sellable()->whereNotNull('parent_product_id')->where('item_code', $term)->with(['variantValues', 'parent'])->first();
-        if ($variant) {
-            $this->openFamily($variant->parent_product_id, $variant->id);
+        $sku = Product::query()->sellable()->where('item_code', $term)->first();
+        if ($sku !== null) {
+            $this->addProduct((int) $sku->id, $cart);
+            $this->search = '';
         }
     }
 

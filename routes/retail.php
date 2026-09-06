@@ -71,6 +71,7 @@ use Illuminate\Validation\Rule;
 Route::middleware(['auth', 'verified'])->group(function (): void {
     require __DIR__.'/pos-hotfix16.php';
     require __DIR__.'/pos-hotfix16-customers.php';
+    require __DIR__.'/pos-hotfix17.php';
     Route::get('pos/products/{product}/thumbnail/{attachment}', function (Request $request, Product $product, Attachment $attachment) {
         abort_unless($request->user()?->can('pos_sales.view'), 403);
         $authorized = $attachment->purpose === 'product_image'

@@ -165,3 +165,10 @@
 - Database-free route registration found 45 POS routes, all required Hotfix16 canonical names, and zero duplicate POS route names. The failed expectation used stale names and inspection also removed one unused customer-search closure capture before the route-only rerun passed.
 - Arabic and English JSON parsed; all 133 newly added English Hotfix16 keys have present, nonblank Arabic counterparts and no unintended identity values. Git diff hygiene passed.
 - No Vite input changed, so no build ran. No broad suite, database, migration, browser, HTTP, production access, deployment, backup, service, tag, push, or remote operation ran.
+
+# 2026-09-06 — v0.1.22-hotfix17 focused verification
+
+- One consolidated database-free pass completed successfully from exact Hotfix16 source commit `31883f5c823458d30738708ec96e1d02337f4c9b` on the required Hotfix17 branch.
+- Syntax passed for all 17 changed/new non-Blade PHP files under available PHP 8.5.9. All changed/new Blade templates compiled and their compiled PHP passed syntax.
+- Required POS/refund route contracts, duplicate-name guard, compact desktop/order/customer/product/payment/checkout contracts, refund authorization/quantity/payment/locking/idempotency/inventory/shift/receipt contracts, Arabic/English JSON parity, and diff hygiene passed.
+- No frontend input changed, so Vite was not run. No broad suite, browser, database, migration, production/live HTTP, service, backup, deployment, activation, tag, push, or remote operation ran.

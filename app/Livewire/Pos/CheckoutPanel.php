@@ -53,14 +53,29 @@ final class CheckoutPanel extends Component
     #[On('pos-cart-updated')]
     public function refreshCheckout(): void {}
 
+    public function chooseMode(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
+    {
+        Gate::authorize('pos_sales.create');
+        if (! in_array($mode, ['cash', 'card', 'split', 'other'], true)) {
+            return;
+        }
+        if ($this->mode !== $mode || $this->paymentLines === []) {
+            $this->mode = $mode;
+            $this->prepareMode($mode);
+        }
+        $this->saveDraft($orders, $contexts);
+    }
+    
     public function startCheckout(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
         Gate::authorize('pos_sales.create');
         if (! in_array($mode, ['cash', 'card', 'split', 'other'], true)) {
             return;
         }
-        $this->mode = $mode;
-        $this->prepareMode($mode);
+        if ($this->mode !== $mode || $this->paymentLines === []) {
+            $this->mode = $mode;
+            $this->prepareMode($mode);
+        }
         $this->saveDraft($orders, $contexts);
         $this->dispatch('open-pos-checkout');
     }
@@ -73,7 +88,9 @@ final class CheckoutPanel extends Component
 
             return;
         }
-        $this->mode = 'split';
+        if ($this->mode !== 'card') {
+            $this->mode = 'split';
+        }
         $this->paymentLines[] = $this->emptyLine();
         $this->saveDraft($orders, $contexts);
     }
@@ -86,7 +103,9 @@ final class CheckoutPanel extends Component
         }
         unset($this->paymentLines[$index]);
         $this->paymentLines = array_values($this->paymentLines);
-        $this->mode = count($this->paymentLines) > 1 ? 'split' : $this->mode;
+        if ($this->mode !== 'card') {
+            $this->mode = count($this->paymentLines) > 1 ? 'split' : $this->mode;
+        }
         $this->saveDraft($orders, $contexts);
     }
 

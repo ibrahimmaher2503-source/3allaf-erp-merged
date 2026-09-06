@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
+use App\Modules\Retail\Support\PosOpenOrderManager;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
@@ -62,14 +63,16 @@ final class Cart extends Component
         }
     }
 
-    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver): View
+    public function render(PosCartSnapshot $snapshot, PosContextResolver $contextResolver, PosOpenOrderManager $orders): View
     {
         /** @var User $user */
         $user = auth()->user();
         $context = $contextResolver->resolve($user);
         $store = $context->store;
         $data = $snapshot->build($context);
+        $activeOrder = $orders->active(request(), $user, $context, false);
+        $openOrders = $orders->orders($user, $context);
 
-        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context]);
+        return view('livewire.pos.cart', [...$data, 'store' => $store, 'context' => $context, 'activeOrder' => $activeOrder, 'openOrders' => $openOrders]);
     }
 }

@@ -79,6 +79,12 @@ final class Sale extends Model implements ImmutableSourceContract
         return $this->hasMany(SalePayment::class);
     }
 
+    /** @return HasMany<RetailReturn, $this> */
+    public function retailReturns(): HasMany
+    {
+        return $this->hasMany(RetailReturn::class, "source_sale_id");
+    }
+
     /**
      * @param  Builder<self>  $query
      * @return Builder<self>

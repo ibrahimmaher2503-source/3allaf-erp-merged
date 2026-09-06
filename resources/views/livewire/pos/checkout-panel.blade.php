@@ -1,183 +1,42 @@
 @php
     $currency = $store?->company?->currency_code ?? $store?->branch?->currency ?? 'EGP';
-    $checkoutBlocker = $cart->isEmpty()
-        ? __('Add an item to begin checkout.')
-        : (! $context->isReady()
-            ? $context->disabledReason
-            : (! $preview ? (($error ?? null) ?: __('Review the cart before checkout.')) : null));
+    $checkoutBlocker = $cart->isEmpty() ? __('Add an item to begin checkout.') : (! $context->isReady() ? $context->disabledReason : (! $preview ? (($error ?? null) ?: __('Review the cart before checkout.')) : null));
     $selectedCustomer = $order?->customer;
-    $cashDraft = collect($paymentLines)->first(fn ($line) => $cashMethod && (int) ($line['method_id'] ?? 0) === (int) $cashMethod->id);
+    $cashDraft = collect($paymentLines)->first(fn($line) => $cashMethod && (int)($line['method_id'] ?? 0) === (int)$cashMethod->id);
     $quickCash = config('pos.cash_quick_denominations', [20, 50, 100, 200, 500, 1000]);
 @endphp
+<section class="rounded-xl bg-white p-3 shadow-xs ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800" data-guide="pos-summary-actions" aria-labelledby="pos-payment-heading">
+    <div class="flex items-center justify-between"><h2 id="pos-payment-heading" class="text-sm font-extrabold">{{ __('Payment') }}</h2>@can('pos_sales.apply_tax')<form method="POST" action="{{ route('pos.cart.tax') }}">@csrf<input type="hidden" name="tax_applicable" value="{{ ($taxApplicable??false)?0:1 }}"><button class="rounded px-2 py-1 text-xs font-bold text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300">{{ ($taxApplicable??false)?__('Remove tax'):__('Add tax') }}</button></form>@endcan</div>
+    @error('paymentLines')<p class="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{{ $message }}</p>@enderror
 
-<section class="rounded-2xl bg-white p-4 shadow-xs ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800" data-guide="pos-summary-actions" aria-labelledby="pos-payment-heading">
-    <div class="flex items-center justify-between gap-3">
-        <div>
-            <flux:heading id="pos-payment-heading" size="lg">{{ __('Payment') }}</flux:heading>
-            <p class="mt-1 text-xs text-zinc-500">{{ __('The draft is saved to the active order when a field is completed.') }}</p>
-        </div>
-        @can('pos_sales.apply_tax')
-            <form method="POST" action="{{ route('pos.cart.tax') }}">
-                @csrf
-                <input type="hidden" name="tax_applicable" value="{{ ($taxApplicable ?? false) ? 0 : 1 }}">
-                <button type="submit" class="min-h-10 rounded-lg px-3 text-xs font-bold text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300 dark:hover:bg-cyan-950/30">
-                    {{ ($taxApplicable ?? false) ? __('Remove tax') : __('Add tax') }}
-                </button>
-            </form>
-        @endcan
+    <div class="mt-2 grid gap-1.5" role="radiogroup" aria-label="{{ __('Payment mode') }}">
+        @if($cashMethod)<button type="button" wire:click="chooseMode('cash')" role="radio" aria-checked="{{ $mode==='cash'?'true':'false' }}" class="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-start {{ $mode==='cash'?'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600 dark:bg-cyan-950/25':'border-zinc-200 dark:border-zinc-700' }}"><span class="size-3 rounded-full border-2 {{ $mode==='cash'?'border-cyan-700 bg-cyan-700':'border-zinc-400' }}"></span><flux:icon name="banknotes" class="size-4" /><span class="min-w-0"><strong class="block text-xs">{{ __('Cash') }}</strong><span class="block text-[10px] text-zinc-500">{{ __('Cash received, exact amount and change') }}</span></span></button>@endif
+        @if($electronicMethods->isNotEmpty())<button type="button" wire:click="chooseMode('card')" role="radio" aria-checked="{{ $mode==='card'?'true':'false' }}" class="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-start {{ $mode==='card'?'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600 dark:bg-cyan-950/25':'border-zinc-200 dark:border-zinc-700' }}"><span class="size-3 rounded-full border-2 {{ $mode==='card'?'border-cyan-700 bg-cyan-700':'border-zinc-400' }}"></span><flux:icon name="credit-card" class="size-4" /><span><strong class="block text-xs">{{ __('Card or electronic') }}</strong><span class="block text-[10px] text-zinc-500">{{ __('One card or multiple cards') }}</span></span></button>@endif
+        @if($methods->count()>1)<button type="button" wire:click="chooseMode('split')" role="radio" aria-checked="{{ in_array($mode,['split','other'],true)?'true':'false' }}" class="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-start {{ in_array($mode,['split','other'],true)?'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600 dark:bg-cyan-950/25':'border-zinc-200 dark:border-zinc-700' }}"><span class="size-3 rounded-full border-2 {{ in_array($mode,['split','other'],true)?'border-cyan-700 bg-cyan-700':'border-zinc-400' }}"></span><flux:icon name="ellipsis-horizontal" class="size-4" /><span><strong class="block text-xs">{{ __('Mixed payment / other methods') }}</strong><span class="block text-[10px] text-zinc-500">{{ __('Cash, cards and active configured methods') }}</span></span></button>@endif
     </div>
 
-    @error('paymentLines')<p class="mt-3 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-800 dark:bg-rose-950/30 dark:text-rose-200">{{ $message }}</p>@enderror
+    <dl class="mt-3 space-y-1.5 border-t border-zinc-200 pt-2 text-xs tabular-nums dark:border-zinc-700"><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Subtotal') }}</dt><dd><x-money :amount="$preview['subtotal']??'0.00'" :currency="$currency" /></dd></div><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Discounts') }}</dt><dd>− <x-money :amount="$preview['discount_total']??'0.00'" :currency="$currency" /></dd></div><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Tax') }}</dt><dd><x-money :amount="$preview['tax_total']??'0.00'" :currency="$currency" /></dd></div>@if(bccomp((string)$cashAdjustment,'0',2)!==0)<div class="flex justify-between"><dt class="text-zinc-500">{{ __('Cash rounding') }}</dt><dd><x-money :amount="$cashAdjustment" :currency="$currency" /></dd></div>@endif<div class="flex items-end justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700"><dt class="font-extrabold">{{ __('Final amount') }}</dt><dd class="text-xl font-black text-cyan-700 dark:text-cyan-300"><x-money :amount="$preview['total']??'0.00'" :currency="$currency" /></dd></div></dl>
+    @if($cashRoundingError)<p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{{ $cashRoundingError }}</p>@endif @if($checkoutBlocker)<p id="pos-checkout-blocker" class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">{{ $checkoutBlocker }}</p>@endif
+    <div class="mt-3 flex gap-2"><button type="button" wire:click="startCheckout('{{ $mode }}')" wire:loading.attr="disabled" @disabled($checkoutBlocker || $cashRoundingError) class="inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-cyan-700 px-3 text-sm font-extrabold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-zinc-300"><flux:icon name="check-circle" class="size-4" />{{ __('Checkout') }}</button>@can('returns.create')@can('returns.submit')<button type="button" wire:click="$dispatch('open-pos-refund')" title="{{ __('Refund a previous sale') }}" aria-label="{{ __('Refund a previous sale') }}" class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-600 dark:border-rose-900 dark:text-rose-300"><flux:icon name="arrow-uturn-left" class="size-4" /></button>@endcan@endcan</div>
 
-    <dl class="mt-4 space-y-2 text-sm tabular-nums">
-        <div class="flex justify-between gap-4"><dt class="text-zinc-500">{{ __('Subtotal') }}</dt><dd><x-money :amount="$preview['subtotal'] ?? '0.00'" :currency="$currency" /></dd></div>
-        <div class="flex justify-between gap-4"><dt class="text-zinc-500">{{ __('Discounts') }}</dt><dd class="text-emerald-700 dark:text-emerald-300">− <x-money :amount="$preview['discount_total'] ?? '0.00'" :currency="$currency" /></dd></div>
-        <div class="flex justify-between gap-4"><dt class="text-zinc-500">{{ __('Tax') }}</dt><dd><x-money :amount="$preview['tax_total'] ?? '0.00'" :currency="$currency" /></dd></div>
-        @if (bccomp((string) $cashAdjustment, '0', 2) !== 0)
-            <div class="flex justify-between gap-4"><dt class="text-zinc-500">{{ __('Cash rounding') }}</dt><dd><x-money :amount="$cashAdjustment" :currency="$currency" /></dd></div>
-        @endif
-        <div class="flex items-end justify-between gap-4 border-t border-zinc-200 pt-3 dark:border-zinc-700"><dt class="font-extrabold">{{ __('Final amount') }}</dt><dd class="text-3xl font-black text-cyan-700 dark:text-cyan-300"><x-money :amount="$preview['total'] ?? '0.00'" :currency="$currency" /></dd></div>
-    </dl>
-
-    @if ($cashRoundingError)
-        <p class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{{ $cashRoundingError }}</p>
-    @endif
-    @if ($checkoutBlocker)
-        <p id="pos-checkout-blocker" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{{ $checkoutBlocker }}</p>
-    @endif
-
-    <div class="mt-4 grid gap-2 sm:grid-cols-2">
-        @if ($cashMethod)
-            <button type="button" wire:click="startCheckout('cash')" wire:loading.attr="disabled" @disabled($checkoutBlocker || $cashRoundingError) class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 text-sm font-extrabold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-zinc-300 dark:disabled:bg-zinc-700">
-                <flux:icon name="banknotes" class="size-5" />{{ __('Cash checkout') }}
-            </button>
-        @endif
-        @if ($electronicMethods->isNotEmpty())
-            <button type="button" wire:click="startCheckout('card')" wire:loading.attr="disabled" @disabled($checkoutBlocker) class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:disabled:bg-zinc-700">
-                <flux:icon name="credit-card" class="size-5" />{{ __('Card / electronic checkout') }}
-            </button>
-        @endif
-        @if ($methods->count() > 1)
-            <button type="button" wire:click="startCheckout('split')" wire:loading.attr="disabled" @disabled($checkoutBlocker) class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-300 px-4 text-sm font-bold hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800 sm:col-span-2">
-                <flux:icon name="ellipsis-horizontal" class="size-5" />{{ __('Mixed split payment') }}
-            </button>
-        @endif
-    </div>
-
-    @can('pos_sales.create')<form method="POST" action="{{ route('pos.suspend') }}" class="mt-2" onsubmit="return window.confirm({{ \Illuminate\Support\Js::from(__('Hold this order without collecting payment?')) }})">@csrf<button type="submit" @disabled($checkoutBlocker) class="min-h-11 w-full rounded-xl border border-zinc-300 px-4 text-sm font-bold hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ __('Hold order') }}</button></form>@endcan
-    <dialog
-        class="m-auto max-h-[94vh] w-[min(96vw,48rem)] overflow-y-auto rounded-2xl bg-white p-0 text-start shadow-2xl backdrop:bg-zinc-950/70 dark:bg-zinc-900 dark:text-zinc-100"
-        x-data="{
-            payable: Number(@js($payable)),
-            cashReceived: Number(@js($cashDraft['tendered'] ?? '0')),
-            submitting: false,
-            nonCashAllocated() {
-                return [...this.$el.querySelectorAll('[data-noncash-amount]')].reduce((total, input) => total + (Number(input.value) || 0), 0);
-            },
-            cashDue() { return Math.max(0, this.payable - this.nonCashAllocated()); },
-            changeDue() { return Math.max(0, this.cashReceived - this.cashDue()); },
-        }"
-        x-on:open-pos-checkout.window="$el.showModal()"
-        x-on:close="submitting = false"
-        aria-labelledby="pos-checkout-dialog-title"
-    >
-        <form method="POST" action="{{ route('pos.checkout') }}" enctype="multipart/form-data" x-on:submit="if (submitting) { $event.preventDefault() } else { submitting = true }">
-            @csrf
-            <input type="hidden" name="checkout_token" value="{{ $order?->checkout_token }}">
-            <input type="hidden" name="open_order_uuid" value="{{ $order?->uuid }}">
-            <input type="hidden" name="tax_applicable" value="{{ ($taxApplicable ?? false) ? 1 : 0 }}">
-            <input type="hidden" name="payment_mode" value="{{ $mode }}">
-
-            <header class="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-wide text-cyan-700 dark:text-cyan-300">{{ __('Secure checkout') }}</p>
-                    <flux:heading id="pos-checkout-dialog-title" size="xl" class="mt-1">
-                        {{ $mode === 'cash' ? __('Cash payment') : ($mode === 'card' ? __('Card / electronic payment') : __('Mixed split payment')) }}
-                    </flux:heading>
-                </div>
-                <button type="button" x-on:click="$el.closest('dialog').close()" class="flex size-10 items-center justify-center rounded-lg hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-cyan-600 dark:hover:bg-zinc-800" aria-label="{{ __('Cancel checkout') }}"><flux:icon name="x-mark" class="size-5" /></button>
-            </header>
-
-            <div class="space-y-5 p-5">
-                <section class="grid gap-2 rounded-xl bg-zinc-50 p-4 text-sm dark:bg-zinc-950 sm:grid-cols-2" aria-label="{{ __('Order context') }}">
-                    <div><span class="text-zinc-500">{{ __('Customer') }}</span><div class="mt-1 font-bold">{{ $selectedCustomer ? (app()->getLocale() === 'ar' ? $selectedCustomer->name_ar : $selectedCustomer->name_en) : __('Walk-in customer') }}</div></div>
-                    <div><span class="text-zinc-500">{{ __('Selling outlet') }}</span><div class="mt-1 font-bold">{{ app()->getLocale() === 'ar' ? $store?->name_ar : $store?->name_en }}</div></div>
-                    <div><span class="text-zinc-500">{{ __('Branch') }}</span><div class="mt-1 font-bold">{{ app()->getLocale() === 'ar' ? $context->branch?->name_ar : $context->branch?->name_en }}</div></div>
-                    @if ($mode !== 'card')<div><span class="text-zinc-500">{{ __('Shift') }}</span><div class="mt-1 font-bold" dir="ltr">#{{ $shift?->id }}</div></div>@endif
-                </section>
-
-                <section class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" aria-label="{{ __('Amount summary') }}">
-                    <dl class="grid gap-2 text-sm sm:grid-cols-2">
-                        <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Subtotal') }}</dt><dd><x-money :amount="$preview['subtotal'] ?? '0.00'" :currency="$currency" /></dd></div>
-                        <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Discounts') }}</dt><dd><x-money :amount="$preview['discount_total'] ?? '0.00'" :currency="$currency" /></dd></div>
-                        <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Tax') }}</dt><dd><x-money :amount="$preview['tax_total'] ?? '0.00'" :currency="$currency" /></dd></div>
-                        <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Cash rounding') }}</dt><dd><x-money :amount="$cashAdjustment" :currency="$currency" /></dd></div>
-                    </dl>
-                    <div class="mt-3 flex items-end justify-between border-t border-zinc-200 pt-3 dark:border-zinc-700"><span class="font-extrabold">{{ __('Final payable amount') }}</span><span class="text-2xl font-black text-cyan-700 dark:text-cyan-300"><x-money :amount="$payable" :currency="$currency" /></span></div>
-                </section>
-
-                <section class="space-y-3" aria-labelledby="payment-portions-heading">
-                    <div class="flex items-center justify-between gap-3"><h3 id="payment-portions-heading" class="font-extrabold">{{ count($paymentLines) > 1 ? __('Payment portions') : __('Single payment') }}</h3>@if(in_array($mode, ['card', 'split'], true))<button type="button" wire:click="addPaymentLine" class="min-h-10 rounded-lg px-3 text-sm font-bold text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300 dark:hover:bg-cyan-950/30">{{ $mode === 'card' ? __('Add card portion') : __('Add payment portion') }}</button>@endif</div>
-
-                    @foreach ($paymentLines as $index => $line)
-                        @php
-                            $selectedMethod = $methods->firstWhere('id', (int) ($line['method_id'] ?? 0));
-                            $isCashLine = $selectedMethod?->isCash() ?? false;
-                            $isGiftCardLine = (string) ($selectedMethod?->type ?? '') === 'gift_card';
-                        @endphp
-                        <fieldset class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-                            <legend class="px-2 text-sm font-bold">{{ __('Payment portion :number', ['number' => $index + 1]) }}</legend>
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                @if ($mode === 'cash' && $cashMethod)
-                                    <input type="hidden" name="payments[{{ $index }}][method_id]" value="{{ $cashMethod->id }}">
-                                    <div class="sm:col-span-2"><span class="text-sm text-zinc-500">{{ __('Payment method') }}</span><div class="mt-1 font-bold">{{ app()->getLocale() === 'ar' ? $cashMethod->name_ar : $cashMethod->name_en }}</div></div>
-                                @else
-                                    <flux:select name="payments[{{ $index }}][method_id]" wire:model.blur="paymentLines.{{ $index }}.method_id" :label="__('Payment method')" required>
-                                        <flux:select.option value="">{{ __('Select a method') }}</flux:select.option>
-                                        @foreach ($methods as $method)
-                                            @if (! ($mode === 'card' && $method->isCash()))
-                                                <flux:select.option value="{{ $method->id }}">{{ app()->getLocale() === 'ar' ? $method->name_ar : $method->name_en }}</flux:select.option>
-                                            @endif
-                                        @endforeach
-                                    </flux:select>
-                                @endif
-
-                                @if ($isCashLine || ($mode === 'cash' && $cashMethod))
-                                    <input type="hidden" name="payments[{{ $index }}][amount]" value="0">
-                                    <div class="sm:col-span-2">
-                                        <label for="cash-received-{{ $index }}" class="text-sm font-semibold">{{ __('Cash received') }}</label>
-                                        <input id="cash-received-{{ $index }}" name="payments[{{ $index }}][tendered]" wire:model.blur="paymentLines.{{ $index }}.tendered" x-model.number="cashReceived" type="number" min="0" step="0.01" inputmode="decimal" autofocus required class="mt-1 block min-h-12 w-full rounded-xl border-zinc-300 bg-white text-lg font-extrabold focus:border-cyan-600 focus:ring-cyan-600 dark:border-zinc-700 dark:bg-zinc-950">
-                                        <div class="mt-2 flex flex-wrap gap-2">
-                                            <button type="button" x-on:click="cashReceived = cashDue(); $nextTick(() => document.getElementById('cash-received-{{ $index }}').dispatchEvent(new Event('change', { bubbles: true })))" class="min-h-10 rounded-lg bg-cyan-50 px-3 text-sm font-bold text-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-200">{{ __('Exact amount') }}</button>
-                                            @foreach ($quickCash as $denomination)<button type="button" x-on:click="cashReceived = {{ (int) $denomination }}; $nextTick(() => document.getElementById('cash-received-{{ $index }}').dispatchEvent(new Event('change', { bubbles: true })))" class="min-h-10 rounded-lg border border-zinc-300 px-3 text-sm font-bold tabular-nums hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ $denomination }}</button>@endforeach
-                                        </div>
-                                    </div>
-                                @else
-                                    <flux:input name="payments[{{ $index }}][amount]" wire:model.blur="paymentLines.{{ $index }}.amount" type="number" min="0.01" step="0.01" inputmode="decimal" :label="__('Allocated amount')" data-noncash-amount :autofocus="$index === 0" required />
-                                    <flux:input name="payments[{{ $index }}][evidence_reference]" wire:model.blur="paymentLines.{{ $index }}.evidence_reference" :label="__('Safe transaction reference (optional)')" autocomplete="off" />
-                                    @if ($isGiftCardLine)<flux:input name="payments[{{ $index }}][gift_card_identifier]" wire:model.blur="paymentLines.{{ $index }}.gift_card_identifier" :label="__('Gift Card identifier')" required />@endif
-                                    @can('pos_sales.payment_evidence_upload')
-                                        <div class="sm:col-span-2"><label for="payment-evidence-{{ $index }}" class="text-sm font-semibold">{{ __('Payment evidence (if required)') }}</label><input id="payment-evidence-{{ $index }}" name="payments[{{ $index }}][evidence]" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-1 block w-full text-sm"></div>
-                                    @endcan
-                                @endif
-                            </div>
-                            @if ($mode === 'split' && count($paymentLines) > 1)<button type="button" wire:click="removePaymentLine({{ $index }})" class="mt-3 min-h-9 rounded-lg px-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">{{ __('Remove portion') }}</button>@endif
-                        </fieldset>
-                    @endforeach
-                </section>
-
-                @if ($mode !== 'card' && collect($paymentLines)->contains(fn ($line) => $cashMethod && (int) ($line['method_id'] ?? 0) === (int) $cashMethod->id))
-                    <section class="rounded-xl bg-emerald-50 p-4 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100" aria-live="polite"><div class="flex items-end justify-between"><span class="font-bold">{{ __('Change due') }}</span><span class="text-3xl font-black" x-text="changeDue().toFixed(2)"></span></div><p class="mt-1 text-xs">{{ __('Change is calculated from the cash portion only.') }}</p></section>
-                @endif
-
-                <flux:textarea name="notes" wire:model.blur="notes" :label="__('Order notes (optional)')" rows="2" maxlength="1000" />
-                <p class="text-xs text-zinc-500">{{ __('Never enter a card number, security code, magnetic-stripe data, or PIN.') }}</p>
+    <dialog class="m-auto max-h-[96vh] w-[min(97vw,76rem)] overflow-y-auto rounded-xl bg-white p-0 text-start shadow-2xl backdrop:bg-zinc-950/70 dark:bg-zinc-900 dark:text-zinc-100 md:overflow-visible" x-data="{ payable:Number(@js($payable)), cashReceived:Number(@js($cashDraft['tendered']??'0')), submitting:false, nonCashAllocated(){return [...this.$el.querySelectorAll('[data-noncash-amount]')].reduce((t,i)=>t+(Number(i.value)||0),0)}, cashDue(){return Math.max(0,this.payable-this.nonCashAllocated())}, amountRemaining(){return Math.max(0,this.cashDue()-this.cashReceived)}, changeDue(){return Math.max(0,this.cashReceived-this.cashDue())}, syncCash(id){this.$nextTick(()=>document.getElementById(id)?.dispatchEvent(new Event('change',{bubbles:true})))}}" x-on:open-pos-checkout.window="$el.showModal()" x-on:close="submitting=false" aria-labelledby="pos-checkout-dialog-title">
+        <form method="POST" action="{{ route('pos.checkout') }}" enctype="multipart/form-data" x-on:submit="if(submitting){$event.preventDefault()}else{submitting=true}">
+            @csrf<input type="hidden" name="checkout_token" value="{{ $order?->checkout_token }}"><input type="hidden" name="open_order_uuid" value="{{ $order?->uuid }}"><input type="hidden" name="tax_applicable" value="{{ ($taxApplicable??false)?1:0 }}"><input type="hidden" name="payment_mode" value="{{ $mode }}">
+            <header class="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800"><div class="flex items-center gap-2"><span class="flex size-9 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300">@if($mode==='cash')<flux:icon name="banknotes" class="size-5" />@else<flux:icon name="credit-card" class="size-5" />@endif</span><div><h2 id="pos-checkout-dialog-title" class="font-extrabold">{{ $mode==='cash'?__('Cash payment'):($mode==='card'?__('Card / electronic payment'):__('Mixed split payment')) }}</h2><p class="text-xs text-zinc-500">{{ __('Secure atomic checkout') }}</p></div></div><button type="button" x-on:click="$el.closest('dialog').close()" class="flex size-9 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="{{ __('Cancel checkout') }}"><flux:icon name="x-mark" class="size-5" /></button></header>
+            <div class="grid gap-3 p-4 md:grid-cols-[.78fr_1.5fr]">
+                <aside class="space-y-3"><section class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950"><div><span class="block text-zinc-500">{{ __('Customer') }}</span><strong>{{ $selectedCustomer?(app()->getLocale()==='ar'?$selectedCustomer->name_ar:$selectedCustomer->name_en):__('Walk-in customer') }}</strong></div><div><span class="block text-zinc-500">{{ __('Branch / outlet') }}</span><strong>{{ app()->getLocale()==='ar'?$context->branch?->name_ar:$context->branch?->name_en }} · {{ app()->getLocale()==='ar'?$store?->name_ar:$store?->name_en }}</strong></div></section><section class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700"><dl class="space-y-1.5 text-xs"><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Subtotal') }}</dt><dd><x-money :amount="$preview['subtotal']??'0.00'" :currency="$currency" /></dd></div><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Discounts') }}</dt><dd><x-money :amount="$preview['discount_total']??'0.00'" :currency="$currency" /></dd></div><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Tax') }}</dt><dd><x-money :amount="$preview['tax_total']??'0.00'" :currency="$currency" /></dd></div><div class="flex justify-between"><dt class="text-zinc-500">{{ __('Cash rounding') }}</dt><dd><x-money :amount="$cashAdjustment" :currency="$currency" /></dd></div><div class="mt-2 flex justify-between border-t border-zinc-200 pt-2 text-lg font-black dark:border-zinc-700"><dt>{{ __('Final') }}</dt><dd><x-money :amount="$payable" :currency="$currency" /></dd></div></dl></section><textarea name="notes" wire:model.blur="notes" rows="2" maxlength="1000" aria-label="{{ __('Order notes (optional)') }}" placeholder="{{ __('Order notes (optional)') }}" class="block w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"></textarea></aside>
+                <main class="min-w-0 space-y-3">
+                    @if(in_array($mode,['cash','split'],true))<div class="inline-flex rounded-lg bg-zinc-100 p-1 text-xs font-bold dark:bg-zinc-800"><button type="button" wire:click="chooseMode('cash')" class="rounded-md px-3 py-1.5 {{ $mode==='cash'?'bg-white shadow-sm dark:bg-zinc-700':'' }}">{{ __('Single payment') }}</button><button type="button" wire:click="chooseMode('split')" class="rounded-md px-3 py-1.5 {{ $mode==='split'?'bg-white shadow-sm dark:bg-zinc-700':'' }}">{{ __('Split payment') }}</button></div>@endif
+                    <div class="flex items-center justify-between"><h3 class="text-sm font-extrabold">{{ count($paymentLines)>1?__('Payment portions'):__('Payment details') }}</h3>@if(in_array($mode,['card','split'],true))<button type="button" wire:click="addPaymentLine" class="rounded-lg px-3 py-1.5 text-xs font-bold text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300">{{ $mode==='card'?__('Add card portion'):__('Add payment portion') }}</button>@endif</div>
+                    <div class="grid gap-2 {{ count($paymentLines)>1?'md:grid-cols-2':'' }}">@foreach($paymentLines as $index=>$line)@php($selectedMethod=$methods->firstWhere('id',(int)($line['method_id']??0)))@php($isCashLine=$selectedMethod?->isCash()??false)@php($isGiftCardLine=(string)($selectedMethod?->type??'')==='gift_card')<fieldset class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">@if(count($paymentLines)>1)<legend class="px-1 text-[11px] font-bold">{{ __('Payment portion :number',['number'=>$index+1]) }}</legend>@endif<div class="grid gap-2 sm:grid-cols-2">
+                        @if($mode==='cash'&&$cashMethod)<input type="hidden" name="payments[{{ $index }}][method_id]" value="{{ $cashMethod->id }}"><div class="text-sm font-bold sm:col-span-2">{{ app()->getLocale()==='ar'?$cashMethod->name_ar:$cashMethod->name_en }}</div>@else<label class="text-xs font-bold">{{ __('Payment method') }}<select name="payments[{{ $index }}][method_id]" wire:model.blur="paymentLines.{{ $index }}.method_id" required class="mt-1 h-9 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"><option value="">{{ __('Select a method') }}</option>@foreach($methods as $method)@if(!($mode==='card'&&$method->isCash()))<option value="{{ $method->id }}">{{ app()->getLocale()==='ar'?$method->name_ar:$method->name_en }}</option>@endif @endforeach</select></label>@endif
+                        @if($isCashLine||($mode==='cash'&&$cashMethod))<input type="hidden" name="payments[{{ $index }}][amount]" value="0"><div class="sm:col-span-2"><label for="cash-received-{{ $index }}" class="text-xs font-bold">{{ __('Cash received') }}</label><div class="mt-1 flex gap-2"><input id="cash-received-{{ $index }}" name="payments[{{ $index }}][tendered]" wire:model.blur="paymentLines.{{ $index }}.tendered" x-model.number="cashReceived" type="number" min="0" step="0.01" inputmode="decimal" required class="h-10 min-w-0 flex-1 rounded-lg border-zinc-300 text-lg font-black dark:border-zinc-700 dark:bg-zinc-950"><button type="button" x-on:click="cashReceived=cashDue();syncCash('cash-received-{{ $index }}')" class="shrink-0 rounded-lg bg-cyan-50 px-3 text-xs font-bold text-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-200">{{ __('Exact amount') }}</button></div><div class="mt-1.5 flex flex-wrap gap-1">@foreach($quickCash as $denomination)<button type="button" x-on:click="cashReceived={{ (int)$denomination }};syncCash('cash-received-{{ $index }}')" class="h-7 rounded border border-zinc-300 px-2 text-[11px] font-bold tabular-nums dark:border-zinc-700">{{ $denomination }}</button>@endforeach</div><div class="mt-2 grid grid-cols-2 gap-2 text-xs"><div x-show="amountRemaining()>0" class="rounded-lg bg-amber-50 px-2 py-1.5 text-amber-900"><span>{{ __('Amount remaining to pay') }}</span><strong class="ms-1" x-text="amountRemaining().toFixed(2)"></strong></div><div x-show="changeDue()>0" class="rounded-lg bg-emerald-50 px-2 py-1.5 text-emerald-900"><span>{{ __('Change due to customer') }}</span><strong class="ms-1" x-text="changeDue().toFixed(2)"></strong></div></div></div>
+                        @else<label class="text-xs font-bold">{{ __('Allocated amount') }}<input name="payments[{{ $index }}][amount]" wire:model.blur="paymentLines.{{ $index }}.amount" type="number" min="0.01" step="0.01" inputmode="decimal" data-noncash-amount required class="mt-1 h-9 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"></label>@if($selectedMethod?->requires_evidence)<label class="text-xs font-bold">{{ __('Transaction reference') }}<input name="payments[{{ $index }}][evidence_reference]" wire:model.blur="paymentLines.{{ $index }}.evidence_reference" maxlength="190" autocomplete="off" required class="mt-1 h-9 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"></label>@can('pos_sales.payment_evidence_upload')<label class="text-xs font-bold sm:col-span-2">{{ __('Payment evidence') }}<input name="payments[{{ $index }}][evidence]" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-1 block w-full text-xs"></label>@endcan @endif @if($isGiftCardLine)<label class="text-xs font-bold">{{ __('Gift Card identifier') }}<input name="payments[{{ $index }}][gift_card_identifier]" wire:model.blur="paymentLines.{{ $index }}.gift_card_identifier" required class="mt-1 h-9 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"></label>@endif @endif
+                    </div>@if(($mode==='split'||$mode==='card')&&count($paymentLines)>1)<button type="button" wire:click="removePaymentLine({{ $index }})" class="mt-2 text-[11px] font-bold text-rose-600">{{ __('Remove portion') }}</button>@endif</fieldset>@endforeach</div>
+                    @if($mode!=='cash')<p class="text-[10px] text-zinc-500">{{ __('Never enter a card number, security code, magnetic-stripe data, or PIN.') }}</p>@endif
+                </main>
             </div>
-
-            <footer class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:justify-end">
-                <button type="button" x-on:click="$el.closest('dialog').close()" class="min-h-12 rounded-xl px-5 text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800">{{ __('Cancel') }}</button>
-                <button type="submit" x-bind:disabled="submitting" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-cyan-700 px-6 text-base font-extrabold text-white hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"><flux:icon name="check-circle" class="size-5" /><span x-show="!submitting">{{ __('Complete sale') }}</span><span x-show="submitting" x-cloak>{{ __('Completing sale…') }}</span></button>
-            </footer>
+            <footer class="flex justify-end gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800"><button type="button" x-on:click="$el.closest('dialog').close()" class="min-h-10 rounded-lg px-4 text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800">{{ __('Cancel') }}</button><button type="submit" x-bind:disabled="submitting" class="inline-flex min-h-10 items-center rounded-lg bg-cyan-700 px-5 text-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-60"><span x-show="!submitting">{{ __('Complete sale') }}</span><span x-show="submitting" x-cloak>{{ __('Completing sale…') }}</span></button></footer>
         </form>
     </dialog>
 </section>

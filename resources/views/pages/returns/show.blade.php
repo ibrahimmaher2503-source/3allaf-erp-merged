@@ -8,6 +8,7 @@
         @if ($errors->any())
             <flux:callout variant="danger">{{ $errors->first() }}</flux:callout>
         @endif
+        @if ($refundAllocationError)<flux:callout variant="warning">{{ $refundAllocationError }}</flux:callout>@endif
 
         <div class="grid gap-4 sm:grid-cols-3">
             <flux:card>
@@ -66,6 +67,11 @@
                         @csrf
                         <flux:button type="submit" variant="primary">{{ __('Approve') }}</flux:button>
                     </form>
+<form method="POST" action="{{ route('returns.reject', $return) }}" class="flex items-end gap-2">
+    @csrf
+    <flux:input name="rejection_reason" :label="__('Rejection reason')" required maxlength="2000" />
+    <flux:button type="submit" variant="danger">{{ __('Reject') }}</flux:button>
+</form>
                 @endcan
             @endif
 
@@ -84,12 +90,18 @@
                     @endif
 
                     @if ($return->settlement_type === 'original_tender')
-                        <flux:select name="original_payment_id" label="{{ __('Original payment to reverse') }}" required>
-                            <option value="">{{ __('Select original payment') }}</option>
-                            @foreach (($return->sourceSale?->payments ?? collect()) as $payment)
-                                <option value="{{ $payment->id }}">{{ $payment->paymentMethod?->name_en ?: $payment->method_code }} · {{ number_format((float) $payment->amount, 2) }}</option>
+                        <div class="sm:col-span-2 space-y-2">
+                            @foreach ($refundAllocations as $index => $allocation)
+                                @php($payment = $return->sourceSale?->payments->firstWhere('id', (int) $allocation['original_payment_id']))
+                                <div class="grid gap-2 rounded-lg border border-zinc-200 p-2 sm:grid-cols-3 dark:border-zinc-700">
+                                    <input type="hidden" name="allocations[{{ $index }}][original_payment_id]" value="{{ $allocation['original_payment_id'] }}">
+                                    <input type="hidden" name="allocations[{{ $index }}][amount]" value="{{ $allocation['amount'] }}">
+                                    <span class="text-sm font-semibold">{{ app()->getLocale() === 'ar' ? $payment?->paymentMethod?->name_ar : $payment?->paymentMethod?->name_en }}</span>
+                                    <span class="text-sm tabular-nums">{{ $allocation['amount'] }} {{ $return->currency_code }}</span>
+                                    @if($payment?->paymentMethod?->requires_evidence)<input name="allocations[{{ $index }}][safe_reference]" maxlength="190" required class="rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950" placeholder="{{ __('Required transaction reference') }}">@endif
+                                </div>
                             @endforeach
-                        </flux:select>
+                        </div>
                     @endif
 
                     <div class="flex items-end">
@@ -98,7 +110,7 @@
                 </form>
             @endif
 
-            <a class="inline-flex items-center rounded-lg border px-3 py-2 text-sm" href="{{ route('returns.print', $return) }}">{{ __('Print') }}</a>
+            @if($return->status === 'completed')<a class="inline-flex items-center rounded-lg border px-3 py-2 text-sm" href="{{ route('returns.print', $return) }}">{{ __('Print') }}</a>@endif
         </div>
     </x-app.page>
 </x-layouts::app>
