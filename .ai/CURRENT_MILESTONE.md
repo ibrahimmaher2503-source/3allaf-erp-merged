@@ -1,10 +1,10 @@
 # Current Milestone
 
 **Date:** 2026-09-07
-**Status:** v0.1.22-hotfix19 is the verified corrective I4 release candidate from exact Hotfix18 commit `c0fa3ed3623f7c259ba2c29109c08184bfa42eb4`; host-user runtime proof is enforced by the fail-closed activation preflight.
+**Status:** v0.1.22-hotfix20 is the corrective I4 release candidate from exact Hotfix19 commit `1fd252c6f0e612f8b3a0d4cea3413a53295205a8`, with newly generated production Vite assets.
 
-The milestone retains the Hotfix17 compact three-column POS, durable order tabs, bounded customer/product lookup, scanner control, compact payment cards, wide cash/card/split checkout, source-linked refund workflow, financial and inventory reversal controls, audit, idempotency, authorization, and Arabic/English presentation, plus the Hotfix18 Blade/PHP compiler repairs.
+Hotfix20 retains the Hotfix17 compact three-column POS, durable order tabs, customer and product lookup, scanner control, compact payment cards, wide checkout dialogs, full refund workflow, Hotfix18 Blade repairs, and Hotfix19 permanent Livewire root and runtime-cache preparation.
 
-Hotfix19 gives the conditionally displayed refund wizard one permanent Livewire root without removing or changing any redesigned POS/refund function. It also corrects extracted-release runtime preparation: bootstrap cache is created after extraction with mode `0775`, recursively owned by `rajeh:rajeh`, checked writable as `rajeh` before and after cache generation, and every Artisan invocation remains under `runuser` as `rajeh`.
+Tailwind v4 already includes all Blade templates through `@source '../views'`. One clean Vite build produced Hotfix20 manifest SHA-256 `8e5c124882f8b0af416f5a35e28e90adfc2952a38abf70296780b80075c73901` and app CSS SHA-256 `56e206d8fc38fc2e01c82d5f2b2b8e8ef20947b67fc5feac0124db18c850ec87`, replacing the Hotfix16 asset identity.
 
-Exact active Hotfix16 remains the activation prerequisite and rollback target. Migration 000111 is required to remain already Ran; Hotfix19 adds no migration and its activation script does not run migrations. Production access or mutation, deployment, backup execution, migration execution, active-symlink changes, service actions, browser testing, tags, pushes, and remotes did not occur during preparation.
+Exact active Hotfix16 remains the only activation prerequisite and rollback target. Migration 000111 must already be Ran and is never executed by the operator scripts. Authenticated non-production POS rendering was unavailable, so no screenshot PASS is claimed; the activation script instead verifies the exact packaged Vite manifest/assets, Laravel and Livewire rendering, and runtime cache contract before switching.

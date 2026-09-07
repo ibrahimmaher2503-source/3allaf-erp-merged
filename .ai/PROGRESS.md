@@ -238,3 +238,12 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Corrected derived promotion/activation preparation so the extracted release gets bootstrap cache at mode `0775` with recursive `rajeh:rajeh` ownership, all Artisan commands run as `rajeh`, and writability is proved before and after cache generation.
 - The remaining database-free pass compiled all 231 Blade templates through the registered Laravel/Flux/Livewire compiler, confirmed the four POS Livewire roots and closed refund render contract, and linted the changed compiled refund view. Host-user `rajeh` ownership/cache proof is deferred to the fail-closed activation preflight.
 - Hotfix19 adds no migration; 000111 is required to remain already Ran. No broad test, browser, Composer, Vite, database, production access, migration, deployment, tag, push, sudo, or remote operation occurred.
+
+
+## 2026-09-07 - v0.1.22-hotfix20 POS production assets
+
+- Created Hotfix20 from exact Hotfix19 commit `1fd252c6f0e612f8b3a0d4cea3413a53295205a8` without changing the POS/refund implementation.
+- Confirmed Tailwind v4 recursively scans all `resources/views`, including POS and Livewire Blade templates; no content-path, invalid-utility, or CSS-conflict edit was required.
+- Ran exactly one clean production Vite build. The new manifest SHA-256 is `8e5c124882f8b0af416f5a35e28e90adfc2952a38abf70296780b80075c73901`; the new app CSS SHA-256 is `56e206d8fc38fc2e01c82d5f2b2b8e8ef20947b67fc5feac0124db18c850ec87`. Both differ from Hotfix16.
+- Authenticated safe non-production POS rendering was unavailable because no isolated environment/database exists, so no visual PASS or screenshots are claimed. Production remained untouched.
+- Hotfix20 adds no migration. Migration 000111 must remain already Ran; activation performs no migration and fails closed before switching unless exact assets, Livewire rendering, and `rajeh` runtime-cache preparation pass.
