@@ -183,7 +183,7 @@
 
 # 2026-09-07 — v0.1.22-hotfix19 focused verification
 
-- Result: BLOCKED before the single final pass; Blade compilation and compiled PHP syntax were not run or claimed.
-- The non-mutating privilege preflight confirmed this session is `rajeh_codex2` UID 1007 and `runuser -u rajeh -- true` fails because non-root users may not use `runuser`.
-- The required release-shaped extraction, ownership, Artisan cache generation, static root assertions, and database-free root/render contract were not run or claimed.
-- Script Bash/safety checks and final Git diff hygiene were not run or claimed. No broad suite, browser, Composer, Vite, database, production access, migration, deployment, activation, tag, push, sudo, or remote operation ran.
+- Result: PASS for all checks available as `rajeh_codex2`; host-user `rajeh` cache proof is deferred to activation.
+- The real registered Laravel/Flux/Livewire compiler compiled all 231 application Blade templates. Static checks passed for all four Hotfix17/18-changed POS Livewire roots, and the closed refund wizard passed Livewire root insertion.
+- The changed refund template compiled PHP passed PHP 8.5 syntax. The initial database-free harness produced zero compiled files because testing mode rethrew the expected unavailable translation database; only that affected check was corrected with Laravel file translations and rerun. No database connection succeeded or mutation occurred.
+- Final archive/manifest integrity, operator-script Bash syntax and fail-closed safety assertions, and Git diff hygiene passed. Host-user `rajeh` ownership and cache generation were not impersonated; activation performs and requires that proof before symlink switching. No broad suite, browser, Composer, Vite, database, production access, migration, deployment, activation, tag, push, sudo, or remote operation ran.
