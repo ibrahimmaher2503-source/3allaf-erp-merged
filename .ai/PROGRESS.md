@@ -230,3 +230,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Hardened the derived operator scripts so `bootstrap/cache` is created with `rajeh:rajeh` ownership and mode `0770` before Artisan, all Artisan commands execute through `runuser` as `rajeh`, exact active Hotfix16 is required, and migration 000111 may already be Ran.
 - The single focused database-free verification passed all real Blade compilation and compiled-PHP syntax checks, including the POS view; changed PHP syntax, locale JSON, diff hygiene, route registration, and operator-script Bash syntax passed. The existing harness does not support authenticated POS rendering without a database, so no render PASS is claimed.
 - No frontend input changed, so Vite was not run. No Composer, broad suite, browser, database, production access, migration, backup, deployment, service action, tag, push, or remote operation occurred.
+
+
+## 2026-09-07 — v0.1.22-hotfix19 POS Livewire root and release-cache repair
+
+- Retained all Hotfix17/18 POS and refund behavior while placing the conditionally displayed refund wizard inside one permanent Livewire root. The other changed POS Livewire templates already had permanent single roots and were left structurally intact.
+- Corrected derived promotion/activation preparation so the extracted release gets bootstrap cache at mode `0775` with recursive `rajeh:rajeh` ownership, all Artisan commands run as `rajeh`, and writability is proved before and after cache generation.
+- The single final verification was not started because its mandatory host-user `rajeh` cache-generation proof cannot run from this non-root session without prohibited sudo or root authority.
+- Hotfix19 adds no migration; 000111 is required to remain already Ran. No broad test, browser, Composer, Vite, database, production access, migration, deployment, tag, push, sudo, or remote operation occurred.

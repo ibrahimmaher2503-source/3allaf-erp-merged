@@ -918,3 +918,12 @@
 - **Work completed:** Preserved all Hotfix17 compact POS/refund work; repaired the compiler-confirmed POS/checkout nested refund authorization, cart inline PHP, and purchasing-return print fallback defects; and hardened promotion/activation preparation for pre-Artisan runtime cache ownership, application-user Artisan execution, exact Hotfix16 activation/rollback, and already-Ran migration 000111.
 - **Verification actually run:** One focused database-free pass compiled every Blade template with the real Laravel/Flux/Livewire compiler and linted every compiled file, including POS; changed PHP syntax, POS/refund route registration, locale JSON, diff hygiene, and both root scripts' Bash syntax passed. The existing database-free harness could not render the authenticated POS route without persisted POS context, so that optional render was not claimed.
 - **Remaining blockers or next action:** No implementation blocker. An authorized root operator may run the immutable promotion and activation scripts; migration 000111 is preserved as already Ran.
+
+
+## 2026-09-07 — v0.1.22-hotfix19 POS Livewire root and release-cache repair
+
+- **Task:** Created Hotfix19 from exact Hotfix18 commit `c0fa3ed3623f7c259ba2c29109c08184bfa42eb4` on isolated branch `hotfix/v0.1.22-hotfix19-pos-livewire-root-cache` after the confirmed production rollback to exact Hotfix16.
+- **Work completed:** Preserved all Hotfix17/18 POS redesign and refund behavior; gave the closed refund wizard one permanent Livewire root; and hardened post-extraction bootstrap cache creation, recursive runtime ownership, `rajeh`-only Artisan execution, pre/post cache-generation writability, already-Ran migration 000111 preservation, and exact Hotfix16 rollback.
+- **Verification actually run:** Only a non-mutating identity preflight. The session is `rajeh_codex2` UID 1007, and `runuser -u rajeh -- true` failed because non-root users may not use `runuser`; the final pass was not started or claimed.
+- **Remaining blocker:** The required release-shaped Artisan cache-generation proof must run as host user `rajeh`, but this session has neither root nor permitted sudo authority. The package and scripts are prepared but are not a completed operator handoff.
+- **Boundary:** Code, documentation, a local preparation commit, and offline package/script preparation occurred; final verification did not occur. No broad tests, browser, Composer, Vite, database, production access, migration, backup execution, deployment, activation, service action, tag, push, sudo, or remote contact occurred.

@@ -179,3 +179,11 @@
 - Changed PHP syntax, Arabic/English JSON parsing, POS/refund route registration, duplicate-name detection, Git diff hygiene, and both operator scripts’ Bash syntax passed. Hotfix18 changes no locale key or value.
 - The existing database-free route harness supports route registration and middleware contracts but not authenticated POS rendering without persisted POS context. No route-render PASS is claimed and no database was accessed.
 - No frontend input changed, so Vite was not run. No broad suite, browser, Composer, database, migration, production access, backup, deployment, activation, service, tag, push, sudo, or remote operation ran.
+
+
+# 2026-09-07 — v0.1.22-hotfix19 focused verification
+
+- Result: BLOCKED before the single final pass; Blade compilation and compiled PHP syntax were not run or claimed.
+- The non-mutating privilege preflight confirmed this session is `rajeh_codex2` UID 1007 and `runuser -u rajeh -- true` fails because non-root users may not use `runuser`.
+- The required release-shaped extraction, ownership, Artisan cache generation, static root assertions, and database-free root/render contract were not run or claimed.
+- Script Bash/safety checks and final Git diff hygiene were not run or claimed. No broad suite, browser, Composer, Vite, database, production access, migration, deployment, activation, tag, push, sudo, or remote operation ran.

@@ -1,10 +1,10 @@
 # Current Milestone
 
 **Date:** 2026-09-07
-**Status:** v0.1.22-hotfix18 is the corrective D3/I4 release candidate from exact Hotfix17 commit `6f47db7a62b38e8bac2aa9a4983a63611a8c17e4`.
+**Status:** v0.1.22-hotfix19 is implemented and packaged from exact Hotfix18 commit `c0fa3ed3623f7c259ba2c29109c08184bfa42eb4`, but final verification is blocked on the required host-user `rajeh` execution proof.
 
-The milestone retains Hotfix17's compact three-column POS, cart-contained order tabs, bounded customer/product lookup, scanner control, compact payment cards, wide cash/card/split checkout, full source-linked refund workflow, financial and inventory reversal controls, audit, idempotency, authorization, and Arabic/English presentation.
+The milestone retains the Hotfix17 compact three-column POS, durable order tabs, bounded customer/product lookup, scanner control, compact payment cards, wide cash/card/split checkout, source-linked refund workflow, financial and inventory reversal controls, audit, idempotency, authorization, and Arabic/English presentation, plus the Hotfix18 Blade/PHP compiler repairs.
 
-Hotfix18 repairs all compiler-confirmed Blade/PHP structural failures found by the mandated all-template pass: nested POS/checkout refund authorization, cart inline PHP assignments, and the PHP 8.5 purchasing-return print fallback. It also hardens operator runtime preparation so `bootstrap/cache` exists with exact runtime ownership and permissions before Artisan is invoked as the `rajeh` application user.
+Hotfix19 gives the conditionally displayed refund wizard one permanent Livewire root without removing or changing any redesigned POS/refund function. It also corrects extracted-release runtime preparation: bootstrap cache is created after extraction with mode `0775`, recursively owned by `rajeh:rajeh`, checked writable as `rajeh` before and after cache generation, and every Artisan invocation remains under `runuser` as `rajeh`.
 
-Exact active Hotfix16 remains the activation prerequisite and rollback target. Migration 000111 may already be Ran and is preserved; Hotfix18 adds no migration. Production access or mutation, deployment, backup execution, migration execution, active-symlink changes, service actions, browser testing, tags, pushes, and remotes remain prohibited during preparation.
+Exact active Hotfix16 remains the activation prerequisite and rollback target. Migration 000111 is required to remain already Ran; Hotfix19 adds no migration and its activation script does not run migrations. Production access or mutation, deployment, backup execution, migration execution, active-symlink changes, service actions, browser testing, tags, pushes, and remotes did not occur during preparation.

@@ -118,3 +118,10 @@
 - Hotfix18 changes no POS or refund behavior: it retains exact Hotfix17 functionality and repairs only compiler-confirmed Blade/PHP structures in the POS page, cart, checkout panel, and purchasing-return print fallback.
 - The owner-verified production baseline is exact Hotfix16 while additive migration 000111 is already Ran. Activation must accept 000111 as either Ran or Pending, run the normal idempotent migration command as `rajeh`, and require it to be Ran afterward; no new migration is permitted.
 - Promotion and activation must prepare `bootstrap/cache` with `rajeh:rajeh` ownership and mode `0770` before every possible Artisan call. Exact Hotfix16 remains both the required active release and failure rollback target.
+
+
+## 2026-09-07 — Hotfix19 Livewire root and extracted-cache boundary
+
+- Hotfix19 retains all Hotfix17/18 POS and refund behavior. The closed refund wizard must still render one permanent Livewire root; its dialog and every conditional state remain inside that wrapper.
+- Promotion must create the extracted target bootstrap cache with mode `0775`, recursively set `rajeh:rajeh` ownership, and verify writability as `rajeh`. Activation repeats that preparation before any Artisan command and verifies writability immediately before and after cache generation.
+- Exact active Hotfix16 is the only accepted activation baseline and exact rollback target. Migration 000111 is already Ran and must remain Ran; Hotfix19 adds no migration and activation does not execute a migration command.

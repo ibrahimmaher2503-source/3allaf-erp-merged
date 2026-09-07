@@ -1,3 +1,4 @@
+<div data-pos-refund-wizard>
 @if($open)
 <dialog open class="m-auto max-h-[96vh] w-[min(97vw,80rem)] overflow-hidden rounded-xl bg-white p-0 text-start shadow-2xl backdrop:bg-zinc-950/75 dark:bg-zinc-900 dark:text-zinc-100" aria-modal="true" aria-labelledby="pos-refund-heading" x-data x-init="$nextTick(() => document.getElementById('pos-refund-lookup')?.focus())">
     <section class="flex max-h-[96vh] flex-col" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
@@ -54,3 +55,4 @@
     </section>
 </dialog>
 @endif
+</div>
