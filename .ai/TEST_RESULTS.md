@@ -187,3 +187,11 @@
 - The real registered Laravel/Flux/Livewire compiler compiled all 231 application Blade templates. Static checks passed for all four Hotfix17/18-changed POS Livewire roots, and the closed refund wizard passed Livewire root insertion.
 - The changed refund template compiled PHP passed PHP 8.5 syntax. The initial database-free harness produced zero compiled files because testing mode rethrew the expected unavailable translation database; only that affected check was corrected with Laravel file translations and rerun. No database connection succeeded or mutation occurred.
 - Final archive/manifest integrity, operator-script Bash syntax and fail-closed safety assertions, and Git diff hygiene passed. Host-user `rajeh` ownership and cache generation were not impersonated; activation performs and requires that proof before symlink switching. No broad suite, browser, Composer, Vite, database, production access, migration, deployment, activation, tag, push, sudo, or remote operation ran.
+
+# 2026-09-08 — v0.1.22-hotfix21 focused verification
+
+- Server and browser payment contracts passed the required `25/20`, `25/25`, and `25/1000` cases plus split, zero, negative, malformed, duplicate, and overallocated validation.
+- The deterministic multi-page sidebar contract preserved lower-menu scroll position and expanded/active ancestry without resetting an already-visible active item; RTL/collapsed/mobile boundaries passed source and compiled-asset checks. No headed-browser visual claim is made because no executable was available.
+- Laravel Blade compilation produced 886 compiled PHP files and compiled syntax passed. The affected Livewire checkout retained one permanent root and a keyed total-refresh contract.
+- Exactly one Vite build passed. Manifest `1618bfbf5e4ebe3830db4f18bc435648d5f067cb03a24a1c4fe6b7ccab67d71c`; app JS `7173aa54896453aa9eb94569c2e60d07d93701fc447d8f9dbb60affa1aa523e1`; app CSS `bd7cfb054cd76cec89861bce602db64d6beaa670122149ea31337ab6520ba24a`.
+- Locale JSON, affected PHP syntax, referenced-asset integrity, and Git diff hygiene passed. Harness-only selector and Vite-entry assumptions were corrected without changing application code or rebuilding.

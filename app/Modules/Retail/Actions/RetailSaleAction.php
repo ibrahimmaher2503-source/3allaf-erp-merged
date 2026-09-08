@@ -158,6 +158,9 @@ final class RetailSaleAction
             $hasCash = ! $suspend && $this->hasCashTender($tenders);
             $cashRounding = $hasCash ? $this->calculator->cashRoundingAdjustment($totals['total']) : '0.00';
             $payable = bcadd($totals['total'], $cashRounding, 2);
+            if (! $suspend) {
+                $tenders = $this->validatedTenderAllocation($tenders, $payable);
+            }
 
             $currencyCode = trim((string) $store->company?->currency_code);
             if ($currencyCode === '' || strtoupper($currencyCode) === 'TBD') {
@@ -334,6 +337,7 @@ final class RetailSaleAction
                 'cash_rounding_amount' => $rounding,
                 'payable_total' => bcadd($totals['total'], $rounding, 2),
             ]);
+            $tenders = $this->validatedTenderAllocation($tenders, (string) $sale->payable_total);
 
             foreach ($sale->lines->values() as $index => $saleLine) {
                 $line = $lines[$index];
@@ -793,11 +797,17 @@ final class RetailSaleAction
         }
 
         $cashCount = 0;
+        $methodIds = [];
         foreach ($tenders as &$tender) {
             if (! ($tender['method'] ?? null) instanceof PaymentMethod) {
                 throw new InvalidArgumentException(__('Every tender requires a configured payment method.'));
             }
             $tender['method'] = PaymentMethod::query()->findOrFail($tender['method']->id);
+            $methodId = (int) $tender['method']->id;
+            if (isset($methodIds[$methodId])) {
+                throw new InvalidArgumentException(__('Each payment method may only be used once per checkout.'));
+            }
+            $methodIds[$methodId] = true;
             $isGiftCard = (string) $tender['method']->type === 'gift_card';
             if ($isGiftCard !== (($tender['gift_card'] ?? null) instanceof GiftCard)) {
                 throw new InvalidArgumentException($isGiftCard
@@ -820,6 +830,59 @@ final class RetailSaleAction
         usort($tenders, fn (array $left, array $right): int => (int) $this->isCashMethod($left['method']) <=> (int) $this->isCashMethod($right['method']));
 
         return array_values($tenders);
+    }
+
+    /**
+     * Normalize and validate the complete tender allocation before any payment
+     * is captured. Cash settles only the residual left by explicit non-cash
+     * portions; excess cash is change, while underpayment fails closed.
+     *
+     * @param array<int, array<string, mixed>> $tenders
+     * @return array<int, array<string, mixed>>
+     */
+    private function validatedTenderAllocation(array $tenders, string $payable): array
+    {
+        $payable = DecimalMoney::round($payable);
+        $nonCashTotal = '0.00';
+        $cashIndex = null;
+
+        foreach ($tenders as $index => &$tender) {
+            if ($this->isCashMethod($tender['method'])) {
+                $cashIndex = $index;
+                continue;
+            }
+            $amount = DecimalMoney::round((string) ($tender['amount'] ?? ''), 2, __('A payment amount must be a valid number.'));
+            if (bccomp($amount, '0.00', 2) <= 0) {
+                throw new InvalidArgumentException(__('A payment amount must be greater than zero.'));
+            }
+            $tender['amount'] = $amount;
+            $nonCashTotal = bcadd($nonCashTotal, $amount, 2);
+            if (bccomp($nonCashTotal, $payable, 2) > 0) {
+                throw new InvalidArgumentException(__('Payment portions cannot exceed the order total.'));
+            }
+        }
+        unset($tender);
+
+        $residual = bcsub($payable, $nonCashTotal, 2);
+        if ($cashIndex === null) {
+            if (bccomp($residual, '0.00', 2) !== 0) {
+                throw new InvalidArgumentException(__('Payment portions must settle the order total exactly.'));
+            }
+            return $tenders;
+        }
+        if (bccomp($residual, '0.00', 2) <= 0) {
+            throw new InvalidArgumentException(__('Cash cannot be added after other payment portions have fully allocated the order total.'));
+        }
+        $tendered = DecimalMoney::round((string) ($tenders[$cashIndex]['tendered'] ?? ''), 2, __('The cash tendered must be a valid amount.'));
+        if (bccomp($tendered, '0.00', 2) <= 0) {
+            throw new InvalidArgumentException(__('The cash received must be greater than zero.'));
+        }
+        if (bccomp($tendered, $residual, 2) < 0) {
+            throw new InvalidArgumentException(__('The tendered cash cannot be less than the remaining amount.'));
+        }
+        $tenders[$cashIndex]['amount'] = $residual;
+        $tenders[$cashIndex]['tendered'] = $tendered;
+        return $tenders;
     }
 
     private function openShift(User $cashier, Store $store): PosShift

@@ -247,3 +247,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Ran exactly one clean production Vite build. The new manifest SHA-256 is `8e5c124882f8b0af416f5a35e28e90adfc2952a38abf70296780b80075c73901`; the new app CSS SHA-256 is `56e206d8fc38fc2e01c82d5f2b2b8e8ef20947b67fc5feac0124db18c850ec87`. Both differ from Hotfix16.
 - Authenticated safe non-production POS rendering was unavailable because no isolated environment/database exists, so no visual PASS or screenshots are claimed. Production remained untouched.
 - Hotfix20 adds no migration. Migration 000111 must remain already Ran; activation performs no migration and fails closed before switching unless exact assets, Livewire rendering, and `rajeh` runtime-cache preparation pass.
+
+## 2026-09-08 — v0.1.22-hotfix21 cash checkout and persistent sidebar
+
+- Corrected cash/split arithmetic with exact cents in the browser and BC Math on the server; underpayment remains due and blocked, exact cash settles at zero, excess cash becomes customer change, and invalid/duplicate/overallocated portions fail closed.
+- Made the desktop sidebar fixed independently of document scrolling with a dedicated vertical/no-horizontal navigation scroller; persisted scroll position, expanded groups, and active ancestry across full and Livewire navigation while retaining RTL, collapsed desktop, and mobile drawer behavior.
+- Ran one Vite production build and completed focused database-free payment, navigation-state, Blade/compiled-PHP, Livewire-root, locale, asset-integrity, and diff checks. No migration, database, production, deployment, tag, push, sudo, or remote action occurred.

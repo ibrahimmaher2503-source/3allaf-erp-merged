@@ -55,8 +55,7 @@
 @endphp
 <flux:sidebar
     collapsible="mobile"
-    x-init="if (window.matchMedia('(min-width: 1024px)').matches) { $el.style.setProperty('display', 'block', 'important'); $el.style.setProperty('height', 'auto', 'important'); $el.style.setProperty('max-height', 'none', 'important'); $el.style.setProperty('overflow', 'visible', 'important'); }"
-    class="app-sidebar z-30! min-h-dvh w-[272px] gap-2 overflow-y-auto border-e p-3 lg:h-auto lg:max-h-none lg:overflow-visible"
+    class="app-sidebar z-30! h-dvh max-h-dvh w-[272px] gap-2 overflow-hidden border-e p-3"
 >
     <flux:sidebar.header class="app-brand-block">
         <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />

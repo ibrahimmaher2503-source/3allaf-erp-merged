@@ -1319,3 +1319,12 @@ select:focus[data-flux-control] {
     body.app-layout .app-sidebar .app-navigation { flex:0 0 auto!important; min-height:auto!important; overflow:visible!important; overscroll-behavior:auto!important; }
     body.app-layout .app-sidebar .app-sidebar__footer { margin-top:.75rem; }
 }
+
+/* Hotfix21: fixed desktop shell with an independent, stateful navigation scroller. */
+@media (min-width: 1024px) {
+    .app-layout { display:block!important; min-height:100dvh; }
+    .app-layout > .app-sidebar { display:flex!important; position:fixed!important; inset-block:0!important; inset-inline-start:0!important; height:100dvh!important; min-height:100dvh!important; max-height:100dvh!important; overflow:hidden!important; }
+    .app-layout > .app-layout__content { width:auto!important; margin-inline-start:17rem!important; }
+    html[data-sidebar-mode="collapsed"] .app-layout > .app-layout__content { margin-inline-start:5rem!important; }
+    .app-sidebar .app-navigation { flex:1 1 0%!important; min-height:0!important; overflow-x:hidden!important; overflow-y:auto!important; overscroll-behavior:contain!important; scrollbar-gutter:stable; }
+}

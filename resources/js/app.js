@@ -1,4 +1,6 @@
 import './dashboard-assistant';
+import './sidebar-navigation-state';
+import './pos-payment-calculator';
 import './offline-pos';
 
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
