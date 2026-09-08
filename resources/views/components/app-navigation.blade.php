@@ -5,7 +5,7 @@
     $groups = $navigation->normalizeForRendering(is_iterable($groups) ? $groups : [], app()->getLocale());
 @endphp
 
-<nav {{ $attributes->class('app-navigation') }} aria-label="{{ app()->getLocale() === 'ar' ? 'التنقل الرئيسي' : 'Primary navigation' }}">
+<nav {{ $attributes->class('app-navigation') }} data-sidebar-scroll aria-label="{{ app()->getLocale() === 'ar' ? 'التنقل الرئيسي' : 'Primary navigation' }}">
     @foreach ($groups as $group)
         @if ($group['type'] === 'separator')
             <div class="my-1 border-t border-white/10" role="separator"></div>

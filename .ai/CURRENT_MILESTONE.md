@@ -1,8 +1,10 @@
 # Current Milestone
 
 **Date:** 2026-09-08
-**Status:** v0.1.22-hotfix22 is the verified I4 release candidate from exact Hotfix21 source commit `63d542558fc301f7b6554da5c5747ca2f4124a46`, targeting exact production Hotfix20 commit `04d09977abd9b3d56bc83fd067a78642f5127ca7`.
+**Status:** v0.1.22-hotfix23 is the verified I4 release candidate from exact Hotfix22 commit `163548b2f10f217ebf989589701f98a5a60b49ec`, targeting exact production Hotfix20 commit `04d09977abd9b3d56bc83fd067a78642f5127ca7`.
 
-The release preserves Hotfix20 and Hotfix21 POS/refund/payment/Livewire-root/Vite/cache/sidebar/accounting/inventory/permission/idempotency behavior. It corrects the navigation runtime failure by normalizing all optional renderer fields and assigning stable fallback keys before Blade access. Runtime contracts cover the real keyless Initial Setup item, permission-filtered cashier/manager/administrator profiles, nested groups, headings, separators, empty fields, and the authenticated dashboard layout.
+The release restores Hotfix20 desktop shell geometry, makes only the unique internal navigation list scrollable, preserves document/body scroll position during restoration, and removes active-navigation `scrollIntoView` while retaining legitimate tour and validation behavior. Hotfix21 payment and Hotfix22 keyless-navigation behavior remain intact.
 
-Exactly one Vite production build produced Hotfix22 assets. Operator activation remains external and fail-closed: exact Hotfix20 is the only accepted active baseline and rollback target, migration 000111 must already be Ran, no migration command is allowed, and the `rajeh` navigation/cache/asset preflights must pass before switching.
+The clean replacement Vite assets, actual Laravel layout render, deterministic geometry/runtime proof, Blade/PHP/Livewire, payment, navigation, locale, asset-integrity, and diff checks passed. Browser screenshots are unavailable after the one authorized install attempt failed with ENOSPC; the owner-authorized deterministic fallback is recorded truthfully.
+
+Operator activation remains external and fail-closed from exact Hotfix20 with migration 000111 already Ran and no migration command.

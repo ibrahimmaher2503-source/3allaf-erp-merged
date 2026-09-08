@@ -201,3 +201,12 @@
 - The initial contract run exposed only fixture-construction and harness API/database-isolation issues. Each was corrected in the evidence harness, and only the affected navigation runtime contract was resumed until it passed. No application defect was exposed after the normalization change.
 - Preserved Hotfix21 server/browser cash and split-payment contracts and deterministic multi-page sidebar restoration passed. All application Blade templates compiled, all compiled PHP passed syntax, affected Livewire root contracts passed, both locale JSON files parsed, and the single new Vite build's manifest/referenced assets passed integrity checks.
 - No broad automated suite, headed browser, database, migration, production access, deployment, tag, push, sudo, or remote service was used.
+
+## 2026-09-08 — v0.1.22-hotfix23 focused verification
+
+- **Result:** PASS using the owner-authorized deterministic layout fallback; browser visual acceptance unavailable.
+- **Layout/navigation:** Actual authenticated database-free Laravel dashboard rendered with real normalized navigation and replacement assets. Exactly one internal sidebar scroller exists; Hotfix20 grid geometry, bounded internal active reveal, zero document/body scroll change, RTL/LTR, collapsed desktop, and mobile contracts passed.
+- **Preserved behavior:** Hotfix22 keyless navigation profiles and Hotfix21 cash/split-payment contracts passed.
+- **Compilation/integrity:** 886 compiled Blade PHP files, affected PHP, Livewire roots, locale JSON, replacement Vite manifest/references, and Git diff hygiene passed.
+- **Assets:** manifest `5d171d1aae53e952aa727a1093dcf427d0366a881481e713caaa371e67243687`; JS `app-DGJ2yKaj.js` `988e8ee9c13d186c4d3692ed1b7a3cf9680ba8897e2b4ec5272f2646b58392e5`; CSS `app-DWxi_J5Q.css` `9d49b148f0775f0d0b8b104f77c6fa39ea6910c14dfac8c93cbcdd067d371228`.
+- **Boundary:** The one authorized Chromium download failed with ENOSPC and was not retried. No screenshot or visual PASS is claimed.

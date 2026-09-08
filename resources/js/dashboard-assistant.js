@@ -473,10 +473,6 @@ document.addEventListener('livewire:navigated', registerDashboardAssistant);
 
 const synchronizeActiveNavigation = () => {
     document.querySelectorAll(".app-navigation__group[data-active-group]").forEach((group) => { group.open = true; });
-    const active = document.querySelector(".app-navigation__item[aria-current=page]");
-    if (active && active.closest(".app-navigation")) {
-        window.requestAnimationFrame(() => active.scrollIntoView({ block: "nearest", inline: "nearest" }));
-    }
 };
 document.addEventListener("DOMContentLoaded", synchronizeActiveNavigation);
 document.addEventListener("livewire:navigated", synchronizeActiveNavigation);

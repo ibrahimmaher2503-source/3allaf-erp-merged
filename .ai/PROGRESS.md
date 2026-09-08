@@ -1,3 +1,25 @@
+## 2026-09-08 — v0.1.22-hotfix23 sidebar layout repair completed
+
+- Removed only the active-navigation `scrollIntoView` from `dashboard-assistant.js`; preserved the unrelated guided-tour and product-validation calls.
+- Deleted the superseded generated assets and ran exactly one clean replacement Vite 8.2.0 build.
+- Actual Laravel layout rendering and the deterministic fallback proved Hotfix20 grid geometry, unique internal scrolling, unchanged document/body scroll, bounded active reveal, collapsed/RTL/LTR/mobile contracts, and final asset identity.
+- Hotfix22 keyless navigation, Hotfix21 cash/split payments, Blade/PHP/Livewire roots, locale JSON, asset integrity, and diff hygiene passed.
+- Browser screenshots remain unavailable after the single authorized Chromium install attempt failed with ENOSPC; no visual PASS is claimed.
+
+## 2026-09-08 — v0.1.22-hotfix23 resumed deterministic proof (source/build blocker)
+
+- The one authorized workspace-local Playwright Chromium install attempt failed with `ENOSPC`; it was not retried.
+- The real Laravel dashboard/navigation render passed with exactly one explicit sidebar scroller and the final Hotfix23 asset identities.
+- The deterministic final-bundle proof found a second active-navigation `scrollIntoView` in `resources/js/dashboard-assistant.js`, also present in `public/build/assets/app-641tFKz1.js`.
+- Correcting this confirmed source defect requires another production Vite build. The current owner instruction forbids rerunning Vite, so final verification, commit, and packaging stopped fail-closed.
+
+## 2026-09-08 — v0.1.22-hotfix23 sidebar layout repair (visual gate blocked)
+
+- Created the isolated Hotfix23 branch from exact Hotfix22 commit `163548b2f10f217ebf989589701f98a5a60b49ec`.
+- Removed the desktop `display:block` shell override, restored the Hotfix20 grid relationship, limited scrolling to `[data-sidebar-scroll]`, removed active-item `scrollIntoView`, and retained Hotfix21 payment plus Hotfix22 normalization behavior.
+- One successful Vite 8.2.0 production build completed after an initial npm launcher failure occurred before Vite started or wrote assets.
+- Mandatory 1920×1080 screenshot acceptance is blocked: no Chromium, Chrome, Firefox, Playwright browser payload, WebKit/Qt renderer, or cached local browser container exists. Git diff hygiene passed once during the preservation check; the remaining final verification, commit, and packaging were not run.
+
 # UI/UX Release Progress
 
 ## 2026-09-08 — v0.1.22-hotfix22 navigation runtime normalization

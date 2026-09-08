@@ -1,77 +1,113 @@
-export const SIDEBAR_STATE_KEY = 'rajeh_sidebar_navigation_v1';
+export const SIDEBAR_STATE_KEY = 'rajeh_sidebar_navigation_v2';
+export const SIDEBAR_SCROLL_SELECTOR = '[data-sidebar-scroll]';
+
+const findSidebarScroller = (root = document) => {
+    const matches = root.querySelectorAll(SIDEBAR_SCROLL_SELECTOR);
+    return matches.length === 1 ? matches[0] : null;
+};
 
 const readState = (storage = window.localStorage) => {
     try {
         const state = JSON.parse(storage.getItem(SIDEBAR_STATE_KEY) || 'null');
-        return state?.version === 1 && Array.isArray(state.open) ? state : null;
+        return state?.version === 2 && Number.isFinite(state.scrollTop) && Array.isArray(state.open) ? state : null;
     } catch (ignored) {
         return null;
     }
 };
 
+const openKeys = (navigation) => [...navigation.querySelectorAll('details[data-navigation-state][open]')]
+    .map((details) => details.dataset.navigationState)
+    .filter((key) => typeof key === 'string' && key !== '');
+
+const maximumScrollTop = (navigation) => Math.max(0, navigation.scrollHeight - navigation.clientHeight);
+
+const revealActiveInsideSidebar = (navigation, active) => {
+    if (!active) return;
+
+    const navigationRect = navigation.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    let delta = 0;
+
+    if (activeRect.top < navigationRect.top) {
+        delta = activeRect.top - navigationRect.top;
+    } else if (activeRect.bottom > navigationRect.bottom) {
+        delta = activeRect.bottom - navigationRect.bottom;
+    }
+
+    if (delta !== 0) {
+        navigation.scrollTop = Math.min(
+            maximumScrollTop(navigation),
+            Math.max(0, Math.round(navigation.scrollTop + delta)),
+        );
+    }
+};
+
 export const captureSidebarState = (root = document, storage = window.localStorage) => {
-    const navigation = root.querySelector('.app-navigation');
+    const navigation = findSidebarScroller(root);
     if (!navigation) return null;
-    const active = navigation.querySelector('.app-navigation__item[aria-current="page"]');
-    const activeSection = active?.closest('[data-navigation-group]')?.dataset.navigationGroup ?? null;
+
     const state = {
-        version: 1,
-        scrollTop: Math.max(0, Math.round(navigation.scrollTop)),
-        open: [...navigation.querySelectorAll('details[data-navigation-state][open]')]
-            .map((details) => details.dataset.navigationState),
-        activeSection,
+        version: 2,
+        scrollTop: Math.min(maximumScrollTop(navigation), Math.max(0, Math.round(navigation.scrollTop))),
+        open: openKeys(navigation),
     };
-    try { storage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state)); } catch (ignored) {}
+
+    try {
+        storage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state));
+    } catch (ignored) {}
+
     return state;
 };
 
 export const restoreSidebarState = (root = document, storage = window.localStorage) => {
-    const navigation = root.querySelector('.app-navigation');
+    const navigation = findSidebarScroller(root);
     if (!navigation) return null;
+
     const state = readState(storage);
     const active = navigation.querySelector('.app-navigation__item[aria-current="page"]');
+    const details = [...navigation.querySelectorAll('details[data-navigation-state]')];
     const activeAncestors = new Set(
-        active ? [...navigation.querySelectorAll('details[data-navigation-state]')]
-            .filter((details) => details.contains(active))
-            .map((details) => details.dataset.navigationState) : [],
+        active ? details
+            .filter((candidate) => candidate.contains(active))
+            .map((candidate) => candidate.dataset.navigationState) : [],
     );
 
     if (state) {
         const storedOpen = new Set(state.open);
-        navigation.querySelectorAll('details[data-navigation-state]').forEach((details) => {
-            details.open = storedOpen.has(details.dataset.navigationState) || activeAncestors.has(details.dataset.navigationState);
+        details.forEach((candidate) => {
+            candidate.open = storedOpen.has(candidate.dataset.navigationState)
+                || activeAncestors.has(candidate.dataset.navigationState);
         });
-        navigation.scrollTop = Math.min(state.scrollTop, Math.max(0, navigation.scrollHeight - navigation.clientHeight));
+        navigation.scrollTop = Math.min(maximumScrollTop(navigation), Math.max(0, Math.round(state.scrollTop)));
     } else {
-        activeAncestors.forEach((key) => {
-            const details = [...navigation.querySelectorAll('details[data-navigation-state]')]
-                .find((candidate) => candidate.dataset.navigationState === key);
-            if (details) details.open = true;
+        details.forEach((candidate) => {
+            if (activeAncestors.has(candidate.dataset.navigationState)) candidate.open = true;
         });
     }
 
-    if (active) {
-        const navigationRect = navigation.getBoundingClientRect();
-        const activeRect = active.getBoundingClientRect();
-        if (activeRect.top < navigationRect.top || activeRect.bottom > navigationRect.bottom) {
-            active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-        }
-    }
+    revealActiveInsideSidebar(navigation, active);
     navigation.dataset.sidebarRestored = 'true';
-    return { state, activeSection: active?.closest('[data-navigation-group]')?.dataset.navigationGroup ?? null };
+
+    return { state };
 };
 
 const bindSidebarState = () => {
-    const navigation = document.querySelector('.app-navigation');
-    if (!navigation || navigation.dataset.sidebarStateBound === 'true') {
+    const navigation = findSidebarScroller(document);
+    if (!navigation) return;
+
+    if (navigation.dataset.sidebarStateBound === 'true') {
         restoreSidebarState();
         return;
     }
+
     navigation.dataset.sidebarStateBound = 'true';
     let frame = null;
     navigation.addEventListener('scroll', () => {
         if (frame !== null) cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(() => { captureSidebarState(); frame = null; });
+        frame = requestAnimationFrame(() => {
+            captureSidebarState();
+            frame = null;
+        });
     }, { passive: true });
     navigation.addEventListener('toggle', () => captureSidebarState(), true);
     navigation.addEventListener('click', (event) => {
