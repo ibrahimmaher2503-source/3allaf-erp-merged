@@ -195,3 +195,9 @@
 - Laravel Blade compilation produced 886 compiled PHP files and compiled syntax passed. The affected Livewire checkout retained one permanent root and a keyed total-refresh contract.
 - Exactly one Vite build passed. Manifest `1618bfbf5e4ebe3830db4f18bc435648d5f067cb03a24a1c4fe6b7ccab67d71c`; app JS `7173aa54896453aa9eb94569c2e60d07d93701fc447d8f9dbb60affa1aa523e1`; app CSS `bd7cfb054cd76cec89861bce602db64d6beaa670122149ea31337ab6520ba24a`.
 - Locale JSON, affected PHP syntax, referenced-asset integrity, and Git diff hygiene passed. Harness-only selector and Vite-entry assumptions were corrected without changing application code or rebuilding.
+## 2026-09-08 — v0.1.22-hotfix22 focused verification
+
+- The runtime navigation contract passed for real configured navigation under cashier, manager, and administrator permission profiles; the real keyless Initial Setup item; deterministic unique fallback keys; nested groups; headings; separators; empty optional fields; and an authenticated database-free render of the actual dashboard layout.
+- The initial contract run exposed only fixture-construction and harness API/database-isolation issues. Each was corrected in the evidence harness, and only the affected navigation runtime contract was resumed until it passed. No application defect was exposed after the normalization change.
+- Preserved Hotfix21 server/browser cash and split-payment contracts and deterministic multi-page sidebar restoration passed. All application Blade templates compiled, all compiled PHP passed syntax, affected Livewire root contracts passed, both locale JSON files parsed, and the single new Vite build's manifest/referenced assets passed integrity checks.
+- No broad automated suite, headed browser, database, migration, production access, deployment, tag, push, sudo, or remote service was used.

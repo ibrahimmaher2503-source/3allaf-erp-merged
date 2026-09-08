@@ -1,5 +1,12 @@
 # UI/UX Release Progress
 
+## 2026-09-08 — v0.1.22-hotfix22 navigation runtime normalization
+
+- Preserved Hotfix21 payment and sidebar behavior while normalizing every renderer-facing navigation field before Blade access.
+- Added deterministic fallback keys for keyless groups/items/subgroups and safe rendering for permission-filtered links, nested groups, headings, separators, and empty optional shapes.
+- Authenticated database-free dashboard/navigation rendering, three permission profiles, the real keyless Initial Setup item, Hotfix21 payment/sidebar contracts, full Blade compilation, compiled PHP syntax, Livewire roots, locale JSON, and new Vite asset integrity passed. Exactly one production Vite build ran.
+- No migration, database, production, deployment, activation, service, sudo, tag, push, or remote operation occurred.
+
 ## 2026-09-04 — v0.1.22-hotfix10 UI deduplication
 
 - Removed only the upper standalone Roles & Permissions navigation item and the lower duplicate Product Catalog readiness summary.

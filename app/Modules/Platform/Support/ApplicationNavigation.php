@@ -42,32 +42,87 @@ final class ApplicationNavigation
     /** @return array<int, array<string, mixed>> */
     public function for(User $user, string $locale): array
     {
-        return collect(config('navigation', []))
-            ->filter(static fn (array $group): bool => $group['enabled'] ?? true)
-            ->map(function (array $group) use ($user, $locale): array {
-                $group['label'] = $group['label'][$locale] ?? $group['label']['en'];
-                $group['items'] = collect($group['items'])
-                    ->filter(fn (array $item): bool => Route::has($item['route']) && $user->can($item['permission']))
-                    ->map(function (array $item) use ($locale, $user): array {
-                        $item['label'] = $item['label'][$locale] ?? $item['label']['en'];
-                        $item['url'] = route($item['route'], $item['parameters'] ?? []);
-                        $activeRoutes = $item['active_routes'] ?? self::ACTIVE_ROUTES[$item['route']] ?? [$item['route']];
-                        $item['active'] = request()->routeIs(...$activeRoutes)
-                            && collect($item['parameters'] ?? [])->every(fn (mixed $value, string $key): bool => (string) request($key, request()->route($key)) === (string) $value);
+        $configuredGroups = config('navigation', []);
 
-                        if ($item['route'] === 'initial-setup') {
+        if (! is_array($configuredGroups)) {
+            return [];
+        }
+
+        $groups = collect($configuredGroups)
+            ->filter(static fn (mixed $group): bool => is_array($group))
+            ->filter(static fn (array $group): bool => (bool) ($group['enabled'] ?? true))
+            ->map(function (array $group) use ($user, $locale): array {
+                $group['label'] = $this->localizedLabel($group['label'] ?? null, $locale);
+                $items = is_array($group['items'] ?? null) ? $group['items'] : [];
+                $group['items'] = collect($items)
+                    ->filter(static fn (mixed $item): bool => is_array($item))
+                    ->filter(function (array $item) use ($user): bool {
+                        $type = $this->entryType($item, 'item');
+
+                        if (in_array($type, ['heading', 'separator'], true)) {
+                            return true;
+                        }
+
+                        $route = $item['route'] ?? null;
+                        $permission = $item['permission'] ?? null;
+
+                        return is_string($route)
+                            && $route !== ''
+                            && is_string($permission)
+                            && $permission !== ''
+                            && Route::has($route)
+                            && $user->can($permission);
+                    })
+                    ->map(function (array $item) use ($locale, $user): array {
+                        $type = $this->entryType($item, 'item');
+                        $item['label'] = $this->localizedLabel($item['label'] ?? null, $locale);
+
+                        if (in_array($type, ['heading', 'separator'], true)) {
+                            return $item;
+                        }
+
+                        $route = (string) ($item['route'] ?? '');
+                        $parameters = is_array($item['parameters'] ?? null) ? $item['parameters'] : [];
+                        $item['url'] = route($route, $parameters);
+                        $activeRoutes = $item['active_routes'] ?? self::ACTIVE_ROUTES[$route] ?? [$route];
+                        $activeRoutes = is_array($activeRoutes) ? array_values(array_filter($activeRoutes, 'is_string')) : [$route];
+                        $item['active'] = $activeRoutes !== []
+                            && request()->routeIs(...$activeRoutes)
+                            && collect($parameters)->every(fn (mixed $value, string $key): bool => (string) request($key, request()->route($key)) === (string) $value);
+
+                        if ($route === 'initial-setup') {
                             $item = $this->withSetupSteps($item, $user);
                         }
 
                         return $item;
                     })->values()->all();
 
-                $group['active'] = collect($group['items'])->contains(fn (array $item): bool => $item['active'] || ($item['children_active'] ?? false));
+                $group['active'] = collect($group['items'])->contains(
+                    fn (array $item): bool => (bool) ($item['active'] ?? false) || (bool) ($item['children_active'] ?? false)
+                );
 
                 return $group;
             })
-            ->filter(fn (array $group): bool => $group['items'] !== [])
+            ->filter(fn (array $group): bool => in_array($this->entryType($group, 'group'), ['heading', 'separator'], true)
+                || ($group['items'] ?? []) !== [])
             ->values()->all();
+
+        return $this->normalizeForRendering($groups, $locale);
+    }
+
+    /**
+     * Normalize every renderer-facing field, including optional keys, before Blade sees it.
+     *
+     * @param  iterable<mixed>  $groups
+     * @return list<array<string, mixed>>
+     */
+    public function normalizeForRendering(iterable $groups, string $locale): array
+    {
+        return collect($groups)
+            ->filter(static fn (mixed $group): bool => is_array($group))
+            ->values()
+            ->map(fn (array $group, int $index): array => $this->normalizeGroup($group, $locale, $index, 'root'))
+            ->all();
     }
 
     /** @param array<string,mixed> $item @return array<string,mixed> */
@@ -121,5 +176,138 @@ final class ApplicationNavigation
         $item['active'] = request()->routeIs('initial-setup');
 
         return $item;
+    }
+
+    /** @param array<string, mixed> $group @return array<string, mixed> */
+    private function normalizeGroup(array $group, string $locale, int $index, string $parentKey): array
+    {
+        $type = $this->entryType($group, 'group');
+        $label = $this->localizedLabel($group['label'] ?? null, $locale);
+        $key = $this->navigationKey($group, $type, $label, $parentKey, $index);
+        $rawItems = is_array($group['items'] ?? null) ? $group['items'] : [];
+        $items = collect($rawItems)
+            ->filter(static fn (mixed $item): bool => is_array($item))
+            ->values()
+            ->map(fn (array $item, int $itemIndex): array => $this->normalizeItem($item, $locale, $itemIndex, $key))
+            ->all();
+        $active = (bool) ($group['active'] ?? false)
+            || collect($items)->contains(fn (array $item): bool => $item['active'] || $item['children_active']);
+        $destination = collect($items)->first(
+            fn (array $item): bool => $item['active'] && ! in_array($item['type'], ['heading', 'separator'], true) && $item['url'] !== '#'
+        ) ?? collect($items)->first(
+            fn (array $item): bool => ! in_array($item['type'], ['heading', 'separator'], true) && $item['url'] !== '#'
+        );
+
+        return array_replace($group, [
+            'type' => $type,
+            'key' => $key,
+            'label' => $label,
+            'icon' => $this->scalarString($group['icon'] ?? null, 'squares-2x2'),
+            'items' => $items,
+            'active' => $active,
+            'url' => is_array($destination) ? $destination['url'] : '#',
+        ]);
+    }
+
+    /** @param array<string, mixed> $item @return array<string, mixed> */
+    private function normalizeItem(array $item, string $locale, int $index, string $parentKey): array
+    {
+        $type = $this->entryType($item, 'item');
+        $label = $this->localizedLabel($item['label'] ?? null, $locale);
+        $key = $this->navigationKey($item, $type, $label, $parentKey, $index);
+        $rawSubgroups = $item['subgroups'] ?? ($type === 'group' ? ($item['items'] ?? []) : []);
+        $rawSubgroups = is_array($rawSubgroups) ? $rawSubgroups : [];
+        $subgroups = collect($rawSubgroups)
+            ->filter(static fn (mixed $group): bool => is_array($group))
+            ->values()
+            ->map(fn (array $group, int $groupIndex): array => $this->normalizeGroup($group, $locale, $groupIndex, $key))
+            ->all();
+        $active = (bool) ($item['active'] ?? false);
+        $childrenActive = (bool) ($item['children_active'] ?? false)
+            || collect($subgroups)->contains(fn (array $group): bool => $group['active']);
+
+        return array_replace($item, [
+            'type' => $type,
+            'key' => $key,
+            'label' => $label,
+            'icon' => $this->scalarString($item['icon'] ?? null, 'document-text'),
+            'url' => $this->scalarString($item['url'] ?? null, '#'),
+            'active' => $active,
+            'children_active' => $childrenActive,
+            'subgroups' => $subgroups,
+        ]);
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function navigationKey(array $entry, string $type, string $label, string $parentKey, int $index): string
+    {
+        $explicit = $this->scalarString($entry['key'] ?? null);
+
+        if ($explicit !== '') {
+            return $explicit;
+        }
+
+        $stableData = [
+            'parent' => $parentKey,
+            'type' => $type,
+            'route' => $this->scalarString($entry['route'] ?? null),
+            'group' => $this->scalarString($entry['group'] ?? null),
+            'label' => $label,
+            'url' => $this->scalarString($entry['url'] ?? null),
+            'index' => $index,
+        ];
+        $encoded = json_encode($stableData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+        return 'auto-'.substr(hash('sha256', $encoded), 0, 20).'-'.$index;
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function entryType(array $entry, string $default): string
+    {
+        if (($entry['separator'] ?? false) === true) {
+            return 'separator';
+        }
+
+        if (($entry['heading'] ?? false) === true) {
+            return 'heading';
+        }
+
+        $type = strtolower($this->scalarString($entry['type'] ?? null, $default));
+
+        return in_array($type, ['group', 'item', 'heading', 'separator'], true) ? $type : $default;
+    }
+
+    private function localizedLabel(mixed $label, string $locale): string
+    {
+        if (is_array($label)) {
+            $candidates = [$label[$locale] ?? null, $label['en'] ?? null, $label['ar'] ?? null, ...array_values($label)];
+
+            foreach ($candidates as $candidate) {
+                $value = $this->scalarString($candidate);
+
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        } else {
+            $value = $this->scalarString($label);
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return $locale === 'ar' ? 'التنقل' : 'Navigation';
+    }
+
+    private function scalarString(mixed $value, string $default = ''): string
+    {
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            $value = trim((string) $value);
+
+            return $value !== '' ? $value : $default;
+        }
+
+        return $default;
     }
 }
