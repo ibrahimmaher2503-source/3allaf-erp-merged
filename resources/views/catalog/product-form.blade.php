@@ -343,7 +343,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
             'productForm.model_number' => 'رقم الموديل', 'productForm.product_type' => 'نوع المنتج',
             'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية',
-            'productForm.average_cost' => 'متوسط تكلفة المخزون', 'productForm.sale_price' => 'سعر البيع الأساسي للمستهلك',
+            'productForm.average_cost' => 'سعر التكلفة', 'productForm.sale_price' => 'سعر البيع الأساسي للمستهلك',
             'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
             'supplierBarcode' => 'الباركود الدولي',
         ];
@@ -370,7 +370,7 @@ new #[Title('Product Card')] class extends Component {
     :title="$isEditing ? __('Edit product card') : __('Add Product Card')"
     :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
     max-width="7xl"
-    class="catalog-screen"
+    class="catalog-screen product-form-page"
     data-guide="product-form-header"
 >
     <x-slot:actions>
@@ -433,10 +433,6 @@ new #[Title('Product Card')] class extends Component {
                 @endif
                 <flux:input id="product-field-name_ar" wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                 <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" />
-            </div>
-            <div class="grid gap-4 md:grid-cols-2">
-                <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="4" dir="rtl" />
-                <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="4" dir="ltr" />
             </div>
             @if ($isEditing && $product)
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
@@ -502,7 +498,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Average inventory cost')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />
+                <flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />
                 <div id="base-consumer-price"><flux:input id="product-field-sale_price" wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" :description="__('Required for sellable products and must be greater than zero.')" /></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
@@ -522,6 +518,10 @@ new #[Title('Product Card')] class extends Component {
                 <flux:text class="mt-1 text-sm text-text-muted">{{ __('These values are searchable/reportable attributes. They do not create variants, balances, or independent barcode identities.') }}</flux:text>
             </summary>
             <div class="catalog-product-disclosure__content">
+                <div class="mb-4 grid gap-4 md:grid-cols-2">
+                    <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="3" dir="rtl" />
+                    <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="3" dir="ltr" />
+                </div>
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
                     <flux:input wire:model="productForm.reorder_threshold" :label="__('Reorder threshold')" type="number" min="0" step="1" :disabled="in_array($productForm['product_type'], ['service', 'digital'], true)" />
@@ -643,7 +643,11 @@ new #[Title('Product Card')] class extends Component {
         @else
             <div class="order-4 rounded-xl border border-border bg-surface-muted/40 p-4">
                 <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage B — Optional additional data') }}</h2>
-                <p class="mt-1 text-sm text-text-muted">{{ __('Save the required Product Card first. Optional images, Product Filters, dimensions, online visibility, descriptions, and battery data become available afterward.') }}</p>
+                <p class="mt-1 text-sm text-text-muted">{{ __('Descriptions are optional and may be entered now. Images, Product Filters, dimensions, online visibility, and battery data become available after the required Product Card is saved.') }}</p>
+                <div class="mt-3 grid gap-4 md:grid-cols-2">
+                    <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="3" dir="rtl" />
+                    <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="3" dir="ltr" />
+                </div>
             </div>
         @endif
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">

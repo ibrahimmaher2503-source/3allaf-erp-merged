@@ -161,7 +161,7 @@ new #[Title('Product Details')] class extends Component {
             </flux:card>
 
             @if ($canViewCost)
-                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
+                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost price') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
             @else
                 <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('Cost information is restricted to authorized purchasing and finance users.') }}</flux:callout>
             @endif

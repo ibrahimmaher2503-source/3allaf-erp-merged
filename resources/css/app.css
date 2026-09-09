@@ -313,9 +313,10 @@
     }
 
     .page-frame {
-        @apply mx-auto w-full max-w-[96rem] px-4 py-6 sm:px-7 lg:px-10 lg:py-8;
+        @apply mx-auto w-full max-w-[96rem] px-4 py-3 sm:px-7 sm:py-4 lg:px-10 lg:py-5;
     }
 
+    .product-form-page .catalog-product-section-nav { @apply mt-0; }
     .dashboard-shell { @apply relative; }
     .dashboard-hero { position: relative; padding-inline-start: 1rem; }
     .dashboard-hero::before { content: ''; position: absolute; inset-inline-start: 0; top: 0.25rem; bottom: 1.75rem; width: 0.25rem; border-radius: 999px; background: var(--color-primary); box-shadow: 0 0 22px color-mix(in srgb, var(--color-primary) 28%, transparent); }

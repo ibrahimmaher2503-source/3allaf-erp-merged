@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class ApplicationVersion
 {
-    public const RELEASE = '0.1.22-hotfix23';
+    public const RELEASE = '0.1.22-hotfix24';
 
     private function __construct() {}
 }

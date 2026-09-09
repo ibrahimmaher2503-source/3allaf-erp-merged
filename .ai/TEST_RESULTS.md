@@ -210,3 +210,10 @@
 - **Compilation/integrity:** 886 compiled Blade PHP files, affected PHP, Livewire roots, locale JSON, replacement Vite manifest/references, and Git diff hygiene passed.
 - **Assets:** manifest `5d171d1aae53e952aa727a1093dcf427d0366a881481e713caaa371e67243687`; JS `app-DGJ2yKaj.js` `988e8ee9c13d186c4d3692ed1b7a3cf9680ba8897e2b4ec5272f2646b58392e5`; CSS `app-DWxi_J5Q.css` `9d49b148f0775f0d0b8b104f77c6fa39ea6910c14dfac8c93cbcdd067d371228`.
 - **Boundary:** The one authorized Chromium download failed with ENOSPC and was not retried. No screenshot or visual PASS is claimed.
+# 2026-09-09 — v0.1.22-hotfix24 focused final verification
+
+- PASS: Phase 1 purchase-invoice quick Product Card source contract, required/duplicate validation, supplier prefill, transaction boundary, created-product insertion, and draft-state preservation.
+- PASS: description placement, Arabic cost label, compact authenticated layout/Reports Center, report selector/filter/export preservation, and affected Arabic/English translations.
+- PASS: Hotfix23 sidebar layout/restoration runtime and asset contracts; cash/split-payment contract; unchanged POS/refund/inventory source boundary.
+- PASS: PHP syntax, Blade compilation/compiled syntax, Vite asset integrity, locale JSON, Git diff hygiene, and operator Bash syntax.
+- Exactly one clean Vite production build ran. Automated tests and browser checks were not created or run. No database or migration command ran.

@@ -282,3 +282,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Corrected cash/split arithmetic with exact cents in the browser and BC Math on the server; underpayment remains due and blocked, exact cash settles at zero, excess cash becomes customer change, and invalid/duplicate/overallocated portions fail closed.
 - Made the desktop sidebar fixed independently of document scrolling with a dedicated vertical/no-horizontal navigation scroller; persisted scroll position, expanded groups, and active ancestry across full and Livewire navigation while retaining RTL, collapsed desktop, and mobile drawer behavior.
 - Ran one Vite production build and completed focused database-free payment, navigation-state, Blade/compiled-PHP, Livewire-root, locale, asset-integrity, and diff checks. No migration, database, production, deployment, tag, push, sudo, or remote action occurred.
+# 2026-09-09 — v0.1.22-hotfix24 product quick-create and compact UI
+
+- Started from exact Hotfix23 commit `ac812449e446f69301a0202cb540c625f71eb9d8` in the isolated `rajeh_ahmed` worktree and required Hotfix24 branch.
+- Completed the source implementation for atomic purchase-invoice quick Product Card creation, the label-only Arabic cost rename, product-description Stage B placement, compact authenticated shared spacing, compact Reports Center, and affected bilingual localization.
+- Preserved the invoice draft component state and deferred inventory/accounting/supplier posting to the existing invoice-finalization path. No migration was added or run.
+- Exactly one clean Node 20/Vite 8.2.0 production build passed. The bounded source, Blade/PHP, locale, asset, Hotfix23 sidebar, cash/split-payment, POS/refund/inventory unchanged-source, diff, and operator-script checks passed in one focused final verification.
+- The clean local commit and immutable archive, complete manifest, promotion script, and activation script were prepared under `/home/rajeh_ahmed`; promotion and activation remain unexecuted.

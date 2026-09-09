@@ -26,7 +26,7 @@
     };
 @endphp
 
-<main {{ $attributes->merge(['class' => 'page-frame w-full mx-auto space-y-6 ' . $maxWidthClass]) }}>
+<main {{ $attributes->merge(['class' => 'page-frame w-full mx-auto space-y-4 ' . $maxWidthClass]) }}>
     @if (filled($title))
         <x-page-header
             :title="$title"

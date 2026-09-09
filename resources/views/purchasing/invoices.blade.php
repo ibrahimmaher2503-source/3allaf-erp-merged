@@ -2,10 +2,10 @@
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\Barcode;
+use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
-use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
@@ -20,7 +20,10 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -69,7 +72,21 @@ new #[Title('Purchase Invoices')] class extends Component
     public string $productSearch = '';
     public int $productSearchRequest = 0;
     public bool $showQuickProduct = false;
-    public array $quickProduct = ['barcode'=>'','name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
+    public array $quickProduct = [
+        'barcode_registration_type' => 'international',
+        'barcode' => '',
+        'model_number' => '',
+        'name_ar' => '',
+        'name_en' => '',
+        'category_id' => '',
+        'brand_id' => '',
+        'preferred_supplier_id' => '',
+        'product_type' => 'standard',
+        'status' => 'active',
+        'average_cost' => '',
+        'sale_price' => '',
+        'open_price' => false,
+    ];
     public bool $showDistribution = false;
     public array $selectedDestinationIds = [];
     public array $distributionMatrix = [];
@@ -251,8 +268,23 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function openQuickProduct(string $barcode = ''): void
     {
-        Gate::authorize('purchase_invoices_supplier_returns.create');
-        $this->quickProduct = ['barcode'=>trim($barcode),'name_ar'=>'','name_en'=>'','model_number'=>'','category_id'=>''];
+        Gate::authorize('products_categories_brands.create');
+        $this->resetValidation();
+        $this->quickProduct = [
+            'barcode_registration_type' => 'international',
+            'barcode' => trim($barcode !== '' ? $barcode : $this->itemEntry),
+            'model_number' => '',
+            'name_ar' => '',
+            'name_en' => '',
+            'category_id' => '',
+            'brand_id' => '',
+            'preferred_supplier_id' => (string) ($this->invoiceForm['supplier_id'] ?: ''),
+            'product_type' => 'standard',
+            'status' => 'active',
+            'average_cost' => '',
+            'sale_price' => '',
+            'open_price' => false,
+        ];
         $this->showQuickProduct = true;
     }
 
@@ -279,13 +311,73 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->dispatch('invoice-scanner-focus');
     }
 
-    public function createQuickProduct(SaveProductAction $save, ReserveProductIdentityAction $identity): void
+    public function createQuickProduct(SaveProductAction $save, AddBarcodeAction $barcodes): void
     {
-        $this->validate(['quickProduct.barcode'=>'nullable|string|max:64','quickProduct.name_ar'=>'required|string|max:255','quickProduct.name_en'=>'nullable|string|max:255','quickProduct.model_number'=>'nullable|string|max:100','quickProduct.category_id'=>'required|exists:categories,id']);
-        $lookup=trim((string)$this->quickProduct['barcode']);
-        $product=$save->execute([...$this->quickProduct,'item_code'=>preg_match('/^[A-Z0-9][A-Z0-9._\/-]{0,49}$/i',$lookup)?$lookup:'','product_type'=>'standard','status'=>'active','preferred_supplier_id'=>$this->invoiceForm['supplier_id'] ?: null,'average_cost'=>0,'sale_price'=>0]);
-        if (preg_match('/^\d{8}$|^\d{12,14}$/',$lookup) && ! Barcode::query()->where('barcode',$lookup)->exists()) $identity->createPrimaryBarcode($product,app(\App\Modules\Catalog\Support\ProductBarcodePolicy::class)->international($lookup),'international');
-        $this->showQuickProduct=false; $this->insertProduct($product);
+        Gate::authorize('products_categories_brands.create');
+
+        try {
+            $validated = $this->validate([
+                'quickProduct.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
+                'quickProduct.barcode' => ['required', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('products', 'item_code'), Rule::unique('barcodes', 'barcode')],
+                'quickProduct.model_number' => ['required', 'string', 'max:100'],
+                'quickProduct.name_ar' => ['required', 'string', 'max:255'],
+                'quickProduct.name_en' => ['nullable', 'string', 'max:255'],
+                'quickProduct.category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('status', 'active')],
+                'quickProduct.brand_id' => ['nullable', 'integer', Rule::exists('brands', 'id')->where('status', 'active')],
+                'quickProduct.preferred_supplier_id' => [Rule::requiredIf(fn (): bool => $this->quickProduct['barcode_registration_type'] === 'local'), 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+                'quickProduct.product_type' => ['required', Rule::in(['standard', 'composite', 'service'])],
+                'quickProduct.status' => ['required', Rule::in(['active', 'inactive'])],
+                'quickProduct.average_cost' => ['required', 'numeric', 'min:0'],
+                'quickProduct.sale_price' => ['required', 'numeric', 'min:0.01'],
+                'quickProduct.open_price' => ['required', 'boolean'],
+            ], [], [
+                'quickProduct.barcode_registration_type' => __('Barcode registration type'),
+                'quickProduct.barcode' => __('Barcode / SKU'),
+                'quickProduct.model_number' => __('Model number'),
+                'quickProduct.name_ar' => __('Arabic product name'),
+                'quickProduct.name_en' => __('English product name'),
+                'quickProduct.category_id' => __('Category / subcategory'),
+                'quickProduct.brand_id' => __('Brand'),
+                'quickProduct.preferred_supplier_id' => __('Supplier'),
+                'quickProduct.product_type' => __('Product type'),
+                'quickProduct.status' => __('Status'),
+                'quickProduct.average_cost' => __('Cost price'),
+                'quickProduct.sale_price' => __('Base consumer selling price'),
+                'quickProduct.open_price' => __('Open-price product'),
+            ])['quickProduct'];
+
+            $lookup = trim((string) $validated['barcode']);
+            $isInternationalBarcode = $validated['barcode_registration_type'] === 'international'
+                && preg_match('/^\d{8}$|^\d{12,14}$/', $lookup) === 1;
+            if ($isInternationalBarcode) {
+                app(\App\Modules\Catalog\Support\ProductBarcodePolicy::class)->international($lookup);
+            }
+
+            $product = DB::transaction(function () use ($save, $barcodes, $validated, $lookup, $isInternationalBarcode): Product {
+                $product = $save->execute([
+                    ...$validated,
+                    'item_code' => $isInternationalBarcode ? '' : strtoupper($lookup),
+                    'preferred_supplier_id' => $validated['preferred_supplier_id'] ?: null,
+                ]);
+
+                if ($validated['barcode_registration_type'] === 'local') {
+                    $supplier = Supplier::query()->findOrFail((int) $validated['preferred_supplier_id']);
+                    $barcodes->allocateLocalBarcode($product->id, $supplier->code, 'purchase-invoice-quick-product:'.$product->id);
+                } elseif ($isInternationalBarcode) {
+                    $barcodes->addSupplierBarcode($product->id, $lookup);
+                }
+
+                return $product->fresh();
+            });
+
+            $this->showQuickProduct = false;
+            $this->insertProduct($product);
+            Flux::toast(__('Product card created and added to the draft invoice.'), variant: 'success');
+        } catch (ValidationException $exception) {
+            $this->setErrorBag($exception->validator->errors());
+        } catch (Throwable $exception) {
+            $this->addError('quickProduct.barcode', \App\Support\UserSafeError::message($exception));
+        }
     }
 
     public function removeLine(int $index): void
@@ -434,6 +526,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'productResults' => $this->searchProducts($actor),
             'lineProducts' => Product::query()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn($id)=>(int)$id))->get()->keyBy('id'),
             'categories' => Category::query()->where('status','active')->orderBy('name_en')->get(),
+            'brands' => Brand::query()->where('status','active')->orderBy('name_en')->get(),
             'distributionInvoice' => $this->showDistribution && $this->editingInvoiceId ? PurchaseInvoice::query()->with(['lines.product','distributions.destination'])->find($this->editingInvoiceId) : null,
         ]);
     }
@@ -674,7 +767,9 @@ new #[Title('Purchase Invoices')] class extends Component
                     <div x-data="{camera:false,stream:null,async start(){if(!('BarcodeDetector' in window)){alert(@js(__('Camera barcode scanning is not supported by this browser.')));return} this.camera=true; this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); this.$nextTick(()=>{this.$refs.video.srcObject=this.stream; this.detect()})},async detect(){if(!this.camera)return; const hits=await (new BarcodeDetector()).detect(this.$refs.video); if(hits[0]){this.stop(); await $wire.set('itemEntry',hits[0].rawValue); await $wire.addItemEntry();return} requestAnimationFrame(()=>this.detect())},stop(){this.camera=false;this.stream?.getTracks().forEach(track=>track.stop());this.stream=null} }" class="space-y-3">
                         <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
                             <div class="min-w-0"><flux:input id="purchase-item-entry" wire:model="itemEntry" wire:keydown.enter.prevent="addItemEntry" :label="__('Barcode or item code')" autocomplete="off" autofocus x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('input')?.focus())" /></div>
-                            <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus" class="w-full sm:w-auto">{{ __('Add') }}</flux:button>
+                            @can('products_categories_brands.create')
+                                <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus" class="w-full sm:w-auto">{{ __('Create product') }}</flux:button>
+                            @endcan
                             <flux:button type="button" x-on:click="start" variant="subtle" icon="camera" class="w-full sm:w-auto">{{ __('Scan with camera') }}</flux:button>
                         </div>
                         <div x-show="camera" x-cloak class="rounded-xl border p-3"><video x-ref="video" autoplay playsinline class="mx-auto max-h-64 rounded-lg"></video><flux:button type="button" class="mt-2" x-on:click="stop">{{ __('Close camera') }}</flux:button></div>
@@ -734,7 +829,62 @@ new #[Title('Purchase Invoices')] class extends Component
     @endif
 
     @if($showQuickProduct)
-        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-2xl"><form wire:submit="createQuickProduct" class="space-y-4"><flux:heading size="lg">{{__('Unknown barcode — create Product Card')}}</flux:heading><flux:text>{{__('The invoice remains open. Create the product and it will be inserted immediately.')}}</flux:text><div class="grid gap-3 sm:grid-cols-2"><flux:input wire:model="quickProduct.barcode" :label="__('Barcode or item code')"/><flux:input wire:model="quickProduct.name_ar" :label="__('Arabic name')" required/><flux:input wire:model="quickProduct.name_en" :label="__('English name')"/><flux:input wire:model="quickProduct.model_number" :label="__('Model number')"/><flux:select wire:model="quickProduct.category_id" :label="__('Category')"><flux:select.option value="">{{__('Select category')}}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{$category->id}}">{{app()->getLocale()==='ar'?($category->name_ar?:'—'):($category->name_en?:'—')}}</flux:select.option>@endforeach</flux:select></div><div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="closeQuickProduct">{{__('Cancel')}}</flux:button><flux:button type="submit" variant="primary">{{__('Create and add')}}</flux:button></div></form></flux:modal>
+        <flux:modal wire:model.self="showQuickProduct" class="md:max-w-5xl xl:max-w-6xl">
+            <form wire:submit="createQuickProduct" class="space-y-3" novalidate>
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <flux:heading size="lg">{{ __('Unknown barcode — create Product Card') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('The invoice remains open. Create the complete Phase 1 product card and it will be inserted immediately.') }}</flux:text>
+                    </div>
+                    <flux:badge color="sky" size="sm">{{ __('Draft invoice preserved') }}</flux:badge>
+                </div>
+
+                @if ($errors->has('quickProduct.*'))
+                    <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Product card could not be created') }}" class="py-2">
+                        <ul class="list-disc ps-5 text-sm">@foreach ($errors->get('quickProduct.*') as $messages) @foreach ($messages as $message)<li>{{ $message }}</li>@endforeach @endforeach</ul>
+                    </flux:callout>
+                @endif
+
+                <fieldset class="rounded-xl border border-border p-3">
+                    <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Identity') }}</legend>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                        <flux:select wire:model="quickProduct.barcode_registration_type" :label="__('Barcode registration type')" required>
+                            <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
+                            <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
+                        </flux:select>
+                        <flux:input wire:model="quickProduct.barcode" :label="__('Barcode / SKU')" dir="ltr" required />
+                        <flux:input wire:model="quickProduct.model_number" :label="__('Model number')" required />
+                        <flux:input wire:model="quickProduct.name_ar" :label="__('Arabic product name')" dir="rtl" required />
+                        <flux:input wire:model="quickProduct.name_en" :label="__('English product name')" dir="ltr" />
+                    </div>
+                </fieldset>
+
+                <fieldset class="rounded-xl border border-border p-3">
+                    <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Classification') }}</legend>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                        <flux:select wire:model="quickProduct.category_id" :label="__('Category / subcategory')" required><flux:select.option value="">{{ __('Select category') }}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{ $category->id }}">{{ $category->code }} · {{ app()->getLocale()==='ar' ? ($category->name_ar ?: '—') : ($category->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.brand_id" :label="__('Brand')"><flux:select.option value="">{{ __('No brand') }}</flux:select.option>@foreach($brands as $brand)<flux:select.option value="{{ $brand->id }}">{{ $brand->code }} · {{ app()->getLocale()==='ar' ? ($brand->name_ar ?: '—') : ($brand->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.preferred_supplier_id" :label="__('Supplier')"><flux:select.option value="">{{ __('No supplier') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ $supplier->code }} · {{ app()->getLocale()==='ar' ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.product_type" :label="__('Product type')" required><flux:select.option value="standard">{{ __('Standard') }}</flux:select.option><flux:select.option value="service">{{ __('Service') }}</flux:select.option><flux:select.option value="composite">{{ __('Composite') }}</flux:select.option></flux:select>
+                        <flux:select wire:model="quickProduct.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
+                    </div>
+                </fieldset>
+
+                <fieldset class="rounded-xl border border-border p-3">
+                    <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Commercial fields') }}</legend>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+                        <flux:input wire:model="quickProduct.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" required />
+                        <flux:input wire:model="quickProduct.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" required />
+                        <flux:checkbox wire:model="quickProduct.open_price" :label="__('Open-price product')" />
+                    </div>
+                </fieldset>
+
+                <div class="flex flex-wrap justify-end gap-2">
+                    <flux:button type="button" variant="subtle" wire:click="closeQuickProduct">{{ __('Cancel') }}</flux:button>
+                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="createQuickProduct">{{ __('Create and add') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
     @endif
 
     @if ($showTransitionModal)
