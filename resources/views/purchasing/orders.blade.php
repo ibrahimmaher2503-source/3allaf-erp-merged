@@ -542,7 +542,7 @@ new #[Title('Purchase Orders')] class extends Component
             <p class="text-xs text-zinc-500 mt-1">{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p>
         </div>
 
-        <form wire:submit.prevent="saveOrder" class="space-y-6">
+        <form wire:submit.prevent="saveOrder" class="space-y-6" data-product-line-editor data-autofocus="true">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
                     <option value="">{{ __('Select Supplier') }}</option>
@@ -574,37 +574,35 @@ new #[Title('Purchase Orders')] class extends Component
             <div class="space-y-3 border-t border-border pt-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
-                    <flux:button size="xs" variant="subtle" icon="plus" wire:click="addLine">
+                    <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line>
                         {{ __('Add Item Line') }}
                     </flux:button>
                 </div>
 
                 <div class="space-y-3">
                     @foreach ($lineItems as $index => $item)
-                        <div class="grid grid-cols-12 gap-2 items-center bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-border">
-                            <div class="col-span-12 sm:col-span-5">
-                                <label class="text-xs text-zinc-500 sm:hidden">{{ __('Product') }}</label>
-                                <select wire:change="onProductSelected({{ $index }}, $event.target.value)" class="w-full text-xs rounded-md border-border bg-white dark:bg-zinc-800 p-2">
-                                    <option value="">{{ __('Select Product') }}</option>
-                                    @foreach ($products as $prod)
-                                        <option value="{{ $prod->id }}" @if(($item['product_id'] ?? '') == $prod->id) selected @endif>
-                                            {{ app()->getLocale() === 'ar' ? $prod->name_ar : ($prod->name_en ?: $prod->name_ar) }} ({{ $prod->sku ?: $prod->code }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                        <div class="grid grid-cols-12 gap-2 items-end bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-border" data-product-line wire:key="order-line-{{ $index }}">
+                            <div class="col-span-12 sm:col-span-4">
+                                @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
+                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->getLocale() === 'ar' ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" />
                             </div>
 
-                            <div class="col-span-5 sm:col-span-3">
-                                <label class="text-xs text-zinc-500 sm:hidden">{{ __('Qty') }}</label>
-                                <flux:input type="number" step="0.0001" min="0.0001" wire:model.live="lineItems.{{ $index }}.quantity_ordered" :placeholder="__('Qty')" size="sm" />
+                            <div class="col-span-4 sm:col-span-2">
+                                <label class="text-xs font-semibold">{{ __('Quantity') }}</label>
+                                <input data-line-quantity type="number" step="1" min="1" wire:model.live="lineItems.{{ $index }}.quantity_ordered" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
                             </div>
 
-                            <div class="col-span-5 sm:col-span-3">
-                                <label class="text-xs text-zinc-500 sm:hidden">{{ __('Unit Cost') }}</label>
-                                <flux:input type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" :placeholder="__('Cost')" size="sm" />
+                            <div class="col-span-4 sm:col-span-2">
+                                <label class="text-xs font-semibold">{{ __('Unit cost') }}</label>
+                                <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
                             </div>
 
-                            <div class="col-span-2 sm:col-span-1 text-end">
+                            <div class="col-span-3 sm:col-span-2">
+                                <span class="block text-xs font-semibold">{{ __('Line total') }}</span>
+                                <output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-3 font-mono text-sm dark:bg-zinc-900" data-line-total>0.00</output>
+                            </div>
+
+                            <div class="col-span-1 sm:col-span-2 text-end">
                                 @if (count($lineItems) > 1)
                                     <flux:button size="xs" variant="ghost" icon="trash" class="text-rose-600" wire:click="removeLine({{ $index }})" />
                                 @endif

@@ -289,3 +289,10 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Preserved the invoice draft component state and deferred inventory/accounting/supplier posting to the existing invoice-finalization path. No migration was added or run.
 - Exactly one clean Node 20/Vite 8.2.0 production build passed. The bounded source, Blade/PHP, locale, asset, Hotfix23 sidebar, cash/split-payment, POS/refund/inventory unchanged-source, diff, and operator-script checks passed in one focused final verification.
 - The clean local commit and immutable archive, complete manifest, promotion script, and activation script were prepared under `/home/rajeh_ahmed`; promotion and activation remain unexecuted.
+# 2026-09-09 — v0.1.22-hotfix25 keyboard product lines
+
+- Added one reusable accessible product combobox and keyboard row controller for exact barcode/code selection, bounded multi-match navigation, quantity/price progression, line totals, validation, and unlimited one-at-a-time row entry.
+- Applied the workflow to purchase orders/invoices/returns, transfers, stock counts, adjustments, exchanges/returns, quotations, Party booking/invoice product lines, and POS search/cart presentation while preserving downstream authorization and document rules.
+- Added a permission-gated transaction lookup endpoint covering barcode, item/SKU code, model, Arabic name, and English name; cost is omitted from responses unless the operator already holds a cost-bearing permission.
+- PHP/Blade/runtime contracts, compiled asset identity, and representative browser keyboard scenarios passed. One successful Node 20/Vite 8.2.0 production build emitted the final assets after the default Node 16 launcher failed before Vite could compile.
+- No schema, migration, database, production, deployment, tag, push, sudo, or root action occurred.

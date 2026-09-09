@@ -301,14 +301,13 @@ new #[Title('Purchase Invoices')] class extends Component
                 $this->lineItems[$index]['quantity'] = bcadd((string) $line['quantity'], '1', 6);
                 $this->itemEntry='';
                 $this->dispatch('invoice-line-focus', index: $index);
-                $this->dispatch('invoice-scanner-focus');
                 return;
             }
         }
         if (count($this->lineItems) === 1 && empty($this->lineItems[0]['product_id'])) $this->lineItems=[];
         $this->lineItems[] = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>(string)($product->average_cost ?? 0), 'base_consumer_price'=>(string)($product->sale_price ?? 0)];
         $this->itemEntry='';
-        $this->dispatch('invoice-scanner-focus');
+        $this->dispatch('invoice-line-focus', index: array_key_last($this->lineItems));
     }
 
     public function createQuickProduct(SaveProductAction $save, AddBarcodeAction $barcodes): void
@@ -733,7 +732,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     @if ($showFormModal)
         <flux:card class="space-y-5" aria-label="{{ __('Stage 1 — Purchase invoice') }}">
-            <form wire:submit="saveInvoice" class="space-y-5">
+            <form wire:submit="saveInvoice" class="space-y-5" data-product-line-editor data-autofocus="true">
                 <div><flux:heading size="xl">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><flux:text>{{ __('Scan or search products, then save the invoice safely as a draft.') }}</flux:text></div>
                 @if (filled($invoiceForm['purchase_order_id']))
                     <input type="hidden" wire:model="invoiceForm.purchase_order_id" />
@@ -763,10 +762,11 @@ new #[Title('Purchase Invoices')] class extends Component
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
+                        <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()">{{ __('Add item') }}</flux:button>
                     </div>
-                    <div x-data="{camera:false,stream:null,async start(){if(!('BarcodeDetector' in window)){alert(@js(__('Camera barcode scanning is not supported by this browser.')));return} this.camera=true; this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); this.$nextTick(()=>{this.$refs.video.srcObject=this.stream; this.detect()})},async detect(){if(!this.camera)return; const hits=await (new BarcodeDetector()).detect(this.$refs.video); if(hits[0]){this.stop(); await $wire.set('itemEntry',hits[0].rawValue); await $wire.addItemEntry();return} requestAnimationFrame(()=>this.detect())},stop(){this.camera=false;this.stream?.getTracks().forEach(track=>track.stop());this.stream=null} }" class="space-y-3">
+                    <div x-data="{camera:false,stream:null,async start(){if(!('BarcodeDetector' in window)){alert(@js(__('Camera barcode scanning is not supported by this browser.')));return} this.camera=true; this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); this.$nextTick(()=>{this.$refs.video.srcObject=this.stream; this.detect()})},async detect(){if(!this.camera)return; const hits=await (new BarcodeDetector()).detect(this.$refs.video); if(hits[0]){this.stop(); await $wire.set('itemEntry',hits[0].rawValue); await $wire.addItemEntry();return} requestAnimationFrame(()=>this.detect())},stop(){this.camera=false;this.stream?.getTracks().forEach(track=>track.stop());this.stream=null} }" class="space-y-3" data-product-line>
                         <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
-                            <div class="min-w-0"><flux:input id="purchase-item-entry" wire:model="itemEntry" wire:keydown.enter.prevent="addItemEntry" :label="__('Barcode or item code')" autocomplete="off" autofocus x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('input')?.focus())" /></div>
+                            <x-product-line-lookup wire:model="itemEntry" :label="__('Product')" :required="true" x-on:product-selected="$wire.selectSearchProduct($event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term)" x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                             @can('products_categories_brands.create')
                                 <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus" class="w-full sm:w-auto">{{ __('Create product') }}</flux:button>
                             @endcan
@@ -774,25 +774,21 @@ new #[Title('Purchase Invoices')] class extends Component
                         </div>
                         <div x-show="camera" x-cloak class="rounded-xl border p-3"><video x-ref="video" autoplay playsinline class="mx-auto max-h-64 rounded-lg"></video><flux:button type="button" class="mt-2" x-on:click="stop">{{ __('Close camera') }}</flux:button></div>
                     </div>
-                    <div class="relative" x-data="{timer:null,queue(value){clearTimeout(this.timer);this.timer=setTimeout(()=>$wire.searchProductsNow(value),175)},now(value){clearTimeout(this.timer);$wire.searchProductsNow(value)}}">
-                        <flux:input wire:model="productSearch" x-on:input="queue($event.target.value)" x-on:keydown.enter.prevent="now($event.target.value)" :label="__('Search products')" :description="__('Enter at least 3 characters or digits. Search covers name, model, item code, and barcode.')" autocomplete="off" />
-                        <div wire:loading.flex wire:target="searchProductsNow" class="mt-2 items-center gap-2 rounded-xl border p-3 text-sm text-text-muted"><flux:icon.loading class="size-4" />{{ __('Searching products…') }}</div>
-                        @if(mb_strlen(trim($productSearch)) >= 3)<div wire:key="product-search-{{$productSearchRequest}}" wire:loading.remove wire:target="searchProductsNow" class="mt-2 divide-y rounded-xl border bg-surface shadow-sm">@forelse($productResults as $result)<button type="button" wire:click="selectSearchProduct({{$result->id}})" class="grid w-full gap-2 p-3 text-start hover:bg-surface-muted sm:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)] sm:items-center"><strong class="truncate">{{ app()->getLocale()==='ar'?($result->name_ar?:'—'):($result->name_en?:'—') }}</strong><span class="grid gap-1 text-xs text-text-muted sm:grid-cols-3" dir="ltr"><span>{{ __('Model') }}: {{ $result->model_number ?: '—' }}</span><span>{{ __('Item code') }}: {{ $result->item_code }}</span><span>{{ __('Barcode') }}: {{ $result->barcodes->first()?->barcode ?: '—' }}</span></span></button>@empty<div class="p-3 text-sm text-text-muted">{{__('No matching products.')}}</div>@endforelse</div>@endif
-                    </div>
                     @foreach ($lineItems as $index => $line)
                         @continue(empty($line['product_id']))
-                        <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-8" wire:key="invoice-line-{{ $index }}">
-                            <div class="md:col-span-2" tabindex="-1" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$el.focus()"><flux:label>{{__('Product')}}</flux:label><div class="mt-2 rounded-lg border p-3">@php($lineProduct=$lineProducts->get((int)$line['product_id']))<strong>{{ app()->getLocale()==='ar' ? ($lineProduct?->name_ar ?: '—') : ($lineProduct?->name_en ?: '—') }}</strong><div class="text-xs text-text-muted" dir="ltr">{{ $lineProduct?->item_code }}</div></div></div>
-                            <flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" />
-                            <flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" />
-                            <flux:input wire:model="lineItems.{{ $index }}.base_consumer_price" type="number" min="0" step="0.001" :label="__('Base Consumer Price List 0')" :disabled="!Gate::allows('purchase_invoices.change_list0_price')" />
-                            <flux:select wire:model.live="lineItems.{{ $index }}.discount_type" :label="__('Discount type')">
+                        <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-9" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] }}">
+                            <div class="md:col-span-2"><flux:label>{{__('Product')}}</flux:label><div class="mt-2 rounded-lg border p-3">@php($lineProduct=$lineProducts->get((int)$line['product_id']))<strong>{{ app()->getLocale()==='ar' ? ($lineProduct?->name_ar ?: '—') : ($lineProduct?->name_en ?: '—') }}</strong><div class="text-xs text-text-muted" dir="ltr">{{ $lineProduct?->item_code }}</div></div></div>
+                            <div x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" data-line-quantity /></div>
+                            <flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" data-line-price data-price-kind="cost" />
+                            <flux:input wire:model="lineItems.{{ $index }}.base_consumer_price" type="number" min="0" step="0.001" :label="__('Base Consumer Price List 0')" :disabled="!Gate::allows('purchase_invoices.change_list0_price')" data-line-step />
+                            <flux:select wire:model.live="lineItems.{{ $index }}.discount_type" :label="__('Discount type')" data-line-discount-type data-line-step>
                                 <flux:select.option value="">{{ __('None') }}</flux:select.option>
                                 <flux:select.option value="percentage">{{ __('Percentage') }}</flux:select.option>
                                 <flux:select.option value="amount">{{ __('Amount') }}</flux:select.option>
                             </flux:select>
-                            <flux:input wire:model="lineItems.{{ $index }}.discount_value" type="number" min="0" step="0.0001" :label="__('Discount')" />
-                            <flux:input wire:model="lineItems.{{ $index }}.tax_rate" type="number" min="0" max="100" step="0.0001" :label="__('Tax %')" />
+                            <flux:input wire:model="lineItems.{{ $index }}.discount_value" type="number" min="0" step="0.0001" :label="__('Discount')" data-line-discount data-line-step />
+                            <flux:input wire:model="lineItems.{{ $index }}.tax_rate" type="number" min="0" max="100" step="0.0001" :label="__('Tax %')" data-line-tax data-line-final />
+                            <div><flux:label>{{ __('Line total') }}</flux:label><output class="mt-2 flex h-10 items-center justify-end rounded-lg bg-surface-muted px-3 font-mono" data-line-total>0.00</output></div>
                             <div class="flex items-end justify-end">
                                 <flux:button type="button" variant="danger" size="sm" wire:click="removeLine({{ $index }})" :disabled="count($lineItems) <= 1">{{ __('Remove') }}</flux:button>
                             </div>

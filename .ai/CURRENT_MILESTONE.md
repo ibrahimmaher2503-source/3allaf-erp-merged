@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-09
-**Status:** v0.1.22-hotfix24 is the active I4 release-candidate batch from exact Hotfix23 commit `ac812449e446f69301a0202cb540c625f71eb9d8`.
+**Status:** v0.1.22-hotfix25 is the active I4 release-candidate batch from exact Hotfix24 commit `fcb40cd596dd7b45a577befbdf13f46ead072860`.
 
-The bounded batch completes purchase-invoice Phase 1 product quick creation, the presentation-only Arabic cost-label correction, product-description Stage B placement, compact authenticated page framing and Reports Center, and affected Arabic localization. It preserves all Hotfix23 sidebar behavior and all POS, payment, refund, inventory, accounting, and permission boundaries.
+The bounded batch standardizes keyboard-first transactional product-line entry across purchasing, inventory, sales/returns, quotations, Party product lines, and POS without changing document business rules or schemas. It preserves Hotfix24 quick-create/compact UI, Hotfix23 sidebar behavior, Hotfix21 POS payment behavior, refund rules, localization, and server authorization.
 
-The single clean Vite build and single focused final verification passed, and the local release commit plus immutable operator handoff are complete. No migration or production action occurred; operator activation remains external and fail-closed.
+Focused PHP/Blade/runtime/compiled-asset checks, representative local browser keyboard contracts, release commit, and immutable offline packaging are complete. One successful Node 20 Vite production build produced the final assets after the host's default Node 16 launcher failed before compilation. No migration, production action, deployment, tag, or push occurred; operator promotion/activation remains external and fail-closed.

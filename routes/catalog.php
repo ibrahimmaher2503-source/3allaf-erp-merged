@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TransactionProductSearchController;
 use App\Modules\Catalog\Actions\DownloadProductImportErrorsAction;
 use App\Modules\Catalog\Actions\StageCatalogReferenceImportAction;
 use App\Modules\Catalog\Actions\StageSupplierImportAction;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Gate;
 $router = app('router');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router): void {
+    $router->get('transaction-products/search', TransactionProductSearchController::class)
+        ->name('transaction-products.search');
     $router->livewire('catalog/products', 'catalog::products')
         ->middleware('can:products_categories_brands.view')
         ->name('catalog.products');

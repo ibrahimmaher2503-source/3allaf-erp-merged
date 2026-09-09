@@ -2,6 +2,7 @@ import './dashboard-assistant';
 import './sidebar-navigation-state';
 import './pos-payment-calculator';
 import './offline-pos';
+import './keyboard-product-lines';
 
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {

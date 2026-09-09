@@ -1,13 +1,11 @@
-# Current Task - v0.1.22-hotfix24 product quick-create and compact UI
+# Current Task - v0.1.22-hotfix25 keyboard product lines
 
 **Date:** 2026-09-09
 **Change class:** I4
-**Source baseline:** exact Hotfix23 commit `ac812449e446f69301a0202cb540c625f71eb9d8`
-**Branch:** `hotfix/v0.1.22-hotfix24-product-quick-create-compact-ui`
-**Status:** Implementation, the one clean production Vite build, focused final verification, release commit, and immutable operator packaging are complete. Operator promotion/activation remain unexecuted.
+**Source baseline:** exact Hotfix24 commit `fcb40cd596dd7b45a577befbdf13f46ead072860`
+**Branch:** `hotfix/v0.1.22-hotfix25-keyboard-product-lines`
+**Status:** Implementation, focused local verification, release commit, and immutable operator packaging are complete. Promotion/activation remain unexecuted operator actions.
 
-Hotfix24 completes the existing purchase-invoice quick Product Card path with the Phase 1 identity, classification, and commercial fields; server authorization and duplicate validation; one atomic catalog/barcode transaction; selected-supplier prefill; and insertion into the in-memory draft without posting the invoice or replacing its entered state.
+Hotfix25 adds one authorized, bounded, bilingual product lookup and one reusable keyboard line-editor workflow to transactional product-entry screens in purchasing, inventory, sales/returns, quotations, Party consumables/invoices, and POS. Exact barcode/code entry, keyboard list selection, quantity/price progression, calculated line totals, one-at-a-time automatic blank rows, and parent-form submission protection are shared while downstream document actions retain their existing authorization, scope, pricing, tax, stock, validation, duplicate, and transaction rules.
 
-The release also changes only the Arabic presentation label for product cost to `سعر التكلفة`, moves the two optional product descriptions from Basic Identity to Stage B, compacts shared authenticated page framing/header spacing, removes the duplicated Reports catalog while retaining one permission-filtered selector and all filters/exports, and fills the affected report localization gaps. Hotfix23 sidebar geometry/restoration and POS/payment/refund behavior are preserved.
-
-No migration was added or run. Activation must accept only exact Hotfix23 commit `ac812449e446f69301a0202cb540c625f71eb9d8`, require migration 000111 already Ran without executing migrations, preflight runtime caches/rendering/packaged assets before switching, and roll back exactly to Hotfix23 on any failure.
+No migration was added or run. Activation must accept only exact Hotfix24 commit `fcb40cd596dd7b45a577befbdf13f46ead072860`, require migration 000111 already Ran without executing migrations, preflight runtime access/caches/bilingual component rendering/compiled asset identity before switching, and roll back exactly to Hotfix24 on any failure.

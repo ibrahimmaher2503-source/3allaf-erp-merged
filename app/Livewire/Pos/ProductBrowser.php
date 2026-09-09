@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Livewire\Pos;
 
 use App\Models\User;
-use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImage;
@@ -44,16 +43,11 @@ final class ProductBrowser extends Component
         if ($term === '') {
             return;
         }
-        $barcode = Barcode::query()->active()->where('barcode', $term)->with('product.parent')->first();
-        if ($barcode?->product?->isSellable()) {
-            $this->addProduct($barcode->product->id, $cart);
-            $this->search = '';
-
-            return;
-        }
-        $sku = Product::query()->sellable()->where('item_code', $term)->first();
-        if ($sku !== null) {
-            $this->addProduct((int) $sku->id, $cart);
+        $matches = Product::query()->sellable()
+            ->where(fn ($query) => $query->where('item_code', $term)->orWhere('model_number', $term)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $term)))
+            ->limit(2)->get();
+        if ($matches->count() === 1) {
+            $this->addProduct((int) $matches->first()->id, $cart);
             $this->search = '';
         }
     }
@@ -110,6 +104,7 @@ final class ProductBrowser extends Component
             $cart->add(request(), $user, $productId, $this->quantity);
             $this->dispatch('pos-cart-updated');
             $this->dispatch('notify', message: __('Product added to cart.'));
+            $this->dispatch('pos-product-search-focus');
             $this->openFamilyId = null;
             $this->selectedVariantId = null;
             $this->quantity = '1';

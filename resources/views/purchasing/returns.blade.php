@@ -432,7 +432,7 @@ new #[Title('Supplier Returns')] class extends Component
 
     @if ($showFormModal)
         <flux:modal wire:model.self="showFormModal" class="md:w-[min(96vw,900px)]">
-            <form wire:submit="saveDraft" class="space-y-5">
+            <form wire:submit="saveDraft" class="space-y-5" data-product-line-editor>
                 <flux:heading size="lg">{{ __('New supplier return draft') }}</flux:heading>
                 <flux:callout variant="warning" icon="shield-check">
                     {{ __('The source invoice and line cost are server-authoritative. The cost field below is read-only and cannot be replaced with current WAC.') }}
@@ -453,13 +453,15 @@ new #[Title('Supplier Returns')] class extends Component
                     <div class="space-y-3">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
                         @foreach ($returnLines as $index => $line)
-                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-4" wire:key="return-line-{{ $line['purchase_invoice_line_id'] }}">
+                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-5" wire:key="return-line-{{ $line['purchase_invoice_line_id'] }}" data-product-line data-product-value="{{ $line['purchase_invoice_line_id'] }}">
                                 <div class="md:col-span-2">
-                                    <flux:text class="font-medium">{{ $line['product'] }}</flux:text>
+                                    <flux:label>{{ __('Product') }}</flux:label>
+                                    <flux:text class="mt-2 font-medium">{{ $line['product'] }}</flux:text>
                                     <flux:text size="sm">{{ __('Eligible quantity') }}: {{ $line['available'] }}</flux:text>
                                 </div>
-                                <flux:input wire:model="returnLines.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Return quantity')" />
-                                <flux:input wire:model="returnLines.{{ $index }}.unit_cost" type="text" readonly :label="__('Original unit cost')" />
+                                <flux:input wire:model="returnLines.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" data-line-quantity />
+                                <flux:input wire:model="returnLines.{{ $index }}.unit_cost" type="text" readonly :label="__('Unit cost')" data-line-price data-price-kind="cost" />
+                                <div><flux:label>{{ __('Line total') }}</flux:label><output class="mt-2 flex h-10 items-center justify-end rounded-lg bg-surface-muted px-3 font-mono" data-line-total>0.00</output></div>
                             </div>
                         @endforeach
                     </div>

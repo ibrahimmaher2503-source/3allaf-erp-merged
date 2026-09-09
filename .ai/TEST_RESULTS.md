@@ -217,3 +217,11 @@
 - PASS: Hotfix23 sidebar layout/restoration runtime and asset contracts; cash/split-payment contract; unchanged POS/refund/inventory source boundary.
 - PASS: PHP syntax, Blade compilation/compiled syntax, Vite asset integrity, locale JSON, Git diff hygiene, and operator Bash syntax.
 - Exactly one clean Vite production build ran. Automated tests and browser checks were not created or run. No database or migration command ran.
+# 2026-09-09 — v0.1.22-hotfix25 focused verification
+
+- PASS: PHP syntax for the changed controller, POS Livewire class, version, and route; full Blade cache compilation; both locale JSON files; and Git diff hygiene.
+- PASS: bilingual runtime rendering of the reusable combobox, exact named-route/controller binding, and final compiled keyboard asset (`app-CYFvxL4g.js`, SHA-256 `461db02ecf0d732da400cf6230deb73d18171c26e14854553685e7445deb4b33`).
+- PASS: representative local browser contracts for purchase-order exact barcode selection, selection-to-quantity focus, quantity-to-cost focus, live total, single automatic next row, repeated-Enter de-duplication, multiple-result arrow/Enter selection, inventory automatic next row, purchase-invoice price-to-final-field progression, Escape, and prevention of parent-form submission. A separate Arabic RTL run passed direction and Arabic no-results text. No screenshot was taken.
+- PASS: one successful clean Node 20.20.0 / Vite 8.2.0 production build. An initial invocation selected host Node 16.20.2 and failed on missing `node:util.styleText` before Vite compilation or asset emission; it was corrected using the already-installed Node 20 binary, with no package installation.
+- Existing focused source tests: 23 executed, 15 passed, 7 failed, 1 errored, 197 assertions. The non-passing contracts are stale Hotfix24/baseline expectations: removed legacy invoice-search markup, old version markers, unrelated old POS markers, and a pre-existing missing purchasing fixture. Tests were not edited or broadened to manufacture a pass.
+- No database or migration command ran. Migration 000111 remains an activation precondition and must already be `Ran`; this local session did not query production or claim live migration status.

@@ -16,7 +16,7 @@
                 <flux:heading size="lg">{{ __('New return or exchange') }}</flux:heading>
                 <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ __('For an exchange, add every replacement line below. Any difference requires an active payment method when the approved return is completed.') }}</p>
 
-                <form method="POST" action="{{ route('returns.store') }}" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" x-data="{ settlement: @js(old('settlement_type', 'cash_refund')), extraLines: [] }">
+                <form method="POST" action="{{ route('returns.store') }}" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" x-data="{ settlement: @js(old('settlement_type', 'cash_refund')) }" data-product-line-editor data-next-index="1">
                     @csrf
                     <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
 
@@ -68,34 +68,14 @@
                     <fieldset x-show="settlement === 'exchange'" x-cloak class="sm:col-span-2 lg:col-span-4 rounded-lg border border-teal-200 p-4 dark:border-teal-900">
                         <legend class="px-1 text-sm font-semibold">{{ __('Replacement lines') }}</legend>
                         <p class="mb-3 text-sm text-zinc-600 dark:text-zinc-400">{{ __('Replacement stock leaves the selling store only when this return is completed.') }}</p>
-                        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
-                            <flux:select name="exchange_lines[0][product_id]" label="{{ __('Replacement product') }}">
-                                <option value="">{{ __('Choose active product') }}</option>
-                                @foreach($replacementProducts as $product)
-                                    <option value="{{ $product->id }}">{{ $product->item_code }} · {{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</option>
-                                @endforeach
-                            </flux:select>
-                            <flux:input name="exchange_lines[0][quantity]" type="number" min="1" step="1" value="1" label="{{ __('Quantity') }}" />
+                        <div class="grid gap-3 sm:grid-cols-12" data-product-line>
+                            <div class="sm:col-span-5"><x-product-line-lookup name="exchange_lines[0][product_id]" :label="__('Product')" /></div>
+                            <div class="sm:col-span-2"><label class="text-xs font-semibold">{{ __('Quantity') }}</label><input name="exchange_lines[0][quantity]" data-line-quantity type="number" min="1" step="1" value="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300"></div>
+                            <div class="sm:col-span-2"><span class="block text-xs font-semibold">{{ __('Unit price') }}</span><span class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-xs">{{ __('Calculated at completion') }}</span></div>
+                            <div class="sm:col-span-2"><span class="block text-xs font-semibold">{{ __('Line total') }}</span><span class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3">—</span></div>
                         </div>
-                        <template x-for="(line, index) in extraLines" :key="index">
-                            <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
-                                <label class="grid gap-1 text-sm font-medium">
-                                    <span>{{ __('Replacement product') }}</span>
-                                    <select class="rounded-lg border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900" :name="`exchange_lines[${index + 1}][product_id]`" x-model="line.product_id">
-                                        <option value="">{{ __('Choose active product') }}</option>
-                                        @foreach($replacementProducts as $product)
-                                            <option value="{{ $product->id }}">{{ $product->item_code }} · {{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="grid gap-1 text-sm font-medium">
-                                    <span>{{ __('Quantity') }}</span>
-                                    <input class="rounded-lg border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900" :name="`exchange_lines[${index + 1}][quantity]`" x-model="line.quantity" type="number" min="1" step="1">
-                                </label>
-                                <button type="button" class="self-end text-sm text-red-700 underline" @click="extraLines.splice(index, 1)">{{ __('Remove') }}</button>
-                            </div>
-                        </template>
-                        <button type="button" class="mt-3 text-sm text-teal-700 underline" @click="extraLines.push({ product_id: '', quantity: '1' })">{{ __('Add replacement line') }}</button>
+                        <template data-line-template><div class="mt-3 grid gap-3 sm:grid-cols-12" data-product-line><div class="sm:col-span-5"><x-product-line-lookup name="exchange_lines[__INDEX__][product_id]" :label="__('Product')" /></div><div class="sm:col-span-2"><label class="text-xs font-semibold">{{ __('Quantity') }}</label><input name="exchange_lines[__INDEX__][quantity]" data-line-quantity type="number" min="1" step="1" value="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300"></div><div class="sm:col-span-2"><span class="block text-xs font-semibold">{{ __('Unit price') }}</span><span class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-xs">{{ __('Calculated at completion') }}</span></div><div class="sm:col-span-2"><span class="block text-xs font-semibold">{{ __('Line total') }}</span><span class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3">—</span></div><button type="button" data-remove-line class="self-end text-sm text-red-700 underline">{{ __('Remove') }}</button></div></template>
+                        <button type="button" data-add-line class="mt-3 text-sm text-teal-700 underline">{{ __('Add item') }}</button>
                     </fieldset>
 
                     <flux:textarea name="reason" label="{{ __('Reason') }}" required class="sm:col-span-2" />
