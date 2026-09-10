@@ -79,6 +79,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:purchase_orders.view')
         ->name('purchasing.orders');
 
+    $router->livewire('purchasing/orders/create', 'purchasing::orders')
+        ->middleware('can:purchase_orders.create')
+        ->name('purchasing.orders.create');
+
     $router->livewire('purchasing/invoices', 'purchasing::invoices')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices');

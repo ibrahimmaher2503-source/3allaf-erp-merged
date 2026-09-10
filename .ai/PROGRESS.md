@@ -304,3 +304,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added localized supplier-change confirmation that clears affected lines/prices, preserved supplier-return source-invoice cost constraints, and retained Hotfix25 behavior outside purchasing.
 - Focused syntax, Blade compilation, dependency-free interaction tests, runtime rendering/asset checks, locale JSON, and diff hygiene passed. Exactly one Node 20/Vite 8.2.0 production build ran.
 - No migration was added or run. No production access, deployment, promotion, activation, backup, service action, sudo, root, push, tag, browser/package installation, or remote operation occurred.
+
+# 2026-09-10 — v0.1.22-hotfix27 purchase-order full-page search
+
+- Reserved a fixed logical camera-button area in the shared purchasing lookup and applied direction-safe logical padding/alignment so Arabic, English, numeric, and mixed queries remain visible responsively.
+- Changed contained server matching and browser selection state so `001`, narrowed identifiers, and Arabic names update incrementally; multiple matches remain unselected until an arrow/mouse choice, while one exact unique barcode, SKU, supplier code, or model may select immediately.
+- Added the permission-gated full-page purchase-order create route and adjacent bilingual sidebar item. The page reuses the existing Livewire component, validation, supplier/store/line state, supplier pricing, totals, and draft-save action.
+- Focused syntax, 721-view Blade compilation, route/runtime rendering, dependency-free interaction tests, localization, compiled-asset integrity, and diff hygiene passed. Exactly one clean Node 20/Vite 8.2.0 production build ran.
+- No migration was added or run. No production access, deployment, promotion, activation, database change, service action, sudo, root, push, tag, browser/package installation, or remote operation occurred.

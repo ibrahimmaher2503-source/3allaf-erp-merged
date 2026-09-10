@@ -65,28 +65,34 @@ final class TransactionProductSearchController extends Controller
         $escaped = addcslashes($term, '\\%_');
         $prefix = $escaped.'%';
         $contained = '%'.$escaped.'%';
-        $tokens = collect(preg_split('/\s+/u', $term) ?: [])->filter()->take(4);
-
-        $products = Product::query()->sellable()
+        $productsQuery = Product::query()->sellable()
             ->with([
                 'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary'),
                 'productSuppliers' => fn ($query) => $query->where('supplier_id', $supplierId),
             ])
             ->when($supplierOnly, fn ($query) => $query->whereHas('productSuppliers', fn ($relations) => $relations->where('supplier_id', $supplierId)))
             ->when($sourceInvoice !== null, fn ($query) => $query->whereIn('products.id', PurchaseInvoiceLine::query()->where('purchase_invoice_id', $sourceInvoice->id)->select('product_id')))
-            ->where(function ($query) use ($term, $prefix, $contained, $tokens, $supplierId): void {
+            ->where(function ($query) use ($term, $prefix, $contained, $supplierId): void {
                 $query->where('item_code', $term)->orWhere('model_number', $term)
                     ->orWhere('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)
                     ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where(fn ($barcode) => $barcode->where('barcode', 'like', $prefix)->orWhere('barcode', 'like', $contained)))
-                    ->orWhere(function ($names) use ($tokens): void {
-                        foreach ($tokens as $token) {
-                            $value = addcslashes((string) $token, '\\%_');
-                            $names->orWhere('name_ar', 'like', '%'.$value.'%')->orWhere('name_en', 'like', '%'.$value.'%');
-                        }
-                    })
+                    ->orWhere('name_ar', 'like', $contained)->orWhere('name_en', 'like', $contained)
                     ->orWhere('item_code', 'like', $contained)->orWhere('model_number', 'like', $contained)
                     ->when($supplierId > 0, fn ($query) => $query->orWhereHas('productSuppliers', fn ($relations) => $relations->where('supplier_id', $supplierId)->where('supplier_item_code', 'like', $contained)));
+            });
+
+        $exactProductIds = (clone $productsQuery)
+            ->where(function ($query) use ($term, $supplierId): void {
+                $query->where('item_code', $term)
+                    ->orWhere('model_number', $term)
+                    ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $term))
+                    ->when($supplierId > 0, fn ($query) => $query->orWhereHas('productSuppliers', fn ($relations) => $relations->where('supplier_id', $supplierId)->where('supplier_item_code', $term)));
             })
+            ->limit(2)
+            ->pluck('products.id');
+        $uniqueExactProductId = $exactProductIds->count() === 1 ? (int) $exactProductIds->first() : null;
+
+        $products = $productsQuery
             ->orderByRaw('CASE WHEN item_code = ? OR model_number = ? OR EXISTS (SELECT 1 FROM barcodes WHERE barcodes.product_id = products.id AND barcodes.status = ? AND barcodes.barcode = ?) THEN 0 WHEN item_code LIKE ? OR model_number LIKE ? THEN 1 ELSE 2 END', [$term, $term, 'active', $term, $prefix, $prefix])
             ->orderBy('item_code')
             ->limit(20)
@@ -98,7 +104,7 @@ final class TransactionProductSearchController extends Controller
 
         $supplierProductsEmpty = $supplierOnly && ! ProductSupplier::query()->where('supplier_id', $supplierId)->exists();
 
-        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices): array {
+        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId): array {
             $barcodes = $product->barcodes->pluck('barcode')->filter()->values();
             $supplierProduct = $product->productSuppliers->first();
             $identifiers = collect([$product->item_code, $product->model_number, $supplierProduct?->supplier_item_code])->merge($barcodes)->filter()->map(fn ($value) => mb_strtolower(trim((string) $value)))->unique()->values();
@@ -121,6 +127,7 @@ final class TransactionProductSearchController extends Controller
                 'price_currency' => $price['price_currency'],
                 'unit_price' => $product->sale_price,
                 'exact' => $identifiers->contains(mb_strtolower($term)),
+                'exact_unique' => $uniqueExactProductId === $product->id,
             ];
         })->values(), 'meta' => ['supplier_products_empty' => $supplierProductsEmpty]]);
     }

@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-10
-**Status:** v0.1.22-hotfix26 is the I4 release-candidate batch from exact Hotfix25 commit `510241c162056a305ce291286b5b0a4b22cb9518`.
+**Status:** v0.1.22-hotfix27 is the I4 release-candidate batch from exact Hotfix26 commit `2aae45258b2ebc0ef71b140567397990cea74b63`.
 
-The bounded batch replaces purchasing product selectors with one reusable supplier-aware searchable combobox while preserving Hotfix25 behavior outside purchasing and all existing purchasing authorization, source-document, unit, tax, total, inventory, and approval rules. The existing many-to-many supplier-product relation and approved purchase-invoice history are reused; no schema change is required.
+The bounded batch repairs purchasing lookup geometry and multi-match keyboard behavior, and moves purchase-order creation from a modal trigger to a dedicated responsive route with the same authorization and business logic. Supplier filtering, authorized scope, supplier prices, camera/external scanning, row progression, totals, validation, draft persistence, and unrelated purchasing screens remain on the Hotfix26 contracts.
 
-Focused PHP/Blade/JavaScript/runtime/locale checks and exactly one Node 20 Vite production build passed. The database-backed feature contract was created but could not be executed because this isolated worktree has no authorized MariaDB credentials; no database was accessed or changed. Operator promotion/activation remains external and fail-closed.
+Focused PHP/Blade/JavaScript/runtime/route/locale checks and exactly one clean Node 20 Vite production build passed. The dedicated database-backed feature test was updated but could not run because the isolated worktree has no authorized MariaDB credentials; its attempt failed before fixtures or database changes. Operator promotion/activation remains external and fail-closed.

@@ -34,6 +34,8 @@ new #[Title('Purchase Orders')] class extends Component
 
     public bool $showFormModal = false;
 
+    public bool $createPage = false;
+
     public ?int $editingOrderId = null;
 
     public array $orderForm = [
@@ -74,10 +76,15 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function mount(): void
     {
-        Gate::authorize('purchase_orders.view');
-        $this->orderForm['order_date'] = now()->toDateString();
+        $this->createPage = request()->routeIs('purchasing.orders.create');
+        Gate::authorize($this->createPage ? 'purchase_orders.create' : 'purchase_orders.view');
         $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id(auth()->user());
         $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
+        if ($this->createPage) {
+            $this->initializeCreateForm();
+        } else {
+            $this->orderForm['order_date'] = now()->toDateString();
+        }
     }
 
     public function updatingSearch(): void
@@ -95,10 +102,8 @@ new #[Title('Purchase Orders')] class extends Component
         $this->resetPage();
     }
 
-    public function openCreateModal(): void
+    private function initializeCreateForm(): void
     {
-        Gate::authorize('purchase_orders.create');
-
         $this->resetValidation();
         $this->editingOrderId = null;
         $this->paymentTermsManuallyEdited = false;
@@ -115,7 +120,6 @@ new #[Title('Purchase Orders')] class extends Component
         $this->confirmedSupplierId = '';
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
-        $this->showFormModal = true;
     }
 
     public function openEditModal(int $id): void
@@ -277,6 +281,9 @@ new #[Title('Purchase Orders')] class extends Component
 
             $this->showFormModal = false;
             Flux::toast($this->editingOrderId ? __('Purchase Order updated successfully.') : __('Purchase Order :number created as draft.', ['number' => $order->po_number]), variant: 'success');
+            if ($this->createPage) {
+                $this->redirectRoute('purchasing.orders', navigate: true);
+            }
         } catch (Throwable $e) {
             Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
@@ -367,6 +374,23 @@ new #[Title('Purchase Orders')] class extends Component
     public function render(PurchasingDashboard $dashboard): View
     {
         $user = auth()->user();
+        $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
+        $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
+        $products = Product::query()->sellable()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
+        $formSubtotal = collect($this->lineItems)->sum(fn (array $item): float => (float) ($item['quantity_ordered'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
+
+        if ($this->createPage) {
+            return view('purchasing.orders', [
+                'suppliers' => $suppliers,
+                'stores' => $stores,
+                'products' => $products,
+                'formSubtotal' => $formSubtotal,
+                'viewingOrder' => null,
+                'auditLogs' => collect(),
+                'canPrint' => false,
+            ]);
+        }
+
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'lines']);
 
         if ($user && ! $user->is_super_admin) {
@@ -401,10 +425,6 @@ new #[Title('Purchase Orders')] class extends Component
         }
 
         $orders = $query->latest('id')->paginate(15);
-        $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
-        $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
-        $products = Product::query()->sellable()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
-
         $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product']);
         if ($user && ! $user->is_super_admin) {
             $viewingOrderQuery->where(function ($scope) use ($user) {
@@ -419,14 +439,6 @@ new #[Title('Purchase Orders')] class extends Component
             ->where('source_id', (string) $viewingOrder->id)
             ->latest('id')
             ->get() : collect();
-
-        // Calculate preview totals for current form lines
-        $formSubtotal = 0;
-        foreach ($this->lineItems as $item) {
-            $qty = (float) ($item['quantity_ordered'] ?? 0);
-            $cost = (float) ($item['unit_cost'] ?? 0);
-            $formSubtotal += ($qty * $cost);
-        }
 
         return view('purchasing.orders', [
             'orders' => $orders,
@@ -447,28 +459,37 @@ new #[Title('Purchase Orders')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="app()->getLocale() === 'ar' ? 'نظرة عامة على المشتريات' : __('Purchasing overview')"
-    :description="app()->getLocale() === 'ar' ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.')"
+    :title="$createPage ? __('New Purchase Order') : (app()->getLocale() === 'ar' ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
+    :description="$createPage ? __('Enter supplier, destination store, order dates, and item lines.') : (app()->getLocale() === 'ar' ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.'))"
     :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="purchasing-screen"
     data-guide="po-header"
 >
     <x-slot:actions>
+        @if ($createPage)
+            <flux:button href="{{ route('purchasing.orders') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Purchase Order Overview') }}</flux:button>
+        @else
         <x-tables.resource-toolbar filter-target="po-filters">
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="clipboard-document-list" data-guide="tsk-015-readiness-link">
             {{ app()->getLocale() === 'ar' ? 'فواتير الشراء' : 'Purchase invoices' }}
         </flux:button>
         @if ($canCreate)
             <div>
-                <flux:button variant="primary" icon="plus" wire:click="openCreateModal" data-guide="po-create-action">
+                <flux:button variant="primary" icon="plus" href="{{ route('purchasing.orders.create') }}" wire:navigate data-guide="po-create-action">
                     {{ __('New Purchase Order') }}
                 </flux:button>
             </div>
         @endif
         </x-tables.resource-toolbar>
+        @endif
     </x-slot:actions>
 
+    @if ($createPage)
+        <flux:card class="p-4 sm:p-6" data-guide="po-create-page">
+            @include('purchasing.partials.order-form', ['fullPage' => true])
+        </flux:card>
+    @else
     <x-purchasing.dashboard :dashboard="$dashboard" />
 
     <!-- Filters Bar -->
@@ -692,6 +713,7 @@ new #[Title('Purchase Orders')] class extends Component
             </div>
         </form>
     </flux:modal>
+    @endif
 
     <flux:modal wire:model.self="showSupplierChangeConfirmation" class="md:max-w-lg">
         <div class="space-y-5">

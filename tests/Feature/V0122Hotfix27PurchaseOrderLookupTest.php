@@ -12,6 +12,7 @@ use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SyncSupplierProductAssociation;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use Illuminate\Contracts\Console\Kernel;
@@ -19,7 +20,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 
-final class V0122Hotfix26SupplierProductLookupTest extends TestCase
+final class V0122Hotfix27PurchaseOrderLookupTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -41,30 +42,42 @@ final class V0122Hotfix26SupplierProductLookupTest extends TestCase
         $this->approvedInvoice($supplier, $store, $linked, '888.0000', '2026-09-10', 'EGP', 'cancelled');
 
         $filtered = $this->actingAs($actor)->getJson(route('transaction-products.search', [
-            'q' => 'Robo', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 1, 'currency_code' => 'EGP',
+            'q' => '001', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 1, 'currency_code' => 'EGP',
         ]))->assertOk()->json('data');
         self::assertSame([$linked->id], array_column($filtered, 'id'));
         self::assertSame('17.7500', $filtered[0]['unit_cost']);
         self::assertSame('last_supplier_price', $filtered[0]['price_source']);
         self::assertSame('2026-09-02', $filtered[0]['price_date']);
         self::assertSame('piece', $filtered[0]['unit_of_measure']);
-        self::assertSame('SUP-ROBOT-7', $filtered[0]['supplier_item_code']);
+        self::assertSame('SUP-001-7', $filtered[0]['supplier_item_code']);
 
         $all = $this->getJson(route('transaction-products.search', [
-            'q' => 'Robot', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0,
+            'q' => '001', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0,
         ]))->assertOk()->json('data');
         self::assertEqualsCanonicalizing([$linked->id, $other->id], array_column($all, 'id'));
 
         $narrowed = $this->getJson(route('transaction-products.search', [
-            'q' => 'Robot Alpha', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0,
+            'q' => '0012', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0,
         ]))->assertOk()->json('data');
-        self::assertSame([$linked->id], array_column($narrowed, 'id'));
+        self::assertSame([$other->id], array_column($narrowed, 'id'));
+
+        $arabicNames = $this->getJson(route('transaction-products.search', [
+            'q' => 'منتج', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0,
+        ]))->assertOk()->json('data');
+        self::assertEqualsCanonicalizing([$linked->id, $other->id], array_column($arabicNames, 'id'));
 
         $exactBarcode = $this->getJson(route('transaction-products.search', [
             'q' => '6221234567890', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 1,
         ]))->assertOk()->json('data');
         self::assertCount(1, $exactBarcode);
         self::assertTrue($exactBarcode[0]['exact']);
+        self::assertTrue($exactBarcode[0]['exact_unique']);
+
+        $exactSupplierCode = $this->getJson(route('transaction-products.search', [
+            'q' => 'SUP-001-7', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 1,
+        ]))->assertOk()->json('data');
+        self::assertSame([$linked->id], array_column($exactSupplierCode, 'id'));
+        self::assertTrue($exactSupplierCode[0]['exact_unique']);
     }
 
     public function test_supplier_return_lookup_is_source_invoice_and_store_scope_constrained(): void
@@ -73,7 +86,7 @@ final class V0122Hotfix26SupplierProductLookupTest extends TestCase
         $invoice = $this->approvedInvoice($supplier, $store, $linked, '12.0000', '2026-09-03', 'EGP', 'approved');
 
         $data = $this->actingAs($actor)->getJson(route('transaction-products.search', [
-            'q' => 'Robot', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0, 'purchase_invoice_id' => $invoice->id,
+            'q' => '001', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 0, 'purchase_invoice_id' => $invoice->id,
         ]))->assertOk()->json('data');
 
         self::assertSame([$linked->id], array_column($data, 'id'));
@@ -85,12 +98,34 @@ final class V0122Hotfix26SupplierProductLookupTest extends TestCase
         [$actor, $supplier, , $linked, $other] = $this->fixtures();
         $unauthorized = User::factory()->create(['status' => 'active']);
 
-        $this->actingAs($unauthorized)->getJson(route('transaction-products.search', ['q' => 'Robot']))->assertForbidden();
+        $this->actingAs($unauthorized)->getJson(route('transaction-products.search', ['q' => '001']))->assertForbidden();
         self::assertFalse(ProductSupplier::query()->where('supplier_id', $supplier->id)->where('product_id', $other->id)->exists());
 
         $this->actingAs($actor);
         app(SyncSupplierProductAssociation::class)->associate($supplier->id, $other->id, $actor->id);
         self::assertTrue(ProductSupplier::query()->where('supplier_id', $supplier->id)->where('product_id', $other->id)->exists());
+    }
+
+    public function test_authorized_create_route_renders_full_page_and_shared_action_saves_a_draft(): void
+    {
+        [$actor, $supplier, $store, $linked] = $this->fixtures();
+        $unauthorized = User::factory()->create(['status' => 'active']);
+
+        $this->actingAs($unauthorized)->get(route('purchasing.orders.create'))->assertForbidden();
+        $this->actingAs($actor)->get(route('purchasing.orders.create'))
+            ->assertOk()
+            ->assertSee('data-guide="po-create-page"', false)
+            ->assertSee('data-product-line-editor', false);
+
+        $order = app(SavePurchaseOrderAction::class)->execute(
+            ['supplier_id' => $supplier->id, 'store_id' => $store->id, 'order_date' => '2026-09-10', 'notes' => 'Hotfix27 full-page draft'],
+            [['product_id' => $linked->id, 'quantity_ordered' => 2, 'unit_cost' => '17.7500']],
+        );
+
+        self::assertSame('draft', $order->status);
+        self::assertSame($supplier->id, $order->supplier_id);
+        self::assertCount(1, $order->lines);
+        self::assertSame('35.5000', $order->subtotal);
     }
 
     /** @return array{User, Supplier, Store, Product, Product} */
@@ -101,11 +136,11 @@ final class V0122Hotfix26SupplierProductLookupTest extends TestCase
         $company = Company::factory()->create();
         $branch = Branch::factory()->create(['company_id' => $company->id]);
         $store = Store::factory()->warehouse()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
-        $supplier = Supplier::query()->create(['code' => 'SUP-H26-'.str()->random(6), 'name_ar' => 'مورد الروبوت', 'name_en' => 'Robot Supplier', 'status' => 'active']);
-        $linked = Product::factory()->create(['item_code' => 'H26-ROBOT-A-'.str()->random(4), 'model_number' => 'MODEL-A7', 'name_ar' => 'روبوت ألفا', 'name_en' => 'Robot Alpha', 'unit_of_measure' => 'piece', 'average_cost' => '9.50']);
-        $other = Product::factory()->create(['item_code' => 'H26-ROBOT-B-'.str()->random(4), 'model_number' => 'MODEL-B8', 'name_ar' => 'روبوت بيتا', 'name_en' => 'Robot Beta', 'unit_of_measure' => 'piece', 'average_cost' => '8.50']);
+        $supplier = Supplier::query()->create(['code' => 'SUP-H27-'.str()->random(6), 'name_ar' => 'مورد المنتجات', 'name_en' => 'Product Supplier', 'status' => 'active']);
+        $linked = Product::factory()->create(['item_code' => 'H27-001-A-'.str()->random(4), 'model_number' => 'MODEL-A1', 'name_ar' => 'منتج ألفا 001', 'name_en' => 'Product Alpha 001', 'unit_of_measure' => 'piece', 'average_cost' => '9.50']);
+        $other = Product::factory()->create(['item_code' => 'H27-B-'.str()->random(4), 'model_number' => 'MODEL-0012-B', 'name_ar' => 'منتج بيتا', 'name_en' => 'Product Beta', 'unit_of_measure' => 'piece', 'average_cost' => '8.50']);
         Barcode::query()->create(['product_id' => $linked->id, 'barcode' => '6221234567890', 'source' => 'supplier', 'status' => 'active', 'is_primary' => true]);
-        ProductSupplier::query()->create(['product_id' => $linked->id, 'supplier_id' => $supplier->id, 'supplier_item_code' => 'SUP-ROBOT-7', 'is_preferred' => false, 'created_by' => $actor->id, 'updated_by' => $actor->id]);
+        ProductSupplier::query()->create(['product_id' => $linked->id, 'supplier_id' => $supplier->id, 'supplier_item_code' => 'SUP-001-7', 'is_preferred' => false, 'created_by' => $actor->id, 'updated_by' => $actor->id]);
 
         return [$actor, $supplier, $store, $linked, $other];
     }
@@ -113,7 +148,7 @@ final class V0122Hotfix26SupplierProductLookupTest extends TestCase
     private function approvedInvoice(Supplier $supplier, Store $store, Product $product, string $cost, string $date, string $currency, string $status): PurchaseInvoice
     {
         $invoice = PurchaseInvoice::query()->create([
-            'invoice_number' => 'H26-INV-'.str()->random(8),
+            'invoice_number' => 'H27-INV-'.str()->random(8),
             'supplier_id' => $supplier->id,
             'store_id' => $store->id,
             'invoice_date' => $date,

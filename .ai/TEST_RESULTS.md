@@ -235,3 +235,12 @@
 - NOT RUN: the new database-backed purchase order/invoice/return lookup feature test. Both available local MariaDB identities rejected authentication and no authorized isolated database credentials were present; no database was created, queried, migrated, or mutated.
 - INFO: an optional focused PHPStan attempt did not complete cleanly: `/tmp` cache capacity and the default 128 MB worker limit were corrected, then analysis reported existing Eloquent relation-inference findings plus joined-column inference in the new query. No PHPStan PASS is claimed.
 - Migration status: no Hotfix26 migration exists or ran. Migration 000111 was not queried locally and remains a mandatory already-`Ran` activation precondition.
+
+# 2026-09-10 — v0.1.22-hotfix27 focused verification
+
+- PASS: changed PHP/Blade syntax, 721 registered Blade cache files, Arabic/English locale JSON, named route registration, and Git diff hygiene.
+- PASS: dependency-free JavaScript behavior contract, 3 tests / 3 passed, covering continuous narrowing, duplicate/stale response protection, no implicit first-result Enter selection, Arrow Up/Down plus Enter, Escape, exact unique external-scanner selection, parent-submit prevention, row progression, and camera fallback/cleanup.
+- PASS: bilingual rendered input geometry (`dir=auto`, logical start/end padding, fixed camera area), full-page create route reuse and `purchase_orders.create` middleware, adjacent localized navigation item, and compiled Vite asset contract. Final app JavaScript SHA-256: `b06582b6a9bf032f7d37ad6e94dffc3936a07300e7239c75c960f899efeeb5f7`.
+- PASS: exactly one clean Node 20/Vite 8.2.0 production build after the functional frontend edits.
+- BLOCKED BEFORE DATABASE ACCESS: the updated focused MySQL feature contract (4 tests) could not authenticate to dedicated database `toyjoy_testing` because no authorized local credentials exist in the isolated worktree. It made zero assertions, fixtures, migrations, or database changes; no rerun was attempted.
+- Migration status: no Hotfix27 migration exists or ran. Migration 000111 was not queried locally and remains a mandatory already-`Ran` activation precondition.

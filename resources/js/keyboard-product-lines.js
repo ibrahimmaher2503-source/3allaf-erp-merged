@@ -11,6 +11,8 @@ class ProductLookup {
         this.error = root.querySelector('[data-product-error]');
         this.items = [];
         this.active = -1;
+        this.explicitHighlight = false;
+        this.lastResolvedTerm = null;
         this.timer = null;
         this.controller = null;
         this.pendingKey = null;
@@ -47,6 +49,10 @@ class ProductLookup {
             this.renderMessage(this.root.dataset.messageSupplierRequired);
             return;
         }
+        this.items = [];
+        this.active = -1;
+        this.explicitHighlight = false;
+        this.renderMessage(this.root.dataset.messageLoading);
         this.timer = setTimeout(() => this.search(term), 120);
     }
 
@@ -78,9 +84,10 @@ class ProductLookup {
             const payload = await response.json();
             if (sequence !== this.requestSequence || term !== this.input.value.trim()) return;
             this.items = payload.data ?? [];
-            const exact = this.items.filter((item) => item.exact);
-            if (exact.length === 1 && (commitExact || exact[0].barcodes?.some((barcode) => barcode.toLocaleLowerCase() === term.toLocaleLowerCase()) || exact[0].item_code?.toLocaleLowerCase() === term.toLocaleLowerCase())) {
-                this.select(exact[0]);
+            this.lastResolvedTerm = term;
+            const uniqueExact = this.items.find((item) => item.exact_unique === true);
+            if (uniqueExact) {
+                this.select(uniqueExact);
                 return;
             }
             if (commitExact && this.items.length === 0) {
@@ -100,7 +107,8 @@ class ProductLookup {
     }
 
     render(meta = {}) {
-        this.active = this.items.length ? 0 : -1;
+        this.active = -1;
+        this.explicitHighlight = false;
         if (!this.items.length) {
             const message = meta.supplier_required
                 ? this.root.dataset.messageSupplierRequired
@@ -108,16 +116,22 @@ class ProductLookup {
             this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(message)}</p>`;
         } else {
             this.results.innerHTML = this.items.map((item, index) => {
-                const identity = `<strong>${escapeHtml(document.documentElement.lang === 'ar' ? (item.name_ar || item.name_en) : (item.name_en || item.name_ar))}</strong><small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
+                const arabic = item.name_ar || item.name_en;
+                const english = item.name_en || item.name_ar;
+                const primaryName = document.documentElement.lang === 'ar' ? arabic : english;
+                const secondaryName = document.documentElement.lang === 'ar' ? english : arabic;
+                const secondaryDirection = document.documentElement.lang === 'ar' ? 'ltr' : 'rtl';
+                const names = `<strong class="block">${escapeHtml(primaryName)}</strong>${secondaryName && secondaryName !== primaryName ? `<span class="mt-0.5 block text-xs text-zinc-600 dark:text-zinc-300" dir="${secondaryDirection}">${escapeHtml(secondaryName)}</span>` : ''}`;
+                const identity = `${names}<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
                 if (this.root.dataset.context !== 'purchasing') {
-                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="${index === 0}" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}</button>`;
+                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}</button>`;
                 }
                 const source = item.price_source === 'last_supplier_price'
                     ? this.root.dataset.labelLastPrice
                     : (item.price_source === 'fallback_cost' ? this.root.dataset.labelFallbackPrice : this.root.dataset.labelNoPrice);
                 const price = item.unit_cost === null ? source : `${source}: ${item.unit_cost}${item.price_currency ? ` ${item.price_currency}` : ''}${item.price_date ? ` · ${item.price_date}` : ''}`;
                 const supplierCode = item.supplier_item_code ? ` · ${this.root.dataset.labelSupplierCode}: ${item.supplier_item_code}` : '';
-                return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="${index === 0}" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}<small class="mt-1 block text-zinc-600 dark:text-zinc-300">${escapeHtml(this.root.dataset.labelUnit)}: ${escapeHtml(item.unit_of_measure || '—')}${escapeHtml(supplierCode)}</small><small class="mt-1 block font-semibold text-cyan-700 dark:text-cyan-300">${escapeHtml(price)}</small></button>`;
+                return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}<small class="mt-1 block text-zinc-600 dark:text-zinc-300">${escapeHtml(this.root.dataset.labelUnit)}: ${escapeHtml(item.unit_of_measure || '—')}${escapeHtml(supplierCode)}</small><small class="mt-1 block font-semibold text-cyan-700 dark:text-cyan-300">${escapeHtml(price)}</small></button>`;
             }).join('');
             this.results.querySelectorAll('[data-result-index]').forEach((button) => {
                 button.addEventListener('mousedown', (event) => event.preventDefault());
@@ -140,7 +154,9 @@ class ProductLookup {
             event.preventDefault();
             if (this.results.classList.contains('hidden')) return this.search(this.input.value.trim());
             const direction = event.key === 'ArrowDown' ? 1 : -1;
-            this.active = Math.max(0, Math.min(this.items.length - 1, this.active + direction));
+            if (!this.items.length) return;
+            this.active = this.active < 0 ? (direction > 0 ? 0 : this.items.length - 1) : Math.max(0, Math.min(this.items.length - 1, this.active + direction));
+            this.explicitHighlight = true;
             this.syncActive();
             return;
         }
@@ -148,9 +164,9 @@ class ProductLookup {
         event.preventDefault();
         event.stopPropagation();
         clearTimeout(this.timer);
-        if (!this.results.classList.contains('hidden') && this.items[this.active]) {
+        if (!this.results.classList.contains('hidden') && this.explicitHighlight && this.items[this.active]) {
             this.select(this.items[this.active]);
-        } else if (this.input.value.trim()) {
+        } else if (this.input.value.trim() && (this.results.classList.contains('hidden') || this.lastResolvedTerm !== this.input.value.trim())) {
             this.search(this.input.value.trim(), true);
         }
     }
@@ -180,6 +196,8 @@ class ProductLookup {
 
     close() {
         this.results.classList.add('hidden');
+        this.active = -1;
+        this.explicitHighlight = false;
         this.input.setAttribute('aria-expanded', 'false');
         this.input.removeAttribute('aria-activedescendant');
     }

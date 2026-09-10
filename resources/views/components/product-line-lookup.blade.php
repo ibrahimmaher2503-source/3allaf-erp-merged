@@ -25,6 +25,7 @@
     data-currency-code="{{ $currencyCode }}"
     data-purchase-invoice-id="{{ $purchaseInvoiceId }}"
     data-message-empty="{{ __('No matching products.') }}"
+    data-message-loading="{{ __('Searching products…') }}"
     data-message-supplier-required="{{ __('Select a supplier before adding products.') }}"
     data-message-supplier-empty="{{ __('This supplier has no associated products. Uncheck “Use supplier products only” to search all authorized products.') }}"
     data-label-unit="{{ __('Unit') }}"
@@ -55,12 +56,12 @@
             @if($disabled) disabled @endif
             placeholder="{{ $disabled ? __('Select a supplier before adding products.') : $placeholder }}"
             value="{{ $display }}"
-            class="block h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 {{ $purchasing ? 'pe-11' : '' }} dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-800"
+            class="block h-10 w-full appearance-none rounded-lg border border-zinc-300 bg-white ps-3 text-start text-sm [unicode-bidi:plaintext] outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 {{ $purchasing ? 'pe-12' : 'pe-3' }} dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-800"
             data-product-search
             @if(filled($value)) data-selected="true" @endif
         >
         @if($purchasing)
-            <button type="button" data-camera-trigger class="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-zinc-500 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="{{ __('Scan with camera') }}" title="{{ __('Scan with camera') }}" @if($disabled) disabled @endif>
+            <button type="button" data-camera-trigger class="absolute inset-y-px end-px flex w-11 shrink-0 items-center justify-center border-s border-zinc-200 bg-white/95 text-zinc-500 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900" aria-label="{{ __('Scan with camera') }}" title="{{ __('Scan with camera') }}" @if($disabled) disabled @endif>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5 8.1 5.7A1.5 1.5 0 0 1 9.3 5.1h5.4a1.5 1.5 0 0 1 1.2.6l1.35 1.8H19.5A1.5 1.5 0 0 1 21 9v8.25a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.25V9a1.5 1.5 0 0 1 1.5-1.5h2.25Z"/><circle cx="12" cy="12.75" r="3.25"/></svg>
             </button>
         @endif
