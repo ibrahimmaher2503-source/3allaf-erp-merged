@@ -45,7 +45,7 @@ class SavePurchaseOrderAction
             }
 
             $supplierId = (int) ($data['supplier_id'] ?? 0);
-            $supplier = Supplier::query()->findOrFail($supplierId);
+            $supplier = Supplier::query()->lockForUpdate()->findOrFail($supplierId);
             if ($supplier->status !== 'active') {
                 throw new InvalidArgumentException(__('Cannot create or update a purchase order for an inactive supplier.'));
             }
@@ -129,6 +129,7 @@ class SavePurchaseOrderAction
                     ...$lineData,
                     'created_by' => $userId,
                 ]);
+                app(SyncSupplierProductAssociation::class)->associate($supplier->id, (int) $lineData['product_id'], (int) $userId);
             }
 
             app(RecordAuditEvent::class)->execute(

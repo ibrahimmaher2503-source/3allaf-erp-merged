@@ -153,6 +153,7 @@ final class CreatePurchaseReturnDraftAction
 
             foreach ($normalized as $line) {
                 $return->lines()->create($line);
+                app(SyncSupplierProductAssociation::class)->associate($invoice->supplier_id, (int) $line['product_id'], $actorId);
             }
 
             app(RecordAuditEvent::class)->execute(

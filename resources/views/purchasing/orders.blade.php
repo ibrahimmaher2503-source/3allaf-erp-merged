@@ -12,6 +12,7 @@ use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\PurchasingDashboard;
+use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +51,14 @@ new #[Title('Purchase Orders')] class extends Component
     public bool $paymentTermsManuallyEdited = false;
 
     public bool $syncingPaymentTerms = false;
+
+    public bool $supplierProductsOnly = true;
+
+    public string $confirmedSupplierId = '';
+
+    public string $pendingSupplierId = '';
+
+    public bool $showSupplierChangeConfirmation = false;
 
     public bool $showDetailModal = false;
 
@@ -102,9 +111,10 @@ new #[Title('Purchase Orders')] class extends Component
             'notes' => '',
             'lock_version' => 0,
         ];
-        $this->lineItems = [
-            ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => 0, 'notes' => ''],
-        ];
+        $this->lineItems = [$this->emptyOrderLine()];
+        $this->confirmedSupplierId = '';
+        $this->pendingSupplierId = '';
+        $this->supplierProductsOnly = true;
         $this->showFormModal = true;
     }
 
@@ -139,19 +149,61 @@ new #[Title('Purchase Orders')] class extends Component
                 'quantity_ordered' => (float) $line->quantity_ordered,
                 'unit_cost' => (float) $line->unit_cost,
                 'notes' => $line->notes ?: '',
+                'price_source' => 'saved_draft_cost',
+                'price_date' => '',
+                'price_currency' => '',
             ];
         }
 
         if (empty($this->lineItems)) {
-            $this->lineItems[] = ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => 0, 'notes' => ''];
+            $this->lineItems[] = $this->emptyOrderLine();
         }
 
+        $this->confirmedSupplierId = (string) $order->supplier_id;
+        $this->pendingSupplierId = '';
+        $this->supplierProductsOnly = true;
         $this->showFormModal = true;
     }
 
     public function updatedOrderFormSupplierId($supplierId): void
     {
-        if ($this->editingOrderId !== null || $this->paymentTermsManuallyEdited || ! filled($supplierId)) {
+        $supplierId = filled($supplierId) ? (string) $supplierId : '';
+        if ($this->confirmedSupplierId !== '' && $supplierId !== $this->confirmedSupplierId && collect($this->lineItems)->contains(fn (array $line): bool => filled($line['product_id'] ?? null))) {
+            $this->pendingSupplierId = $supplierId;
+            $this->orderForm['supplier_id'] = $this->confirmedSupplierId;
+            $this->showSupplierChangeConfirmation = true;
+
+            return;
+        }
+
+        $this->confirmedSupplierId = $supplierId;
+        $this->supplierProductsOnly = $supplierId !== '';
+        $this->applySupplierPaymentTerms($supplierId);
+        $this->dispatch('purchasing-product-focus');
+    }
+
+    public function confirmSupplierChange(): void
+    {
+        $this->orderForm['supplier_id'] = $this->pendingSupplierId;
+        $this->confirmedSupplierId = $this->pendingSupplierId;
+        $this->pendingSupplierId = '';
+        $this->lineItems = [$this->emptyOrderLine()];
+        $this->supplierProductsOnly = $this->confirmedSupplierId !== '';
+        $this->showSupplierChangeConfirmation = false;
+        $this->paymentTermsManuallyEdited = false;
+        $this->applySupplierPaymentTerms($this->confirmedSupplierId);
+        $this->dispatch('purchasing-product-focus');
+    }
+
+    public function cancelSupplierChange(): void
+    {
+        $this->pendingSupplierId = '';
+        $this->showSupplierChangeConfirmation = false;
+    }
+
+    private function applySupplierPaymentTerms(string $supplierId): void
+    {
+        if ($this->editingOrderId !== null || $this->paymentTermsManuallyEdited || $supplierId === '') {
             return;
         }
 
@@ -172,7 +224,12 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function addLine(): void
     {
-        $this->lineItems[] = ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => 0, 'notes' => ''];
+        if (! filled($this->orderForm['supplier_id'])) {
+            Flux::toast(__('Select a supplier before adding products.'), variant: 'warning');
+
+            return;
+        }
+        $this->lineItems[] = $this->emptyOrderLine();
     }
 
     public function removeLine(int $index): void
@@ -182,15 +239,16 @@ new #[Title('Purchase Orders')] class extends Component
         }
     }
 
-    public function onProductSelected(int $index, string $productId): void
+    public function selectOrderProduct(int $index, int $productId, SupplierProductPrice $prices): void
     {
-        $this->lineItems[$index]['product_id'] = $productId;
-        if (! empty($productId)) {
-            $product = Product::query()->sellable()->find((int) $productId);
-            if ($product && ! empty($product->cost_price)) {
-                $this->lineItems[$index]['unit_cost'] = (float) $product->cost_price;
-            }
-        }
+        abort_unless(filled($this->orderForm['supplier_id']), 422, __('Select a supplier before adding products.'));
+        $product = Product::query()->sellable()->findOrFail($productId);
+        $price = $prices->resolve($product, (int) $this->orderForm['supplier_id']);
+        $this->lineItems[$index]['product_id'] = (string) $product->id;
+        $this->lineItems[$index]['unit_cost'] = $price['unit_cost'] ?? '';
+        $this->lineItems[$index]['price_source'] = $price['price_source'];
+        $this->lineItems[$index]['price_date'] = $price['price_date'] ?? '';
+        $this->lineItems[$index]['price_currency'] = $price['price_currency'] ?? '';
     }
 
     public function saveOrder(): void
@@ -222,6 +280,12 @@ new #[Title('Purchase Orders')] class extends Component
         } catch (Throwable $e) {
             Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
+    }
+
+    /** @return array<string, int|string> */
+    private function emptyOrderLine(): array
+    {
+        return ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => '', 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
     }
 
     public function submitOrder(int $id): void
@@ -339,7 +403,7 @@ new #[Title('Purchase Orders')] class extends Component
         $orders = $query->latest('id')->paginate(15);
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
         $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
-        $products = Product::query()->sellable()->orderBy('name_ar')->get();
+        $products = Product::query()->sellable()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
 
         $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product']);
         if ($user && ! $user->is_super_admin) {
@@ -574,9 +638,10 @@ new #[Title('Purchase Orders')] class extends Component
             <div class="space-y-3 border-t border-border pt-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
-                    <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line>
-                        {{ __('Add Item Line') }}
-                    </flux:button>
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="blank($orderForm['supplier_id'])" />
+                        <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line :disabled="blank($orderForm['supplier_id'])">{{ __('Add item') }}</flux:button>
+                    </div>
                 </div>
 
                 <div class="space-y-3">
@@ -584,7 +649,7 @@ new #[Title('Purchase Orders')] class extends Component
                         <div class="grid grid-cols-12 gap-2 items-end bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-border" data-product-line wire:key="order-line-{{ $index }}">
                             <div class="col-span-12 sm:col-span-4">
                                 @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
-                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->getLocale() === 'ar' ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" />
+                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->getLocale() === 'ar' ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
                             </div>
 
                             <div class="col-span-4 sm:col-span-2">
@@ -595,6 +660,7 @@ new #[Title('Purchase Orders')] class extends Component
                             <div class="col-span-4 sm:col-span-2">
                                 <label class="text-xs font-semibold">{{ __('Unit cost') }}</label>
                                 <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
+                                <p class="mt-1 text-[11px] text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
                             </div>
 
                             <div class="col-span-3 sm:col-span-2">
@@ -625,6 +691,17 @@ new #[Title('Purchase Orders')] class extends Component
                 <flux:button variant="primary" type="submit">{{ __('Save Draft') }}</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    <flux:modal wire:model.self="showSupplierChangeConfirmation" class="md:max-w-lg">
+        <div class="space-y-5">
+            <flux:heading size="lg">{{ __('Change supplier and clear product lines?') }}</flux:heading>
+            <flux:callout variant="warning">{{ __('Changing the supplier clears existing product lines and supplier prices so no price is retained for the wrong supplier.') }}</flux:callout>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="subtle" wire:click="cancelSupplierChange">{{ __('Keep current supplier') }}</flux:button>
+                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and clear lines') }}</flux:button>
+            </div>
+        </div>
     </flux:modal>
 
     <!-- Detail Drawer / Modal -->

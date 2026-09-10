@@ -225,3 +225,13 @@
 - PASS: one successful clean Node 20.20.0 / Vite 8.2.0 production build. An initial invocation selected host Node 16.20.2 and failed on missing `node:util.styleText` before Vite compilation or asset emission; it was corrected using the already-installed Node 20 binary, with no package installation.
 - Existing focused source tests: 23 executed, 15 passed, 7 failed, 1 errored, 197 assertions. The non-passing contracts are stale Hotfix24/baseline expectations: removed legacy invoice-search markup, old version markers, unrelated old POS markers, and a pre-existing missing purchasing fixture. Tests were not edited or broadened to manufacture a pass.
 - No database or migration command ran. Migration 000111 remains an activation precondition and must already be `Ran`; this local session did not query production or claim live migration status.
+
+# 2026-09-10 — v0.1.22-hotfix26 focused verification
+
+- PASS: changed PHP and Blade syntax; full registered Blade cache compilation (927 views); Arabic and English locale JSON; Git diff hygiene.
+- PASS: dependency-free JavaScript behavior contract, 3 tests / 3 passed, covering incremental narrowing, duplicate-request suppression, stale-response rejection, exact barcode/external-scanner Enter, Arrow Up/Down, Enter, Escape, parent-submit prevention, row progression, camera unsupported fallback, and camera-track cleanup.
+- PASS: focused existing PHPUnit unit contract, 3 tests / 17 assertions; bilingual purchasing lookup runtime render, named authorized search route, and compiled Vite asset contract. Final app JavaScript SHA-256: `c592a88f1ccd285323f3cea676d45dce14055e03292ac886fbb4e2e2af8acb32`.
+- PASS: exactly one clean Node 20/Vite 8.2.0 production build after frontend edits.
+- NOT RUN: the new database-backed purchase order/invoice/return lookup feature test. Both available local MariaDB identities rejected authentication and no authorized isolated database credentials were present; no database was created, queried, migrated, or mutated.
+- INFO: an optional focused PHPStan attempt did not complete cleanly: `/tmp` cache capacity and the default 128 MB worker limit were corrected, then analysis reported existing Eloquent relation-inference findings plus joined-column inference in the new query. No PHPStan PASS is claimed.
+- Migration status: no Hotfix26 migration exists or ran. Migration 000111 was not queried locally and remains a mandatory already-`Ran` activation precondition.

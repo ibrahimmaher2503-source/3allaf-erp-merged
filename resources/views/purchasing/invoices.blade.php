@@ -17,6 +17,7 @@ use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseDistributionAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -69,6 +70,10 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public array $lineItems = [];
     public string $itemEntry = '';
+    public bool $supplierProductsOnly = true;
+    public string $confirmedSupplierId = '';
+    public string $pendingSupplierId = '';
+    public bool $showSupplierChangeConfirmation = false;
     public string $productSearch = '';
     public int $productSearchRequest = 0;
     public bool $showQuickProduct = false;
@@ -137,6 +142,9 @@ new #[Title('Purchase Invoices')] class extends Component
             'lock_version' => 0,
         ];
         $this->lineItems = [$this->emptyLine()];
+        $this->confirmedSupplierId = '';
+        $this->pendingSupplierId = '';
+        $this->supplierProductsOnly = true;
         $this->showFormModal = true;
     }
 
@@ -190,6 +198,8 @@ new #[Title('Purchase Invoices')] class extends Component
             'lock_version' => 0,
         ];
         $this->lineItems = $lineItems;
+        $this->confirmedSupplierId = (string) $order->supplier_id;
+        $this->supplierProductsOnly = true;
         $this->showFormModal = true;
     }
 
@@ -227,31 +237,80 @@ new #[Title('Purchase Invoices')] class extends Component
             'discount_value' => (string) $line->discount_value,
             'tax_rate' => (string) $line->tax_rate,
             'tax_code' => $line->tax_code ?: '',
+            'price_source' => 'saved_draft_cost',
+            'price_date' => '',
+            'price_currency' => $invoice->currency_code ?: '',
         ])->all();
         $this->lineItems = $this->lineItems ?: [$this->emptyLine()];
+        $this->confirmedSupplierId = (string) $invoice->supplier_id;
+        $this->supplierProductsOnly = true;
         $this->showFormModal = true;
+    }
+
+    public function updatedInvoiceFormSupplierId($supplierId): void
+    {
+        $supplierId = filled($supplierId) ? (string) $supplierId : '';
+        if ($this->confirmedSupplierId !== '' && $supplierId !== $this->confirmedSupplierId && collect($this->lineItems)->contains(fn (array $line): bool => filled($line['product_id'] ?? null))) {
+            $this->pendingSupplierId = $supplierId;
+            $this->invoiceForm['supplier_id'] = $this->confirmedSupplierId;
+            $this->showSupplierChangeConfirmation = true;
+
+            return;
+        }
+        $this->confirmedSupplierId = $supplierId;
+        $this->supplierProductsOnly = $supplierId !== '';
+        $this->dispatch('purchasing-product-focus');
+    }
+
+    public function confirmSupplierChange(): void
+    {
+        $this->invoiceForm['supplier_id'] = $this->pendingSupplierId;
+        $this->confirmedSupplierId = $this->pendingSupplierId;
+        $this->pendingSupplierId = '';
+        $this->lineItems = [$this->emptyLine()];
+        $this->itemEntry = '';
+        $this->invoiceForm['purchase_order_id'] = '';
+        $this->supplierProductsOnly = $this->confirmedSupplierId !== '';
+        $this->showSupplierChangeConfirmation = false;
+        $this->dispatch('purchasing-product-focus');
+    }
+
+    public function cancelSupplierChange(): void
+    {
+        $this->pendingSupplierId = '';
+        $this->showSupplierChangeConfirmation = false;
     }
 
     public function addLine(): void
     {
+        if (! filled($this->invoiceForm['supplier_id'])) {
+            Flux::toast(__('Select a supplier before adding products.'), variant: 'warning');
+
+            return;
+        }
         $this->lineItems[] = $this->emptyLine();
     }
 
-    public function addItemEntry(): void
+    public function addItemEntry(SupplierProductPrice $prices): void
     {
+        if (! filled($this->invoiceForm['supplier_id'])) { Flux::toast(__('Select a supplier before adding products.'), variant: 'warning'); return; }
         $lookup = trim($this->itemEntry);
         if ($lookup === '') { $this->dispatch('invoice-scanner-focus'); return; }
-        $product = Product::query()->sellable()->where(function ($query) use ($lookup): void {
+        $product = Product::query()->sellable()
+            ->when($this->supplierProductsOnly, fn ($query) => $query->whereHas('productSuppliers', fn ($relations) => $relations->where('supplier_id', (int) $this->invoiceForm['supplier_id'])))
+            ->where(function ($query) use ($lookup): void {
             $query->where('item_code', $lookup)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', $lookup)->where('status', 'active'));
         })->first();
         if (! $product) { $this->openQuickProduct($lookup); return; }
-        $this->insertProduct($product);
+        $this->insertProduct($product, $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null));
     }
 
-    public function selectSearchProduct(int $productId): void
+    public function selectSearchProduct(int $productId, SupplierProductPrice $prices): void
     {
+        abort_unless(filled($this->invoiceForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         $product = Product::query()->sellable()->findOrFail($productId);
-        $this->insertProduct($product);
+        $price = $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null);
+        $this->insertProduct($product, $price);
         $this->productSearch = '';
     }
 
@@ -269,6 +328,11 @@ new #[Title('Purchase Invoices')] class extends Component
     public function openQuickProduct(string $barcode = ''): void
     {
         Gate::authorize('products_categories_brands.create');
+        if (! filled($this->invoiceForm['supplier_id'])) {
+            Flux::toast(__('Select a supplier before adding products.'), variant: 'warning');
+
+            return;
+        }
         $this->resetValidation();
         $this->quickProduct = [
             'barcode_registration_type' => 'international',
@@ -294,7 +358,8 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->dispatch('invoice-scanner-focus');
     }
 
-    private function insertProduct(Product $product): void
+    /** @param array{unit_cost: string|null, price_source: string, price_date: string|null, price_currency: string|null}|null $price */
+    private function insertProduct(Product $product, ?array $price = null): void
     {
         foreach ($this->lineItems as $index => $line) {
             if ((int) ($line['product_id'] ?? 0) === $product->id) {
@@ -305,7 +370,8 @@ new #[Title('Purchase Invoices')] class extends Component
             }
         }
         if (count($this->lineItems) === 1 && empty($this->lineItems[0]['product_id'])) $this->lineItems=[];
-        $this->lineItems[] = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>(string)($product->average_cost ?? 0), 'base_consumer_price'=>(string)($product->sale_price ?? 0)];
+        $price ??= app(SupplierProductPrice::class)->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null);
+        $this->lineItems[] = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>$price['unit_cost'] ?? '', 'base_consumer_price'=>(string)($product->sale_price ?? 0), 'price_source'=>$price['price_source'], 'price_date'=>$price['price_date'] ?? '', 'price_currency'=>$price['price_currency'] ?? ''];
         $this->itemEntry='';
         $this->dispatch('invoice-line-focus', index: array_key_last($this->lineItems));
     }
@@ -584,6 +650,9 @@ new #[Title('Purchase Invoices')] class extends Component
             'discount_value' => '0',
             'tax_rate' => '0',
             'tax_code' => '',
+            'price_source' => 'none',
+            'price_date' => '',
+            'price_currency' => '',
         ];
     }
 };
@@ -741,7 +810,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </flux:callout>
                 @endif
                 <div class="grid gap-4 md:grid-cols-3">
-                    <flux:select wire:model="invoiceForm.supplier_id" :label="__('Supplier')">
+                    <flux:select wire:model.live="invoiceForm.supplier_id" :label="__('Supplier')" :disabled="filled($invoiceForm['purchase_order_id'])">
                         <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
                         @foreach ($suppliers as $supplier)
                             <flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale()==='ar' ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>
@@ -762,24 +831,25 @@ new #[Title('Purchase Invoices')] class extends Component
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
-                        <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()">{{ __('Add item') }}</flux:button>
-                    </div>
-                    <div x-data="{camera:false,stream:null,async start(){if(!('BarcodeDetector' in window)){alert(@js(__('Camera barcode scanning is not supported by this browser.')));return} this.camera=true; this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); this.$nextTick(()=>{this.$refs.video.srcObject=this.stream; this.detect()})},async detect(){if(!this.camera)return; const hits=await (new BarcodeDetector()).detect(this.$refs.video); if(hits[0]){this.stop(); await $wire.set('itemEntry',hits[0].rawValue); await $wire.addItemEntry();return} requestAnimationFrame(()=>this.detect())},stop(){this.camera=false;this.stream?.getTracks().forEach(track=>track.stop());this.stream=null} }" class="space-y-3" data-product-line>
-                        <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
-                            <x-product-line-lookup wire:model="itemEntry" :label="__('Product')" :required="true" x-on:product-selected="$wire.selectSearchProduct($event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term)" x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
-                            @can('products_categories_brands.create')
-                                <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus" class="w-full sm:w-auto">{{ __('Create product') }}</flux:button>
-                            @endcan
-                            <flux:button type="button" x-on:click="start" variant="subtle" icon="camera" class="w-full sm:w-auto">{{ __('Scan with camera') }}</flux:button>
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="blank($invoiceForm['supplier_id'])" />
+                            <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()" data-add-line :disabled="blank($invoiceForm['supplier_id'])">{{ __('Add item') }}</flux:button>
                         </div>
-                        <div x-show="camera" x-cloak class="rounded-xl border p-3"><video x-ref="video" autoplay playsinline class="mx-auto max-h-64 rounded-lg"></video><flux:button type="button" class="mt-2" x-on:click="stop">{{ __('Close camera') }}</flux:button></div>
+                    </div>
+                    <div class="space-y-3" data-product-line>
+                        <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                            <x-product-line-lookup wire:model="itemEntry" :label="__('Product')" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :disabled="blank($invoiceForm['supplier_id'])" x-on:product-selected="$wire.selectSearchProduct($event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term)" x-on:invoice-scanner-focus.window="$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
+                            @can('products_categories_brands.create')
+                                <flux:button type="button" wire:click="openQuickProduct" variant="primary" icon="plus" class="w-full sm:w-auto" :disabled="blank($invoiceForm['supplier_id'])">{{ __('Create product') }}</flux:button>
+                            @endcan
+                        </div>
                     </div>
                     @foreach ($lineItems as $index => $line)
                         @continue(empty($line['product_id']))
                         <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-9" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] }}">
                             <div class="md:col-span-2"><flux:label>{{__('Product')}}</flux:label><div class="mt-2 rounded-lg border p-3">@php($lineProduct=$lineProducts->get((int)$line['product_id']))<strong>{{ app()->getLocale()==='ar' ? ($lineProduct?->name_ar ?: '—') : ($lineProduct?->name_en ?: '—') }}</strong><div class="text-xs text-text-muted" dir="ltr">{{ $lineProduct?->item_code }}</div></div></div>
                             <div x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><flux:input wire:model="lineItems.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" data-line-quantity /></div>
-                            <flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" data-line-price data-price-kind="cost" />
+                            <div><flux:input wire:model="lineItems.{{ $index }}.unit_cost" type="number" min="0" step="0.0001" :label="__('Unit cost')" :disabled="!Gate::allows('purchase_invoices.change_cost')" data-line-price data-price-kind="cost" /><p class="mt-1 text-[11px] text-zinc-500" data-price-source>{{ match($line['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($line['price_date'] ?? '')) · {{ $line['price_date'] }}@endif @if(filled($line['price_currency'] ?? '')) · {{ $line['price_currency'] }}@endif</p></div>
                             <flux:input wire:model="lineItems.{{ $index }}.base_consumer_price" type="number" min="0" step="0.001" :label="__('Base Consumer Price List 0')" :disabled="!Gate::allows('purchase_invoices.change_list0_price')" data-line-step />
                             <flux:select wire:model.live="lineItems.{{ $index }}.discount_type" :label="__('Discount type')" data-line-discount-type data-line-step>
                                 <flux:select.option value="">{{ __('None') }}</flux:select.option>
@@ -803,6 +873,17 @@ new #[Title('Purchase Invoices')] class extends Component
             </form>
         </flux:card>
     @endif
+
+    <flux:modal wire:model.self="showSupplierChangeConfirmation" class="md:max-w-lg">
+        <div class="space-y-5">
+            <flux:heading size="lg">{{ __('Change supplier and clear product lines?') }}</flux:heading>
+            <flux:callout variant="warning">{{ __('Changing the supplier clears existing product lines and supplier prices so no price is retained for the wrong supplier.') }}</flux:callout>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="subtle" wire:click="cancelSupplierChange">{{ __('Keep current supplier') }}</flux:button>
+                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and clear lines') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     @if($showDistribution && $distributionInvoice)
         <flux:card class="space-y-5" aria-label="{{ __('Stage 2 — Mandatory distribution') }}">

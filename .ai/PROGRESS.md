@@ -296,3 +296,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added a permission-gated transaction lookup endpoint covering barcode, item/SKU code, model, Arabic name, and English name; cost is omitted from responses unless the operator already holds a cost-bearing permission.
 - PHP/Blade/runtime contracts, compiled asset identity, and representative browser keyboard scenarios passed. One successful Node 20/Vite 8.2.0 production build emitted the final assets after the default Node 16 launcher failed before Vite could compile.
 - No schema, migration, database, production, deployment, tag, push, sudo, or root action occurred.
+
+# 2026-09-10 — v0.1.22-hotfix26 supplier product lookup
+
+- Replaced purchasing selectors in purchase orders, purchase invoices, and supplier returns with the shared incremental product combobox, supplier-first gating, associated/all-product filtering, keyboard/scanner behavior, and explicit native camera scanning.
+- Reused the existing many-to-many `product_suppliers` schema and approved purchase-invoice history. Supplier-specific latest approved price/fallback source is shown and remains editable; valid purchasing saves establish missing associations and approval updates purchase history.
+- Added localized supplier-change confirmation that clears affected lines/prices, preserved supplier-return source-invoice cost constraints, and retained Hotfix25 behavior outside purchasing.
+- Focused syntax, Blade compilation, dependency-free interaction tests, runtime rendering/asset checks, locale JSON, and diff hygiene passed. Exactly one Node 20/Vite 8.2.0 production build ran.
+- No migration was added or run. No production access, deployment, promotion, activation, backup, service action, sudo, root, push, tag, browser/package installation, or remote operation occurred.

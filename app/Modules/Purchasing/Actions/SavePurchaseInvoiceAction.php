@@ -63,7 +63,7 @@ final class SavePurchaseInvoiceAction
                 throw new InvalidArgumentException(__('The selected receiving store has inconsistent company ownership.'));
             }
 
-            $supplier = Supplier::query()->with('supplierGroup:id,company_id')->findOrFail((int) ($data['supplier_id'] ?? 0));
+            $supplier = Supplier::query()->with('supplierGroup:id,company_id')->lockForUpdate()->findOrFail((int) ($data['supplier_id'] ?? 0));
             if ($supplier->status !== 'active') {
                 throw new InvalidArgumentException(__('Cannot create an invoice for an inactive supplier.'));
             }
@@ -176,6 +176,7 @@ final class SavePurchaseInvoiceAction
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
                     'quantity_received' => 0,
                 ]);
+                app(SyncSupplierProductAssociation::class)->associate($supplier->id, $product->id, (int) $userId);
             }
 
             app(RecordAuditEvent::class)->execute(

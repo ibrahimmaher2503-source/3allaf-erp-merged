@@ -80,6 +80,9 @@ final class ApprovePurchaseInvoiceAction
                 'approved_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,
             ]);
+            foreach ($invoice->lines as $line) {
+                app(SyncSupplierProductAssociation::class)->recordApprovedPrice($invoice, $line, $actorId);
+            }
             app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Purchase invoice and stock receipt approved.'));
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'approve_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['invoice_number', 'status', 'approved_at', 'approved_by', 'lock_version']), storeId: $invoice->store_id, metadata: ['stock_posted' => true, 'wac_posted' => true, 'approval_record_id' => $approval->id]);
 

@@ -13,33 +13,71 @@ class ProductLookup {
         this.active = -1;
         this.timer = null;
         this.controller = null;
+        this.pendingKey = null;
+        this.pendingRequest = null;
+        this.requestSequence = 0;
+        this.stream = null;
+        this.cameraFrame = null;
+        this.cameraTrigger = root.querySelector('[data-camera-trigger]');
+        this.cameraPanel = root.querySelector('[data-camera-panel]');
+        this.cameraVideo = root.querySelector('[data-camera-video]');
+        this.cameraMessage = root.querySelector('[data-camera-message]');
         this.listId = `product-results-${Math.random().toString(36).slice(2)}`;
         this.results.id = this.listId;
         this.input.setAttribute('aria-controls', this.listId);
         this.input.addEventListener('input', () => this.queue());
         this.input.addEventListener('keydown', (event) => this.keydown(event));
         this.input.addEventListener('blur', () => setTimeout(() => this.close(), 120));
+        this.cameraTrigger?.addEventListener('click', () => this.openCamera());
+        root.querySelector('[data-camera-close]')?.addEventListener('click', () => this.closeCamera());
+        root._productLookup = this;
     }
 
     queue() {
         this.hidden.value = '';
         this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
         clearTimeout(this.timer);
+        this.controller?.abort();
+        this.requestSequence++;
+        this.pendingKey = null;
+        this.pendingRequest = null;
         const term = this.input.value.trim();
-        if (term.length < 2) return this.close();
-        this.timer = setTimeout(() => this.search(term), 140);
+        if (term.length < 1) return this.close();
+        if (this.root.dataset.context === 'purchasing' && !this.root.dataset.supplierId) {
+            this.renderMessage(this.root.dataset.messageSupplierRequired);
+            return;
+        }
+        this.timer = setTimeout(() => this.search(term), 120);
     }
 
     async search(term, commitExact = false) {
+        if (!term) return this.close();
+        const params = new URLSearchParams({
+            q: term,
+            context: this.root.dataset.context || 'transaction',
+        });
+        if (this.root.dataset.supplierId) params.set('supplier_id', this.root.dataset.supplierId);
+        if (this.root.dataset.supplierOnly) params.set('supplier_only', this.root.dataset.supplierOnly);
+        if (this.root.dataset.currencyCode) params.set('currency_code', this.root.dataset.currencyCode);
+        if (this.root.dataset.purchaseInvoiceId) params.set('purchase_invoice_id', this.root.dataset.purchaseInvoiceId);
+        const requestKey = params.toString();
+        if (requestKey === this.pendingKey && this.pendingRequest) return this.pendingRequest;
+
         this.controller?.abort();
         this.controller = new AbortController();
-        try {
-            const response = await fetch(`${this.root.dataset.searchUrl}?q=${encodeURIComponent(term)}`, {
+        const controller = this.controller;
+        const sequence = ++this.requestSequence;
+        this.pendingKey = requestKey;
+        this.pendingRequest = (async () => {
+          try {
+            const response = await fetch(`${this.root.dataset.searchUrl}?${requestKey}`, {
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                signal: this.controller.signal,
+                signal: controller.signal,
             });
             if (!response.ok) throw new Error('lookup');
-            this.items = (await response.json()).data ?? [];
+            const payload = await response.json();
+            if (sequence !== this.requestSequence || term !== this.input.value.trim()) return;
+            this.items = payload.data ?? [];
             const exact = this.items.filter((item) => item.exact);
             if (exact.length === 1 && (commitExact || exact[0].barcodes?.some((barcode) => barcode.toLocaleLowerCase() === term.toLocaleLowerCase()) || exact[0].item_code?.toLocaleLowerCase() === term.toLocaleLowerCase())) {
                 this.select(exact[0]);
@@ -48,18 +86,39 @@ class ProductLookup {
             if (commitExact && this.items.length === 0) {
                 this.root.dispatchEvent(new CustomEvent('product-lookup-empty', { bubbles: true, detail: { term } }));
             }
-            this.render();
+            this.render(payload.meta ?? {});
         } catch (error) {
             if (error.name !== 'AbortError') this.close();
+        } finally {
+            if (sequence === this.requestSequence) {
+                this.pendingKey = null;
+                this.pendingRequest = null;
+            }
         }
+        })();
+        return this.pendingRequest;
     }
 
-    render() {
+    render(meta = {}) {
         this.active = this.items.length ? 0 : -1;
         if (!this.items.length) {
-            this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(document.documentElement.lang === 'ar' ? 'لا توجد منتجات مطابقة.' : 'No matching products.')}</p>`;
+            const message = meta.supplier_required
+                ? this.root.dataset.messageSupplierRequired
+                : (meta.supplier_products_empty ? this.root.dataset.messageSupplierEmpty : this.root.dataset.messageEmpty);
+            this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(message)}</p>`;
         } else {
-            this.results.innerHTML = this.items.map((item, index) => `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="${index === 0}" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30"><strong>${escapeHtml(document.documentElement.lang === 'ar' ? (item.name_ar || item.name_en) : (item.name_en || item.name_ar))}</strong><small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small></button>`).join('');
+            this.results.innerHTML = this.items.map((item, index) => {
+                const identity = `<strong>${escapeHtml(document.documentElement.lang === 'ar' ? (item.name_ar || item.name_en) : (item.name_en || item.name_ar))}</strong><small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
+                if (this.root.dataset.context !== 'purchasing') {
+                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="${index === 0}" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}</button>`;
+                }
+                const source = item.price_source === 'last_supplier_price'
+                    ? this.root.dataset.labelLastPrice
+                    : (item.price_source === 'fallback_cost' ? this.root.dataset.labelFallbackPrice : this.root.dataset.labelNoPrice);
+                const price = item.unit_cost === null ? source : `${source}: ${item.unit_cost}${item.price_currency ? ` ${item.price_currency}` : ''}${item.price_date ? ` · ${item.price_date}` : ''}`;
+                const supplierCode = item.supplier_item_code ? ` · ${this.root.dataset.labelSupplierCode}: ${item.supplier_item_code}` : '';
+                return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="${index === 0}" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}<small class="mt-1 block text-zinc-600 dark:text-zinc-300">${escapeHtml(this.root.dataset.labelUnit)}: ${escapeHtml(item.unit_of_measure || '—')}${escapeHtml(supplierCode)}</small><small class="mt-1 block font-semibold text-cyan-700 dark:text-cyan-300">${escapeHtml(price)}</small></button>`;
+            }).join('');
             this.results.querySelectorAll('[data-result-index]').forEach((button) => {
                 button.addEventListener('mousedown', (event) => event.preventDefault());
                 button.addEventListener('click', () => this.select(this.items[Number(button.dataset.resultIndex)]));
@@ -74,6 +133,7 @@ class ProductLookup {
         if (event.key === 'Escape') {
             event.preventDefault();
             this.close();
+            this.closeCamera();
             return;
         }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -87,6 +147,7 @@ class ProductLookup {
         if (event.key !== 'Enter') return;
         event.preventDefault();
         event.stopPropagation();
+        clearTimeout(this.timer);
         if (!this.results.classList.contains('hidden') && this.items[this.active]) {
             this.select(this.items[this.active]);
         } else if (this.input.value.trim()) {
@@ -104,6 +165,7 @@ class ProductLookup {
     }
 
     select(item) {
+        clearTimeout(this.timer);
         this.hidden.value = String(item[this.root.dataset.valueField || 'id'] ?? item.id);
         this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
         this.hidden.dispatchEvent(new Event('change', { bubbles: true }));
@@ -111,6 +173,7 @@ class ProductLookup {
         this.input.dataset.selected = 'true';
         this.error?.classList.add('hidden');
         this.close();
+        this.closeCamera();
         this.root.dispatchEvent(new CustomEvent('product-selected', { bubbles: true, detail: item }));
         requestAnimationFrame(() => this.root.closest('[data-product-line]')?.querySelector('[data-line-quantity]')?.focus());
     }
@@ -119,6 +182,81 @@ class ProductLookup {
         this.results.classList.add('hidden');
         this.input.setAttribute('aria-expanded', 'false');
         this.input.removeAttribute('aria-activedescendant');
+    }
+
+    renderMessage(message) {
+        this.items = [];
+        this.active = -1;
+        this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(message)}</p>`;
+        this.results.classList.remove('hidden');
+        this.input.setAttribute('aria-expanded', 'true');
+    }
+
+    async openCamera() {
+        this.cameraMessage?.classList.add('hidden');
+        if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
+            this.showCameraMessage(this.root.dataset.cameraUnsupported);
+            return;
+        }
+        try {
+            this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            this.cameraVideo.srcObject = this.stream;
+            this.cameraPanel.classList.remove('hidden');
+            await this.cameraVideo.play();
+            this.detectBarcode(new BarcodeDetector());
+        } catch {
+            this.closeCamera();
+            this.showCameraMessage(this.root.dataset.cameraError);
+        }
+    }
+
+    async detectBarcode(detector) {
+        if (!this.stream || !this.root.isConnected) return this.closeCamera();
+        try {
+            const detections = await detector.detect(this.cameraVideo);
+            if (detections[0]?.rawValue) {
+                const barcode = detections[0].rawValue.trim();
+                this.input.value = barcode;
+                this.closeCamera();
+                await this.search(barcode, true);
+                return;
+            }
+        } catch {
+            this.closeCamera();
+            this.showCameraMessage(this.root.dataset.cameraError);
+            return;
+        }
+        this.cameraFrame = requestAnimationFrame(() => this.detectBarcode(detector));
+    }
+
+    closeCamera() {
+        if (this.cameraFrame) cancelAnimationFrame(this.cameraFrame);
+        this.cameraFrame = null;
+        this.stream?.getTracks().forEach((track) => track.stop());
+        this.stream = null;
+        if (this.cameraVideo) this.cameraVideo.srcObject = null;
+        this.cameraPanel?.classList.add('hidden');
+    }
+
+    showCameraMessage(message) {
+        if (!this.cameraMessage) return;
+        this.cameraMessage.textContent = message;
+        this.cameraMessage.classList.remove('hidden');
+    }
+
+    destroy() {
+        clearTimeout(this.timer);
+        this.controller?.abort();
+        this.closeCamera();
+        delete this.root._productLookup;
+    }
+
+    invalidate() {
+        this.controller?.abort();
+        this.requestSequence++;
+        this.pendingKey = null;
+        this.pendingRequest = null;
+        this.close();
     }
 }
 
@@ -134,10 +272,18 @@ const initializeEditor = (editor) => {
         line.querySelectorAll('[name$="[description_en]"], [name$="[description]"]').forEach((field) => { if (!field.value) field.value = event.detail.name_en || event.detail.name_ar || ''; });
         const price = line.querySelector('[data-line-price]');
         const preferred = price?.dataset.priceKind === 'price' ? event.detail.unit_price : event.detail.unit_cost;
-        if (price && !price.disabled && (!price.value || Number(price.value) === 0) && preferred !== null) {
+        const purchasing = event.target.dataset.context === 'purchasing';
+        if (price && !price.disabled && (purchasing || !price.value || Number(price.value) === 0)) {
             price.value = preferred ?? '';
             price.dispatchEvent(new Event('input', { bubbles: true }));
             price.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const source = line.querySelector('[data-price-source]');
+        if (source && purchasing) {
+            const label = event.detail.price_source === 'last_supplier_price'
+                ? event.target.dataset.labelLastPrice
+                : (event.detail.price_source === 'fallback_cost' ? event.target.dataset.labelFallbackPrice : event.target.dataset.labelNoPrice);
+            source.textContent = `${label}${event.detail.price_date ? ` · ${event.detail.price_date}` : ''}${event.detail.price_currency ? ` · ${event.detail.price_currency}` : ''}`;
         }
         updateTotal(line);
     });
@@ -274,9 +420,29 @@ const boot = () => {
     document.querySelectorAll('[data-product-line-editor]').forEach(focusBlank);
 };
 
-new MutationObserver(boot).observe(document.documentElement, { childList: true, subtree: true });
-document.addEventListener('DOMContentLoaded', boot);
-document.addEventListener('livewire:navigated', boot);
-document.addEventListener('keydown', posKeyboardNavigation);
-window.addEventListener('pos-product-search-focus', () => requestAnimationFrame(() => document.getElementById('live-pos-product-search')?.focus()));
-boot();
+if (typeof document !== 'undefined') {
+    new MutationObserver((records) => {
+        records.forEach((record) => {
+            record.removedNodes.forEach((node) => {
+                if (!(node instanceof Element)) return;
+                if (node.matches('[data-product-lookup]')) node._productLookup?.destroy();
+                node.querySelectorAll?.('[data-product-lookup]').forEach((root) => root._productLookup?.destroy());
+            });
+            if (record.type === 'attributes' && record.target.matches?.('[data-product-lookup]')) record.target._productLookup?.invalidate();
+        });
+        boot();
+        requestAnimationFrame(() => document.querySelectorAll('[data-product-lookup]').forEach((root) => {
+            if (root.getClientRects().length === 0) root._productLookup?.closeCamera();
+        }));
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-supplier-id', 'data-supplier-only', 'data-currency-code', 'data-purchase-invoice-id', 'hidden', 'class'] });
+    document.addEventListener('DOMContentLoaded', boot);
+    document.addEventListener('livewire:navigated', boot);
+    document.addEventListener('keydown', posKeyboardNavigation);
+    window.addEventListener('pos-product-search-focus', () => requestAnimationFrame(() => document.getElementById('live-pos-product-search')?.focus()));
+    window.addEventListener('purchasing-product-focus', () => requestAnimationFrame(() => document.querySelector('[data-product-lookup][data-context="purchasing"] [data-product-search]:not(:disabled)')?.focus()));
+    window.addEventListener('pagehide', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
+    document.addEventListener('livewire:navigating', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
+    boot();
+}
+
+export { ProductLookup, initializeEditor };

@@ -10,6 +10,7 @@ use App\Modules\Purchasing\Actions\ReversePurchaseReturnAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseReturnAction;
 use App\Modules\Purchasing\Actions\UpdatePurchaseReturnDraftAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\PurchaseReturnLine;
 use App\Modules\Purchasing\Models\StockBalance;
@@ -34,6 +35,18 @@ new #[Title('Supplier Returns')] class extends Component
     public bool $showFormModal = false;
 
     public ?int $selectedInvoiceId = null;
+
+    public ?int $selectedSupplierId = null;
+
+    public string $returnProductEntry = '';
+
+    public bool $supplierProductsOnly = true;
+
+    public string $confirmedSupplierId = '';
+
+    public string $pendingSupplierId = '';
+
+    public bool $showSupplierChangeConfirmation = false;
 
     public ?int $selectedReturnId = null;
 
@@ -76,6 +89,11 @@ new #[Title('Supplier Returns')] class extends Component
 
         $this->resetValidation();
         $this->selectedInvoiceId = null;
+        $this->selectedSupplierId = null;
+        $this->confirmedSupplierId = '';
+        $this->pendingSupplierId = '';
+        $this->supplierProductsOnly = true;
+        $this->returnProductEntry = '';
         $this->selectedReturnId = null;
         $this->selectedReasonId = null;
         $this->returnLines = [];
@@ -94,9 +112,45 @@ new #[Title('Supplier Returns')] class extends Component
             ->findOrFail($id);
         $this->selectedReturnId = $return->id;
         $this->selectedInvoiceId = $return->purchase_invoice_id;
+        $this->selectedSupplierId = $return->supplier_id;
+        $this->confirmedSupplierId = (string) $return->supplier_id;
         $this->selectedReasonId = $return->reason_id;
         $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
         $this->showFormModal = true;
+    }
+
+    public function updatedSelectedSupplierId(?int $supplierId): void
+    {
+        $next = $supplierId ? (string) $supplierId : '';
+        if ($this->confirmedSupplierId !== '' && $next !== $this->confirmedSupplierId && $this->returnLines !== []) {
+            $this->pendingSupplierId = $next;
+            $this->selectedSupplierId = (int) $this->confirmedSupplierId;
+            $this->showSupplierChangeConfirmation = true;
+
+            return;
+        }
+        $this->confirmedSupplierId = $next;
+        $this->selectedInvoiceId = null;
+        $this->returnLines = [];
+        $this->supplierProductsOnly = $next !== '';
+    }
+
+    public function confirmSupplierChange(): void
+    {
+        $this->selectedSupplierId = $this->pendingSupplierId === '' ? null : (int) $this->pendingSupplierId;
+        $this->confirmedSupplierId = $this->pendingSupplierId;
+        $this->pendingSupplierId = '';
+        $this->selectedInvoiceId = null;
+        $this->returnLines = [];
+        $this->returnProductEntry = '';
+        $this->supplierProductsOnly = $this->confirmedSupplierId !== '';
+        $this->showSupplierChangeConfirmation = false;
+    }
+
+    public function cancelSupplierChange(): void
+    {
+        $this->pendingSupplierId = '';
+        $this->showSupplierChangeConfirmation = false;
     }
 
     public function updatedSelectedInvoiceId(?int $invoiceId): void
@@ -112,29 +166,69 @@ new #[Title('Supplier Returns')] class extends Component
             ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
             ->with('lines.product')
             ->where('status', 'approved')
+            ->where('supplier_id', $this->selectedSupplierId)
             ->findOrFail($invoiceId);
-        $this->returnLines = $invoice->lines
-            ->map(function ($line) use ($invoice): ?array {
-                $returned = PurchaseReturnLine::query()
-                    ->where('purchase_invoice_line_id', $line->id)
-                    ->when($this->selectedReturnId !== null, fn ($query) => $query->where('purchase_return_id', '!=', $this->selectedReturnId))
-                    ->whereHas('purchaseReturn', fn ($query) => $query->whereNotIn('status', ['cancelled', 'rejected', 'reversed']))
-                    ->sum('quantity');
-                $remaining = bcsub((string) $line->quantity_received, (string) $returned, 6);
-                $onHand = (string) (StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $line->product_id)->value('on_hand') ?? '0');
-                $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
-                if (bccomp($available, '0', 6) <= 0) {
-                    return null;
-                }
+        $this->returnProductEntry = '';
+        $this->dispatch('purchasing-product-focus');
+    }
 
-                return [
-                    'purchase_invoice_line_id' => (string) $line->id,
-                    'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
-                    'unit_cost' => (string) $line->unit_cost,
-                    'available' => $available,
-                    'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
-                ];
-            })->filter()->values()->all();
+    public function selectReturnProduct(int $productId): void
+    {
+        $actor = Auth::user();
+        abort_unless($actor instanceof User && $this->selectedInvoiceId !== null && $this->selectedSupplierId !== null, 422, __('Select a supplier and approved invoice before adding products.'));
+        $invoice = PurchaseInvoice::query()
+            ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+            ->where('status', 'approved')
+            ->where('supplier_id', $this->selectedSupplierId)
+            ->with(['lines' => fn ($query) => $query->where('product_id', $productId)->with('product')])
+            ->findOrFail($this->selectedInvoiceId);
+        $line = $invoice->lines->firstOrFail();
+        $entry = $this->returnLineEntry($invoice, $line);
+        if ($entry === null) {
+            Flux::toast(__('This invoice line has no quantity available to return.'), variant: 'warning');
+
+            return;
+        }
+        if (collect($this->returnLines)->contains(fn (array $current): bool => (int) $current['purchase_invoice_line_id'] === $line->id)) {
+            Flux::toast(__('This product is already in the supplier return.'), variant: 'warning');
+
+            return;
+        }
+        $this->returnLines[] = $entry;
+        $this->returnProductEntry = '';
+        $this->dispatch('return-line-focus', index: array_key_last($this->returnLines));
+    }
+
+    public function removeReturnLine(int $index): void
+    {
+        if (array_key_exists($index, $this->returnLines)) {
+            array_splice($this->returnLines, $index, 1);
+        }
+        $this->dispatch('purchasing-product-focus');
+    }
+
+    /** @return array<string, string>|null */
+    private function returnLineEntry(PurchaseInvoice $invoice, PurchaseInvoiceLine $line): ?array
+    {
+        $returned = PurchaseReturnLine::query()
+            ->where('purchase_invoice_line_id', $line->id)
+            ->when($this->selectedReturnId !== null, fn ($query) => $query->where('purchase_return_id', '!=', $this->selectedReturnId))
+            ->whereHas('purchaseReturn', fn ($query) => $query->whereNotIn('status', ['cancelled', 'rejected', 'reversed']))
+            ->sum('quantity');
+        $remaining = bcsub((string) $line->quantity_received, (string) $returned, 6);
+        $onHand = (string) (StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $line->product_id)->value('on_hand') ?? '0');
+        $available = bccomp($remaining, $onHand, 6) <= 0 ? $remaining : $onHand;
+        if (bccomp($available, '0', 6) <= 0) {
+            return null;
+        }
+
+        return [
+            'purchase_invoice_line_id' => (string) $line->id,
+            'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
+            'unit_cost' => (string) $line->unit_cost,
+            'available' => $available,
+            'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
+        ];
     }
 
     public function saveDraft(CreatePurchaseReturnDraftAction $create, UpdatePurchaseReturnDraftAction $update): void
@@ -437,12 +531,29 @@ new #[Title('Supplier Returns')] class extends Component
                 <flux:callout variant="warning" icon="shield-check">
                     {{ __('The source invoice and line cost are server-authoritative. The cost field below is read-only and cannot be replaced with current WAC.') }}
                 </flux:callout>
-                <flux:select wire:model.live="selectedInvoiceId" :label="__('Approved purchase invoice')">
+                <flux:select wire:model.live="selectedSupplierId" :label="__('Supplier')" :disabled="$selectedReturnId !== null">
+                    <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
+                    @foreach($sourceInvoices->pluck('supplier')->filter()->unique('id') as $supplier)
+                        <flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale() === 'ar' ? ($supplier->name_ar ?: $supplier->name_en) : ($supplier->name_en ?: $supplier->name_ar) }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:select wire:model.live="selectedInvoiceId" :label="__('Approved purchase invoice')" :disabled="$selectedSupplierId === null || $selectedReturnId !== null">
                     <flux:select.option value="">{{ __('Select approved invoice') }}</flux:select.option>
-                    @foreach ($sourceInvoices as $invoice)
+                    @foreach ($sourceInvoices->where('supplier_id', $selectedSupplierId) as $invoice)
                         <flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }} — {{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
+                <div class="space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <flux:heading size="base">{{ __('Return product lines') }}</flux:heading>
+                        <div class="flex flex-wrap items-center justify-end gap-3">
+                            <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="$selectedSupplierId === null" />
+                            <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null">{{ __('Add item') }}</flux:button>
+                        </div>
+                    </div>
+                    <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
+                    @if($selectedSupplierId !== null && $selectedInvoiceId === null)<p class="text-xs text-zinc-500">{{ __('Select an approved invoice before searching its returnable products.') }}</p>@endif
+                </div>
                 <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>
                     @foreach ($reasons as $reason)
@@ -453,7 +564,7 @@ new #[Title('Supplier Returns')] class extends Component
                     <div class="space-y-3">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>
                         @foreach ($returnLines as $index => $line)
-                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-5" wire:key="return-line-{{ $line['purchase_invoice_line_id'] }}" data-product-line data-product-value="{{ $line['purchase_invoice_line_id'] }}">
+                            <div class="grid gap-3 rounded-lg border p-3 md:grid-cols-6" wire:key="return-line-{{ $line['purchase_invoice_line_id'] }}" data-product-line data-product-value="{{ $line['purchase_invoice_line_id'] }}" x-on:return-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())">
                                 <div class="md:col-span-2">
                                     <flux:label>{{ __('Product') }}</flux:label>
                                     <flux:text class="mt-2 font-medium">{{ $line['product'] }}</flux:text>
@@ -462,11 +573,12 @@ new #[Title('Supplier Returns')] class extends Component
                                 <flux:input wire:model="returnLines.{{ $index }}.quantity" type="number" min="1" step="1" :label="__('Quantity')" data-line-quantity />
                                 <flux:input wire:model="returnLines.{{ $index }}.unit_cost" type="text" readonly :label="__('Unit cost')" data-line-price data-price-kind="cost" />
                                 <div><flux:label>{{ __('Line total') }}</flux:label><output class="mt-2 flex h-10 items-center justify-end rounded-lg bg-surface-muted px-3 font-mono" data-line-total>0.00</output></div>
+                                <div class="flex items-end justify-end"><flux:button type="button" variant="danger" size="sm" wire:click="removeReturnLine({{ $index }})">{{ __('Remove') }}</flux:button></div>
                             </div>
                         @endforeach
                     </div>
                 @else
-                    <flux:callout variant="warning">{{ __('Select an approved invoice with received lines.') }}</flux:callout>
+                    <flux:callout variant="warning">{{ __('Select an approved invoice, then search and add at least one returnable product.') }}</flux:callout>
                 @endif
                 <div class="flex justify-end gap-2">
                     <flux:button type="button" variant="subtle" wire:click="$set('showFormModal', false)">{{ __('Cancel') }}</flux:button>
@@ -475,4 +587,15 @@ new #[Title('Supplier Returns')] class extends Component
             </form>
         </flux:modal>
     @endif
+
+    <flux:modal wire:model.self="showSupplierChangeConfirmation" class="md:max-w-lg">
+        <div class="space-y-5">
+            <flux:heading size="lg">{{ __('Change supplier and clear product lines?') }}</flux:heading>
+            <flux:callout variant="warning">{{ __('Changing the supplier clears the selected invoice and existing return lines.') }}</flux:callout>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="subtle" wire:click="cancelSupplierChange">{{ __('Keep current supplier') }}</flux:button>
+                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and clear lines') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </x-app.page>

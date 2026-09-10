@@ -86,6 +86,9 @@ final class UpdatePurchaseReturnDraftAction
             $before = $return->only(['reason_id', 'subtotal', 'total_amount', 'lock_version']);
             $return->lines()->delete();
             $return->lines()->createMany($normalized);
+            foreach ($normalized as $line) {
+                app(SyncSupplierProductAssociation::class)->associate($return->supplier_id, (int) $line['product_id'], $actorId);
+            }
             $return->update(['reason_id' => $reason->id, 'subtotal' => $subtotal, 'total_amount' => $subtotal, 'updated_by' => $actorId, 'lock_version' => $return->lock_version + 1]);
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'edit_supplier_return_draft', source: $return, before: $before, after: $return->only(['reason_id', 'subtotal', 'total_amount', 'lock_version']), storeId: $return->store_id, reasonCode: $reason->code);
 
