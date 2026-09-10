@@ -244,3 +244,12 @@
 - PASS: exactly one clean Node 20/Vite 8.2.0 production build after the functional frontend edits.
 - BLOCKED BEFORE DATABASE ACCESS: the updated focused MySQL feature contract (4 tests) could not authenticate to dedicated database `toyjoy_testing` because no authorized local credentials exist in the isolated worktree. It made zero assertions, fixtures, migrations, or database changes; no rerun was attempted.
 - Migration status: no Hotfix27 migration exists or ran. Migration 000111 was not queried locally and remains a mandatory already-`Ran` activation precondition.
+
+# 2026-09-10 — v0.1.22-hotfix28 focused verification
+
+- PASS: affected PHP/runtime-verifier syntax and full Blade cache compilation (715 compiled views).
+- PASS: purchase-order overview/create named routes, shared Livewire action, permission middleware, toolbar destination, adjacent bilingual sidebar item, no legacy create-modal trigger, and fixture runtime contract.
+- PASS: unchanged product-search behavior contract, 3 tests / 3 passed, covering incremental/stale/duplicate behavior, multi-match Enter prevention, arrow selection, exact scanner selection, row progression, parent-submit prevention, and camera cleanup.
+- PASS: Arabic/English locale JSON, Git diff hygiene, and Hotfix27 Vite artifact identity (`manifest.json` SHA-256 `73073894ef9dfca13d6038ccfed8ee7905aa7fc91a38c795b86ac9872277c1b7`; app JavaScript SHA-256 `b06582b6a9bf032f7d37ad6e94dffc3936a07300e7239c75c960f899efeeb5f7`). No Vite build ran because no frontend source changed.
+- ACTIVATION-GATED: authenticated production-shaped Arabic/English HTTP 200 checks for `/purchasing/orders` and `/purchasing/orders/create` require the real environment and runtime user `rajeh`. Activation runs them before and after switching and rolls back to exact Hotfix26 on any failure.
+- Migration status: no Hotfix28 migration exists or ran. Migration 000111 was not queried locally and remains a mandatory already-`Ran` activation precondition.

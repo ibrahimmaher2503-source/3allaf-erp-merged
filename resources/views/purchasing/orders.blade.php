@@ -381,6 +381,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         if ($this->createPage) {
             return view('purchasing.orders', [
+                'createPage' => $this->createPage,
                 'suppliers' => $suppliers,
                 'stores' => $stores,
                 'products' => $products,
@@ -441,6 +442,7 @@ new #[Title('Purchase Orders')] class extends Component
             ->get() : collect();
 
         return view('purchasing.orders', [
+            'createPage' => $this->createPage,
             'orders' => $orders,
             'suppliers' => $suppliers,
             'stores' => $stores,

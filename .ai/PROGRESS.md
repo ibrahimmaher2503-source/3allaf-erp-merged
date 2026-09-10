@@ -312,3 +312,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added the permission-gated full-page purchase-order create route and adjacent bilingual sidebar item. The page reuses the existing Livewire component, validation, supplier/store/line state, supplier pricing, totals, and draft-save action.
 - Focused syntax, 721-view Blade compilation, route/runtime rendering, dependency-free interaction tests, localization, compiled-asset integrity, and diff hygiene passed. Exactly one clean Node 20/Vite 8.2.0 production build ran.
 - No migration was added or run. No production access, deployment, promotion, activation, database change, service action, sudo, root, push, tag, browser/package installation, or remote operation occurred.
+
+# 2026-09-10 — v0.1.22-hotfix28 purchase-order runtime repair
+
+- Correlated both supplied production request IDs to the same `Undefined variable $createPage` exception during Livewire `purchasing::orders` rendering; both custom render branches omitted the new view datum.
+- Added `createPage` explicitly to the overview and full-page create render arrays without changing the Hotfix27 routes, navigation, form, product lookup, or create-modal removal.
+- Added a fail-fast activation runtime verifier that uses an existing authorized user and visible store, array-only session/cache drivers, internal HTTP rendering in Arabic and English, warning escalation, and an always-rolled-back database transaction.
+- Focused PHP syntax, 715-view Blade compilation, route/runtime fixture, navigation/product lookup, 3/3 JavaScript behavior checks, locale JSON, unchanged asset hashes, and diff hygiene passed. No Vite build was run because frontend source was unchanged.
+- No migration or database mutation occurred. Production logs were read-only; production files, caches, data, releases, and active links were not modified.
