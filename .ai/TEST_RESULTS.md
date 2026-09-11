@@ -281,3 +281,12 @@
 - PASS: multiple-match Enter did not auto-select; Arrow/Enter selected the highlighted product, applied supplier/fallback cost, focused quantity, progressed through invoice line fields, created one next row, focused its product search, suppressed repeated Enter, and prevented parent invoice submission. Exact unique scanner selection and Escape closure passed.
 - PASS: exactly one clean Node 20.20.2 / Vite 8.2.0 build; manifest SHA-256 `43ee8a205f5c4467d00ced437109f1478e86a67c4edf9aa3b24be79dba5cf11a`; app JavaScript SHA-256 `d3943fbaff090cbc93123b0597b173271fe4399a22d6a6cab40681e34c64e6b4`.
 - ACTIVATION-GATED: authenticated Arabic/English HTTP 200 and production-shaped runtime verification execute before and after activation. No database or migration was accessed locally; migration 000111 must already be `Ran` and no migration is executed.
+
+# 2026-09-11 — v0.1.22-hotfix32 focused verification
+
+- PASS: corrected fixture runtime verification rendered one exact Arabic supplier-only editor label and no exact label text inside two lookup controls, then exercised the unchanged compiled search/keyboard runtime and emitted the required terminal PASS marker.
+- PASS: real `منتج` and `001` input events, visible dropdown lifecycle, supplier-only/all-product requests, multi-match keyboard selection, exact scanner selection, line creation/next focus, repeated-Enter suppression, and parent-submit prevention remain intact in the reused Hotfix31 compiled asset.
+- PASS: isolated forced verifier failures proved pre-switch no-switch, post-switch exact Hotfix31 restoration, and absence of `ACTIVATION=SUCCESS` after either failure. Temporary paths only were used.
+- PASS: touched PHP syntax, Bash syntax, exact reused manifest/asset identity, immutable archive/manifest integrity, executable script modes, and Git diff hygiene. Blade and locale files were unchanged; Vite build count is 0.
+- INFO: two initial fixture invocations under an inappropriate testing environment failed closed before runtime checks because the unavailable translation database was deliberately rethrown; the affected fixture was rerun with the production-shaped environment and passed. No database connection succeeded or mutation occurred.
+- Migration status: no Hotfix32 migration exists or ran. Migration 000111 remains a mandatory already-`Ran` activation precondition; activation executes no migration.

@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-11
-**Status:** v0.1.22-hotfix31 is the bounded I4 purchase-invoice and price-list UX candidate from exact Hotfix30 commit `05f67897402d918001fd4da6a9c3204a26358c6d`.
+**Status:** v0.1.22-hotfix32 is the bounded I4 verification and activation repair from exact Hotfix31 commit `3ca22dbe6671f94aaec4132b84fb6a2c126cec82`.
 
-The release applies the proven Hotfix30 purchasing lookup and keyboard lifecycle to purchase-invoice draft entry, provides compact responsive invoice metadata and bounded sticky-header lines, keeps totals/notes/actions accessible, and places price-list search/status controls in one compact desktop row. Hotfix24–Hotfix30 business, authorization, accounting, receiving, pricing, quick-create, scanner, and purchase-order contracts remain in place.
+The release corrects a stale supplier-only verification assertion and makes pre/post activation verification strictly fail closed with exact Hotfix31 rollback. The approved Hotfix31 purchase-invoice and price-list UI and every Hotfix24–Hotfix31 business, authorization, accounting, receiving, pricing, quick-create, scanner, keyboard, and purchase-order contract remain unchanged.
 
-Focused source, PHP, Blade, locale, rendered lookup, compiled-browser, geometry, asset-identity, and diff checks are complete. No migration was added or executed; migration 000111 remains an activation precondition. Promotion and activation are external root-operator steps and were not executed.
+Focused verifier, forced-failure activation, PHP, Bash, asset-identity, and diff checks are required once. No migration is added or executed; migration 000111 remains an activation precondition. Promotion and activation are external root-operator steps and are not executed locally.

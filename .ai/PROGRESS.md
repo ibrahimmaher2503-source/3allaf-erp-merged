@@ -342,3 +342,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added invoice keyboard progression through quantity, editable cost, list price, discount and tax fields; final Enter creates at most one next row and focuses its product search while parent submission remains blocked.
 - Compacted purchase-invoice metadata, bounded/sticky line geometry, totals, notes/actions, and the price-list search/status row without changing invoice or pricing business rules.
 - Updated version/tracking/evidence; exactly one clean Node 20 production Vite build completed. No migration or production operation occurred.
+
+# v0.1.22-hotfix32 invoice verification fail-closed repair — 2026-09-11
+
+- Confirmed the approved Hotfix31 invoice Blade declares the supplier-only checkbox once; the stale verifier was matching the same words inside a longer lookup empty-state data message.
+- Replaced the substring assertion with exact rendered text-node checks around one editor checkbox and multiple lookup controls, and made all verifier exceptions exit explicitly with status 1.
+- Hardened activation around checked `tee` pipeline statuses and an exact terminal PASS marker; post-switch failure restores exact Hotfix31, rebuilds caches, reloads PHP-FPM, runs `artisan up`, and confirms maintenance mode is off.
+- The isolated negative contract passed pre-switch/no-switch, post-switch/rollback, and no-false-success scenarios. No frontend source changed; exact Hotfix31 compiled assets are reused and Vite build count is zero.
+- No migration, database, production access/change, promotion, activation, sudo/root action, service action, push, tag, package/browser installation, or unrelated application change occurred.
