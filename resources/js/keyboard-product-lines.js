@@ -3,13 +3,15 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character
 class ProductLookup {
     constructor(root) {
         const currentInput = root.querySelector('[data-product-search]');
-        if (root._productLookup?.input === currentInput) return root._productLookup;
+        const currentResultsAnchor = root.querySelector('[data-product-results]');
+        if (root._productLookup?.input === currentInput && root._productLookup?.resultsAnchor === currentResultsAnchor) return root._productLookup;
         root._productLookup?.destroy();
         root.dataset.productLookupReady = 'true';
         this.root = root;
         this.input = currentInput;
         this.hidden = root.querySelector('[data-product-id]');
-        this.results = root.querySelector('[data-product-results]');
+        this.resultsAnchor = currentResultsAnchor;
+        this.results = this.createResultsOverlay();
         this.error = root.querySelector('[data-product-error]');
         this.items = [];
         this.active = -1;
@@ -34,7 +36,47 @@ class ProductLookup {
         this.input.addEventListener('blur', () => setTimeout(() => this.close(), 120));
         this.cameraTrigger?.addEventListener('click', () => this.openCamera());
         root.querySelector('[data-camera-close]')?.addEventListener('click', () => this.closeCamera());
+        this.outsidePointer = (event) => {
+            if (!this.root.contains(event.target) && !this.results.contains(event.target)) this.close();
+        };
+        this.reposition = () => {
+            if (!this.results.classList.contains('hidden')) this.positionResultsOverlay();
+        };
+        document.addEventListener('pointerdown', this.outsidePointer, true);
+        window.addEventListener('resize', this.reposition, { passive: true });
+        window.addEventListener('scroll', this.reposition, { passive: true, capture: true });
         root._productLookup = this;
+    }
+
+    createResultsOverlay() {
+        const overlay = this.resultsAnchor.cloneNode(false);
+        overlay.removeAttribute('data-product-results');
+        overlay.dataset.productResultsOverlay = 'true';
+        overlay.classList.add('hidden');
+        overlay.setAttribute('role', 'listbox');
+        overlay.setAttribute('aria-live', 'polite');
+        overlay.style.position = 'fixed';
+        overlay.style.zIndex = '10000';
+        overlay.style.margin = '0';
+        document.body.appendChild(overlay);
+        this.resultsAnchor.setAttribute('aria-hidden', 'true');
+
+        return overlay;
+    }
+
+    positionResultsOverlay() {
+        const rect = this.input.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const spaceBelow = viewportHeight - rect.bottom - 8;
+        const spaceAbove = rect.top - 8;
+        const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
+        const available = Math.max(96, Math.min(256, openAbove ? spaceAbove : spaceBelow));
+        this.results.style.left = `${Math.max(4, rect.left)}px`;
+        this.results.style.width = `${Math.max(240, rect.width)}px`;
+        this.results.style.maxHeight = `${available}px`;
+        this.results.style.top = openAbove ? 'auto' : `${rect.bottom + 4}px`;
+        this.results.style.bottom = openAbove ? `${viewportHeight - rect.top + 4}px` : 'auto';
+        this.results.setAttribute('dir', this.input.getAttribute('dir') || document.documentElement.dir || 'ltr');
     }
 
     queue() {
@@ -82,6 +124,7 @@ class ProductLookup {
           try {
             const response = await fetch(`${this.root.dataset.searchUrl}?${requestKey}`, {
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
                 signal: controller.signal,
             });
             if (!response.ok) throw new Error('lookup');
@@ -99,7 +142,9 @@ class ProductLookup {
             }
             this.render(payload.meta ?? {});
         } catch (error) {
-            if (error.name !== 'AbortError') this.close();
+            if (error.name !== 'AbortError' && sequence === this.requestSequence) {
+                this.renderMessage(this.root.dataset.messageError, 'error');
+            }
         } finally {
             if (sequence === this.requestSequence) {
                 this.pendingKey = null;
@@ -117,7 +162,7 @@ class ProductLookup {
             const message = meta.supplier_required
                 ? this.root.dataset.messageSupplierRequired
                 : (meta.supplier_products_empty ? this.root.dataset.messageSupplierEmpty : this.root.dataset.messageEmpty);
-            this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(message)}</p>`;
+            this.results.innerHTML = `<p class="p-2 text-xs text-zinc-500" role="status" data-product-state="empty">${escapeHtml(message)}</p>`;
         } else {
             this.results.innerHTML = this.items.map((item, index) => {
                 const arabic = item.name_ar || item.name_en;
@@ -143,6 +188,8 @@ class ProductLookup {
             });
         }
         this.results.classList.remove('hidden');
+        this.results.dataset.state = this.items.length ? 'results' : 'empty';
+        this.positionResultsOverlay();
         this.input.setAttribute('aria-expanded', 'true');
         this.syncActive();
     }
@@ -205,17 +252,21 @@ class ProductLookup {
 
     close() {
         this.results.classList.add('hidden');
+        delete this.results.dataset.state;
         this.active = -1;
         this.explicitHighlight = false;
         this.input.setAttribute('aria-expanded', 'false');
         this.input.removeAttribute('aria-activedescendant');
     }
 
-    renderMessage(message) {
+    renderMessage(message, state = 'loading') {
         this.items = [];
         this.active = -1;
-        this.results.innerHTML = `<p class="p-3 text-sm text-zinc-500">${escapeHtml(message)}</p>`;
+        const tone = state === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-zinc-500';
+        this.results.innerHTML = `<p class="p-2 text-xs ${tone}" role="status" data-product-state="${state}">${escapeHtml(message)}</p>`;
         this.results.classList.remove('hidden');
+        this.results.dataset.state = state;
+        this.positionResultsOverlay();
         this.input.setAttribute('aria-expanded', 'true');
     }
 
@@ -275,7 +326,12 @@ class ProductLookup {
         clearTimeout(this.timer);
         this.controller?.abort();
         this.closeCamera();
+        document.removeEventListener('pointerdown', this.outsidePointer, true);
+        window.removeEventListener('resize', this.reposition);
+        window.removeEventListener('scroll', this.reposition, true);
+        this.results.remove();
         delete this.root._productLookup;
+        delete this.root.dataset.productLookupReady;
     }
 
     invalidate() {
@@ -441,10 +497,22 @@ const focusBlank = (editor) => {
     }
 };
 
-const boot = () => {
-    document.querySelectorAll('[data-product-lookup]').forEach((root) => new ProductLookup(root));
-    document.querySelectorAll('[data-product-line-editor]').forEach(initializeEditor);
-    document.querySelectorAll('[data-product-line-editor]').forEach(focusBlank);
+const matchingElements = (scope, selector) => [
+    ...(scope.matches?.(selector) ? [scope] : []),
+    ...scope.querySelectorAll(selector),
+];
+
+const boot = (scope = document) => {
+    matchingElements(scope, '[data-product-lookup]').forEach((root) => new ProductLookup(root));
+    matchingElements(scope, '[data-product-line-editor]').forEach(initializeEditor);
+    matchingElements(scope, '[data-product-line-editor]').forEach(focusBlank);
+};
+
+const bindLivewireHooks = () => {
+    if (!window.Livewire?.hook || window.__toyJoyProductLookupHooksBound) return;
+    window.__toyJoyProductLookupHooksBound = true;
+    window.Livewire.hook('morph.updated', ({ el }) => boot(el));
+    window.Livewire.hook('morph.added', ({ el }) => boot(el));
 };
 
 if (typeof document !== 'undefined') {
@@ -457,13 +525,19 @@ if (typeof document !== 'undefined') {
             });
             if (record.type === 'attributes' && record.target.matches?.('[data-product-lookup]')) record.target._productLookup?.invalidate();
         });
-        boot();
+        records.forEach((record) => boot(record.target));
         requestAnimationFrame(() => document.querySelectorAll('[data-product-lookup]').forEach((root) => {
             if (root.getClientRects().length === 0) root._productLookup?.closeCamera();
         }));
     }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-supplier-id', 'data-supplier-only', 'data-currency-code', 'data-purchase-invoice-id', 'hidden', 'class'] });
-    document.addEventListener('DOMContentLoaded', boot);
-    document.addEventListener('livewire:navigated', boot);
+    document.addEventListener('DOMContentLoaded', () => boot());
+    document.addEventListener('livewire:init', bindLivewireHooks);
+    document.addEventListener('livewire:initialized', () => { bindLivewireHooks(); boot(); });
+    document.addEventListener('livewire:navigated', () => { bindLivewireHooks(); boot(); });
+    document.addEventListener('input', (event) => {
+        const root = event.target.closest?.('[data-product-lookup]');
+        if (root && !root._productLookup) new ProductLookup(root);
+    }, true);
     document.addEventListener('keydown', posKeyboardNavigation);
     window.addEventListener('pos-product-search-focus', () => requestAnimationFrame(() => document.getElementById('live-pos-product-search')?.focus()));
     window.addEventListener('purchasing-product-focus', () => requestAnimationFrame(() => document.querySelector('[data-product-lookup][data-context="purchasing"] [data-product-search]:not(:disabled)')?.focus()));
@@ -472,4 +546,4 @@ if (typeof document !== 'undefined') {
     boot();
 }
 
-export { ProductLookup, initializeEditor };
+export { ProductLookup, boot, initializeEditor };

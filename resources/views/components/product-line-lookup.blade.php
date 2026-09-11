@@ -26,6 +26,7 @@
     data-purchase-invoice-id="{{ $purchaseInvoiceId }}"
     data-message-empty="{{ __('No matching products.') }}"
     data-message-loading="{{ __('Searching products…') }}"
+    data-message-error="{{ __('Product search could not be completed. Try again.') }}"
     data-message-supplier-required="{{ __('Select a supplier before adding products.') }}"
     data-message-supplier-empty="{{ __('This supplier has no associated products. Uncheck “Use supplier products only” to search all authorized products.') }}"
     data-label-unit="{{ __('Unit') }}"
@@ -68,7 +69,7 @@
             </button>
         @endif
     </div>
-    <div class="absolute z-40 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900" role="listbox" data-product-results></div>
+    <div class="absolute z-40 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900" role="listbox" aria-live="polite" data-product-results></div>
     <p class="mt-1 hidden text-xs font-semibold text-rose-600" role="alert" data-product-error>{{ __('Select a product from the search results.') }}</p>
     @if($purchasing)
         <div class="mt-2 hidden rounded-xl border border-zinc-200 bg-zinc-950 p-3" data-camera-panel>

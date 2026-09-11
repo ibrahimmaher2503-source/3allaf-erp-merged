@@ -328,3 +328,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Compacted the full-page purchase-order editor into a five-field desktop metadata row and dense aligned item rows, with a bounded scrolling item area, sticky header, compact price source, end-positioned notes, totals, and actions.
 - Focused local checks passed: touched PHP syntax, 887-view Blade compilation, locale JSON, static bilingual route/layout/asset contract, 4/4 JavaScript runtime behavior tests, compiled asset identity, and diff hygiene. Real-environment authenticated bilingual route/search checks remain deliberately activation-gated because the isolated worktree has no environment or authorized local database credentials.
 - One clean Node 20/Vite 8.2.0 production build completed successfully. No migration, production access/change, deployment, activation, sudo/root action, push, tag, package/browser installation, or unrelated work occurred.
+
+# 2026-09-11 — v0.1.22-hotfix30 compiled browser product search
+
+- Preserved the Hotfix29 purchase-order overview and compact create-form layout byte-for-byte.
+- Repaired the hidden lookup feedback by rendering its dropdown as a fixed body overlay outside the bounded `overflow-y-auto` line container; added compact localized loading, results, empty, and request-error states.
+- Made lookup binding idempotent across initial DOM load, Livewire initialization/navigation, Livewire morph hooks, mutation fallback, and dynamically added rows, while retaining authenticated debounce, supplier filtering, exact-unique selection, multi-match keyboard safeguards, row pricing/totals, camera behavior, and stale-request protection.
+- One clean Node 20.20.2/Vite 8.2.0 build completed. The compiled bundle passed the rendered-markup DOM lifecycle contract for Arabic and identifier input, feedback visibility, keyboard/row state, Livewire replacement/addition/navigation, and unclipped overlay placement.
+- No migration, production access/change, deployment, activation, sudo/root action, push, tag, package/browser installation, or unrelated work occurred.

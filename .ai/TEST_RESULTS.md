@@ -263,3 +263,14 @@
 - PASS: one successful clean Node 20.20.2/Vite 8.2.0 production build. Three preceding environment-resolution attempts emitted no usable build (missing isolated `node_modules`, then config dependencies, then isolated `vendor`); no package was installed, and the final build started from an empty build directory using unchanged shared dependencies.
 - ACTIVATION-GATED: authenticated Arabic/English HTTP 200 checks for `/purchasing/orders` and `/purchasing/orders/create`, plus authorized supplier-product partial-search JSON, require the real release environment. The verifier uses array cache/session state and an always-rolled-back transaction; activation runs it before and after switching.
 - Migration status: no Hotfix29 migration exists or ran. Migration 000111 was not queried locally and is a mandatory already-`Ran` activation precondition.
+
+# 2026-09-11 — v0.1.22-hotfix30 focused compiled-browser verification
+
+- PASS: PHP 8.4 syntax for the touched version/runtime PHP files; one Blade compilation produced 887 compiled views; Arabic/English locale JSON passed.
+- PASS: exactly one clean Node 20.20.2/Vite 8.2.0 production build. Compiled app asset `assets/app-DFNxkatv.js` SHA-256 `b9a4bf0238e0ea37899858e7c448c4e1f9b7c7a689724618301180132da750f5`; Vite manifest SHA-256 `daecb4bae24237df2f581d13eecc6434950d8b9c0148a1d97c807e6620509809`.
+- PASS: production compiled JavaScript executed against rendered purchase-order lookup markup. Real Arabic `منتج` and identifier `001` input events produced loading and visible multi-result states; narrowing, empty and localized request-error states passed; supplier-only/all-product request parameters passed.
+- PASS: multi-result Enter remained non-selecting; Arrow/Enter populated product ID, supplier cost provenance, quantity-derived total, and quantity focus; exact unique scanner identifier selection passed.
+- PASS: initial load, Livewire initialization/navigation, morph replacement, and dynamically added-row initialization remained single-bound; outside click/Escape closure and fixed body-overlay containment passed.
+- PASS: Hotfix29 compact layout files are unchanged; static route/component/asset contract and `git diff --check` passed.
+- ACTIVATION-GATED: real-environment authenticated Arabic/English HTTP 200 checks and the same compiled-browser contract against the complete authenticated `/purchasing/orders/create` response run before and after switching inside the rollback-safe verifier.
+- Migration status: no Hotfix30 migration exists or ran. Migration 000111 remains a mandatory already-`Ran` activation precondition.
