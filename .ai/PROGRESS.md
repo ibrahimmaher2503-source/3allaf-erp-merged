@@ -320,3 +320,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added a fail-fast activation runtime verifier that uses an existing authorized user and visible store, array-only session/cache drivers, internal HTTP rendering in Arabic and English, warning escalation, and an always-rolled-back database transaction.
 - Focused PHP syntax, 715-view Blade compilation, route/runtime fixture, navigation/product lookup, 3/3 JavaScript behavior checks, locale JSON, unchanged asset hashes, and diff hygiene passed. No Vite build was run because frontend source was unchanged.
 - No migration or database mutation occurred. Production logs were read-only; production files, caches, data, releases, and active links were not modified.
+
+# 2026-09-11 — v0.1.22-hotfix29 purchase-order search and compact layout
+
+- Rebound the shared product lookup whenever Livewire preserves its root but replaces child controls, and stopped empty product IDs from emitting competing Livewire input requests while users type.
+- Moved the camera control fully outside the input, made Arabic/English direction and alignment explicit, and preserved supplier filtering/pricing, unique exact selection, guarded multi-match Enter, stale-response protection, and keyboard row progression.
+- Compacted the full-page purchase-order editor into a five-field desktop metadata row and dense aligned item rows, with a bounded scrolling item area, sticky header, compact price source, end-positioned notes, totals, and actions.
+- Focused local checks passed: touched PHP syntax, 887-view Blade compilation, locale JSON, static bilingual route/layout/asset contract, 4/4 JavaScript runtime behavior tests, compiled asset identity, and diff hygiene. Real-environment authenticated bilingual route/search checks remain deliberately activation-gated because the isolated worktree has no environment or authorized local database credentials.
+- One clean Node 20/Vite 8.2.0 production build completed successfully. No migration, production access/change, deployment, activation, sudo/root action, push, tag, package/browser installation, or unrelated work occurred.

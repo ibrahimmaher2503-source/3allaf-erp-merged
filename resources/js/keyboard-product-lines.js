@@ -2,10 +2,12 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character
 
 class ProductLookup {
     constructor(root) {
-        if (root.dataset.productLookupReady) return;
+        const currentInput = root.querySelector('[data-product-search]');
+        if (root._productLookup?.input === currentInput) return root._productLookup;
+        root._productLookup?.destroy();
         root.dataset.productLookupReady = 'true';
         this.root = root;
-        this.input = root.querySelector('[data-product-search]');
+        this.input = currentInput;
         this.hidden = root.querySelector('[data-product-id]');
         this.results = root.querySelector('[data-product-results]');
         this.error = root.querySelector('[data-product-error]');
@@ -36,8 +38,10 @@ class ProductLookup {
     }
 
     queue() {
-        this.hidden.value = '';
-        this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        if (this.hidden.value !== '') {
+            this.hidden.value = '';
+            this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         clearTimeout(this.timer);
         this.controller?.abort();
         this.requestSequence++;
@@ -182,7 +186,12 @@ class ProductLookup {
 
     select(item) {
         clearTimeout(this.timer);
-        this.hidden.value = String(item[this.root.dataset.valueField || 'id'] ?? item.id);
+        const selectedValue = String(item[this.root.dataset.valueField || 'id'] ?? item.id);
+        if (this.hidden.value === selectedValue) {
+            this.close();
+            return;
+        }
+        this.hidden.value = selectedValue;
         this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
         this.hidden.dispatchEvent(new Event('change', { bubbles: true }));
         this.input.value = `${document.documentElement.lang === 'ar' ? (item.name_ar || item.name_en) : (item.name_en || item.name_ar)} · ${item.item_code}`;

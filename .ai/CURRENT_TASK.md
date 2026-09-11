@@ -1,12 +1,12 @@
-# Current Task - v0.1.22-hotfix28 purchase-order runtime repair
+# Current Task - v0.1.22-hotfix29 purchase-order search and compact layout
 
-**Date:** 2026-09-10
+**Date:** 2026-09-11
 **Change class:** I4
-**Source baseline:** exact Hotfix27 commit `40439ebc3a7e87fb96255addc7796d3c1ef16c8c`
-**Production baseline:** exact active Hotfix27 path `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix27-40439ebc3a7e`
-**Branch:** `hotfix/v0.1.22-hotfix28-purchase-orders-runtime-repair`
-**Status:** Runtime contract repair and focused local verification are complete. Release commit and immutable operator packaging remain local finalization steps; promotion and activation remain unexecuted operator actions.
+**Source baseline:** exact Hotfix28 commit `97ef774eeb4bee5050a86605a698ba396cfebac1`
+**Production baseline:** exact active Hotfix28 path `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix28-97ef774eeb4b`
+**Branch:** `hotfix/v0.1.22-hotfix29-purchase-order-search-compact-layout`
+**Status:** Source repair, one successful clean production build, and focused local evidence are complete. Release commit and immutable packaging remain; promotion and activation remain unexecuted root-operator actions.
 
-Both production request IDs `249d9a80-6b78-4a9b-a7df-10aadbb26c8e` and `df115f08-bc9c-425d-a9d8-fa71cd3ed1b2` failed because `purchasing/orders.blade.php` referenced `$createPage` while the custom Livewire `render()` data arrays omitted it. Hotfix28 supplies that contract in both overview and create branches without restoring the create modal. It adds a production-shaped authenticated verifier that renders both routes in Arabic and English with an existing authorized user/store, array-only cache/session state, warning-to-exception handling, and an always-rolled-back database transaction.
+Hotfix29 repairs the Livewire-preserved product-lookup root after supplier-driven child morphs and prevents an empty product ID from triggering a competing Livewire request during incremental typing. It preserves unique-exact and multiple-match keyboard safeguards. The camera control is an adjacent button, locale direction/alignment is explicit, and the full-page editor uses compact desktop metadata and line grids, a bounded sticky-header line area, end-positioned notes, and the full available width.
 
-No migration was added or run. Activation must accept only exact Hotfix27, require migration 000111 already Ran, verify both authenticated routes before switching, switch to Hotfix28, repeat both checks, and roll back exactly to Hotfix26 on any activation failure.
+No migration, production mutation, deployment, sudo/root execution, push, tag, package/browser installation, or unrelated change is authorized. Exactly one Node 20 production Vite build is required after all frontend edits. Activation must accept only exact Hotfix28, require migration 000111 already Ran, verify both authenticated routes before and after switching, and atomically restore exact Hotfix28 after any post-switch failure.

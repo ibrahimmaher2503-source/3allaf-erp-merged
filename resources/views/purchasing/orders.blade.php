@@ -464,7 +464,7 @@ new #[Title('Purchase Orders')] class extends Component
     :title="$createPage ? __('New Purchase Order') : (app()->getLocale() === 'ar' ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
     :description="$createPage ? __('Enter supplier, destination store, order dates, and item lines.') : (app()->getLocale() === 'ar' ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.'))"
     :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
-    max-width="7xl"
+    :max-width="$createPage ? 'full' : '7xl'"
     class="purchasing-screen"
     data-guide="po-header"
 >
@@ -488,7 +488,7 @@ new #[Title('Purchase Orders')] class extends Component
     </x-slot:actions>
 
     @if ($createPage)
-        <flux:card class="p-4 sm:p-6" data-guide="po-create-page">
+        <flux:card class="p-3 sm:p-4" data-guide="po-create-page">
             @include('purchasing.partials.order-form', ['fullPage' => true])
         </flux:card>
     @else
