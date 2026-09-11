@@ -274,3 +274,10 @@
 - PASS: Hotfix29 compact layout files are unchanged; static route/component/asset contract and `git diff --check` passed.
 - ACTIVATION-GATED: real-environment authenticated Arabic/English HTTP 200 checks and the same compiled-browser contract against the complete authenticated `/purchasing/orders/create` response run before and after switching inside the rollback-safe verifier.
 - Migration status: no Hotfix30 migration exists or ran. Migration 000111 remains a mandatory already-`Ran` activation precondition.
+# 2026-09-11 — v0.1.22-hotfix31 focused verification
+
+- PASS: touched PHP/Blade syntax, one Blade compilation, Arabic/English locale JSON, invoice rendered lookup directions, exact Arabic supplier-only label, compact invoice/price-list geometry, compiled asset identity, Git diff hygiene, and Bash syntax.
+- PASS: compiled application JavaScript processed real `منتج` and `001` input events and exposed loading, multiple visible results, narrowing, empty and request-error states with supplier-only/all-product parameters.
+- PASS: multiple-match Enter did not auto-select; Arrow/Enter selected the highlighted product, applied supplier/fallback cost, focused quantity, progressed through invoice line fields, created one next row, focused its product search, suppressed repeated Enter, and prevented parent invoice submission. Exact unique scanner selection and Escape closure passed.
+- PASS: exactly one clean Node 20.20.2 / Vite 8.2.0 build; manifest SHA-256 `43ee8a205f5c4467d00ced437109f1478e86a67c4edf9aa3b24be79dba5cf11a`; app JavaScript SHA-256 `d3943fbaff090cbc93123b0597b173271fe4399a22d6a6cab40681e34c64e6b4`.
+- ACTIVATION-GATED: authenticated Arabic/English HTTP 200 and production-shaped runtime verification execute before and after activation. No database or migration was accessed locally; migration 000111 must already be `Ran` and no migration is executed.

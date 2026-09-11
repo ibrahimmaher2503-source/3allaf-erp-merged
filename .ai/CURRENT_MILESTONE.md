@@ -1,8 +1,8 @@
 # Current Milestone
 
-**Date:** 2026-09-10
-**Status:** v0.1.22-hotfix28 is the I4 regression-repair candidate from exact Hotfix27 commit `40439ebc3a7e87fb96255addc7796d3c1ef16c8c`.
+**Date:** 2026-09-11
+**Status:** v0.1.22-hotfix31 is the bounded I4 purchase-invoice and price-list UX candidate from exact Hotfix30 commit `05f67897402d918001fd4da6a9c3204a26358c6d`.
 
-The bounded release repairs the purchase-order Livewire render data contract that caused both overview and create routes to return HTTP 500. Hotfix27 full-page creation, navigation, supplier-aware product lookup, keyboard/scanner behavior, pricing, totals, authorization, localization, and sidebar restoration remain unchanged.
+The release applies the proven Hotfix30 purchasing lookup and keyboard lifecycle to purchase-invoice draft entry, provides compact responsive invoice metadata and bounded sticky-header lines, keeps totals/notes/actions accessible, and places price-list search/status controls in one compact desktop row. Hotfix24–Hotfix30 business, authorization, accounting, receiving, pricing, quick-create, scanner, and purchase-order contracts remain in place.
 
-Focused local PHP, Blade, route, navigation, product-lookup, locale, fixture-runtime, asset-identity, and diff checks pass. No frontend input changed and Vite was not run. The new activation-only production-shaped verifier requires real authenticated Arabic/English HTTP 200 rendering before and after switching; it performs no document write and rolls back its database transaction. Activation failure rolls back to exact Hotfix26 rather than broken Hotfix27.
+Focused source, PHP, Blade, locale, rendered lookup, compiled-browser, geometry, asset-identity, and diff checks are complete. No migration was added or executed; migration 000111 remains an activation precondition. Promotion and activation are external root-operator steps and were not executed.

@@ -377,7 +377,13 @@ const initializeEditor = (editor) => {
     editor.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter' || event.target.matches('[data-product-search], textarea, button')) return;
         const line = event.target.closest('[data-product-line]');
-        if (!line) return;
+        if (!line) {
+            if (event.target.matches('input, select')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            return;
+        }
         if (event.target.matches('[data-line-quantity]')) {
             event.preventDefault();
             event.stopPropagation();
@@ -436,6 +442,16 @@ const updateTotal = (line) => {
     const taxable = Math.max(0, gross - discount);
     const result = taxable + (taxable * taxRate / 100);
     if (total) total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+    updateEditorTotal(line.closest('[data-product-line-editor]'));
+};
+
+const updateEditorTotal = (editor) => {
+    if (!editor) return;
+    const total = [...editor.querySelectorAll('[data-line-total]')]
+        .reduce((sum, output) => sum + Number(output.textContent || 0), 0);
+    editor.querySelectorAll('[data-editor-total]').forEach((output) => {
+        output.textContent = Number.isFinite(total) ? total.toFixed(2) : '0.00';
+    });
 };
 
 const commitLine = (editor, line) => {
@@ -502,10 +518,24 @@ const matchingElements = (scope, selector) => [
     ...scope.querySelectorAll(selector),
 ];
 
+const initializeCompactFilterRow = (row) => {
+    if (row.dataset.compactFilterReady) return;
+    row.dataset.compactFilterReady = 'true';
+    row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || !event.target.matches('input, select')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const controls = [...row.querySelectorAll('input:not(:disabled), select:not(:disabled)')];
+        const next = controls[controls.indexOf(event.target) + 1];
+        (next || document.querySelector('[data-price-lists-table] a, [data-price-lists-table] button'))?.focus();
+    });
+};
+
 const boot = (scope = document) => {
     matchingElements(scope, '[data-product-lookup]').forEach((root) => new ProductLookup(root));
     matchingElements(scope, '[data-product-line-editor]').forEach(initializeEditor);
     matchingElements(scope, '[data-product-line-editor]').forEach(focusBlank);
+    matchingElements(scope, '[data-compact-filter-row]').forEach(initializeCompactFilterRow);
 };
 
 const bindLivewireHooks = () => {

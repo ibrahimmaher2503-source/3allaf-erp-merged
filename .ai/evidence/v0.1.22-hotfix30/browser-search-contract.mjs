@@ -5,9 +5,10 @@ import { pathToFileURL } from 'node:url';
 const [compiledAsset, renderedHtml, supplierId = '7'] = process.argv.slice(2);
 assert.ok(compiledAsset && renderedHtml, 'Expected compiled asset and rendered HTML paths.');
 const html = await readFile(renderedHtml, 'utf8');
-for (const marker of ['data-guide="po-create-page"', 'data-product-line-editor', 'data-product-lookup', 'data-order-lines-scroll']) {
+for (const marker of ['data-product-line-editor', 'data-product-lookup']) {
     assert.match(html, new RegExp(marker));
 }
+assert.match(html, /data-order-lines-scroll|data-invoice-lines-scroll/);
 
 class FakeEvent {
     constructor(type, options = {}) {
@@ -79,9 +80,10 @@ class FakeElement {
         if (selector === '[data-product-lookup]') return 'productLookup' in this.dataset;
         if (selector === '[data-product-line-editor]') return 'productLineEditor' in this.dataset;
         if (selector === '[data-line-quantity]') return 'lineQuantity' in this.dataset;
-        if (selector === '[data-line-price], [data-line-step], [data-line-final]') return 'linePrice' in this.dataset;
+        if (selector === '[data-line-price], [data-line-step], [data-line-final]') return 'linePrice' in this.dataset || 'lineStep' in this.dataset || 'lineFinal' in this.dataset;
         if (selector.includes('[data-product-search]')) return 'productSearch' in this.dataset;
         if (selector === 'textarea, button') return ['TEXTAREA', 'BUTTON'].includes(this.tagName);
+        if (selector === 'input, select') return ['INPUT', 'SELECT'].includes(this.tagName);
         return false;
     }
     closest(selector) {
@@ -100,6 +102,7 @@ class FakeElement {
         return false;
     }
     focus() { document.activeElement = this; this.focused = true; }
+    click() { this.dispatchEvent(new FakeEvent('click', { bubbles: true })); }
     checkValidity() { return true; }
     getBoundingClientRect() { return { left: 120, top: 180, right: 600, bottom: 220, width: 480, height: 40 }; }
     getClientRects() { return this.isConnected ? [this.getBoundingClientRect()] : []; }
@@ -154,8 +157,14 @@ const makeRow = () => {
     const cameraClose = new FakeElement('button', { 'data-camera-close': '' });
     const quantity = new FakeElement('input', { value: '2', 'data-line-quantity': '' });
     const price = new FakeElement('input', { value: '', 'data-line-price': '', 'data-price-kind': 'cost' });
+    const basePrice = new FakeElement('input', { value: '25', 'data-line-step': '' });
+    const discountType = new FakeElement('select', { value: '', 'data-line-step': '', 'data-line-discount-type': '' });
+    const discount = new FakeElement('input', { value: '0', 'data-line-step': '', 'data-line-discount': '' });
+    const tax = new FakeElement('input', { value: '0', 'data-line-final': '', 'data-line-tax': '' });
     const priceSource = new FakeElement('p', { 'data-price-source': '' });
     const total = new FakeElement('output', { 'data-line-total': '' });
+    const editorTotal = new FakeElement('output', { 'data-editor-total': '' });
+    const add = new FakeElement('button', { 'data-add-line': '' });
     root._queries = new Map([
         ['[data-product-search]', input], ['[data-product-id]', hidden], ['[data-product-results]', anchor],
         ['[data-product-error]', error], ['[data-camera-trigger]', camera], ['[data-camera-panel]', cameraPanel],
@@ -165,14 +174,19 @@ const makeRow = () => {
     line._queries = new Map([
         ['[data-product-id]', hidden], ['[data-product-search]', input], ['[data-line-quantity]', quantity],
         ['[data-line-price]', price], ['[data-line-price]:not(:disabled)', price], ['[data-price-source]', priceSource], ['[data-line-total]', total],
+        ['[data-line-price]:not(:disabled):not([readonly]), [data-line-step]:not(:disabled):not([readonly]), [data-line-final]:not(:disabled):not([readonly])', price],
     ]);
-    line._queryAll = new Map([['[name$="[description_ar]"]', []], ['[name$="[description_en]"], [name$="[description]"]', []]]);
-    editor._queries = new Map([['[data-add-line]', null], ['[data-product-search]', input]]);
-    editor._queryAll = new Map([['[data-product-line]', [line]], ['[data-product-lookup]', [root]]]);
+    line._queryAll = new Map([
+        ['[name$="[description_ar]"]', []], ['[name$="[description_en]"], [name$="[description]"]', []],
+        ['[data-line-price]:not(:disabled):not([readonly]), [data-line-step]:not(:disabled):not([readonly]), [data-line-final]:not(:disabled):not([readonly])', [price, basePrice, discountType, discount, tax]],
+        ['[data-product-lookup]', [root]],
+    ]);
+    editor._queries = new Map([['[data-add-line]', add], ['[data-product-search]', input], ['[data-editor-total]', editorTotal]]);
+    editor._queryAll = new Map([['[data-product-line]', [line]], ['[data-product-lookup]', [root]], ['[data-line-total]', [total]], ['[data-editor-total]', [editorTotal]]]);
     root.appendChild(input); root.appendChild(hidden); root.appendChild(anchor); root.appendChild(error);
-    line.appendChild(root); line.appendChild(quantity); line.appendChild(price); line.appendChild(priceSource); line.appendChild(total);
-    editor.appendChild(line);
-    return { editor, line, root, input, hidden, anchor, quantity, price, priceSource, total };
+    line.appendChild(root); line.appendChild(quantity); line.appendChild(price); line.appendChild(basePrice); line.appendChild(discountType); line.appendChild(discount); line.appendChild(tax); line.appendChild(priceSource); line.appendChild(total);
+    editor.appendChild(line); editor.appendChild(editorTotal); editor.appendChild(add);
+    return { editor, line, root, input, hidden, anchor, quantity, price, basePrice, discountType, discount, tax, priceSource, total, editorTotal, add };
 };
 
 class FakeDocument extends FakeElement {
@@ -286,6 +300,39 @@ assert.equal(first.price.value, '12.5000');
 assert.equal(first.total.textContent, '25.00');
 assert.match(first.priceSource.textContent, /Last supplier price/);
 assert.equal(document.activeElement, first.quantity);
+assert.equal(first.editorTotal.textContent, '25.00');
+
+let committedLines = 0;
+first.add.addEventListener('click', () => queueMicrotask(() => {
+    committedLines++;
+    const nextRow = makeRow();
+    nextRow.editor = first.editor;
+    first.editor.appendChild(nextRow.line);
+    first.editor._queryAll.get('[data-product-line]').push(nextRow.line);
+    first.editor._queryAll.get('[data-product-lookup]').push(nextRow.root);
+    first.editor._queryAll.get('[data-line-total]').push(nextRow.total);
+    document.rows.push(nextRow);
+    hooks.get('morph.added')?.({ el: first.editor });
+}));
+first.quantity.dispatchEvent(new FakeEvent('keydown', { key: 'Enter', bubbles: true }));
+assert.equal(document.activeElement, first.price);
+for (const [field, next] of [[first.price, first.basePrice], [first.basePrice, first.discountType], [first.discountType, first.discount], [first.discount, first.tax]]) {
+    field.dispatchEvent(new FakeEvent('keydown', { key: 'Enter', bubbles: true }));
+    assert.equal(document.activeElement, next);
+}
+const finalEnter = new FakeEvent('keydown', { key: 'Enter', bubbles: true });
+first.tax.dispatchEvent(finalEnter);
+first.tax.dispatchEvent(new FakeEvent('keydown', { key: 'Enter', bubbles: true }));
+await Promise.resolve();
+assert.equal(finalEnter.defaultPrevented, true);
+assert.equal(finalEnter.propagationStopped, true);
+assert.equal(committedLines, 1, 'Repeated Enter created duplicate rows.');
+assert.equal(document.activeElement, document.rows.at(-1).input, 'Next-row product search did not receive focus.');
+const metadata = new FakeElement('input');
+first.editor.appendChild(metadata);
+const metadataEnter = new FakeEvent('keydown', { key: 'Enter', bubbles: true });
+metadata.dispatchEvent(metadataEnter);
+assert.equal(metadataEnter.defaultPrevented, true, 'Metadata Enter could submit the parent invoice.');
 
 first.input.value = '001';
 first.input.dispatchEvent(new FakeEvent('input', { bubbles: true }));
@@ -353,3 +400,5 @@ console.log('HOTFIX30_LOADING_RESULTS_EMPTY_ERROR_STATES=PASS');
 console.log('HOTFIX30_MULTI_RESULT_KEYBOARD_ROW_STATE=PASS');
 console.log('HOTFIX30_LIVEWIRE_NAVIGATION_MORPH_ADDED_ROW=PASS');
 console.log('HOTFIX30_DROPDOWN_VIEWPORT_OVERLAY_NOT_CLIPPED=PASS');
+console.log('HOTFIX31_INVOICE_LINE_COMMIT_NEXT_FOCUS=PASS');
+console.log('HOTFIX31_REPEATED_ENTER_PARENT_SUBMIT_PREVENTION=PASS');

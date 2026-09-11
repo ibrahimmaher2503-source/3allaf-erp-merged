@@ -336,3 +336,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Made lookup binding idempotent across initial DOM load, Livewire initialization/navigation, Livewire morph hooks, mutation fallback, and dynamically added rows, while retaining authenticated debounce, supplier filtering, exact-unique selection, multi-match keyboard safeguards, row pricing/totals, camera behavior, and stale-request protection.
 - One clean Node 20.20.2/Vite 8.2.0 build completed. The compiled bundle passed the rendered-markup DOM lifecycle contract for Arabic and identifier input, feedback visibility, keyboard/row state, Livewire replacement/addition/navigation, and unclipped overlay placement.
 - No migration, production access/change, deployment, activation, sudo/root action, push, tag, package/browser installation, or unrelated work occurred.
+# v0.1.22-hotfix31 purchase-invoice keyboard compact UI — 2026-09-11
+
+- Reused the Hotfix30 browser-side product lookup per purchase-invoice line with supplier filtering, dynamic bilingual/identifier search, scanner separation, stale-response handling, and explicit multi-match selection.
+- Added invoice keyboard progression through quantity, editable cost, list price, discount and tax fields; final Enter creates at most one next row and focuses its product search while parent submission remains blocked.
+- Compacted purchase-invoice metadata, bounded/sticky line geometry, totals, notes/actions, and the price-list search/status row without changing invoice or pricing business rules.
+- Updated version/tracking/evidence; exactly one clean Node 20 production Vite build completed. No migration or production operation occurred.

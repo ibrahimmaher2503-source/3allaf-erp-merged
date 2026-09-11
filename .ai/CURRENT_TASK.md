@@ -1,12 +1,11 @@
-# Current Task - v0.1.22-hotfix30 purchase-order compiled browser search
+# Current Task - v0.1.22-hotfix31 purchase-invoice keyboard compact UI
 
 **Date:** 2026-09-11
 **Change class:** I4
-**Source baseline:** exact Hotfix29 commit `40d894259928c475eac3f902686e20c882e4c370`
-**Production baseline:** exact active Hotfix29 path `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix29-40d894259928`
-**Branch:** `hotfix/v0.1.22-hotfix30-purchase-order-browser-search`
-**Status:** Browser lifecycle repair, one clean production build, and focused compiled-DOM evidence are complete. Release commit and immutable packaging remain; promotion and activation remain unexecuted root-operator actions.
+**Source baseline:** exact Hotfix30 commit `05f67897402d918001fd4da6a9c3204a26358c6d`
+**Branch:** `hotfix/v0.1.22-hotfix31-purchase-invoice-keyboard-compact-ui`
+**Status:** Purchase-invoice and price-list source changes, one clean Node 20 production build, and the focused local verification pass are complete. Release commit and immutable packaging remain; promotion and activation remain unexecuted root-operator actions.
 
-Hotfix30 preserves the Hotfix29 compact page layout exactly and repairs the missed browser visibility contract. Lookup feedback is rendered into a fixed body overlay outside the bounded line scroller, controller binding covers initial load, Livewire initialization/navigation/morph hooks, mutation fallback, and added rows, and request failures now remain visibly localized and fail closed.
+Hotfix31 reuses the Hotfix30 browser-side purchasing lookup in each purchase-invoice line, adds complete invoice-line keyboard progression and duplicate-submit protection, compacts invoice metadata/lines/totals/notes/actions, and compacts the price-list filters. Existing invoice validation, tax, currency, receiving, draft/posting/accounting, supplier price, scanner, authorization, and quick Product Card contracts remain unchanged.
 
-No migration, production access/change, deployment, sudo/root execution, push, tag, package/browser installation, layout redesign, or unrelated change is authorized. Exactly one Node 20 production Vite build is required after all frontend edits. Activation must accept only exact Hotfix29, require migration 000111 already Ran, run authenticated bilingual HTTP and compiled browser-DOM checks before and after switching, and atomically restore exact Hotfix29 after any post-switch failure.
+No migration, production access/change, deployment, sudo/root execution, push, tag, package/browser installation, or unrelated redesign is authorized. Exactly one Node 20 production Vite build was run after frontend edits. Activation accepts only exact Hotfix30, requires migration 000111 already Ran, runs authenticated bilingual HTTP and compiled invoice browser-runtime checks before and after switching, and restores exact Hotfix30 after any post-switch failure.
