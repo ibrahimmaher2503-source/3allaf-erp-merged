@@ -31,7 +31,7 @@
                 <div><p class="dashboard-kpi__label">{{ $isArabic ? 'متوسط الفاتورة' : 'Average ticket' }}</p><p class="dashboard-kpi__value"><x-money :amount="$dashboard['average_ticket']" :currency="$dashboard['currency_code']" /></p><p class="dashboard-kpi__state">{{ number_format($dashboard['today_count']) }} {{ $isArabic ? 'فاتورة اليوم' : 'invoices today' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.document-text class="size-5" /></span>
             </a>
             @can('shifts_cash_movements.view')<a href="{{ route('pos.shift') }}" class="dashboard-kpi">
-                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'الورديات المفتوحة' : 'Open shifts' }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['open_shifts']) }}</p><p class="dashboard-kpi__state">{{ $isArabic ? 'تحتاج متابعة تشغيلية' : 'Operational shift context' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.clock class="size-5" /></span>
+                <div><p class="dashboard-kpi__label">{{ $isArabic ? 'الورديات المفتوحة' : 'Open shifts' }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['open_shifts']) }}</p><p class="dashboard-kpi__state">{{ app()->isLocale('ar-EG') ? 'تحتاج كمّل تشغيلية' : ($isArabic ? 'تحتاج متابعة تشغيلية' : 'Operational shift context') }}</p></div><span class="dashboard-kpi__icon"><flux:icon.clock class="size-5" /></span>
             </a>@endcan
             <a href="{{ route('returns.index') }}" class="dashboard-kpi">
                 <div><p class="dashboard-kpi__label">{{ $isArabic ? 'خصومات اليوم' : "Today's discounts" }}</p><p class="dashboard-kpi__value"><x-money :amount="$dashboard['discount_total']" :currency="$dashboard['currency_code']" /></p><p class="dashboard-kpi__state">{{ number_format($dashboard['returns_count']) }} {{ $isArabic ? 'مرتجع اليوم' : 'returns today' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.pause-circle class="size-5" /></span>
@@ -48,7 +48,7 @@
                         @endforeach
                     </div>
                 @else
-                    <x-state.empty :title="$isArabic ? 'لا توجد مبيعات معتمدة خلال الفترة' : 'No approved sales in this period'" :description="$isArabic ? 'ستظهر الحركة اليومية هنا عند تسجيل أول فاتورة.' : 'Daily activity will appear after the first approved invoice.'" icon="chart-bar" />
+                    <x-state.empty :title="app()->isLocale('ar-EG') ? 'مفيش مبيعات معتمدة خلال الفترة' : ($isArabic ? 'لا توجد مبيعات معتمدة خلال الفترة' : 'No approved sales in this period')" :description="$isArabic ? 'ستظهر الحركة اليومية هنا عند تسجيل أول فاتورة.' : 'Daily activity will appear after the first approved invoice.'" icon="chart-bar" />
                 @endif
             </section>
             <section class="dashboard-panel sales-overview-grid__summary">
@@ -58,7 +58,7 @@
                         @php($paymentLabel = $isArabic ? match (strtolower((string) $payment->method_code)) { 'cash' => 'نقدي', 'card' => 'بطاقة', default => $payment->method_code } : $payment->method_code)
                         <div class="dashboard-list__row"><span class="font-medium" dir="auto">{{ $paymentLabel }}</span><x-money :amount="$payment->collected_total" :currency="$dashboard['currency_code']" class="font-semibold" /></div>
                     @empty
-                        <x-state.empty :title="$isArabic ? 'لا توجد عمليات تحصيل اليوم' : 'No collections today'" icon="credit-card" />
+                        <x-state.empty :title="app()->isLocale('ar-EG') ? 'مفيش عمليات تحصيل اليوم' : ($isArabic ? 'لا توجد عمليات تحصيل اليوم' : 'No collections today')" icon="credit-card" />
                     @endforelse
                 </div>
             </section>
@@ -70,7 +70,7 @@
                 @forelse ($dashboard['top_products'] as $product)
                     <div class="dashboard-list__row"><div class="min-w-0"><p class="truncate font-semibold">{{ $isArabic ? $product->name_ar : $product->name_en }}</p><p class="text-xs text-text-muted" dir="ltr">{{ $product->item_code }}</p></div><div class="text-end"><p class="font-semibold tabular-nums">{{ $product->units }} {{ $isArabic ? 'وحدة' : 'units' }}</p><x-money :amount="$product->net_total" :currency="$dashboard['currency_code']" class="text-xs text-text-muted" /></div></div>
                 @empty
-                    <x-state.empty :title="$isArabic ? 'لا توجد بيانات منتجات للفترة' : 'No product activity for this period'" icon="cube" />
+                    <x-state.empty :title="app()->isLocale('ar-EG') ? 'مفيش بيانات منتجات للفترة' : ($isArabic ? 'لا توجد بيانات منتجات للفترة' : 'No product activity for this period')" icon="cube" />
                 @endforelse
             </div>
         </section>

@@ -6,9 +6,7 @@
     $tutorialProgress = auth()->user()?->uiPreference?->tutorial_progress ?? [];
     $locale = app()->getLocale();
     $isArabic = str_starts_with($locale, 'ar');
-    $fallback = $isArabic
-        ? 'لم يتم نشر دليل تفصيلي لهذه الصفحة بعد. يمكنك استخدام الصفحة وفق صلاحياتك الحالية.'
-        : 'A detailed guide has not been published for this page yet. You can still use the page according to your current permissions.';
+    $fallback = app()->isLocale('ar-EG') ? 'ما تمّش نشر دليل تفصيلي لدي الصفحة بعد. يمكنك استخدام الصفحة وفق صلاحياتك الحالية.' : ($isArabic ? 'لم يتم نشر دليل تفصيلي لهذه الصفحة بعد. يمكنك استخدام الصفحة وفق صلاحياتك الحالية.' : 'A detailed guide has not been published for this page yet. You can still use the page according to your current permissions.');
 @endphp
 
 <div
@@ -44,19 +42,19 @@
             <div>
                 <p class="platform-assistant__eyebrow">{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</p>
                 <h2 id="page-guide-title" class="platform-assistant__title" x-text="text(context?.title) || (locale.startsWith('ar') ? 'دليل الصفحة' : 'Page Guide')"></h2>
-                <p class="platform-assistant__screen" x-show="context?.screen_id">{{ $isArabic ? 'إرشاد مرتبط بهذه الشاشة' : 'Guidance for this screen' }}</p>
+                <p class="platform-assistant__screen" x-show="context?.screen_id">{{ app()->isLocale('ar-EG') ? 'إرشاد مرتبط بدي الشاشة' : ($isArabic ? 'إرشاد مرتبط بهذه الشاشة' : 'Guidance for this screen') }}</p>
             </div>
-            <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}"><flux:icon.x-mark class="size-5" /></button>
+            <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ app()->isLocale('ar-EG') ? 'اقفل' : ($isArabic ? 'إغلاق' : 'Close') }}"><flux:icon.x-mark class="size-5" /></button>
         </header>
 
         <div class="platform-assistant__body">
             <template x-if="context">
                 <div class="space-y-5">
                     <div class="platform-assistant__progress" role="status" aria-live="polite"><span x-text="tutorialStatusText()"></span><flux:icon.check-circle x-show="tutorialStatus === 'completed'" class="size-4" aria-hidden="true" /></div>
-                    <section x-show="context.module" class="rounded-xl border border-border bg-surface-muted p-4"><h3>{{ $isArabic ? 'عن هذه الوحدة' : 'About this module' }}</h3><p x-text="text(context.module?.description)"></p></section>
-                    <section><h3>{{ $isArabic ? 'ماذا تفعل هذه الصفحة؟' : 'What this page does' }}</h3><p x-text="text(context.purpose)"></p></section>
+                    <section x-show="context.module" class="rounded-xl border border-border bg-surface-muted p-4"><h3>{{ app()->isLocale('ar-EG') ? 'عن دي الوحدة' : ($isArabic ? 'عن هذه الوحدة' : 'About this module') }}</h3><p x-text="text(context.module?.description)"></p></section>
+                    <section><h3>{{ app()->isLocale('ar-EG') ? 'ماذا تفعل دي الصفحة؟' : ($isArabic ? 'ماذا تفعل هذه الصفحة؟' : 'What this page does') }}</h3><p x-text="text(context.purpose)"></p></section>
                     <section><h3>{{ $isArabic ? 'متى تستخدمها؟' : 'When to use it' }}</h3><p x-text="text(context.when_to_use)"></p></section>
-                    <section><h3>{{ $isArabic ? 'ما يمكنك فعله' : 'What you can do here' }}</h3><ul class="platform-assistant__list"><template x-for="action in context.approved_actions" :key="action.key"><li x-text="text(action.label)"></li></template></ul><p x-show="!context.approved_actions?.length" class="platform-assistant__muted">{{ $isArabic ? 'لا توجد إجراءات متاحة لهذا المستخدم هنا.' : 'No actions are available for this user here.' }}</p></section>
+                    <section><h3>{{ $isArabic ? 'ما يمكنك فعله' : 'What you can do here' }}</h3><ul class="platform-assistant__list"><template x-for="action in context.approved_actions" :key="action.key"><li x-text="text(action.label)"></li></template></ul><p x-show="!context.approved_actions?.length" class="platform-assistant__muted">{{ app()->isLocale('ar-EG') ? 'مفيش إجراءات متاحة لده المستخدم هنا.' : ($isArabic ? 'لا توجد إجراءات متاحة لهذا المستخدم هنا.' : 'No actions are available for this user here.') }}</p></section>
                     <section><h3>{{ $isArabic ? 'خطوات الاستخدام' : 'Step-by-step usage' }}</h3><ol class="platform-assistant__steps"><template x-for="step in context.sections.steps" :key="step.key"><li><strong x-text="text(step.title)"></strong><span x-text="text(step.body)"></span></li></template></ol></section>
                     <details open><summary>{{ $isArabic ? 'شرح الحقول' : 'Field explanations' }}</summary><template x-for="field in context.sections.fields" :key="field.key"><p class="mt-3" x-text="text(field.body)"></p></template></details>
                     <details><summary>{{ $isArabic ? 'ملاحظات مهمة' : 'Important notes' }}</summary><p class="mt-3" x-text="text(context.sections.notes)"></p></details>
@@ -79,12 +77,12 @@
 
     <div x-cloak x-show="customizerOpen" x-transition.opacity class="platform-assistant__backdrop" x-on:click="closeCustomizer()"></div>
     <aside id="appearance-customizer" x-cloak x-show="customizerOpen" x-transition class="platform-assistant__drawer platform-assistant__drawer--customizer" role="dialog" aria-modal="true" aria-labelledby="appearance-title" x-trap.noscroll="customizerOpen">
-        <header class="platform-assistant__header"><div><p class="platform-assistant__eyebrow">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</p><h2 id="appearance-title" class="platform-assistant__title">{{ $isArabic ? 'إعدادات العرض' : 'Display settings' }}</h2></div><button type="button" class="platform-assistant__close" x-on:click="closeCustomizer()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}"><flux:icon.x-mark class="size-5" /></button></header>
+        <header class="platform-assistant__header"><div><p class="platform-assistant__eyebrow">{{ $isArabic ? 'تخصيص المظهر' : 'Appearance Customizer' }}</p><h2 id="appearance-title" class="platform-assistant__title">{{ app()->isLocale('ar-EG') ? 'إعدادات الاعرض' : ($isArabic ? 'إعدادات العرض' : 'Display settings') }}</h2></div><button type="button" class="platform-assistant__close" x-on:click="closeCustomizer()" aria-label="{{ app()->isLocale('ar-EG') ? 'اقفل' : ($isArabic ? 'إغلاق' : 'Close') }}"><flux:icon.x-mark class="size-5" /></button></header>
         <div class="platform-assistant__body platform-assistant__controls">
             <label>{{ $isArabic ? 'المظهر' : 'Appearance' }}<select x-model="preferences.appearance" x-on:change="applyPreferences(); savePreferences()"><option value="system">{{ $isArabic ? 'النظام' : 'System' }}</option><option value="light">{{ $isArabic ? 'فاتح' : 'Light' }}</option><option value="dark">{{ $isArabic ? 'داكن' : 'Dark' }}</option></select></label>
             <label>{{ $isArabic ? 'اللون المميز' : 'Accent color' }}<select x-model="preferences.accent_color" x-on:change="applyPreferences(); savePreferences()"><option value="teal">{{ $isArabic ? 'تركوازي' : 'Teal' }}</option><option value="indigo">{{ $isArabic ? 'نيلي' : 'Indigo' }}</option><option value="amber">{{ $isArabic ? 'كهرماني' : 'Amber' }}</option><option value="rose">{{ $isArabic ? 'وردي' : 'Rose' }}</option></select></label>
             <label>{{ $isArabic ? 'الشريط الجانبي' : 'Sidebar' }}<select x-model="preferences.sidebar_mode" x-on:change="applyPreferences(); savePreferences()"><option value="expanded">{{ $isArabic ? 'موسع' : 'Expanded' }}</option><option value="collapsed">{{ $isArabic ? 'مطوي' : 'Collapsed' }}</option></select></label>
-            <label>{{ $isArabic ? 'عرض المحتوى' : 'Content width' }}<select x-model="preferences.content_width" x-on:change="applyPreferences(); savePreferences()"><option value="wide">{{ $isArabic ? 'واسع' : 'Wide' }}</option><option value="compact">{{ $isArabic ? 'مضغوط' : 'Compact' }}</option></select></label>
+            <label>{{ app()->isLocale('ar-EG') ? 'اعرض المحتوى' : ($isArabic ? 'عرض المحتوى' : 'Content width') }}<select x-model="preferences.content_width" x-on:change="applyPreferences(); savePreferences()"><option value="wide">{{ $isArabic ? 'واسع' : 'Wide' }}</option><option value="compact">{{ $isArabic ? 'مضغوط' : 'Compact' }}</option></select></label>
             <label>{{ $isArabic ? 'كثافة الجداول' : 'Table density' }}<select x-model="preferences.table_density" x-on:change="applyPreferences(); savePreferences()"><option value="comfortable">{{ $isArabic ? 'مريح' : 'Comfortable' }}</option><option value="compact">{{ $isArabic ? 'مضغوط' : 'Compact' }}</option></select></label>
             <label>{{ $isArabic ? 'حجم الخط' : 'Font scale' }}<select x-model="preferences.font_scale" x-on:change="applyPreferences(); savePreferences()"><option value="small">{{ $isArabic ? 'صغير' : 'Small' }}</option><option value="normal">{{ $isArabic ? 'عادي' : 'Normal' }}</option><option value="large">{{ $isArabic ? 'كبير' : 'Large' }}</option></select></label>
             <label class="platform-assistant__check"><input type="checkbox" x-model="preferences.reduced_motion" x-on:change="applyPreferences(); savePreferences()"> {{ $isArabic ? 'تقليل الحركة' : 'Reduced motion' }}</label>

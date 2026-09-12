@@ -768,7 +768,7 @@ final class ReportSnapshot
                 $row = [
                     'posted_at' => $movement->posted_at?->toIso8601String(), 'product' => $movement->product?->item_code,
                     'store' => $movement->store?->code, 'type' => \App\Modules\Inventory\Support\InventoryMovementLabel::label($movement->movement_type), 'quantity' => \App\Support\ProductQuantity::format($movement->quantity),
-                    'source' => class_basename((string) $movement->source_type).':'.$movement->source_id,
+                    'source' => app(\App\Modules\Platform\Support\AuditLogPresentation::class)->source($movement->source_type).':'.$movement->source_id,
                 ];
                 if ($canViewCost) {
                     $row += ['unit_cost' => (float) $movement->unit_cost, 'total_cost' => (float) $movement->total_cost];

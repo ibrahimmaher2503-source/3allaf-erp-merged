@@ -11,7 +11,7 @@
 
         <form method="GET" class="internal-toolbar" aria-label="{{ $isArabic ? 'مرشحات فواتير المبيعات' : 'Sales invoice filters' }}">
             <div class="internal-toolbar__grid">
-                <flux:input name="q" value="{{ request('q') }}" :label="__('Invoice number')" :placeholder="$isArabic ? 'ابحث برقم الفاتورة' : 'Search invoice number'" />
+                <flux:input name="q" value="{{ request('q') }}" :label="__('Invoice number')" :placeholder="app()->isLocale('ar-EG') ? 'ادوّر برقم الفاتورة' : ($isArabic ? 'ابحث برقم الفاتورة' : 'Search invoice number')" />
                 <flux:select name="store_id" :label="__('Store')"><flux:select.option value="">{{ __('All') }}</flux:select.option>@foreach ($stores as $store)<flux:select.option value="{{ $store->id }}" :selected="(string) request('store_id') === (string) $store->id">{{ $store->code }}</flux:select.option>@endforeach</flux:select>
                 <flux:input name="date_from" type="date" value="{{ request('date_from') }}" :label="__('From')" />
                 <flux:input name="date_to" type="date" value="{{ request('date_to') }}" :label="__('To')" />

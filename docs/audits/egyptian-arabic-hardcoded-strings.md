@@ -4,6 +4,7 @@
 - Source baseline: `3ca22dbe6671f94aaec4132b84fb6a2c126cec82`
 - Locale: `ar-EG` (`العربية المصرية`)
 - Result: **1515 unique candidate source locations remain** across application PHP, routes, JavaScript, and Blade views.
+- Completion review: **123 candidates localized at source/render boundaries**; **1,392 intentionally retained** because they are protected product/business data (412), identifiers/codes/formats (367), non-rendered implementation literals (401), or existing `ar`/`en` bilingual branches whose source wording must remain unchanged (212). Egyptian output for the latter is supplied by the separate `ar-EG` catalog; no stored identifier or business value was rewritten.
 - This is an audit only. No functional Blade or Livewire copy was mass-extracted or rewritten as part of the audit.
 
 ## Method

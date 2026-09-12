@@ -1,6 +1,6 @@
 <?php
 
-return [
-    'previous' => 'السابق',
-    'next'     => 'التالي',
-];
+return array (
+  'previous' => 'ببساطة: السابق',
+  'next' => 'ببساطة: التالي',
+);
