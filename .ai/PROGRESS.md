@@ -375,4 +375,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Replaced direct cached-action invocation in the runtime proof with genuine HTTP-kernel requests through the cached router, including safe rejection of unsupported and malformed locale values.
 - Preserved exact Hotfix32 business queries, all Hotfix24–Hotfix32 purchasing/search/keyboard repairs, 6,115 JSON keys, 244 PHP leaves, and the 1,515-location deferred hardcoded-string audit.
 - Frontend inputs are unchanged; exact Hotfix33 compiled assets are reused and Hotfix34 Vite build count is zero. Authenticated database-backed rendering remains strictly pre/post-switch activation-gated and transactional.
+
+# v0.1.22-hotfix35 Egyptian localization completion — 2026-09-12
+
+- Created the Hotfix35 branch from exact active Hotfix34 commit `397fd3529a087f08f402fd11c88692481bb0654b` in a separate clean worktree and cherry-picked localization commit `57cb2a85666cc7d9cfad02edce33eb5bfa766df6` without conflicts or discarded localization content.
+- Completed the `ar-EG` presentation while preserving `ar`, `en`, the Hotfix34 controller-based locale route and cached-route repair, internal PHP class names, queries, permissions, routes, search, keyboard workflows, accounting, posting, and migrations.
+- Version, focused evidence, immutable offline package, and fail-closed operator scripts target `0.1.22-hotfix35`. Promotion and activation accept only exact Hotfix34; activation requires migration 000111 already `Ran`, runs no migration, verifies authenticated `ar`, `en`, and `ar-EG` representative routes before and after switching, and restores exact Hotfix34 on any post-switch failure.
+- Vite inputs are unchanged, exact Hotfix34 compiled assets are reused, and Hotfix35 Vite build count is zero. No production access, database mutation, migration, deployment, promotion, activation, root execution, push, tag, or package installation occurred.
 - 2026-09-12: Completed the owner-directed V0 Egyptian Arabic locale pass from exact Hotfix34. All 6,115 JSON values and 244 PHP leaves were rewritten locally; focused rendered-source wording and the 1,515-candidate audit were resolved/categorized. Final verification and commit are recorded in the session summary.

@@ -290,3 +290,10 @@
 - PASS: touched PHP syntax, Bash syntax, exact reused manifest/asset identity, immutable archive/manifest integrity, executable script modes, and Git diff hygiene. Blade and locale files were unchanged; Vite build count is 0.
 - INFO: two initial fixture invocations under an inappropriate testing environment failed closed before runtime checks because the unavailable translation database was deliberately rethrown; the affected fixture was rerun with the production-shaped environment and passed. No database connection succeeded or mutation occurred.
 - Migration status: no Hotfix32 migration exists or ran. Migration 000111 remains a mandatory already-`Ran` activation precondition; activation executes no migration.
+
+# 2026-09-12 — v0.1.22-hotfix35 concise verification
+
+- PASS: PHP syntax, `ar-EG` JSON/PHP key and protected-token parity, unchanged `ar`/`en`, Hotfix34 cached controller locale route, exact `lang`/RTL/Cairo and three-way switching contracts, Egyptian greeting and localized alert/source presentation contracts, exact reused Hotfix34 Vite assets, no migration diff, immutable package/manifest integrity, Bash syntax, isolated exact-Hotfix34 fail-closed rollback, and Git diff hygiene.
+- ACTIVATION-GATED: the unexecuted activation script requires authenticated HTTP 200 rendering of dashboard, alerts, approvals, sales, purchasing, and inventory routes in `ar`, `en`, and `ar-EG` before and after switching. Its verifier uses an always-rolled-back transaction and reports no database mutation.
+- Migration status: Hotfix35 adds and executes no migration. Migration 000111 was not queried locally and must already be `Ran`; activation executes no migration.
+- Vite build count: zero; no Vite input changed and exact Hotfix34 compiled assets are reused.

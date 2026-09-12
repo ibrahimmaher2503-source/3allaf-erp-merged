@@ -1,12 +1,12 @@
-# Current Task — v0.1.22-hotfix34 Egyptian locale route-cache repair
+# Current Task — v0.1.22-hotfix35 Egyptian localization completion
 
 **Date:** 2026-09-12
 **Change class:** I4
-**Source baseline:** exact Hotfix32 commit `2636d8dc1d345fa050e4e20c729a4cab9ac4a35a`
-**Failed candidate:** Hotfix33 commit `3934420bf7dae9c50ffd2377b7128eab7a5ba442`
-**Branch:** `hotfix/v0.1.22-hotfix34-egyptian-locale-route-cache`
-**Status:** Immutable replacement release preparation is in progress in a separate `rajeh_ahmed` worktree; Hotfix33 release files remain untouched.
+**Source baseline:** exact active Hotfix34 commit `397fd3529a087f08f402fd11c88692481bb0654b`
+**Localization source:** `57cb2a85666cc7d9cfad02edce33eb5bfa766df6`
+**Branch:** `hotfix/v0.1.22-hotfix35-egyptian-localization-completion`
+**Status:** Hotfix35 integrates the completed Egyptian Arabic presentation layer onto exact Hotfix34; immutable offline release preparation and unexecuted operator scripts are in progress.
 
-Hotfix34 carries forward the accepted Hotfix33 localization while replacing the locale-switch route closure with a strict-allowlist invokable controller. This removes locale switching from serialized-closure restoration and lets cached routes boot before the verifier exercises the real CSRF-protected endpoint. `ar`, `en`, all business behavior, database queries, and every Hotfix24–Hotfix32 repair remain unchanged.
+Hotfix35 preserves Hotfix34's controller-based locale route and route-cache repair while completing `ar-EG` copy and presentation-only source labels. `ar`, `en`, business behavior, database queries, permissions, routes, search, keyboard workflows, accounting behavior, and internal PHP class names remain unchanged.
 
-One focused packaged-candidate verification is authorized. No automated suite, migration, database mutation, production access, deployment, activation, sudo/root execution, push, tag, browser/package installation, or unrelated functional change is authorized. Operator scripts must accept only exact Hotfix32, require migration 000111 already `Ran`, execute no migration, refuse pre-switch failures, and restore exact Hotfix32 after any post-switch failure.
+One concise packaged-candidate verification is authorized. No automated suite, migration, database mutation, production access, deployment, activation, sudo/root execution, push, tag, browser/package installation, or unrelated functional change is authorized. Operator scripts must accept only exact Hotfix34, require migration 000111 already `Ran`, execute no migration, refuse pre-switch failures, and restore exact Hotfix34 after any post-switch failure.
