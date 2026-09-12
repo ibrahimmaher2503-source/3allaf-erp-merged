@@ -383,3 +383,12 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Version, focused evidence, immutable offline package, and fail-closed operator scripts target `0.1.22-hotfix35`. Promotion and activation accept only exact Hotfix34; activation requires migration 000111 already `Ran`, runs no migration, verifies authenticated `ar`, `en`, and `ar-EG` representative routes before and after switching, and restores exact Hotfix34 on any post-switch failure.
 - Vite inputs are unchanged, exact Hotfix34 compiled assets are reused, and Hotfix35 Vite build count is zero. No production access, database mutation, migration, deployment, promotion, activation, root execution, push, tag, or package installation occurred.
 - 2026-09-12: Completed the owner-directed V0 Egyptian Arabic locale pass from exact Hotfix34. All 6,115 JSON values and 244 PHP leaves were rewritten locally; focused rendered-source wording and the 1,515-candidate audit were resolved/categorized. Final verification and commit are recorded in the session summary.
+
+
+# 2026-09-13 — Egyptian Arabic locale quality repair
+
+- Repaired the Hotfix35 `ar-EG` corruption from exact commit `2f6b07285ca082cb3c61f1f860e13b0d3d2bccb8` on `ui/egyptian-arabic-locale-quality-repair`.
+- Removed all 3,093 literal `بالمصري:` occurrences. Of 6,115 JSON values, 6,111 changed: 2,974 needed a prefix-only cleanup and 3,137 received contextual or grammatical rewriting beyond prefix removal. All 244 PHP locale leaves changed and were reviewed.
+- Corrected residual Hotfix35 word-map ordering, malformed empty states, approval and wallet wording, product-card labels, limit text, and Egyptian-only rendered copy across 14 Blade templates. Preserved professional accounting, inventory, tax, and legal terminology plus required identifiers, placeholders, brands, and file formats.
+- The focused final gate passed JSON/PHP syntax, 6,115-key and 244-leaf integrity, placeholders, exact unchanged `ar`/`en`, zero forbidden prefixes and known corruption signatures, representative product/dashboard/alerts/approvals/sales/purchasing/inventory wording, unchanged RTL/Cairo/locale switching and compiled assets, allowed-file scope, and `git diff --check`.
+- No browser-control or automated suite was run under the current repository directive. No Vite build, database operation, migration, production access, deployment, packaging, push, tag, or business-logic change occurred.

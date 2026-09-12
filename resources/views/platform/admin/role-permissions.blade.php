@@ -140,11 +140,11 @@ new #[Title('Role Permissions')] class extends Component
             <flux:badge size="sm" color="amber" icon="shield-check">{{ $isArabic ? 'دور أساسي، صلاحياته قابلة للإدارة' : 'Canonical role, permissions manageable' }}</flux:badge>
         </div>
     @elseif (! $canEdit)
-        <p class="flex items-center gap-2 text-sm text-text-muted"><flux:icon name="eye" class="size-4" />{{ app()->isLocale('ar-EG') ? 'يمكنك مراجعة الصلاحيات، لكن لا تملك صلاحية عدّلها.' : ($isArabic ? 'يمكنك مراجعة الصلاحيات، لكن لا تملك صلاحية تعديلها.' : 'You can review these permissions, but cannot change them.') }}</p>
+        <p class="flex items-center gap-2 text-sm text-text-muted"><flux:icon name="eye" class="size-4" />{{ app()->isLocale('ar-EG') ? 'يمكنك مراجعة الصلاحيات، لكن لا تملك صلاحية تعديلها.' : ($isArabic ? 'يمكنك مراجعة الصلاحيات، لكن لا تملك صلاحية تعديلها.' : 'You can review these permissions, but cannot change them.') }}</p>
     @endif
 
     <form wire:submit="savePermissions" class="space-y-4">
-        <x-tables.data-panel :title="$isArabic ? 'صلاحيات الدور' : 'Permissions'" :description="$canAssignSensitive ? (app()->isLocale('ar-EG') ? 'اختار أي صلاحيات نشطة لده الدور.' : ($isArabic ? 'اختر أي صلاحيات نشطة لهذا الدور.' : 'Choose any active permissions for this role.')) : (app()->isLocale('ar-EG') ? 'اختار الصلاحيات النشطة غير الحساسة المسموح بها لده الدور.' : ($isArabic ? 'اختر الصلاحيات النشطة غير الحساسة المسموح بها لهذا الدور.' : 'Choose the active, non-sensitive permissions allowed for this role.'))">
+        <x-tables.data-panel :title="$isArabic ? 'صلاحيات الدور' : 'Permissions'" :description="$canAssignSensitive ? (app()->isLocale('ar-EG') ? 'اختار أي صلاحيات نشطة للدور ده.' : ($isArabic ? 'اختر أي صلاحيات نشطة لهذا الدور.' : 'Choose any active permissions for this role.')) : (app()->isLocale('ar-EG') ? 'اختار الصلاحيات النشطة غير الحساسة المسموح بها للدور ده.' : ($isArabic ? 'اختر الصلاحيات النشطة غير الحساسة المسموح بها لهذا الدور.' : 'Choose the active, non-sensitive permissions allowed for this role.'))">
             <x-slot:toolbar>
                 <x-tables.filter-bar>
                     <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="app()->isLocale('ar-EG') ? 'دوّر في الصلاحيات' : ($isArabic ? 'بحث في الصلاحيات' : 'Search permissions')" :placeholder="app()->isLocale('ar-EG') ? 'ادوّر بالكود أو الوحدة أو الإجراء' : ($isArabic ? 'ابحث بالكود أو الوحدة أو الإجراء' : 'Code, module, or action')" />
@@ -153,7 +153,7 @@ new #[Title('Role Permissions')] class extends Component
             </x-slot:toolbar>
 
             @if ($permissions->isEmpty())
-                <x-state.empty :title="app()->isLocale('ar-EG') ? 'مفيش صلاحيات' : ($isArabic ? 'لا توجد صلاحيات' : 'No permissions found')" :description="app()->isLocale('ar-EG') ? 'غيّر الدوّر أو الوحدة لاعرض الصلاحيات المتاحة.' : ($isArabic ? 'غيّر البحث أو الوحدة لعرض الصلاحيات المتاحة.' : 'Change the search or module to review the available permissions.')" icon="key" />
+                <x-state.empty :title="app()->isLocale('ar-EG') ? 'مفيش صلاحيات' : ($isArabic ? 'لا توجد صلاحيات' : 'No permissions found')" :description="app()->isLocale('ar-EG') ? 'غيّر البحث أو الوحدة لعرض الصلاحيات المتاحة.' : ($isArabic ? 'غيّر البحث أو الوحدة لعرض الصلاحيات المتاحة.' : 'Change the search or module to review the available permissions.')" icon="key" />
             @else
                 <div class="space-y-3">
                     @foreach ($permissionGroups as $module => $modulePermissions)

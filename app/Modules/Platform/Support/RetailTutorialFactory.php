@@ -216,7 +216,7 @@ final class RetailTutorialFactory
 
     private static function polishString(string $value, bool $arabic): string
     {
-        $value = preg_replace('/\bTSK-\d+\b\s*·?\s*/iu', app()->isLocale('ar-EG') ? 'ده النطاق التشغيلي ' : ($arabic ? 'هذا النطاق التشغيلي ' : 'this operational scope '), $value) ?? $value;
+        $value = preg_replace('/\bTSK-\d+\b\s*·?\s*/iu', app()->isLocale('ar-EG') ? 'النطاق التشغيلي ده ' : ($arabic ? 'هذا النطاق التشغيلي ' : 'this operational scope '), $value) ?? $value;
 
         $replacements = $arabic
             ? [

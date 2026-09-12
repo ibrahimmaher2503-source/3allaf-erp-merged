@@ -1,12 +1,11 @@
-# Current Task — v0.1.22-hotfix35 Egyptian localization completion
+# Current Task — Egyptian Arabic locale quality repair
 
-**Date:** 2026-09-12
-**Change class:** I4
-**Source baseline:** exact active Hotfix34 commit `397fd3529a087f08f402fd11c88692481bb0654b`
-**Localization source:** `57cb2a85666cc7d9cfad02edce33eb5bfa766df6`
-**Branch:** `hotfix/v0.1.22-hotfix35-egyptian-localization-completion`
-**Status:** Hotfix35 integrates the completed Egyptian Arabic presentation layer onto exact Hotfix34; immutable offline release preparation and unexecuted operator scripts are in progress.
+**Date:** 2026-09-13
+**Change class:** V0 (UI/localization only)
+**Source baseline:** exact Hotfix35 commit `2f6b07285ca082cb3c61f1f860e13b0d3d2bccb8`
+**Branch:** `ui/egyptian-arabic-locale-quality-repair`
+**Status:** Complete; focused verification passed and the result is included in the local handoff commit.
 
-Hotfix35 preserves Hotfix34's controller-based locale route and route-cache repair while completing `ar-EG` copy and presentation-only source labels. `ar`, `en`, business behavior, database queries, permissions, routes, search, keyboard workflows, accounting behavior, and internal PHP class names remain unchanged.
+Repair the deployed `ar-EG` presentation quality without changing `ar`, `en`, business logic, routes, queries, permissions, database behavior, compiled assets, or locale infrastructure. Remove every literal `بالمصري:` prefix, rewrite malformed and mixed-language values as concise professional Egyptian Arabic, and review representative product, dashboard, alert, approval, sales, purchasing, and inventory surfaces.
 
-One concise packaged-candidate verification is authorized. No automated suite, migration, database mutation, production access, deployment, activation, sudo/root execution, push, tag, browser/package installation, or unrelated functional change is authorized. Operator scripts must accept only exact Hotfix34, require migration 000111 already `Ran`, execute no migration, refuse pre-switch failures, and restore exact Hotfix34 after any post-switch failure.
+No automated suite, browser-control run, Vite build, database operation, migration, production access, deployment, packaging, activation, push, or tag is authorized. The final focused pass covers locale/PHP syntax and integrity, unchanged `ar`/`en`, representative rendered-source wording, RTL/Cairo/switching preservation, corruption-marker absence, and Git diff hygiene.
