@@ -297,3 +297,11 @@
 - ACTIVATION-GATED: the unexecuted activation script requires authenticated HTTP 200 rendering of dashboard, alerts, approvals, sales, purchasing, and inventory routes in `ar`, `en`, and `ar-EG` before and after switching. Its verifier uses an always-rolled-back transaction and reports no database mutation.
 - Migration status: Hotfix35 adds and executes no migration. Migration 000111 was not queried locally and must already be `Ran`; activation executes no migration.
 - Vite build count: zero; no Vite input changed and exact Hotfix34 compiled assets are reused.
+
+# 2026-09-13 — v0.1.22-hotfix36 concise release verification
+
+- PASS: PHP/locale syntax, 6,115 JSON-key and 244 PHP-leaf parity, protected tokens, nonempty values, zero documented corruption markers, and representative Egyptian dashboard/products/inventory/sales/purchasing/alerts/approvals wording.
+- PASS: exact unchanged Hotfix35 `ar`/`en`, routes, business/query/permission/search/keyboard/accounting/database boundaries, RTL/Cairo/switching contracts, and compiled Vite assets; build count zero.
+- PASS: archive/complete-manifest integrity, root-script Bash syntax and static fail-closed safety contract, and Git diff hygiene. The operator scripts were not executed.
+- ACTIVATION-GATED: authenticated `ar`, `en`, and `ar-EG` representative route rendering runs transactionally before and after switching. It was not locally executed without an authorized runtime database.
+- Migration status: no migration was added, queried, or executed. Migration 000111 must already be `Ran` when activation starts.

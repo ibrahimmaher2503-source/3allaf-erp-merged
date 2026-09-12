@@ -23,3 +23,7 @@ Production access, deployment, backup execution, migration execution, active-sym
 ## 2026-09-12 — Egyptian Arabic locale completion batch
 
 - **V0 / completed locally / undeployed:** Rewrote all 6,115 `ar-EG` JSON values and 244 PHP locale leaves, added contextual Egyptian render wording and human-readable source labels, and preserved `ar`/`en`. Commit recorded after final verification. No deployment or packaging.
+
+## 2026-09-13 — Hotfix36 Egyptian Arabic quality-repair batch
+
+- **V0 / release candidate / undeployed:** Integrated the direct-child localization repair onto exact Hotfix35, retaining all 6,115 JSON keys, 244 PHP leaves, unchanged `ar`/`en`, and unchanged functional boundaries. Offline package and fail-closed exact-Hotfix35 operator workflow prepared; no production or operator action executed.

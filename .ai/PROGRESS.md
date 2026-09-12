@@ -392,3 +392,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Corrected residual Hotfix35 word-map ordering, malformed empty states, approval and wallet wording, product-card labels, limit text, and Egyptian-only rendered copy across 14 Blade templates. Preserved professional accounting, inventory, tax, and legal terminology plus required identifiers, placeholders, brands, and file formats.
 - The focused final gate passed JSON/PHP syntax, 6,115-key and 244-leaf integrity, placeholders, exact unchanged `ar`/`en`, zero forbidden prefixes and known corruption signatures, representative product/dashboard/alerts/approvals/sales/purchasing/inventory wording, unchanged RTL/Cairo/locale switching and compiled assets, allowed-file scope, and `git diff --check`.
 - No browser-control or automated suite was run under the current repository directive. No Vite build, database operation, migration, production access, deployment, packaging, push, tag, or business-logic change occurred.
+
+# v0.1.22-hotfix36 Egyptian localization quality repair — 2026-09-13
+
+- Integrated direct-child repair commit `80156c9ab50d9b76c19a797dc30db487b694ecb2` onto exact active Hotfix35 `2f6b07285ca082cb3c61f1f860e13b0d3d2bccb8`, preserving all 6,115 `ar-EG` JSON keys and 244 PHP locale leaves.
+- Retained byte-identical `ar` and `en`, exact Hotfix35 compiled assets, locale routes, queries, permissions, search, keyboard, accounting and database behavior; Vite build count is zero and no migration was added or run.
+- Finalized version/evidence and prepared immutable offline packaging plus unexecuted fail-closed scripts restricted to exact Hotfix35. Authenticated three-locale representative rendering is enforced transactionally before and after activation, with exact Hotfix35 rollback after any post-switch failure.
