@@ -291,8 +291,8 @@ class Product extends Model
             : $this->variantValues()->with(['group', 'value'])->get();
 
         return $values->map(function (ProductVariantValue $selection) use ($locale): string {
-            $group = $locale === 'ar' ? $selection->group?->name_ar : $selection->group?->name_en;
-            $value = $locale === 'ar' ? $selection->value?->name_ar : $selection->value?->name_en;
+            $group = str_starts_with($locale, 'ar') ? $selection->group?->name_ar : $selection->group?->name_en;
+            $value = str_starts_with($locale, 'ar') ? $selection->value?->name_ar : $selection->value?->name_en;
 
             return trim((string) $group).': '.trim((string) $value);
         })->implode(' · ');

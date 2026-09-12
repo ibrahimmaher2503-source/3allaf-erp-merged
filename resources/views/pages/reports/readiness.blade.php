@@ -1,4 +1,4 @@
-@php $isArabic = app()->getLocale() === 'ar'; @endphp
+@php $isArabic = app()->isLocale('ar*'); @endphp
 <x-layouts::app :title="$title">
     <x-state.capability-boundary
         :title="$title"

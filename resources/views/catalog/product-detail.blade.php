@@ -47,7 +47,7 @@ new #[Title('Product Details')] class extends Component {
 }; ?>
 
 <x-app.page
-    :title="app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en"
+    :title="app()->isLocale('ar*') ? $product->name_ar : $product->name_en"
     :description="__('Product detail summary with role-safe identity, attributes, barcodes, and protected media.')"
     max-width="7xl"
     class="catalog-screen"
@@ -78,12 +78,12 @@ new #[Title('Product Details')] class extends Component {
                             <flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge>
                         </div>
                         <div>
-                            <flux:heading size="xl">{{ app()->getLocale() === 'ar' ? $product->name_ar : $product->name_en }}</flux:heading>
-                            <flux:text class="mt-2 text-sm text-text-muted">{{ app()->getLocale() === 'ar' ? $product->name_en : $product->name_ar }}</flux:text>
+                            <flux:heading size="xl">{{ app()->isLocale('ar*') ? $product->name_ar : $product->name_en }}</flux:heading>
+                            <flux:text class="mt-2 text-sm text-text-muted">{{ app()->isLocale('ar*') ? $product->name_en : $product->name_ar }}</flux:text>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ app()->getLocale() === 'ar' ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
-                            <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(app()->getLocale() === 'ar' ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ app()->isLocale('ar*') ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(app()->isLocale('ar*') ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Model / item number') }}</div><div class="font-medium">{{ $product->model_number ?: __('Not provided') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Unit of measure') }}</div><div class="font-medium">{{ $product->unit_of_measure ?: __('Owner-configurable') }}</div></div>
                         </div>
@@ -119,7 +119,7 @@ new #[Title('Product Details')] class extends Component {
                             <div>
                                 <div class="flex items-center gap-2">
                                     <span class="catalog-code-chip">{{ $ps->supplier?->code }}</span>
-                                    <span class="font-medium text-sm">{{ app()->getLocale() === 'ar' ? $ps->supplier?->name_ar : $ps->supplier?->name_en }}</span>
+                                    <span class="font-medium text-sm">{{ app()->isLocale('ar*') ? $ps->supplier?->name_ar : $ps->supplier?->name_en }}</span>
                                     @if ($ps->is_preferred)
                                         <flux:badge size="sm" color="amber">{{ __('Preferred Supplier') }}</flux:badge>
                                     @endif
@@ -145,8 +145,8 @@ new #[Title('Product Details')] class extends Component {
                 <div class="space-y-2">
                     @forelse ($product->barcodes as $barcode)
                         @php($barcodeLabel = $barcode->source === 'local'
-                            ? (app()->getLocale() === 'ar' ? 'باركود داخلي ينشئه النظام' : 'System-Generated Internal Barcode')
-                            : (app()->getLocale() === 'ar' ? 'باركود المصنع الموجود' : 'Existing Manufacturer Barcode'))
+                            ? (app()->isLocale('ar*') ? 'باركود داخلي ينشئه النظام' : 'System-Generated Internal Barcode')
+                            : (app()->isLocale('ar*') ? 'باركود المصنع الموجود' : 'Existing Manufacturer Barcode'))
                         <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"><bdi dir="ltr" class="catalog-code-chip">{{ $barcode->barcode }}</bdi><flux:badge size="sm" color="{{ $barcode->source === 'local' ? 'sky' : 'zinc' }}">{{ $barcodeLabel }}</flux:badge></div>
                     @empty
                         <x-state.empty :title="__('No barcode linked')" :description="__('Barcode identity can be managed from the catalog list.')" icon="tag">
@@ -180,7 +180,7 @@ new #[Title('Product Details')] class extends Component {
             @if ($canRemove)
                 <flux:card class="space-y-4 p-5" data-product-removal>
                     <flux:heading size="lg">{{ __('Safe product removal') }}</flux:heading>
-                    <p class="text-sm text-text-muted">{{ __('Product: :code — :name', ['code' => $product->item_code, 'name' => app()->isLocale('ar') ? $product->name_ar : $product->name_en]) }}</p>
+                    <p class="text-sm text-text-muted">{{ __('Product: :code — :name', ['code' => $product->item_code, 'name' => app()->isLocale('ar*') ? $product->name_ar : $product->name_en]) }}</p>
                     @error('product')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
                     @if (($removalReport['operational_total'] ?? 0) > 0)
                         <flux:callout variant="warning" icon="archive-box">{{ __('This product has :count operational or historical dependencies. It can only be archived; every dependency remains intact.', ['count' => $removalReport['operational_total']]) }}</flux:callout>

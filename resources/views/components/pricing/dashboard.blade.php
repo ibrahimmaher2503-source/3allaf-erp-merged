@@ -1,7 +1,7 @@
 @props(['dashboard'])
 
 @php
-    $isArabic = app()->getLocale() === 'ar';
+    $isArabic = app()->isLocale('ar*');
     $exceptionTotal = array_sum($dashboard['pricing_exceptions']);
 @endphp
 

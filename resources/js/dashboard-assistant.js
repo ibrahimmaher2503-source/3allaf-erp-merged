@@ -31,16 +31,16 @@ const registerDashboardAssistant = () => {
             },
             tutorialStatusText() {
                 return {
-                    not_started: locale === 'ar' ? 'لم تبدأ الجولة بعد' : 'Tour not started',
-                    in_progress: locale === 'ar' ? 'جولة قيد التقدم' : 'Tour in progress',
-                    completed: locale === 'ar' ? 'اكتملت الجولة' : 'Tour completed',
-                    dismissed: locale === 'ar' ? 'تم تخطي الجولة' : 'Tour dismissed',
+                    not_started: locale.startsWith('ar') ? 'لم تبدأ الجولة بعد' : 'Tour not started',
+                    in_progress: locale.startsWith('ar') ? 'جولة قيد التقدم' : 'Tour in progress',
+                    completed: locale.startsWith('ar') ? 'اكتملت الجولة' : 'Tour completed',
+                    dismissed: locale.startsWith('ar') ? 'تم تخطي الجولة' : 'Tour dismissed',
                 }[this.tutorialStatus] || '';
             },
             tourButtonLabel() {
                 return this.tutorialStatus === 'in_progress'
-                    ? (locale === 'ar' ? 'متابعة الجولة' : 'Continue tour')
-                    : (locale === 'ar' ? 'ابدأ الجولة التفاعلية' : 'Start interactive tour');
+                    ? (locale.startsWith('ar') ? 'متابعة الجولة' : 'Continue tour')
+                    : (locale.startsWith('ar') ? 'ابدأ الجولة التفاعلية' : 'Start interactive tour');
             },
             async persistTutorialStatus(status) {
                 const screenId = this.context?.screen_id;
@@ -91,14 +91,14 @@ const registerDashboardAssistant = () => {
                 return merged;
             },
             saveStatusText() {
-                return { saving: locale === 'ar' ? 'جارٍ حفظ إعدادات العرض…' : 'Saving display settings…', saved: locale === 'ar' ? 'تم حفظ إعدادات العرض' : 'Display settings saved', error: locale === 'ar' ? 'تعذر حفظ الإعدادات، لكن تم تطبيقها محلياً' : 'Could not save settings; they remain applied locally' }[this.saveStatus] || '';
+                return { saving: locale.startsWith('ar') ? 'جارٍ حفظ إعدادات العرض…' : 'Saving display settings…', saved: locale.startsWith('ar') ? 'تم حفظ إعدادات العرض' : 'Display settings saved', error: locale.startsWith('ar') ? 'تعذر حفظ الإعدادات، لكن تم تطبيقها محلياً' : 'Could not save settings; they remain applied locally' }[this.saveStatus] || '';
             },
             text(value) {
                 if (!value) return '';
                 if (typeof value === 'string') return value;
                 if (Array.isArray(value)) return value.map(v => this.text(v)).filter(Boolean).join(' ');
                 if (typeof value === 'object') {
-                    const val = value[this.locale] || value.en || value.ar;
+                    const val = value[this.locale] || (this.locale.startsWith('ar') ? value.ar : value.en) || value.ar || value.en;
                     if (typeof val === 'string') return val;
                     if (Array.isArray(val)) return val.map(v => this.text(v)).filter(Boolean).join(' ');
                     if (val) return String(val);

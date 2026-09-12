@@ -1,7 +1,7 @@
 @php
     $locale = app()->getLocale();
-    $isArabic = $locale === 'ar';
-    $text = fn ($value): string => is_array($value) ? ($value[$locale] ?? $value['en'] ?? $value['ar'] ?? '') : (string) $value;
+    $isArabic = str_starts_with($locale, 'ar');
+    $text = fn ($value): string => is_array($value) ? ($value[$isArabic ? 'ar' : 'en'] ?? $value['ar'] ?? $value['en'] ?? '') : (string) $value;
     $title = $text($context['title']);
     $sections = $context['sections'];
     $relatedFlows = $context['related_flows'] ?? [];

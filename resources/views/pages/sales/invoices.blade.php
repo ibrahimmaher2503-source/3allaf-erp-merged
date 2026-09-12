@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('Sales Invoices')">
     @php
-        $isArabic = app()->getLocale() === 'ar';
+        $isArabic = app()->isLocale('ar*');
         $selectedStore = $stores->firstWhere('id', (int) request('store_id'));
     @endphp
     <x-app.page class="internal-page" :title="__('Sales Invoices')" :description="__('Approved, numbered retail invoices with immutable financial snapshots.')" :breadcrumbs="$isArabic ? 'المبيعات ونقطة البيع / فواتير المبيعات' : 'Sales & POS / Sales invoices'">

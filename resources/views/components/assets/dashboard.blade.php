@@ -1,6 +1,6 @@
 @props(['dashboard'])
 
-@php($ar = app()->getLocale() === 'ar')
+@php($ar = app()->isLocale('ar*'))
 
 <section class="dashboard-kpi-grid" aria-label="{{ $ar ? 'مؤشرات الأصول والتأجير' : 'Assets and rental indicators' }}">
     <a href="{{ route('party.assets.index', ['mode' => 'catalog']) }}" class="dashboard-kpi dashboard-kpi--priority"><div><p class="dashboard-kpi__label">{{ $ar ? 'الأصول النشطة' : 'Active assets' }}</p><p class="dashboard-kpi__value">{{ number_format($dashboard['active_assets']) }}</p><p class="dashboard-kpi__state">{{ $dashboard['available_assets'] }} {{ $ar ? 'متاح للحجز' : 'available to reserve' }}</p></div><span class="dashboard-kpi__icon"><flux:icon.archive-box class="size-5" /></span></a>

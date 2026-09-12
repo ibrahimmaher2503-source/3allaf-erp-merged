@@ -18,7 +18,7 @@ new class extends Component {
             <tbody>
             @foreach ($rows as $row)
                 <tr>
-                    <td>{{ $row['list']->code }} · {{ app()->isLocale('ar') ? $row['list']->name_ar : $row['list']->name_en }}</td>
+                    <td>{{ $row['list']->code }} · {{ app()->isLocale('ar*') ? $row['list']->name_ar : $row['list']->name_en }}</td>
                     <td dir="ltr">{{ $row['list']->percentage_increase }}%</td>
                     @if ($row['resolved'])
                         <td dir="ltr">{{ $row['resolved']->basePrice }} {{ __('EGP') }}</td>

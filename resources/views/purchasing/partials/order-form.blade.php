@@ -10,14 +10,14 @@
         <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
             <option value="">{{ __('Select Supplier') }}</option>
             @foreach ($suppliers as $sup)
-                <option value="{{ $sup->id }}">{{ app()->getLocale() === 'ar' ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
+                <option value="{{ $sup->id }}">{{ app()->isLocale('ar*') ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
             @endforeach
         </flux:select>
 
         <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse')">
             <option value="">{{ __('Select Store (Optional)') }}</option>
             @foreach ($stores as $st)
-                <option value="{{ $st->id }}">{{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
+                <option value="{{ $st->id }}">{{ app()->isLocale('ar*') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
             @endforeach
         </flux:select>
 
@@ -51,7 +51,7 @@
                 <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(20rem,1fr)_6rem_9rem_8rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
                     <div class="col-span-12 min-w-0 lg:col-auto">
                         @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
-                        <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->getLocale() === 'ar' ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
+                        <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->isLocale('ar*') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
                     </div>
 
                     <div class="col-span-5 sm:col-span-3 lg:col-auto">

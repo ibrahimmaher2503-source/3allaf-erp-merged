@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('Rental assets')">
     @php
-        $ar = app()->getLocale() === 'ar';
+        $ar = app()->isLocale('ar*');
         $pageTitle = match($mode) {
             'catalog' => $ar ? 'سجل الأصول' : 'Asset catalog',
             'calendar' => $ar ? 'تقويم الإتاحة والحجوزات' : 'Availability calendar',
@@ -58,7 +58,7 @@
                 <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
                     <table class="min-w-[720px] w-full text-sm"><thead><tr class="bg-zinc-50 text-start dark:bg-zinc-800/60"><th class="p-3">{{ __('Asset') }}</th><th class="p-3">{{ __('Starts') }}</th><th class="p-3">{{ __('Ends') }}</th><th class="p-3">{{ __('Location') }}</th><th class="p-3">{{ __('Reference') }}</th></tr></thead><tbody>
                         @foreach ($calendarReservations as $reservation)
-                            <tr class="border-t border-zinc-100 dark:border-zinc-800"><td class="p-3 font-medium">{{ $reservation->asset->code }} · {{ app()->getLocale() === 'ar' ? $reservation->asset->name_ar : $reservation->asset->name_en }}</td><td class="p-3">{{ $reservation->starts_at?->format('Y-m-d H:i') }}</td><td class="p-3">{{ $reservation->ends_at?->format('Y-m-d H:i') }}</td><td class="p-3">{{ $reservation->store?->code ?: __('Not recorded') }}</td><td class="p-3">{{ $reservation->source_reference ?: __('Not recorded') }}</td></tr>
+                            <tr class="border-t border-zinc-100 dark:border-zinc-800"><td class="p-3 font-medium">{{ $reservation->asset->code }} · {{ app()->isLocale('ar*') ? $reservation->asset->name_ar : $reservation->asset->name_en }}</td><td class="p-3">{{ $reservation->starts_at?->format('Y-m-d H:i') }}</td><td class="p-3">{{ $reservation->ends_at?->format('Y-m-d H:i') }}</td><td class="p-3">{{ $reservation->store?->code ?: __('Not recorded') }}</td><td class="p-3">{{ $reservation->source_reference ?: __('Not recorded') }}</td></tr>
                         @endforeach
                     </tbody></table>
                 </div>
@@ -85,7 +85,7 @@
                     @php($checkout = $asset->checkouts->first())
                     @php($assetReturn = $asset->returns->first())
                     <tr class="border-t border-zinc-100 dark:border-zinc-800 align-top">
-                        <td><div class="font-semibold">{{ $asset->code }}</div><div class="text-xs text-zinc-500">{{ app()->getLocale() === 'ar' ? $asset->name_ar : $asset->name_en }}</div><div class="mt-1 text-xs text-zinc-500">{{ __('History records') }}: {{ $asset->events_count + $asset->returns_count + $asset->checkouts_count }}</div></td>
+                        <td><div class="font-semibold">{{ $asset->code }}</div><div class="text-xs text-zinc-500">{{ app()->isLocale('ar*') ? $asset->name_ar : $asset->name_en }}</div><div class="mt-1 text-xs text-zinc-500">{{ __('History records') }}: {{ $asset->events_count + $asset->returns_count + $asset->checkouts_count }}</div></td>
                         <td>{{ $asset->store?->code }}<div class="text-xs text-zinc-500">{{ $asset->location ?: __('Not recorded') }}</div></td>
                         <td><x-status.badge :status="$asset->status" /><div class="mt-1 text-xs text-zinc-500">{{ $asset->reservations_count }} {{ __('reservation records') }}</div></td>
                         <td>{{ ucfirst($asset->condition) }}</td>

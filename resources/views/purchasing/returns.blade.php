@@ -115,7 +115,7 @@ new #[Title('Supplier Returns')] class extends Component
         $this->selectedSupplierId = $return->supplier_id;
         $this->confirmedSupplierId = (string) $return->supplier_id;
         $this->selectedReasonId = $return->reason_id;
-        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
+        $this->returnLines = $return->lines->map(fn ($line): array => ['purchase_invoice_line_id' => (string) $line->purchase_invoice_line_id, 'quantity' => (string) $line->quantity, 'unit_cost' => (string) $line->unit_cost, 'available' => '', 'product' => app()->isLocale('ar*') ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id)])->values()->all();
         $this->showFormModal = true;
     }
 
@@ -227,7 +227,7 @@ new #[Title('Supplier Returns')] class extends Component
             'quantity' => bccomp($available, '1', 6) < 0 ? $available : '1',
             'unit_cost' => (string) $line->unit_cost,
             'available' => $available,
-            'product' => app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
+            'product' => app()->isLocale('ar*') ? ($line->product?->name_ar ?: $line->product?->name_en ?: '#'.$line->product_id) : ($line->product?->name_en ?: $line->product?->name_ar ?: '#'.$line->product_id),
         ];
     }
 
@@ -403,9 +403,9 @@ new #[Title('Supplier Returns')] class extends Component
 ?>
 
 <x-app.page
-    :title="app()->getLocale() === 'ar' ? 'مرتجعات الموردين' : __('Supplier returns')"
-    :description="app()->getLocale() === 'ar' ? 'تابع المرتجعات المرتبطة بفواتير الشراء وحالات الاعتماد والعكس.' : __('Track source-linked returns, approvals, posting, and reversal states.')"
-    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
+    :title="app()->isLocale('ar*') ? 'مرتجعات الموردين' : __('Supplier returns')"
+    :description="app()->isLocale('ar*') ? 'تابع المرتجعات المرتبطة بفواتير الشراء وحالات الاعتماد والعكس.' : __('Track source-linked returns, approvals, posting, and reversal states.')"
+    :breadcrumbs="app()->isLocale('ar*') ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="space-y-6"
 >
@@ -462,7 +462,7 @@ new #[Title('Supplier Returns')] class extends Component
                     <flux:table.row :key="$return->id">
                         <flux:table.cell data-primary><a class="font-medium underline" href="{{ route('purchasing.returns.show', $return) }}">{{ $return->return_number ?: '#'.$return->id }}</a></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Original invoice') }}">{{ $return->purchaseInvoice?->invoice_number ?: '#'.$return->purchase_invoice_id }}</flux:table.cell>
-                        <flux:table.cell data-label="{{ __('Supplier') }}">{{ app()->getLocale() === 'ar' ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
+                        <flux:table.cell data-label="{{ __('Supplier') }}">{{ app()->isLocale('ar*') ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Reason') }}">{{ $return->reason?->code ?: __('Unavailable') }}</flux:table.cell>
                         <flux:table.cell data-label="{{ __('Total cost') }}"><x-money :amount="$return->total_amount" currency="EGP" /></flux:table.cell>
                         <flux:table.cell data-label="{{ __('Status') }}"><x-status.badge :status="$return->status" /></flux:table.cell>
@@ -534,13 +534,13 @@ new #[Title('Supplier Returns')] class extends Component
                 <flux:select wire:model.live="selectedSupplierId" :label="__('Supplier')" :disabled="$selectedReturnId !== null">
                     <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
                     @foreach($sourceInvoices->pluck('supplier')->filter()->unique('id') as $supplier)
-                        <flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale() === 'ar' ? ($supplier->name_ar ?: $supplier->name_en) : ($supplier->name_en ?: $supplier->name_ar) }}</flux:select.option>
+                        <flux:select.option value="{{ $supplier->id }}">{{ app()->isLocale('ar*') ? ($supplier->name_ar ?: $supplier->name_en) : ($supplier->name_en ?: $supplier->name_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:select wire:model.live="selectedInvoiceId" :label="__('Approved purchase invoice')" :disabled="$selectedSupplierId === null || $selectedReturnId !== null">
                     <flux:select.option value="">{{ __('Select approved invoice') }}</flux:select.option>
                     @foreach ($sourceInvoices->where('supplier_id', $selectedSupplierId) as $invoice)
-                        <flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }} — {{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:select.option>
+                        <flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }} — {{ app()->isLocale('ar*') ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <div class="space-y-2">
@@ -557,7 +557,7 @@ new #[Title('Supplier Returns')] class extends Component
                 <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>
                     @foreach ($reasons as $reason)
-                        <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ app()->getLocale() === 'ar' ? ($reason->label_ar ?: $reason->label_en) : ($reason->label_en ?: $reason->label_ar) }}</flux:select.option>
+                        <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ app()->isLocale('ar*') ? ($reason->label_ar ?: $reason->label_en) : ($reason->label_en ?: $reason->label_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 @if ($returnLines !== [])

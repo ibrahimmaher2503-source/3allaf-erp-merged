@@ -16,7 +16,7 @@
 
         <div class="space-y-2">
             <h1 class="text-xl font-bold tracking-tight">خطأ غير متوقع في النظام</h1>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-semibold">{{ app()->getLocale() === 'ar' ? '500' : 'Unexpected system error (500)' }}</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-semibold">{{ app()->isLocale('ar*') ? '500' : 'Unexpected system error (500)' }}</p>
         </div>
 
         <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
@@ -34,10 +34,10 @@
 
         <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a href="{{ request()->fullUrl() }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors">
-                {{ app()->getLocale() === 'ar' ? 'إعادة المحاولة' : 'Retry' }}
+                {{ app()->isLocale('ar*') ? 'إعادة المحاولة' : 'Retry' }}
             </a>
             <a href="{{ route('dashboard') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-zinc-700">
-                {{ app()->getLocale() === 'ar' ? 'لوحة التحكم' : 'Dashboard' }}
+                {{ app()->isLocale('ar*') ? 'لوحة التحكم' : 'Dashboard' }}
             </a>
         </div>
     </div>

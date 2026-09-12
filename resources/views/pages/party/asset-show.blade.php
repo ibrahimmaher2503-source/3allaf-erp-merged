@@ -1,5 +1,5 @@
 <x-layouts::app :title="$asset->code">
-    @php($ar = app()->getLocale() === 'ar')
+    @php($ar = app()->isLocale('ar*'))
     <x-app.page :title="($ar ? $asset->name_ar : $asset->name_en)" :description="$ar ? 'سجل الهوية والعهدة والحالة والحجوزات المرتبط بهذا الأصل.' : 'Identity, custody, condition, and reservation history for this asset.'" max-width="7xl">
         <x-slot:actions><flux:button href="{{ route('party.assets.index', ['mode' => 'catalog']) }}" variant="subtle" icon="arrow-left">{{ $ar ? 'سجل الأصول' : 'Asset catalog' }}</flux:button>@can('rental_assets.print')<flux:button href="{{ route('party.assets.print', $asset) }}" icon="printer">{{ __('Print') }}</flux:button>@endcan</x-slot:actions>
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="{{ $ar ? 'ملخص الأصل' : 'Asset summary' }}">

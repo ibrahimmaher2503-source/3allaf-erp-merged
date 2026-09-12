@@ -350,3 +350,12 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Hardened activation around checked `tee` pipeline statuses and an exact terminal PASS marker; post-switch failure restores exact Hotfix31, rebuilds caches, reloads PHP-FPM, runs `artisan up`, and confirms maintenance mode is off.
 - The isolated negative contract passed pre-switch/no-switch, post-switch/rollback, and no-false-success scenarios. No frontend source changed; exact Hotfix31 compiled assets are reused and Vite build count is zero.
 - No migration, database, production access/change, promotion, activation, sudo/root action, service action, push, tag, package/browser installation, or unrelated application change occurred.
+
+# 2026-09-12 — Egyptian Arabic locale
+
+- Added the separate `ar-EG` locale named `العربية المصرية` from exact source baseline `3ca22dbe6671f94aaec4132b84fb6a2c126cec82`; retained `ar` and `en` unchanged.
+- Completed the 6,115-key union of current Arabic and English JSON catalogs plus all six Arabic PHP locale files, with no empty or duplicate `ar-EG` entries and protected placeholders/tokens preserved.
+- Added three-way locale switching with existing session/cookie persistence, Laravel fallback `ar-EG → ar → en`, exact `lang="ar-EG"`, RTL/Cairo behavior, and Arabic field/label selection across existing application surfaces.
+- Recorded 1,515 remaining hardcoded user-facing candidate locations in `docs/audits/egyptian-arabic-hardcoded-strings.md`; no functional Blade/Livewire copy was mass-extracted during the audit.
+- Focused locale integrity, PHP/JavaScript syntax, full Blade compilation, fallback, switch/persistence, RTL/lang, audit-count, build-manifest, unchanged-source-locale, and diff checks passed. One Vite build completed successfully after one earlier invocation stopped before asset generation because the isolated worktree lacked a local `vendor` path.
+- No automated test suite, browser, database, migration, deployment, packaging, activation, production access, push, tag, sudo, package installation, or business-rule change occurred.

@@ -63,7 +63,7 @@ new #[Title('Role Permissions')] class extends Component
 }; ?>
 
 @php
-    $isArabic = app()->getLocale() === 'ar';
+    $isArabic = app()->isLocale('ar*');
     $roleName = $isArabic ? $role->name_ar : $role->name_en;
     $locale = $isArabic ? 'ar' : 'en';
     $moduleLabels = [

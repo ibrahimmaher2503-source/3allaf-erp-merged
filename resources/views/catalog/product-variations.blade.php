@@ -148,7 +148,7 @@ new class extends Component {
             foreach ($result as $base) foreach ($ids as $valueId) {
                 $value = $values->get($valueId);
                 if (! $value) continue;
-                $next[] = ['value_ids' => [...$base['value_ids'], $valueId], 'labels' => [...$base['labels'], (app()->getLocale() === 'ar' ? $group->name_ar.': '.$value->name_ar : $group->name_en.': '.$value->name_en)]];
+                $next[] = ['value_ids' => [...$base['value_ids'], $valueId], 'labels' => [...$base['labels'], (app()->isLocale('ar*') ? $group->name_ar.': '.$value->name_ar : $group->name_en.': '.$value->name_en)]];
                 if (count($next) > 100) return $next;
             }
             $result = $next;
@@ -218,7 +218,7 @@ new class extends Component {
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($optionGroups as $group)
                     <label wire:key="variation-group-{{ $group->id }}" class="flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 transition has-[:checked]:border-cyan-600 has-[:checked]:bg-cyan-50 dark:border-zinc-700 dark:has-[:checked]:bg-cyan-950/20">
-                        <span><strong class="block">{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</strong><span class="mt-1 block font-mono text-xs text-zinc-500">{{ $group->code }}</span></span>
+                        <span><strong class="block">{{ app()->isLocale('ar*') ? $group->name_ar : $group->name_en }}</strong><span class="mt-1 block font-mono text-xs text-zinc-500">{{ $group->code }}</span></span>
                         <input type="checkbox" wire:model.live="selectedGroups" value="{{ $group->id }}" class="size-5 rounded border-zinc-300 text-cyan-700">
                     </label>
                 @endforeach
@@ -231,13 +231,13 @@ new class extends Component {
 
         @foreach($optionGroups->whereIn('id', array_map('intval', $selectedGroups)) as $group)
             <fieldset wire:key="variation-values-{{ $group->id }}" class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-                <legend class="px-1 text-sm font-bold">{{ app()->getLocale() === 'ar' ? $group->name_ar : $group->name_en }}</legend>
+                <legend class="px-1 text-sm font-bold">{{ app()->isLocale('ar*') ? $group->name_ar : $group->name_en }}</legend>
                 <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach($group->values as $value)
                         <label wire:key="variation-value-{{ $group->id }}-{{ $value->id }}" class="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2 has-[:checked]:border-cyan-600 has-[:checked]:bg-cyan-50 dark:border-zinc-700 dark:has-[:checked]:bg-cyan-950/20">
                             <input type="checkbox" wire:click="toggleValue({{ $group->id }}, {{ $value->id }})" value="{{ $value->id }}" class="size-5 rounded border-zinc-300 text-cyan-700" @checked(in_array((string) $value->id, $selectedValues[$group->id] ?? [], true)) @disabled($value->status !== 'active' && !in_array((string) $value->id, $selectedValues[$group->id] ?? [], true))>
                             @if($value->colour_swatch)<span class="size-5 shrink-0 rounded-full border" style="background-color:{{ $value->colour_swatch }}"></span>@endif
-                            <span>{{ app()->getLocale() === 'ar' ? $value->name_ar : $value->name_en }}</span>
+                            <span>{{ app()->isLocale('ar*') ? $value->name_ar : $value->name_en }}</span>
                         </label>
                     @endforeach
                 </div>

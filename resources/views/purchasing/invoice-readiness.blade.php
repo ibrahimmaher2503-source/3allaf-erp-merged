@@ -32,7 +32,7 @@
                 @foreach ($decisionGroups as $group)
                     <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
                         <div class="flex items-start justify-between gap-3">
-                            <flux:heading size="base">{{ $group['title'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:heading>
+                            <flux:heading size="base">{{ $group['title'][str_starts_with($locale, 'ar') ? 'ar' : 'en'] }}</flux:heading>
                             <flux:badge color="zinc">{{ $group['items'] }}</flux:badge>
                         </div>
                         <flux:text size="sm" class="mt-2">{{ __('Decision items') }}</flux:text>
@@ -50,8 +50,8 @@
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
                         <div class="flex items-start gap-3">
                             <div>
-                                <flux:heading size="sm">{{ $blocker['title'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:heading>
-                                <flux:text class="mt-1">{{ $blocker['detail'][$locale === 'ar' ? 'ar' : 'en'] }}</flux:text>
+                                <flux:heading size="sm">{{ $blocker['title'][str_starts_with($locale, 'ar') ? 'ar' : 'en'] }}</flux:heading>
+                                <flux:text class="mt-1">{{ $blocker['detail'][str_starts_with($locale, 'ar') ? 'ar' : 'en'] }}</flux:text>
                             </div>
                         </div>
                     </div>

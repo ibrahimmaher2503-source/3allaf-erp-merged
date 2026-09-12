@@ -8,20 +8,7 @@
     </head>
     <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900 relative">
         <div class="absolute top-4 right-4 rtl:right-auto rtl:left-4 z-10">
-            <form method="POST" action="{{ route('locale.switch') }}">
-                @csrf
-                @if (app()->getLocale() === 'ar')
-                    <input type="hidden" name="locale" value="en" />
-                    <flux:button type="submit" size="sm" variant="subtle" icon="language">
-                        English
-                    </flux:button>
-                @else
-                    <input type="hidden" name="locale" value="ar" />
-                    <flux:button type="submit" size="sm" variant="subtle" icon="language">
-                        عربي
-                    </flux:button>
-                @endif
-            </form>
+            <x-locale-switcher compact />
         </div>
         <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div class="flex w-full max-w-sm flex-col gap-2">

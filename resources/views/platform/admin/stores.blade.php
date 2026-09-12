@@ -171,11 +171,11 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             'storeForm.allows_negative_stock' => ['boolean'],
             'storeForm.policy_notes' => ['nullable', 'string'],
         ], [], [
-            'storeForm.code' => app()->getLocale() === 'ar' ? 'رمز المخزن' : __('Location Code'),
-            'storeForm.branch_id' => app()->getLocale() === 'ar' ? 'الفرع' : __('Branch'),
-            'storeForm.name_ar' => app()->getLocale() === 'ar' ? 'اسم الموقع بالعربية' : __('Arabic Name'),
-            'storeForm.name_en' => app()->getLocale() === 'ar' ? 'اسم الموقع بالإنجليزية' : __('English Name'),
-            'storeForm.status' => app()->getLocale() === 'ar' ? 'حالة الموقع' : __('Status'),
+            'storeForm.code' => app()->isLocale('ar*') ? 'رمز المخزن' : __('Location Code'),
+            'storeForm.branch_id' => app()->isLocale('ar*') ? 'الفرع' : __('Branch'),
+            'storeForm.name_ar' => app()->isLocale('ar*') ? 'اسم الموقع بالعربية' : __('Arabic Name'),
+            'storeForm.name_en' => app()->isLocale('ar*') ? 'اسم الموقع بالإنجليزية' : __('English Name'),
+            'storeForm.status' => app()->isLocale('ar*') ? 'حالة الموقع' : __('Status'),
         ])['storeForm'];
 
         try {
@@ -212,7 +212,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
             $this->archiveStoreId = $store->id;
             $this->archiveStoreContext = [
                 'code' => $store->code,
-                'name' => app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en,
+                'name' => app()->isLocale('ar*') ? $store->name_ar : $store->name_en,
                 'type' => match ($store->type) {
                     'selling' => __('Point of Sale (POS)'),
                     'warehouse' => __('Warehouse'),
@@ -223,7 +223,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 },
                 'branch' => $store->branch === null
                     ? __('Central / Unassigned')
-                    : $store->branch->code.' — '.(app()->getLocale() === 'ar' ? $store->branch->name_ar : $store->branch->name_en),
+                    : $store->branch->code.' — '.(app()->isLocale('ar*') ? $store->branch->name_ar : $store->branch->name_en),
             ];
             $this->resetValidation();
             $this->showArchiveModal = true;
@@ -278,8 +278,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         }
 
         $this->mappingStoreId = $store->id;
-        $this->mappingStoreName = app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en;
-        $this->mappingBranchName = app()->getLocale() === 'ar' ? $store->branch->name_ar : $store->branch->name_en;
+        $this->mappingStoreName = app()->isLocale('ar*') ? $store->name_ar : $store->name_en;
+        $this->mappingBranchName = app()->isLocale('ar*') ? $store->branch->name_ar : $store->branch->name_en;
         $this->selectedBranchId = $store->branch->id;
         $this->mappingApprovalNotes = '';
         $this->resetValidation();
@@ -390,7 +390,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <flux:select.option value="unassigned">{{ __('Unassigned Branch') }}</flux:select.option>
                 @foreach ($branchesList as $b)
                     <flux:select.option :value="$b->id">
-                        {{ $b->code }} - {{ app()->getLocale() === 'ar' ? $b->name_ar : $b->name_en }}
+                        {{ $b->code }} - {{ app()->isLocale('ar*') ? $b->name_ar : $b->name_en }}
                     </flux:select.option>
                 @endforeach
             </flux:select>
@@ -686,13 +686,13 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endif
                 @foreach ($activeBranchesList as $b)
                     <flux:select.option :value="$b->id">
-                        {{ $b->code }} - {{ app()->getLocale() === 'ar' ? $b->name_ar : $b->name_en }}
+                        {{ $b->code }} - {{ app()->isLocale('ar*') ? $b->name_ar : $b->name_en }}
                     </flux:select.option>
                 @endforeach
             </flux:select>
             @if ($storeForm['type'] === 'selling')
                 <p class="text-xs text-zinc-500">{{ __('A sales outlet must belong to an active branch. Its own linked cash drawer identifies the exact POS stock source.') }}</p>
-                <flux:select wire:model="storeForm.price_list_id" :label="__('Price list')"><flux:select.option value="">{{ __('Inherit branch default or List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
+                <flux:select wire:model="storeForm.price_list_id" :label="__('Price list')"><flux:select.option value="">{{ __('Inherit branch default or List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar*')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
             @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

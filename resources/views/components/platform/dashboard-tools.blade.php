@@ -5,7 +5,7 @@
     $guide = $pageGuideContext?->toArray();
     $tutorialProgress = auth()->user()?->uiPreference?->tutorial_progress ?? [];
     $locale = app()->getLocale();
-    $isArabic = $locale === 'ar';
+    $isArabic = str_starts_with($locale, 'ar');
     $fallback = $isArabic
         ? 'لم يتم نشر دليل تفصيلي لهذه الصفحة بعد. يمكنك استخدام الصفحة وفق صلاحياتك الحالية.'
         : 'A detailed guide has not been published for this page yet. You can still use the page according to your current permissions.';
@@ -43,7 +43,7 @@
         <header class="platform-assistant__header">
             <div>
                 <p class="platform-assistant__eyebrow">{{ $isArabic ? 'دليل الصفحة' : 'Page Guide' }}</p>
-                <h2 id="page-guide-title" class="platform-assistant__title" x-text="text(context?.title) || (locale === 'ar' ? 'دليل الصفحة' : 'Page Guide')"></h2>
+                <h2 id="page-guide-title" class="platform-assistant__title" x-text="text(context?.title) || (locale.startsWith('ar') ? 'دليل الصفحة' : 'Page Guide')"></h2>
                 <p class="platform-assistant__screen" x-show="context?.screen_id">{{ $isArabic ? 'إرشاد مرتبط بهذه الشاشة' : 'Guidance for this screen' }}</p>
             </div>
             <button type="button" class="platform-assistant__close" x-on:click="closeGuide()" aria-label="{{ $isArabic ? 'إغلاق' : 'Close' }}"><flux:icon.x-mark class="size-5" /></button>
@@ -120,7 +120,7 @@
         <div class="platform-assistant__tour-actions">
             <button type="button" x-on:click="previousTour()" :disabled="tour.visibleIndex <= 1">{{ $isArabic ? 'السابق' : 'Previous' }}</button>
             <button type="button" x-on:click="skipTour()">{{ $isArabic ? 'تخطي' : 'Skip' }}</button>
-            <button type="button" class="platform-assistant__primary" x-on:click="nextTour()" x-text="tour.visibleIndex === tour.steps.length ? (locale === 'ar' ? 'إنهاء' : 'Finish') : (locale === 'ar' ? 'التالي' : 'Next')"></button>
+            <button type="button" class="platform-assistant__primary" x-on:click="nextTour()" x-text="tour.visibleIndex === tour.steps.length ? (locale.startsWith('ar') ? 'إنهاء' : 'Finish') : (locale.startsWith('ar') ? 'التالي' : 'Next')"></button>
         </div>
     </div>
 </div>

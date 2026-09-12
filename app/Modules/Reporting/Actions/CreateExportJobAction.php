@@ -23,7 +23,7 @@ final class CreateExportJobAction
 
         unset($filters['page'], $filters['per_page']);
         $locale = app()->getLocale();
-        $locale = in_array($locale, config('app.supported_locales', ['ar', 'en']), true) ? $locale : (string) config('app.fallback_locale', 'en');
+        $locale = in_array($locale, config('app.supported_locales', ['ar', 'en', 'ar-EG']), true) ? $locale : (string) config('app.fallback_locale', 'en');
         $snapshot = app(ReportSnapshot::class)->execute($user, $filters, true);
         $job = DB::transaction(fn (): ExportJob => ExportJob::query()->create([
             'report_key' => $snapshot['filters']['module'] ?? 'dashboard',

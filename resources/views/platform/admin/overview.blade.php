@@ -1,5 +1,5 @@
 @php
-    $ar = app()->getLocale() === 'ar';
+    $ar = app()->isLocale('ar*');
     $setup = $dashboard['setup'];
     $attention = collect($setup['steps'])->where('required', true)->where('complete', false)->take(6);
     $links = [

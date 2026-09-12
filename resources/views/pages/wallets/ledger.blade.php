@@ -1,5 +1,5 @@
 @php
-    $isArabic = app()->getLocale() === 'ar';
+    $isArabic = app()->isLocale('ar*');
     $isCustomerWallet = $customer !== null;
     $walletLabel = $wallet === 'party' ? __('Party Wallet') : __('Product Wallet');
     $settlementRoute = $customer !== null ? ($wallet === 'party' ? route('customers.party-wallet.settle', $customer) : route('customers.product-wallet.settle', $customer)) : null;
@@ -14,7 +14,7 @@
                 <h1 class="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-950">{{ $title }}</h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $description }}</p>
                 @if ($customer !== null)
-                    <p class="mt-2 text-sm text-slate-500">{{ __('Customer') }}: <span class="font-semibold text-slate-900">{{ app()->getLocale() === 'ar' ? $customer->name_ar : $customer->name_en }}</span> · <span dir="ltr" class="font-mono">{{ $customer->phone_display }}</span></p>
+                    <p class="mt-2 text-sm text-slate-500">{{ __('Customer') }}: <span class="font-semibold text-slate-900">{{ app()->isLocale('ar*') ? $customer->name_ar : $customer->name_en }}</span> · <span dir="ltr" class="font-mono">{{ $customer->phone_display }}</span></p>
                 @endif
             </div>
             <div class="flex max-w-full flex-wrap gap-2">
@@ -34,16 +34,16 @@
             <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm" role="status" data-guide="product-wallet-not-configured">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div class="max-w-3xl">
-                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">{{ app()->getLocale() === 'ar' ? 'محفظة المنتجات' : 'Product Wallet' }}</p>
-                        <h2 class="mt-2 text-lg font-semibold text-amber-950">{{ app()->getLocale() === 'ar' ? 'محفظة المنتجات غير مُعدة بعد' : 'Product Wallet is not configured yet' }}</h2>
-                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->getLocale() === 'ar' ? 'تحتفظ محفظة المنتجات بأرصدة المنتجات الخاصة بالعملاء في دفتر مستقل مرتبط بالمصدر.' : 'Product Wallet holds customer product credits in a separate source-linked ledger.' }}</p>
-                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->getLocale() === 'ar' ? 'قبل الاستخدام: يجب إعداد سياسة محفظة المنتجات والعملة على مستوى الشركة. ويتطلب كل قيد مصدر بيع تجزئة معتمد.' : 'Before use, an authorized owner must configure the Product Wallet policy and company currency. Each entry also requires an approved retail source.' }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">{{ app()->isLocale('ar*') ? 'محفظة المنتجات' : 'Product Wallet' }}</p>
+                        <h2 class="mt-2 text-lg font-semibold text-amber-950">{{ app()->isLocale('ar*') ? 'محفظة المنتجات غير مُعدة بعد' : 'Product Wallet is not configured yet' }}</h2>
+                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->isLocale('ar*') ? 'تحتفظ محفظة المنتجات بأرصدة المنتجات الخاصة بالعملاء في دفتر مستقل مرتبط بالمصدر.' : 'Product Wallet holds customer product credits in a separate source-linked ledger.' }}</p>
+                        <p class="mt-2 text-sm leading-6 text-amber-900">{{ app()->isLocale('ar*') ? 'قبل الاستخدام: يجب إعداد سياسة محفظة المنتجات والعملة على مستوى الشركة. ويتطلب كل قيد مصدر بيع تجزئة معتمد.' : 'Before use, an authorized owner must configure the Product Wallet policy and company currency. Each entry also requires an approved retail source.' }}</p>
                         <p class="mt-2 text-xs leading-5 text-amber-800">{{ $policyError }}</p>
                     </div>
                     @can('company_settings.view')
-                        <a href="{{ route('admin.settings.customer-loyalty') }}" class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm hover:border-amber-400">{{ app()->getLocale() === 'ar' ? 'إعداد سياسة المحفظة' : 'Configure wallet policy' }}</a>
+                        <a href="{{ route('admin.settings.customer-loyalty') }}" class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm hover:border-amber-400">{{ app()->isLocale('ar*') ? 'إعداد سياسة المحفظة' : 'Configure wallet policy' }}</a>
                     @else
-                        <span class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900">{{ app()->getLocale() === 'ar' ? 'يلزم مستخدم مخوّل للإعداد' : 'An authorized settings user is required' }}</span>
+                        <span class="inline-flex shrink-0 items-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900">{{ app()->isLocale('ar*') ? 'يلزم مستخدم مخوّل للإعداد' : 'An authorized settings user is required' }}</span>
                     @endcan
                 </div>
             </section>
@@ -166,7 +166,7 @@
                         <thead><tr><th scope="col">{{ __('Customer') }}</th><th scope="col">{{ __('Entry') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col" class="text-end">{{ __('Amount') }}</th><th scope="col" class="text-end">{{ __('Before') }}</th><th scope="col" class="text-end">{{ __('After') }}</th><th scope="col">{{ __('Created') }}</th></tr></thead>
                         <tbody>
                             @foreach ($entries as $entry)
-                                <tr><td>{{ $entry->customer ? (app()->getLocale() === 'ar' ? $entry->customer->name_ar : $entry->customer->name_en) : $entry->customer_id }}</td><td><span class="font-semibold">{{ __(str_replace('_', ' ', ucfirst((string) $entry->entry_type))) }}</span><div class="mt-1 font-mono text-xs text-text-muted">{{ $entry->public_id }}</div></td><td><span class="break-all text-xs">{{ __(str_replace('_', ' ', ucfirst((string) $entry->source_type))) }}</span><div class="font-mono text-xs text-text-muted">{{ $entry->source_id }}</div></td><td class="text-end"><x-money :amount="$entry->amount" :currency="$entry->currency_code" /></td><td class="text-end"><x-money :amount="$entry->balance_before" :currency="$entry->currency_code" /></td><td class="text-end"><x-money :amount="$entry->balance_after" :currency="$entry->currency_code" /></td><td class="text-xs text-text-muted">{{ $entry->created_at?->toDateTimeString() }}</td></tr>
+                                <tr><td>{{ $entry->customer ? (app()->isLocale('ar*') ? $entry->customer->name_ar : $entry->customer->name_en) : $entry->customer_id }}</td><td><span class="font-semibold">{{ __(str_replace('_', ' ', ucfirst((string) $entry->entry_type))) }}</span><div class="mt-1 font-mono text-xs text-text-muted">{{ $entry->public_id }}</div></td><td><span class="break-all text-xs">{{ __(str_replace('_', ' ', ucfirst((string) $entry->source_type))) }}</span><div class="font-mono text-xs text-text-muted">{{ $entry->source_id }}</div></td><td class="text-end"><x-money :amount="$entry->amount" :currency="$entry->currency_code" /></td><td class="text-end"><x-money :amount="$entry->balance_before" :currency="$entry->currency_code" /></td><td class="text-end"><x-money :amount="$entry->balance_after" :currency="$entry->currency_code" /></td><td class="text-xs text-text-muted">{{ $entry->created_at?->toDateTimeString() }}</td></tr>
                             @endforeach
                         </tbody>
                     </table>

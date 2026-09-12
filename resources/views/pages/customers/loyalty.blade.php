@@ -1,4 +1,4 @@
-@php($displayName = app()->getLocale() === 'ar' ? $customer->name_ar : $customer->name_en)
+@php($displayName = app()->isLocale('ar*') ? $customer->name_ar : $customer->name_en)
 @php($user = auth()->user())
 <x-layouts::app :title="__('Loyalty ledger').' · '.$displayName">
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar*') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,10 +25,10 @@
     <h1>{{ $policy->printTitle() }}</h1>
     <p class="muted">{{ $return->return_number ?: '#'.$return->id }} · {{ \App\Modules\Platform\Support\UiLabel::status($return->status) }}</p>
     <div class="grid">
-        <div><strong>{{ __('Supplier') }}</strong><br>{{ app()->getLocale() === 'ar' ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</div>
-        <div><strong>{{ __('Store') }}</strong><br>{{ app()->getLocale() === 'ar' ? ($return->store?->name_ar ?: $return->store?->name_en) : ($return->store?->name_en ?: $return->store?->name_ar) }}</div>
+        <div><strong>{{ __('Supplier') }}</strong><br>{{ app()->isLocale('ar*') ? ($return->supplier?->name_ar ?: $return->supplier?->name_en) : ($return->supplier?->name_en ?: $return->supplier?->name_ar) }}</div>
+        <div><strong>{{ __('Store') }}</strong><br>{{ app()->isLocale('ar*') ? ($return->store?->name_ar ?: $return->store?->name_en) : ($return->store?->name_en ?: $return->store?->name_ar) }}</div>
         <div><strong>{{ __('Original invoice') }}</strong><br>{{ $return->purchaseInvoice?->invoice_number ?: '—' }}</div>
-        <div><strong>{{ __('Reason') }}</strong><br>{{ $return->reason?->code }} — {{ app()->getLocale() === 'ar' ? ($return->reason?->label_ar ?: $return->reason?->label_en) : ($return->reason?->label_en ?: $return->reason?->label_ar) }}</div>
+        <div><strong>{{ __('Reason') }}</strong><br>{{ $return->reason?->code }} — {{ app()->isLocale('ar*') ? ($return->reason?->label_ar ?: $return->reason?->label_en) : ($return->reason?->label_en ?: $return->reason?->label_ar) }}</div>
         <div><strong>{{ __('Created by') }}</strong><br>{{ $return->creator?->name ?: '—' }}</div>
         <div><strong>{{ __('Approved by') }}</strong><br>{{ $return->approver?->name ?: '—' }}</div>
     </div>
@@ -36,7 +36,7 @@
         <thead><tr><th>{{ __('Product') }}</th><th class="numeric">{{ __('Quantity') }}</th><th class="numeric">{{ __('Original unit cost') }}</th><th class="numeric">{{ __('Total cost') }}</th></tr></thead>
         <tbody>
             @foreach($return->lines as $line)
-                <tr><td>{{ (app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar)) ?: '#'.$line->product_id }}</td><td class="numeric"><x-product-quantity :value="$line->quantity" /></td><td class="numeric">{{ number_format((float) $line->unit_cost, 2) }}</td><td class="numeric">{{ number_format((float) $line->total_cost, 2) }}</td></tr>
+                <tr><td>{{ (app()->isLocale('ar*') ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar)) ?: '#'.$line->product_id }}</td><td class="numeric"><x-product-quantity :value="$line->quantity" /></td><td class="numeric">{{ number_format((float) $line->unit_cost, 2) }}</td><td class="numeric">{{ number_format((float) $line->total_cost, 2) }}</td></tr>
             @endforeach
         </tbody>
     </table>

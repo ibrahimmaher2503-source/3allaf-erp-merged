@@ -26,7 +26,7 @@ $router = app('router');
 
 $router->post('locale', function (Request $request) {
     $validated = $request->validate([
-        'locale' => ['required', 'string', 'in:'.implode(',', config('app.supported_locales', ['ar', 'en']))],
+        'locale' => ['required', 'string', 'in:'.implode(',', config('app.supported_locales', ['ar', 'en', 'ar-EG']))],
     ]);
 
     session(['locale' => $validated['locale']]);

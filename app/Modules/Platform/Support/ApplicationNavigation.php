@@ -280,7 +280,7 @@ final class ApplicationNavigation
     private function localizedLabel(mixed $label, string $locale): string
     {
         if (is_array($label)) {
-            $candidates = [$label[$locale] ?? null, $label['en'] ?? null, $label['ar'] ?? null, ...array_values($label)];
+            $candidates = [$label[str_starts_with($locale, 'ar') ? 'ar' : 'en'] ?? null, $label['en'] ?? null, $label['ar'] ?? null, ...array_values($label)];
 
             foreach ($candidates as $candidate) {
                 $value = $this->scalarString($candidate);
@@ -297,7 +297,7 @@ final class ApplicationNavigation
             }
         }
 
-        return $locale === 'ar' ? 'التنقل' : 'Navigation';
+        return str_starts_with($locale, 'ar') ? 'التنقل' : 'Navigation';
     }
 
     private function scalarString(mixed $value, string $default = ''): string

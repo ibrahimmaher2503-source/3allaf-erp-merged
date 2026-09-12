@@ -8,12 +8,12 @@
         html, body { margin: 0; padding: 0; }
         body {
             direction: ltr;
-            font-family: {{ app()->getLocale() === 'ar' ? "'Cairo PDF Arabic'" : "'Cairo PDF Latin'" }};
+            font-family: {{ app()->isLocale('ar*') ? "'Cairo PDF Arabic'" : "'Cairo PDF Latin'" }};
             font-size: 9px;
             font-weight: 400;
             line-height: 1.65;
             color: #17233c;
-            text-align: {{ app()->getLocale() === 'ar' ? 'right' : 'left' }};
+            text-align: {{ app()->isLocale('ar*') ? 'right' : 'left' }};
         }
         h1 { margin: 0 0 12px; font-family: inherit; font-size: 16px; font-weight: 800; line-height: 1.5; }
         p, table, thead, tbody, tr, th, td, span { font-family: inherit; }
@@ -22,7 +22,7 @@
         th, td {
             border: 1px solid #bccbd2;
             padding: 6px 7px;
-            text-align: {{ app()->getLocale() === 'ar' ? 'right' : 'left' }};
+            text-align: {{ app()->isLocale('ar*') ? 'right' : 'left' }};
             vertical-align: top;
             overflow-wrap: break-word;
         }
@@ -37,7 +37,7 @@
 @php
     $segments = static fn (mixed $value): array => preg_split('/(\p{Arabic}[^A-Za-z]*)/u', (string) $value, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [(string) $value];
 @endphp
-<h1 class="{{ app()->getLocale() === 'ar' ? 'arabic' : 'latin' }}">{{ $title }}</h1>
+<h1 class="{{ app()->isLocale('ar*') ? 'arabic' : 'latin' }}">{{ $title }}</h1>
 <table>
     <thead><tr>@foreach($headers as $header)<th class="{{ preg_match('/\p{Arabic}/u', (string) $header) ? 'arabic' : 'latin' }}">{{ $header }}</th>@endforeach</tr></thead>
     <tbody>
@@ -48,7 +48,7 @@
             @endforeach
         </tr>
     @empty
-        <tr><td colspan="{{ count($headers) }}" class="{{ app()->getLocale() === 'ar' ? 'arabic' : 'latin' }}">{{ __('No records found') }}</td></tr>
+        <tr><td colspan="{{ count($headers) }}" class="{{ app()->isLocale('ar*') ? 'arabic' : 'latin' }}">{{ __('No records found') }}</td></tr>
     @endforelse
     </tbody>
 </table>

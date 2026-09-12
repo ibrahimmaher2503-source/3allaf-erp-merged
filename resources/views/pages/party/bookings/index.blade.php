@@ -1,4 +1,4 @@
-@php($ar=app()->getLocale()==='ar')
+@php($ar=app()->isLocale('ar*'))
 <x-layouts::app :title="$ar ? 'الحفلات والحجوزات' : 'Parties & bookings'">
     <x-app.page :title="$ar ? 'الحفلات والحجوزات' : 'Parties & bookings'" :description="$ar ? 'متابعة الحجوزات والمواعيد والتحصيل والتشغيل ضمن الفروع والمتاجر المصرح بها.' : 'Monitor bookings, schedules, collections, and operations within your authorized scope.'" max-width="7xl">
         <x-slot:actions>

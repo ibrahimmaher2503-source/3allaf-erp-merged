@@ -16,7 +16,7 @@ new #[Title('Appearance settings')] class extends Component {
                 <flux:radio value="system" icon="computer-desktop">{{ __('System') }}</flux:radio>
             </flux:radio.group>
 
-            @php $isArabic = app()->getLocale() === 'ar'; @endphp
+            @php $isArabic = app()->isLocale('ar*'); @endphp
             <div
                 x-data="{
                     darkSidebar: false,

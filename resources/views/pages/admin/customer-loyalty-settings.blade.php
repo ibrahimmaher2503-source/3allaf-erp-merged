@@ -1,5 +1,5 @@
 @php
-    $arabic = app()->getLocale() === 'ar';
+    $arabic = app()->isLocale('ar*');
     $purposeOptions = [
         'service_delivery' => $arabic ? 'تقديم الخدمة للعميل' : 'Service delivery',
         'loyalty' => $arabic ? 'برنامج نقاط الولاء' : 'Loyalty programme',

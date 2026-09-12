@@ -312,16 +312,16 @@ new #[Title('Pricing Workspace')] class extends Component
     }
 };
 ?>
-<x-app.page :title="app()->getLocale() === 'ar' ? 'التسعير' : 'Pricing workspace'" :description="app()->getLocale() === 'ar' ? 'إدارة الأسعار الفعالة والنسخ المجدولة والاعتمادات والاستثناءات ضمن المتاجر المصرح بها.' : 'Manage effective prices, schedules, approvals, and exceptions across authorized stores.'" :breadcrumbs="app()->getLocale() === 'ar' ? 'التسعير' : 'Pricing'" max-width="7xl" class="pricing-screen" data-pricing-mode="{{ $mode }}">
-    @php($modeTitles = ['workspace' => app()->getLocale() === 'ar' ? 'نظرة عامة' : 'Overview', 'versions' => app()->getLocale() === 'ar' ? 'قوائم ونسخ الأسعار' : 'Price lists & versions', 'unpriced' => app()->getLocale() === 'ar' ? 'منتجات بلا سعر' : 'Unpriced products', 'history' => app()->getLocale() === 'ar' ? 'سجل التغييرات' : 'Change history'])
-    <x-slot:actions><x-tables.resource-toolbar filter-target="pricing-filters">@can('pricing_labels.create')<flux:button variant="subtle" wire:click="openImportForm" icon="arrow-up-tray">{{ app()->getLocale() === 'ar' ? 'استيراد CSV' : 'Import CSV' }}</flux:button><flux:button variant="primary" wire:click="openProposalForm" icon="plus">{{ app()->getLocale() === 'ar' ? 'مقترح سعر جديد' : 'New price proposal' }}</flux:button>@endcan</x-tables.resource-toolbar></x-slot:actions>
+<x-app.page :title="app()->isLocale('ar*') ? 'التسعير' : 'Pricing workspace'" :description="app()->isLocale('ar*') ? 'إدارة الأسعار الفعالة والنسخ المجدولة والاعتمادات والاستثناءات ضمن المتاجر المصرح بها.' : 'Manage effective prices, schedules, approvals, and exceptions across authorized stores.'" :breadcrumbs="app()->isLocale('ar*') ? 'التسعير' : 'Pricing'" max-width="7xl" class="pricing-screen" data-pricing-mode="{{ $mode }}">
+    @php($modeTitles = ['workspace' => app()->isLocale('ar*') ? 'نظرة عامة' : 'Overview', 'versions' => app()->isLocale('ar*') ? 'قوائم ونسخ الأسعار' : 'Price lists & versions', 'unpriced' => app()->isLocale('ar*') ? 'منتجات بلا سعر' : 'Unpriced products', 'history' => app()->isLocale('ar*') ? 'سجل التغييرات' : 'Change history'])
+    <x-slot:actions><x-tables.resource-toolbar filter-target="pricing-filters">@can('pricing_labels.create')<flux:button variant="subtle" wire:click="openImportForm" icon="arrow-up-tray">{{ app()->isLocale('ar*') ? 'استيراد CSV' : 'Import CSV' }}</flux:button><flux:button variant="primary" wire:click="openProposalForm" icon="plus">{{ app()->isLocale('ar*') ? 'مقترح سعر جديد' : 'New price proposal' }}</flux:button>@endcan</x-tables.resource-toolbar></x-slot:actions>
     <div class="space-y-5">
     <div class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $modeTitles[$mode] }}</h1>
             <flux:text class="mt-1 max-w-3xl">{{ __('The Product Card base consumer price is immediately sellable. Optional active price lists override it only when applicable. Cost changes never rewrite sale prices.') }}</flux:text>
         </div>
-        <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="printer" wire:navigate>{{ app()->getLocale() === 'ar' ? 'ملصقات الأسعار' : 'Price labels' }}</flux:button>
+        <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="printer" wire:navigate>{{ app()->isLocale('ar*') ? 'ملصقات الأسعار' : 'Price labels' }}</flux:button>
     </div>
 
     @if (session('status'))
@@ -336,12 +336,12 @@ new #[Title('Pricing Workspace')] class extends Component
 
     <div id="pricing-filters" class="scroll-mt-24 grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-2 min-w-0 xl:grid-cols-[minmax(12rem,1.5fr)_repeat(4,minmax(8.5rem,1fr))_auto]">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Search list, item code, or product') }}" />
-        <flux:select wire:model.live="storeFilter" :label="app()->getLocale() === 'ar' ? 'موقع العمل' : 'Work location'"><option value="all">{{ app()->getLocale() === 'ar' ? 'كل المتاجر' : 'All stores' }}</option>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->code }} · {{ app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en }}</option>@endforeach</flux:select>
+        <flux:select wire:model.live="storeFilter" :label="app()->isLocale('ar*') ? 'موقع العمل' : 'Work location'"><option value="all">{{ app()->isLocale('ar*') ? 'كل المتاجر' : 'All stores' }}</option>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->code }} · {{ app()->isLocale('ar*') ? $store->name_ar : $store->name_en }}</option>@endforeach</flux:select>
         @if($mode !== 'unpriced')<flux:select wire:model.live="statusFilter" :label="__('Status')"><option value="all">{{ __('All states') }}</option>@foreach (PriceVersionState::cases() as $state)<option value="{{ $state->value }}">{{ __(ucfirst($state->value)) }}</option>@endforeach</flux:select>@else<div></div>@endif
-        <flux:input wire:model.live="effectiveFrom" type="date" :label="app()->getLocale() === 'ar' ? 'ساري من' : 'Effective from'" />
-        <flux:input wire:model.live="effectiveTo" type="date" :label="app()->getLocale() === 'ar' ? 'ساري حتى' : 'Effective to'" />
-        <flux:select wire:model.live="perPage" :label="app()->getLocale() === 'ar' ? 'حجم الصفحة' : 'Page size'"><option value="12">12</option><option value="24">24</option><option value="48">48</option></flux:select>
-        <flux:button wire:click="resetFilters" variant="ghost" icon="arrow-path">{{ app()->getLocale() === 'ar' ? 'إعادة ضبط' : 'Reset' }}</flux:button>
+        <flux:input wire:model.live="effectiveFrom" type="date" :label="app()->isLocale('ar*') ? 'ساري من' : 'Effective from'" />
+        <flux:input wire:model.live="effectiveTo" type="date" :label="app()->isLocale('ar*') ? 'ساري حتى' : 'Effective to'" />
+        <flux:select wire:model.live="perPage" :label="app()->isLocale('ar*') ? 'حجم الصفحة' : 'Page size'"><option value="12">12</option><option value="24">24</option><option value="48">48</option></flux:select>
+        <flux:button wire:click="resetFilters" variant="ghost" icon="arrow-path">{{ app()->isLocale('ar*') ? 'إعادة ضبط' : 'Reset' }}</flux:button>
     </div>
 
     @if($mode === 'workspace')<x-pricing.dashboard :dashboard="$dashboard" />@endif
@@ -357,7 +357,7 @@ new #[Title('Pricing Workspace')] class extends Component
             </div>
             <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 @forelse ($unpricedProducts as $unpricedProduct)
-                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900 dark:bg-amber-950/30"><span class="font-semibold">{{ $unpricedProduct->item_code }}</span><span class="text-zinc-600 dark:text-zinc-300"> · {{ app()->getLocale() === 'ar' ? $unpricedProduct->name_ar : $unpricedProduct->name_en }}</span></div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900 dark:bg-amber-950/30"><span class="font-semibold">{{ $unpricedProduct->item_code }}</span><span class="text-zinc-600 dark:text-zinc-300"> · {{ app()->isLocale('ar*') ? $unpricedProduct->name_ar : $unpricedProduct->name_en }}</span></div>
                 @empty
                     <x-state.empty :title="__('No unpriced products in the visible stores.')" />
                 @endforelse
@@ -375,7 +375,7 @@ new #[Title('Pricing Workspace')] class extends Component
                         @php($line = $version->lines->first())
                         <tr wire:key="price-version-{{ $version->id }}" class="align-top">
                             <td data-primary><div class="font-semibold text-text-primary">{{ $version->priceList->code }} · v{{ $version->version }}</div><div class="text-xs text-text-muted">{{ optional($version->effective_from)->format('Y-m-d H:i') ?: __('Immediate') }}</div></td>
-                            <td data-label="{{ __('Product / location') }}"><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->getLocale() === 'ar' ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-text-muted">{{ $line?->store?->code }} · {{ app()->getLocale() === 'ar' ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
+                            <td data-label="{{ __('Product / location') }}"><div class="font-medium">{{ $line?->product?->item_code }} · {{ app()->isLocale('ar*') ? $line?->product?->name_ar : $line?->product?->name_en }}</div><div class="text-xs text-text-muted">{{ $line?->store?->code }} · {{ app()->isLocale('ar*') ? $line?->store?->name_ar : $line?->store?->name_en }}</div></td>
                             <td data-label="{{ __('Amount') }}" class="font-semibold"><x-money :amount="$line?->amount" /></td>
                             <td data-label="{{ __('Source') }}"><div>{{ $version->source_type === 'product_card' ? __('Product price') : __(str_replace('_', ' ', ucfirst($version->source_type))) }}</div><div class="text-xs text-text-muted">{{ $version->source_reference ?: '—' }}</div></td>
                             <td data-label="{{ __('State') }}"><x-status.badge :status="$version->state->value" /><div class="mt-1 text-xs text-text-muted">{{ $version->approvalRecord ? __('Approval') . ': ' . UiLabel::status($version->approvalRecord->approval_state->value) : __('No approval yet') }}</div></td>

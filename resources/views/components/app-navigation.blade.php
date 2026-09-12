@@ -3,9 +3,10 @@
     $navigation = app(\App\Modules\Platform\Support\ApplicationNavigation::class);
     $groups ??= $navigation->for(auth()->user(), app()->getLocale());
     $groups = $navigation->normalizeForRendering(is_iterable($groups) ? $groups : [], app()->getLocale());
+    $isArabic = in_array(app()->getLocale(), config('app.arabic_locales', ['ar']), true);
 @endphp
 
-<nav {{ $attributes->class('app-navigation') }} data-sidebar-scroll aria-label="{{ app()->getLocale() === 'ar' ? 'التنقل الرئيسي' : 'Primary navigation' }}">
+<nav {{ $attributes->class('app-navigation') }} data-sidebar-scroll aria-label="{{ $isArabic ? 'التنقل الرئيسي' : 'Primary navigation' }}">
     @foreach ($groups as $group)
         @if ($group['type'] === 'separator')
             <div class="my-1 border-t border-white/10" role="separator"></div>

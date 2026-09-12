@@ -202,7 +202,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             <flux:select wire:model.live="branchFilter" :label="__('Branch')" size="sm">
                 <option value="all">{{ __('All Branches') }}</option>
                 @foreach(Branch::visibleTo(auth()->user())->orderBy('name_en')->get() as $branchOption)
-                    <option value="{{ $branchOption->id }}">{{ app()->getLocale() === 'ar' ? $branchOption->name_ar : $branchOption->name_en }} ({{ $branchOption->code }})</option>
+                    <option value="{{ $branchOption->id }}">{{ app()->isLocale('ar*') ? $branchOption->name_ar : $branchOption->name_en }} ({{ $branchOption->code }})</option>
                 @endforeach
             </flux:select>
 
@@ -260,7 +260,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             <div class="grid gap-3 p-3 md:hidden">
                 @foreach($drawers as $drawer)
                     <flux:card class="space-y-3 p-4">
-                        <div class="flex items-start justify-between gap-3"><div><div class="font-semibold">{{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $drawer->name_en : $drawer->name_ar }}</div><span class="font-mono text-xs text-primary" dir="ltr">{{ $drawer->code }}</span></div><x-status.badge :status="$drawer->status === 'active' ? 'active' : ($drawer->status === 'maintenance' ? 'warning' : 'inactive')" :label="__($drawer->status === 'active' ? 'Active' : ($drawer->status === 'maintenance' ? 'Maintenance' : 'Inactive'))" /></div>
+                        <div class="flex items-start justify-between gap-3"><div><div class="font-semibold">{{ app()->isLocale('ar*') ? $drawer->name_ar : $drawer->name_en }}</div><div class="text-xs text-text-muted">{{ app()->isLocale('ar*') ? $drawer->name_en : $drawer->name_ar }}</div><span class="font-mono text-xs text-primary" dir="ltr">{{ $drawer->code }}</span></div><x-status.badge :status="$drawer->status === 'active' ? 'active' : ($drawer->status === 'maintenance' ? 'warning' : 'inactive')" :label="__($drawer->status === 'active' ? 'Active' : ($drawer->status === 'maintenance' ? 'Maintenance' : 'Inactive'))" /></div>
                         <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->assignedUser?->name ?? __('Unassigned') }}</dd></div></dl>
                         <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                             @can('drawers_payments_tax_numbering_printers.edit')
@@ -298,9 +298,9 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                     {{ $drawer->code }}
                                 </td>
                                 <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                                    {{ app()->getLocale() === 'ar' ? $drawer->name_ar : $drawer->name_en }}
+                                    {{ app()->isLocale('ar*') ? $drawer->name_ar : $drawer->name_en }}
                                     <div class="text-xs font-normal text-zinc-600 dark:text-zinc-300">
-                                        {{ app()->getLocale() === 'ar' ? $drawer->name_en : $drawer->name_ar }}
+                                        {{ app()->isLocale('ar*') ? $drawer->name_en : $drawer->name_ar }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
@@ -308,8 +308,8 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                         <div class="flex min-w-[15rem] items-start gap-1.5">
                                             <flux:icon name="building-office-2" class="mt-0.5 size-3.5 shrink-0 text-zinc-400" />
                                             <div class="min-w-0">
-                                                <div class="font-medium">{{ $drawer->branch->code }} — {{ app()->getLocale() === 'ar' ? $drawer->branch->name_ar : $drawer->branch->name_en }}</div>
-                                                <div class="text-xs text-zinc-500 dark:text-zinc-400">→ {{ $drawer->store?->code ?? __('No POS location') }}{{ $drawer->store ? ' — '.(app()->getLocale() === 'ar' ? $drawer->store->name_ar : $drawer->store->name_en) : '' }}</div>
+                                                <div class="font-medium">{{ $drawer->branch->code }} — {{ app()->isLocale('ar*') ? $drawer->branch->name_ar : $drawer->branch->name_en }}</div>
+                                                <div class="text-xs text-zinc-500 dark:text-zinc-400">→ {{ $drawer->store?->code ?? __('No POS location') }}{{ $drawer->store ? ' — '.(app()->isLocale('ar*') ? $drawer->store->name_ar : $drawer->store->name_en) : '' }}</div>
                                             </div>
                                         </div>
                                     @else
@@ -405,7 +405,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 >
                     <option value="">{{ __('Select Branch') }}</option>
                     @foreach($branches as $b)
-                        <option value="{{ $b->id }}">{{ app()->getLocale() === 'ar' ? $b->name_ar : $b->name_en }} ({{ $b->code }})</option>
+                        <option value="{{ $b->id }}">{{ app()->isLocale('ar*') ? $b->name_ar : $b->name_en }} ({{ $b->code }})</option>
                     @endforeach
                 </flux:select>
 
@@ -444,7 +444,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 >
                     <option value="">{{ __('Select POS selling location / stock source') }}</option>
                     @foreach($sellingStores as $st)
-                        <option value="{{ $st->id }}">{{ $st->code }} — {{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }}</option>
+                        <option value="{{ $st->id }}">{{ $st->code }} — {{ app()->isLocale('ar*') ? $st->name_ar : $st->name_en }}</option>
                     @endforeach
                 </flux:select>
 

@@ -166,11 +166,11 @@ new #[Title('Branch Management')] class extends Component
             'branchForm.policy_notes' => ['nullable', 'string'],
             'branchForm.default_price_list_id' => ['nullable', Rule::exists('price_lists', 'id')->where(fn ($query) => $query->where('status', 'active'))],
         ], [], [
-            'branchForm.code' => app()->getLocale() === 'ar' ? 'رمز الفرع' : __('Branch Code'),
-            'branchForm.name_ar' => app()->getLocale() === 'ar' ? 'اسم الفرع بالعربية' : __('Arabic Name'),
-            'branchForm.name_en' => app()->getLocale() === 'ar' ? 'اسم الفرع بالإنجليزية' : __('English Name'),
-            'branchForm.timezone' => app()->getLocale() === 'ar' ? 'المنطقة الزمنية' : __('Timezone'),
-            'branchForm.status' => app()->getLocale() === 'ar' ? 'حالة الفرع' : __('Status'),
+            'branchForm.code' => app()->isLocale('ar*') ? 'رمز الفرع' : __('Branch Code'),
+            'branchForm.name_ar' => app()->isLocale('ar*') ? 'اسم الفرع بالعربية' : __('Arabic Name'),
+            'branchForm.name_en' => app()->isLocale('ar*') ? 'اسم الفرع بالإنجليزية' : __('English Name'),
+            'branchForm.timezone' => app()->isLocale('ar*') ? 'المنطقة الزمنية' : __('Timezone'),
+            'branchForm.status' => app()->isLocale('ar*') ? 'حالة الفرع' : __('Status'),
         ])['branchForm'];
 
         try {
@@ -180,7 +180,7 @@ new #[Title('Branch Management')] class extends Component
             $this->showBranchModal = false;
             if ($wasCreating) {
                 $this->savedBranchId = $branch->id;
-                $this->savedBranchName = app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en;
+                $this->savedBranchName = app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en;
             }
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
@@ -233,7 +233,7 @@ new #[Title('Branch Management')] class extends Component
 
         $branch = Branch::visibleTo(auth()->user())->findOrFail($branchId);
         $this->mappingBranchId = $branch->id;
-        $this->mappingBranchName = app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en;
+        $this->mappingBranchName = app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en;
         $this->selectedStoreId = $branch->activeSellingStoreMapping?->store_id;
         $this->mappingApprovalNotes = '';
         $this->resetValidation();
@@ -268,7 +268,7 @@ new #[Title('Branch Management')] class extends Component
 
         $branch = Branch::visibleTo(auth()->user())->with(['sellingStoreMappings.store', 'sellingStoreMappings.creator'])->findOrFail($branchId);
         $this->historyBranchId = $branch->id;
-        $this->historyBranchName = app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en;
+        $this->historyBranchName = app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en;
         $this->historyRecords = $branch->sellingStoreMappings
             // MySQL's default `timestamp` precision is whole seconds, so two
             // mappings created within the same second tie on `created_at` and previously fell
@@ -279,7 +279,7 @@ new #[Title('Branch Management')] class extends Component
             ->map(fn ($item) => [
                 'id' => $item->id,
                 'store_code' => $item->store?->code,
-                'store_name' => app()->getLocale() === 'ar' ? $item->store?->name_ar : $item->store?->name_en,
+                'store_name' => app()->isLocale('ar*') ? $item->store?->name_ar : $item->store?->name_en,
                 'effective_from' => $item->effective_from?->format('Y-m-d H:i:s'),
                 'effective_to' => $item->effective_to?->format('Y-m-d H:i:s') ?? __('Current Active'),
                 'status' => $item->status,
@@ -369,14 +369,14 @@ new #[Title('Branch Management')] class extends Component
                             <flux:table.row :key="$branch->id">
                                 <flux:table.cell class="whitespace-normal align-top">
                                     <div class="space-y-1">
-                                        <div class="font-medium">{{ app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en }}</div>
+                                        <div class="font-medium">{{ app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en }}</div>
                                         <div class="font-mono text-xs text-zinc-500">{{ $branch->code }}</div>
                                     </div>
                                 </flux:table.cell>
                                 <flux:table.cell class="whitespace-normal align-top">
                                     @if ($branch->activeSellingStoreMapping && $branch->activeSellingStoreMapping->store)
                                         <div class="space-y-1">
-                                            <div class="font-medium">{{ app()->getLocale() === 'ar' ? $branch->activeSellingStoreMapping->store->name_ar : $branch->activeSellingStoreMapping->store->name_en }}</div>
+                                            <div class="font-medium">{{ app()->isLocale('ar*') ? $branch->activeSellingStoreMapping->store->name_ar : $branch->activeSellingStoreMapping->store->name_en }}</div>
                                             <div class="font-mono text-xs text-zinc-500">{{ $branch->activeSellingStoreMapping->store->code }}</div>
                                         </div>
                                     @else
@@ -452,7 +452,7 @@ new #[Title('Branch Management')] class extends Component
         <div class="grid gap-3 md:hidden" aria-label="{{ __('Branch directory') }}">
             @foreach ($branches as $branch)
                 <flux:card class="space-y-3 p-4">
-                    <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-text-primary">{{ app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en }}</div><div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $branch->name_en : $branch->name_ar }}</div><span class="mt-1 inline-block font-mono text-xs text-primary" dir="ltr">{{ $branch->code }}</span></div><flux:badge size="sm" color="{{ $branch->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($branch->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></div>
+                    <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-text-primary">{{ app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en }}</div><div class="text-xs text-text-muted">{{ app()->isLocale('ar*') ? $branch->name_en : $branch->name_ar }}</div><span class="mt-1 inline-block font-mono text-xs text-primary" dir="ltr">{{ $branch->code }}</span></div><flux:badge size="sm" color="{{ $branch->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($branch->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></div>
                     <dl class="grid grid-cols-2 gap-3 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Phone') }}</dt><dd dir="ltr">{{ $branch->phone ?: '—' }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Timezone') }}</dt><dd class="font-mono text-xs" dir="ltr">{{ $branch->timezone }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Warehouses') }}</dt><dd>{{ $branch->active_warehouse_count }}</dd></div></dl>
                     <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                         @can('branches_stores.edit')
@@ -612,7 +612,7 @@ new #[Title('Branch Management')] class extends Component
                 placeholder="{{ __('Physical branch address details...') }}"
                 rows="2"
             />
-            <flux:select wire:model="branchForm.default_price_list_id" :label="__('Default price list for Sales Outlets')"><flux:select.option value="">{{ __('Base Price List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
+            <flux:select wire:model="branchForm.default_price_list_id" :label="__('Default price list for Sales Outlets')"><flux:select.option value="">{{ __('Base Price List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ app()->isLocale('ar*')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
 
             <div class="flex justify-end gap-3 pt-4">
                 <flux:button variant="subtle" wire:click="$set('showBranchModal', false)">{{ __('Cancel') }}</x-actions.button>
@@ -656,7 +656,7 @@ new #[Title('Branch Management')] class extends Component
                 <flux:select.option value="">{{ __('Select a point of sale...') }}</flux:select.option>
                 @foreach ($availableSellingStores as $st)
                     <flux:select.option :value="$st->id">
-                        {{ $st->code }} · {{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }}
+                        {{ $st->code }} · {{ app()->isLocale('ar*') ? $st->name_ar : $st->name_en }}
                     </flux:select.option>
                 @endforeach
             </flux:select>

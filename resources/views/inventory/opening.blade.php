@@ -1,4 +1,4 @@
-@php($ar = app()->getLocale() === 'ar')
+@php($ar = app()->isLocale('ar*'))
 <x-layouts.app :title="$ar ? 'إضافة رصيد افتتاحي للمخزون' : 'Add Opening Inventory'">
 <x-app.page :title="$ar ? 'إضافة رصيد افتتاحي للمخزون' : 'Add Opening Inventory'" :description="$ar ? 'مستند مستقل يُرحّل مرة واحدة إلى سجل المخزون ويأخذ تكلفة الوحدة من كارت الصنف.' : 'A dedicated document posted once through the inventory ledger; unit cost always comes from the Product Card.'" max-width="7xl">
     <x-slot:actions><flux:button :href="route('inventory.opening.template')" icon="arrow-down-tray" variant="subtle">{{ $ar ? 'تنزيل نموذج XLSX' : 'Download XLSX template' }}</flux:button></x-slot:actions>

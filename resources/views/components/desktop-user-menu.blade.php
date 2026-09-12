@@ -22,20 +22,7 @@
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('Settings') }}
             </flux:menu.item>
-            <form method="POST" action="{{ route('locale.switch') }}" class="w-full">
-                @csrf
-                @if (app()->getLocale() === 'ar')
-                    <input type="hidden" name="locale" value="en" />
-                    <flux:menu.item as="button" type="submit" icon="language" class="w-full cursor-pointer">
-                        {{ __('Switch to English') }}
-                    </flux:menu.item>
-                @else
-                    <input type="hidden" name="locale" value="ar" />
-                    <flux:menu.item as="button" type="submit" icon="language" class="w-full cursor-pointer">
-                        {{ __('Switch to Arabic') }}
-                    </flux:menu.item>
-                @endif
-            </form>
+            <x-locale-switcher class="w-full" />
             <form method="POST" action="{{ route('logout') }}" class="w-full">
                 @csrf
                 <flux:menu.item

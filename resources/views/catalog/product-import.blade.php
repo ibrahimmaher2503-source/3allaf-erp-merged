@@ -163,10 +163,10 @@ new #[Title('Product Import')] class extends Component {
     <flux:card class="space-y-5 rounded-2xl border border-cyan-200/20 bg-slate-900/30 p-4 sm:p-6" data-guide="import-upload-section">
         <div class="space-y-2">
             <div class="flex flex-wrap items-center gap-2">
-                <flux:heading size="lg">{{ app()->getLocale() === 'ar' ? 'استيراد المنتجات' : __('Excel import — 1. Upload and stage') }}</flux:heading>
-                <span class="rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-200">{{ app()->getLocale() === 'ar' ? 'الخطوة ١' : 'Step 1' }}</span>
+                <flux:heading size="lg">{{ app()->isLocale('ar*') ? 'استيراد المنتجات' : __('Excel import — 1. Upload and stage') }}</flux:heading>
+                <span class="rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-200">{{ app()->isLocale('ar*') ? 'الخطوة ١' : 'Step 1' }}</span>
             </div>
-            @if (app()->getLocale() === 'ar')
+            @if (app()->isLocale('ar*'))
                 <flux:text>ارفع ملف Excel أو CSV لتجهيز المنتجات ومراجعتها قبل اعتمادها وحفظها.</flux:text>
                 <div class="grid gap-3 pt-2 md:grid-cols-2">
                     <div class="rounded-xl border border-cyan-200/15 bg-slate-950/20 p-4">

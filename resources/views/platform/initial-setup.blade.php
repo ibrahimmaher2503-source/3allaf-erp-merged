@@ -20,7 +20,7 @@
 <x-layouts::app :title="__('Initial setup')">
     <x-app.page :title="__('Initial setup progress')" :description="__('Finish setup and master data definitions before daily operations and transactions.')" max-width="7xl" class="space-y-6" data-guide="initial-setup-header">
         <x-slot:actions>
-            <form method="POST" action="{{ route('locale.switch') }}" class="inline-flex">@csrf<input type="hidden" name="locale" value="{{ app()->getLocale() === 'ar' ? 'en' : 'ar' }}"><flux:button type="submit" variant="subtle" icon="language">{{ app()->getLocale() === 'ar' ? __('Switch to English') : __('Switch to Arabic') }}</flux:button></form>
+            <x-locale-switcher />
             <flux:button :href="route('dashboard')" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to dashboard') }}</flux:button>
         </x-slot:actions>
         <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]" data-guide="initial-setup-summary">

@@ -36,12 +36,12 @@
                         <option value="">{{ __('Choose item from the selected source') }}</option>
                         @foreach($sales as $sale)
                             @foreach($sale->lines as $line)
-                                <option value="{{ $line->id }}">{{ __('Sale') }} {{ $sale->document_number ?: '#'.$sale->id }} · {{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }} · {{ $line->quantity }}</option>
+                                <option value="{{ $line->id }}">{{ __('Sale') }} {{ $sale->document_number ?: '#'.$sale->id }} · {{ app()->isLocale('ar*') ? $line->name_ar : $line->name_en }} · {{ $line->quantity }}</option>
                             @endforeach
                         @endforeach
                         @foreach($receipts as $receipt)
                             @foreach($receipt->lines as $line)
-                                <option value="{{ $line->sale_line_id }}">{{ __('Gift Receipt') }} {{ $receipt->reference }} · {{ app()->getLocale() === 'ar' ? $line->name_ar : $line->name_en }} · {{ $line->quantity }}</option>
+                                <option value="{{ $line->sale_line_id }}">{{ __('Gift Receipt') }} {{ $receipt->reference }} · {{ app()->isLocale('ar*') ? $line->name_ar : $line->name_en }} · {{ $line->quantity }}</option>
                             @endforeach
                         @endforeach
                     </flux:select>

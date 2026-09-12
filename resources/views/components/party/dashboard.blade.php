@@ -1,6 +1,6 @@
 @props(['dashboard'])
 @php
-    $ar = app()->getLocale() === 'ar';
+    $ar = app()->isLocale('ar*');
     $days = collect(range(6, 0))->map(fn ($offset) => now()->subDays($offset));
     $maxTrend = max(1, (int) $days->map(fn ($day) => (int) ($dashboard['trend'][$day->format('Y-m-d')]->booking_count ?? 0))->max());
 @endphp

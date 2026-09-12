@@ -461,9 +461,9 @@ new #[Title('Purchase Orders')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="$createPage ? __('New Purchase Order') : (app()->getLocale() === 'ar' ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
-    :description="$createPage ? __('Enter supplier, destination store, order dates, and item lines.') : (app()->getLocale() === 'ar' ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.'))"
-    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
+    :title="$createPage ? __('New Purchase Order') : (app()->isLocale('ar*') ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
+    :description="$createPage ? __('Enter supplier, destination store, order dates, and item lines.') : (app()->isLocale('ar*') ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.'))"
+    :breadcrumbs="app()->isLocale('ar*') ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     :max-width="$createPage ? 'full' : '7xl'"
     class="purchasing-screen"
     data-guide="po-header"
@@ -474,7 +474,7 @@ new #[Title('Purchase Orders')] class extends Component
         @else
         <x-tables.resource-toolbar filter-target="po-filters">
         <flux:button href="{{ route('purchasing.invoices.readiness') }}" variant="subtle" icon="clipboard-document-list" data-guide="tsk-015-readiness-link">
-            {{ app()->getLocale() === 'ar' ? 'فواتير الشراء' : 'Purchase invoices' }}
+            {{ app()->isLocale('ar*') ? 'فواتير الشراء' : 'Purchase invoices' }}
         </flux:button>
         @if ($canCreate)
             <div>
@@ -513,7 +513,7 @@ new #[Title('Purchase Orders')] class extends Component
             <flux:select wire:model.live="supplierFilter" :label="__('Supplier')">
                 <option value="all">{{ __('All Suppliers') }}</option>
                 @foreach ($suppliers as $sup)
-                    <option value="{{ $sup->id }}">{{ app()->getLocale() === 'ar' ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
+                    <option value="{{ $sup->id }}">{{ app()->isLocale('ar*') ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
                 @endforeach
             </flux:select>
         </div>
@@ -542,12 +542,12 @@ new #[Title('Purchase Orders')] class extends Component
                             </td>
                             <td data-label="{{ __('Supplier') }}" class="px-4 py-3">
                                 <div class="font-medium text-zinc-900 dark:text-white">
-                                    {{ app()->getLocale() === 'ar' ? $order->supplier->name_ar : ($order->supplier->name_en ?: $order->supplier->name_ar) }}
+                                    {{ app()->isLocale('ar*') ? $order->supplier->name_ar : ($order->supplier->name_en ?: $order->supplier->name_ar) }}
                                 </div>
                                 <div class="text-xs font-mono text-zinc-500">{{ $order->supplier->code }}</div>
                             </td>
                             <td data-label="{{ __('Store') }}" class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
-                                {{ $order->store ? (app()->getLocale() === 'ar' ? $order->store->name_ar : $order->store->name_en) : '—' }}
+                                {{ $order->store ? (app()->isLocale('ar*') ? $order->store->name_ar : $order->store->name_en) : '—' }}
                             </td>
                             <td data-label="{{ __('Status') }}" class="px-4 py-3 text-center">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide
@@ -634,14 +634,14 @@ new #[Title('Purchase Orders')] class extends Component
                 <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
                     <option value="">{{ __('Select Supplier') }}</option>
                     @foreach ($suppliers as $sup)
-                        <option value="{{ $sup->id }}">{{ app()->getLocale() === 'ar' ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
+                        <option value="{{ $sup->id }}">{{ app()->isLocale('ar*') ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
                     @endforeach
                 </flux:select>
 
                 <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse')">
                     <option value="">{{ __('Select Store (Optional)') }}</option>
                     @foreach ($stores as $st)
-                        <option value="{{ $st->id }}">{{ app()->getLocale() === 'ar' ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
+                        <option value="{{ $st->id }}">{{ app()->isLocale('ar*') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
                     @endforeach
                 </flux:select>
 
@@ -672,7 +672,7 @@ new #[Title('Purchase Orders')] class extends Component
                         <div class="grid grid-cols-12 gap-2 items-end bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-lg border border-border" data-product-line wire:key="order-line-{{ $index }}">
                             <div class="col-span-12 sm:col-span-4">
                                 @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
-                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->getLocale() === 'ar' ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
+                                <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((app()->isLocale('ar*') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
                             </div>
 
                             <div class="col-span-4 sm:col-span-2">
@@ -735,7 +735,7 @@ new #[Title('Purchase Orders')] class extends Component
                 <div>
                     <h2 class="text-xl font-bold font-mono text-zinc-900 dark:text-white">{{ $viewingOrder->po_number }}</h2>
                     <p class="text-xs text-zinc-500 mt-1">
-                        {{ __('Supplier') }}: <strong>{{ app()->getLocale() === 'ar' ? $viewingOrder->supplier->name_ar : ($viewingOrder->supplier->name_en ?: $viewingOrder->supplier->name_ar) }}</strong>
+                        {{ __('Supplier') }}: <strong>{{ app()->isLocale('ar*') ? $viewingOrder->supplier->name_ar : ($viewingOrder->supplier->name_en ?: $viewingOrder->supplier->name_ar) }}</strong>
                     </p>
                 </div>
                 <div>
@@ -777,7 +777,7 @@ new #[Title('Purchase Orders')] class extends Component
                         </div>
                         <div>
                             <span class="text-zinc-500">{{ __('Store') }}:</span>
-                            <span class="font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->store ? (app()->getLocale() === 'ar' ? $viewingOrder->store->name_ar : $viewingOrder->store->name_en) : __('Unassigned') }}</span>
+                            <span class="font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->store ? (app()->isLocale('ar*') ? $viewingOrder->store->name_ar : $viewingOrder->store->name_en) : __('Unassigned') }}</span>
                         </div>
                         <div>
                             <span class="text-zinc-500">{{ __('Payment Terms') }}:</span>
@@ -801,7 +801,7 @@ new #[Title('Purchase Orders')] class extends Component
                                     <tr>
                                         <td class="px-3 py-2 font-mono text-zinc-400">{{ $line->line_number }}</td>
                                         <td class="px-3 py-2">
-                                            <div class="font-medium text-zinc-900 dark:text-white">{{ app()->getLocale() === 'ar' ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
+                                            <div class="font-medium text-zinc-900 dark:text-white">{{ app()->isLocale('ar*') ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
                                             <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->sku ?: $line->product->code }}</div>
                                         </td>
                                         <td class="px-3 py-2 text-end font-mono"><x-product-quantity :value="$line->quantity_ordered" /></td>

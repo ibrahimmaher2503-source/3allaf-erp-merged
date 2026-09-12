@@ -15,7 +15,7 @@ class SetLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $supportedLocales = config('app.supported_locales', ['ar', 'en']);
+        $supportedLocales = config('app.supported_locales', ['ar', 'en', 'ar-EG']);
         // The global invocation runs before the session middleware. A locale
         // cookie keeps safe exception pages localized even when no route
         // matched; the web-group invocation below still gives the session

@@ -86,9 +86,23 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
-    'supported_locales' => ['ar', 'en'],
+    'supported_locales' => ['ar', 'en', 'ar-EG'],
 
-    'rtl_locales' => ['ar'],
+    'locale_names' => [
+        'ar' => 'العربية',
+        'en' => 'English',
+        'ar-EG' => 'العربية المصرية',
+    ],
+
+    'rtl_locales' => ['ar', 'ar-EG'],
+
+    'arabic_locales' => ['ar', 'ar-EG'],
+
+    'locale_fallbacks' => [
+        'ar-EG' => ['ar-EG', 'ar', 'en'],
+        'ar' => ['ar', 'en'],
+        'en' => ['en'],
+    ],
 
     /*
     |--------------------------------------------------------------------------

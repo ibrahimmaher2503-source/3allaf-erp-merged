@@ -24,7 +24,7 @@ class ToggleSupplierStatusAction
 
             if ($supplier->status === 'active' && $newStatus === 'inactive') {
                 if ($supplier->productSuppliers()->where('is_preferred', true)->exists()) {
-                    throw new InvalidArgumentException(app()->getLocale() === 'ar'
+                    throw new InvalidArgumentException(app()->isLocale('ar*')
                         ? 'لا يمكن تعطيل المورد لأنه مورد مفضّل لمنتجات نشطة.'
                         : __('Cannot deactivate a supplier that is set as preferred for active products.'));
                 }

@@ -53,12 +53,12 @@
                 aria-autocomplete="list"
                 aria-expanded="false"
                 autocomplete="off"
-                dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}"
+                dir="{{ app()->isLocale('ar*') ? 'rtl' : 'ltr' }}"
                 @if($required) required @endif
                 @if($disabled) disabled @endif
                 placeholder="{{ $disabled ? __('Select a supplier before adding products.') : $placeholder }}"
                 value="{{ $display }}"
-                class="block h-10 w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }} text-sm [unicode-bidi:plaintext] outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-800"
+                class="block h-10 w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 {{ app()->isLocale('ar*') ? 'text-right' : 'text-left' }} text-sm [unicode-bidi:plaintext] outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:disabled:bg-zinc-800"
                 data-product-search
                 @if(filled($value)) data-selected="true" @endif
             >

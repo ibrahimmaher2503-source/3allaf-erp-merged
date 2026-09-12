@@ -10,7 +10,7 @@
         ? '—'
         : number_format((float) $amount, (int) $precision, '.', ',');
     $displayCurrency = strtoupper((string) $currency) === 'EGP'
-        ? (app()->getLocale() === 'ar' ? 'ج.م' : 'EGP')
+        ? (app()->isLocale('ar*') ? 'ج.م' : 'EGP')
         : $currency;
 @endphp
 

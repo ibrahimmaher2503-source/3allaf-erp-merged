@@ -41,8 +41,8 @@
             </div>
             <div class="flex flex-col gap-2">
                 <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Adjacent setup steps') }}">
-                    @if ($previousStep)<flux:button :href="$setupHref($previousStep)" size="sm" variant="subtle" class="min-h-11" :icon="app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left'" aria-label="{{ __('Go to previous setup step: :step', ['step' => $previousStep['label']]) }}" wire:navigate>{{ __('Previous') }}</flux:button>@endif
-                    @if ($nextStep)<flux:button :href="$setupHref($nextStep)" size="sm" variant="primary" class="min-h-11" :icon-trailing="app()->getLocale() === 'ar' ? 'arrow-left' : 'arrow-right'" aria-label="{{ __('Go to next setup step: :step', ['step' => $nextStep['label']]) }}" wire:navigate>{{ __('Next') }}</flux:button>@endif
+                    @if ($previousStep)<flux:button :href="$setupHref($previousStep)" size="sm" variant="subtle" class="min-h-11" :icon="app()->isLocale('ar*') ? 'arrow-right' : 'arrow-left'" aria-label="{{ __('Go to previous setup step: :step', ['step' => $previousStep['label']]) }}" wire:navigate>{{ __('Previous') }}</flux:button>@endif
+                    @if ($nextStep)<flux:button :href="$setupHref($nextStep)" size="sm" variant="primary" class="min-h-11" :icon-trailing="app()->isLocale('ar*') ? 'arrow-left' : 'arrow-right'" aria-label="{{ __('Go to next setup step: :step', ['step' => $nextStep['label']]) }}" wire:navigate>{{ __('Next') }}</flux:button>@endif
                     @if (! $currentStep['complete'])
                         <form method="POST" action="{{ route('setup.decisions.store') }}" class="inline-flex">@csrf<input type="hidden" name="step_key" value="{{ $currentKey }}"><input type="hidden" name="decision" value="{{ $currentStep['required'] ? 'deferred' : 'skipped' }}"><flux:button type="submit" size="sm" variant="subtle" class="min-h-11">{{ $currentStep['required'] ? __('Complete later') : __('Skip') }}</flux:button></form>
                     @endif

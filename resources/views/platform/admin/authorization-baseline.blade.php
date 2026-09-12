@@ -206,7 +206,7 @@ new #[Title('Authorization Baseline')] class extends Component
                     @foreach ($users as $user)
                         @php
                             $roleNames = $user->roles
-                                ->map(fn ($role) => app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en)
+                                ->map(fn ($role) => app()->isLocale('ar*') ? $role->name_ar : $role->name_en)
                                 ->filter()
                                 ->join(', ');
                         @endphp
@@ -258,7 +258,7 @@ new #[Title('Authorization Baseline')] class extends Component
                             <flux:input x-model="roleSearch" :label="__('Search roles')" :placeholder="__('Search roles')" />
                             <flux:checkbox.group wire:model="roleIds" class="max-h-52 space-y-2 overflow-y-auto">
                                 @foreach ($roles as $role)
-                                    @php($roleLabel = app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en)
+                                    @php($roleLabel = app()->isLocale('ar*') ? $role->name_ar : $role->name_en)
                                     <div x-show="roleSearch.trim() === '' || $el.dataset.roleLabel.includes(roleSearch.trim().toLowerCase())" data-role-label="{{ mb_strtolower($roleLabel) }}">
                                         <flux:checkbox value="{{ $role->id }}" :label="$roleLabel" />
                                     </div>
@@ -270,12 +270,12 @@ new #[Title('Authorization Baseline')] class extends Component
                 </div>
                 <flux:checkbox.group wire:model="branchIds" :label="__('Branch scopes')" class="space-y-2">
                     @foreach ($branches as $branch)
-                        <flux:checkbox value="{{ $branch->id }}" :label="app()->getLocale() === 'ar' ? $branch->name_ar : $branch->name_en" />
+                        <flux:checkbox value="{{ $branch->id }}" :label="app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en" />
                     @endforeach
                 </flux:checkbox.group>
                 <flux:checkbox.group wire:model="storeIds" :label="__('Store scopes')" class="space-y-2">
                     @foreach ($stores as $store)
-                        <flux:checkbox value="{{ $store->id }}" :label="app()->getLocale() === 'ar' ? $store->name_ar : $store->name_en" />
+                        <flux:checkbox value="{{ $store->id }}" :label="app()->isLocale('ar*') ? $store->name_ar : $store->name_en" />
                     @endforeach
                 </flux:checkbox.group>
             </div>

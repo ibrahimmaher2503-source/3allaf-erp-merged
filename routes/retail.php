@@ -242,7 +242,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('audit_logs.view'), 403);
 
-        $isArabic = app()->getLocale() === 'ar';
+        $isArabic = app()->isLocale('ar*');
         $cards = [
             ['title' => $isArabic ? 'حزمة السيناريوهات والتغطية' : 'Scenario pack and coverage', 'body' => $isArabic ? 'معرّفات السيناريوهات والمتطلبات والشروط والنتائج المتوقعة تحتاج اعتمادًا.' : 'Scenario IDs, requirements, prerequisites, and expected results need approval.'],
             ['title' => $isArabic ? 'المالكون والأدوار' : 'Owners and roles', 'body' => $isArabic ? 'مالكو الأعمال والتقنية والعيوب والقبول والتوقيع النهائي غير محددين.' : 'Business, technical, defect, acceptance, and final sign-off owners are not named.'],
@@ -261,7 +261,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('audit_logs.view'), 403);
 
-        $isArabic = app()->getLocale() === 'ar';
+        $isArabic = app()->isLocale('ar*');
         $cards = [
             ['title' => $isArabic ? 'نسخة الإصدار والتجميد' : 'Release version and freeze', 'body' => $isArabic ? 'رقم الإصدار ونقطة التجميد وخطة التراجع غير معتمدة.' : 'Release ID, freeze point, and rollback plan are not approved.'],
             ['title' => $isArabic ? 'بيانات القطع' : 'Cutover data', 'body' => $isArabic ? 'البيانات النهائية والمطابقة ومالك القطع غير محددة.' : 'Final data, reconciliation, and cutover owner are not defined.'],
@@ -461,8 +461,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
 
         return view('pages.wallets.ledger', [
-            'title' => app()->getLocale() === 'ar' ? 'محفظة المنتجات' : 'Product Wallet',
-            'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالمنتج، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for product-linked entries while source, policy, and authorization remain outside this slice.',
+            'title' => app()->isLocale('ar*') ? 'محفظة المنتجات' : 'Product Wallet',
+            'description' => app()->isLocale('ar*') ? 'سجل مستقل للقيود المرتبطة بالمنتج، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for product-linked entries while source, policy, and authorization remain outside this slice.',
             'ledgerTable' => 'product_wallet_ledger',
             'entries' => ProductWalletLedger::query()->latestFirst()->paginate(20),
             'otherRoute' => 'wallets.party',
@@ -502,8 +502,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ]);
 
         return view('pages.wallets.ledger', [
-            'title' => app()->getLocale() === 'ar' ? 'محفظة الأطراف' : 'Party Wallet',
-            'description' => app()->getLocale() === 'ar' ? 'سجل مستقل للقيود المرتبطة بالطرف، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for party-linked entries while source, policy, and authorization remain outside this slice.',
+            'title' => app()->isLocale('ar*') ? 'محفظة الأطراف' : 'Party Wallet',
+            'description' => app()->isLocale('ar*') ? 'سجل مستقل للقيود المرتبطة بالطرف، مع إبقاء المصدر والسياسة والصلاحية خارج نطاق هذه الشريحة.' : 'A separate ledger for party-linked entries while source, policy, and authorization remain outside this slice.',
             'ledgerTable' => 'party_wallet_ledger',
             'entries' => PartyWalletLedger::query()->latestFirst()->paginate(20),
             'otherRoute' => 'wallets.product',
@@ -1328,7 +1328,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ], $notes);
         }
 
-        return to_route('admin.settings.customer-loyalty')->with('status', app()->getLocale() === 'ar' ? 'تم حفظ نسخة جديدة من الإعدادات.' : 'A new settings version was saved.');
+        return to_route('admin.settings.customer-loyalty')->with('status', app()->isLocale('ar*') ? 'تم حفظ نسخة جديدة من الإعدادات.' : 'A new settings version was saved.');
     })->middleware('can:company_settings.edit')->name('admin.settings.customer-loyalty.save');
 
     Route::get('pos/financial-readiness', function (Request $request) {

@@ -119,9 +119,9 @@ new #[Title('Roles')] class extends Component
                             <tr class="data-table-row">
                                 <td class="px-3 py-3 align-top font-mono text-xs">{{ $role->code }}</td>
                                 <td class="px-3 py-3 align-top">
-                                    <div class="font-medium">{{ app()->getLocale() === 'ar' ? $role->name_ar : $role->name_en }}</div>
-                                    <div class="text-xs text-text-muted">{{ app()->getLocale() === 'ar' ? $role->name_en : $role->name_ar }}</div>
-                                    @php($roleDescription = app()->getLocale() === 'ar' ? $role->description_ar : $role->description_en)
+                                    <div class="font-medium">{{ app()->isLocale('ar*') ? $role->name_ar : $role->name_en }}</div>
+                                    <div class="text-xs text-text-muted">{{ app()->isLocale('ar*') ? $role->name_en : $role->name_ar }}</div>
+                                    @php($roleDescription = app()->isLocale('ar*') ? $role->description_ar : $role->description_en)
                                     @if ($role->code === 'cashier')
                                         <p class="mt-1 max-w-xl text-xs leading-5 text-text-muted">{{ $roleDescription ?: __('Cashier role scope description') }}</p>
                                     @elseif ($roleDescription)

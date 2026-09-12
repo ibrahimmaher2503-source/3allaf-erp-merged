@@ -46,7 +46,7 @@ final class GenerateReportExportJob implements ShouldQueue
         }
         Auth::setUser($user);
         $locale = (string) ($job->filters['locale'] ?? config('app.fallback_locale', 'en'));
-        app()->setLocale(in_array($locale, config('app.supported_locales', ['ar', 'en']), true) ? $locale : (string) config('app.fallback_locale', 'en'));
+        app()->setLocale(in_array($locale, config('app.supported_locales', ['ar', 'en', 'ar-EG']), true) ? $locale : (string) config('app.fallback_locale', 'en'));
 
         Gate::forUser($user)->authorize('dashboard_reports.export_'.$job->format);
         $snapshot = $reports->execute($user, $job->filters ?? [], true);

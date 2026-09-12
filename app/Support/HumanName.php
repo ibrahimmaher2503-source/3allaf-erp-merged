@@ -12,8 +12,9 @@ final class HumanName
             return __('Incomplete data');
         }
         $locale ??= app()->getLocale();
-        $primary = trim((string) ($record->{'name_'.$locale} ?? ''));
-        $alternate = trim((string) ($record->{$locale === 'ar' ? 'name_en' : 'name_ar'} ?? ''));
+        $nameLocale = str_starts_with($locale, 'ar') ? 'ar' : 'en';
+        $primary = trim((string) ($record->{'name_'.$nameLocale} ?? ''));
+        $alternate = trim((string) ($record->{$nameLocale === 'ar' ? 'name_en' : 'name_ar'} ?? ''));
         if ($primary !== '') {
             return $primary;
         }

@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 $root = realpath(__DIR__.'/..');
-$locales = ['ar' => $root.'/lang/ar.json', 'en' => $root.'/lang/en.json'];
+$locales = [
+    'ar' => $root.'/lang/ar.json',
+    'en' => $root.'/lang/en.json',
+    'ar-EG' => $root.'/lang/ar-EG.json',
+];
 $keysByLocale = [];
 
 foreach ($locales as $locale => $path) {
@@ -24,20 +28,31 @@ foreach ($locales as $locale => $path) {
     sort($keysByLocale[$locale]);
 }
 
-$arOnly = array_values(array_diff($keysByLocale['ar'], $keysByLocale['en']));
-$enOnly = array_values(array_diff($keysByLocale['en'], $keysByLocale['ar']));
+$requiredKeys = array_values(array_unique([
+    ...$keysByLocale['ar'],
+    ...$keysByLocale['en'],
+]));
+sort($requiredKeys);
+$missing = array_values(array_diff($requiredKeys, $keysByLocale['ar-EG']));
+$unexpected = array_values(array_diff($keysByLocale['ar-EG'], $requiredKeys));
 
-if ($arOnly !== [] || $enOnly !== []) {
-    if ($arOnly !== []) {
-        fwrite(STDERR, "Keys only in ar.json:\n- ".implode("\n- ", $arOnly)."\n");
+if ($missing !== [] || $unexpected !== []) {
+    if ($missing !== []) {
+        fwrite(STDERR, "Keys missing from ar-EG.json:\n- ".implode("\n- ", $missing)."\n");
     }
-    if ($enOnly !== []) {
-        fwrite(STDERR, "Keys only in en.json:\n- ".implode("\n- ", $enOnly)."\n");
+    if ($unexpected !== []) {
+        fwrite(STDERR, "Unexpected keys in ar-EG.json:\n- ".implode("\n- ", $unexpected)."\n");
     }
     exit(1);
 }
 
-printf("Locale key parity: PASS (%d keys in ar.json and en.json)\n", count($keysByLocale['ar']));
+printf(
+    "Egyptian Arabic locale key parity: PASS (%d required keys; ar=%d, en=%d, ar-EG=%d)\n",
+    count($requiredKeys),
+    count($keysByLocale['ar']),
+    count($keysByLocale['en']),
+    count($keysByLocale['ar-EG']),
+);
 
 function collectKeys(mixed $value, string $prefix, array &$keys): void
 {

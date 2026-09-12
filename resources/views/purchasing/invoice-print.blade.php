@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar*') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <title>{{ __('Purchase Invoice') }} {{ $invoice->invoice_number ?: __('Draft') }}</title>
@@ -23,15 +23,15 @@
     </div>
     <h1>{{ $invoice->invoice_number ?: __('Draft invoice') }}</h1>
     <div class="grid">
-        <div><div class="muted">{{ __('Supplier') }}</div>{{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }} ({{ $invoice->supplier?->code }})</div>
-        <div><div class="muted">{{ __('Receiving store') }}</div>{{ app()->getLocale() === 'ar' ? ($invoice->store?->name_ar ?: $invoice->store?->name_en) : ($invoice->store?->name_en ?: $invoice->store?->name_ar) }} ({{ $invoice->store?->code }})</div>
+        <div><div class="muted">{{ __('Supplier') }}</div>{{ app()->isLocale('ar*') ? ($invoice->supplier?->name_ar ?: $invoice->supplier?->name_en) : ($invoice->supplier?->name_en ?: $invoice->supplier?->name_ar) }} ({{ $invoice->supplier?->code }})</div>
+        <div><div class="muted">{{ __('Receiving store') }}</div>{{ app()->isLocale('ar*') ? ($invoice->store?->name_ar ?: $invoice->store?->name_en) : ($invoice->store?->name_en ?: $invoice->store?->name_ar) }} ({{ $invoice->store?->code }})</div>
         <div><div class="muted">{{ __('Status') }}</div>{{ \App\Modules\Platform\Support\UiLabel::status($invoice->status) }}<br>{{ $invoice->invoice_date?->format('Y-m-d') }}</div>
     </div>
     <table>
         <thead><tr><th>#</th><th>{{ __('Product') }}</th><th>{{ __('Quantity') }}</th><th>{{ __('Unit cost') }}</th><th>{{ __('Discount') }}</th><th>{{ __('Tax') }}</th><th>{{ __('Total') }}</th></tr></thead>
         <tbody>
         @foreach ($invoice->lines as $index => $line)
-            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ app()->getLocale() === 'ar' ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) }}</td><td class="tabular-nums"><x-product-quantity :value="$line->quantity" /></td><td class="tabular-nums">{{ number_format((float) $line->unit_cost, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->discount_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->tax_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->line_total, 2) }} {{ $invoice->currency_code }}</td></tr>
+            <tr><td>{{ $index + 1 }}</td><td>{{ $line->product?->item_code }} — {{ app()->isLocale('ar*') ? ($line->product?->name_ar ?: $line->product?->name_en) : ($line->product?->name_en ?: $line->product?->name_ar) }}</td><td class="tabular-nums"><x-product-quantity :value="$line->quantity" /></td><td class="tabular-nums">{{ number_format((float) $line->unit_cost, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->discount_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->tax_amount, 2) }} {{ $invoice->currency_code }}</td><td class="tabular-nums">{{ number_format((float) $line->line_total, 2) }} {{ $invoice->currency_code }}</td></tr>
         @endforeach
         </tbody>
     </table>

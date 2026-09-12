@@ -691,9 +691,9 @@ new #[Title('Purchase Invoices')] class extends Component
 ?>
 
 <x-app.page
-    :title="app()->getLocale() === 'ar' ? 'فواتير المشتريات' : __('Purchase invoices')"
-    :description="app()->getLocale() === 'ar' ? 'راجع فواتير الموردين والاستلام والاعتماد والترحيل ضمن نطاقك.' : __('Review supplier invoices, receiving, approvals, and posting within your scope.')"
-    :breadcrumbs="app()->getLocale() === 'ar' ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
+    :title="app()->isLocale('ar*') ? 'فواتير المشتريات' : __('Purchase invoices')"
+    :description="app()->isLocale('ar*') ? 'راجع فواتير الموردين والاستلام والاعتماد والترحيل ضمن نطاقك.' : __('Review supplier invoices, receiving, approvals, and posting within your scope.')"
+    :breadcrumbs="app()->isLocale('ar*') ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="space-y-6"
 >
@@ -739,8 +739,8 @@ new #[Title('Purchase Invoices')] class extends Component
                     <flux:select.option value="rejected">{{ __('Rejected') }}</flux:select.option>
                 </flux:select>
             </div>
-            <flux:select wire:model.live="supplierFilter" :label="__('Supplier')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale() === 'ar' ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
-            <flux:select wire:model.live="storeFilter" :label="__('Store')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($stores as $store)<flux:select.option value="{{ $store->id }}">{{ app()->getLocale() === 'ar' ? ($store->name_ar ?: '—') : ($store->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+            <flux:select wire:model.live="supplierFilter" :label="__('Supplier')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ app()->isLocale('ar*') ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+            <flux:select wire:model.live="storeFilter" :label="__('Store')"><flux:select.option value="all">{{ __('All') }}</flux:select.option>@foreach($stores as $store)<flux:select.option value="{{ $store->id }}">{{ app()->isLocale('ar*') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
             <flux:input wire:model.live="dateFrom" type="date" :label="__('From')" />
             <flux:input wire:model.live="dateTo" type="date" :label="__('To')" />
         </div>
@@ -761,10 +761,10 @@ new #[Title('Purchase Invoices')] class extends Component
                             <x-status.badge :status="$invoice->status" />
                         </div>
                         @if(filled($invoice->supplier_reference))<div class="truncate text-xs text-text-muted" dir="ltr">{{ $invoice->supplier_reference }}</div>@endif
-                        <div class="text-sm">{{ app()->getLocale() === 'ar' ? ($invoice->supplier?->name_ar ?: '—') : ($invoice->supplier?->name_en ?: '—') }}</div>
+                        <div class="text-sm">{{ app()->isLocale('ar*') ? ($invoice->supplier?->name_ar ?: '—') : ($invoice->supplier?->name_en ?: '—') }}</div>
                     </div>
                     <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm lg:grid-cols-1">
-                        <div><dt class="text-xs text-text-muted">{{ __('Store') }}</dt><dd>{{ app()->getLocale() === 'ar' ? ($invoice->store?->name_ar ?: '—') : ($invoice->store?->name_en ?: '—') }}</dd></div>
+                        <div><dt class="text-xs text-text-muted">{{ __('Store') }}</dt><dd>{{ app()->isLocale('ar*') ? ($invoice->store?->name_ar ?: '—') : ($invoice->store?->name_en ?: '—') }}</dd></div>
                         <div><dt class="text-xs text-text-muted">{{ __('Date') }}</dt><dd dir="ltr">{{ $invoice->invoice_date?->format('Y-m-d') }}</dd></div>
                         <div><dt class="text-xs text-text-muted">{{ __('Total') }}</dt><dd><x-money :amount="$invoice->total_amount" :currency="$invoice->currency_code" /></dd></div>
                     </dl>
@@ -811,7 +811,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             @elseif ($invoice->status === 'approved')
                                 @can('purchase_invoices.print_labels')
                                     @foreach($invoice->distributions->whereNotNull('effective_selling_price')->unique('destination_store_id') as $allocation)
-                                        <x-actions.button semantic="print" :label="__('Print labels')" :href="route('purchasing.invoices.destination-labels',[$invoice,$allocation->destination_store_id])">{{ __('Labels') }} · {{ app()->getLocale()==='ar'?$allocation->destination?->name_ar:($allocation->destination?->name_en?:$allocation->destination?->name_ar) }}</x-actions.button>
+                                        <x-actions.button semantic="print" :label="__('Print labels')" :href="route('purchasing.invoices.destination-labels',[$invoice,$allocation->destination_store_id])">{{ __('Labels') }} · {{ app()->isLocale('ar*')?$allocation->destination?->name_ar:($allocation->destination?->name_en?:$allocation->destination?->name_ar) }}</x-actions.button>
                                     @endforeach
                                 @endcan
                                 @can('purchase_invoices.reverse')
@@ -845,13 +845,13 @@ new #[Title('Purchase Invoices')] class extends Component
                     <flux:select wire:model.live="invoiceForm.supplier_id" :label="__('Supplier')" :disabled="filled($invoiceForm['purchase_order_id'])">
                         <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
                         @foreach ($suppliers as $supplier)
-                            <flux:select.option value="{{ $supplier->id }}">{{ app()->getLocale()==='ar' ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>
+                            <flux:select.option value="{{ $supplier->id }}">{{ app()->isLocale('ar*') ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model="invoiceForm.store_id" :label="__('Receiving store')">
                         <flux:select.option value="">{{ __('Select store') }}</flux:select.option>
                         @foreach ($stores as $store)
-                            <flux:select.option value="{{ $store->id }}">{{ app()->getLocale()==='ar' ? ($store->name_ar ?: '—') : ($store->name_en ?: '—') }}</flux:select.option>
+                            <flux:select.option value="{{ $store->id }}">{{ app()->isLocale('ar*') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—') }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <flux:input wire:model="invoiceForm.invoice_date" type="date" :label="__('Invoice date')" />
@@ -880,7 +880,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(14rem,1fr)_4.5rem_6.5rem_6.5rem_6.5rem_5rem_4.5rem_6rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
                                 <div class="col-span-12 min-w-0 lg:col-auto">
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
-                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((app()->getLocale()==='ar' ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :disabled="blank($invoiceForm['supplier_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
+                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((app()->isLocale('ar*') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :disabled="blank($invoiceForm['supplier_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                                 </div>
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
                                 <div class="col-span-4 min-w-0 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label><input wire:model="lineItems.{{ $index }}.unit_cost" data-line-price data-price-kind="cost" type="number" min="0" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /><p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source title="{{ match($line['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}">{{ match($line['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($line['price_date'] ?? '')) · {{ $line['price_date'] }}@endif @if(filled($line['price_currency'] ?? '')) · {{ $line['price_currency'] }}@endif</p></div>
@@ -924,13 +924,13 @@ new #[Title('Purchase Invoices')] class extends Component
             <div><flux:heading size="xl">{{ __('Stage 2 — Mandatory distribution') }}</flux:heading><flux:text>{{ __('Select destinations and allocate every purchased unit. The receiving warehouse is temporary and must finish at zero.') }}</flux:text></div>
             <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($stores->where('id','!=',$distributionInvoice->store_id) as $store)
-                    <flux:checkbox wire:model.live="selectedDestinationIds" value="{{ $store->id }}" :label="app()->getLocale()==='ar' ? ($store->name_ar ?: '—') : ($store->name_en ?: '—')" />
+                    <flux:checkbox wire:model.live="selectedDestinationIds" value="{{ $store->id }}" :label="app()->isLocale('ar*') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—')" />
                 @endforeach
             </div>
             <form wire:submit="saveDistribution" class="space-y-4 overflow-x-auto">
-                <table class="min-w-full text-sm"><thead><tr><th class="p-2 text-start">{{__('Product')}}</th><th class="p-2">{{__('Purchased')}}</th>@foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<th class="p-2">{{ app()->getLocale()==='ar'?$store->name_ar:($store->name_en?:$store->name_ar) }}@if($store->type==='selling')<div class="text-xs text-text-muted">{{__('Effective destination price')}}</div>@endif</th>@endforeach<th class="p-2">{{__('Distributed')}}</th><th class="p-2">{{__('Remaining')}}</th></tr></thead>
+                <table class="min-w-full text-sm"><thead><tr><th class="p-2 text-start">{{__('Product')}}</th><th class="p-2">{{__('Purchased')}}</th>@foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<th class="p-2">{{ app()->isLocale('ar*')?$store->name_ar:($store->name_en?:$store->name_ar) }}@if($store->type==='selling')<div class="text-xs text-text-muted">{{__('Effective destination price')}}</div>@endif</th>@endforeach<th class="p-2">{{__('Distributed')}}</th><th class="p-2">{{__('Remaining')}}</th></tr></thead>
                 <tbody>@foreach($distributionInvoice->lines as $line) @php($distributed=collect($distributionMatrix[$line->id]??[])->reduce(fn($t,$q)=>bcadd($t,is_numeric($q)?(string)$q:'0',6),'0'))
-                    <tr class="border-t"><td class="p-2"><strong>{{ app()->getLocale()==='ar'?($line->product->name_ar?:'—'):($line->product->name_en?:'—') }}</strong><div dir="ltr">{{ $line->product->model_number }} · {{ $line->product->item_code }}</div></td><td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($line->quantity) }}</td>
+                    <tr class="border-t"><td class="p-2"><strong>{{ app()->isLocale('ar*')?($line->product->name_ar?:'—'):($line->product->name_en?:'—') }}</strong><div dir="ltr">{{ $line->product->model_number }} · {{ $line->product->item_code }}</div></td><td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($line->quantity) }}</td>
                     @foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<td class="p-2"><flux:input wire:model.live="distributionMatrix.{{ $line->id }}.{{ $store->id }}" type="number" min="0" step="1" aria-label="{{__('Distribution quantity')}}" />@php($saved=$distributionInvoice->distributions->first(fn($d)=>$d->purchase_invoice_line_id===$line->id&&$d->destination_store_id===$store->id))@if($saved?->effective_selling_price)<div class="mt-1 text-center"><x-money :amount="$saved->effective_selling_price" :currency="$distributionInvoice->currency_code" /></div>@endif</td>@endforeach
                     <td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($distributed) }}</td><td class="p-2 text-center {{ bccomp(bcsub((string)$line->quantity,$distributed,6),'0',6)!==0?'text-red-600':'text-green-700' }}" dir="ltr">{{ $this->formatQuantity(bcsub((string)$line->quantity,$distributed,6)) }}</td></tr>
                 @endforeach</tbody></table>
@@ -973,9 +973,9 @@ new #[Title('Purchase Invoices')] class extends Component
                 <fieldset class="rounded-xl border border-border p-3">
                     <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Classification') }}</legend>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        <flux:select wire:model="quickProduct.category_id" :label="__('Category / subcategory')" required><flux:select.option value="">{{ __('Select category') }}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{ $category->id }}">{{ $category->code }} · {{ app()->getLocale()==='ar' ? ($category->name_ar ?: '—') : ($category->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
-                        <flux:select wire:model="quickProduct.brand_id" :label="__('Brand')"><flux:select.option value="">{{ __('No brand') }}</flux:select.option>@foreach($brands as $brand)<flux:select.option value="{{ $brand->id }}">{{ $brand->code }} · {{ app()->getLocale()==='ar' ? ($brand->name_ar ?: '—') : ($brand->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
-                        <flux:select wire:model="quickProduct.preferred_supplier_id" :label="__('Supplier')"><flux:select.option value="">{{ __('No supplier') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ $supplier->code }} · {{ app()->getLocale()==='ar' ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.category_id" :label="__('Category / subcategory')" required><flux:select.option value="">{{ __('Select category') }}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{ $category->id }}">{{ $category->code }} · {{ app()->isLocale('ar*') ? ($category->name_ar ?: '—') : ($category->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.brand_id" :label="__('Brand')"><flux:select.option value="">{{ __('No brand') }}</flux:select.option>@foreach($brands as $brand)<flux:select.option value="{{ $brand->id }}">{{ $brand->code }} · {{ app()->isLocale('ar*') ? ($brand->name_ar ?: '—') : ($brand->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <flux:select wire:model="quickProduct.preferred_supplier_id" :label="__('Supplier')"><flux:select.option value="">{{ __('No supplier') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ $supplier->code }} · {{ app()->isLocale('ar*') ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
                         <flux:select wire:model="quickProduct.product_type" :label="__('Product type')" required><flux:select.option value="standard">{{ __('Standard') }}</flux:select.option><flux:select.option value="service">{{ __('Service') }}</flux:select.option><flux:select.option value="composite">{{ __('Composite') }}</flux:select.option></flux:select>
                         <flux:select wire:model="quickProduct.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
                     </div>

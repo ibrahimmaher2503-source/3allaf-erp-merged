@@ -1,5 +1,5 @@
 @php
-    $isArabic = app()->getLocale() === 'ar';
+    $isArabic = in_array(app()->getLocale(), config('app.arabic_locales', ['ar']), true);
     $setupPercent = ($setup['required_count'] ?? 0) > 0 ? (int) round((($setup['completed_count'] ?? 0) / $setup['required_count']) * 100) : 100;
     $trendMax = max(1, (float) $dashboard['trend']->max(fn (array $day): float => max((float) $day['sales'], (float) $day['purchases'])));
     $trendSalesTotal = (float) $dashboard['trend']->sum(fn (array $day): float => (float) $day['sales']);

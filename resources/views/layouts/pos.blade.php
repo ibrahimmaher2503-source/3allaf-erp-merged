@@ -24,11 +24,11 @@
                 <div class="flex max-w-full flex-wrap items-center gap-1 overflow-x-auto text-[11px] sm:gap-2 sm:text-xs" data-pos-readiness="{{ $posReady ? 'ready' : 'blocked' }}">
                     <div class="flex shrink-0 flex-col rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Branch') }}</span>
-                        <span class="font-semibold">{{ $posBranch ? $posBranch->code.' · '.(app()->getLocale() === 'ar' ? $posBranch->name_ar : $posBranch->name_en) : __('Unavailable') }}</span>
+                        <span class="font-semibold">{{ $posBranch ? $posBranch->code.' · '.(in_array(app()->getLocale(), config('app.arabic_locales', ['ar']), true) ? $posBranch->name_ar : $posBranch->name_en) : __('Unavailable') }}</span>
                     </div>
                     <div class="flex shrink-0 flex-col rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('POS selling location') }}</span>
-                        <span class="font-semibold">{{ $posStore ? $posStore->code.' · '.(app()->getLocale() === 'ar' ? $posStore->name_ar : $posStore->name_en) : __('Unavailable') }}</span>
+                        <span class="font-semibold">{{ $posStore ? $posStore->code.' · '.(in_array(app()->getLocale(), config('app.arabic_locales', ['ar']), true) ? $posStore->name_ar : $posStore->name_en) : __('Unavailable') }}</span>
                     </div>
                     <div class="flex shrink-0 flex-col rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-cyan-900 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-100">
                         <span class="text-[10px] font-medium uppercase tracking-wide text-cyan-700 dark:text-cyan-300">{{ __('Stock source') }}</span>
@@ -36,7 +36,7 @@
                     </div>
                     <div class="flex shrink-0 flex-col rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 dark:border-zinc-800 dark:bg-zinc-800">
                         <span class="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Drawer') }}</span>
-                        <span class="font-semibold">{{ $posShift?->cashDrawer ? $posShift->cashDrawer->code.' · '.(app()->getLocale() === 'ar' ? $posShift->cashDrawer->name_ar : $posShift->cashDrawer->name_en) : __('Unavailable') }}</span>
+                        <span class="font-semibold">{{ $posShift?->cashDrawer ? $posShift->cashDrawer->code.' · '.(in_array(app()->getLocale(), config('app.arabic_locales', ['ar']), true) ? $posShift->cashDrawer->name_ar : $posShift->cashDrawer->name_en) : __('Unavailable') }}</span>
                     </div>
                     <div class="flex shrink-0 flex-col rounded-md border {{ $posReady ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300' }} px-2 py-1">
                         <span class="text-[10px] font-medium uppercase tracking-wide">{{ __('Shift') }}</span>
@@ -63,20 +63,7 @@
                     @endif
 
                     <!-- Locale switcher -->
-                    <form method="POST" action="{{ route('locale.switch') }}" class="inline">
-                        @csrf
-                        @if (app()->getLocale() === 'ar')
-                            <input type="hidden" name="locale" value="en" />
-                            <flux:button type="submit" size="sm" variant="subtle" icon="language">
-                                EN
-                            </flux:button>
-                        @else
-                            <input type="hidden" name="locale" value="ar" />
-                            <flux:button type="submit" size="sm" variant="subtle" icon="language">
-                                عربي
-                            </flux:button>
-                        @endif
-                    </form>
+                    <x-locale-switcher compact />
 
                     <flux:button href="{{ route('dashboard') }}" wire:navigate size="sm" variant="subtle" icon="arrow-left">
                         {{ __('Dashboard') }}

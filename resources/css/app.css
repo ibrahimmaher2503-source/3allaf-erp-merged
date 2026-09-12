@@ -1159,17 +1159,17 @@ select:focus[data-flux-control] {
 
 /* M50A.1 application shell ----------------------------------------------- */
 @layer base {
-    html[lang="ar"] body,
-    html[lang="ar"] :where(button, input, select, textarea, option, table, dialog, [role="dialog"], [data-flux-button], [data-flux-heading], [data-flux-text], [data-flux-sidebar-item], [data-flux-sidebar-group], [data-flux-menu]) {
+    html[lang|="ar"] body,
+    html[lang|="ar"] :where(button, input, select, textarea, option, table, dialog, [role="dialog"], [data-flux-button], [data-flux-heading], [data-flux-text], [data-flux-sidebar-item], [data-flux-sidebar-group], [data-flux-menu]) {
         font-family: 'Cairo Variable', Tahoma, Arial, sans-serif !important;
         font-optical-sizing: auto;
         letter-spacing: normal;
     }
-    html[lang="ar"] body { font-weight: 400; line-height: 1.65; }
-    html[lang="ar"] :where(h1,h2,h3,h4,h5,h6,[data-flux-heading],.dashboard-kpi__value) { font-weight: 700; line-height: 1.45; }
-    html[lang="ar"] :where(button,input,select,textarea,[data-flux-button],[data-flux-sidebar-item],[data-flux-sidebar-group]) { font-weight: 600; line-height: 1.55; }
-    html[lang="ar"] :where(.font-sans,[class*="tracking-"]) { font-family: 'Cairo Variable', Tahoma, Arial, sans-serif !important; letter-spacing: normal !important; }
-    html[lang="ar"] :where(.app-footer,.app-sidebar,.app-topbar,.dashboard-panel,.dashboard-kpi,.data-table) { font-family: 'Cairo Variable', Tahoma, Arial, sans-serif !important; }
+    html[lang|="ar"] body { font-weight: 400; line-height: 1.65; }
+    html[lang|="ar"] :where(h1,h2,h3,h4,h5,h6,[data-flux-heading],.dashboard-kpi__value) { font-weight: 700; line-height: 1.45; }
+    html[lang|="ar"] :where(button,input,select,textarea,[data-flux-button],[data-flux-sidebar-item],[data-flux-sidebar-group]) { font-weight: 600; line-height: 1.55; }
+    html[lang|="ar"] :where(.font-sans,[class*="tracking-"]) { font-family: 'Cairo Variable', Tahoma, Arial, sans-serif !important; letter-spacing: normal !important; }
+    html[lang|="ar"] :where(.app-footer,.app-sidebar,.app-topbar,.dashboard-panel,.dashboard-kpi,.data-table) { font-family: 'Cairo Variable', Tahoma, Arial, sans-serif !important; }
     :where(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid #0d9488; outline-offset: 2px; }
 }
 @layer components {

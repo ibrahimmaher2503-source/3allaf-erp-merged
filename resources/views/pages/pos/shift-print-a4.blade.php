@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar*') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,9 +12,9 @@
 </head>
 <body class="bg-white text-zinc-900">
     @php
-        $storeName = app()->getLocale() === 'ar' ? ($shift->store?->name_ar ?: $shift->store_name_ar_snapshot) : ($shift->store?->name_en ?: $shift->store_name_en_snapshot);
-        $branchName = app()->getLocale() === 'ar' ? ($shift->branch?->name_ar ?: $shift->branch_name_ar_snapshot) : ($shift->branch?->name_en ?: $shift->branch_name_en_snapshot);
-        $drawerName = app()->getLocale() === 'ar' ? ($shift->cashDrawer?->name_ar ?: $shift->cash_drawer_name_ar_snapshot) : ($shift->cashDrawer?->name_en ?: $shift->cash_drawer_name_en_snapshot);
+        $storeName = app()->isLocale('ar*') ? ($shift->store?->name_ar ?: $shift->store_name_ar_snapshot) : ($shift->store?->name_en ?: $shift->store_name_en_snapshot);
+        $branchName = app()->isLocale('ar*') ? ($shift->branch?->name_ar ?: $shift->branch_name_ar_snapshot) : ($shift->branch?->name_en ?: $shift->branch_name_en_snapshot);
+        $drawerName = app()->isLocale('ar*') ? ($shift->cashDrawer?->name_ar ?: $shift->cash_drawer_name_ar_snapshot) : ($shift->cashDrawer?->name_en ?: $shift->cash_drawer_name_en_snapshot);
     @endphp
 
     <main class="mx-auto max-w-5xl p-6">

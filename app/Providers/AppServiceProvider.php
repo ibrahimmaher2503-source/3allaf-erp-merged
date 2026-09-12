@@ -56,6 +56,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        app('translator')->determineLocalesUsing(static function (array $locales): array {
+            $locale = (string) ($locales[0] ?? config('app.locale', 'en'));
+
+            return config('app.locale_fallbacks.'.$locale, array_values(array_unique($locales)));
+        });
+
         $this->configureDefaults();
         $this->configureQueryObservability();
         Livewire::addNamespace('platform', viewPath: resource_path('views/platform'));
