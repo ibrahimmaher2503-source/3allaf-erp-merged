@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('Sales overview')">
     @php
-        $isArabic = app()->isLocale('ar*');
+        $isArabic = str_starts_with(app()->getLocale(), 'ar');
         $maxTrend = max(1, (float) collect($dashboard['trend'])->max('total'));
         $selectedStore = $stores->firstWhere('id', (int) request('store_id'));
         $filterLabels = [

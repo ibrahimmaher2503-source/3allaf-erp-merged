@@ -209,13 +209,13 @@ new #[Title('Audit Logs')] class extends Component {
                     <flux:select wire:model.live="branchId" :label="__('Branch')">
                         <option value="">{{ __('All visible branches') }}</option>
                         @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->code }} - {{ app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en }}</option>
+                            <option value="{{ $branch->id }}">{{ $branch->code }} - {{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }}</option>
                         @endforeach
                     </flux:select>
                     <flux:select wire:model.live="storeId" :label="__('Store')">
                         <option value="">{{ __('All visible stores') }}</option>
                         @foreach ($stores as $store)
-                            <option value="{{ $store->id }}">{{ $store->code }} - {{ app()->isLocale('ar*') ? $store->name_ar : $store->name_en }}</option>
+                            <option value="{{ $store->id }}">{{ $store->code }} - {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</option>
                         @endforeach
                     </flux:select>
                     <flux:input wire:model.live="dateFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" dir="ltr" :label="__('From date')" />

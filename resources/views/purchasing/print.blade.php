@@ -7,7 +7,7 @@
 <!DOCTYPE html>
 <html
     lang="{{ app()->getLocale() }}"
-    dir="{{ app()->isLocale('ar*') ? 'rtl' : 'ltr' }}"
+    dir="{{ str_starts_with(app()->getLocale(), 'ar') ? 'rtl' : 'ltr' }}"
     data-appearance="{{ $uiPreferences['appearance'] }}"
     data-accent="{{ $uiPreferences['accent_color'] }}"
 >
@@ -36,7 +36,7 @@
 <body class="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-sans p-4 sm:p-8 min-h-screen">
     <div class="max-w-4xl mx-auto mb-4 no-print flex items-center justify-between">
         <a href="{{ route('purchasing.orders') }}" class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1">
-            {{ app()->isLocale('ar*') ? '→' : '←' }} {{ __('Back to Purchase Orders') }}
+            {{ str_starts_with(app()->getLocale(), 'ar') ? '→' : '←' }} {{ __('Back to Purchase Orders') }}
         </a>
         <button onclick="window.print()" class="px-4 py-2 bg-primary hover:bg-primary/90 text-accent-foreground rounded-lg text-sm font-medium transition shadow">
             🖨️ {{ __('Print A4 document') }}
@@ -70,7 +70,7 @@
         <div class="grid grid-cols-2 gap-6 text-sm">
             <div class="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700/60">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">{{ __('Supplier Details') }}</h3>
-                <p class="font-bold text-zinc-900 dark:text-white">{{ app()->isLocale('ar*') ? $order->supplier->name_ar : ($order->supplier->name_en ?: $order->supplier->name_ar) }}</p>
+                <p class="font-bold text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $order->supplier->name_ar : ($order->supplier->name_en ?: $order->supplier->name_ar) }}</p>
                 <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">{{ __('Code') }}: {{ $order->supplier->code }}</p>
                 @if($order->supplier->contact_name)<p class="text-xs text-zinc-600 dark:text-zinc-300 mt-1">{{ __('Contact') }}: {{ $order->supplier->contact_name }}</p>@endif
                 @if($order->supplier->phone)<p class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('Phone') }}: {{ $order->supplier->phone }}</p>@endif
@@ -80,7 +80,7 @@
             <div class="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700/60">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">{{ __('Delivery & Terms') }}</h3>
                 @if($order->store)
-                    <p class="font-bold text-zinc-900 dark:text-white">{{ app()->isLocale('ar*') ? $order->store->name_ar : $order->store->name_en }}</p>
+                    <p class="font-bold text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $order->store->name_ar : $order->store->name_en }}</p>
                     <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Store Code') }}: {{ $order->store->code }}</p>
                 @else
                     <p class="text-xs text-zinc-500 italic">{{ __('No specific store assigned') }}</p>
@@ -107,7 +107,7 @@
                         <tr>
                             <td class="px-4 py-2.5 text-center text-xs text-zinc-500 font-mono">{{ $line->line_number }}</td>
                             <td class="px-4 py-2.5">
-                                <div class="font-medium text-zinc-900 dark:text-white">{{ app()->isLocale('ar*') ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
+                                <div class="font-medium text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
                                 <div class="text-xs font-mono text-zinc-500">{{ $line->product->sku ?: $line->product->code }}</div>
                             </td>
                             <td class="px-4 py-2.5 text-end font-mono"><x-product-quantity :value="$line->quantity_ordered" /></td>

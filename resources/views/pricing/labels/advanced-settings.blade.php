@@ -7,7 +7,7 @@
             <flux:select.option value="">{{ __('Use Product Card price') }}</flux:select.option>
             @foreach ($stores as $store)
                 <flux:select.option value="{{ $store->id }}">
-                    {{ app()->isLocale('ar*') ? $store->name_ar : $store->name_en }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}
                 </flux:select.option>
             @endforeach
         </flux:select>
@@ -16,7 +16,7 @@
             <flux:select.option value="">{{ __('Automatic default') }}</flux:select.option>
             @foreach ($templates as $template)
                 <flux:select.option value="{{ $template->id }}">
-                    {{ app()->isLocale('ar*') ? $template->name_ar : $template->name_en }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? $template->name_ar : $template->name_en }}
                 </flux:select.option>
             @endforeach
         </flux:select>

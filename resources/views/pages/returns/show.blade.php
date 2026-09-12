@@ -40,7 +40,7 @@
                     <tbody>
                         @foreach ($return->lines as $line)
                             <tr class="border-t border-zinc-100 dark:border-zinc-800">
-                                <td><div>{{ app()->isLocale('ar*') ? $line->product?->name_ar : $line->product?->name_en }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
+                                <td><div>{{ str_starts_with(app()->getLocale(), 'ar') ? $line->product?->name_ar : $line->product?->name_en }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
                                 <td><x-product-quantity :value="$line->quantity" /></td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->disposition)) }}</td>
@@ -84,7 +84,7 @@
                         <flux:select name="payment_method_id" label="{{ __('Settlement payment method') }}">
                             <option value="">{{ __('Select method if required') }}</option>
                             @foreach ($paymentMethods as $method)
-                                <option value="{{ $method->id }}">{{ app()->isLocale('ar*') ? $method->name_ar : $method->name_en }} ({{ $method->code }})</option>
+                                <option value="{{ $method->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en }} ({{ $method->code }})</option>
                             @endforeach
                         </flux:select>
                     @endif
@@ -96,7 +96,7 @@
                                 <div class="grid gap-2 rounded-lg border border-zinc-200 p-2 sm:grid-cols-3 dark:border-zinc-700">
                                     <input type="hidden" name="allocations[{{ $index }}][original_payment_id]" value="{{ $allocation['original_payment_id'] }}">
                                     <input type="hidden" name="allocations[{{ $index }}][amount]" value="{{ $allocation['amount'] }}">
-                                    <span class="text-sm font-semibold">{{ app()->isLocale('ar*') ? $payment?->paymentMethod?->name_ar : $payment?->paymentMethod?->name_en }}</span>
+                                    <span class="text-sm font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $payment?->paymentMethod?->name_ar : $payment?->paymentMethod?->name_en }}</span>
                                     <span class="text-sm tabular-nums">{{ $allocation['amount'] }} {{ $return->currency_code }}</span>
                                     @if($payment?->paymentMethod?->requires_evidence)<input name="allocations[{{ $index }}][safe_reference]" maxlength="190" required class="rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-950" placeholder="{{ __('Required transaction reference') }}">@endif
                                 </div>

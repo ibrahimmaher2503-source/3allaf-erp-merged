@@ -1,7 +1,7 @@
 @props(['readiness', 'showCounts' => false, 'compact' => false])
 
 @php
-    $isArabic = app()->isLocale('ar*');
+    $isArabic = str_starts_with(app()->getLocale(), 'ar');
     $affected = collect($readiness['affected_products'] ?? []);
 @endphp
 

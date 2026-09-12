@@ -247,10 +247,10 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.supplier_group_id' => ['nullable', 'integer'],
             'supplierForm.status' => ['required', 'in:active,inactive'],
         ], [], [
-            'supplierForm.code' => app()->isLocale('ar*') ? 'كود المورد' : __('Supplier code'),
-            'supplierForm.name_ar' => app()->isLocale('ar*') ? 'اسم المورد بالعربية' : __('Arabic name'),
-            'supplierForm.name_en' => app()->isLocale('ar*') ? 'اسم المورد بالإنجليزية' : __('English name'),
-            'supplierForm.status' => app()->isLocale('ar*') ? 'حالة التشغيل' : __('Operational status'),
+            'supplierForm.code' => str_starts_with(app()->getLocale(), 'ar') ? 'كود المورد' : __('Supplier code'),
+            'supplierForm.name_ar' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالعربية' : __('Arabic name'),
+            'supplierForm.name_en' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالإنجليزية' : __('English name'),
+            'supplierForm.status' => str_starts_with(app()->getLocale(), 'ar') ? 'حالة التشغيل' : __('Operational status'),
         ])['supplierForm'];
 
         try {
@@ -292,7 +292,7 @@ new #[Title('Supplier Masters')] class extends Component
                 $action->execute($id, $status);
             });
             $this->clearBulkSelection();
-            Flux::toast(variant: 'success', text: app()->isLocale('ar*')
+            Flux::toast(variant: 'success', text: str_starts_with(app()->getLocale(), 'ar')
                 ? "تم تحديث حالة {$count} مورد."
                 : __('Supplier status updated for :count records.', ['count' => $count]));
         } catch (Throwable $exception) {
@@ -536,8 +536,8 @@ new #[Title('Supplier Masters')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="$section === 'supplier-groups' ? (app()->isLocale('ar*') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')) : (app()->isLocale('ar*') ? 'الموردون' : __('Supplier Masters & Product-Supplier History'))"
-    :description="$section === 'supplier-groups' ? (app()->isLocale('ar*') ? 'رتّب الموردين في مجموعات لتسهيل البحث والمتابعة.' : __('Create and maintain the supplier hierarchy before assigning supplier masters to a group.')) : (app()->isLocale('ar*') ? 'أضف الموردين وبيانات التواصل والشروط التجارية، ثم اربط منتجاتهم عند الحاجة.' : __('Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.'))"
+    :title="$section === 'supplier-groups' ? (str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')) : (str_starts_with(app()->getLocale(), 'ar') ? 'الموردون' : __('Supplier Masters & Product-Supplier History'))"
+    :description="$section === 'supplier-groups' ? (str_starts_with(app()->getLocale(), 'ar') ? 'رتّب الموردين في مجموعات لتسهيل البحث والمتابعة.' : __('Create and maintain the supplier hierarchy before assigning supplier masters to a group.')) : (str_starts_with(app()->getLocale(), 'ar') ? 'أضف الموردين وبيانات التواصل والشروط التجارية، ثم اربط منتجاتهم عند الحاجة.' : __('Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.'))"
     max-width="7xl"
     class="catalog-screen"
     data-guide="suppliers-header"
@@ -554,14 +554,14 @@ new #[Title('Supplier Masters')] class extends Component
                     wire:click="openCreateSupplierModal"
                     data-guide="suppliers-add-action"
                 >
-                    {{ app()->isLocale('ar*') ? 'إضافة مورد' : __('Add supplier') }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مورد' : __('Add supplier') }}
                 </flux:button>
                 <flux:button icon="folder-open" variant="subtle" :href="route('catalog.suppliers', ['section' => 'supplier-groups'])" wire:navigate>
-                    {{ app()->isLocale('ar*') ? 'إدارة مجموعات الموردين' : __('Manage supplier groups') }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'إدارة مجموعات الموردين' : __('Manage supplier groups') }}
                 </flux:button>
             @elseif ($canCreate && $section === 'supplier-groups')
                 <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal" data-guide="supplier-groups-add-action">
-                    {{ app()->isLocale('ar*') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
                 </flux:button>
             @endif
             </div>
@@ -571,19 +571,19 @@ new #[Title('Supplier Masters')] class extends Component
     <div class="space-y-5" data-supplier-workspace="{{ $section }}">
         @if ($section === 'supplier-groups')
             <section class="space-y-5" data-guide="supplier-groups-workspace">
-                <flux:callout variant="info" icon="information-circle" :title="app()->isLocale('ar*') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')">
-                    {{ app()->isLocale('ar*') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}
+                <flux:callout variant="info" icon="information-circle" :title="str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')">
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}
                 </flux:callout>
 
                 <flux:card class="space-y-4 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <flux:heading size="lg">{{ app()->isLocale('ar*') ? 'مجموعات الموردين' : __('Supplier groups') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ app()->isLocale('ar*') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</flux:text>
+                            <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مجموعات الموردين' : __('Supplier groups') }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</flux:text>
                         </div>
                         @if ($canCreate)
                             <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal">
-                                {{ app()->isLocale('ar*') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
+                                {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مجموعة موردين' : __('Add supplier group') }}
                             </flux:button>
                         @endif
                     </div>
@@ -597,7 +597,7 @@ new #[Title('Supplier Masters')] class extends Component
                         <thead><tr><th>{{ __('Supplier group') }}</th><th>{{ __('Parent / path') }}</th><th>{{ __('Order') }}</th><th>{{ __('Suppliers') }}</th><th>{{ __('Status') }}</th><th class="text-center">{{ __('Actions') }}</th></tr></thead>
                         <tbody>@forelse($supplierGroups as $group)
                             <tr>
-                                <td data-primary style="padding-inline-start: {{ 1.25 + ($group->hierarchy_depth * 1.25) }}rem"><div class="font-semibold">{{ $group->hierarchy_depth ? '↳ ' : '' }}{{ app()->isLocale('ar*')?$group->name_ar:$group->name_en }}</div><div class="text-xs text-text-muted">{{ app()->isLocale('ar*')?$group->name_en:$group->name_ar }}</div><span class="catalog-code-chip" dir="ltr">{{ $group->code }}</span></td>
+                                <td data-primary style="padding-inline-start: {{ 1.25 + ($group->hierarchy_depth * 1.25) }}rem"><div class="font-semibold">{{ $group->hierarchy_depth ? '↳ ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar')?$group->name_ar:$group->name_en }}</div><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar')?$group->name_en:$group->name_ar }}</div><span class="catalog-code-chip" dir="ltr">{{ $group->code }}</span></td>
                                 <td data-label="{{ __('Parent / path') }}">{{ $group->hierarchy_path }}</td>
                                 <td data-label="{{ __('Order') }}" class="text-center tabular-nums">{{ $group->sort_order }}</td>
                                 <td data-label="{{ __('Suppliers') }}" class="text-center tabular-nums">{{ $group->suppliers_count }}</td>
@@ -614,24 +614,24 @@ new #[Title('Supplier Masters')] class extends Component
             <section class="space-y-5" data-guide="supplier-masters-workspace">
         <flux:card id="suppliers-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
             <div>
-                <flux:heading size="sm">{{ app()->isLocale('ar*') ? 'البحث والتصفية' : 'Search and filters' }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ app()->isLocale('ar*') ? 'ابحث عن المورد أو حدّد الحالة والمجموعة.' : 'Find a supplier or narrow the list by status and group.' }}</flux:text>
+                <flux:heading size="sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'البحث والتصفية' : 'Search and filters' }}</flux:heading>
+                <flux:text class="mt-1 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'ابحث عن المورد أو حدّد الحالة والمجموعة.' : 'Find a supplier or narrow the list by status and group.' }}</flux:text>
             </div>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:input
                     wire:model.live.debounce.300ms="search"
                     icon="magnifying-glass"
-                    :label="app()->isLocale('ar*') ? 'بحث' : 'Search'"
-                    :placeholder="app()->isLocale('ar*') ? 'الكود أو الاسم أو الهاتف أو الرقم الضريبي' : __('Search by code, name, contact, phone, or tax number...')"
+                    :label="str_starts_with(app()->getLocale(), 'ar') ? 'بحث' : 'Search'"
+                    :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'الكود أو الاسم أو الهاتف أو الرقم الضريبي' : __('Search by code, name, contact, phone, or tax number...')"
                     clearable
                 />
-                <flux:select wire:model.live="statusFilter" :label="app()->isLocale('ar*') ? 'الحالة' : __('Status filter')">
-                    <option value="all">{{ app()->isLocale('ar*') ? 'كل الحالات' : __('All status') }}</option>
-                    <option value="active">{{ app()->isLocale('ar*') ? 'نشط' : __('Active only') }}</option>
-                    <option value="inactive">{{ app()->isLocale('ar*') ? 'غير نشط' : __('Inactive only') }}</option>
+                <flux:select wire:model.live="statusFilter" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status filter')">
+                    <option value="all">{{ str_starts_with(app()->getLocale(), 'ar') ? 'كل الحالات' : __('All status') }}</option>
+                    <option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشط' : __('Active only') }}</option>
+                    <option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشط' : __('Inactive only') }}</option>
                 </flux:select>
-                <flux:select wire:model.live="supplierGroupFilter" :label="app()->isLocale('ar*') ? 'مجموعة الموردين' : __('Supplier group')">
-                    <option value="all">{{ app()->isLocale('ar*') ? 'كل المجموعات' : __('All supplier groups') }}</option>
+                <flux:select wire:model.live="supplierGroupFilter" :label="str_starts_with(app()->getLocale(), 'ar') ? 'مجموعة الموردين' : __('Supplier group')">
+                    <option value="all">{{ str_starts_with(app()->getLocale(), 'ar') ? 'كل المجموعات' : __('All supplier groups') }}</option>
                     @foreach ($supplierGroups as $group)
                         <option value="{{ $group->id }}">
                             {{ $group->name_ar }}{{ $group->name_en ? ' — '.$group->name_en : '' }} ({{ $group->suppliers_count }})
@@ -644,16 +644,16 @@ new #[Title('Supplier Masters')] class extends Component
         <div class="rounded-xl border border-border bg-surface p-4" data-guide="suppliers-bulk-actions">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <div class="font-semibold">{{ app()->isLocale('ar*') ? 'تحديث الموردين المحددين' : 'Update selected suppliers' }}</div>
-                    <div class="text-sm text-text-muted">{{ app()->isLocale('ar*') ? 'حدد موردين ثم فعّلهم أو عطّلهم مرة واحدة.' : 'Select suppliers, then activate or deactivate them together.' }}</div>
+                    <div class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تحديث الموردين المحددين' : 'Update selected suppliers' }}</div>
+                    <div class="text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حدد موردين ثم فعّلهم أو عطّلهم مرة واحدة.' : 'Select suppliers, then activate or deactivate them together.' }}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @if ($canEdit)
-                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkSetSupplierStatus('active')" wire:confirm="{{ app()->isLocale('ar*') ? 'تفعيل الموردين المحددين؟' : 'Activate the selected suppliers?' }}">
-                            {{ app()->isLocale('ar*') ? 'تفعيل المحدد' : 'Activate selected' }}
+                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkSetSupplierStatus('active')" wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'تفعيل الموردين المحددين؟' : 'Activate the selected suppliers?' }}">
+                            {{ str_starts_with(app()->getLocale(), 'ar') ? 'تفعيل المحدد' : 'Activate selected' }}
                         </flux:button>
-                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkSetSupplierStatus('inactive')" wire:confirm="{{ app()->isLocale('ar*') ? 'تعطيل الموردين المحددين؟' : 'Deactivate the selected suppliers?' }}">
-                            {{ app()->isLocale('ar*') ? 'تعطيل المحدد' : 'Deactivate selected' }}
+                        <flux:button type="button" size="sm" variant="subtle" wire:click="bulkSetSupplierStatus('inactive')" wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'تعطيل الموردين المحددين؟' : 'Deactivate the selected suppliers?' }}">
+                            {{ str_starts_with(app()->getLocale(), 'ar') ? 'تعطيل المحدد' : 'Deactivate selected' }}
                         </flux:button>
                     @endif
                 </div>
@@ -665,35 +665,35 @@ new #[Title('Supplier Masters')] class extends Component
                 <table class="data-table responsive-resource-table min-w-full">
                     <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                         <tr>
-                            <th scope="col" class="w-12 px-3 py-3 text-center text-xs font-semibold text-text-muted"><span class="sr-only">{{ app()->isLocale('ar*') ? 'تحديد' : __('Select') }}</span></th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'كود المورد' : __('Supplier code') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'اسم المورد' : __('Bilingual name') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'بيانات التواصل' : __('Contact info') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'الرقم الضريبي' : __('Tax number') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'شروط الدفع' : __('Payment terms') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'الحالة' : __('Status') }}</th>
-                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'المنتجات' : __('Products') }}</th>
-                            <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-text-muted uppercase tracking-wider">{{ app()->isLocale('ar*') ? 'إجراءات' : __('Actions') }}</th>
+                            <th scope="col" class="w-12 px-3 py-3 text-center text-xs font-semibold text-text-muted"><span class="sr-only">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تحديد' : __('Select') }}</span></th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'كود المورد' : __('Supplier code') }}</th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد' : __('Bilingual name') }}</th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بيانات التواصل' : __('Contact info') }}</th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax number') }}</th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms') }}</th>
+                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status') }}</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'المنتجات' : __('Products') }}</th>
+                            <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إجراءات' : __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border bg-white dark:bg-zinc-900">
                         @forelse ($suppliers as $supplier)
                             <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
                                 <td class="px-3 py-3 text-center">
-                                    <input type="checkbox" value="{{ $supplier->id }}" wire:model.live="selectedIds" aria-label="{{ app()->isLocale('ar*') ? 'تحديد المورد '.$supplier->code : __('Select supplier :code', ['code' => $supplier->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" />
+                                    <input type="checkbox" value="{{ $supplier->id }}" wire:model.live="selectedIds" aria-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'تحديد المورد '.$supplier->code : __('Select supplier :code', ['code' => $supplier->code]) }}" class="size-4 rounded border-border text-primary focus:ring-primary" />
                                 </td>
                                 <td data-primary class="px-4 py-3 text-sm font-medium whitespace-nowrap">
                                     <span class="catalog-code-chip">{{ $supplier->code }}</span>
                                 </td>
-                                <td data-label="{{ app()->isLocale('ar*') ? 'اسم المورد' : __('Supplier') }}" class="px-4 py-3 text-sm">
+                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد' : __('Supplier') }}" class="px-4 py-3 text-sm">
                                     <div class="font-medium text-zinc-900 dark:text-zinc-100">
-                                        {{ app()->isLocale('ar*') ? $supplier->name_ar : $supplier->name_en }}
+                                        {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}
                                     </div>
                                     <div class="text-xs text-text-muted">
-                                        {{ app()->isLocale('ar*') ? $supplier->name_en : $supplier->name_ar }}
+                                        {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_en : $supplier->name_ar }}
                                     </div>
                                 </td>
-                                <td data-label="{{ app()->isLocale('ar*') ? 'التواصل' : __('Contact') }}" class="px-4 py-3 text-sm">
+                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'التواصل' : __('Contact') }}" class="px-4 py-3 text-sm">
                                     @if ($supplier->contact_name)
                                         <div class="font-medium text-xs">{{ $supplier->contact_name }}</div>
                                     @endif
@@ -707,10 +707,10 @@ new #[Title('Supplier Masters')] class extends Component
                                         <span class="text-xs text-text-muted">—</span>
                                     @endif
                                 </td>
-                                <td data-label="{{ app()->isLocale('ar*') ? 'الرقم الضريبي' : __('Tax number') }}" class="px-4 py-3 text-sm whitespace-nowrap text-text-muted font-mono text-xs">
+                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax number') }}" class="px-4 py-3 text-sm whitespace-nowrap text-text-muted font-mono text-xs">
                                     {{ $supplier->tax_number ?: '—' }}
                                 </td>
-                                <td data-label="{{ app()->isLocale('ar*') ? 'شروط الدفع' : __('Payment terms') }}" class="px-4 py-3 text-sm max-w-48 truncate text-text-muted text-xs">
+                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms') }}" class="px-4 py-3 text-sm max-w-48 truncate text-text-muted text-xs">
                                     {{ $supplier->payment_terms ?: __('Not configured') }}
                                 </td>
                                 <td data-label="{{ __('Status') }}" class="px-4 py-3 text-sm whitespace-nowrap">
@@ -718,7 +718,7 @@ new #[Title('Supplier Masters')] class extends Component
                                         {{ __($supplier->status === 'active' ? 'Active' : 'Inactive') }}
                                     </flux:badge>
                                 </td>
-                                <td data-label="{{ app()->isLocale('ar*') ? 'المنتجات' : __('Products') }}" class="px-4 py-3 text-sm text-center whitespace-nowrap">
+                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'المنتجات' : __('Products') }}" class="px-4 py-3 text-sm text-center whitespace-nowrap">
                                     <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
                                 <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
@@ -730,8 +730,8 @@ new #[Title('Supplier Masters')] class extends Component
                                             variant="subtle"
                                             icon="arrow-path"
                                             wire:click="toggleSupplierStatus({{ $supplier->id }})"
-                                            wire:confirm="{{ app()->isLocale('ar*') ? ($supplier->status === 'active' ? 'تعطيل المورد؟ سيظل سجله محفوظاً.' : 'تفعيل المورد؟') : __('Change supplier :name to :status? Its historical records are preserved.', ['name' => $supplier->name_en ?: $supplier->name_ar, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')]) }}"
-                                            title="{{ app()->isLocale('ar*') ? ($supplier->status === 'active' ? 'تعطيل المورد' : 'تفعيل المورد') : ($supplier->status === 'active' ? __('Deactivate supplier') : __('Activate supplier')) }}"
+                                            wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد؟ سيظل سجله محفوظاً.' : 'تفعيل المورد؟') : __('Change supplier :name to :status? Its historical records are preserved.', ['name' => $supplier->name_en ?: $supplier->name_ar, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')]) }}"
+                                            title="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد' : 'تفعيل المورد') : ($supplier->status === 'active' ? __('Deactivate supplier') : __('Activate supplier')) }}"
                                         />
                                     @endif
                                 </td>
@@ -764,34 +764,34 @@ new #[Title('Supplier Masters')] class extends Component
         <div wire:key="supplier-form-{{ $editingSupplierId === null ? 'new' : 'edit-'.$editingSupplierId }}" class="space-y-6">
             <div>
                 <flux:heading size="lg">
-                    {{ app()->isLocale('ar*') ? ($editingSupplierId ? 'تعديل المورد' : 'إضافة مورد') : ($editingSupplierId ? __('Edit Supplier Master') : __('Create Supplier Master')) }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? ($editingSupplierId ? 'تعديل المورد' : 'إضافة مورد') : ($editingSupplierId ? __('Edit Supplier Master') : __('Create Supplier Master')) }}
                 </flux:heading>
                 <flux:text class="text-sm text-text-muted">
-                    {{ app()->isLocale('ar*') ? 'أدخل بيانات المورد الأساسية ووسيلة التواصل وشروط الدفع.' : __('Maintain supplier identity, contact details, tax reference, and configurable payment terms text.') }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل بيانات المورد الأساسية ووسيلة التواصل وشروط الدفع.' : __('Maintain supplier identity, contact details, tax reference, and configurable payment terms text.') }}
                 </flux:text>
             </div>
 
             <form wire:submit.prevent="saveSupplier" novalidate class="space-y-4">
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="supplierForm.code" :label="app()->isLocale('ar*') ? 'كود المورد' : __('Supplier code')" placeholder="SUP-001" required :disabled="$editingSupplierId !== null" />@if ($editingSupplierId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateSupplierCode" wire:loading.attr="disabled" wire:target="generateSupplierCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
+                    <div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="supplierForm.code" :label="str_starts_with(app()->getLocale(), 'ar') ? 'كود المورد' : __('Supplier code')" placeholder="SUP-001" required :disabled="$editingSupplierId !== null" />@if ($editingSupplierId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateSupplierCode" wire:loading.attr="disabled" wire:target="generateSupplierCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div>
                     <flux:input wire:model="supplierForm.barcode_prefix" :label="__('Barcode prefix')" maxlength="12" placeholder="AHMED01" />
-                    <flux:select wire:model="supplierForm.status" :label="app()->isLocale('ar*') ? 'الحالة' : __('Operational status')">
-                        <option value="active">{{ app()->isLocale('ar*') ? 'نشط' : __('Active') }}</option>
-                        <option value="inactive">{{ app()->isLocale('ar*') ? 'غير نشط' : __('Inactive') }}</option>
+                    <flux:select wire:model="supplierForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Operational status')">
+                        <option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشط' : __('Active') }}</option>
+                        <option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشط' : __('Inactive') }}</option>
                     </flux:select>
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <flux:input
                         wire:model="supplierForm.name_ar"
-                        :label="app()->isLocale('ar*') ? 'اسم المورد بالعربية' : __('Arabic name')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالعربية' : __('Arabic name')"
                         placeholder="مورد جديد"
                         required
                         dir="rtl"
                     />
                     <flux:input
                         wire:model="supplierForm.name_en"
-                        :label="app()->isLocale('ar*') ? 'اسم المورد بالإنجليزية' : __('English name')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالإنجليزية' : __('English name')"
                         placeholder="New Supplier Ltd"
                         required
                         dir="ltr"
@@ -801,18 +801,18 @@ new #[Title('Supplier Masters')] class extends Component
                 <div class="grid gap-4 sm:grid-cols-3">
                     <flux:input
                         wire:model="supplierForm.contact_name"
-                        :label="app()->isLocale('ar*') ? 'اسم جهة الاتصال' : __('Contact name')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم جهة الاتصال' : __('Contact name')"
                         placeholder="John Doe"
                     />
                     <flux:input
                         wire:model="supplierForm.phone"
-                        :label="app()->isLocale('ar*') ? 'رقم الهاتف' : __('Phone number')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'رقم الهاتف' : __('Phone number')"
                         :placeholder="__('e.g. 01012345678 or +20 1012345678')"
                         dir="ltr"
                     />
                     <flux:input
                         wire:model="supplierForm.email"
-                        :label="app()->isLocale('ar*') ? 'البريد الإلكتروني' : __('Email address')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'البريد الإلكتروني' : __('Email address')"
                         type="email"
                         placeholder="supplier@example.com"
                         dir="ltr"
@@ -822,15 +822,15 @@ new #[Title('Supplier Masters')] class extends Component
                 <div class="grid gap-4 sm:grid-cols-2">
                     <flux:input
                         wire:model="supplierForm.tax_number"
-                        :label="app()->isLocale('ar*') ? 'الرقم الضريبي' : __('Tax registration number')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax registration number')"
                         placeholder="123-456-789"
                     />
                     <flux:input
                         wire:model="supplierForm.payment_terms"
-                        :label="app()->isLocale('ar*') ? 'شروط الدفع' : __('Payment terms text')"
+                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms text')"
                         placeholder="Net 30 Days / دفع بعد 30 يوم"
                     />
-                    <flux:select wire:model.live="supplierForm.settlement_method" :label="app()->isLocale('ar*') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method')" required>
+                    <flux:select wire:model.live="supplierForm.settlement_method" :label="str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method')" required>
                         <option value="">{{ __('Select settlement method') }}</option>
                         @foreach ($settlementMethods as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
                     </flux:select>
@@ -841,13 +841,13 @@ new #[Title('Supplier Masters')] class extends Component
 
                 <flux:textarea
                     wire:model="supplierForm.address"
-                    :label="app()->isLocale('ar*') ? 'العنوان' : __('Address / Location')"
+                    :label="str_starts_with(app()->getLocale(), 'ar') ? 'العنوان' : __('Address / Location')"
                     rows="2"
                     placeholder="Supplier physical or mailing address..."
                 />
 
-                <flux:select wire:model="supplierForm.supplier_group_id" :label="app()->isLocale('ar*') ? 'مجموعة الموردين (اختياري)' : __('Supplier group')">
-                    <option value="">{{ app()->isLocale('ar*') ? 'بدون مجموعة' : __('No supplier group') }}</option>
+                <flux:select wire:model="supplierForm.supplier_group_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'مجموعة الموردين (اختياري)' : __('Supplier group')">
+                    <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون مجموعة' : __('No supplier group') }}</option>
                     @foreach ($supplierGroups as $group)
                         <option value="{{ $group->id }}">{{ $group->name_ar }}{{ $group->name_en ? ' — '.$group->name_en : '' }}</option>
                     @endforeach
@@ -861,7 +861,7 @@ new #[Title('Supplier Masters')] class extends Component
 
                 <div class="flex items-center justify-end gap-3 pt-3 border-t border-border">
                     <flux:button variant="subtle" wire:click="$set('showSupplierModal', false)">
-                        {{ app()->isLocale('ar*') ? 'إلغاء' : __('Cancel') }}
+                        {{ str_starts_with(app()->getLocale(), 'ar') ? 'إلغاء' : __('Cancel') }}
                     </flux:button>
                     <x-actions.loading-button type="submit" action="saveSupplier" :label="__('Save')" />
                 </div>
@@ -883,10 +883,10 @@ new #[Title('Supplier Masters')] class extends Component
                             </flux:badge>
                         </div>
                         <flux:heading size="xl" class="mt-1">
-                            {{ app()->isLocale('ar*') ? $viewingSupplier->name_ar : $viewingSupplier->name_en }}
+                            {{ str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->name_ar : $viewingSupplier->name_en }}
                         </flux:heading>
                         <flux:text class="text-sm text-text-muted">
-                            {{ app()->isLocale('ar*') ? $viewingSupplier->name_en : $viewingSupplier->name_ar }}
+                            {{ str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->name_en : $viewingSupplier->name_ar }}
                         </flux:text>
                     </div>
 
@@ -944,8 +944,8 @@ new #[Title('Supplier Masters')] class extends Component
                             <dd class="mt-1 text-sm font-medium whitespace-pre-line">{{ $viewingSupplier->payment_terms ?: __('Not configured') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
-                            <dt class="catalog-detail-label">{{ app()->isLocale('ar*') ? 'طريقة الدفع المفضلة' : __('Preferred payment method') }}</dt>
-                            <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->preferredPaymentMethod ? (app()->isLocale('ar*') ? $viewingSupplier->preferredPaymentMethod->name_ar : $viewingSupplier->preferredPaymentMethod->name_en) : __('Not configured') }}</dd>
+                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة' : __('Preferred payment method') }}</dt>
+                            <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->preferredPaymentMethod ? (str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->preferredPaymentMethod->name_ar : $viewingSupplier->preferredPaymentMethod->name_en) : __('Not configured') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
                             <dt class="catalog-detail-label">{{ __('Address') }}</dt>
@@ -1002,7 +1002,7 @@ new #[Title('Supplier Masters')] class extends Component
                                     @forelse ($viewingSupplier->productSuppliers as $ps)
                                         <tr>
                                             <td class="px-3 py-2 text-xs font-mono"><span class="catalog-code-chip">{{ $ps->product?->item_code }}</span></td>
-                                            <td class="px-3 py-2 text-xs font-medium">{{ app()->isLocale('ar*') ? $ps->product?->name_ar : $ps->product?->name_en }}</td>
+                                            <td class="px-3 py-2 text-xs font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $ps->product?->name_ar : $ps->product?->name_en }}</td>
                                             <td class="px-3 py-2 text-xs text-text-muted font-mono">{{ $ps->supplier_item_code ?: '—' }}</td>
                                             <td class="px-3 py-2 text-xs text-center">
                                                 @if ($ps->is_preferred)
@@ -1049,7 +1049,7 @@ new #[Title('Supplier Masters')] class extends Component
                 <flux:select wire:model="productLinkForm.product_id" :label="__('Select product')" required>
                     <option value="">{{ __('Select a product...') }}</option>
                     @foreach ($availableProducts as $prod)
-                        <option value="{{ $prod->id }}">{{ $prod->item_code }} — {{ app()->isLocale('ar*') ? $prod->name_ar : $prod->name_en }}</option>
+                        <option value="{{ $prod->id }}">{{ $prod->item_code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? $prod->name_ar : $prod->name_en }}</option>
                     @endforeach
                 </flux:select>
 
@@ -1089,23 +1089,23 @@ new #[Title('Supplier Masters')] class extends Component
     @if ($section === 'supplier-groups')
     <flux:modal wire:model="showSupplierGroupModal" class="md:max-w-lg">
         <div class="space-y-5">
-            <flux:heading size="lg">{{ app()->isLocale('ar*') ? ($editingSupplierGroupId ? 'تعديل مجموعة موردين' : 'إضافة مجموعة موردين') : ($editingSupplierGroupId ? __('Edit supplier group') : __('Create supplier group')) }}</flux:heading>
+            <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? ($editingSupplierGroupId ? 'تعديل مجموعة موردين' : 'إضافة مجموعة موردين') : ($editingSupplierGroupId ? __('Edit supplier group') : __('Create supplier group')) }}</flux:heading>
             <form wire:submit.prevent="saveSupplierGroup" class="space-y-4">
-                <flux:input wire:model="supplierGroupForm.name_ar" :label="app()->isLocale('ar*') ? 'اسم المجموعة بالعربية' : __('Arabic group name')" required dir="rtl" />
-                <flux:input wire:model="supplierGroupForm.name_en" :label="app()->isLocale('ar*') ? 'اسم المجموعة بالإنجليزية (اختياري)' : __('English group name (optional)')" dir="ltr" />
+                <flux:input wire:model="supplierGroupForm.name_ar" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المجموعة بالعربية' : __('Arabic group name')" required dir="rtl" />
+                <flux:input wire:model="supplierGroupForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المجموعة بالإنجليزية (اختياري)' : __('English group name (optional)')" dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.code" :label="__('Stable code')" required dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.sort_order" :label="__('Order')" type="number" min="0" />
-                <flux:select wire:model="supplierGroupForm.parent_id" :label="app()->isLocale('ar*') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :description="app()->isLocale('ar*') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.')">
-                    <option value="">{{ app()->isLocale('ar*') ? 'بدون مجموعة رئيسية' : __('No parent group') }}</option>
+                <flux:select wire:model="supplierGroupForm.parent_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.')">
+                    <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون مجموعة رئيسية' : __('No parent group') }}</option>
                     @foreach ($supplierGroupParents as $parent)
                         @if ($parent->id !== $editingSupplierGroupId)
                             <option value="{{ $parent->id }}">{{ $parent->name_ar }}{{ $parent->name_en ? ' — '.$parent->name_en : '' }}</option>
                         @endif
                     @endforeach
                 </flux:select>
-                <flux:select wire:model="supplierGroupForm.status" :label="app()->isLocale('ar*') ? 'الحالة' : __('Status')"><option value="active">{{ app()->isLocale('ar*') ? 'نشطة' : __('Active') }}</option><option value="inactive">{{ app()->isLocale('ar*') ? 'غير نشطة' : __('Inactive') }}</option></flux:select>
+                <flux:select wire:model="supplierGroupForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')"><option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشطة' : __('Active') }}</option><option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشطة' : __('Inactive') }}</option></flux:select>
                 @error('supplierGroupForm')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
-                <div class="flex justify-end gap-3 border-t border-border pt-3"><flux:button variant="subtle" wire:click="$set('showSupplierGroupModal', false)">{{ app()->isLocale('ar*') ? 'إلغاء' : __('Cancel') }}</flux:button><flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplierGroup"><span wire:loading.remove wire:target="saveSupplierGroup">{{ __('Save') }}</span><span wire:loading wire:target="saveSupplierGroup">{{ app()->isLocale('ar*') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button></div>
+                <div class="flex justify-end gap-3 border-t border-border pt-3"><flux:button variant="subtle" wire:click="$set('showSupplierGroupModal', false)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إلغاء' : __('Cancel') }}</flux:button><flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplierGroup"><span wire:loading.remove wire:target="saveSupplierGroup">{{ __('Save') }}</span><span wire:loading wire:target="saveSupplierGroup">{{ str_starts_with(app()->getLocale(), 'ar') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button></div>
             </form>
         </div>
     </flux:modal>

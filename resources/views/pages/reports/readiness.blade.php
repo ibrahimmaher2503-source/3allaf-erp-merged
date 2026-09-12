@@ -1,4 +1,4 @@
-@php $isArabic = app()->isLocale('ar*'); @endphp
+@php $isArabic = str_starts_with(app()->getLocale(), 'ar'); @endphp
 <x-layouts::app :title="$title">
     <x-state.capability-boundary
         :title="$title"

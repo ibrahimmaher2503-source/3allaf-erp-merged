@@ -1,7 +1,7 @@
 @props(['dashboard'])
 
 @php
-    $isArabic = app()->isLocale('ar*');
+    $isArabic = str_starts_with(app()->getLocale(), 'ar');
     $maxTrend = max(1, (float) collect($dashboard['trend'])->max('total'));
 @endphp
 

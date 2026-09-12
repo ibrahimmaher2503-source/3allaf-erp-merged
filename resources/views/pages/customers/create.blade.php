@@ -12,7 +12,7 @@
             <flux:callout variant="warning" icon="exclamation-triangle">
                 <div class="space-y-2">
                     <p>{{ __('A visible customer profile already uses this phone number or email address. Review it before creating another profile; the system never merges profiles automatically.') }}</p>
-                    <p class="text-sm"><span class="font-semibold">{{ app()->isLocale('ar*') ? $candidate['name_ar'] : $candidate['name_en'] }}</span> · <span dir="ltr" class="font-mono">{{ $candidate['phone_display'] }}</span></p>
+                    <p class="text-sm"><span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $candidate['name_ar'] : $candidate['name_en'] }}</span> · <span dir="ltr" class="font-mono">{{ $candidate['phone_display'] }}</span></p>
                     <flux:button href="{{ route('customers.show', $candidate['id']) }}" variant="primary" size="sm">{{ __('Review matching customer profile') }}</flux:button>
                 </div>
             </flux:callout>
@@ -20,11 +20,11 @@
         @if ($consentPolicyError)
             <flux:callout variant="warning" icon="exclamation-triangle">
                 <div class="space-y-2">
-                    <p>{{ app()->isLocale('ar*') ? 'لا يمكن إنشاء ملف عميل لأن إعداد الموافقة التلقائية لتقديم الخدمة غير مكتمل. يلزم حفظ سجل موافقة صحيح مع كل ملف عميل.' : 'Customer creation is unavailable because the automatic service-delivery consent setting is incomplete. A valid consent record is required for every customer profile.' }}</p>
+                    <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'لا يمكن إنشاء ملف عميل لأن إعداد الموافقة التلقائية لتقديم الخدمة غير مكتمل. يلزم حفظ سجل موافقة صحيح مع كل ملف عميل.' : 'Customer creation is unavailable because the automatic service-delivery consent setting is incomplete. A valid consent record is required for every customer profile.' }}</p>
                     @can('company_settings.edit')
-                        <flux:button href="{{ route('admin.settings.customer-loyalty') }}" variant="primary" size="sm">{{ app()->isLocale('ar*') ? 'إعداد نطاق أغراض الموافقة' : 'Configure consent purposes' }}</flux:button>
+                        <flux:button href="{{ route('admin.settings.customer-loyalty') }}" variant="primary" size="sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إعداد نطاق أغراض الموافقة' : 'Configure consent purposes' }}</flux:button>
                     @else
-                        <p class="text-xs">{{ app()->isLocale('ar*') ? 'اطلب من مسؤول إعدادات الشركة تهيئة هذا الإعداد.' : 'Ask a company-settings administrator to configure this setting.' }}</p>
+                        <p class="text-xs">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اطلب من مسؤول إعدادات الشركة تهيئة هذا الإعداد.' : 'Ask a company-settings administrator to configure this setting.' }}</p>
                     @endcan
                 </div>
             </flux:callout>
@@ -55,8 +55,8 @@
                         <div class="rounded-xl border border-border bg-surface p-4" x-data="{ governorate: @js((string) old('governorate_id', '')), city: @js((string) old('city_id', '')), cityCounts: @js($cities->countBy('governorate_id')->mapWithKeys(fn($count,$id)=>[(string)$id=>$count])) }">
                             <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Address') }}</p>
                             <div class="grid gap-4 sm:grid-cols-2">
-                                <flux:select name="governorate_id" x-model="governorate" x-on:change="city = ''" :label="__('Governorate')" required><flux:select.option value="">{{ __('Select governorate') }}</flux:select.option>@foreach($governorates as $governorate)<flux:select.option value="{{ $governorate->id }}">{{ app()->isLocale('ar*') ? $governorate->name_ar : $governorate->name_en }}</flux:select.option>@endforeach</flux:select>
-                                <flux:select name="city_id" x-model="city" :label="__('City / locality')" required><flux:select.option value="">{{ __('Select city / locality') }}</flux:select.option>@foreach($cities as $city)<flux:select.option value="{{ $city->id }}" x-show="governorate === '{{ $city->governorate_id }}'">{{ app()->isLocale('ar*') ? $city->name_ar : $city->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <flux:select name="governorate_id" x-model="governorate" x-on:change="city = ''" :label="__('Governorate')" required><flux:select.option value="">{{ __('Select governorate') }}</flux:select.option>@foreach($governorates as $governorate)<flux:select.option value="{{ $governorate->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $governorate->name_ar : $governorate->name_en }}</flux:select.option>@endforeach</flux:select>
+                                <flux:select name="city_id" x-model="city" :label="__('City / locality')" required><flux:select.option value="">{{ __('Select city / locality') }}</flux:select.option>@foreach($cities as $city)<flux:select.option value="{{ $city->id }}" x-show="governorate === '{{ $city->governorate_id }}'">{{ str_starts_with(app()->getLocale(), 'ar') ? $city->name_ar : $city->name_en }}</flux:select.option>@endforeach</flux:select>
                                 <p class="sm:col-span-2 text-sm text-amber-700" x-cloak x-show="governorate && !cityCounts[governorate]">{{ __('No active city/locality exists for this governorate.') }} @can('company_settings.edit')<a class="font-semibold underline" href="{{ route('admin.settings.cities') }}">{{ __('Manage cities') }}</a>@endcan</p>
                                 <flux:textarea name="address_ar" :label="__('Arabic address')" :value="old('address_ar')" dir="rtl" />
                                 <flux:textarea name="address_en" :label="__('English address')" :value="old('address_en')" dir="ltr" />
@@ -73,7 +73,7 @@
                             <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
                                 <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
                                 @foreach ($groupOptions as $group)
-                                    <flux:select.option value="{{ $group->id }}">{{ app()->isLocale('ar*') ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
+                                    <flux:select.option value="{{ $group->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
                                 @endforeach
                             </flux:select>
                         </div>
@@ -84,12 +84,12 @@
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" x-data="{ children: @js(old('children', [])), childPurpose: @js($childPurposes[0] ?? '') }" x-init="children.forEach(child => child.purpose ||= childPurpose)">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <flux:heading size="lg">{{ app()->isLocale('ar*') ? 'بيانات الأطفال (اختياري)' : __('Child profiles (optional)') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ app()->isLocale('ar*') ? 'أضف بيانات طفل أو أكثر عند الحاجة.' : 'Add one or more child profiles when needed.' }}</flux:text>
+                        <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بيانات الأطفال (اختياري)' : __('Child profiles (optional)') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أضف بيانات طفل أو أكثر عند الحاجة.' : 'Add one or more child profiles when needed.' }}</flux:text>
                     </div>
                     @if ($childPurposes !== [])
                         <flux:button type="button" variant="subtle" icon="plus" x-on:click="children.push({ name_ar: '', name_en: '', birth_date: '', purpose: childPurpose })" x-bind:disabled="children.length >= 10">
-                            {{ app()->isLocale('ar*') ? 'إضافة طفل' : 'Add child' }}
+                            {{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة طفل' : 'Add child' }}
                         </flux:button>
                     @endif
                 </div>
@@ -99,20 +99,20 @@
                         <template x-for="(child, index) in children" :key="index">
                             <div class="rounded-xl border border-border bg-surface p-4">
                                 <div class="mb-4 flex items-center justify-between gap-3">
-                                    <p class="font-semibold text-text-primary" x-text="`{{ app()->isLocale('ar*') ? 'الطفل' : 'Child' }} ${index + 1}`"></p>
-                                    <flux:button type="button" size="sm" variant="subtle" icon="trash" x-on:click="children.splice(index, 1)">{{ app()->isLocale('ar*') ? 'حذف' : 'Remove' }}</flux:button>
+                                    <p class="font-semibold text-text-primary" x-text="`{{ str_starts_with(app()->getLocale(), 'ar') ? 'الطفل' : 'Child' }} ${index + 1}`"></p>
+                                    <flux:button type="button" size="sm" variant="subtle" icon="trash" x-on:click="children.splice(index, 1)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف' : 'Remove' }}</flux:button>
                                 </div>
                                 <div class="grid gap-4 sm:grid-cols-2">
-                                    <flux:input x-bind:name="`children[${index}][name_ar]`" x-model="child.name_ar" :label="app()->isLocale('ar*') ? 'اسم الطفل بالعربية' : __('Child Arabic name')" dir="rtl" />
-                                    <flux:input x-bind:name="`children[${index}][name_en]`" x-model="child.name_en" :label="app()->isLocale('ar*') ? 'اسم الطفل بالإنجليزية (اختياري)' : __('Child English name')" dir="ltr" />
-                                    <flux:input x-bind:name="`children[${index}][birth_date]`" x-model="child.birth_date" :label="app()->isLocale('ar*') ? 'تاريخ الميلاد' : __('Birth date')" type="date" />
+                                    <flux:input x-bind:name="`children[${index}][name_ar]`" x-model="child.name_ar" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم الطفل بالعربية' : __('Child Arabic name')" dir="rtl" />
+                                    <flux:input x-bind:name="`children[${index}][name_en]`" x-model="child.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم الطفل بالإنجليزية (اختياري)' : __('Child English name')" dir="ltr" />
+                                    <flux:input x-bind:name="`children[${index}][birth_date]`" x-model="child.birth_date" :label="str_starts_with(app()->getLocale(), 'ar') ? 'تاريخ الميلاد' : __('Birth date')" type="date" />
                                     @if (count($childPurposes) === 1)
                                         <input type="hidden" x-bind:name="`children[${index}][purpose]`" x-model="child.purpose">
                                     @else
                                         <label class="block min-w-0 text-sm font-medium text-text-primary">
-                                            {{ app()->isLocale('ar*') ? 'الغرض من حفظ بيانات الطفل' : __('Child-data purpose') }}
+                                            {{ str_starts_with(app()->getLocale(), 'ar') ? 'الغرض من حفظ بيانات الطفل' : __('Child-data purpose') }}
                                             <select x-bind:name="`children[${index}][purpose]`" x-model="child.purpose" class="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
-                                                <option value="">{{ app()->isLocale('ar*') ? 'اختر الغرض' : 'Choose a purpose' }}</option>
+                                                <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختر الغرض' : 'Choose a purpose' }}</option>
                                                 @foreach ($childPurposes as $purpose)
                                                     <option value="{{ $purpose }}">{{ $purpose }}</option>
                                                 @endforeach
@@ -123,12 +123,12 @@
                             </div>
                         </template>
                     </div>
-                    <p class="mt-4 text-sm text-text-muted" x-show="! children.length">{{ app()->isLocale('ar*') ? 'لم تُضف بيانات أطفال بعد.' : 'No child profiles have been added.' }}</p>
+                    <p class="mt-4 text-sm text-text-muted" x-show="! children.length">{{ str_starts_with(app()->getLocale(), 'ar') ? 'لم تُضف بيانات أطفال بعد.' : 'No child profiles have been added.' }}</p>
                 @endif
             </section>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <flux:text class="text-xs text-slate-500">{{ __('The selected selling store is') }}: <span class="font-semibold">{{ app()->isLocale('ar*') ? $store->name_ar : $store->name_en }}</span></flux:text>
+                <flux:text class="text-xs text-slate-500">{{ __('The selected selling store is') }}: <span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</span></flux:text>
                 <flux:button type="submit" variant="primary" :disabled="$consentPurposes === []">{{ __('Save') }}</flux:button>
             </div>
         </form>

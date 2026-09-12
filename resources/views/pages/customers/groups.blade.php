@@ -25,7 +25,7 @@
                         <select id="new-group-parent" name="parent_id" class="mt-1 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-zinc-700 dark:bg-zinc-950">
                             <option value="">{{ __('No parent — root group') }}</option>
                             @foreach ($parentOptions as $parent)
-                                <option value="{{ $parent->id }}">{{ $parent->parent_id ? '↳ ' : '' }}{{ app()->isLocale('ar*') ? $parent->name_ar : $parent->name_en }}</option>
+                                <option value="{{ $parent->id }}">{{ $parent->parent_id ? '↳ ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $parent->name_ar : $parent->name_en }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -55,8 +55,8 @@
                     <tbody>
                         @forelse ($groups as $group)
                             <tr>
-                                <td style="padding-inline-start: {{ 1.25 + ($group->hierarchy_depth * 1.25) }}rem"><div class="font-semibold">{{ $group->hierarchy_depth ? '↳ ' : '' }}{{ app()->isLocale('ar*') ? $group->name_ar : $group->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ app()->isLocale('ar*') ? $group->name_en : $group->name_ar }}</div><div class="mt-1 text-xs"><span class="font-mono" dir="ltr">{{ $group->code }}</span> · {{ $group->hierarchy_path }}</div></td>
-                                <td>{{ $group->parent ? (app()->isLocale('ar*') ? $group->parent->name_ar : $group->parent->name_en) : __('Root group') }}</td>
+                                <td style="padding-inline-start: {{ 1.25 + ($group->hierarchy_depth * 1.25) }}rem"><div class="font-semibold">{{ $group->hierarchy_depth ? '↳ ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $group->name_ar : $group->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->name_en : $group->name_ar }}</div><div class="mt-1 text-xs"><span class="font-mono" dir="ltr">{{ $group->code }}</span> · {{ $group->hierarchy_path }}</div></td>
+                                <td>{{ $group->parent ? (str_starts_with(app()->getLocale(), 'ar') ? $group->parent->name_ar : $group->parent->name_en) : __('Root group') }}</td>
                                 <td class="tabular-nums">{{ $group->active_customers_count }}</td>
                                 <td><x-status.badge :status="$group->status" /></td>
                                 <td class="text-end">
@@ -69,7 +69,7 @@
                                                 <flux:input name="name_en" :label="__('English group name')" :value="$group->name_en" required dir="ltr" />
                                                 <flux:input name="code" :label="__('Stable code')" :value="$group->code" required dir="ltr" />
                                                 <flux:input name="sort_order" :label="__('Order')" :value="$group->sort_order" type="number" min="0" dir="ltr" />
-                                                <div><label class="block text-sm font-semibold">{{ __('Parent group') }}</label><select name="parent_id" class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"><option value="">{{ __('No parent — root group') }}</option>@foreach ($parentOptions as $parent)<option value="{{ $parent->id }}" @selected($group->parent_id === $parent->id || ($group->parent_id === null && $parent->id === 0))>{{ $parent->parent_id ? '↳ ' : '' }}{{ app()->isLocale('ar*') ? $parent->name_ar : $parent->name_en }}</option>@endforeach</select></div>
+                                                <div><label class="block text-sm font-semibold">{{ __('Parent group') }}</label><select name="parent_id" class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-zinc-700 dark:bg-zinc-950"><option value="">{{ __('No parent — root group') }}</option>@foreach ($parentOptions as $parent)<option value="{{ $parent->id }}" @selected($group->parent_id === $parent->id || ($group->parent_id === null && $parent->id === 0))>{{ $parent->parent_id ? '↳ ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $parent->name_ar : $parent->name_en }}</option>@endforeach</select></div>
                                                 <flux:select name="status" :label="__('Status')"><flux:select.option value="active" :selected="$group->status === 'active'">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive" :selected="$group->status === 'inactive'">{{ __('Inactive') }}</flux:select.option></flux:select>
                                                 <x-actions.button semantic="edit" :label="__('Save')" type="submit" variant="primary" size="sm">{{ __('Save') }}</x-actions.button>
                                             </form>

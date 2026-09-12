@@ -19,7 +19,7 @@
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><div class="text-xs text-zinc-500">{{ __('Store') }}</div><div class="mt-1 font-semibold">{{ app()->isLocale('ar*') ? $sale->store->name_ar : $sale->store->name_en }}</div></div>
+            <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><div class="text-xs text-zinc-500">{{ __('Store') }}</div><div class="mt-1 font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $sale->store->name_ar : $sale->store->name_en }}</div></div>
             <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><div class="text-xs text-zinc-500">{{ __('Cashier') }}</div><div class="mt-1 font-semibold">{{ $sale->cashier->name }}</div></div>
             <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><div class="text-xs text-zinc-500">{{ __('Status') }}</div><div class="mt-1"><x-status.badge :status="$sale->status" /></div></div>
             <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><div class="text-xs text-zinc-500">{{ __('Approved') }}</div><div class="mt-1 font-semibold">{{ $sale->approved_at?->format('Y-m-d H:i') ?? '—' }}</div></div>
@@ -31,7 +31,7 @@
                 <tbody>
                     @foreach ($sale->lines as $line)
                         <tr>
-                            <td><div class="font-medium">{{ app()->isLocale('ar*') ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>
+                            <td><div class="font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en }}</div><div class="text-xs text-text-muted">{{ $line->item_code }}</div><x-variant-snapshot :snapshot="$line->variant_snapshot" class="mt-1 block" /></td>
                             <td class="text-end tabular-nums"><x-product-quantity :value="$line->quantity" /></td>
                             <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) ($line->reference_price ?? $line->unit_price))" :currency="$sale->currency_code" /></td>
                             <td class="text-end"><x-money :amount="\App\Modules\Retail\Support\DecimalMoney::round((string) $line->unit_price)" :currency="$sale->currency_code" /></td>
@@ -65,7 +65,7 @@
                 <div class="mt-4 space-y-3">
                     @forelse ($sale->payments as $payment)
                         <div class="rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700">
-                            <div class="flex justify-between gap-3"><span class="font-semibold">{{ app()->isLocale('ar*') ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</span><span class="font-semibold"><x-money :amount="$payment->amount" :currency="$sale->currency_code" /></span></div>
+                            <div class="flex justify-between gap-3"><span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</span><span class="font-semibold"><x-money :amount="$payment->amount" :currency="$sale->currency_code" /></span></div>
                             @if ($payment->tendered_amount !== null)<div class="mt-1 text-xs text-zinc-500">{{ __('Tendered') }} {{ $payment->tendered_amount }} · {{ __('Change') }} {{ $payment->change_amount }}</div>@endif
                             @if ($payment->evidenceAttachment && auth()->user()->can('pos_sales.payment_evidence_view'))<a class="mt-2 inline-block text-xs text-blue-600 hover:underline" href="{{ route('payments.evidence.show', $payment->evidenceAttachment) }}" target="_blank">{{ __('View protected payment evidence') }}</a>@endif
                         </div>

@@ -322,7 +322,7 @@ new #[Title('Product Card')] class extends Component {
 
     private function productValidationMessages(): array
     {
-        return app()->isLocale('ar*') ? [
+        return str_starts_with(app()->getLocale(), 'ar') ? [
             'required' => 'حقل :attribute مطلوب.',
             'numeric' => 'يجب أن يحتوي حقل :attribute على رقم صحيح.',
             'integer' => 'يجب أن يحتوي حقل :attribute على عدد صحيح.',
@@ -337,7 +337,7 @@ new #[Title('Product Card')] class extends Component {
 
     private function productValidationAttributes(): array
     {
-        if (! app()->isLocale('ar*')) return [];
+        if (! str_starts_with(app()->getLocale(), 'ar')) return [];
         return [
             'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
@@ -451,7 +451,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:select id="product-field-category_id" wire:model="productForm.category_id" :label="__('Category / subcategory')" required>
                     <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
                     @foreach ($categories as $category)
-                        <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->isLocale('ar*') ? $category->name_ar : $category->name_en }}</flux:select.option>
+                        <flux:select.option :value="$category->id">{{ $category->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 @if ($categories->isEmpty())
@@ -460,7 +460,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:select wire:model="productForm.brand_id" :label="__('Brand')">
                     <flux:select.option value="">{{ __('No brand') }}</flux:select.option>
                     @foreach ($brands as $brand)
-                        <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ app()->isLocale('ar*') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
+                        <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 @if ($brands->isEmpty())
@@ -469,7 +469,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
                     <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
                     @foreach ($suppliers as $supplier)
-                        <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ app()->isLocale('ar*') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
+                        <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
@@ -542,20 +542,20 @@ new #[Title('Product Card')] class extends Component {
                 <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <flux:select wire:model="productForm.gender_id" :label="__('Gender')">
                         <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['genders'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->isLocale('ar*') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                        @foreach ($lookups['genders'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
                     </flux:select>
                     <flux:select wire:model="productForm.age_label_id" :label="__('Age label')">
                         <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['ages'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->isLocale('ar*') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                        @foreach ($lookups['ages'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
                     </flux:select>
                     <flux:select wire:model="productForm.character_id" :label="__('Character')">
                         <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['characters'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->isLocale('ar*') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                        @foreach ($lookups['characters'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
                     </flux:select>
                     @unless ($product?->has_variations)
                         <flux:select wire:model="productForm.colour_id" :label="__('Colour')">
                             <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                            @foreach ($lookups['colours'] as $lookup)<flux:select.option :value="$lookup->id">{{ app()->isLocale('ar*') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
+                            @foreach ($lookups['colours'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
                         </flux:select>
                     @endunless
                 </div>

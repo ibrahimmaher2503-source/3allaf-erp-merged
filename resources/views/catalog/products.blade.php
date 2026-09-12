@@ -167,7 +167,7 @@ new #[Title('Product Masters')] class extends Component
 
     protected function validationAttributes(): array
     {
-        return app()->isLocale('ar*')
+        return str_starts_with(app()->getLocale(), 'ar')
             ? [
                 'productForm.item_code' => 'كود الصنف',
                 'productForm.name_ar' => 'اسم المنتج بالعربية',
@@ -199,7 +199,7 @@ new #[Title('Product Masters')] class extends Component
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             'productForm.preferred_supplier_id' => [$this->editingProductId || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.status' => ['required', 'in:active,inactive'],
-        ], app()->isLocale('ar*') ? [
+        ], str_starts_with(app()->getLocale(), 'ar') ? [
             'productForm.item_code.required' => 'كود الصنف مطلوب.',
             'productForm.item_code.regex' => 'صيغة كود الصنف غير صحيحة. استخدم حروفًا إنجليزية وأرقامًا وشرطة أو شرطة سفلية فقط.',
             'productForm.item_code.unique' => 'كود الصنف مستخدم بالفعل.',
@@ -247,7 +247,7 @@ new #[Title('Product Masters')] class extends Component
         Gate::authorize('products_categories_brands.edit');
         $product = Product::query()->findOrFail($productId);
         $this->barcodeProductId = $product->id;
-        $this->barcodeProductLabel = $product->item_code.' · '.(app()->isLocale('ar*') ? $product->name_ar : $product->name_en);
+        $this->barcodeProductLabel = $product->item_code.' · '.(str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en);
         $this->refreshBarcodeRecords();
         $this->barcodeForm = ['source' => 'supplier', 'barcode' => '', 'supplier_code' => ''];
         $this->allocationKey = (string) Str::uuid();
@@ -404,9 +404,9 @@ new #[Title('Product Masters')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="app()->isLocale('ar*') ? 'المنتجات والباركود' : __('Products & barcodes')"
-    :description="app()->isLocale('ar*') ? 'ابحث بالاسم أو كود الصنف أو الباركود، وراجع الهوية والمتغيرات وحالة بيانات الكتالوج.' : __('Search by name, item code, or barcode and review identity, variants, and catalog readiness.')"
-    :breadcrumbs="app()->isLocale('ar*') ? 'المنتجات والمخزون' : 'Products & inventory'"
+    :title="str_starts_with(app()->getLocale(), 'ar') ? 'المنتجات والباركود' : __('Products & barcodes')"
+    :description="str_starts_with(app()->getLocale(), 'ar') ? 'ابحث بالاسم أو كود الصنف أو الباركود، وراجع الهوية والمتغيرات وحالة بيانات الكتالوج.' : __('Search by name, item code, or barcode and review identity, variants, and catalog readiness.')"
+    :breadcrumbs="str_starts_with(app()->getLocale(), 'ar') ? 'المنتجات والمخزون' : 'Products & inventory'"
     max-width="7xl"
     class="catalog-screen"
     data-guide="products-header"
@@ -418,7 +418,7 @@ new #[Title('Product Masters')] class extends Component
                 <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'xlsx']) }}" icon="document-arrow-down" variant="subtle">XLSX</flux:button>
                 <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'pdf']) }}" icon="document-arrow-down" variant="subtle">PDF</flux:button>
                 <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
-                <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate>{{ app()->isLocale('ar*') ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
+                <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>
     </x-slot:actions>
@@ -460,13 +460,13 @@ new #[Title('Product Masters')] class extends Component
         <flux:select wire:model.live="categoryFilter" :label="__('Category')">
             <flux:select.option value="all">{{ __('All categories') }}</flux:select.option>
             @foreach ($categories as $category)
-                <flux:select.option :value="$category->id">{{ $category->code }} &middot; {{ app()->isLocale('ar*') ? $category->name_ar : $category->name_en }}</flux:select.option>
+                <flux:select.option :value="$category->id">{{ $category->code }} &middot; {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
             @endforeach
         </flux:select>
         <flux:select wire:model.live="brandFilter" :label="__('Brand')">
             <flux:select.option value="all">{{ __('All brands') }}</flux:select.option>
             @foreach ($brands as $brand)
-                <flux:select.option :value="$brand->id">{{ $brand->code }} &middot; {{ app()->isLocale('ar*') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
+                <flux:select.option :value="$brand->id">{{ $brand->code }} &middot; {{ str_starts_with(app()->getLocale(), 'ar') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
             @endforeach
         </flux:select>
         <flux:select wire:model.live="statusFilter" :label="__('Status')">
@@ -563,14 +563,14 @@ new #[Title('Product Masters')] class extends Component
                             </flux:table.cell>
                             <flux:table.cell data-primary class="whitespace-nowrap"><span class="catalog-code-chip">{{ $product->item_code }}</span></flux:table.cell>
                             <flux:table.cell data-label="{{ __('Product name') }}">
-                                <div class="font-medium text-text-primary">{{ app()->isLocale('ar*') ? $product->name_ar : $product->name_en }}</div>
-                                <div class="catalog-secondary-line">{{ app()->isLocale('ar*') ? $product->name_en : $product->name_ar }}</div>
+                                <div class="font-medium text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en }}</div>
+                                <div class="catalog-secondary-line">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_en : $product->name_ar }}</div>
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Type') }}"><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
                             <flux:table.cell data-label="{{ __('Category / brand') }}" class="text-xs">
-                                <div>{{ $product->category?->code }} · {{ app()->isLocale('ar*') ? $product->category?->name_ar : $product->category?->name_en }}</div>
+                                <div>{{ $product->category?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div>
                                 @if ($product->brand)
-                                    <div class="text-zinc-500">{{ $product->brand->code }} · {{ app()->isLocale('ar*') ? $product->brand->name_ar : $product->brand->name_en }}</div>
+                                    <div class="text-zinc-500">{{ $product->brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->brand->name_ar : $product->brand->name_en }}</div>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Barcodes') }}">
@@ -608,44 +608,44 @@ new #[Title('Product Masters')] class extends Component
 
     <flux:modal name="product-identity-editor" wire:model="showProductModal" class="max-w-2xl">
         <div class="catalog-modal-section space-y-1">
-            <flux:heading level="2" size="lg">{{ app()->isLocale('ar*') ? ($editingProductId ? 'تعديل هوية المنتج' : 'إنشاء هوية المنتج') : ($editingProductId ? __('Edit product identity') : __('Create product identity')) }}</flux:heading>
-            <flux:subheading>{{ app()->isLocale('ar*') ? 'أدخل البيانات الأساسية للمنتج. وللوصف والخصائص والصور استخدم محرر بطاقة المنتج الكامل.' : __('This quick editor preserves the identity slice. Use the full product-card editor for descriptions, types, attributes, and protected media.') }}</flux:subheading>
+            <flux:heading level="2" size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? ($editingProductId ? 'تعديل هوية المنتج' : 'إنشاء هوية المنتج') : ($editingProductId ? __('Edit product identity') : __('Create product identity')) }}</flux:heading>
+            <flux:subheading>{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل البيانات الأساسية للمنتج. وللوصف والخصائص والصور استخدم محرر بطاقة المنتج الكامل.' : __('This quick editor preserves the identity slice. Use the full product-card editor for descriptions, types, attributes, and protected media.') }}</flux:subheading>
         </div>
         <form wire:submit="saveProduct" novalidate class="space-y-4">
             <div>
                 <flux:input autofocus wire:model="productForm.item_code" :label="__('Global / scanned code (optional)')" :disabled="$editingProductId !== null" />
-                <flux:text class="mt-1 text-xs text-text-muted">{{ app()->isLocale('ar*') ? 'لا يمكن تغيير هذا الكود بعد إنشاء المنتج.' : __('This identity value cannot be changed after the product is created.') }}</flux:text>
+                <flux:text class="mt-1 text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'لا يمكن تغيير هذا الكود بعد إنشاء المنتج.' : __('This identity value cannot be changed after the product is created.') }}</flux:text>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:input wire:model="productForm.name_ar" :label="app()->isLocale('ar*') ? 'اسم المنتج بالعربية' : __('Arabic product name')" required />
-                <flux:input wire:model="productForm.name_en" :label="app()->isLocale('ar*') ? 'اسم المنتج بالإنجليزية' : __('English product name')" required />
+                <flux:input wire:model="productForm.name_ar" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المنتج بالعربية' : __('Arabic product name')" required />
+                <flux:input wire:model="productForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المنتج بالإنجليزية' : __('English product name')" required />
             </div>
-            <flux:select wire:model="productForm.product_type" :label="app()->isLocale('ar*') ? 'نوع المنتج' : __('Product type')" required>
-                <flux:select.option value="standard">{{ app()->isLocale('ar*') ? 'منتج عادي' : __('Standard') }}</flux:select.option>
-                <flux:select.option value="service">{{ app()->isLocale('ar*') ? 'خدمة' : __('Service') }}</flux:select.option>
+            <flux:select wire:model="productForm.product_type" :label="str_starts_with(app()->getLocale(), 'ar') ? 'نوع المنتج' : __('Product type')" required>
+                <flux:select.option value="standard">{{ str_starts_with(app()->getLocale(), 'ar') ? 'منتج عادي' : __('Standard') }}</flux:select.option>
+                <flux:select.option value="service">{{ str_starts_with(app()->getLocale(), 'ar') ? 'خدمة' : __('Service') }}</flux:select.option>
                 <flux:select.option value="digital">{{ __('Digital product') }}</flux:select.option>
             </flux:select>
             <div class="grid gap-4 md:grid-cols-2">
-            <flux:select wire:model="productForm.category_id" :label="app()->isLocale('ar*') ? 'الفئة' : __('Category')" required>
-                <flux:select.option value="">{{ app()->isLocale('ar*') ? 'اختر فئة نشطة...' : __('Select active category...') }}</flux:select.option>
+            <flux:select wire:model="productForm.category_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الفئة' : __('Category')" required>
+                <flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختر فئة نشطة...' : __('Select active category...') }}</flux:select.option>
                 @foreach ($activeCategories as $category)
-                    <flux:select.option :value="$category->id">{{ $category->code }} · {{ app()->isLocale('ar*') ? $category->name_ar : $category->name_en }}</flux:select.option>
+                    <flux:select.option :value="$category->id">{{ $category->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
                 @endforeach
             </flux:select>
     @can('products_categories_brands.create')
         <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
     @endcan
             @if ($activeCategories->isEmpty())
-                <flux:callout variant="warning" icon="exclamation-triangle">{{ app()->isLocale('ar*') ? 'لا توجد فئات نشطة. أضف فئة قبل حفظ المنتج.' : __('No active categories exist yet. Configure a category before saving this product.') }} <a class="font-medium underline" href="{{ route('catalog.categories') }}" wire:navigate>{{ app()->isLocale('ar*') ? 'إعداد الفئات' : __('Configure categories') }}</a></flux:callout>
+                <flux:callout variant="warning" icon="exclamation-triangle">{{ str_starts_with(app()->getLocale(), 'ar') ? 'لا توجد فئات نشطة. أضف فئة قبل حفظ المنتج.' : __('No active categories exist yet. Configure a category before saving this product.') }} <a class="font-medium underline" href="{{ route('catalog.categories') }}" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إعداد الفئات' : __('Configure categories') }}</a></flux:callout>
             @endif
-            <flux:select wire:model="productForm.brand_id" :label="app()->isLocale('ar*') ? 'العلامة التجارية' : __('Brand')">
-                <flux:select.option value="">{{ app()->isLocale('ar*') ? 'بدون علامة تجارية' : __('No brand') }}</flux:select.option>
+            <flux:select wire:model="productForm.brand_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'العلامة التجارية' : __('Brand')">
+                <flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون علامة تجارية' : __('No brand') }}</flux:select.option>
                 @foreach ($activeBrands as $brand)
-                    <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ app()->isLocale('ar*') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
+                    <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
                 @endforeach
             </flux:select>
             @if ($activeBrands->isEmpty())
-                <flux:text class="text-xs text-text-muted">{{ app()->isLocale('ar*') ? 'لا توجد علامات تجارية نشطة. العلامة اختيارية؛ أضفها فقط إذا كان المنتج يحتاجها.' : __('No active brands exist. Brand is optional; configure one only if this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ app()->isLocale('ar*') ? 'إعداد العلامات التجارية' : __('Configure brands') }}</a></flux:text>
+                <flux:text class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'لا توجد علامات تجارية نشطة. العلامة اختيارية؛ أضفها فقط إذا كان المنتج يحتاجها.' : __('No active brands exist. Brand is optional; configure one only if this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إعداد العلامات التجارية' : __('Configure brands') }}</a></flux:text>
             @endif
             <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Preferred supplier')">
                 <flux:select.option value="">{{ __('Select supplier when no global code is supplied') }}</flux:select.option>
@@ -654,31 +654,31 @@ new #[Title('Product Masters')] class extends Component
                 @endforeach
             </flux:select>
             </div>
-            <flux:select wire:model="productForm.status" :label="app()->isLocale('ar*') ? 'الحالة' : __('Status')" required>
-                <flux:select.option value="active">{{ app()->isLocale('ar*') ? 'نشط' : __('Active') }}</flux:select.option>
-                <flux:select.option value="inactive">{{ app()->isLocale('ar*') ? 'غير نشط' : __('Inactive') }}</flux:select.option>
+            <flux:select wire:model="productForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')" required>
+                <flux:select.option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشط' : __('Active') }}</flux:select.option>
+                <flux:select.option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشط' : __('Inactive') }}</flux:select.option>
             </flux:select>
             <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-                <flux:button type="button" variant="subtle" wire:click="$set('showProductModal', false)">{{ app()->isLocale('ar*') ? 'إلغاء' : __('Cancel') }}</flux:button>
-                <flux:text wire:dirty class="me-auto self-center text-xs text-text-muted">{{ app()->isLocale('ar*') ? 'تغييرات غير محفوظة' : __('Unsaved changes') }}</flux:text>
-                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveProduct">{{ app()->isLocale('ar*') ? 'حفظ المنتج' : __('Save product') }} <span wire:loading wire:target="saveProduct">{{ app()->isLocale('ar*') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button>
+                <flux:button type="button" variant="subtle" wire:click="$set('showProductModal', false)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إلغاء' : __('Cancel') }}</flux:button>
+                <flux:text wire:dirty class="me-auto self-center text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تغييرات غير محفوظة' : __('Unsaved changes') }}</flux:text>
+                <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="saveProduct">{{ str_starts_with(app()->getLocale(), 'ar') ? 'حفظ المنتج' : __('Save product') }} <span wire:loading wire:target="saveProduct">{{ str_starts_with(app()->getLocale(), 'ar') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button>
             </div>
         </form>
     </flux:modal>
 
     <flux:modal wire:model="showBarcodeModal" class="max-w-2xl space-y-5">
         <div class="rounded-xl border border-border bg-surface-muted/20 p-4">
-            <flux:heading size="lg">{{ app()->isLocale('ar*') ? 'باركود المنتج' : __('Barcode identity') }}</flux:heading>
+            <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'باركود المنتج' : __('Barcode identity') }}</flux:heading>
             <flux:subheading>{{ $barcodeProductLabel }}</flux:subheading>
         </div>
         <div class="rounded-xl border border-info/15 bg-info/5 p-4 text-sm leading-7 text-text-primary">
-            {{ app()->isLocale('ar*') ? 'باركود المورد يُسجَّل كما ورد على العبوة. الباركود المحلي يُنشأ تلقائيًا من بادئة المورد ورقم تسلسلي.' : __('Supplier barcodes are preserved as supplied. Local barcodes concatenate a supplier prefix of up to 12 letters or digits and a six-digit sequential serial, with no invented check digit.') }}
+            {{ str_starts_with(app()->getLocale(), 'ar') ? 'باركود المورد يُسجَّل كما ورد على العبوة. الباركود المحلي يُنشأ تلقائيًا من بادئة المورد ورقم تسلسلي.' : __('Supplier barcodes are preserved as supplied. Local barcodes concatenate a supplier prefix of up to 12 letters or digits and a six-digit sequential serial, with no invented check digit.') }}
         </div>
         @if ($barcodeProductId)
             <div class="rounded-xl border border-border bg-surface-muted/10 p-4 space-y-3">
                 <div class="flex items-center justify-between gap-3">
-                    <flux:text class="font-medium">{{ app()->isLocale('ar*') ? 'الباركودات المرتبطة' : __('Current barcodes') }}</flux:text>
-                    <span class="text-xs text-text-muted">{{ count($barcodeRecords) }} {{ app()->isLocale('ar*') ? 'مرتبط' : __('linked') }}</span>
+                    <flux:text class="font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الباركودات المرتبطة' : __('Current barcodes') }}</flux:text>
+                    <span class="text-xs text-text-muted">{{ count($barcodeRecords) }} {{ str_starts_with(app()->getLocale(), 'ar') ? 'مرتبط' : __('linked') }}</span>
                 </div>
                 @forelse ($barcodeRecords as $barcode)
                     <div class="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm">
@@ -698,20 +698,20 @@ new #[Title('Product Masters')] class extends Component
         @endif
         <form wire:submit="addBarcode" novalidate class="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
             <div>
-                <flux:heading size="sm">{{ app()->isLocale('ar*') ? 'إضافة باركود للمنتج' : __('Add barcode') }}</flux:heading>
-                <flux:text class="mt-1 text-xs leading-6 text-text-muted">{{ app()->isLocale('ar*') ? 'اختار نوع الباركود ثم أدخل القيمة أو أنشئ باركودًا محليًا.' : __('Choose the source before entering or allocating the identity.') }}</flux:text>
+                <flux:heading size="sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة باركود للمنتج' : __('Add barcode') }}</flux:heading>
+                <flux:text class="mt-1 text-xs leading-6 text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختار نوع الباركود ثم أدخل القيمة أو أنشئ باركودًا محليًا.' : __('Choose the source before entering or allocating the identity.') }}</flux:text>
             </div>
-            <flux:select wire:model.live="barcodeForm.source" :label="app()->isLocale('ar*') ? 'نوع الباركود' : __('Barcode source')" required>
-                <flux:select.option value="supplier">{{ app()->isLocale('ar*') ? 'باركود المورد (يُحفظ كما هو)' : __('Supplier / international') }}</flux:select.option>
-                <flux:select.option value="local">{{ app()->isLocale('ar*') ? 'باركود محلي (يُنشأ تلقائيًا)' : __('Locally generated') }}</flux:select.option>
+            <flux:select wire:model.live="barcodeForm.source" :label="str_starts_with(app()->getLocale(), 'ar') ? 'نوع الباركود' : __('Barcode source')" required>
+                <flux:select.option value="supplier">{{ str_starts_with(app()->getLocale(), 'ar') ? 'باركود المورد (يُحفظ كما هو)' : __('Supplier / international') }}</flux:select.option>
+                <flux:select.option value="local">{{ str_starts_with(app()->getLocale(), 'ar') ? 'باركود محلي (يُنشأ تلقائيًا)' : __('Locally generated') }}</flux:select.option>
             </flux:select>
             <div class="rounded-lg border border-border bg-surface/60 px-3 py-2 text-xs leading-6 text-text-muted">
                 {{ $barcodeForm['source'] === 'supplier'
-                    ? (app()->isLocale('ar*') ? 'استخدمه عندما يكون للمنتج باركود مطبوع من المورد.' : __('Use this when the supplier already provides the barcode.'))
-                    : (app()->isLocale('ar*') ? 'سيُنشأ الرقم التسلسلي تلقائيًا؛ لا تحتاج لإدخاله.' : __('The serial is allocated automatically; you do not need to enter it.')) }}
+                    ? (str_starts_with(app()->getLocale(), 'ar') ? 'استخدمه عندما يكون للمنتج باركود مطبوع من المورد.' : __('Use this when the supplier already provides the barcode.'))
+                    : (str_starts_with(app()->getLocale(), 'ar') ? 'سيُنشأ الرقم التسلسلي تلقائيًا؛ لا تحتاج لإدخاله.' : __('The serial is allocated automatically; you do not need to enter it.')) }}
             </div>
             @if ($barcodeForm['source'] === 'supplier')
-                <flux:input wire:model="barcodeForm.barcode" :label="app()->isLocale('ar*') ? 'باركود المورد' : __('Supplier barcode')" :placeholder="app()->isLocale('ar*') ? 'أدخل الباركود كما هو' : __('Enter the supplied value')" required />
+                <flux:input wire:model="barcodeForm.barcode" :label="str_starts_with(app()->getLocale(), 'ar') ? 'باركود المورد' : __('Supplier barcode')" :placeholder="str_starts_with(app()->getLocale(), 'ar') ? 'أدخل الباركود كما هو' : __('Enter the supplied value')" required />
             @else
                 <flux:input wire:model="barcodeForm.supplier_code" :label="__('Supplier barcode prefix')" maxlength="12" placeholder="AHMED01" required />
             @endif

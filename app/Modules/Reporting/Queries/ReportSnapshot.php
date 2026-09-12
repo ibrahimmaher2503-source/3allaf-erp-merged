@@ -687,7 +687,7 @@ final class ReportSnapshot
             ], $saleLines->map(fn (SaleLine $line): array => [
                 'document' => $line->sale?->document_number,
                 'sku' => $line->item_code,
-                'product' => app()->isLocale('ar*') ? $line->name_ar : $line->name_en,
+                'product' => str_starts_with(app()->getLocale(), 'ar') ? $line->name_ar : $line->name_en,
                 'options_ar' => $this->snapshotOptions($line->variant_snapshot, 'ar'),
                 'options_en' => $this->snapshotOptions($line->variant_snapshot, 'en'),
                 'quantity' => \App\Support\ProductQuantity::format($line->quantity),

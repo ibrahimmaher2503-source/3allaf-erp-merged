@@ -359,3 +359,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Recorded 1,515 remaining hardcoded user-facing candidate locations in `docs/audits/egyptian-arabic-hardcoded-strings.md`; no functional Blade/Livewire copy was mass-extracted during the audit.
 - Focused locale integrity, PHP/JavaScript syntax, full Blade compilation, fallback, switch/persistence, RTL/lang, audit-count, build-manifest, unchanged-source-locale, and diff checks passed. One Vite build completed successfully after one earlier invocation stopped before asset generation because the isolated worktree lacked a local `vendor` path.
 - No automated test suite, browser, database, migration, deployment, packaging, activation, production access, push, tag, sudo, package installation, or business-rule change occurred.
+
+# v0.1.22-hotfix33 Egyptian Arabic integration — 2026-09-12
+
+- Integrated localization commit `be300bfb039316a3f89b29f2cd2c29bd73bd0add` onto exact Hotfix32 commit `2636d8dc1d345fa050e4e20c729a4cab9ac4a35a` in a separate `rajeh_ahmed` worktree and preserved both tracking histories.
+- Accepted only locale registration, switching/persistence/fallback, Arabic-family data presentation, RTL/Cairo, and view-copy changes. Rejected the locale-dependent POS customer-search `ORDER BY` hunk and retained exact Hotfix32 query behavior.
+- Corrected 532 non-wildcard-aware `isLocale('ar*')` calls across 107 files to a real Arabic-family prefix check after the focused runtime probe demonstrated the Laravel method uses exact equality. Existing Arabic and Egyptian Arabic now share the intended presentation without business-rule changes.
+- Focused verification passed 6,115 JSON keys, 244 PHP locale leaves, exact key/token parity, unchanged `ar`/`en`, switch/session/cookie/fallback, RTL/lang/Cairo/sidebar/command palette, Hotfix32 invoice-search/keyboard compiled behavior, assets, audit count, syntax, diff hygiene, and isolated activation failure/rollback behavior. Authenticated production-shaped route rendering remains activation-gated before and after the switch.
+- No migration, database access/mutation, production access/change, deployment, promotion, activation, sudo/root action, service action, automated suite, browser, push, tag, package/browser installation, or remote operation occurred.

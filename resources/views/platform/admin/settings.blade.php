@@ -1150,7 +1150,7 @@ new #[Title('System Settings')] class extends Component
                             <flux:select wire:model="documentSequenceForm.scope_id" :label="__('Branch')" required>
                                 <option value="">{{ __('Select an active branch...') }}</option>
                                 <?php foreach ($activeBranches as $branch): ?>
-                                    <option value="{{ $branch->id }}">{{ $branch->code }} — {{ app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en }}</option>
+                                    <option value="{{ $branch->id }}">{{ $branch->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }}</option>
                                 <?php endforeach; ?>
                             </flux:select>
                         <?php endif; ?>
@@ -1280,7 +1280,7 @@ new #[Title('System Settings')] class extends Component
                                 <flux:table.cell>
                                     <?php if ($seq->scope_type === 'branch'): ?>
                                         <flux:badge size="sm" color="blue">
-                                            {{ __('Branch') }}: {{ app()->isLocale('ar*') ? ($seq->scopeBranch?->name_ar ?? __('Unknown branch')) : ($seq->scopeBranch?->name_en ?? __('Unknown branch')) }}
+                                            {{ __('Branch') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? ($seq->scopeBranch?->name_ar ?? __('Unknown branch')) : ($seq->scopeBranch?->name_en ?? __('Unknown branch')) }}
                                             <span class="text-xs opacity-70">({{ $seq->scopeBranch?->code ?? $seq->scope_id }})</span>
                                         </flux:badge>
                                     <?php else: ?>
@@ -1383,14 +1383,14 @@ new #[Title('System Settings')] class extends Component
                         <flux:select wire:model.live="printerForm.branch_id" :label="__('Branch')" :disabled="$printerForm['scope_type'] === 'global'">
                             <option value="">{{ __('Select branch') }}</option>
                             @foreach ($printerBranches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->code }} · {{ app()->isLocale('ar*') ? $branch->name_ar : $branch->name_en }}</option>
+                                <option value="{{ $branch->id }}">{{ $branch->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }}</option>
                             @endforeach
                         </flux:select>
 
                         <flux:select wire:model="printerForm.store_id" :label="__('Store / point of sale')" :disabled="$printerForm['scope_type'] !== 'store'">
                             <option value="">{{ __('Select a store or point of sale') }}</option>
                             @foreach ($printerStores->when(filled($printerForm['branch_id']), fn ($stores) => $stores->where('branch_id', (int) $printerForm['branch_id'])) as $store)
-                                <option value="{{ $store->id }}">{{ $store->code }} · {{ app()->isLocale('ar*') ? $store->name_ar : $store->name_en }}</option>
+                                <option value="{{ $store->id }}">{{ $store->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</option>
                             @endforeach
                         </flux:select>
 
@@ -1414,11 +1414,11 @@ new #[Title('System Settings')] class extends Component
                             <?php endif; ?>
                         </flux:select>
 
-                        @php($compatibleTemplates = PrintTemplate::visibleTo(auth()->user())->where('status', 'active')->where('paper_size', $printerForm['paper_size'])->orderBy(app()->isLocale('ar*') ? 'name_ar' : 'name_en')->get())
+                        @php($compatibleTemplates = PrintTemplate::visibleTo(auth()->user())->where('status', 'active')->where('paper_size', $printerForm['paper_size'])->orderBy(str_starts_with(app()->getLocale(), 'ar') ? 'name_ar' : 'name_en')->get())
                         <flux:select wire:model="printerForm.print_template_id" :label="__('Print template')">
                             <option value="">{{ __('No template assigned') }}</option>
                             @foreach ($compatibleTemplates as $template)
-                                <option value="{{ $template->id }}">{{ app()->isLocale('ar*') ? $template->name_ar : $template->name_en }}</option>
+                                <option value="{{ $template->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $template->name_ar : $template->name_en }}</option>
                             @endforeach
                         </flux:select>
 
@@ -1464,8 +1464,8 @@ new #[Title('System Settings')] class extends Component
                             <?php foreach ($printers as $printer): ?>
                                 <flux:table.row key="physical-printer-{{ $printer->id }}">
                                     <flux:table.cell class="font-medium">{{ $printer->name }}</flux:table.cell>
-                                    <flux:table.cell>{{ $printer->branch ? (app()->isLocale('ar*') ? $printer->branch->name_ar : $printer->branch->name_en) : __('Entire company') }}</flux:table.cell>
-                                    <flux:table.cell>{{ $printer->store ? (app()->isLocale('ar*') ? $printer->store->name_ar : $printer->store->name_en) : '—' }}</flux:table.cell>
+                                    <flux:table.cell>{{ $printer->branch ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->branch->name_ar : $printer->branch->name_en) : __('Entire company') }}</flux:table.cell>
+                                    <flux:table.cell>{{ $printer->store ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->store->name_ar : $printer->store->name_en) : '—' }}</flux:table.cell>
                                     <flux:table.cell>{{ __(match ($printer->printer_type) { 'thermal' => 'Thermal receipt printer', 'label' => 'Barcode / label printer', 'a4' => 'A4 printer', default => 'PDF printer' }) }}</flux:table.cell>
                                     <flux:table.cell>{{ $printer->paper_size }}</flux:table.cell>
                                     <flux:table.cell><flux:badge size="sm" :color="$printer->status === 'active' ? 'green' : 'zinc'">{{ $printer->status === 'active' ? __('Available') : __('Inactive') }}</flux:badge></flux:table.cell>
@@ -1523,7 +1523,7 @@ new #[Title('System Settings')] class extends Component
                 @php($templates = PrintTemplate::visibleTo(auth()->user())->withCount('printers')->orderBy('document_type')->orderBy('code')->paginate(25, ['*'], 'templates_page'))
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     @forelse($templates as $template)
-                        <article class="rounded-xl border border-border-subtle p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ app()->isLocale('ar*') ? $template->name_ar : $template->name_en }}</h3><p class="font-mono text-xs text-text-muted">{{ $template->code }}</p></div><flux:badge size="sm" :color="$template->status==='active'?'green':'zinc'">{{ \App\Modules\Platform\Support\UiLabel::status($template->status) }}</flux:badge></div><dl class="mt-3 grid grid-cols-2 gap-2 text-sm"><dt>{{ __('Document type') }}</dt><dd>{{ __(Str::headline($template->document_type)) }}</dd><dt>{{ __('Paper size') }}</dt><dd>{{ __(strtoupper($template->paper_size)) }}</dd><dt>{{ __('Language') }}</dt><dd>{{ __($template->language) }}</dd><dt>{{ __('Assigned printers') }}</dt><dd>{{ $template->printers_count }}</dd></dl><div class="mt-4 flex flex-wrap gap-2"><flux:button size="sm" type="button" wire:click="editPrintTemplate({{ $template->id }})">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" href="{{ route('admin.settings.template-preview', $template) }}" target="_blank">{{ __('Preview') }}</flux:button></div></article>
+                        <article class="rounded-xl border border-border-subtle p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $template->name_ar : $template->name_en }}</h3><p class="font-mono text-xs text-text-muted">{{ $template->code }}</p></div><flux:badge size="sm" :color="$template->status==='active'?'green':'zinc'">{{ \App\Modules\Platform\Support\UiLabel::status($template->status) }}</flux:badge></div><dl class="mt-3 grid grid-cols-2 gap-2 text-sm"><dt>{{ __('Document type') }}</dt><dd>{{ __(Str::headline($template->document_type)) }}</dd><dt>{{ __('Paper size') }}</dt><dd>{{ __(strtoupper($template->paper_size)) }}</dd><dt>{{ __('Language') }}</dt><dd>{{ __($template->language) }}</dd><dt>{{ __('Assigned printers') }}</dt><dd>{{ $template->printers_count }}</dd></dl><div class="mt-4 flex flex-wrap gap-2"><flux:button size="sm" type="button" wire:click="editPrintTemplate({{ $template->id }})">{{ __('Edit') }}</flux:button><flux:button size="sm" variant="subtle" href="{{ route('admin.settings.template-preview', $template) }}" target="_blank">{{ __('Preview') }}</flux:button></div></article>
                     @empty<x-state.empty :title="__('No print templates yet')" :description="__('Add the first reusable print template.')" icon="document-text" />@endforelse
                 </div>
                 {{ $templates->links() }}
@@ -1603,9 +1603,9 @@ new #[Title('System Settings')] class extends Component
                                             ? __('Default printer')
                                             : $printer->name;
                                         $location = $printer->store
-                                            ? (app()->isLocale('ar*') ? $printer->store->name_ar : $printer->store->name_en)
+                                            ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->store->name_ar : $printer->store->name_en)
                                             : ($printer->branch
-                                                ? (app()->isLocale('ar*') ? $printer->branch->name_ar : $printer->branch->name_en)
+                                                ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->branch->name_ar : $printer->branch->name_en)
                                                 : __('Entire company'));
                                     ?>
                                     <flux:table.row key="printer-{{ $printer->id }}">
@@ -1663,7 +1663,7 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 6: Settings Audit Trail -->
     <?php if ($activeTab === 'audit'): ?>
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" class="space-y-6">
-            <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('activeTab', 'printers')">{{ app()->isLocale('ar*') ? 'السابق →' : '← Previous' }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
+            <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('activeTab', 'printers')">{{ str_starts_with(app()->getLocale(), 'ar') ? 'السابق →' : '← Previous' }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <div>

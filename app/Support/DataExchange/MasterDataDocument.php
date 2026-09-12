@@ -85,20 +85,20 @@ final class MasterDataDocument
         $instructionsSheet = $writer->getCurrentSheet()->setName('Instructions');
         $instructionsSheet->setColumnWidthForRange(28, 1, 1);
         $instructionsSheet->setColumnWidthForRange(90, 2, 2);
-        $writer->addRow(Row::fromValues([app()->isLocale('ar*') ? 'تعليمات الاستيراد' : 'Import instructions', $schema], $titleStyle));
-        $writer->addRow(Row::fromValues([app()->isLocale('ar*') ? 'هوية المخطط' : 'Schema identity', $schema]));
-        $writer->addRow(Row::fromValues([app()->isLocale('ar*') ? 'تاريخ التوليد' : 'Generated at', now()->utc()->format('Y-m-d\TH:i:s\Z')]));
-        $writer->addRow(Row::fromValues([app()->isLocale('ar*') ? 'نطاق الشركة' : 'Company scope', $companyIdentity ?? '—']));
-        $writer->addRow(Row::fromValues([app()->isLocale('ar*') ? 'قاعدة الرؤوس' : 'Header contract', app()->isLocale('ar*') ? 'لا تغيّر أسماء أعمدة ورقة Data Entry أو ترتيبها.' : 'Do not rename or reorder Data Entry headers.']));
+        $writer->addRow(Row::fromValues([str_starts_with(app()->getLocale(), 'ar') ? 'تعليمات الاستيراد' : 'Import instructions', $schema], $titleStyle));
+        $writer->addRow(Row::fromValues([str_starts_with(app()->getLocale(), 'ar') ? 'هوية المخطط' : 'Schema identity', $schema]));
+        $writer->addRow(Row::fromValues([str_starts_with(app()->getLocale(), 'ar') ? 'تاريخ التوليد' : 'Generated at', now()->utc()->format('Y-m-d\TH:i:s\Z')]));
+        $writer->addRow(Row::fromValues([str_starts_with(app()->getLocale(), 'ar') ? 'نطاق الشركة' : 'Company scope', $companyIdentity ?? '—']));
+        $writer->addRow(Row::fromValues([str_starts_with(app()->getLocale(), 'ar') ? 'قاعدة الرؤوس' : 'Header contract', str_starts_with(app()->getLocale(), 'ar') ? 'لا تغيّر أسماء أعمدة ورقة Data Entry أو ترتيبها.' : 'Do not rename or reorder Data Entry headers.']));
         foreach ($instructions as $instruction) {
-            $primary = app()->isLocale('ar*') ? $instruction['ar'] : $instruction['en'];
-            $secondary = app()->isLocale('ar*') ? $instruction['en'] : $instruction['ar'];
+            $primary = str_starts_with(app()->getLocale(), 'ar') ? $instruction['ar'] : $instruction['en'];
+            $secondary = str_starts_with(app()->getLocale(), 'ar') ? $instruction['en'] : $instruction['ar'];
             $writer->addRow(Row::fromValues([$primary, $secondary]));
         }
 
         $dataSheet = $writer->addNewSheetAndMakeItCurrent()->setName('Data Entry');
         $view = (new SheetView)->setFreezeRow(2);
-        if (app()->isLocale('ar*')) {
+        if (str_starts_with(app()->getLocale(), 'ar')) {
             $view->setRightToLeft(true);
         }
         $dataSheet->setSheetView($view);
@@ -230,7 +230,7 @@ final class MasterDataDocument
     public function pdf(string $filename, string $title, array $headers, iterable $rows): Response
     {
         $rows = collect($rows)->map(static fn (array $row): array => array_map(static fn (mixed $value): string => (string) $value, $row));
-        if (app()->isLocale('ar*')) {
+        if (str_starts_with(app()->getLocale(), 'ar')) {
             $values = array_merge([$title], $headers, $rows->flatten()->all());
             $visual = app(ArabicPdfText::class)->visualOrder($values);
             $title = array_shift($visual);
@@ -249,7 +249,7 @@ final class MasterDataDocument
         $options->setFontDir($fontCache);
         $options->setFontCache($fontCache);
         $options->setTempDir($fontCache);
-        $options->setDefaultFont(app()->isLocale('ar*') ? 'Cairo PDF Arabic' : 'Cairo PDF Latin');
+        $options->setDefaultFont(str_starts_with(app()->getLocale(), 'ar') ? 'Cairo PDF Arabic' : 'Cairo PDF Latin');
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml(view('pages.exports.master-data-pdf', ['title' => $title, 'headers' => $headers, 'rows' => $rows])->render(), 'UTF-8');
         $dompdf->setPaper('a4', 'landscape');

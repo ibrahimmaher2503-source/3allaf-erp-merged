@@ -16,7 +16,7 @@
 
         <div class="space-y-2">
             <h1 class="text-xl font-bold tracking-tight">النظام قيد الصيانة المؤقتة</h1>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-semibold">{{ app()->isLocale('ar*') ? '503' : 'Service temporarily unavailable (503)' }}</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? '503' : 'Service temporarily unavailable (503)' }}</p>
         </div>
 
         <p class="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
@@ -34,7 +34,7 @@
 
         <div class="pt-2">
             <a href="{{ request()->fullUrl() }}" class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors">
-                {{ app()->isLocale('ar*') ? 'تحديث الصفحة' : 'Refresh page' }}
+                {{ str_starts_with(app()->getLocale(), 'ar') ? 'تحديث الصفحة' : 'Refresh page' }}
             </a>
         </div>
     </div>

@@ -66,7 +66,7 @@
                                     <tr>
                                         <td data-primary class="font-mono font-semibold">{{ $closedShift->closing_document_number }}</td>
                                         <td data-label="{{ __('Drawer') }}">{{ $closedShift->cashDrawer?->code ?: $closedShift->cash_drawer_code_snapshot }}</td>
-                                        <td data-label="{{ __('Closed at') }}">{{ $closedShift->closed_at?->translatedFormat(app()->isLocale('ar*') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</td>
+                                        <td data-label="{{ __('Closed at') }}">{{ $closedShift->closed_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</td>
                                         <td data-label="{{ __('Outputs') }}" class="text-end">
                                             @can('shifts_cash_movements.print')
                                                 <div class="flex flex-wrap justify-end gap-2">
@@ -91,8 +91,8 @@
                     <x-status.badge :status="$shift->status->value" />
                 </div>
                 <dl class="mt-4 grid gap-2 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ app()->isLocale('ar*') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(app()->isLocale('ar*') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>
                     @if ($shift->recount_count > 0)
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Recounts requested') }}</dt><dd>{{ $shift->recount_count }}</dd></div>
@@ -150,7 +150,7 @@
                                 step="0.01"
                                 min="0"
                                 name="actual_by_method[{{ $method->code }}]"
-                                :label="(app()->isLocale('ar*') ? $method->name_ar : $method->name_en).' — '.__('counted total')" />
+                                :label="(str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en).' — '.__('counted total')" />
                         @endforeach
                         <flux:textarea name="notes" :label="__('Notes (optional)')" rows="2" />
                         @error('actual_cash')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror

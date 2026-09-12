@@ -1,4 +1,4 @@
-@php($ar=app()->isLocale('ar*'))
+@php($ar=str_starts_with(app()->getLocale(), 'ar'))
 <x-layouts::app :title="$ar ? 'أوامر تشغيل الحفلات' : 'Party operating orders'">
     <x-app.page :title="$ar ? 'أوامر تشغيل الحفلات' : 'Party operating orders'" :description="$ar ? 'تنفيذ الخدمات والأصول والمستهلكات من الحجز المؤكد مع الحفاظ على أثر المصدر.' : 'Execute services, assets, and consumables from confirmed bookings with source traceability.'" max-width="7xl">
         <x-slot:actions><flux:button href="{{ route('parties.bookings.index') }}" variant="subtle" icon="calendar-days">{{ $ar ? 'الحجوزات' : 'Bookings' }}</flux:button></x-slot:actions>
