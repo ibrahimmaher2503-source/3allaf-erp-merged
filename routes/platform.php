@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LocaleController;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Actions\ExportAuditLogs;
 use App\Modules\Platform\Actions\RecordSetupDecision;
@@ -24,15 +25,7 @@ use Illuminate\Support\Facades\Gate;
 
 $router = app('router');
 
-$router->post('locale', function (Request $request) {
-    $validated = $request->validate([
-        'locale' => ['required', 'string', 'in:'.implode(',', config('app.supported_locales', ['ar', 'en', 'ar-EG']))],
-    ]);
-
-    session(['locale' => $validated['locale']]);
-
-    return back()->withCookie(cookie('locale', $validated['locale'], 60 * 24 * 365));
-})->name('locale.switch');
+$router->post('locale', LocaleController::class)->name('locale.switch');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->post('ui/work-context', function (Request $request, WorkContext $context) {

@@ -367,3 +367,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Corrected 532 non-wildcard-aware `isLocale('ar*')` calls across 107 files to a real Arabic-family prefix check after the focused runtime probe demonstrated the Laravel method uses exact equality. Existing Arabic and Egyptian Arabic now share the intended presentation without business-rule changes.
 - Focused verification passed 6,115 JSON keys, 244 PHP locale leaves, exact key/token parity, unchanged `ar`/`en`, switch/session/cookie/fallback, RTL/lang/Cairo/sidebar/command palette, Hotfix32 invoice-search/keyboard compiled behavior, assets, audit count, syntax, diff hygiene, and isolated activation failure/rollback behavior. Authenticated production-shaped route rendering remains activation-gated before and after the switch.
 - No migration, database access/mutation, production access/change, deployment, promotion, activation, sudo/root action, service action, automated suite, browser, push, tag, package/browser installation, or remote operation occurred.
+
+# v0.1.22-hotfix34 Egyptian locale route-cache repair — 2026-09-12
+
+- Rebuilt from exact Hotfix32 in a separate clean worktree, reapplied the accepted Hotfix33 localization history, and left the failed Hotfix33 release and artifacts immutable.
+- Replaced the locale-switch closure with the dedicated invokable `LocaleController`; preserved POST, route name, CSRF/web middleware, redirect-back, session persistence, one-year cookie, and exact `ar`, `en`, `ar-EG` validation.
+- Replaced direct cached-action invocation in the runtime proof with genuine HTTP-kernel requests through the cached router, including safe rejection of unsupported and malformed locale values.
+- Preserved exact Hotfix32 business queries, all Hotfix24–Hotfix32 purchasing/search/keyboard repairs, 6,115 JSON keys, 244 PHP leaves, and the 1,515-location deferred hardcoded-string audit.
+- Frontend inputs are unchanged; exact Hotfix33 compiled assets are reused and Hotfix34 Vite build count is zero. Authenticated database-backed rendering remains strictly pre/post-switch activation-gated and transactional.
