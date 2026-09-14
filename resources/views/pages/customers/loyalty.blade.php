@@ -9,7 +9,7 @@
                 <flux:heading size="xl" class="mt-2">{{ __('Loyalty ledger') }}</flux:heading>
                 <flux:text class="mt-1">{{ $displayName }} · <span dir="ltr">{{ $customer->phone_display }}</span></flux:text>
             </div>
-            <div class="flex flex-wrap gap-2">@can('loyalty.export')<flux:button href="{{ route('customers.loyalty.export', $customer) }}" variant="subtle" icon="arrow-down-tray">{{ __('Export ledger') }}</flux:button>@endcan<flux:button href="{{ route('customers.show', $customer) }}" variant="subtle" icon="arrow-left">{{ __('Customer profile') }}</flux:button><flux:button href="{{ route('customers.index') }}" variant="ghost">{{ __('All customers') }}</flux:button></div>
+            <div class="flex flex-wrap gap-2"><x-context-help :title="__('Loyalty behavior')" :label="__('Open loyalty help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Points are earned only from approved eligible sales under the active company policy.') }}</li><li>{{ __('Redemptions use available unexpired points oldest first.') }}</li><li>{{ __('Manual adjustments require the configured approval separation and never rewrite ledger history.') }}</li></ul></x-context-help><flux:button href="{{ route('customers.show', $customer) }}" variant="subtle" icon="arrow-left">{{ __('Customer profile') }}</flux:button><flux:button href="{{ route('customers.index') }}" variant="ghost">{{ __('All customers') }}</flux:button></div>
         </div>
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
         @if ($errors->any())<flux:callout variant="danger" icon="exclamation-triangle">{{ $errors->first() }}</flux:callout>@endif

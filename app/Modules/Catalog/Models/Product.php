@@ -116,6 +116,18 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function hasIncompleteCard(): bool
+    {
+        return blank($this->name_ar)
+            || blank($this->model_number)
+            || $this->category_id === null
+            || $this->sale_price === null
+            || bccomp((string) $this->sale_price, '0', 2) <= 0
+            || ($this->product_type !== 'service' && ! ($this->relationLoaded('barcodes')
+                ? $this->barcodes->contains('status', 'active')
+                : $this->barcodes()->where('status', 'active')->exists()));
+    }
+
     public function ageLabel(): BelongsTo { return $this->belongsTo(AgeLabel::class); }
     public function gender(): BelongsTo { return $this->belongsTo(Gender::class); }
     public function colourLookup(): BelongsTo { return $this->belongsTo(Colour::class, 'colour_id'); }
@@ -229,7 +241,7 @@ class Product extends Model
      */
     public function scopeSellable(Builder $query): Builder
     {
-        return $query->where('products.status', 'active')->where(function (Builder $scope): void {
+        return $query->where('products.status', 'active')->completeCard()->where(function (Builder $scope): void {
             $scope->where(function (Builder $simple): void {
                 $simple->whereNull('products.parent_product_id')->where('products.has_variations', false);
             })->orWhere(function (Builder $variant): void {
@@ -237,6 +249,20 @@ class Product extends Model
                     ->whereHas('parent', fn (Builder $family): Builder => $family->where('status', 'active')->where('has_variations', true));
             });
         });
+    }
+
+    public function scopeCompleteCard(Builder $query): Builder
+    {
+        return $query->whereNotNull('products.category_id')->whereNotNull('products.model_number')->where('products.model_number', '<>', '')
+            ->whereNotNull('products.name_ar')->where('products.name_ar', '<>', '')->where('products.sale_price', '>', 0)
+            ->where(fn (Builder $scope) => $scope->where('products.product_type', 'service')->orWhereHas('barcodes', fn (Builder $codes) => $codes->where('status', 'active')));
+    }
+
+    public function scopeIncompleteCard(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $scope) => $scope->whereNull('products.category_id')->orWhereNull('products.model_number')->orWhere('products.model_number', '')
+            ->orWhereNull('products.name_ar')->orWhere('products.name_ar', '')->orWhereNull('products.sale_price')->orWhere('products.sale_price', '<=', 0)
+            ->orWhere(fn (Builder $stock) => $stock->where('products.product_type', '<>', 'service')->whereDoesntHave('barcodes', fn (Builder $codes) => $codes->where('status', 'active'))));
     }
 
     public function isFamily(): bool
@@ -251,7 +277,7 @@ class Product extends Model
 
     public function isSellable(): bool
     {
-        if ($this->status !== 'active') {
+        if ($this->status !== 'active' || $this->hasIncompleteCard()) {
             return false;
         }
 

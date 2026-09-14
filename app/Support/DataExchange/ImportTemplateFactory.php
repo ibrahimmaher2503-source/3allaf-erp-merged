@@ -44,16 +44,16 @@ final class ImportTemplateFactory
                 'preferredProductSupplier' => fn ($query) => $query->whereHas('supplier', fn ($suppliers) => $suppliers->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id))),
             ])
             ->orderBy('id')->lazyById(500)->map(fn (Product $product): array => [
-                $product->item_code, $product->item_code, $product->preferredProductSupplier?->supplier_item_code ?: $product->item_code,
-                $product->barcodes->first()?->barcode ?? '', $product->name_ar, $product->name_en ?? '', '', '',
+                $product->item_code, $product->item_code, $product->preferredProductSupplier?->supplier_item_code ?? '', $product->model_number ?? '',
+                $product->barcodes->first()?->barcode ?? '', $product->name_ar, $product->name_en ?? '', '', '', $product->average_cost ?? '0.0000',
             ]);
         $stores = Store::query()->visibleTo($actor)->where('company_id', $company->id)->where('status', 'active')->whereIn('type', ['warehouse', 'selling'])->with('branch:id,code,name_ar,name_en')->orderBy('code')->get();
 
-        return $this->documents->importTemplate('opening-inventory-template.xlsx', 'toyjoy.opening-inventory.v2', ImportOpeningInventoryWorkbookAction::HEADERS, $rows, [
-            ['ar' => 'تحتوي الورقة على أحدث الأصناف الفعالة المؤهلة وقت التنزيل. املأ موقع المخزون والكمية فقط للصفوف المطلوب ترحيلها.', 'en' => 'The sheet contains the latest eligible active products at download time. Fill location and quantity only for rows to be posted.'],
-            ['ar' => 'تكلفة الوحدة تؤخذ دائماً من كارت الصنف ولا تُقبل من الملف.', 'en' => 'Unit cost always comes from the Product Card and is never accepted from the workbook.'],
+        return $this->documents->importTemplate('opening-inventory-template.xlsx', 'toyjoy.opening-inventory.v3', ImportOpeningInventoryWorkbookAction::HEADERS, $rows, [
+            ['ar' => 'تحتوي الورقة على أحدث الأصناف الفعالة المؤهلة وقت التنزيل. املأ الموقع والكمية والتكلفة للصفوف المطلوبة، واستخدم موقعاً واحداً في الملف.', 'en' => 'The sheet contains the latest eligible active products. Fill location, quantity, and cost for required rows and use one location per workbook.'],
+            ['ar' => 'يمكن البحث بكود الصنف أو المورد أو الموديل أو الباركود؛ أعمدة المرجع مقفلة لمنع الربط الخاطئ.', 'en' => 'Products resolve by internal, supplier, model, or barcode code; locked reference columns prevent incorrect mapping.'],
             ['ar' => 'استخدم كود مخزن أو منفذ بيع ظاهر في ورقة المواقع المصرح بها.', 'en' => 'Use a warehouse or stock-bearing Sales Outlet code from Authorized Locations.'],
-        ], ['Authorized Locations' => [['location_code', 'branch_code', 'type', 'name_ar', 'name_en'], ...$stores->map(fn (Store $store): array => [$store->code, $store->branch?->code ?? '', $store->type, $store->name_ar, $store->name_en])->all()]], [6, 7], [0, 1, 2, 3, 4, 5], [7 => '0'], $company->code.' — '.$company->name_ar, [6 => ['sheet' => 'Authorized Locations', 'last_row' => $stores->count() + 1]]);
+        ], ['Authorized Locations' => [['location_code', 'branch_code', 'type', 'name_ar', 'name_en'], ...$stores->map(fn (Store $store): array => [$store->code, $store->branch?->code ?? '', $store->type, $store->name_ar, $store->name_en])->all()]], [7, 8, 9], [0, 1, 2, 3, 4, 5, 6], [8 => '0', 9 => '0.0000'], $company->code.' — '.$company->name_ar, [7 => ['sheet' => 'Authorized Locations', 'last_row' => $stores->count() + 1]]);
     }
 
     public function productCards(User $actor, bool $staged = false, mixed $companyId = null): BinaryFileResponse

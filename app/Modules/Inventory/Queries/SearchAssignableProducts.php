@@ -12,7 +12,7 @@ final class SearchAssignableProducts
     /** @param array<string,mixed> $filters */
     public function query(array $filters): Builder
     {
-        $query = Product::query()->with(['barcodes' => fn ($q) => $q->where('status', 'active')->orderByDesc('is_primary'), 'category:id,code,name_ar,name_en', 'brand:id,code,name_ar,name_en'])
+        $query = Product::query()->with(['barcodes' => fn ($q) => $q->where('status', 'active')->orderByDesc('is_primary'), 'productSuppliers:id,product_id,supplier_item_code', 'category:id,code,name_ar,name_en', 'brand:id,code,name_ar,name_en'])
             ->where(function (Builder $scope): void {
                 $scope->where(function (Builder $simple): void {
                     $simple->whereNull('products.parent_product_id')->where('products.has_variations', false);
@@ -20,7 +20,7 @@ final class SearchAssignableProducts
                     $variant->whereNotNull('products.parent_product_id')
                         ->whereHas('parent', fn (Builder $family): Builder => $family->where('status', 'active')->where('has_variations', true));
                 });
-            })->where('product_type', '!=', 'service');
+            })->where('product_type', '!=', 'service')->completeCard();
         $term = trim((string) ($filters['q'] ?? ''));
         if ($term !== '') {
             $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';

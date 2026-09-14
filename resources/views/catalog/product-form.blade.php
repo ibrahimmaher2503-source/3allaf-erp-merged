@@ -73,6 +73,7 @@ new #[Title('Product Card')] class extends Component {
         'fractional_quantity' => false,
         'average_cost' => '', 'sale_price' => '', 'battery_required' => false, 'battery_details' => '',
         'preferred_supplier_id' => '', 'age_label_ids' => [], 'character_ids' => [], 'colour_ids' => [], 'gender_ids' => [],
+        'supplier_item_code' => '',
     ];
 
     public function mount(?Product $product = null): void
@@ -267,6 +268,7 @@ new #[Title('Product Card')] class extends Component {
             'average_cost' => $product->average_cost ?? '', 'sale_price' => $product->sale_price ?? '',
             'battery_required' => (bool) $product->battery_required, 'battery_details' => $product->battery_details ?? '',
             'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
+            'supplier_item_code' => (string) ($product->preferredProductSupplier?->supplier_item_code ?? ''),
             'age_label_ids' => $product->ages->pluck('id')->all(), 'character_ids' => $product->characters->pluck('id')->all(), 'colour_ids' => $product->colours->pluck('id')->all(), 'gender_ids' => $product->genders->pluck('id')->all(),
         ];
         $this->productVersion = $product->lock_version;
@@ -317,6 +319,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [$this->productForm['barcode_registration_type'] === 'local' ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+            'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
             'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
             'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
             'productForm.colour_ids' => ['array'], 'productForm.colour_ids.*' => ['integer', 'exists:colours,id'],
@@ -361,7 +364,7 @@ new #[Title('Product Card')] class extends Component {
 
         return view('catalog.product-form', [
             'product' => $product,
-            'categories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'categories' => Category::query()->active()->with('parent:id,code,name_ar,name_en')->orderBy('sort_order')->orderBy('code')->get(['id', 'parent_id', 'code', 'name_ar', 'name_en']),
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'taxSettings' => TaxSetting::query()->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
@@ -416,11 +419,9 @@ new #[Title('Product Card')] class extends Component {
         </div>
 
         <flux:card id="product-identity" class="order-1 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-identity">
-            <div class="border-b border-border pb-4">
-                <div>
-                    <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
-                    <flux:text class="mt-1 text-sm text-text-muted">{{ __('Keep the internal item code stable. Supplier, barcode, and descriptive changes never rewrite it.') }}</flux:text>
-                </div>
+            <div class="flex items-center justify-between gap-3 border-b border-border pb-3">
+                <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
+                <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:select wire:model.live="productForm.barcode_registration_type" :label="__('Barcode registration type')" required>
@@ -456,7 +457,7 @@ new #[Title('Product Card')] class extends Component {
                 <flux:select id="product-field-category_id" wire:model="productForm.category_id" :label="__('Category / subcategory')" required>
                     <flux:select.option value="">{{ __('Select active category...') }}</flux:select.option>
                     @foreach ($categories as $category)
-                        <flux:select.option :value="$category->id">{{ $category->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
+                        <flux:select.option :value="$category->id">{{ $category->parent ? (str_starts_with(app()->getLocale(), 'ar') ? $category->parent->name_ar : $category->parent->name_en).' / ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }} · {{ $category->code }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 @if ($categories->isEmpty())
@@ -483,6 +484,7 @@ new #[Title('Product Card')] class extends Component {
                         <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
                     @endforeach
                 </flux:select>
+                <flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product / local code')" dir="ltr" />
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
                     <flux:select.option value="service">{{ __('Service') }}</flux:select.option>

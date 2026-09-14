@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use InvalidArgumentException;
 
 final class ReverseOpeningInventoryAction
@@ -28,7 +29,8 @@ final class ReverseOpeningInventoryAction
             $original = OpeningInventoryDocument::query()->lockForUpdate()->findOrFail($id);
             abort_unless((int) $original->company_id === (int) $company->id, 404);
             if ($original->status !== 'approved' || $original->reversal_of_id) throw new InvalidArgumentException(__('Only an approved original opening inventory document can be reversed.'));
-            $reversal = OpeningInventoryDocument::query()->create(['company_id' => $original->company_id, 'document_number' => 'OPEN-REV-'.now()->format('YmdHis').'-'.strtoupper(Str::random(4)), 'status' => 'draft', 'notes' => $reason, 'created_by' => Auth::id(), 'reversal_of_id' => $original->id, 'idempotency_key' => (string) Str::uuid(), 'lock_version' => 1]);
+            $store = $original->store_id ? \App\Modules\Platform\Models\Store::query()->findOrFail($original->store_id) : \App\Modules\Platform\Models\Store::query()->findOrFail($original->lines()->value('store_id'));
+            $reversal = OpeningInventoryDocument::query()->create(['company_id' => $original->company_id, 'branch_id' => $store->branch_id, 'store_id' => $store->id, 'document_number' => app(AllocateDocumentNumber::class)->executeForBranch('opening_inventory', (int) $store->branch_id), 'document_date' => now()->toDateString(), 'status' => 'draft', 'notes' => $reason, 'created_by' => Auth::id(), 'reversal_of_id' => $original->id, 'idempotency_key' => (string) Str::uuid(), 'lock_version' => 1]);
             $original->lines()->orderBy('id')->chunkById(500, function ($lines) use ($original, $reversal): void {
                 $movementKeys = $lines->map(fn ($line): string => 'opening-inventory:'.$original->id.':'.$line->id);
                 $movements = StockMovement::query()->whereIn('idempotency_key', $movementKeys)->get()->keyBy('idempotency_key');

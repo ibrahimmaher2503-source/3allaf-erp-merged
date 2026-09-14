@@ -17,6 +17,7 @@ final class DocumentTypeCatalog
         'supplier_return' => ['label' => 'Supplier return', 'code' => 'PR'],
         'stock_transfer' => ['label' => 'Stock transfer', 'code' => 'ST'],
         'inventory_adjustment' => ['label' => 'Inventory adjustment', 'code' => 'IA'],
+        'opening_inventory' => ['label' => 'Opening inventory', 'code' => 'OI'],
         'stock_count' => ['label' => 'Stock count', 'code' => 'SC'],
         'quotation' => ['label' => 'Quotation', 'code' => 'QT'],
         'party_booking' => ['label' => 'Party booking', 'code' => 'PB'],

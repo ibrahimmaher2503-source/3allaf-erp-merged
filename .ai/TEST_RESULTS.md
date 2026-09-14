@@ -315,3 +315,10 @@
 - PASS: `git diff --check` and no-migration boundary. No automated suite or browser-control run was created or executed under the current directive.
 - ACTIVATION-GATED: the optimized script checks migration 000111 is already `Ran` and performs one focused authenticated smoke render per `ar`, `en`, and `ar-EG` before switching. Activation executes no migration.
 - Database status: no database command, connection, query, fixture, migration or mutation occurred during local implementation or verification.
+
+# 2026-09-14 — v0.1.22-hotfix39 focused verification
+
+- PASS: changed PHP syntax, complete Blade compilation, `ar`/`en`/`ar-EG` JSON parsing and required-key coverage, database-free Hotfix39 contract verification, Vite reference integrity, and Git diff hygiene.
+- PASS: product Draft/Resume and five-identifier search contracts; separate supplier code; hidden product/customer/supplier distributed exports; hidden supplier payment terms; structured contact fields; opening header/line/import/totals/numbering/immutability source contracts.
+- PASS: exactly one Node 20 / Vite 8.2.0 production build. Manifest SHA-256 `f5e7c91b350a37fa8b89fc368708e1398fe442662e1a22dfa224794efd93c7ec`; CSS SHA-256 `bff10abe3cea4c46bd6e9789adc4acb22025c28d08a6d0143afa6a596682642d`; JavaScript SHA-256 `a9ca86aeb7e0ad1983173cc94f9dc6f9195f17a3d0a15333dccf38bd3ba891ea`.
+- ACTIVATION-GATED: authenticated `ar`, `en`, and `ar-EG` focused renders execute transactionally before the atomic switch. No automated suite, browser control, database connection, migration, or mutation ran locally.

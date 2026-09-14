@@ -13,7 +13,7 @@ final class SupplierContact extends Model
     public const ROLES = ['owner', 'representative', 'order', 'accounting', 'general'];
 
     protected $fillable = [
-        'supplier_id', 'role', 'name', 'email', 'phone', 'whatsapp', 'is_primary', 'status',
+        'supplier_id', 'role', 'name', 'email', 'phone', 'mobile', 'whatsapp', 'notes', 'is_primary', 'status',
         'created_by', 'updated_by', 'lock_version',
     ];
 

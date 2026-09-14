@@ -37,7 +37,9 @@ final class SaveSupplierContactAction
                 'name' => trim((string) ($data['name'] ?? '')),
                 'email' => filled($data['email'] ?? null) ? trim((string) $data['email']) : null,
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
+                'mobile' => filled($data['mobile'] ?? null) ? PhoneNormalizer::normalize((string) $data['mobile']) : null,
                 'whatsapp' => filled($data['whatsapp'] ?? null) ? PhoneNormalizer::normalize((string) $data['whatsapp']) : null,
+                'notes' => filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null,
                 'is_primary' => (bool) ($data['is_primary'] ?? false),
                 'status' => in_array(($data['status'] ?? 'active'), ['active', 'inactive'], true) ? $data['status'] : 'active',
                 'updated_by' => $actorId,
@@ -54,7 +56,7 @@ final class SaveSupplierContactAction
                 $event = 'supplier_contact_created';
                 $before = null;
             } else {
-                $before = $contact->only(['role', 'name', 'email', 'phone', 'whatsapp', 'is_primary', 'status', 'lock_version']);
+                $before = $contact->only(['role', 'name', 'email', 'phone', 'mobile', 'whatsapp', 'notes', 'is_primary', 'status', 'lock_version']);
                 $contact->fill($attributes + ['lock_version' => ((int) $contact->lock_version) + 1])->save();
                 $event = 'supplier_contact_updated';
             }
@@ -65,7 +67,7 @@ final class SaveSupplierContactAction
                 event: $event,
                 source: $saved,
                 before: $before,
-                after: $saved->only(['supplier_id', 'role', 'name', 'email', 'phone', 'whatsapp', 'is_primary', 'status', 'lock_version']),
+                after: $saved->only(['supplier_id', 'role', 'name', 'email', 'phone', 'mobile', 'whatsapp', 'notes', 'is_primary', 'status', 'lock_version']),
                 metadata: ['actor_id' => $actorId],
             );
 

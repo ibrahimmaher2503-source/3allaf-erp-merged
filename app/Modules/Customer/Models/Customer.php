@@ -44,6 +44,11 @@ final class Customer extends Model
         self::deleting(fn (): never => throw new LogicException('Customer history is preserved; use a named logical state action.'));
     }
 
+    public function getCustomerCodeAttribute(): string
+    {
+        return 'CUS-'.str_pad((string) $this->getKey(), 7, '0', STR_PAD_LEFT);
+    }
+
     /** @return BelongsTo<Customer, $this> */
     public function mergedInto(): BelongsTo
     {

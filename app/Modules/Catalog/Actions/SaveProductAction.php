@@ -211,7 +211,10 @@ class SaveProductAction
                     $product->productSuppliers()->update(['is_preferred' => false]);
 
                     if ($supplier !== null) {
-                        $product->productSuppliers()->updateOrCreate(['supplier_id' => $supplier->id], ['is_preferred' => true]);
+                        $product->productSuppliers()->updateOrCreate(['supplier_id' => $supplier->id], [
+                            'is_preferred' => true,
+                            'supplier_item_code' => $this->nullableString($data['supplier_item_code'] ?? null),
+                        ]);
                     }
                 }
 

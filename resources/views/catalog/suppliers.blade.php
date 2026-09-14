@@ -93,7 +93,9 @@ new #[Title('Supplier Masters')] class extends Component
         'name' => '',
         'email' => '',
         'phone' => '',
+        'mobile' => '',
         'whatsapp' => '',
+        'notes' => '',
         'is_primary' => false,
         'status' => 'active',
     ];
@@ -400,7 +402,7 @@ new #[Title('Supplier Masters')] class extends Component
     {
         Gate::authorize('suppliers.edit');
         $this->editingSupplierContactId = null;
-        $this->supplierContactForm = ['role' => 'representative', 'name' => '', 'email' => '', 'phone' => '', 'whatsapp' => '', 'is_primary' => false, 'status' => 'active'];
+        $this->supplierContactForm = ['role' => 'representative', 'name' => '', 'email' => '', 'phone' => '', 'mobile' => '', 'whatsapp' => '', 'notes' => '', 'is_primary' => false, 'status' => 'active'];
         $this->resetValidation();
         $this->showSupplierContactModal = true;
     }
@@ -410,7 +412,7 @@ new #[Title('Supplier Masters')] class extends Component
         Gate::authorize('suppliers.edit');
         $contact = SupplierContact::query()->where('supplier_id', $this->viewingSupplierId)->findOrFail($id);
         $this->editingSupplierContactId = $contact->id;
-        $this->supplierContactForm = $contact->only(['role', 'name', 'email', 'phone', 'whatsapp', 'is_primary', 'status']);
+        $this->supplierContactForm = $contact->only(['role', 'name', 'email', 'phone', 'mobile', 'whatsapp', 'notes', 'is_primary', 'status']);
         $this->resetValidation();
         $this->showSupplierContactModal = true;
     }
@@ -423,7 +425,9 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierContactForm.name' => ['required', 'string', 'max:255'],
             'supplierContactForm.email' => ['nullable', 'email', 'max:255'],
             'supplierContactForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
+            'supplierContactForm.mobile' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
             'supplierContactForm.whatsapp' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
+            'supplierContactForm.notes' => ['nullable', 'string', 'max:1000'],
             'supplierContactForm.is_primary' => ['boolean'],
             'supplierContactForm.status' => ['required', 'in:active,inactive'],
         ])['supplierContactForm'];
@@ -537,7 +541,7 @@ new #[Title('Supplier Masters')] class extends Component
 
 <x-app.page
     :title="$section === 'supplier-groups' ? (str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')) : (str_starts_with(app()->getLocale(), 'ar') ? 'الموردون' : __('Supplier Masters & Product-Supplier History'))"
-    :description="$section === 'supplier-groups' ? (str_starts_with(app()->getLocale(), 'ar') ? 'رتّب الموردين في مجموعات لتسهيل البحث والمتابعة.' : __('Create and maintain the supplier hierarchy before assigning supplier masters to a group.')) : (str_starts_with(app()->getLocale(), 'ar') ? 'أضف الموردين وبيانات التواصل والشروط التجارية، ثم اربط منتجاتهم عند الحاجة.' : __('Maintain supplier master contacts, commercial payment terms, preferred product relations, and purchase history.'))"
+    :description="$section === 'supplier-groups' ? (str_starts_with(app()->getLocale(), 'ar') ? 'رتّب الموردين في مجموعات لتسهيل البحث والمتابعة.' : __('Create and maintain the supplier hierarchy before assigning supplier masters to a group.')) : (str_starts_with(app()->getLocale(), 'ar') ? 'أضف هوية المورد وجهات التواصل المنظمة، ثم اربط منتجاته عند الحاجة.' : __('Maintain supplier identity, structured contacts, preferred product relations, and purchase history.'))"
     max-width="7xl"
     class="catalog-screen"
     data-guide="suppliers-header"
@@ -546,8 +550,6 @@ new #[Title('Supplier Masters')] class extends Component
         <div class="table-resource-toolbar">
             <div class="table-resource-toolbar__controls">
             @if ($canCreate && $section === 'supplier-masters')
-                <flux:button icon="arrow-down-tray" variant="subtle" :href="route('catalog.suppliers.export',['format'=>'xlsx','q'=>$search,'status'=>$statusFilter,'group_id'=>$supplierGroupFilter])">XLSX</flux:button>
-                <flux:button icon="document-arrow-down" variant="subtle" :href="route('catalog.suppliers.export',['format'=>'pdf','q'=>$search,'status'=>$statusFilter,'group_id'=>$supplierGroupFilter])">PDF</flux:button>
                 <flux:button
                     icon="plus"
                     variant="primary"
@@ -670,7 +672,6 @@ new #[Title('Supplier Masters')] class extends Component
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد' : __('Bilingual name') }}</th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بيانات التواصل' : __('Contact info') }}</th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax number') }}</th>
-                            <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms') }}</th>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status') }}</th>
                             <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'المنتجات' : __('Products') }}</th>
                             <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-text-muted uppercase tracking-wider">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إجراءات' : __('Actions') }}</th>
@@ -709,9 +710,6 @@ new #[Title('Supplier Masters')] class extends Component
                                 </td>
                                 <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax number') }}" class="px-4 py-3 text-sm whitespace-nowrap text-text-muted font-mono text-xs">
                                     {{ $supplier->tax_number ?: '—' }}
-                                </td>
-                                <td data-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms') }}" class="px-4 py-3 text-sm max-w-48 truncate text-text-muted text-xs">
-                                    {{ $supplier->payment_terms ?: __('Not configured') }}
                                 </td>
                                 <td data-label="{{ __('Status') }}" class="px-4 py-3 text-sm whitespace-nowrap">
                                     <flux:badge size="sm" color="{{ $supplier->status === 'active' ? 'emerald' : 'zinc' }}">
@@ -767,7 +765,7 @@ new #[Title('Supplier Masters')] class extends Component
                     {{ str_starts_with(app()->getLocale(), 'ar') ? ($editingSupplierId ? 'تعديل المورد' : 'إضافة مورد') : ($editingSupplierId ? __('Edit Supplier Master') : __('Create Supplier Master')) }}
                 </flux:heading>
                 <flux:text class="text-sm text-text-muted">
-                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل بيانات المورد الأساسية ووسيلة التواصل وشروط الدفع.' : __('Maintain supplier identity, contact details, tax reference, and configurable payment terms text.') }}
+                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل هوية المورد وبيانات التواصل الأساسية.' : __('Maintain compact supplier identity and core contact details.') }}
                 </flux:text>
             </div>
 
@@ -824,11 +822,6 @@ new #[Title('Supplier Masters')] class extends Component
                         wire:model="supplierForm.tax_number"
                         :label="str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax registration number')"
                         placeholder="123-456-789"
-                    />
-                    <flux:input
-                        wire:model="supplierForm.payment_terms"
-                        :label="str_starts_with(app()->getLocale(), 'ar') ? 'شروط الدفع' : __('Payment terms text')"
-                        placeholder="Net 30 Days / دفع بعد 30 يوم"
                     />
                     <flux:select wire:model.live="supplierForm.settlement_method" :label="str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method')" required>
                         <option value="">{{ __('Select settlement method') }}</option>
@@ -940,10 +933,6 @@ new #[Title('Supplier Masters')] class extends Component
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->supplierGroup?->name_ar ?: __('No supplier group') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
-                            <dt class="catalog-detail-label">{{ __('Configurable payment terms') }}</dt>
-                            <dd class="mt-1 text-sm font-medium whitespace-pre-line">{{ $viewingSupplier->payment_terms ?: __('Not configured') }}</dd>
-                        </div>
-                        <div class="catalog-detail-field sm:col-span-2">
                             <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة' : __('Preferred payment method') }}</dt>
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->preferredPaymentMethod ? (str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->preferredPaymentMethod->name_ar : $viewingSupplier->preferredPaymentMethod->name_en) : __('Not configured') }}</dd>
                         </div>
@@ -967,7 +956,8 @@ new #[Title('Supplier Masters')] class extends Component
                                         <span class="font-medium">{{ $contact->name }}</span>
                                         <flux:badge size="sm" color="zinc">{{ __(ucwords(str_replace('_', ' ', $contact->role))) }}</flux:badge>
                                     </div>
-                                    <div class="text-xs text-text-muted">{{ $contact->email ?: __('No email') }} · {{ $contact->phone ?: ($contact->whatsapp ?: __('No phone')) }}</div>
+                                    <div class="text-xs text-text-muted">{{ $contact->email ?: __('No email') }} · {{ $contact->phone ?: __('No phone') }} @if($contact->mobile)· {{ $contact->mobile }}@endif</div>
+                                    @if($contact->notes)<p class="text-xs text-text-muted">{{ $contact->notes }}</p>@endif
                                     @if ($contact->is_primary)<flux:badge size="sm" color="emerald">{{ __('Primary') }}</flux:badge>@endif
                                     @if ($canEdit)<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif
                                 </div>
@@ -1116,9 +1106,10 @@ new #[Title('Supplier Masters')] class extends Component
         <div class="space-y-5">
             <flux:heading size="lg">{{ $editingSupplierContactId ? __('Edit supplier contact') : __('Add supplier contact') }}</flux:heading>
             <form wire:submit.prevent="saveSupplierContact" class="space-y-4">
-                <flux:select wire:model="supplierContactForm.role" :label="__('Contact role')"><option value="owner">{{ __('Company / owner') }}</option><option value="representative">{{ __('Sales / account representative') }}</option><option value="order">{{ __('Order contact') }}</option><option value="accounting">{{ __('Accounting contact') }}</option><option value="general">{{ __('General contact') }}</option></flux:select>
+                <flux:select wire:model="supplierContactForm.role" :label="__('Contact role')"><option value="owner">{{ __('Owner') }}</option><option value="accounting">{{ __('Accountant') }}</option><option value="representative">{{ __('Sales representative') }}</option><option value="order">{{ __('Order contact') }}</option><option value="general">{{ __('General contact') }}</option></flux:select>
                 <flux:input wire:model="supplierContactForm.name" :label="__('Contact name')" required />
-                <div class="grid gap-4 sm:grid-cols-3"><flux:input wire:model="supplierContactForm.email" :label="__('Email')" type="email" dir="ltr" /><flux:input wire:model="supplierContactForm.phone" :label="__('Phone')" dir="ltr" /><flux:input wire:model="supplierContactForm.whatsapp" :label="__('WhatsApp')" dir="ltr" /></div>
+                <div class="grid gap-4 sm:grid-cols-3"><flux:input wire:model="supplierContactForm.phone" :label="__('Phone')" dir="ltr" /><flux:input wire:model="supplierContactForm.mobile" :label="__('Mobile')" dir="ltr" /><flux:input wire:model="supplierContactForm.email" :label="__('Email')" type="email" dir="ltr" /></div>
+                <flux:textarea wire:model="supplierContactForm.notes" :label="__('Notes')" rows="2" />
                 <flux:checkbox wire:model="supplierContactForm.is_primary" :label="__('Primary contact for this role')" />
                 @error('supplierContactForm')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
                  <div class="flex justify-end gap-3 border-t border-border pt-3"><flux:button variant="subtle" wire:click="$set('showSupplierContactModal', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplierContact"><span wire:loading.remove wire:target="saveSupplierContact">{{ __('Save contact') }}</span><span wire:loading wire:target="saveSupplierContact">{{ __('Saving...') }}</span></flux:button></div>

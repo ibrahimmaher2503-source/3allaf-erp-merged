@@ -53,6 +53,7 @@ new #[Title('Product Masters')] class extends Component
         'brand_id' => '',
         'tax_setting_id' => '',
         'preferred_supplier_id' => '',
+        'supplier_item_code' => '',
         'status' => 'active',
     ];
 
@@ -142,6 +143,7 @@ new #[Title('Product Masters')] class extends Component
             'brand_id' => '',
             'tax_setting_id' => '',
             'preferred_supplier_id' => '',
+            'supplier_item_code' => '',
             'status' => 'active',
         ];
         $this->resetValidation();
@@ -163,6 +165,7 @@ new #[Title('Product Masters')] class extends Component
             'brand_id' => (string) ($product->brand_id ?? ''),
             'tax_setting_id' => (string) ($product->tax_setting_id ?? ''),
             'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
+            'supplier_item_code' => (string) ($product->preferredProductSupplier?->supplier_item_code ?? ''),
             'status' => $product->status,
         ];
         $this->resetValidation();
@@ -211,6 +214,7 @@ new #[Title('Product Masters')] class extends Component
                     ->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now()))),
             ],
             'productForm.preferred_supplier_id' => [$this->editingProductId || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+            'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
             'productForm.status' => ['required', 'in:active,inactive'],
         ], str_starts_with(app()->getLocale(), 'ar') ? [
             'productForm.item_code.required' => 'كود الصنف مطلوب.',
@@ -344,7 +348,7 @@ new #[Title('Product Masters')] class extends Component
         return [
             'categories' => Category::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
-            'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'activeCategories' => Category::query()->active()->with('parent:id,code,name_ar,name_en')->orderBy('sort_order')->orderBy('code')->get(['id', 'parent_id', 'code', 'name_ar', 'name_en']),
             'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeSuppliers' => Supplier::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeTaxSettings' => TaxSetting::query()
@@ -360,7 +364,7 @@ new #[Title('Product Masters')] class extends Component
     {
         $term = mb_strtolower(trim(Str::limit($this->search, 100, '')));
         $query = Product::query()->familiesAndSimple()->with([
-            'category:id,code,name_ar,name_en',
+            'category.parent:id,code,name_ar,name_en',
             'brand:id,code,name_ar,name_en',
             'barcodes' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('barcode'),
         ]);
@@ -368,9 +372,10 @@ new #[Title('Product Masters')] class extends Component
         if ($term !== '') {
             $like = '%'.$term.'%';
             $query->where(function ($scope) use ($term, $like): void {
-                $scope->where('item_code', $term)
-                    ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('barcode', $term))
-                    ->orWhere('model_number', $term)
+                $scope->where('item_code', 'like', $like)
+                    ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('barcode', 'like', $like))
+                    ->orWhere('model_number', 'like', $like)
+                    ->orWhereHas('productSuppliers', fn ($link) => $link->where('supplier_item_code', 'like', $like))
                     ->orWhereRaw('LOWER(name_ar) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(name_en) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(COALESCE(keywords_ar, \'\')) LIKE ?', [$like])
@@ -386,7 +391,9 @@ new #[Title('Product Masters')] class extends Component
             $query->where('brand_id', (int) $this->brandFilter);
         }
 
-        if ($this->statusFilter !== 'all') {
+        if ($this->statusFilter === 'draft') {
+            $query->incompleteCard();
+        } elseif ($this->statusFilter !== 'all') {
             $query->where('status', $this->statusFilter);
         }
 
@@ -434,8 +441,6 @@ new #[Title('Product Masters')] class extends Component
         <x-tables.resource-toolbar filter-target="products-filters">
             @can('products_categories_brands.create')
                 <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
-                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'xlsx']) }}" icon="document-arrow-down" variant="subtle">XLSX</flux:button>
-                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'pdf']) }}" icon="document-arrow-down" variant="subtle">PDF</flux:button>
                 <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
                 <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
             @endcan
@@ -492,6 +497,7 @@ new #[Title('Product Masters')] class extends Component
             <flux:select.option value="all">{{ __('All statuses') }}</flux:select.option>
             <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
             <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
+            <flux:select.option value="draft">{{ __('Draft') }}</flux:select.option>
         </flux:select>
         <flux:select wire:model.live="productTypeFilter" :label="__('Product type')">
             <flux:select.option value="all">{{ __('All product types') }}</flux:select.option>
@@ -536,8 +542,6 @@ new #[Title('Product Masters')] class extends Component
                     <div class="flex flex-wrap justify-center gap-2">
                         <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
                 <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
-                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'xlsx']) }}" icon="document-arrow-down" variant="subtle">XLSX</flux:button>
-                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'products', 'format' => 'pdf']) }}" icon="document-arrow-down" variant="subtle">PDF</flux:button>
                         <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
                     </div>
                 @else
@@ -587,7 +591,7 @@ new #[Title('Product Masters')] class extends Component
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Type') }}"><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
                             <flux:table.cell data-label="{{ __('Category / brand') }}" class="text-xs">
-                                <div>{{ $product->category?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div>
+                                @if($product->category?->parent)<div class="font-semibold">{{ __('Main category') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category->parent->name_ar : $product->category->parent->name_en }}</div><div>{{ __('Subcategory') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category->name_ar : $product->category->name_en }}</div>@else<div class="font-semibold">{{ __('Main category') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div>@endif
                                 @if ($product->brand)
                                     <div class="text-zinc-500">{{ $product->brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->brand->name_ar : $product->brand->name_en }}</div>
                                 @endif
@@ -602,13 +606,13 @@ new #[Title('Product Masters')] class extends Component
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Status') }}">
-                                <flux:badge size="sm" :color="$product->status === 'active' ? 'emerald' : 'zinc'">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
+                                @if($product->hasIncompleteCard())<flux:badge size="sm" color="amber">{{ __('Draft') }}</flux:badge>@else<flux:badge size="sm" :color="$product->status === 'active' ? 'emerald' : 'zinc'">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>@endif
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Actions') }}" class="whitespace-nowrap">
                                 @can('products_categories_brands.edit')
                                     <div class="catalog-actions">
                                         <x-actions.button semantic="view" :label="__('View details')" :href="route('catalog.products.show', ['product' => $product])" size="xs" wire:navigate />
-                                        <x-actions.button semantic="view" icon="arrow-top-right-on-square" :label="__('Full product card')" :href="route('catalog.products.edit', ['product' => $product])" size="xs" wire:navigate />
+                                        <x-actions.button semantic="view" icon="arrow-top-right-on-square" :label="$product->hasIncompleteCard() ? __('Resume') : __('Full product card')" :href="route('catalog.products.edit', ['product' => $product])" size="xs" wire:navigate />
                                         <x-actions.button semantic="edit" :label="__('Edit identity')" size="xs" wire:click="openEditProductModal({{ $product->id }})" />
                                         <x-actions.button semantic="assign" icon="tag" :label="__('Manage barcodes')" size="xs" wire:click="openBarcodeModal({{ $product->id }})" />
                                         <x-actions.button :semantic="$product->status === 'active' ? 'disable' : 'restore'" :icon="$product->status === 'active' ? 'pause' : 'play'" :label="$product->status === 'active' ? __('Deactivate') : __('Activate')" size="xs" wire:click="toggleProductStatus({{ $product->id }})" />
@@ -648,7 +652,7 @@ new #[Title('Product Masters')] class extends Component
             <flux:select wire:model="productForm.category_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الفئة' : __('Category')" required>
                 <flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختر فئة نشطة...' : __('Select active category...') }}</flux:select.option>
                 @foreach ($activeCategories as $category)
-                    <flux:select.option :value="$category->id">{{ $category->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
+                    <flux:select.option :value="$category->id">{{ $category->parent ? (str_starts_with(app()->getLocale(), 'ar') ? $category->parent->name_ar : $category->parent->name_en).' / ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }} · {{ $category->code }}</flux:select.option>
                 @endforeach
             </flux:select>
     @can('products_categories_brands.create')
@@ -678,6 +682,7 @@ new #[Title('Product Masters')] class extends Component
                     <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ $supplier->name_en }}</flux:select.option>
                 @endforeach
             </flux:select>
+            <flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product code')" :description="__('Kept separately from the internal item code and barcode.')" dir="ltr" />
             </div>
             <flux:select wire:model="productForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')" required>
                 <flux:select.option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشط' : __('Active') }}</flux:select.option>

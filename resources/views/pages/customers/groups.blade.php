@@ -1,7 +1,7 @@
 <x-layouts::app :title="__('Customer groups')">
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
         <x-page-header :title="__('Customer groups')" :description="__('Build a company-scoped hierarchy and use it to organize and filter customer profiles.')">
-            <x-slot:actions><div class="flex flex-wrap gap-2">@can('customers.export')<flux:button href="{{ route('customers.groups.export',['format'=>'xlsx']+request()->only('q')) }}" icon="arrow-down-tray">XLSX</flux:button><flux:button href="{{ route('customers.groups.export',['format'=>'pdf']+request()->only('q')) }}" icon="document-arrow-down">PDF</flux:button>@endcan @can('customers.edit')<flux:button href="{{ route('customers.groups.import.template') }}">{{ __('Download template') }}</flux:button>@endcan</div></x-slot:actions>
+            <x-slot:actions><div class="flex flex-wrap gap-2">@can('customers.edit')<flux:button href="{{ route('customers.groups.import.template') }}">{{ __('Download template') }}</flux:button>@endcan</div></x-slot:actions>
         </x-page-header>
 
         @if (session('success'))<flux:callout variant="success" icon="check-circle">{{ session('success') }}</flux:callout>@endif
@@ -9,11 +9,11 @@
 
         @can('customers.edit')
             <form method="POST" action="{{ route('customers.groups.import') }}" enctype="multipart/form-data" class="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface p-4">@csrf <flux:input type="file" name="import_file" accept=".xlsx" :label="__('Import customer groups')" required/><flux:button type="submit">{{ __('Import valid rows') }}</flux:button></form>
-            <section class="rounded-2xl border border-border bg-surface p-5 shadow-card" aria-labelledby="customer-group-create-heading">
-                <div class="mb-5 border-b border-border pb-4">
+            <details class="rounded-2xl border border-border bg-surface p-5 shadow-card" aria-labelledby="customer-group-create-heading">
+                <summary class="cursor-pointer border-b border-border pb-3">
                     <flux:heading id="customer-group-create-heading" size="lg">{{ __('Create customer group') }}</flux:heading>
                     <flux:text class="mt-1 text-sm text-text-muted">{{ __('Use groups to organize customer profiles and simplify searching.') }}</flux:text>
-                </div>
+                </summary>
                 <form method="POST" action="{{ route('customers.groups.store') }}" novalidate class="grid gap-4 sm:grid-cols-4">
                     @csrf
                     <flux:input name="name_ar" :label="__('Arabic group name')" :value="old('name_ar')" required dir="rtl" />
@@ -31,7 +31,7 @@
                     </div>
                     <div class="flex sm:col-span-4 sm:justify-end"><flux:button type="submit" variant="primary">{{ __('Save') }}</flux:button></div>
                 </form>
-            </section>
+            </details>
         @endcan
 
         <section class="rounded-2xl border border-border bg-surface p-4 shadow-card">

@@ -231,9 +231,11 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $term = trim((string) $request->string('q'));
         if ($term !== '') {
             $digits = preg_replace('/[^0-9]+/', '', $term);
-            $query->where(function ($scope) use ($term, $digits): void {
+            $customerCodeId = preg_match('/^CUS-0*(\d+)$/i', $term, $match) ? (int) $match[1] : null;
+            $query->where(function ($scope) use ($term, $digits, $customerCodeId): void {
                 $scope->where('name_ar', 'like', '%'.$term.'%')
                     ->orWhere('name_en', 'like', '%'.$term.'%');
+                if ($customerCodeId) $scope->orWhereKey($customerCodeId);
                 if (is_string($digits) && $digits !== '') {
                     $scope->orWhere('phone_normalized', 'like', '%'.$digits.'%');
                 }

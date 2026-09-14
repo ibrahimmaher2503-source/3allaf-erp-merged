@@ -1,11 +1,13 @@
-# Current Task — v0.1.22-hotfix38 Financial and Print Settings
+# Current Task — v0.1.22-hotfix39 Catalog, Opening Balance, and Parties
 
 **Date:** 2026-09-14
-**Change class:** Customer Notes Batch 2 hotfix release
-**Source baseline:** exact active Hotfix37 commit `0f0e7aa18d47986f6805c89b3494f4f55042e151`
-**Branch:** `hotfix/v0.1.22-hotfix38-financial-print-settings`
+**Change class:** Customer Notes Batch 3 hotfix release
+**Source baseline:** exact active Hotfix38 commit `45d9e78c757cd83a596b11d613475dbdc441d2c3`
+**Branch:** `hotfix/v0.1.22-hotfix39-catalog-opening-balance-parties`
 **Status:** Complete in development and ready for the authorized root operator; implementation, focused verification, release commit, and immutable offline packaging are complete.
 
-Hotfix38 adds accessible modal create/edit workflows for payment methods and taxes, hides tax effective dates from presentation only, adds a nullable product tax default with active/effective current-company validation, provides human branch-specific continuous numbering rules, and consolidates printer/template management around one visible configuration table and a 15-type template library.
+Hotfix39 compacts product and party master workflows, preserves Excel imports while removing distributed export buttons, introduces derived Draft/Resume handling for incomplete products, exposes separate supplier item codes and existing branch-price matrices, adds stable customer display codes and loyalty help, and extends supplier contacts with mobile/notes while hiding payment terms from UI only.
 
-The owner explicitly authorized migration `2026_09_14_000112_add_tax_setting_id_to_products.php`. It adds only nullable indexed `products.tax_setting_id`, references `tax_settings.id`, and uses `nullOnDelete`. Historical purchase and sales tax snapshots and accounting calculations are unchanged. No local database or migration execution is authorized. Activation must confirm 000111 already `Ran`, execute only 000112, confirm it `Ran`, and leave that backward-compatible column in place if application rollback restores exact Hotfix37.
+Opening inventory is now a branch/store/date document with Hotfix38 branch/type continuous numbering, dynamic keyboard/scanner product lookup, quantity/cost/totals, paste and repaired XLSX flows, Draft/Resume/Approve, audited reversal, zero-opening completion, and ecommerce identity mapping guidance. Posted documents and stock/accounting actions remain immutable and unchanged.
+
+The owner-authorized migration is `2026_09_14_000113_extend_opening_inventory_and_supplier_contacts_for_hotfix39.php`. It adds nullable opening header context, nullable supplier contact mobile/notes, indexes, and branch opening-inventory sequence rows with `reset_rule=never`. Its `down()` intentionally retains these backward-compatible additions. No local migration execution is authorized. Activation must prove 000111 and 000112 are already `Ran`, run only 000113 if pending, and retain its additions if application rollback restores exact Hotfix38.

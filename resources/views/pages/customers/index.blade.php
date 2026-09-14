@@ -14,7 +14,6 @@
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
         <x-page-header data-guide="customer-list-header" :title="$pageTitle" :description="$pageDescription">
             <x-slot:actions>
-                @can('customers.export')<flux:button href="{{ route('customers.export',request()->query()+['format'=>'xlsx']) }}">XLSX</flux:button><flux:button href="{{ route('customers.export',request()->query()+['format'=>'pdf']) }}">PDF</flux:button>@endcan
                 @if ($mode === 'loyalty')
                     @can('company_settings.view')<flux:button href="{{ route('admin.settings.customer-loyalty') }}" variant="primary" icon="cog-6-tooth">{{ __('Customer Policy Settings') }}</flux:button>@endcan
                     @can('dashboard_reports.view')<flux:button href="{{ route('reports.customers') }}" variant="subtle" icon="chart-bar">{{ __('Customer & loyalty reports') }}</flux:button>@endcan
@@ -23,7 +22,6 @@
                 @endif
                 @canany(['customers.create', 'customers.import.approve'])<flux:button href="{{ route('customers.import') }}" variant="subtle" icon="arrow-up-tray" wire:navigate>{{ __('Customer Import') }}</flux:button>@endcanany
                 @can('customers.view')<flux:button href="{{ route('customers.groups.index') }}" variant="subtle" icon="folder">{{ __('Customer groups') }}</flux:button>@endcan
-                @can('customers.export')<flux:button data-guide="customer-export-action" href="{{ route('customers.export', ['q' => $term]) }}" variant="subtle" icon="arrow-down-tray">{{ __('Export') }}</flux:button>@endcan
             </x-slot:actions>
         </x-page-header>
 
@@ -62,7 +60,7 @@
                     <tbody>
                         @forelse ($customers as $customer)
                             <tr data-customer-row>
-                                <td data-primary><div class="font-semibold text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_en : $customer->name_ar }}</div></td>
+                                <td data-primary><div class="font-semibold text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en }}</div><div class="mt-1 text-xs text-text-muted" dir="auto">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_en : $customer->name_ar }}</div><span class="mt-1 inline-block font-mono text-xs" dir="ltr">{{ $customer->customer_code }}</span></td>
                                 <td data-label="{{ __('Customer group') }}"><div class="font-medium">{{ $customer->group ? (str_starts_with(app()->getLocale(), 'ar') ? $customer->group->name_ar : $customer->group->name_en) : __('No group assigned') }}</div>@if ($customer->group?->parent)<div class="mt-1 text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->group->parent->name_ar : $customer->group->parent->name_en }}</div>@endif</td>
                                 <td data-label="{{ __('Phone') }}" class="font-mono text-xs" dir="ltr">{{ $customer->phone_display }}</td>
                                 <td data-label="{{ __('Residence') }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->governorate?->name_ar : $customer->governorate?->name_en }}@if($customer->city)<span class="block text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->city->name_ar : $customer->city->name_en }}</span>@elseif(!$customer->governorate)<span class="text-xs text-text-muted">{{ __('Legacy record — residence not recorded') }}</span>@endif</td>

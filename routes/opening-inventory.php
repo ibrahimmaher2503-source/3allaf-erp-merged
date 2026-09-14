@@ -42,8 +42,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         return $templates->openingInventory($actor, request()->input('company_id'));
     })->middleware('can:inventory_stock_card.create')->name('inventory.opening.template');
     $router->post('inventory/opening/import', function (ImportOpeningInventoryWorkbookAction $action) {
-        $data = request()->validate(['workbook' => ['required', 'file', 'mimes:xlsx', 'max:51200'], 'notes' => ['nullable', 'string', 'max:2000']]);
-        $result = $action->execute($data['workbook']->getRealPath(), $data['notes'] ?? null);
+        $data = request()->validate(['workbook' => ['required', 'file', 'mimes:xlsx', 'max:51200'], 'document_date' => ['nullable', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:2000']]);
+        $result = $action->execute($data['workbook']->getRealPath(), $data['notes'] ?? null, $data['document_date'] ?? null);
         session(['opening_inventory_rejections' => $result['rejections']]);
         $target = $result['document'] ? route('inventory.opening.show', $result['document']) : route('inventory.opening.index');
         return redirect($target)->with('success', __('Opening inventory import: :total total, :accepted accepted, :rejected rejected.', $result));
@@ -54,8 +54,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })->middleware('can:inventory_stock_card.create')->name('inventory.opening.rejections');
     $router->post('inventory/opening', function (SaveOpeningInventoryDraftAction $action) {
         request()->merge(['lines' => collect(request()->input('lines', []))->filter(fn (array $line): bool => collect($line)->contains(fn ($value): bool => filled($value)))->values()->all()]);
-        $data = request()->validate(['notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:100000'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.store_id' => ['required', 'integer'], 'lines.*.quantity' => ['required', 'integer', 'min:1']]);
-        $document = $action->execute($data['lines'], notes: $data['notes'] ?? null);
+        $data = request()->validate(['document_date' => ['nullable', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:2000'], 'lines' => ['required', 'array', 'min:1', 'max:100000'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.store_id' => ['required', 'integer'], 'lines.*.quantity' => ['required', 'integer', 'min:1'], 'lines.*.unit_cost' => ['nullable', 'numeric', 'min:0']]);
+        $document = $action->execute($data['lines'], notes: $data['notes'] ?? null, documentDate: $data['document_date'] ?? null);
         return redirect()->route('inventory.opening.show', $document)->with('success', __('Opening inventory draft saved. Review totals before approval.'));
     })->middleware('can:inventory_stock_card.create')->name('inventory.opening.store');
     $router->post('inventory/opening/{document}/approve', function (OpeningInventoryDocument $document, ApproveOpeningInventoryAction $action) { $action->execute($document->id); return back()->with('success', __('Opening inventory approved and posted once.')); })->whereNumber('document')->middleware('can:inventory_stock_card.approve')->name('inventory.opening.approve');

@@ -43,7 +43,7 @@
                                 <flux:heading id="customer-identity-heading" size="lg">{{ __('Identity and contact') }}</flux:heading>
                                 <flux:text class="mt-1 text-sm">{{ __('Arabic first and last names are required. English names are optional and fall back to Arabic when omitted; changes are audited.') }}</flux:text>
                             </div>
-                            <span class="font-mono text-xs text-slate-500" dir="ltr">{{ $customer->public_id }}</span>
+                            <span class="font-mono text-xs text-slate-500" dir="ltr">{{ $customer->customer_code }} · {{ $customer->public_id }}</span>
                         </div>
                         <form method="POST" action="{{ route('customers.update', $customer) }}" class="mt-4 grid gap-4 sm:grid-cols-2" x-data="{ governorate: @js((string) old('governorate_id',$customer->governorate_id)), city: @js((string) old('city_id',$customer->city_id)), cityCounts: @js($cities->countBy('governorate_id')->mapWithKeys(fn($count,$id)=>[(string)$id=>$count])) }">
                             @csrf
