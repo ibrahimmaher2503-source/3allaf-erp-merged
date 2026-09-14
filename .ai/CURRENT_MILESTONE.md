@@ -1,7 +1,7 @@
 # Current Milestone
 
 **Date:** 2026-09-14
-**Status:** v0.1.22-hotfix41 runtime repair and its single focused final verification are complete from exact Hotfix40 code commit `08d733692895f1f3bf3f5be70ed17f5c37b5ddb1`; release commit and immutable release preparation remain. Production application files remain on exact Hotfix39 `76e2f1fa780fb6da758a471902761ca6f40acbd8`, while migration 000114 is already `Ran` and retained.
+**Status:** v0.1.22-hotfix41 runtime repair, its single focused final verification, clean commits and immutable operator package are complete from exact Hotfix40 code commit `08d733692895f1f3bf3f5be70ed17f5c37b5ddb1`. Production application files remain on exact Hotfix39 `76e2f1fa780fb6da758a471902761ca6f40acbd8`, while migration 000114 is already `Ran` and retained.
 
 Hotfix41 contains the complete Hotfix40 purchase-order approval/receiving lifecycle, concurrency-safe partial invoicing, stored localized PDFs, supplier-aware entry and centralized scoped exports. The repair is limited to scalar translation keys in directly related reporting views and fail-closed runtime permission handling.
 
