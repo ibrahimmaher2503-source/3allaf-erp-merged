@@ -83,7 +83,7 @@ final class UserFlowRegistry
                 [
                     ['ar' => 'مراجعة قائمة الفروع المعتمدة وحالتها.', 'en' => 'Review the approved branch list and status.'],
                     ['ar' => 'إضافة فرع جديد أو تعديل بيانات الفرع عند توفر الصلاحية.', 'en' => 'Create new branch or edit details when authorized.'],
-                    ['ar' => 'حفظ التغييرات بعد نجاح التحقق من كود الفرع والتوقيت.', 'en' => 'Save changes after validation of branch code and timezone.'],
+                    ['ar' => 'حفظ التغييرات بعد نجاح التحقق من كود الفرع وبياناته.', 'en' => 'Save changes after validation of the branch code and details.'],
                 ],
                 null,
             ),
@@ -158,7 +158,7 @@ final class UserFlowRegistry
                     ['ar' => 'سجّل الدخول وتحقق من الحساب قبل فتح أي شاشة تشغيلية.', 'en' => 'Sign in and verify your account before opening an operational screen.'],
                     ['ar' => 'راجع دور الكاشير وصلاحياته ونطاق الفرع والمتجر. لا يمنح الدليل أي صلاحية إضافية.', 'en' => 'Review the cashier role, permissions, and branch and store scope. The guide grants no additional access.'],
                     ['ar' => 'أكمل بيانات الشركة المصرح بها، بما في ذلك الترقيم والضرائب وطرق الدفع والطباعة حسب السياسة المعتمدة.', 'en' => 'Complete authorized company settings, including numbering, tax, payment methods, and printing under the approved policy.'],
-                    ['ar' => 'أنشئ الفرع التشغيلي وتحقق من حالته وتوقيته.', 'en' => 'Create the operating branch and confirm its status and timezone.'],
+                    ['ar' => 'أنشئ الفرع التشغيلي وتحقق من بياناته وحالته.', 'en' => 'Create the operating branch and confirm its details and status.'],
                     ['ar' => 'أنشئ متجر البيع واربطه بالفرع كمتجر بيع فعلي.', 'en' => 'Create the selling store and map it to the branch as an active selling store.'],
                     ['ar' => 'عيّن درجًا نقديًا متاحًا للكاشير ضمن الفرع والمتجر الصحيحين.', 'en' => 'Assign an available cash drawer to the cashier in the correct branch and store.'],
                     ['ar' => 'أضف منتجًا بلغتيه العربية والإنجليزية مع كود أو باركود صالح.', 'en' => 'Add a product with Arabic and English names plus a valid item code or barcode.'],

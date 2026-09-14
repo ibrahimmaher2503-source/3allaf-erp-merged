@@ -129,7 +129,7 @@ new #[Title('Role Permissions')] class extends Component
 @endphp
 
 <x-app.page :title="$isArabic ? 'صلاحيات الدور' : 'Role permissions'" :description="$isArabic ? 'راجع الصلاحيات الممنوحة لدور '.$roleName.'.' : 'Review the permissions assigned to '.$roleName.'.'" :badge="$roleName" badge-color="primary" max-width="7xl" class="space-y-5">
-    <x-slot:actions><flux:button variant="subtle" icon="arrow-left" :href="route('admin.roles')" wire:navigate>{{ $isArabic ? 'العودة للأدوار' : 'Back to roles' }}</flux:button></x-slot:actions>
+    <x-slot:actions><x-context-help :title="__('Roles and permissions help')" :label="__('Open roles and permissions help')"><ul><li>{{ __('Permissions define actions. Roles collect those permissions for assignment to users.') }}</li><li>{{ __('Branch, warehouse, and point-of-sale scope is assigned on the user access screen and continues to restrict role permissions.') }}</li><li>{{ __('Sensitive and canonical permission safeguards remain enforced by the server.') }}</li></ul></x-context-help><flux:button variant="subtle" icon="arrow-left" :href="route('admin.roles')" wire:navigate>{{ $isArabic ? 'العودة للأدوار' : 'Back to roles' }}</flux:button></x-slot:actions>
 
     @if ($canonical && ! $canEdit)
         <div class="flex">

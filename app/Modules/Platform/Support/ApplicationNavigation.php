@@ -19,7 +19,9 @@ final class ApplicationNavigation
         'purchasing.returns' => ['purchasing.returns*'],
         'catalog.suppliers' => ['catalog.suppliers*', 'suppliers.*'],
         'catalog.products' => ['catalog.products*', 'catalog.product.*'],
-        'catalog.categories' => ['catalog.categories*', 'catalog.brands*', 'catalog.product-options*'],
+        'catalog.categories' => ['catalog.categories*'],
+        'catalog.brands' => ['catalog.brands*'],
+        'catalog.product-options' => ['catalog.product-options*'],
         'inventory.balances' => ['inventory.balances*', 'inventory.movements*', 'inventory.stock-card*'],
         'inventory.transfers' => ['inventory.transfers*'],
         'inventory.counts' => ['inventory.counts*', 'inventory.adjustments*'],
@@ -88,7 +90,12 @@ final class ApplicationNavigation
                         $activeRoutes = is_array($activeRoutes) ? array_values(array_filter($activeRoutes, 'is_string')) : [$route];
                         $item['active'] = $activeRoutes !== []
                             && request()->routeIs(...$activeRoutes)
-                            && collect($parameters)->every(fn (mixed $value, string $key): bool => (string) request($key, request()->route($key)) === (string) $value);
+                            && collect($parameters)->every(function (mixed $value, string $key): bool {
+                                $actual = request($key, request()->route($key));
+
+                                return ($key === 'section' && $value === 'supplier-masters' && blank($actual))
+                                    || (string) $actual === (string) $value;
+                            });
 
                         if ($route === 'initial-setup') {
                             $item = $this->withSetupSteps($item, $user);
@@ -107,7 +114,7 @@ final class ApplicationNavigation
                 || ($group['items'] ?? []) !== [])
             ->values()->all();
 
-        return $this->normalizeForRendering($groups, $locale);
+        return $this->deduplicateDestinations($this->normalizeForRendering($groups, $locale));
     }
 
     /**
@@ -157,6 +164,8 @@ final class ApplicationNavigation
                 return [
                     'key' => $stepKey,
                     'label' => __($step['label']),
+                    'route' => $step['route'],
+                    'parameters' => $step['parameters'],
                     'url' => $url,
                     'active' => $isCanonicalDestination || (request()->routeIs($step['route'])
                         && request()->boolean('setup')
@@ -309,5 +318,66 @@ final class ApplicationNavigation
         }
 
         return $default;
+    }
+
+    /** @param list<array<string,mixed>> $groups @return list<array<string,mixed>> */
+    private function deduplicateDestinations(array $groups): array
+    {
+        $seen = [];
+
+        foreach ($groups as &$group) {
+            foreach ($group['items'] as &$item) {
+                if (($item['subgroups'] ?? []) !== []) {
+                    foreach ($item['subgroups'] as &$subcategory) {
+                        $subcategory['items'] = array_values(array_filter(
+                            $subcategory['items'],
+                            function (array $child) use (&$seen): bool {
+                                $identity = $this->destinationIdentity($child);
+                                if ($identity === '' || ! isset($seen[$identity])) {
+                                    if ($identity !== '') $seen[$identity] = true;
+                                    return true;
+                                }
+
+                                return false;
+                            },
+                        ));
+                    }
+                    unset($subcategory);
+                    $item['subgroups'] = array_values(array_filter($item['subgroups'], fn (array $subcategory): bool => ($subcategory['items'] ?? []) !== []));
+                    foreach ($item['subgroups'] as &$subcategory) {
+                        $subcategory['active'] = collect($subcategory['items'])->contains('active', true);
+                    }
+                    unset($subcategory);
+                    $item['children_active'] = collect($item['subgroups'])->contains('active', true);
+                    continue;
+                }
+
+                $identity = $this->destinationIdentity($item);
+                if ($identity !== '') $seen[$identity] = true;
+            }
+            unset($item);
+            $group['active'] = collect($group['items'])->contains(
+                fn (array $item): bool => (bool) ($item['active'] ?? false) || (bool) ($item['children_active'] ?? false)
+            );
+        }
+        unset($group);
+
+        return $groups;
+    }
+
+    /** @param array<string,mixed> $entry */
+    private function destinationIdentity(array $entry): string
+    {
+        if (in_array($entry['type'] ?? '', ['heading', 'separator'], true)) return '';
+
+        $url = $this->scalarString($entry['url'] ?? null);
+        if ($url === '' || $url === '#') return '';
+        $parts = parse_url($url);
+        parse_str($parts['query'] ?? '', $query);
+        unset($query['setup'], $query['setup_step']);
+        if (($query['section'] ?? null) === 'supplier-masters') unset($query['section']);
+        ksort($query);
+
+        return ($parts['path'] ?? $url).($query === [] ? '' : '?'.http_build_query($query));
     }
 }

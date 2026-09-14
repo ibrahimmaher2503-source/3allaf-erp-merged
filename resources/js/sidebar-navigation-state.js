@@ -1,4 +1,4 @@
-export const SIDEBAR_STATE_KEY = 'rajeh_sidebar_navigation_v2';
+export const SIDEBAR_STATE_KEY = 'rajeh_sidebar_navigation_v3';
 export const SIDEBAR_SCROLL_SELECTOR = '[data-sidebar-scroll]';
 
 const findSidebarScroller = (root = document) => {
@@ -9,7 +9,7 @@ const findSidebarScroller = (root = document) => {
 const readState = (storage = window.localStorage) => {
     try {
         const state = JSON.parse(storage.getItem(SIDEBAR_STATE_KEY) || 'null');
-        return state?.version === 2 && Number.isFinite(state.scrollTop) && Array.isArray(state.open) ? state : null;
+        return state?.version === 3 && Number.isFinite(state.scrollTop) && Array.isArray(state.open) ? state : null;
     } catch (ignored) {
         return null;
     }
@@ -47,7 +47,7 @@ export const captureSidebarState = (root = document, storage = window.localStora
     if (!navigation) return null;
 
     const state = {
-        version: 2,
+        version: 3,
         scrollTop: Math.min(maximumScrollTop(navigation), Math.max(0, Math.round(navigation.scrollTop))),
         open: openKeys(navigation),
     };
@@ -109,10 +109,38 @@ const bindSidebarState = () => {
             frame = null;
         });
     }, { passive: true });
-    navigation.addEventListener('toggle', () => captureSidebarState(), true);
+    navigation.addEventListener('toggle', (event) => {
+        const scrollTop = navigation.scrollTop;
+        requestAnimationFrame(() => {
+            navigation.scrollTop = Math.min(maximumScrollTop(navigation), scrollTop);
+            captureSidebarState();
+        });
+    }, true);
     navigation.addEventListener('click', (event) => {
         if (event.target.closest('a[href]')) captureSidebarState();
     }, true);
+    navigation.addEventListener('keydown', (event) => {
+        const current = event.target.closest('summary, a[href]');
+        if (!current || !navigation.contains(current)) return;
+
+        if (current.matches('summary') && ['ArrowRight', 'ArrowLeft'].includes(event.key)) {
+            const details = current.parentElement;
+            const shouldOpen = document.documentElement.dir === 'rtl'
+                ? event.key === 'ArrowLeft'
+                : event.key === 'ArrowRight';
+            event.preventDefault();
+            details.open = shouldOpen;
+            return;
+        }
+
+        if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+        const controls = [...navigation.querySelectorAll('summary, a[href]')]
+            .filter((control) => control.getClientRects().length > 0);
+        const index = controls.indexOf(current);
+        if (index === -1) return;
+        event.preventDefault();
+        controls[(index + (event.key === 'ArrowDown' ? 1 : -1) + controls.length) % controls.length].focus();
+    });
     restoreSidebarState();
 };
 

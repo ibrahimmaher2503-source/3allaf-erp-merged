@@ -1,8 +1,8 @@
 # Current Milestone
 
-**Date:** 2026-09-13
-**Status:** v0.1.22-hotfix36 integrates the Egyptian Arabic quality repair onto exact active Hotfix35 commit `2f6b07285ca082cb3c61f1f860e13b0d3d2bccb8`.
+**Date:** 2026-09-14
+**Status:** v0.1.22-hotfix37 Customer Notes Batch 1 is implemented and locally verified from exact active Hotfix36 commit `c5f6d57150a04d95915a72f5146a2aebd369bc83`; the immutable release commit and offline operator artifacts close the milestone.
 
-The release removes the documented corrupted `ar-EG` prefixes, word ordering, mixed-language values, and malformed presentation copy while preserving 6,115 JSON keys and 244 PHP locale leaves. Full RTL/Cairo rendering, exact `lang="ar-EG"`, three-way switching, session/cookie persistence, fallback `ar-EG → ar → en`, and Hotfix35's controller-based route-cache repair remain. Arabic `ar`, English `en`, business behavior, queries, permissions, routes, search, keyboard workflows, accounting, posting, migrations, and internal identifiers remain unchanged.
+The slice is limited to contextual help, sidebar navigation behavior/order, branch presentation, the existing per-user UI-preference architecture for default list filter visibility, and users/roles/permissions presentation. It adds no migration and changes no business records, permissions, authorization model, warehouse/POS relationship, purchasing, accounting, inventory calculation, or transactional behavior.
 
-Exactly one concise packaged-candidate verification is permitted. Vite inputs are unchanged, exact Hotfix35 compiled assets are reused, and Vite build count is zero. Promotion and activation remain unexecuted external root-operator steps and accept only exact Hotfix35. Migration 000111 must already be `Ran`; no migration is added or executed.
+Release activation is optimized: promotion authenticates the archive and complete manifest once; activation checks exact identities, runtime links/permissions, already-Ran migration 000111, prepares caches once, runs one authenticated smoke render for each of `ar`, `en`, and `ar-EG` before switching, performs an atomic switch, and runs one minimal health check. Any post-switch failure restores exact Hotfix36.

@@ -3,6 +3,7 @@
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Actions\SavePrintTemplateAction;
+use App\Modules\Platform\Actions\SaveListDisplayPreference;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
@@ -38,6 +39,8 @@ new #[Title('System Settings')] class extends Component
     public bool $companyDirty = false;
 
     public bool $companyEditingBlocked = false;
+
+    public bool $showSearchFiltersByDefault = false;
 
     // Company Form Data
     public array $companyForm = [
@@ -153,6 +156,7 @@ new #[Title('System Settings')] class extends Component
         }
 
         $this->loadSettings();
+        $this->showSearchFiltersByDefault = auth()->user()?->uiPreference?->showSearchFiltersByDefault() ?? false;
     }
 
     public function updatedActiveTab(string $tab): void
@@ -213,6 +217,16 @@ new #[Title('System Settings')] class extends Component
     public function updatedCompanyForm(): void
     {
         $this->companyDirty = true;
+    }
+
+    public function saveListDisplayPreference(SaveListDisplayPreference $action): void
+    {
+        Gate::authorize('manage-settings');
+        $user = auth()->user();
+        abort_unless($user instanceof \App\Models\User, 403);
+        $action->execute($user, $this->showSearchFiltersByDefault);
+        $user->unsetRelation('uiPreference');
+        Flux::toast(variant: 'success', text: __('List display preference saved.'));
     }
 
     /**
@@ -650,9 +664,15 @@ new #[Title('System Settings')] class extends Component
     x-on:livewire:navigate.document="if (dirty && !window.confirm(unsavedNavigationMessage)) $event.preventDefault()"
 >
     <x-slot:actions>
-        <flux:badge size="sm" color="zinc" icon="adjustments-horizontal">
-            {{ __('Configuration') }}
-        </flux:badge>
+        <x-context-help :title="__('General settings help')" :label="__('Open general settings help')">
+            <ul>
+                <li>{{ __('Company identity and timezone are shared defaults for the application. Branch screens do not edit timezone.') }}</li>
+                <li>{{ __('Payment, tax, numbering, printer, and template settings remain in their dedicated sections.') }}</li>
+                <li>{{ __('Search and filters remain available on list screens even when their panel is closed by default.') }}</li>
+                <li>{{ __('Validation, approval, and transactional warnings always remain visible.') }}</li>
+            </ul>
+        </x-context-help>
+        <flux:badge size="sm" color="zinc" icon="adjustments-horizontal">{{ __('Configuration') }}</flux:badge>
     </x-slot:actions>
 
     <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
@@ -763,6 +783,8 @@ new #[Title('System Settings')] class extends Component
                             <option value="en">{{ __('English (LTR)') }}</option>
                         </flux:select>
 
+                        <flux:input wire:model="companyForm.timezone" :label="__('Timezone')" placeholder="Africa/Cairo" required dir="ltr" />
+
                         <flux:input
                             wire:model="companyForm.phone"
                             :label="__('Contact Phone')"
@@ -787,7 +809,14 @@ new #[Title('System Settings')] class extends Component
                         <x-actions.loading-button type="submit" action="saveCompany" :label="__('Save')" x-bind:disabled="!dirty" data-guide="settings-save-button" />
                     </div>
                 </flux:card>
+
             </form>
+
+            <flux:card class="space-y-4">
+                <div><flux:heading size="lg">{{ __('List display') }}</flux:heading><flux:subheading>{{ __('Choose whether list search and filter panels open automatically.') }}</flux:subheading></div>
+                <flux:switch wire:model="showSearchFiltersByDefault" :label="__('Show search and filters by default')" :description="__('When off, use the compact Filter / Search control to open them when needed.')" />
+                <div class="flex justify-end"><flux:button type="button" variant="primary" wire:click="saveListDisplayPreference" wire:loading.attr="disabled" wire:target="saveListDisplayPreference">{{ __('Save list display') }}</flux:button></div>
+            </flux:card>
 
             <?php endif; ?>
         </div>

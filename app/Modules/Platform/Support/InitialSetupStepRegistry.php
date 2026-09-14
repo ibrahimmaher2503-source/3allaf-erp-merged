@@ -26,7 +26,7 @@ final class InitialSetupStepRegistry
             'customers' => self::step('Customers', 'Add genuine customer data only after non-empty latest consent purpose, wording, and retention policies are saved; never preload fabricated personal data.', 'customers.index', 'customers.view', required: false),
             'party-readiness' => self::step('Party readiness and policies', 'Save the separate Party workflow, privacy, service, scheduling, and invoice policy configuration before taking Party bookings. Readiness remains incomplete until the owner defines the exact mandatory Party policy subset.', 'party.readiness', 'party_bookings_invoices.view', required: false, enabled: false),
             'supplier-groups' => self::step('Supplier groups', 'Maintain the persisted supplier-group hierarchy before supplier registration.', 'catalog.suppliers', 'suppliers.view', ['section' => 'supplier-groups'], 'supplier-groups'),
-            'suppliers' => self::step('Suppliers', 'Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.', 'suppliers.index', 'suppliers.view', ['section' => 'supplier-masters'], 'supplier-masters'),
+            'suppliers' => self::step('Suppliers', 'Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.', 'catalog.suppliers', 'suppliers.view', ['section' => 'supplier-masters'], 'supplier-masters'),
             'product-options' => self::step('Product Filters', 'Configure reusable product filters, such as sizes and colours, before building products with variations.', 'catalog.product-options', 'products_categories_brands.view', required: false),
             'product-masters' => self::step('Product Cards', 'Build active sellable product cards and valid variation families from the approved catalog. Product import remains an optional action inside this workspace.', 'catalog.products', 'products_categories_brands.view'),
             'prices' => self::step('Approved selling prices', 'Configure valid reusable price lists from Product Card base prices and assign every active Sales Outlet.', 'pricing.lists', 'pricing_lists.view'),
@@ -40,7 +40,7 @@ final class InitialSetupStepRegistry
         $groups = [
             'basics' => ['company', 'branches-stores', 'warehouses', 'cash-drawers', 'users-scopes'],
             'settings' => ['payment-methods', 'taxes', 'document-sequences', 'printers', 'print-templates'],
-            'operations' => ['categories', 'brands', 'customer-groups', 'customers', 'party-readiness', 'supplier-groups', 'suppliers', 'product-options', 'product-masters', 'prices', 'opening-configuration'],
+            'operations' => ['supplier-groups', 'suppliers', 'customer-groups', 'customers', 'party-readiness', 'product-masters', 'categories', 'brands', 'product-options', 'prices', 'opening-configuration'],
         ];
 
         $steps = self::steps();

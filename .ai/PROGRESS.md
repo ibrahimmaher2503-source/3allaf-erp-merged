@@ -1,3 +1,8 @@
+## 2026-09-14 — v0.1.22-hotfix37 Customer Notes Batch 1
+
+- Implemented the scoped navigation, contextual help, branch presentation, General Settings list-display preference, and user/role card cleanup directly from exact Hotfix36.
+- Preserved routes, authorization checks, branch/warehouse/POS relationships, database schema/records, and business/transactional behavior. The focused syntax/render/navigation/accessibility/boundary verification passed, with one successful production Vite build and no database operation.
+
 ## 2026-09-08 — v0.1.22-hotfix23 sidebar layout repair completed
 
 - Removed only the active-navigation `scrollIntoView` from `dashboard-assistant.js`; preserved the unrelated guided-tour and product-validation calls.

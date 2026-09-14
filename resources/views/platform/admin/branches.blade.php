@@ -52,7 +52,6 @@ new #[Title('Branch Management')] class extends Component
         'phone' => '',
         'email' => '',
         'address' => '',
-        'timezone' => 'Africa/Cairo',
         'status' => 'active',
         'policy_notes' => '',
     ];
@@ -113,7 +112,6 @@ new #[Title('Branch Management')] class extends Component
             'phone' => '',
             'email' => '',
             'address' => '',
-            'timezone' => Company::query()->where('status', 'active')->value('timezone') ?? 'Africa/Cairo',
             'status' => 'active',
             'policy_notes' => '',
         ];
@@ -135,7 +133,6 @@ new #[Title('Branch Management')] class extends Component
             'phone' => $branch->phone ?? '',
             'email' => $branch->email ?? '',
             'address' => $branch->address ?? '',
-            'timezone' => $branch->timezone ?? 'Africa/Cairo',
             'status' => $branch->status,
             'policy_notes' => $branch->policy_notes ?? '',
         ];
@@ -161,7 +158,6 @@ new #[Title('Branch Management')] class extends Component
             'branchForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
             'branchForm.email' => ['nullable', 'email', 'max:255'],
             'branchForm.address' => ['nullable', 'string'],
-            'branchForm.timezone' => ['required', 'string', 'max:100'],
             'branchForm.status' => ['required', 'in:active,inactive'],
             'branchForm.policy_notes' => ['nullable', 'string'],
             'branchForm.default_price_list_id' => ['nullable', Rule::exists('price_lists', 'id')->where(fn ($query) => $query->where('status', 'active'))],
@@ -169,7 +165,6 @@ new #[Title('Branch Management')] class extends Component
             'branchForm.code' => str_starts_with(app()->getLocale(), 'ar') ? 'رمز الفرع' : __('Branch Code'),
             'branchForm.name_ar' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم الفرع بالعربية' : __('Arabic Name'),
             'branchForm.name_en' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم الفرع بالإنجليزية' : __('English Name'),
-            'branchForm.timezone' => str_starts_with(app()->getLocale(), 'ar') ? 'المنطقة الزمنية' : __('Timezone'),
             'branchForm.status' => str_starts_with(app()->getLocale(), 'ar') ? 'حالة الفرع' : __('Status'),
         ])['branchForm'];
 
@@ -315,7 +310,6 @@ new #[Title('Branch Management')] class extends Component
 
         return view('platform.admin.branches', [
             'branches' => $query->orderBy('code')->paginate(10),
-            'companyTimezone' => Company::query()->where('status', 'active')->value('timezone'),
             'activePriceLists' => PriceList::query()->where('company_id', Company::query()->where('status', 'active')->value('id'))->where('status', 'active')->orderBy('list_number')->get(),
         ]);
     }
@@ -323,16 +317,15 @@ new #[Title('Branch Management')] class extends Component
 
 <x-app.page
     :title="__('Branch Masters')"
-    :description="__('Manage branches and open Warehouses & Sales Outlets to configure explicit stock locations.')"
+    :description="__('Manage branch identity, contacts, status, and default selling price list.')"
     max-width="7xl"
     class="space-y-6"
     data-guide="branches-header"
 >
     @if ($savedBranchId)
         <flux:callout variant="success" icon="check-circle" title="{{ __('Branch created successfully.') }}">
-            <p>{{ __('The branch :name is saved. Continue by creating or linking its warehouse or sales outlet.', ['name' => $savedBranchName]) }}</p>
+            <p>{{ __('The branch :name is saved.', ['name' => $savedBranchName]) }}</p>
             <div class="mt-3 flex flex-wrap gap-2">
-                @can('branches_stores.create')<flux:button :href="route('admin.stores', ['setup' => 1, 'setup_step' => 'warehouses', 'branch_id' => $savedBranchId, 'create' => 1])" size="sm" variant="primary" icon="building-storefront" wire:navigate>{{ __('Add warehouse or sales outlet') }}</flux:button>@endcan
                 <flux:button :href="route('admin.branches')" size="sm" variant="subtle" wire:navigate>{{ __('Return to Branches') }}</flux:button>
                 <flux:button :href="route('initial-setup')" size="sm" variant="subtle" wire:navigate>{{ __('Return to Setup Center') }}</flux:button>
             </div>
@@ -341,7 +334,14 @@ new #[Title('Branch Management')] class extends Component
     <x-slot:actions>
         <div class="flex flex-wrap items-center gap-2" data-guide="branches-workspace-navigation">
             @if ($section === 'branch-masters')
-                <flux:button size="sm" icon="building-storefront" variant="primary" href="{{ route('admin.stores') }}">{{ __('Warehouses & Sales Outlets') }}</flux:button>
+                <x-context-help :title="__('Branch help')" :label="__('Open branch help')">
+                    <ul>
+                        <li>{{ __('A branch is the business location that owns its warehouse and point-of-sale access context.') }}</li>
+                        <li>{{ __('Create the branch identity here. Manage warehouses and points of sale from their own authorized screen.') }}</li>
+                        <li>{{ __('Company-wide defaults are managed in General Settings, not on branch records.') }}</li>
+                        <li>{{ __('User access is assigned from branch to warehouse or point of sale, then limited by role permissions.') }}</li>
+                    </ul>
+                </x-context-help>
                 <div data-guide="branch-masters-actions">
                     <x-tables.resource-toolbar>
                         @can('branches_stores.create')
@@ -413,7 +413,7 @@ new #[Title('Branch Management')] class extends Component
     <section data-branch-section="branch-masters" data-guide="branch-masters-workspace" class="space-y-4">
 
     <!-- Filters & Controls -->
-    <flux:card id="branches-filters" class="scroll-mt-24 space-y-4" data-guide="branches-filters">
+    <x-tables.filter-bar id="branches-filters" class="scroll-mt-24" data-guide="branches-filters">
         <div class="grid gap-4 sm:grid-cols-2">
             <flux:input
                 wire:model.live.debounce.300ms="search"
@@ -429,7 +429,7 @@ new #[Title('Branch Management')] class extends Component
                 <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
             </flux:select>
         </div>
-    </flux:card>
+    </x-tables.filter-bar>
 
     <!-- Data Table -->
 
@@ -453,7 +453,7 @@ new #[Title('Branch Management')] class extends Component
             @foreach ($branches as $branch)
                 <flux:card class="space-y-3 p-4">
                     <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="font-semibold text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }}</div><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_en : $branch->name_ar }}</div><span class="mt-1 inline-block font-mono text-xs text-primary" dir="ltr">{{ $branch->code }}</span></div><flux:badge size="sm" color="{{ $branch->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($branch->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge></div>
-                    <dl class="grid grid-cols-2 gap-3 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Phone') }}</dt><dd dir="ltr">{{ $branch->phone ?: '—' }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Timezone') }}</dt><dd class="font-mono text-xs" dir="ltr">{{ $branch->timezone }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Warehouses') }}</dt><dd>{{ $branch->active_warehouse_count }}</dd></div></dl>
+                    <dl class="grid grid-cols-2 gap-3 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Phone') }}</dt><dd dir="ltr">{{ $branch->phone ?: '—' }}</dd></div><div><dt class="text-xs text-text-muted">{{ __('Warehouses') }}</dt><dd>{{ $branch->active_warehouse_count }}</dd></div></dl>
                     <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                         @can('branches_stores.edit')
                             <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditBranchModal({{ $branch->id }})">{{ __('Edit') }}</x-actions.button>
@@ -475,7 +475,6 @@ new #[Title('Branch Management')] class extends Component
             <flux:table.columns>
                 <flux:table.column class="min-w-56"><span class="block whitespace-normal leading-tight">{{ __('Branch identity') }}</span></flux:table.column>
                 <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Phone') }}</flux:table.column>
-                <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Timezone') }}</flux:table.column>
                 <flux:table.column class="min-w-32 whitespace-nowrap">{{ __('Warehouses') }}</flux:table.column>
                 <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Status') }}</flux:table.column>
                 <flux:table.column class="min-w-44 whitespace-nowrap text-end">{{ __('Actions') }}</flux:table.column>
@@ -492,19 +491,6 @@ new #[Title('Branch Management')] class extends Component
 
                         <flux:table.cell class="text-xs">
                             {{ $branch->phone ?: '—' }}
-                        </flux:table.cell>
-
-                        <flux:table.cell class="text-xs">
-                            <div class="font-mono">{{ $branch->timezone }}</div>
-                            @if (filled($companyTimezone) && $branch->timezone !== $companyTimezone)
-                                <flux:badge size="sm" variant="outline" color="amber" class="mt-1">{{ __('company.branch_override') }}</flux:badge>
-                                <div class="mt-1 text-[11px] text-zinc-500">{{ __('company.override_help', ['branch_timezone' => $branch->timezone, 'company_timezone' => $companyTimezone]) }}</div>
-                            @elseif (filled($companyTimezone) && $branch->timezone === $companyTimezone)
-                                <flux:badge size="sm" variant="outline" color="blue" class="mt-1">{{ __('company.matches_company_default') }}</flux:badge>
-                                <div class="mt-1 text-[11px] text-zinc-500">{{ __('company.match_help') }}</div>
-                            @else
-                                <div class="mt-1 text-[11px] text-zinc-500">{{ __('company.scope_not_recorded') }}</div>
-                            @endif
                         </flux:table.cell>
 
                         <flux:table.cell>

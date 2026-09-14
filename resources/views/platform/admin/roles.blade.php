@@ -92,6 +92,7 @@ new #[Title('Roles')] class extends Component
 
 <x-app.page :title="__('Roles')" :description="__('Review canonical roles and maintain permitted local roles. Permission mappings are managed separately and every change is audited.')" max-width="7xl" class="space-y-5">
     <x-slot:actions>
+        <x-context-help :title="__('Roles and permissions help')" :label="__('Open roles and permissions help')"><ul><li>{{ __('Roles define what a user may do; branch and location assignments define where they may do it.') }}</li><li>{{ __('A warehouse or point of sale belongs to a branch, and user access must remain inside the authorized branch chain.') }}</li><li>{{ __('Open Permissions for a role to review its actions. Canonical role safeguards remain unchanged.') }}</li></ul></x-context-help>
         @can('users_roles_permissions.create')
             <flux:button variant="primary" icon="plus" wire:click="openCreateRole">{{ __('Add role') }}</flux:button>
         @endcan

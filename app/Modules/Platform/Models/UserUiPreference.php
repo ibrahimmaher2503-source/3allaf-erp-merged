@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class UserUiPreference extends Model
 {
+    public const DISPLAY_PREFERENCES_KEY = '_display_preferences';
+
     protected $table = 'user_ui_preferences';
 
     protected $fillable = [
@@ -34,5 +36,12 @@ final class UserUiPreference extends Model
             'navbar_mode' => 'sticky', 'content_width' => 'wide', 'table_density' => 'comfortable',
             'font_scale' => 'normal', 'reduced_motion' => false, 'tutorial_progress' => [],
         ];
+    }
+
+    public function showSearchFiltersByDefault(): bool
+    {
+        $progress = is_array($this->tutorial_progress) ? $this->tutorial_progress : [];
+
+        return (bool) ($progress[self::DISPLAY_PREFERENCES_KEY]['show_search_filters_by_default'] ?? false);
     }
 }

@@ -305,3 +305,13 @@
 - PASS: archive/complete-manifest integrity, root-script Bash syntax and static fail-closed safety contract, and Git diff hygiene. The operator scripts were not executed.
 - ACTIVATION-GATED: authenticated `ar`, `en`, and `ar-EG` representative route rendering runs transactionally before and after switching. It was not locally executed without an authorized runtime database.
 - Migration status: no migration was added, queried, or executed. Migration 000111 must already be `Ran` when activation starts.
+
+# 2026-09-14 — v0.1.22-hotfix37 concise release verification
+
+- PASS: changed PHP/Blade syntax, complete Blade cache compilation and compiled PHP syntax, exact `ar`/`en`/natural `ar-EG` locale JSON, and targeted database-free rendering for the contextual-help dialog and shared closed-by-default Filter/Search control.
+- PASS: sidebar hover/focus/active contracts, single internal bottom scroller, saved scroll/expanded state across Livewire navigation, no-jump toggle handling, arrow-key behavior, unique canonical authorized destinations, Supplier-before-Customer ordering, and the Product Cards/Categories/Brands/Product Filters sequence.
+- PASS: contextual-help trigger/dialog accessibility contracts (button, keyboard activation, close, backdrop, Escape, focus trap, initial focus and focus return); branch timezone and warehouse/POS shortcut removal; General Settings timezone and persisted list-display preference; user/role count-card removal with authorization code unchanged.
+- PASS: exactly one successful Node 20/Vite 8.2.0 production build; final manifest SHA-256 `14ab2392f1214f12750ba4d841be4828d9da315013ed9c732fdb46cd1439ead0`, JavaScript SHA-256 `a9ca86aeb7e0ad1983173cc94f9dc6f9195f17a3d0a15333dccf38bd3ba891ea`, and CSS SHA-256 `06c494bb235b3aaaf790f4f9ca8730ce826faf5ca4d04a4eaa9af61190d0a0d6`. One earlier launcher attempt selected system Node 16 and stopped before Vite compilation or asset output.
+- PASS: `git diff --check` and no-migration boundary. No automated suite or browser-control run was created or executed under the current directive.
+- ACTIVATION-GATED: the optimized script checks migration 000111 is already `Ran` and performs one focused authenticated smoke render per `ar`, `en`, and `ar-EG` before switching. Activation executes no migration.
+- Database status: no database command, connection, query, fixture, migration or mutation occurred during local implementation or verification.

@@ -137,7 +137,6 @@ new #[Title('Authorization Baseline')] class extends Component
                 }))
                 ->latest()
                 ->paginate(15),
-            'roleCount' => $scope->roles($actor)->where('status', 'active')->count(),
             'roles' => $this->authorizationModalOpen ? $scope->assignableRoles($actor) : [],
             'branches' => $this->authorizationModalOpen ? $scope->branches($actor)->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : [],
             'stores' => $this->authorizationModalOpen ? $scope->stores($actor)->where('status', 'active')->orderBy('name_en')->get(['id', 'name_ar', 'name_en', 'branch_id']) : [],
@@ -153,15 +152,18 @@ new #[Title('Authorization Baseline')] class extends Component
     data-guide="auth-header"
 >
     <x-slot:actions>
+        <x-context-help :title="__('User access help')" :label="__('Open user access help')">
+            <ul>
+                <li>{{ __('A branch defines the business location. Warehouses and points of sale belong to that branch.') }}</li>
+                <li>{{ __('Assign branch access first, then only the warehouse or point-of-sale locations the user needs.') }}</li>
+                <li>{{ __('Roles grant permitted actions; location access limits where those actions can be used.') }}</li>
+                <li>{{ __('Saving access does not change the existing authorization model or grant hidden permissions.') }}</li>
+            </ul>
+        </x-context-help>
         @can('manage-global-role-catalog')
             <flux:button variant="subtle" icon="shield-check" :href="route('admin.roles')" wire:navigate>{{ __('Manage roles') }}</flux:button>
         @endcan
     </x-slot:actions>
-
-    <div class="grid gap-4 sm:grid-cols-2">
-        <div data-guide="auth-users-card"><x-cards.stat-card :label="__('Users')" :value="$users->total()" :description="__('Searchable inventory')" icon="users" /></div>
-        <div data-guide="auth-roles-card"><x-cards.stat-card :label="__('Roles')" :value="$roleCount" :description="__('Configured roles')" icon="shield-check" tone="info" /></div>
-    </div>
 
     @if ($errors->any())
         <flux:callout variant="danger" title="{{ __('Authorization change could not be completed') }}">

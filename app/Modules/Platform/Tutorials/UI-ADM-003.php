@@ -104,8 +104,8 @@ return [
                     'en' => 'Branch Directory Table & POS Mapping',
                 ],
                 'body' => [
-                    'ar' => 'استعراض بيانات الفروع والمنطقة الزمنية والمتجر البيعي المربوط.',
-                    'en' => 'Inspect branch codes, names, store counts, POS selling stores, and actions.',
+                    'ar' => 'استعراض أكواد الفروع وأسمائها وحالتها والإجراءات المتاحة.',
+                    'en' => 'Inspect branch codes, names, status, and available actions.',
                 ],
             ],
             4 => [
@@ -148,12 +148,12 @@ return [
             1 => [
                 'key' => 'field-2',
                 'title' => [
-                    'ar' => 'المنطقة والتوقيت والحالة',
-                    'en' => 'Region, Timezone & Status',
+                    'ar' => 'بيانات الاتصال والحالة',
+                    'en' => 'Contact details and status',
                 ],
                 'body' => [
-                    'ar' => 'تحدد النطاق الجغرافي والمنطقة الزمنية المعتمدة وحالة تفعيل الفرع.',
-                    'en' => 'Specifies geographic region, approved timezone, and branch active status.',
+                    'ar' => 'توضح بيانات اتصال الفرع وحالة تفعيله.',
+                    'en' => 'Shows branch contact details and active status.',
                 ],
             ],
         ],
@@ -223,8 +223,8 @@ return [
                 'en' => 'Branch Directory Table & POS Mapping',
             ],
             'body' => [
-                'ar' => 'استعراض بيانات الفروع والمنطقة الزمنية والمتجر البيعي المربوط.',
-                'en' => 'Inspect branch codes, names, store counts, POS selling stores, and actions.',
+                'ar' => 'استعراض أكواد الفروع وأسمائها وحالتها والإجراءات المتاحة.',
+                'en' => 'Inspect branch codes, names, status, and available actions.',
             ],
         ],
         4 => [

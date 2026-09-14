@@ -67,6 +67,17 @@
         <flux:sidebar.collapse tooltip="{{ app()->isLocale('ar-EG') ? 'اقفل القائمة' : ($isArabic ? 'إغلاق القائمة' : 'Close menu') }}" class="lg:hidden" />
     </flux:sidebar.header>
     <div class="app-company-context" title="{{ $companyName }}"><span class="app-company-context__dot" aria-hidden="true"></span><span class="min-w-0"><strong>{{ $companyName }}</strong><small>{{ $contextName ?: ($isArabic ? 'كل المواقع المصرح بها' : 'All authorized locations') }}</small></span></div>
+    <div class="flex items-center justify-between gap-2 px-1 text-xs text-slate-300">
+        <span>{{ __('Navigation help') }}</span>
+        <x-context-help :title="__('Navigation help')" :label="__('Open navigation help')" sidebar>
+            <ul>
+                <li>{{ __('Use Tab to reach links and section controls, then Enter or Space to activate them.') }}</li>
+                <li>{{ __('Use Up and Down arrows to move between visible navigation controls. Use Left and Right arrows to close or open a section.') }}</li>
+                <li>{{ __('The highlighted destination is your current screen. Your expanded sections and sidebar position are preserved during navigation.') }}</li>
+                <li>{{ __('Supplier groups appear before customer groups. Product cards, categories, brands, filters, and inventory destinations are kept together.') }}</li>
+            </ul>
+        </x-context-help>
+    </div>
     <x-app-navigation id="application-navigation" :groups="$navigationGroups" />
 </flux:sidebar>
 <div class="app-layout__content min-w-0">
