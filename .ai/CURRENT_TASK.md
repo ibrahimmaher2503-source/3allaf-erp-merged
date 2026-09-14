@@ -4,7 +4,7 @@
 **Change class:** Customer final batch hotfix release
 **Source baseline:** exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`
 **Branch:** `hotfix/v0.1.22-hotfix40-purchase-workflow-reports-center`
-**Status:** Complete in development; focused verification and the one required Vite production build passed. Release commit and immutable offline packaging are the remaining closure steps.
+**Status:** Complete in development and ready for the authorized root operator; implementation, focused verification, the one required Vite production build, release commit, and immutable offline packaging are complete.
 
 Hotfix40 completes the controlled purchase-order lifecycle, full-page draft editing, branch-aware numbering/counts, independent receiving progress, partial multi-invoice conversion with remaining-quantity locking, compact supplier-cost-aware product lines, private versioned purchase-order PDFs, and the permission-scoped Reports and Export Center. Distributed list exports and payment terms remain hidden from UI only; their backend data and services remain available.
 
