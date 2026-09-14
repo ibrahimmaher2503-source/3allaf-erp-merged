@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-14
-**Status:** v0.1.22-hotfix39 Customer Notes Batch 3 is complete in development from exact active Hotfix38 commit `45d9e78c757cd83a596b11d613475dbdc441d2c3`; focused verification, release commit, and offline operator preparation are complete. Production remains untouched.
+**Status:** v0.1.22-hotfix40 Customer final batch is implemented from exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`. The focused database-free verification and exactly one Node 20/Vite 8.2.0 production build passed; production remains untouched.
 
-The slice is limited to product catalog UX/search/supplier identity/draft readiness, opening inventory entry/import/document context, customer/group UX, and supplier/group/contact UX. Existing exports remain routable for a future Reports Center, payment terms remain stored and accepted by backend actions, branch pricing continues through the existing matrix/resolver contracts, and posted inventory/accounting history remains immutable.
+The completed slice covers the purchase-order approval and receiving lifecycle, partial concurrency-safe invoice conversion, stored localized PDFs, supplier-aware compact product entry, and centralized permission-scoped exports. Existing approval, attachment, inventory ledger, invoice snapshot and export infrastructure is reused. Historical approved documents and ledger snapshots remain immutable.
 
-Activation is permitted to run only migration 000113 after proving migrations 000111 and 000112 are `Ran`. Promotion authenticates the archive and verifies its complete manifest exactly once. Activation prepares caches once, performs authenticated `ar`, `en`, and `ar-EG` focused renders, switches atomically, and restores exact Hotfix38 application files on failure while retaining the nullable schema additions.
+Activation is permitted to run only migration 000114 after proving migrations 000111, 000112 and 000113 are `Ran`. Promotion authenticates the archive and verifies its complete manifest exactly once. Activation prepares caches once, performs minimal authenticated `ar`, `en`, and `ar-EG` smoke checks, switches atomically, and restores exact Hotfix39 application files on failure while retaining backward-compatible schema additions.

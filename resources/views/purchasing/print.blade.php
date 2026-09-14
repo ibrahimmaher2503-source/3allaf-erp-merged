@@ -78,7 +78,8 @@
             </div>
 
             <div class="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700/60">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">{{ __('Delivery & Terms') }}</h3>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">{{ __('Branch and receiving location') }}</h3>
+                <p class="font-bold text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $order->branch?->name_ar : $order->branch?->name_en }}</p>
                 @if($order->store)
                     <p class="font-bold text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $order->store->name_ar : $order->store->name_en }}</p>
                     <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Store Code') }}: {{ $order->store->code }}</p>
@@ -86,7 +87,6 @@
                     <p class="text-xs text-zinc-500 italic">{{ __('No specific store assigned') }}</p>
                 @endif
                 @if($order->expected_delivery_date)<p class="text-xs text-zinc-600 dark:text-zinc-300 mt-1">{{ __('Expected Delivery') }}: {{ $order->expected_delivery_date->format('Y-m-d') }}</p>@endif
-                @if($order->payment_terms)<p class="text-xs text-zinc-600 dark:text-zinc-300">{{ __('Payment Terms') }}: {{ $order->payment_terms }}</p>@endif
             </div>
         </div>
 

@@ -83,6 +83,10 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ->middleware('can:purchase_orders.create')
         ->name('purchasing.orders.create');
 
+    $router->livewire('purchasing/orders/{order}/edit', 'purchasing::orders')
+        ->whereNumber('order')->middleware('can:purchase_orders.edit')
+        ->name('purchasing.orders.edit');
+
     $router->livewire('purchasing/invoices', 'purchasing::invoices')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices');
@@ -250,7 +254,23 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         );
 
         return view('purchasing.print', [
-            'order' => $order->load(['supplier', 'store', 'creator', 'lines.product']),
+            'order' => $order->load(['branch', 'supplier', 'store', 'creator', 'lines.product']),
         ]);
     })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.print');
+
+    $router->post('purchasing/orders/{order}/pdf', function (PurchaseOrder $order) {
+        app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order, app()->getLocale());
+        return back()->with('success', __('Purchase-order PDF generated and stored privately.'));
+    })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.generate');
+
+    $deliverOrderPdf = function (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document, bool $download = false) {
+        abort_unless((int) $document->purchase_order_id === (int) $order->id, 404);
+        $attachment = $document->attachment()->firstOrFail();
+        $authorizer = fn (User $user, Attachment $candidate): bool => $user->can('purchase_orders.print') && $candidate->source_type === PurchaseOrder::class && $candidate->source_id === (string) $order->id;
+        if (!$download) return app(DeliverAttachment::class)->execute($attachment, $authorizer);
+        app(\App\Modules\Platform\Actions\AuthorizeAttachmentAccess::class)->execute($attachment, $authorizer);
+        return \Illuminate\Support\Facades\Storage::disk($attachment->storage_disk)->download($attachment->storage_path, $order->po_number.'-v'.$document->version.'-'.$document->locale.'.pdf');
+    };
+    $router->get('purchasing/orders/{order}/pdf/{document}/view', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.view');
+    $router->get('purchasing/orders/{order}/pdf/{document}/download', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document, true))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.download');
 });

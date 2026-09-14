@@ -248,14 +248,14 @@ final class ApprovePurchaseInvoiceAction
             if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
                 throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
             }
-            if ($this->compare($newReceived, $poLine->quantity_ordered) < 0) {
-                throw new InvalidArgumentException(__('Partial receipt is not allowed under invoice-posts-stock Model A; invoice quantity must complete the PO line.'));
-            }
             $poLine->mutateApprovedParentLine(['quantity_received' => $newReceived]);
         }
         $allReceived = $order->lines()->whereColumn('quantity_received', '<', 'quantity_ordered')->doesntExist();
         $someReceived = $order->lines()->where('quantity_received', '>', 0)->exists();
-        $order->mutateApprovedDocument(['status' => $allReceived ? 'received' : ($someReceived ? 'partially_received' : $order->status), 'lock_version' => $order->lock_version + 1]);
+        $order->mutateApprovedDocument([
+            'receiving_status' => $allReceived ? 'fully_received' : ($someReceived ? 'partially_received' : 'not_received'),
+            'lock_version' => $order->lock_version + 1,
+        ]);
     }
 
     private function validatePurchaseOrderRules(PurchaseInvoice $invoice): void
@@ -294,9 +294,6 @@ final class ApprovePurchaseInvoiceAction
             $newReceived = $this->add($poLine->quantity_received, $line->quantity, 6);
             if ($this->compare($newReceived, $poLine->quantity_ordered) > 0) {
                 throw new InvalidArgumentException(__('Over-receipt is not allowed by the approved policy.'));
-            }
-            if ($this->compare($newReceived, $poLine->quantity_ordered) < 0) {
-                throw new InvalidArgumentException(__('Partial receipt is not allowed under invoice-posts-stock Model A; invoice quantity must complete the PO line.'));
             }
         }
     }

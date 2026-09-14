@@ -90,7 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $genders = Gender::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_en']);
 
         $reportKey = $focusedModule ?? 'dashboard';
-        $reportTitle = $focusedModule === null ? __('Reports center') : $reportTitles[$focusedModule];
+        $reportTitle = $focusedModule === null ? __('Reports and Export Center') : $reportTitles[$focusedModule];
         $recentExports = ($user->can('dashboard_reports.export_xlsx') || $user->can('dashboard_reports.export_pdf'))
             ? ExportJob::query()->where('requested_by', $user->id)->latest('id')->limit(5)->get(['id', 'report_key', 'format', 'status', 'row_count', 'created_at', 'completed_at'])
             : collect();
@@ -123,12 +123,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'user_id' => ['nullable', 'integer'], 'module' => ['nullable', 'string', 'in:sales,inventory,purchasing,cash,customers,parties,quotations,assets'],
             'supplier_id' => ['nullable', 'integer'], 'customer_id' => ['nullable', 'integer'], 'product_id' => ['nullable', 'integer'],
             'category_id' => ['nullable', 'integer'], 'payment_method_id' => ['nullable', 'integer'],
-            'document_status' => ['nullable', 'string', 'in:approved,suspended,cancelled'],
+            'document_status' => ['nullable', 'string', 'in:draft,submitted,approved,partially_received,received,awaiting_distribution,rejected,suspended,cancelled,closed'],
             'party_status' => ['nullable', 'string', 'in:draft,confirmed,closed,cancelled'],
             'product_type' => ['nullable', 'string', 'in:standard,service,digital,bundle,rental,party_consumable'], 'product_status' => ['nullable', 'string', 'in:active,inactive,archived'],
             'brand_id' => ['nullable', 'integer'], 'age_label_id' => ['nullable', 'integer'], 'character_id' => ['nullable', 'integer'], 'colour_id' => ['nullable', 'integer'], 'gender_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string', 'max:100'], 'sort' => ['nullable', 'string', 'in:document,store,cashier,gross,discount,tax,total'], 'direction' => ['nullable', 'string', 'in:asc,desc'],
-            'format' => ['required', 'string', 'in:xlsx,pdf'],
+            'dataset' => ['nullable', 'string', 'in:products_barcodes,customers_groups,suppliers_groups,purchase_orders,purchase_invoices_receiving,opening_inventory,inventory_movements'],
+            'format' => ['required', 'string', 'in:csv,xlsx,pdf'],
         ]);
         $job = $action->execute($user, $filters, $filters['format']);
 
@@ -191,13 +192,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('exports/{job}/download', function (Request $request, ExportJob $job) {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->can('dashboard_reports.export_'.$job->format) && $job->requested_by === $user->id, 403);
+        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id, 403);
         abort_unless($job->status === 'ready' && $job->expires_at?->isFuture(), 410);
         abort_unless($job->storage_path !== null && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 404);
         app(RecordAuditEvent::class)->execute('reporting', 'export_downloaded', $job, branchId: $job->branch_id, storeId: $job->store_id, metadata: ['row_count' => $job->row_count, 'filters' => $job->filters, 'expires_at' => $job->expires_at?->toIso8601String()]);
-        $extension = $job->format === 'pdf' ? 'pdf' : 'xlsx';
-        $mime = $job->format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        $extension = $job->format;
+        $mime = match($job->format) { 'pdf'=>'application/pdf','csv'=>'text/csv; charset=UTF-8',default=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
 
         return Storage::disk($job->storage_disk ?: 'local')->download($job->storage_path, 'toyjoy-'.$job->report_key.'-'.$job->id.'.'.$extension, ['Content-Type' => $mime]);
     })->name('exports.download');
+
+    Route::get('exports/{job}/view', function (Request $request, ExportJob $job) {
+        /** @var User $user */ $user=$request->user();
+        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id,403);
+        abort_unless($job->status==='ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk?:'local')->exists($job->storage_path),410);
+        return Storage::disk($job->storage_disk?:'local')->response($job->storage_path, null, ['Cache-Control'=>'private, no-store','X-Content-Type-Options'=>'nosniff']);
+    })->name('exports.view');
 });

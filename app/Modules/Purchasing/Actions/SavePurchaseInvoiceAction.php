@@ -80,6 +80,9 @@ final class SavePurchaseInvoiceAction
                     ->lockForUpdate()
                     ->findOrFail($purchaseOrderId);
             if ($purchaseOrder !== null) {
+                if (! in_array($purchaseOrder->status, ['approved', 'partially_received', 'received'], true)) {
+                    throw new InvalidArgumentException(__('Only procurement-manager-approved purchase orders can be converted to invoices.'));
+                }
                 if ((int) $purchaseOrder->supplier_id !== (int) $supplier->id) {
                     throw new InvalidArgumentException(__('The selected purchase order does not belong to the invoice supplier.'));
                 }
@@ -131,6 +134,13 @@ final class SavePurchaseInvoiceAction
                 $purchaseOrderLine = $purchaseOrderLineId === null ? null : $purchaseOrderLines->get($purchaseOrderLineId);
                 if ($purchaseOrderLine !== null && (int) $purchaseOrderLine->product_id !== (int) $product->id) {
                     throw new InvalidArgumentException(__('The referenced purchase-order line does not belong to the selected product.'));
+                }
+                if ($purchaseOrderLine !== null) {
+                    $requested = ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
+                    $remaining = bcsub((string) $purchaseOrderLine->quantity_ordered, (string) $purchaseOrderLine->quantity_received, 6);
+                    if (bccomp($requested, '0', 6) <= 0 || bccomp($requested, $remaining, 6) > 0) {
+                        throw new InvalidArgumentException(__('Invoice quantity cannot exceed the remaining purchase-order quantity.'));
+                    }
                 }
                 $normalizedLines[] = [...$line, 'product_id' => $product->id, 'purchase_order_line_id' => $purchaseOrderLine?->id, 'line_number' => $index + 1];
             }

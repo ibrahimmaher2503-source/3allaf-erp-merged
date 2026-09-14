@@ -155,7 +155,6 @@ new #[Title('Brand Masters')] class extends Component
             @can('products_categories_brands.create')
                 <flux:button href="{{ route('catalog.reference-import') }}" variant="subtle">{{ __('Excel import') }}</flux:button>
                 <flux:button href="{{ route('catalog.data-exchange.template', ['type' => 'brands']) }}" variant="subtle" icon="arrow-down-tray">{{ __('Import template') }}</flux:button>
-                <flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'brands', 'format' => 'xlsx']) }}" variant="subtle" icon="document-arrow-down">XLSX</flux:button><flux:button href="{{ route('catalog.data-exchange.export', ['type' => 'brands', 'format' => 'pdf']) }}" variant="subtle" icon="document-arrow-down">PDF</flux:button>
                 <flux:button icon="plus" variant="primary" wire:click="openCreateBrandModal" data-guide="brands-add-action">{{ __('Add brand') }}</flux:button>
             @endcan
         </x-tables.resource-toolbar>

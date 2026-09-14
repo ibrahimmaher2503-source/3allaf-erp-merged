@@ -31,7 +31,7 @@ final class ApplicationNavigation
         'parties.calendar' => ['parties.calendar*'],
         'parties.invoices.index' => ['parties.invoices*'],
         'parties.orders.index' => ['parties.orders*'],
-        'reports.index' => ['reports.index', 'reports.exports*'],
+        'reports.index' => ['reports.*', 'exports.*'],
         'admin.branches' => ['admin.branches*'],
         'admin.stores' => ['admin.stores*'],
         'admin.authorization-baseline' => ['admin.authorization-baseline*', 'admin.users*'],

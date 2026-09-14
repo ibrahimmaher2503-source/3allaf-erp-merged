@@ -403,3 +403,11 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Integrated direct-child repair commit `80156c9ab50d9b76c19a797dc30db487b694ecb2` onto exact active Hotfix35 `2f6b07285ca082cb3c61f1f860e13b0d3d2bccb8`, preserving all 6,115 `ar-EG` JSON keys and 244 PHP locale leaves.
 - Retained byte-identical `ar` and `en`, exact Hotfix35 compiled assets, locale routes, queries, permissions, search, keyboard, accounting and database behavior; Vite build count is zero and no migration was added or run.
 - Finalized version/evidence and prepared immutable offline packaging plus unexecuted fail-closed scripts restricted to exact Hotfix35. Authenticated three-locale representative rendering is enforced transactionally before and after activation, with exact Hotfix35 rollback after any post-switch failure.
+
+# 2026-09-14 — v0.1.22-hotfix40 purchase workflow and reports center
+
+- Implemented the exact draft/review/procurement-approved/ready-to-convert purchase-order lifecycle with server permissions, audit reuse, explicit next actions, full-page editing, branch numbering/filtering/counts, duplicate-submit safeguards, and separate receiving status.
+- Enabled locked/idempotent partial receiving and multiple invoices per order with ordered/received/remaining quantities, immutable approved invoice and ledger snapshots, linked-document visibility, and independent not/partially/fully received states.
+- Added compact supplier-cost-aware product entry, private versioned localized purchase-order PDFs, and a unified permission-scoped Reports and Export Center with centralized CSV/XLSX/PDF generation, request deduplication, snapshot hashes and formula-safe CSV output.
+- Added only migration 000114 with nullable/indexed/backward-compatible purchase document and export additions; it was not executed and rollback intentionally retains the additions.
+- One focused database-free verification pass and exactly one Node 20/Vite 8.2.0 production build passed. No broad legacy suite or browser control ran.

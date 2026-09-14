@@ -6,7 +6,8 @@
 @endif
 
 <form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-autofocus="true">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.45fr)_minmax(13rem,1.3fr)_10.5rem_10.5rem_minmax(11rem,1fr)]">
+    @if($editingOrderId)<flux:callout variant="info" icon="pencil-square">{{ __('Draft') }} · {{ __('Next action') }}: {{ __('Submit for Review') }}</flux:callout>@endif
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.45fr)_minmax(13rem,1.3fr)_10.5rem_10.5rem]">
         <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
             <option value="">{{ __('Select Supplier') }}</option>
             @foreach ($suppliers as $sup)
@@ -14,8 +15,8 @@
             @endforeach
         </flux:select>
 
-        <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse')">
-            <option value="">{{ __('Select Store (Optional)') }}</option>
+        <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'">
+            <option value="">{{ __('Select Store') }}</option>
             @foreach ($stores as $st)
                 <option value="{{ $st->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
             @endforeach
@@ -23,10 +24,6 @@
 
         <flux:input type="date" wire:model="orderForm.order_date" :label="__('Order Date') . ' *'" />
         <flux:input type="date" wire:model="orderForm.expected_delivery_date" :label="__('Expected Delivery Date')" />
-        <div class="min-w-0">
-            <flux:input wire:model.live="orderForm.payment_terms" :label="__('Payment Terms')" :placeholder="__('e.g. Net 30 days')" />
-            <p class="mt-1 truncate text-[10px] leading-tight text-zinc-500" title="{{ __('Selecting a supplier fills its saved default. You may replace it explicitly for this draft; later supplier changes will not overwrite your edit.') }}">{{ __('Selecting a supplier fills its saved default. You may replace it explicitly for this draft; later supplier changes will not overwrite your edit.') }}</p>
-        </div>
     </div>
 
     <div class="space-y-2 border-t border-border pt-3">
@@ -52,6 +49,7 @@
                     <div class="col-span-12 min-w-0 lg:col-auto">
                         @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
                         <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
+                        @if($selectedProduct)<p class="mt-0.5 truncate text-[10px] text-zinc-500">{{ __('Internal code') }}: {{ $selectedProduct->item_code }} · {{ __('Supplier code') }}: {{ $selectedProduct->productSuppliers->first()?->supplier_item_code ?: '—' }} · {{ __('Model') }}: {{ $selectedProduct->model_number ?: '—' }}</p>@endif
                     </div>
 
                     <div class="col-span-5 sm:col-span-3 lg:col-auto">
@@ -61,8 +59,8 @@
 
                     <div class="col-span-7 min-w-0 sm:col-span-4 lg:col-auto">
                         <label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label>
-                        <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                        <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source title="{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}">{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
+                        <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
+                        <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
                     </div>
 
                     <div class="col-span-10 sm:col-span-4 lg:col-auto">
@@ -99,6 +97,6 @@
         @else
             <flux:button type="button" variant="ghost" wire:click="$set('showFormModal', false)">{{ __('Cancel') }}</flux:button>
         @endif
-        <flux:button variant="primary" type="submit">{{ __('Save Draft') }}</flux:button>
+        <flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveOrder"><span wire:loading.remove wire:target="saveOrder">{{ __('Save Draft') }}</span><span wire:loading wire:target="saveOrder">{{ __('Saving…') }}</span></flux:button>
     </div>
 </form>

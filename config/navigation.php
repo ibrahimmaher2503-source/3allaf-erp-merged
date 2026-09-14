@@ -49,15 +49,8 @@ return [
         ['route' => 'party.assets.index', 'parameters' => ['mode' => 'returns'], 'permission' => 'rental_assets.view', 'icon' => 'arrow-uturn-left', 'label' => ['ar' => 'الإرجاع والحالة', 'en' => 'Returns & condition']],
         ['route' => 'party.assets.index', 'parameters' => ['mode' => 'history'], 'permission' => 'rental_assets.view', 'icon' => 'clock', 'label' => ['ar' => 'الصيانة وسجل الأحداث', 'en' => 'Maintenance & history']],
     ]],
-    ['key' => 'reports', 'icon' => 'chart-bar', 'label' => ['ar' => 'التقارير', 'en' => 'Reports'], 'items' => [
-        ['route' => 'reports.index', 'permission' => 'dashboard_reports.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز التقارير', 'en' => 'Reports center']],
-        ['route' => 'reports.sales', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'المبيعات', 'en' => 'Sales']],
-        ['route' => 'reports.purchasing', 'permission' => 'purchase_orders.view', 'icon' => 'truck', 'label' => ['ar' => 'المشتريات', 'en' => 'Purchasing']],
-        ['route' => 'reports.inventory', 'permission' => 'inventory_stock_card.view', 'icon' => 'archive-box', 'label' => ['ar' => 'المخزون', 'en' => 'Inventory']],
-        ['route' => 'reports.customers', 'permission' => 'customers.view', 'icon' => 'user-group', 'label' => ['ar' => 'العملاء والموردون', 'en' => 'Customers & suppliers']],
-        ['route' => 'reports.cash', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'النقدية والورديات', 'en' => 'Cash & shifts']],
-        ['route' => 'reports.parties', 'permission' => 'party_bookings_invoices.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings']],
-        ['route' => 'reports.assets', 'permission' => 'rental_assets.view', 'icon' => 'archive-box', 'label' => ['ar' => 'الأصول والتأجير', 'en' => 'Assets & rental']],
+    ['key' => 'reports', 'icon' => 'chart-bar', 'label' => ['ar' => 'التقارير والتصدير', 'en' => 'Reports & exports'], 'items' => [
+        ['route' => 'reports.index', 'permission' => 'dashboard_reports.view', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز التقارير والتصدير', 'en' => 'Reports and Export Center']],
     ]],
     ['key' => 'administration', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'الإدارة والإعدادات', 'en' => 'Administration & settings'], 'items' => [
         ['route' => 'admin.overview', 'permission' => 'access-administration-center', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],

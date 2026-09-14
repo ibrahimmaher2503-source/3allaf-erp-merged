@@ -1,13 +1,11 @@
-# Current Task — v0.1.22-hotfix39 Catalog, Opening Balance, and Parties
+# Current Task — v0.1.22-hotfix40 Purchase Workflow and Reports Center
 
 **Date:** 2026-09-14
-**Change class:** Customer Notes Batch 3 hotfix release
-**Source baseline:** exact active Hotfix38 commit `45d9e78c757cd83a596b11d613475dbdc441d2c3`
-**Branch:** `hotfix/v0.1.22-hotfix39-catalog-opening-balance-parties`
-**Status:** Complete in development and ready for the authorized root operator; implementation, focused verification, release commit, and immutable offline packaging are complete.
+**Change class:** Customer final batch hotfix release
+**Source baseline:** exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`
+**Branch:** `hotfix/v0.1.22-hotfix40-purchase-workflow-reports-center`
+**Status:** Complete in development; focused verification and the one required Vite production build passed. Release commit and immutable offline packaging are the remaining closure steps.
 
-Hotfix39 compacts product and party master workflows, preserves Excel imports while removing distributed export buttons, introduces derived Draft/Resume handling for incomplete products, exposes separate supplier item codes and existing branch-price matrices, adds stable customer display codes and loyalty help, and extends supplier contacts with mobile/notes while hiding payment terms from UI only.
+Hotfix40 completes the controlled purchase-order lifecycle, full-page draft editing, branch-aware numbering/counts, independent receiving progress, partial multi-invoice conversion with remaining-quantity locking, compact supplier-cost-aware product lines, private versioned purchase-order PDFs, and the permission-scoped Reports and Export Center. Distributed list exports and payment terms remain hidden from UI only; their backend data and services remain available.
 
-Opening inventory is now a branch/store/date document with Hotfix38 branch/type continuous numbering, dynamic keyboard/scanner product lookup, quantity/cost/totals, paste and repaired XLSX flows, Draft/Resume/Approve, audited reversal, zero-opening completion, and ecommerce identity mapping guidance. Posted documents and stock/accounting actions remain immutable and unchanged.
-
-The owner-authorized migration is `2026_09_14_000113_extend_opening_inventory_and_supplier_contacts_for_hotfix39.php`. It adds nullable opening header context, nullable supplier contact mobile/notes, indexes, and branch opening-inventory sequence rows with `reset_rule=never`. Its `down()` intentionally retains these backward-compatible additions. No local migration execution is authorized. Activation must prove 000111 and 000112 are already `Ran`, run only 000113 if pending, and retain its additions if application rollback restores exact Hotfix38.
+The owner-authorized migration is `2026_09_14_000114_extend_purchase_orders_and_exports_for_hotfix40.php`. It adds purchase-order receiving state and its workflow index, private purchase-order document metadata, and nullable indexed export request hashes. Its `down()` intentionally retains these backward-compatible additions. No local migration execution is authorized. Activation must prove 000111, 000112 and 000113 are already `Ran`, run only 000114 if pending, and retain its additions if application rollback restores exact Hotfix39.

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 
 class Branch extends Model
 {
@@ -46,6 +47,8 @@ class Branch extends Model
     {
         return $this->hasMany(Store::class);
     }
+
+    public function purchaseOrders(): HasMany { return $this->hasMany(PurchaseOrder::class); }
 
     /**
      * Active warehouse locations directly belonging to this branch.

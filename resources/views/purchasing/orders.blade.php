@@ -32,6 +32,8 @@ new #[Title('Purchase Orders')] class extends Component
 
     public string $storeFilter = 'all';
 
+    public string $branchFilter = 'all';
+
     public bool $showFormModal = false;
 
     public bool $createPage = false;
@@ -76,11 +78,14 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function mount(): void
     {
-        $this->createPage = request()->routeIs('purchasing.orders.create');
-        Gate::authorize($this->createPage ? 'purchase_orders.create' : 'purchase_orders.view');
+        $this->createPage = request()->routeIs('purchasing.orders.create', 'purchasing.orders.edit');
+        Gate::authorize(request()->routeIs('purchasing.orders.edit') ? 'purchase_orders.edit' : ($this->createPage ? 'purchase_orders.create' : 'purchase_orders.view'));
         $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id(auth()->user());
         $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
-        if ($this->createPage) {
+        if (request()->routeIs('purchasing.orders.edit')) {
+            $order = request()->route('order');
+            $this->loadDraft($order instanceof PurchaseOrder ? $order->id : (int) $order);
+        } elseif ($this->createPage) {
             $this->initializeCreateForm();
         } else {
             $this->orderForm['order_date'] = now()->toDateString();
@@ -101,6 +106,8 @@ new #[Title('Purchase Orders')] class extends Component
     {
         $this->resetPage();
     }
+
+    public function updatingBranchFilter(): void { $this->resetPage(); }
 
     private function initializeCreateForm(): void
     {
@@ -125,6 +132,12 @@ new #[Title('Purchase Orders')] class extends Component
     public function openEditModal(int $id): void
     {
         Gate::authorize('purchase_orders.edit');
+
+        $this->redirectRoute('purchasing.orders.edit', ['order' => $id], navigate: true);
+    }
+
+    private function loadDraft(int $id): void
+    {
 
         $order = PurchaseOrder::query()->with('lines')->findOrFail($id);
         if ($order->status !== 'draft') {
@@ -166,7 +179,6 @@ new #[Title('Purchase Orders')] class extends Component
         $this->confirmedSupplierId = (string) $order->supplier_id;
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
-        $this->showFormModal = true;
     }
 
     public function updatedOrderFormSupplierId($supplierId): void
@@ -261,7 +273,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->validate([
             'orderForm.supplier_id' => 'required|exists:suppliers,id',
-            'orderForm.store_id' => 'nullable|exists:stores,id',
+            'orderForm.store_id' => 'required|exists:stores,id',
             'orderForm.order_date' => 'required|date',
             'orderForm.expected_delivery_date' => 'nullable|date|after_or_equal:orderForm.order_date',
             'lineItems' => 'required|array|min:1',
@@ -279,11 +291,11 @@ new #[Title('Purchase Orders')] class extends Component
                 expectedVersion: $this->editingOrderId ? (int) $this->orderForm['lock_version'] : null,
             );
 
+            app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order);
+
             $this->showFormModal = false;
             Flux::toast($this->editingOrderId ? __('Purchase Order updated successfully.') : __('Purchase Order :number created as draft.', ['number' => $order->po_number]), variant: 'success');
-            if ($this->createPage) {
-                $this->redirectRoute('purchasing.orders', navigate: true);
-            }
+            if ($this->createPage) $this->redirectRoute('purchasing.orders', navigate: true);
         } catch (Throwable $e) {
             Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
         }
@@ -315,6 +327,7 @@ new #[Title('Purchase Orders')] class extends Component
         try {
             $order = PurchaseOrder::findOrFail($id);
             app(ApprovePurchaseOrderAction::class)->execute($order->id, $order->lock_version);
+            app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order->fresh());
             Flux::toast(__('Purchase Order :number approved successfully. No stock or invoice posting occurred.', ['number' => $order->po_number]), variant: 'success');
         } catch (Throwable $e) {
             Flux::toast(\App\Support\UserSafeError::message($e), variant: 'danger');
@@ -376,7 +389,7 @@ new #[Title('Purchase Orders')] class extends Component
         $user = auth()->user();
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
         $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
-        $products = Product::query()->sellable()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
+        $products = Product::query()->sellable()->with(['productSuppliers' => fn($query) => $query->when(filled($this->orderForm['supplier_id']), fn($scope) => $scope->where('supplier_id',(int)$this->orderForm['supplier_id']))])->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
         $formSubtotal = collect($this->lineItems)->sum(fn (array $item): float => (float) ($item['quantity_ordered'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
 
         if ($this->createPage) {
@@ -392,7 +405,7 @@ new #[Title('Purchase Orders')] class extends Component
             ]);
         }
 
-        $query = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'lines']);
+        $query = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'lines']);
 
         if ($user && ! $user->is_super_admin) {
             $query->where(function ($scope) use ($user) {
@@ -424,9 +437,10 @@ new #[Title('Purchase Orders')] class extends Component
         if ($this->storeFilter !== 'all') {
             $query->where('store_id', (int) $this->storeFilter);
         }
+        if ($this->branchFilter !== 'all') $query->where('branch_id', (int) $this->branchFilter);
 
         $orders = $query->latest('id')->paginate(15);
-        $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product']);
+        $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product', 'invoices.store', 'documents.attachment']);
         if ($user && ! $user->is_super_admin) {
             $viewingOrderQuery->where(function ($scope) use ($user) {
                 $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
@@ -446,6 +460,7 @@ new #[Title('Purchase Orders')] class extends Component
             'orders' => $orders,
             'suppliers' => $suppliers,
             'stores' => $stores,
+            'branches' => Branch::query()->visibleTo($user)->where('status', 'active')->withCount('purchaseOrders')->orderBy('code')->get(),
             'products' => $products,
             'viewingOrder' => $viewingOrder,
             'auditLogs' => $auditLogs,
@@ -461,7 +476,7 @@ new #[Title('Purchase Orders')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="$createPage ? __('New Purchase Order') : (str_starts_with(app()->getLocale(), 'ar') ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
+    :title="$createPage ? ($editingOrderId ? __('Edit Draft Purchase Order') : __('New Purchase Order')) : (str_starts_with(app()->getLocale(), 'ar') ? 'نظرة عامة على المشتريات' : __('Purchasing overview'))"
     :description="$createPage ? __('Enter supplier, destination store, order dates, and item lines.') : (str_starts_with(app()->getLocale(), 'ar') ? 'المشتريات والاستلام والاستثناءات التشغيلية ضمن المواقع المصرح بها.' : __('Purchasing, receiving, and operational exceptions within your authorized locations.'))"
     :breadcrumbs="str_starts_with(app()->getLocale(), 'ar') ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     :max-width="$createPage ? 'full' : '7xl'"
@@ -496,7 +511,7 @@ new #[Title('Purchase Orders')] class extends Component
 
     <!-- Filters Bar -->
     <flux:card id="po-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="po-filters">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by PO #, supplier or notes...')" />
 
             <flux:select wire:model.live="statusFilter" :label="__('Status')">
@@ -516,6 +531,7 @@ new #[Title('Purchase Orders')] class extends Component
                     <option value="{{ $sup->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $sup->name_ar : ($sup->name_en ?: $sup->name_ar) }} ({{ $sup->code }})</option>
                 @endforeach
             </flux:select>
+            <flux:select wire:model.live="branchFilter" :label="__('Branch')"><option value="all">{{ __('All branches') }}</option>@foreach($branches as $branch)<option value="{{ $branch->id }}">{{ str_starts_with(app()->getLocale(),'ar') ? $branch->name_ar : $branch->name_en }} · {{ $branch->purchase_orders_count ?? '' }}</option>@endforeach</flux:select>
         </div>
     </flux:card>
 
@@ -527,7 +543,7 @@ new #[Title('Purchase Orders')] class extends Component
                     <tr>
                         <th class="px-4 py-3 text-start">{{ __('PO Number') }}</th>
                         <th class="px-4 py-3 text-start">{{ __('Supplier') }}</th>
-                        <th class="px-4 py-3 text-start">{{ __('Store') }}</th>
+                        <th class="px-4 py-3 text-start">{{ __('Branch') }} / {{ __('Receiving Store / Warehouse') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('Status') }}</th>
                         <th class="px-4 py-3 text-start">{{ __('Order Date') }}</th>
                         <th class="px-4 py-3 text-end">{{ __('Total') }}</th>
@@ -546,8 +562,8 @@ new #[Title('Purchase Orders')] class extends Component
                                 </div>
                                 <div class="text-xs font-mono text-zinc-500">{{ $order->supplier->code }}</div>
                             </td>
-                            <td data-label="{{ __('Store') }}" class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
-                                {{ $order->store ? (str_starts_with(app()->getLocale(), 'ar') ? $order->store->name_ar : $order->store->name_en) : '—' }}
+                            <td data-label="{{ __('Branch') }} / {{ __('Receiving Store / Warehouse') }}" class="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">
+                                <div>{{ $order->branch ? (str_starts_with(app()->getLocale(), 'ar') ? $order->branch->name_ar : $order->branch->name_en) : '—' }}</div><div class="text-zinc-500">{{ $order->store ? (str_starts_with(app()->getLocale(), 'ar') ? $order->store->name_ar : $order->store->name_en) : '—' }}</div>
                             </td>
                             <td data-label="{{ __('Status') }}" class="px-4 py-3 text-center">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide
@@ -558,8 +574,9 @@ new #[Title('Purchase Orders')] class extends Component
                                     @elseif($order->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300
                                     @elseif($order->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300
                                     @else bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300 @endif">
-                                    {{ __(ucfirst(str_replace('_', ' ', $order->status))) }}
+                                    {{ __($order->workflowStatusLabel()) }}
                                 </span>
+                                <div class="mt-1 text-[10px] text-zinc-500">{{ __($order->nextAction()) }} · {{ __($order->receivingState()) }}</div>
                             </td>
                             <td data-label="{{ __('Order Date') }}" class="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                                 {{ $order->order_date?->format('Y-m-d') }}
@@ -621,6 +638,7 @@ new #[Title('Purchase Orders')] class extends Component
     </flux:card>
 
     <!-- Create / Edit Form Modal -->
+    @if(false) {{-- Retained only as inert rollback-compatible markup; create/edit routes are full-page. --}}
     <flux:modal wire:model="showFormModal" class="md:max-w-4xl space-y-6">
         <div>
             <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
@@ -650,10 +668,6 @@ new #[Title('Purchase Orders')] class extends Component
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <flux:input wire:model.live="orderForm.payment_terms" :label="__('Payment Terms')" :placeholder="__('e.g. Net 30 days')" />
-                    <p class="mt-1 text-xs text-zinc-500">{{ __('Selecting a supplier fills its saved default. You may replace it explicitly for this draft; later supplier changes will not overwrite your edit.') }}</p>
-                </div>
                 <flux:input wire:model="orderForm.notes" :label="__('Order Notes')" :placeholder="__('Internal procurement reference notes...')" />
             </div>
 
@@ -716,6 +730,7 @@ new #[Title('Purchase Orders')] class extends Component
         </form>
     </flux:modal>
     @endif
+    @endif
 
     <flux:modal wire:model.self="showSupplierChangeConfirmation" class="md:max-w-lg">
         <div class="space-y-5">
@@ -746,7 +761,7 @@ new #[Title('Purchase Orders')] class extends Component
                         @elseif($viewingOrder->status === 'received') bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
                         @elseif($viewingOrder->status === 'cancelled') bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300
                         @else bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300 @endif">
-                        {{ __(ucfirst(str_replace('_', ' ', $viewingOrder->status))) }}
+                        {{ __($viewingOrder->workflowStatusLabel()) }}
                     </span>
                 </div>
             </div>
@@ -779,10 +794,7 @@ new #[Title('Purchase Orders')] class extends Component
                             <span class="text-zinc-500">{{ __('Store') }}:</span>
                             <span class="font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->store ? (str_starts_with(app()->getLocale(), 'ar') ? $viewingOrder->store->name_ar : $viewingOrder->store->name_en) : __('Unassigned') }}</span>
                         </div>
-                        <div>
-                            <span class="text-zinc-500">{{ __('Payment Terms') }}:</span>
-                            <span class="font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->payment_terms ?: __('Standard') }}</span>
-                        </div>
+                        <div><span class="text-zinc-500">{{ __('Branch') }}:</span><span class="font-medium text-zinc-800 dark:text-zinc-200 block">{{ $viewingOrder->branch ? (str_starts_with(app()->getLocale(),'ar') ? $viewingOrder->branch->name_ar : $viewingOrder->branch->name_en) : '—' }}</span></div>
                     </div>
 
                     <div class="border border-border rounded-lg overflow-hidden">
@@ -837,13 +849,7 @@ new #[Title('Purchase Orders')] class extends Component
                     @endif
                 </div>
             @elseif ($detailTab === 'receipts')
-                <div class="py-8 text-center space-y-3">
-                    <flux:icon name="archive-box" class="size-10 mx-auto text-zinc-400" />
-                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No Goods Receipts or Purchase Invoices') }}</h3>
-                    <p class="text-xs text-zinc-500 max-w-sm mx-auto">
-                        {{ __('Goods receipts and purchase invoices will appear here after the order is received.') }}
-                    </p>
-                </div>
+                <div class="space-y-3">@forelse($viewingOrder->invoices as $invoice)<div class="flex items-center justify-between rounded-lg border border-border p-3"><div><strong>{{ $invoice->invoice_number ?: '#'.$invoice->id }}</strong><div class="text-xs text-zinc-500">{{ $invoice->invoice_date?->format('Y-m-d') }} · {{ __($invoice->status) }} · {{ $invoice->store?->code }}</div></div><span class="font-mono">{{ number_format((float)$invoice->total_amount,2) }}</span></div>@empty<x-state.empty :title="__('No Goods Receipts or Purchase Invoices')" :description="__('Goods receipts and purchase invoices will appear here after the order is received.')" />@endforelse</div>
             @elseif ($detailTab === 'audit')
                 <div class="space-y-3">
                     @forelse ($auditLogs as $log)
@@ -868,6 +874,8 @@ new #[Title('Purchase Orders')] class extends Component
             <div class="flex justify-end gap-2 border-t border-border pt-4">
                 <flux:button variant="ghost" wire:click="$set('showDetailModal', false)">{{ __('Close') }}</flux:button>
                 @if ($canPrint)
+                    <form method="POST" action="{{ route('purchasing.orders.pdf.generate', $viewingOrder) }}">@csrf<x-actions.button type="submit" semantic="print" :label="__('Generate stored PDF')" size="sm">{{ __('Generate stored PDF') }}</x-actions.button></form>
+                    @foreach($viewingOrder->documents->take(3) as $document)<a href="{{ route('purchasing.orders.pdf.view', [$viewingOrder,$document]) }}" target="_blank" class="text-xs underline">{{ __('View') }} PDF v{{ $document->version }}</a><a href="{{ route('purchasing.orders.pdf.download', [$viewingOrder,$document]) }}" class="text-xs underline">{{ __('Download') }}</a>@endforeach
                     <a href="{{ route('purchasing.orders.print', $viewingOrder->id) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg text-xs font-medium transition">
                         🖨️ {{ __('Print A4 Document') }}
                     </a>

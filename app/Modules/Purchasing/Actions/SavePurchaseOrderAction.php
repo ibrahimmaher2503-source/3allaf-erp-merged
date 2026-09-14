@@ -29,6 +29,9 @@ class SavePurchaseOrderAction
         if (empty($lines)) {
             throw new InvalidArgumentException(__('A purchase order must contain at least one line item.'));
         }
+        if (collect($lines)->pluck('product_id')->filter()->duplicates()->isNotEmpty()) {
+            throw new InvalidArgumentException(__('A product may appear only once; scan it again to increase quantity.'));
+        }
 
         return DB::transaction(function () use ($data, $lines, $id, $expectedVersion): PurchaseOrder {
             $userId = Auth::id();
@@ -50,12 +53,14 @@ class SavePurchaseOrderAction
                 throw new InvalidArgumentException(__('Cannot create or update a purchase order for an inactive supplier.'));
             }
 
-            $storeId = ! empty($data['store_id']) ? (int) $data['store_id'] : null;
-            $branchId = null;
-            if ($storeId !== null) {
-                $store = Store::query()->findOrFail($storeId);
-                $this->assertStoreScope($storeId);
-                $branchId = $store->branch_id;
+            $storeId = (int) ($data['store_id'] ?? 0);
+            if ($storeId < 1) throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
+            $store = Store::query()->findOrFail($storeId);
+            $this->assertStoreScope($storeId);
+            $branchId = $store->branch_id;
+            if ($branchId === null) throw new InvalidArgumentException(__('The receiving store must belong to a branch.'));
+            if ($po !== null && $po->branch_id !== null && (int)$po->branch_id !== (int)$branchId) {
+                throw new InvalidArgumentException(__('A numbered draft cannot move to another branch; create a new purchase order for that branch.'));
             }
 
             $validatedLines = [];
@@ -89,7 +94,7 @@ class SavePurchaseOrderAction
             $taxAmount = new Number('0'); // Explicit local zero or TBD tax
             $totalAmount = $lineSubtotalSum->add($taxAmount)->round(4);
 
-            $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute($branchId === null ? null : (int) $branchId);
+            $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute((int) $branchId);
 
             $attributes = [
                 'po_number' => $poNumber,

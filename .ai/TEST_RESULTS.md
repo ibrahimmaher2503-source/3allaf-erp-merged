@@ -322,3 +322,13 @@
 - PASS: product Draft/Resume and five-identifier search contracts; separate supplier code; hidden product/customer/supplier distributed exports; hidden supplier payment terms; structured contact fields; opening header/line/import/totals/numbering/immutability source contracts.
 - PASS: exactly one Node 20 / Vite 8.2.0 production build. Manifest SHA-256 `f5e7c91b350a37fa8b89fc368708e1398fe442662e1a22dfa224794efd93c7ec`; CSS SHA-256 `bff10abe3cea4c46bd6e9789adc4acb22025c28d08a6d0143afa6a596682642d`; JavaScript SHA-256 `a9ca86aeb7e0ad1983173cc94f9dc6f9195f17a3d0a15333dccf38bd3ba891ea`.
 - ACTIVATION-GATED: authenticated `ar`, `en`, and `ar-EG` focused renders execute transactionally before the atomic switch. No automated suite, browser control, database connection, migration, or mutation ran locally.
+
+# 2026-09-14 — v0.1.22-hotfix40 focused verification
+
+- PASS: changed/new PHP syntax with PHP 8.4.24.
+- PASS: `ar`, `en`, and `ar-EG` locale JSON and required new labels.
+- PASS: task-local Blade compilation and compiled-view PHP syntax.
+- PASS: database-free Hotfix40 workflow, receiving, numbering, PDF, report dataset, deduplication, snapshot and formula-safety contracts.
+- PASS: focused purchase-order/export route discovery and Git diff hygiene.
+- PASS: exactly one Node 20/Vite 8.2.0 production build; manifest SHA-256 `94c478524c18097f15deeaef3573794ab4e7b25d051e3a4c77f69dd8cfe5eff9`.
+- NOT RUN by directive: migrations, database operations, automated suites, browser control, production/operator actions.

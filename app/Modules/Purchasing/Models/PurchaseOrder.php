@@ -22,6 +22,7 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
         'store_id',
         'branch_id',
         'status',
+        'receiving_status',
         'order_date',
         'expected_delivery_date',
         'payment_terms',
@@ -76,6 +77,16 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
         return $this->hasMany(PurchaseOrderLine::class, 'purchase_order_id')->orderBy('line_number');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(PurchaseInvoice::class, 'purchase_order_id')->latest('id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderDocument::class, 'purchase_order_id')->latest('version');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -118,7 +129,7 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
 
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return in_array($this->status, ['approved', 'partially_received', 'received'], true);
     }
 
     public function isEditable(): bool
@@ -134,5 +145,35 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
     public function isClosable(): bool
     {
         return in_array($this->status, ['approved', 'partially_received', 'received'], true);
+    }
+
+    public function receivingState(): string
+    {
+        return match ($this->status) {
+            'partially_received' => 'partially_received',
+            'received' => 'fully_received',
+            default => $this->receiving_status ?: 'not_received',
+        };
+    }
+
+    public function nextAction(): string
+    {
+        return match (true) {
+            $this->status === 'draft' => 'Submit for Review',
+            $this->status === 'submitted' => 'Procurement Manager Approve',
+            $this->isApproved() && $this->receivingState() !== 'fully_received' => 'Ready to Convert to Purchase Invoice',
+            $this->isApproved() => 'Fully Received',
+            default => 'No available action',
+        };
+    }
+
+    public function workflowStatusLabel(): string
+    {
+        return match (true) {
+            $this->status === 'draft' => 'Draft',
+            $this->status === 'submitted' => 'Submitted for Review',
+            $this->isApproved() => 'Procurement Manager Approved',
+            default => ucfirst(str_replace('_', ' ', $this->status)),
+        };
     }
 }

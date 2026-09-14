@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}" dir="{{ str_starts_with(app()->getLocale(),'ar') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <style>
+        @include('pages.exports.partials.cairo-pdf-styles')
         @page { margin: 24px; }
-        body { font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 9px; }
+        body { font-family: {{ str_starts_with(app()->getLocale(),'ar') ? "'Cairo PDF Arabic'" : "'Cairo PDF Latin'" }}; color: #1f2937; font-size: 9px; direction: {{ str_starts_with(app()->getLocale(),'ar') ? 'rtl' : 'ltr' }}; }
         h1 { font-size: 18px; margin: 0 0 4px; }
         h2 { font-size: 12px; margin: 16px 0 6px; }
         .muted { color: #6b7280; }

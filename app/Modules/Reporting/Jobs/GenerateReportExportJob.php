@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Reporting\Models\ExportJob;
 use App\Modules\Reporting\Queries\ReportSnapshot;
+use App\Modules\Reporting\Queries\CentralExportSnapshot;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Bus\Queueable;
@@ -33,7 +34,7 @@ final class GenerateReportExportJob implements ShouldQueue
 
     public function __construct(public readonly int $exportJobId) {}
 
-    public function handle(ReportSnapshot $reports): void
+    public function handle(ReportSnapshot $reports, CentralExportSnapshot $central): void
     {
         $job = ExportJob::query()->find($this->exportJobId);
         if ($job === null || in_array($job->status, ['ready', 'failed'], true)) {
@@ -48,16 +49,18 @@ final class GenerateReportExportJob implements ShouldQueue
         $locale = (string) ($job->filters['locale'] ?? config('app.fallback_locale', 'en'));
         app()->setLocale(in_array($locale, config('app.supported_locales', ['ar', 'en', 'ar-EG']), true) ? $locale : (string) config('app.fallback_locale', 'en'));
 
-        Gate::forUser($user)->authorize('dashboard_reports.export_'.$job->format);
-        $snapshot = $reports->execute($user, $job->filters ?? [], true);
-        $currentSnapshotHash = $reports->fingerprint($snapshot);
+        Gate::forUser($user)->authorize('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format));
+        $isCentral = in_array($job->report_key, CentralExportSnapshot::DATASETS, true);
+        $snapshot = $isCentral ? $central->execute($user, $job->report_key, $job->filters ?? []) : $reports->execute($user, $job->filters ?? [], true);
+        $currentSnapshotHash = $isCentral ? $central->fingerprint($snapshot) : $reports->fingerprint($snapshot);
         if ($job->snapshot_hash === null || ! hash_equals($job->snapshot_hash, $currentSnapshotHash)) {
             throw new RuntimeException('The report changed before export generation. Refresh the report and request it again. Expected snapshot '.$job->snapshot_hash.'; current snapshot '.$currentSnapshotHash.'.');
         }
 
         $job->update(['status' => 'running', 'started_at' => now(), 'error_message' => null]);
-        $bytes = $job->format === 'pdf' ? $this->pdf($snapshot) : $this->xlsx($snapshot);
-        $extension = $job->format === 'pdf' ? 'pdf' : 'xlsx';
+        if ($isCentral) $snapshot = $this->asReportSnapshot($snapshot);
+        $bytes = match($job->format) { 'pdf' => $this->pdf($snapshot), 'csv' => $this->csv($snapshot), default => $this->xlsx($snapshot) };
+        $extension = $job->format;
         $relative = 'exports/'.$job->public_id.'.'.$extension;
         Storage::disk('local')->put($relative, $bytes);
         $detailRowCount = collect($snapshot['detail_sections'] ?? [])->sum(fn (array $section): int => count($section['rows'] ?? []));
@@ -198,6 +201,28 @@ final class GenerateReportExportJob implements ShouldQueue
         $dompdf->render();
 
         return $dompdf->output();
+    }
+
+    /** @param array<string,mixed> $snapshot */
+    private function csv(array $snapshot): string
+    {
+        $stream = fopen('php://temp', 'w+b');
+        if ($stream === false) throw new RuntimeException('Could not allocate CSV export stream.');
+        fwrite($stream, "\xEF\xBB\xBF");
+        foreach ($snapshot['detail_sections'] ?? [] as $section) {
+            fputcsv($stream, array_map(fn($v)=>$this->safe((string)$v), array_values($section['columns'] ?? [])));
+            foreach ($section['rows'] ?? [] as $row) fputcsv($stream, array_map(fn($v)=>is_string($v)?$this->safe($v):$v, array_values($row)));
+        }
+        rewind($stream); $bytes = stream_get_contents($stream); fclose($stream);
+        if ($bytes === false) throw new RuntimeException('Could not read CSV export stream.');
+        return $bytes;
+    }
+
+    /** @param array<string,mixed> $snapshot @return array<string,mixed> */
+    private function asReportSnapshot(array $snapshot): array
+    {
+        $rows = array_map(fn(array $row): array => array_combine($snapshot['columns'], $row), $snapshot['rows']);
+        return ['filters'=>$snapshot['filters'],'modules'=>[],'fresh_at'=>$snapshot['fresh_at'],'kpis'=>['row_count'=>$snapshot['row_count']],'sources'=>[],'sales'=>[],'assets'=>[],'export'=>['dataset'=>$snapshot['dataset'],'row_count'=>$snapshot['row_count']],'detail_sections'=>[['title'=>__($snapshot['dataset']),'columns'=>array_combine($snapshot['columns'],$snapshot['columns']),'rows'=>$rows]]];
     }
 
     private function safe(string $value): string

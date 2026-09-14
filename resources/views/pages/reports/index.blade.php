@@ -86,8 +86,8 @@
         <x-slot:actions>
             <div class="flex flex-wrap items-center justify-end gap-2">
                 @if (Gate::allows('dashboard_reports.export_xlsx') || Gate::allows('dashboard_reports.export_pdf'))
-                    @foreach(['xlsx' => __('Excel'), 'pdf' => __('PDF')] as $format => $label)
-                        @can('dashboard_reports.export_'.$format)
+                    @foreach(['csv' => __('CSV'), 'xlsx' => __('Excel'), 'pdf' => __('PDF')] as $format => $label)
+                        @can('dashboard_reports.export_'.($format === 'csv' ? 'xlsx' : $format))
                             <form method="POST" action="{{ route('reports.export') }}">@csrf @foreach($report['filters'] as $key => $value) @continue(in_array($key, ['page', 'per_page'], true)) <input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach<input type="hidden" name="format" value="{{ $format }}"><flux:button type="submit" size="sm" :icon="$format === 'xlsx' ? 'table-cells' : 'document-arrow-down'" :aria-label="$format === 'xlsx' ? __('Create Excel export') : __('Create PDF export')">{{ $label }}</flux:button></form>
                         @endcan
                     @endforeach
@@ -98,6 +98,22 @@
 
         @if (session('success')) <flux:callout variant="success">{{ session('success') }}</flux:callout> @endif
         @if ($errors->any()) <flux:callout variant="danger"><ul class="list-disc ps-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></flux:callout> @endif
+
+        @if($reportKey === 'dashboard' && (Gate::allows('dashboard_reports.export_xlsx') || Gate::allows('dashboard_reports.export_pdf')))
+        <flux:card class="p-4"><form method="POST" action="{{ route('reports.export') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">@csrf
+            <flux:select name="dataset" :label="__('Export dataset')" required>
+                @foreach(['products_barcodes','customers_groups','suppliers_groups','purchase_orders','purchase_invoices_receiving','opening_inventory','inventory_movements'] as $dataset)<option value="{{ $dataset }}">{{ __(str($dataset)->replace('_',' ')->title()) }}</option>@endforeach
+            </flux:select>
+            <flux:select name="format" :label="__('Format')"><option value="csv">CSV</option><option value="xlsx">XLSX</option><option value="pdf">PDF</option></flux:select>
+            <flux:input type="date" name="date_from" :label="__('From')" value="{{ $report['filters']['date_from'] }}" />
+            <flux:input type="date" name="date_to" :label="__('To')" value="{{ $report['filters']['date_to'] }}" />
+            <flux:select name="branch_id" :label="__('Branch')"><option value="">{{ __('All visible branches') }}</option>@foreach($branches as $branch)<option value="{{ $branch->id }}">{{ $branch->code }} · {{ str_starts_with(app()->getLocale(),'ar')?$branch->name_ar:$branch->name_en }}</option>@endforeach</flux:select>
+            <flux:select name="supplier_id" :label="__('Supplier')"><option value="">{{ __('All suppliers') }}</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}">{{ $supplier->code }} · {{ $supplier->name_en }}</option>@endforeach</flux:select>
+            <flux:select name="category_id" :label="__('Category')"><option value="">{{ __('All categories') }}</option>@foreach($categories as $category)<option value="{{ $category->id }}">{{ $category->code }} · {{ $category->name_en }}</option>@endforeach</flux:select>
+            <flux:select name="document_status" :label="__('Status')"><option value="">{{ __('All Statuses') }}</option>@foreach(['draft','submitted','approved','partially_received','received','awaiting_distribution','rejected','cancelled','closed'] as $status)<option value="{{ $status }}">{{ __(str($status)->replace('_',' ')->title()) }}</option>@endforeach</flux:select>
+            <div class="flex items-end"><flux:button type="submit" variant="primary" wire:loading.attr="disabled">{{ __('Request export') }}</flux:button></div>
+        </form></flux:card>
+        @endif
 
         <nav class="flex gap-2 overflow-x-auto rounded-xl border border-border bg-surface p-2" aria-label="{{ __('Report categories') }}">
             <a href="{{ route('reports.index') }}" wire:navigate class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition {{ $reportKey === 'dashboard' ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-surface text-text-muted hover:border-primary/40 hover:text-text-primary' }}"><flux:icon name="squares-2x2" class="size-4" />{{ __('Overview') }}</a>

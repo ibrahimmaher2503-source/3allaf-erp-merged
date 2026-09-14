@@ -21,7 +21,7 @@ return [
         'party_evidence' => 10,
         'asset_condition' => 12,
         'approval_evidence' => 5,
-        'generated_document' => 1,
+        'generated_document' => 100,
     ],
     'allowed_mimes' => [
         'payment_evidence' => ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
