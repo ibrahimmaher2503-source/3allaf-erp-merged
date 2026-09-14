@@ -1,11 +1,12 @@
-# Current Task — v0.1.22-hotfix40 Purchase Workflow and Reports Center
+# Current Task — v0.1.22-hotfix41 Reports Runtime Repair
 
 **Date:** 2026-09-14
-**Change class:** Customer final batch hotfix release
-**Source baseline:** exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`
-**Branch:** `hotfix/v0.1.22-hotfix40-purchase-workflow-reports-center`
-**Status:** Complete in development and ready for the authorized root operator; implementation, focused verification, the one required Vite production build, release commit, and immutable offline packaging are complete.
+**Change class:** Production runtime repair
+**Source baseline:** exact Hotfix40 code commit `08d733692895f1f3bf3f5be70ed17f5c37b5ddb1`
+**Production application baseline:** exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`
+**Branch:** `hotfix/v0.1.22-hotfix41-reports-stringable-runtime`
+**Status:** Implementation and the single focused final verification are complete; release commit and immutable release preparation remain.
 
-Hotfix40 completes the controlled purchase-order lifecycle, full-page draft editing, branch-aware numbering/counts, independent receiving progress, partial multi-invoice conversion with remaining-quantity locking, compact supplier-cost-aware product lines, private versioned purchase-order PDFs, and the permission-scoped Reports and Export Center. Distributed list exports and payment terms remain hidden from UI only; their backend data and services remain available.
+Hotfix41 preserves all Hotfix40 purchasing and centralized reporting behavior. It prevents Laravel `Stringable` instances created by report-label transformations from reaching translation helpers by explicitly converting transformed keys to scalar strings. The release workflow also normalizes runtime ownership and modes for `bootstrap/cache` in both exact active Hotfix39 and the Hotfix41 candidate before cache preparation and every authenticated pre-switch `/reports` smoke.
 
-The owner-authorized migration is `2026_09_14_000114_extend_purchase_orders_and_exports_for_hotfix40.php`. It adds purchase-order receiving state and its workflow index, private purchase-order document metadata, and nullable indexed export request hashes. Its `down()` intentionally retains these backward-compatible additions. No local migration execution is authorized. Activation must prove 000111, 000112 and 000113 are already `Ran`, run only 000114 if pending, and retain its additions if application rollback restores exact Hotfix39.
+Hotfix41 adds no migration. Migration `2026_09_14_000114_extend_purchase_orders_and_exports_for_hotfix40.php` is already `Ran` in production and must not be rerun or rolled back. Activation must prove migrations 000111–000114 are already `Ran`, execute no migrations, and retain migration 000114 if exact Hotfix39 application files are restored.

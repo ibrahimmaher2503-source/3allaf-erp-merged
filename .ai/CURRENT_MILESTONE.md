@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-14
-**Status:** v0.1.22-hotfix40 Customer final batch is implemented from exact active Hotfix39 commit `76e2f1fa780fb6da758a471902761ca6f40acbd8`. The focused database-free verification and exactly one Node 20/Vite 8.2.0 production build passed; production remains untouched.
+**Status:** v0.1.22-hotfix41 runtime repair and its single focused final verification are complete from exact Hotfix40 code commit `08d733692895f1f3bf3f5be70ed17f5c37b5ddb1`; release commit and immutable release preparation remain. Production application files remain on exact Hotfix39 `76e2f1fa780fb6da758a471902761ca6f40acbd8`, while migration 000114 is already `Ran` and retained.
 
-The completed slice covers the purchase-order approval and receiving lifecycle, partial concurrency-safe invoice conversion, stored localized PDFs, supplier-aware compact product entry, and centralized permission-scoped exports. Existing approval, attachment, inventory ledger, invoice snapshot and export infrastructure is reused. Historical approved documents and ledger snapshots remain immutable.
+Hotfix41 contains the complete Hotfix40 purchase-order approval/receiving lifecycle, concurrency-safe partial invoicing, stored localized PDFs, supplier-aware entry and centralized scoped exports. The repair is limited to scalar translation keys in directly related reporting views and fail-closed runtime permission handling.
 
-Activation is permitted to run only migration 000114 after proving migrations 000111, 000112 and 000113 are `Ran`. Promotion authenticates the archive and verifies its complete manifest exactly once. Activation prepares caches once, performs minimal authenticated `ar`, `en`, and `ar-EG` smoke checks, switches atomically, and restores exact Hotfix39 application files on failure while retaining backward-compatible schema additions.
+Activation executes no migrations: it requires 000111, 000112, 000113 and the already-applied 000114 to be `Ran`. Promotion authenticates and verifies the complete manifest exactly once. Activation normalizes active/candidate cache permissions, renders authenticated `/reports` in `ar`, `en` and `ar-EG` before the atomic switch, performs one post-switch health check, and restores exact Hotfix39 application files on failure while retaining migration 000114.

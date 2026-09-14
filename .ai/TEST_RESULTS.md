@@ -332,3 +332,12 @@
 - PASS: focused purchase-order/export route discovery and Git diff hygiene.
 - PASS: exactly one Node 20/Vite 8.2.0 production build; manifest SHA-256 `94c478524c18097f15deeaef3573794ab4e7b25d051e3a4c77f69dd8cfe5eff9`.
 - NOT RUN by directive: migrations, database operations, automated suites, browser control, production/operator actions.
+
+# 2026-09-14 — v0.1.22-hotfix41 focused final verification
+
+- PASS: changed PHP syntax and one complete task-local Blade cache compilation with compiled PHP syntax.
+- PASS: authenticated `/reports` returned HTTP 200 with the report marker and exact `lang` for `ar`, `en` and `ar-EG`; execution used array cache/session state inside an always-rolled-back database transaction.
+- PASS: directly related report/export views contain no uncast `Stringable`, `str()` or `Str::of()` expression reaching `__()`, `trans()` or `@lang`.
+- PASS: Hotfix41 changes no migration and `git diff --check` passed.
+- Vite build count: zero; no Vite-managed frontend input changed and exact Hotfix40 compiled assets are retained.
+- NOT RUN: broad legacy suites, browser control, database mutation, migration commands, promotion, activation or post-switch health checks.

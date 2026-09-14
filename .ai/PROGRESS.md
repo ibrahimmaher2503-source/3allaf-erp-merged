@@ -411,3 +411,9 @@ M53.1 completes the primary Setup context with permission-filtered adjacent navi
 - Added compact supplier-cost-aware product entry, private versioned localized purchase-order PDFs, and a unified permission-scoped Reports and Export Center with centralized CSV/XLSX/PDF generation, request deduplication, snapshot hashes and formula-safe CSV output.
 - Added only migration 000114 with nullable/indexed/backward-compatible purchase document and export additions; it was not executed and rollback intentionally retains the additions.
 - One focused database-free verification pass and exactly one Node 20/Vite 8.2.0 production build passed. No broad legacy suite or browser control ran.
+
+# 2026-09-14 — v0.1.22-hotfix41 reports runtime repair
+
+- Converted every `Stringable`-derived translation argument in the Hotfix40 Reports and Export Center views to an explicit scalar string, preserving all labels, locales, datasets, permissions, filters and export behavior.
+- Prepared an authenticated `/reports` smoke for `ar`, `en` and `ar-EG` and a release workflow that requires 000111–000114 already `Ran`, executes no migrations, normalizes active/candidate cache permissions, switches atomically and restores exact Hotfix39 application files on failure while retaining 000114.
+- The single focused final source pass completed changed PHP syntax, one full Blade compilation with compiled syntax, scalar translation-boundary assertions, authenticated transactional `/reports` rendering in all three locales and diff hygiene. No Vite-managed input changed, so the Hotfix40 build is reused without rebuilding.
