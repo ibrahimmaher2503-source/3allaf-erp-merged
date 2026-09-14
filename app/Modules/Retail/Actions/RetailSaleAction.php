@@ -910,7 +910,7 @@ final class RetailSaleAction
             }
         }
 
-        $number = app(AllocateDocumentNumber::class)->execute('retail_sale');
+        $number = app(AllocateDocumentNumber::class)->executeForBranch('retail_sale', (int) $sale->store->branch_id);
         $poster = app(PostInventoryMovement::class);
         foreach ($sale->lines as $line) {
             $movement = $poster->execute(

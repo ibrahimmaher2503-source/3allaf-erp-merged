@@ -7,6 +7,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Models\TaxSetting;
 use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +51,7 @@ new #[Title('Product Masters')] class extends Component
         'product_type' => 'standard',
         'category_id' => '',
         'brand_id' => '',
+        'tax_setting_id' => '',
         'preferred_supplier_id' => '',
         'status' => 'active',
     ];
@@ -138,6 +140,7 @@ new #[Title('Product Masters')] class extends Component
             'product_type' => 'standard',
             'category_id' => '',
             'brand_id' => '',
+            'tax_setting_id' => '',
             'preferred_supplier_id' => '',
             'status' => 'active',
         ];
@@ -158,6 +161,7 @@ new #[Title('Product Masters')] class extends Component
             'product_type' => $product->product_type,
             'category_id' => (string) $product->category_id,
             'brand_id' => (string) ($product->brand_id ?? ''),
+            'tax_setting_id' => (string) ($product->tax_setting_id ?? ''),
             'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
             'status' => $product->status,
         ];
@@ -175,6 +179,7 @@ new #[Title('Product Masters')] class extends Component
                 'productForm.product_type' => 'نوع المنتج',
                 'productForm.category_id' => 'الفئة',
                 'productForm.brand_id' => 'العلامة التجارية',
+                'productForm.tax_setting_id' => 'ضريبة المنتج',
                 'productForm.status' => 'الحالة',
             ]
             : [];
@@ -197,6 +202,14 @@ new #[Title('Product Masters')] class extends Component
             'productForm.product_type' => ['required', 'in:standard,composite,service,digital'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'productForm.tax_setting_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('tax_settings', 'id')->where(fn ($query) => $query
+                    ->where('status', 'active')
+                    ->where(fn ($dates) => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                    ->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now()))),
+            ],
             'productForm.preferred_supplier_id' => [$this->editingProductId || filled($this->productForm['item_code']) ? 'nullable' : 'required', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.status' => ['required', 'in:active,inactive'],
         ], str_starts_with(app()->getLocale(), 'ar') ? [
@@ -334,6 +347,12 @@ new #[Title('Product Masters')] class extends Component
             'activeCategories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeSuppliers' => Supplier::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'activeTaxSettings' => TaxSetting::query()
+                ->where('status', 'active')
+                ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
+                ->orderBy('code')
+                ->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
         ];
     }
 
@@ -642,6 +661,12 @@ new #[Title('Product Masters')] class extends Component
                 <flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون علامة تجارية' : __('No brand') }}</flux:select.option>
                 @foreach ($activeBrands as $brand)
                     <flux:select.option :value="$brand->id">{{ $brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model="productForm.tax_setting_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'ضريبة المنتج' : __('Product-specific tax')">
+                <flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استخدام ضريبة الشركة الافتراضية' : __('Use company default tax') }}</flux:select.option>
+                @foreach ($activeTaxSettings as $taxSetting)
+                    <flux:select.option :value="$taxSetting->id">{{ $taxSetting->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $taxSetting->name_ar : $taxSetting->name_en }} @if($taxSetting->rate !== null)({{ number_format((float) $taxSetting->rate, 2) }}%)@endif</flux:select.option>
                 @endforeach
             </flux:select>
             @if ($activeBrands->isEmpty())

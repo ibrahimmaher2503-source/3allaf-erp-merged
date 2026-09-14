@@ -14,6 +14,8 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\TaxSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -57,6 +59,24 @@ class SaveProductAction
 
                 if (! empty($data['brand_id']) && ($brand === null || $brand->status !== 'active')) {
                     throw new InvalidArgumentException(__('The selected brand must exist and be active.'));
+                }
+
+                $taxSettingId = ! empty($data['tax_setting_id']) ? (int) $data['tax_setting_id'] : null;
+                if ($taxSettingId !== null) {
+                    if (Company::query()->count() !== 1 || ! Company::query()->where('status', 'active')->exists()) {
+                        throw new InvalidArgumentException(__('A single active company is required before assigning product tax.'));
+                    }
+
+                    $taxSetting = TaxSetting::query()
+                        ->whereKey($taxSettingId)
+                        ->where('status', 'active')
+                        ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
+                        ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
+                        ->first();
+
+                    if ($taxSetting === null) {
+                        throw new InvalidArgumentException(__('The selected product tax must be active and valid for the current company.'));
+                    }
                 }
 
                 $pricing = app(ProductPricingContract::class)->forProductCard($data['average_cost'] ?? null, $data['sale_price'] ?? null);
@@ -107,6 +127,7 @@ class SaveProductAction
                     'unit_of_measure' => $this->nullableString($data['unit_of_measure'] ?? null),
                     'category_id' => (int) $data['category_id'],
                     'brand_id' => ! empty($data['brand_id']) ? (int) $data['brand_id'] : null,
+                    'tax_setting_id' => $taxSettingId,
                     'originating_supplier_id' => ! empty($data['preferred_supplier_id'] ?? null) ? (int) $data['preferred_supplier_id'] : null,
                     'barcode_registration_type' => $this->nullableString($data['barcode_registration_type'] ?? null),
                     'status' => $status,
@@ -150,7 +171,7 @@ class SaveProductAction
 
                 if ($product !== null) {
                     foreach ([
-                        'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details',
+                        'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details', 'tax_setting_id',
                         'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
                         'dimension_unit', 'weight', 'weight_unit', 'open_price', 'sell_online', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
                         'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',
@@ -251,7 +272,7 @@ class SaveProductAction
     {
         return $product->only([
             'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
-            'product_type', 'unit_of_measure', 'category_id', 'brand_id', 'status', 'barcode_mode',
+            'product_type', 'unit_of_measure', 'category_id', 'brand_id', 'tax_setting_id', 'status', 'barcode_mode',
             'average_cost', 'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
             'dimension_unit', 'weight', 'target_age', 'suitable_gender', 'colour', 'size', 'character',
             'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',

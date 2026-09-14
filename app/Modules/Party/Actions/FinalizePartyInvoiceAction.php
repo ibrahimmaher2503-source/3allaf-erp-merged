@@ -61,8 +61,8 @@ final class FinalizePartyInvoiceAction
                     $remaining = bcsub($remaining, $walletApplied, 4);
                 }
             }
-            $finalInvoiceNumber = app(AllocateDocumentNumber::class)->execute('party_final_invoice');
-            $finalReceiptNumber = app(AllocateDocumentNumber::class)->execute('party_final_receipt');
+            $finalInvoiceNumber = app(AllocateDocumentNumber::class)->executeForBranch('party_final_invoice', (int) $invoice->booking->branch_id);
+            $finalReceiptNumber = app(AllocateDocumentNumber::class)->executeForBranch('party_final_receipt', (int) $invoice->booking->branch_id);
             $before = $invoice->only(['state', 'total_amount', 'paid_amount', 'balance_due', 'credit_amount']);
             $invoice->update(['state' => 'finalizing', 'total_amount' => $total, 'paid_amount' => $paid, 'wallet_applied_amount' => $walletApplied, 'balance_due' => $remaining, 'credit_amount' => '0.0000', 'final_invoice_number' => $finalInvoiceNumber, 'final_receipt_number' => $finalReceiptNumber, 'final_close_idempotency_key' => $idempotencyKey, 'finalized_by' => $actor->id, 'finalized_at' => now(), 'updated_by' => $actor->id, 'lock_version' => $invoice->lock_version + 1]);
             $invoice->update(['state' => 'final']);

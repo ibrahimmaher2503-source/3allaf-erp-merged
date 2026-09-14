@@ -8,8 +8,10 @@ use App\Modules\Platform\Actions\AllocateDocumentNumber;
 
 final class AllocatePurchaseInvoiceNumberAction
 {
-    public function execute(): string
+    public function execute(?int $branchId = null): string
     {
-        return app(AllocateDocumentNumber::class)->execute('purchase_invoice');
+        return $branchId === null
+            ? app(AllocateDocumentNumber::class)->execute('purchase_invoice')
+            : app(AllocateDocumentNumber::class)->executeForBranch('purchase_invoice', $branchId);
     }
 }

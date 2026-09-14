@@ -117,7 +117,7 @@ final class ReviewShiftVarianceAction
                 'variance_approved_by' => $reviewer->id,
                 'variance_approved_at' => now(),
                 'variance_approval_note' => $note,
-                'closing_document_number' => $this->allocateClosingNumber(),
+                'closing_document_number' => $this->allocateClosingNumber((int) $shift->getAttribute('branch_id')),
                 'lock_version' => (int) $shift->getAttribute('lock_version') + 1,
             ]);
 
@@ -177,9 +177,9 @@ final class ReviewShiftVarianceAction
         );
     }
 
-    private function allocateClosingNumber(): string
+    private function allocateClosingNumber(int $branchId): string
     {
-        return app(AllocateDocumentNumber::class)->execute('shift_close');
+        return app(AllocateDocumentNumber::class)->executeForBranch('shift_close', $branchId);
     }
 
     private function pendingApproval(PosShift $shift, ApprovalRecord $approval): ApprovalRecord

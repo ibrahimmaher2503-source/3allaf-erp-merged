@@ -89,7 +89,7 @@ class SavePurchaseOrderAction
             $taxAmount = new Number('0'); // Explicit local zero or TBD tax
             $totalAmount = $lineSubtotalSum->add($taxAmount)->round(4);
 
-            $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute();
+            $poNumber = $po !== null ? $po->po_number : app(AllocatePurchaseOrderNumberAction::class)->execute($branchId === null ? null : (int) $branchId);
 
             $attributes = [
                 'po_number' => $poNumber,

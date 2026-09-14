@@ -4,6 +4,7 @@ namespace App\Modules\Platform\Models;
 
 use App\Modules\Platform\Enums\TaxTreatment;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaxSetting extends Model
 {
@@ -33,5 +34,10 @@ class TaxSetting extends Model
     public function treatmentLabel(): string
     {
         return TaxTreatment::tryFrom((string) $this->treatment)?->label() ?? __('Standard');
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Catalog\Models\Product::class);
     }
 }

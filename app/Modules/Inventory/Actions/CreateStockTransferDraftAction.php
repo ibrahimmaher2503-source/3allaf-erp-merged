@@ -70,7 +70,7 @@ final class CreateStockTransferDraftAction
 
             $sourceBranchId = Store::query()->whereKey($sourceStoreId)->value('branch_id');
             $transfer = StockTransfer::query()->create([
-                'transfer_number' => app(AllocateDocumentNumber::class)->execute('stock_transfer'),
+                'transfer_number' => app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $sourceBranchId),
                 'source_store_id' => $sourceStoreId,
                 'destination_store_id' => $destinationStoreId,
                 'status' => 'draft',

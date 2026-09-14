@@ -41,7 +41,7 @@ final class CreateQuotationAction
 
         return DB::transaction(function () use ($user, $data, $store, $activity, $lines, $idempotencyKey): Quotation {
             $quotation = Quotation::create([
-                'public_id' => (string) Str::uuid(), 'quotation_number' => app(AllocateDocumentNumber::class)->execute('quotation'),
+                'public_id' => (string) Str::uuid(), 'quotation_number' => app(AllocateDocumentNumber::class)->executeForBranch('quotation', (int) $store->branch_id),
                 'activity_type' => $activity, 'customer_id' => $data['customer_id'] ?? null, 'branch_id' => $store->branch_id, 'store_id' => $store->id,
                 'valid_until' => $data['valid_until'], 'status' => 'draft', 'currency_code' => $data['currency_code'] ?? 'EGP',
                 'terms' => $data['terms'] ?? null, 'notes' => $data['notes'] ?? null, 'subtotal' => 0, 'total' => 0,

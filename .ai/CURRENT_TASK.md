@@ -1,11 +1,11 @@
-# Current Task — v0.1.22-hotfix37 Navigation, Help, and Branch UX
+# Current Task — v0.1.22-hotfix38 Financial and Print Settings
 
 **Date:** 2026-09-14
-**Change class:** Customer Notes Batch 1 hotfix release
-**Source baseline:** exact active Hotfix36 commit `c5f6d57150a04d95915a72f5146a2aebd369bc83`
-**Branch:** `hotfix/v0.1.22-hotfix37-navigation-help-branches`
-**Status:** Implementation and the concise final verification are complete; the release commit and immutable offline packaging close the task.
+**Change class:** Customer Notes Batch 2 hotfix release
+**Source baseline:** exact active Hotfix37 commit `0f0e7aa18d47986f6805c89b3494f4f55042e151`
+**Branch:** `hotfix/v0.1.22-hotfix38-financial-print-settings`
+**Status:** Complete in development and ready for the authorized root operator; implementation, focused verification, release commit, and immutable offline packaging are complete.
 
-Hotfix37 adds reusable accessible contextual help, repairs sidebar highlighting/scroll/state/keyboard behavior and destination ordering, removes branch-screen timezone and warehouse/POS shortcuts, restores company timezone to General Settings, adds a persisted per-user list-filter display preference through the existing UI-preference JSON, and removes only the user/role total cards. Routes, authorization, branch/store relationships, records, and business calculations remain unchanged.
+Hotfix38 adds accessible modal create/edit workflows for payment methods and taxes, hides tax effective dates from presentation only, adds a nullable product tax default with active/effective current-company validation, provides human branch-specific continuous numbering rules, and consolidates printer/template management around one visible configuration table and a 15-type template library.
 
-No migration, database operation, automated suite, browser-control run, production access, deployment, activation, push, tag, or package installation is authorized. One Vite build and one concise database-free release verification are authorized. Activation must accept only exact Hotfix36, require migration 000111 already `Ran`, run no migration, perform only the optimized pre-switch checks named by the owner, and restore exact Hotfix36 after any post-switch failure.
+The owner explicitly authorized migration `2026_09_14_000112_add_tax_setting_id_to_products.php`. It adds only nullable indexed `products.tax_setting_id`, references `tax_settings.id`, and uses `nullOnDelete`. Historical purchase and sales tax snapshots and accounting calculations are unchanged. No local database or migration execution is authorized. Activation must confirm 000111 already `Ran`, execute only 000112, confirm it `Ran`, and leave that backward-compatible column in place if application rollback restores exact Hotfix37.

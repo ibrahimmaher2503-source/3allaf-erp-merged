@@ -92,7 +92,7 @@ final class SaveInventoryAdjustmentAction
             if ($adjustment === null) {
                 $adjustment = InventoryAdjustment::query()->create([
                     ...$attributes,
-                    'adjustment_number' => app(AllocateDocumentNumber::class)->execute('inventory_adjustment'),
+                    'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch('inventory_adjustment', (int) $store->branch_id),
                     'created_by' => Auth::id(),
                     'idempotency_key' => (string) ($data['idempotency_key'] ?? 'inventory-adjustment:'.Str::uuid()),
                     'lock_version' => 1,

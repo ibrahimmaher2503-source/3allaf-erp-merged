@@ -33,7 +33,7 @@ final class ReverseInventoryAdjustmentAction
             }
             $store = Store::query()->findOrFail($original->store_id);
             $reversal = InventoryAdjustment::query()->create([
-                'adjustment_number' => app(AllocateDocumentNumber::class)->execute('inventory_adjustment'),
+                'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch('inventory_adjustment', (int) $store->branch_id),
                 'store_id' => $original->store_id,
                 'adjustment_type' => 'adjustment',
                 'status' => 'approved',

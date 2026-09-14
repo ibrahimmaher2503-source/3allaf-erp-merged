@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
+use App\Modules\Platform\Models\TaxSetting;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -49,6 +50,7 @@ new #[Title('Product Card')] class extends Component {
         'unit_of_measure' => '',
         'category_id' => '',
         'brand_id' => '',
+        'tax_setting_id' => '',
         'reorder_threshold' => '',
         'dimension_length' => '',
         'dimension_width' => '',
@@ -241,6 +243,7 @@ new #[Title('Product Card')] class extends Component {
             'unit_of_measure' => $product->unit_of_measure ?? '',
             'category_id' => (string) $product->category_id,
             'brand_id' => (string) ($product->brand_id ?? ''),
+            'tax_setting_id' => (string) ($product->tax_setting_id ?? ''),
             'reorder_threshold' => $product->reorder_threshold ?? '',
             'dimension_length' => $product->dimension_length ?? '',
             'dimension_width' => $product->dimension_width ?? '',
@@ -290,6 +293,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'productForm.tax_setting_id' => ['nullable', 'integer', Rule::exists('tax_settings', 'id')->where(fn ($query) => $query->where('status', 'active')->where(fn ($dates) => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now())))],
             'productForm.reorder_threshold' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_length' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_width' => ['nullable', 'numeric', 'min:0'],
@@ -342,7 +346,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
             'productForm.model_number' => 'رقم الموديل', 'productForm.product_type' => 'نوع المنتج',
-            'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية',
+            'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية', 'productForm.tax_setting_id' => 'ضريبة المنتج',
             'productForm.average_cost' => 'سعر التكلفة', 'productForm.sale_price' => 'سعر البيع الأساسي للمستهلك',
             'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
             'supplierBarcode' => 'الباركود الدولي',
@@ -359,6 +363,7 @@ new #[Title('Product Card')] class extends Component {
             'product' => $product,
             'categories' => Category::query()->active()->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
+            'taxSettings' => TaxSetting::query()->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'lookups' => $this->lookupOptions(),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
@@ -466,6 +471,12 @@ new #[Title('Product Card')] class extends Component {
                 @if ($brands->isEmpty())
                     <flux:text class="text-xs text-text-muted">{{ __('No active brands exist. Brand is optional; configure one only when this product needs a brand.') }} <a class="font-medium underline" href="{{ route('catalog.brands') }}" wire:navigate>{{ __('Configure brands') }}</a></flux:text>
                 @endif
+                <flux:select wire:model="productForm.tax_setting_id" :label="__('Product-specific tax')">
+                    <flux:select.option value="">{{ __('Use company default tax') }}</flux:select.option>
+                    @foreach ($taxSettings as $taxSetting)
+                        <flux:select.option :value="$taxSetting->id">{{ $taxSetting->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $taxSetting->name_ar : $taxSetting->name_en }} @if($taxSetting->rate !== null)({{ number_format((float) $taxSetting->rate, 2) }}%)@endif</flux:select.option>
+                    @endforeach
+                </flux:select>
                 <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
                     <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
                     @foreach ($suppliers as $supplier)

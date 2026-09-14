@@ -60,7 +60,7 @@ final class CreatePartyBookingAction
                 $normalized = $this->resolveRentalAssets($actor, $store, $normalized);
                 $this->assertNoConflict($store, $normalized['starts_at'], $normalized['ends_at'], $normalized['location'], $normalized['resource_keys']);
                 $booking = PartyBooking::query()->create([
-                    'booking_number' => app(AllocateDocumentNumber::class)->execute('party_booking'),
+                    'booking_number' => app(AllocateDocumentNumber::class)->executeForBranch('party_booking', (int) $store->branch_id),
                     'customer_id' => $customer->id,
                     'child_id' => $child?->id,
                     'branch_id' => $store->branch_id,
@@ -82,7 +82,7 @@ final class CreatePartyBookingAction
                 ]);
                 $invoice = PartyInvoice::query()->create([
                     'party_booking_id' => $booking->id,
-                    'invoice_number' => app(AllocateDocumentNumber::class)->execute('party_invoice'),
+                    'invoice_number' => app(AllocateDocumentNumber::class)->executeForBranch('party_invoice', (int) $store->branch_id),
                     'state' => 'draft',
                     'currency_code' => strtoupper((string) ($store->company?->currency_code ?? '')),
                     'created_by' => $actor->id,

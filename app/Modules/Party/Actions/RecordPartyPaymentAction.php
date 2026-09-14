@@ -41,7 +41,7 @@ final class RecordPartyPaymentAction
                 $remaining = bcsub((string) $lockedInvoice->total_amount, $paid, 4);
                 if (bccomp($amount, $remaining, 4) > 0) throw new InvalidArgumentException(__('This Party payment exceeds the remaining invoice balance.'));
                 $store = $lockedInvoice->booking->store;
-                $receiptNumber = app(AllocateDocumentNumber::class)->execute('party_payment_receipt');
+                $receiptNumber = app(AllocateDocumentNumber::class)->executeForBranch('party_payment_receipt', (int) $store->branch_id);
                 $payment = PartyPayment::query()->create([
                     'party_invoice_id' => $lockedInvoice->id, 'party_booking_id' => $lockedInvoice->party_booking_id,
                     'branch_id' => $lockedInvoice->booking->branch_id, 'store_id' => $lockedInvoice->booking->store_id,

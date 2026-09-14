@@ -60,6 +60,7 @@ class Product extends Model
         'unit_of_measure',
         'category_id',
         'brand_id',
+        'tax_setting_id',
         'originating_supplier_id',
         'status',
         'barcode_mode',
@@ -127,6 +128,11 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function taxSetting(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Platform\Models\TaxSetting::class);
     }
 
     public function originatingSupplier(): BelongsTo

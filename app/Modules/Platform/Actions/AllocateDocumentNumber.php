@@ -11,6 +11,18 @@ use Illuminate\Validation\ValidationException;
 
 final class AllocateDocumentNumber
 {
+    public function executeForBranch(string $documentType, int $branchId): string
+    {
+        $branchRuleExists = DocumentSequence::query()
+            ->where('document_type', trim($documentType))
+            ->where('scope_key', DocumentSequence::scopeKeyFor('branch', $branchId))
+            ->exists();
+
+        return $branchRuleExists
+            ? $this->execute($documentType, 'branch', $branchId)
+            : $this->execute($documentType);
+    }
+
     public function execute(string $documentType, string $scopeType = 'company', ?int $scopeId = null): string
     {
         $documentType = trim($documentType);

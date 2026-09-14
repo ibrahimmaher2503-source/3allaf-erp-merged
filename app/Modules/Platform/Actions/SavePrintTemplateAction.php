@@ -10,7 +10,12 @@ use Illuminate\Validation\ValidationException;
 
 class SavePrintTemplateAction
 {
-    public const DOCUMENT_TYPES = ['sales_invoice', 'gift_receipt', 'sales_return', 'shift_closing', 'barcode_label', 'purchase_invoice'];
+    public const DOCUMENT_TYPES = [
+        'sales_invoice', 'sales_return', 'gift_receipt', 'shift_closing', 'barcode_label',
+        'purchase_order', 'purchase_invoice', 'supplier_return', 'stock_transfer',
+        'inventory_adjustment', 'stock_count', 'quotation', 'party_booking',
+        'party_invoice', 'party_payment_receipt',
+    ];
     public const PAPER_SIZES = ['58mm', '80mm', 'a4', 'a5', 'label_50x30mm', 'label_40x25mm'];
     public const LANGUAGES = ['ar', 'en', 'bilingual'];
 

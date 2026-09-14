@@ -65,7 +65,7 @@ final class ApprovePurchaseInvoiceAction
                 ->firstOrFail();
             $this->validateBusinessRules($invoice);
 
-            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute();
+            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute((int) $invoice->store->branch_id);
             foreach ($invoice->lines as $line) {
                 $this->postLine($invoice, $line, $actorId);
                 $this->updateProductCard($invoice, $line, $actorId);
@@ -136,7 +136,7 @@ final class ApprovePurchaseInvoiceAction
             }
             $transfer = StockTransfer::query()->create([
                 'purchase_invoice_id' => $invoice->id,
-                'transfer_number' => app(AllocateDocumentNumber::class)->execute('stock_transfer'),
+                'transfer_number' => app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $invoice->store->branch_id),
                 'source_store_id' => $invoice->store_id,
                 'destination_store_id' => (int) $destinationId,
                 'status' => 'approved',

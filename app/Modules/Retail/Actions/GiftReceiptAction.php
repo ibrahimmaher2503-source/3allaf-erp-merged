@@ -39,7 +39,7 @@ final class GiftReceiptAction
 
             $receipt = GiftReceipt::query()->create([
                 'sale_id' => $sale->id, 'branch_id' => $sale->branch_id, 'store_id' => $sale->store_id,
-                'issued_by' => $actor->id, 'reference' => $this->reference(), 'status' => 'active',
+                'issued_by' => $actor->id, 'reference' => $this->reference((int) $sale->branch_id), 'status' => 'active',
                 'idempotency_key' => $idempotencyKey, 'lock_version' => 1,
             ]);
             foreach ($selected as $line) {
@@ -97,9 +97,9 @@ final class GiftReceiptAction
         abort_unless($actor->is_super_admin || $actor->can($permission), 403);
     }
 
-    private function reference(): string
+    private function reference(int $branchId): string
     {
-        if (DocumentSequence::query()->where('document_type', 'gift_receipt')->exists()) return app(AllocateDocumentNumber::class)->execute('gift_receipt');
+        if (DocumentSequence::query()->where('document_type', 'gift_receipt')->exists()) return app(AllocateDocumentNumber::class)->executeForBranch('gift_receipt', $branchId);
         return 'GR-'.strtoupper(Str::random(24));
     }
 }

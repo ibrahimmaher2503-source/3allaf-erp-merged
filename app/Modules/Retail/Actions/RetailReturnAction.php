@@ -83,7 +83,7 @@ final class RetailReturnAction
                 'customer_id' => $sale->customer_id,
                 'source_sale_id' => $sale->id,
                 'source_gift_receipt_id' => $receipt?->id,
-                'return_number' => $this->number('retail_return', 'RET-'),
+                'return_number' => $this->number('retail_return', 'RET-', (int) $sale->branch_id),
                 'status' => 'draft',
                 'settlement_type' => $settlementType,
                 'reason' => $reason,
@@ -511,7 +511,7 @@ final class RetailReturnAction
         if ($requested === []) {
             throw ValidationException::withMessages(['exchange_lines' => __('An exchange must include replacement lines.')]);
         }
-        $exchange = Exchange::query()->create(['retail_return_id' => $return->id, 'exchange_number' => $this->number('retail_exchange', 'EX-'), 'status' => 'draft', 'replacement_value' => '0.00', 'difference_value' => '0.00', 'difference_direction' => 'none']);
+        $exchange = Exchange::query()->create(['retail_return_id' => $return->id, 'exchange_number' => $this->number('retail_exchange', 'EX-', (int) $return->branch_id), 'status' => 'draft', 'replacement_value' => '0.00', 'difference_value' => '0.00', 'difference_direction' => 'none']);
         $replacement = '0.00';
         foreach ($requested as $index => $input) {
             $product = Product::query()->sellable()->whereKey((int) ($input['product_id'] ?? 0))->first();
@@ -548,10 +548,10 @@ final class RetailReturnAction
         abort_unless($actor->is_super_admin || $actor->can($permission), 403);
     }
 
-    private function number(string $type, string $prefix): string
+    private function number(string $type, string $prefix, int $branchId): string
     {
         if (DocumentSequence::query()->where('document_type', $type)->exists()) {
-            return app(AllocateDocumentNumber::class)->execute($type);
+            return app(AllocateDocumentNumber::class)->executeForBranch($type, $branchId);
         }
 
         return $prefix.strtoupper(Str::random(20));
