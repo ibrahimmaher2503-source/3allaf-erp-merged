@@ -1136,3 +1136,10 @@
 - **Verification actually run:** The one focused Hotfix42 verifier, PHP 8.4.24 syntax for all changed/new PHP, `git diff --check`, one Node 20.20.0/Vite 8.2.0 production build, and Vite manifest asset integrity passed. The initial Node 16 launcher stopped before compilation/output and was corrected with Node 20; no package install occurred.
 - **Blocked / next action:** No migrated disposable MySQL/MariaDB database exists in this worktree. Migration execution/status, schema/data guard execution, and authenticated `ar`/`en`/`ar-EG` render checks are blocked locally and must run through the fail-closed activation script before the atomic switch. Promotion and activation are not executed; do not call this release ready for activation until those required runtime checks are available and pass.
 - **Boundary:** Code, documentation, tests/evidence, a local commit, one frontend build, archive/manifest, and unexecuted scripts changed state. No automated suite, browser control, database connection/mutation, migration, production access/change, promotion, activation, root/service action, push, tag, or remote operation occurred.
+
+## 2026-09-16 — Hotfix42 operator handoff hardening
+
+- **Task:** Hardened the unexecuted Hotfix42 operator handoff after review found that a two-line backup receipt was not sufficient restore evidence.
+- **Work completed:** Added an isolated-validation and backup-evidence procedure. The replacement activation handoff requires actual backup/restore paths, checksums, timestamps, pre-migration Hotfix41 identity/status evidence, and matching isolated database/private-storage restore evidence. It preserves the package source scope and does not execute any runtime action.
+- **Verification actually run:** Documentation and replacement operator scripts are reviewed statically only. No previous Hotfix42 implementation, build, package, database, migration, production, promotion, activation, worker, cache, queue, session, or browser check was repeated.
+- **Boundary:** A new documentation/release-closure commit and immutable artifact identity are required before handoff. No production/shared resource was accessed or changed.
