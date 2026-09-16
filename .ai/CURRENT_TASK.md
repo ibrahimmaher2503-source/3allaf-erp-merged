@@ -4,7 +4,7 @@
 **Change class:** Customer-correction hotfix
 **Source and production application baseline:** exact Hotfix41 commit `e4ac8a0a98d788eabcb750c797307fee0aa2efef`
 **Branch:** `hotfix/v0.1.22-hotfix42-customer-corrections`
-**Status:** The prior Hotfix42 candidate is superseded by a narrow schema-guard compatibility correction after isolated validation exposed MariaDB information-schema result-name casing. A replacement immutable candidate/package and resumable isolated-validation tools are required; promotion and activation remain unexecuted and runtime-gated.
+**Status:** Replacement candidate `f9b488c9d2bde96718c2e23f9a4cd6ef79ee3b22` and separately authenticated resumable isolated-validation tools are prepared after the prior guard failed on MariaDB information-schema result-name casing. The replacement has not been promoted or activated; isolated runtime checks remain operator-executed and runtime-gated.
 
 Hotfix42 preserves the Hotfix37–Hotfix41 implementation of the original customer scope and closes the approved corrections:
 
