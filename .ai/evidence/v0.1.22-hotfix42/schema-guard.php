@@ -34,6 +34,8 @@ try {
     if ($version === '') {
         $fail('Database engine version is unavailable.');
     }
+    $isMariaDb = stripos($version, 'MariaDB') !== false;
+    $defaultMatchesExpected = require __DIR__.'/schema-default.php';
     $uniqueIndex = DB::table('information_schema.statistics')
         ->where('table_schema', $database)->where('table_name', 'products')->where('column_name', 'item_code')->where('non_unique', 0)
         ->orderBy('index_name')->orderBy('seq_in_index')->get(['index_name', 'seq_in_index', 'column_name'])->map(fn ($row) => (array) $row)->all();
@@ -47,10 +49,18 @@ try {
         ->where('table_schema', $database)->where('table_name', 'purchase_order_lines')
         ->orderBy('constraint_name')->orderBy('ordinal_position')->get(['constraint_name', 'column_name', 'referenced_table_name', 'referenced_column_name'])->map(fn ($row) => (array) $row)->all();
     $columnDefinition = static function (string $table, string $column) use ($database): ?object {
-        return DB::table('information_schema.columns')
+        $metadata = DB::table('information_schema.columns')
             ->selectRaw('COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default, COLUMN_DEFAULT IS NULL AS column_default_is_null')
             ->where('table_schema', $database)->where('table_name', $table)->where('column_name', $column)
             ->first();
+        if ($metadata !== null) {
+            foreach (['column_type', 'is_nullable', 'column_default', 'column_default_is_null'] as $property) {
+                if (! property_exists($metadata, $property)) {
+                    throw new RuntimeException("Required column metadata {$property} is missing.");
+                }
+            }
+        }
+        return $metadata;
     };
     $itemCode = $columnDefinition('products', 'item_code');
     if ($itemCode === null || strtolower((string) $itemCode->column_type) !== 'varchar(50)') {
@@ -102,9 +112,7 @@ try {
     ];
     foreach ($expected as $column => [$type, $nullable, $default]) {
         $actual = $columnDefinition('purchase_order_lines', $column);
-        $defaultMatches = $actual !== null && ($default === null
-            ? (int) $actual->column_default_is_null === 1
-            : (int) $actual->column_default_is_null === 0 && (string) $actual->column_default === $default);
+        $defaultMatches = $actual !== null && $defaultMatchesExpected($actual, $default, $isMariaDb);
         if ($actual === null || strtolower((string) $actual->column_type) !== $type || strtoupper((string) $actual->is_nullable) !== $nullable || ! $defaultMatches) {
             $fail("Unexpected purchase_order_lines.{$column} definition.");
         }
