@@ -4,7 +4,7 @@
 **Change class:** Customer-correction hotfix
 **Source and production application baseline:** exact Hotfix41 commit `e4ac8a0a98d788eabcb750c797307fee0aa2efef`
 **Branch:** `hotfix/v0.1.22-hotfix42-customer-corrections`
-**Status:** Replacement candidate `9f0f9f9303c2362e7e5f8125d51eb493cef7083d` and authenticated guard-after resume tools implement the root-confirmed MariaDB unquoted NULL metadata token. Focused normalization checks passed. The replacement has not been promoted or activated; guard-after and subsequent isolated scenarios remain pending root execution with the original snapshot preserved.
+**Status:** Root reports schema-after PASS with migrations 000111–000116 Ran on the existing isolated database. Scenarios then failed at the application PO quantity validation: the normalized integer was passed directly to strict `bccomp`. Replacement application candidate `be76a45db4e6c4d7eb48c5ecd447a811733ebf81` casts it directly to decimal text without float conversion. Authenticated scenarios-only tooling inspects/reuses existing fixtures and resumes conversions transactionally, followed by pending locales and Hotfix41 compatibility; no migrations, guards, seed, restore or full runner repeat. Runtime verification remains pending root execution. No production action occurred. The original numbered 1–73 coverage source remains unavailable and mapping unproven.
 
 Hotfix42 preserves the Hotfix37–Hotfix41 implementation of the original customer scope and closes the approved corrections:
 
