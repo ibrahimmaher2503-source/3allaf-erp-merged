@@ -6,7 +6,9 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-$root = dirname(__DIR__, 3);
+$configuredRoot = getenv('HF42_APPLICATION_ROOT');
+$root = $configuredRoot === false || $configuredRoot === '' ? dirname(__DIR__, 3) : $configuredRoot;
+$root = realpath($root) ?: '';
 $mode = $argv[1] ?? '';
 $snapshotPath = $argv[2] ?? '';
 $fail = static function (string $message): never {
@@ -16,6 +18,9 @@ $fail = static function (string $message): never {
 try {
     if (! in_array($mode, ['before', 'after'], true) || $snapshotPath === '') {
         $fail('Usage: schema-guard.php before|after SNAPSHOT_PATH');
+    }
+    if ($root === '' || ! is_file($root.'/vendor/autoload.php') || ! is_file($root.'/bootstrap/app.php')) {
+        $fail('Hotfix42 application root is unavailable.');
     }
     require $root.'/vendor/autoload.php';
     $app = require $root.'/bootstrap/app.php';
@@ -41,7 +46,13 @@ try {
     $purchaseOrderLineConstraints = DB::table('information_schema.key_column_usage')
         ->where('table_schema', $database)->where('table_name', 'purchase_order_lines')
         ->orderBy('constraint_name')->orderBy('ordinal_position')->get(['constraint_name', 'column_name', 'referenced_table_name', 'referenced_column_name'])->map(fn ($row) => (array) $row)->all();
-    $itemCode = DB::table('information_schema.columns')->where('table_schema', $database)->where('table_name', 'products')->where('column_name', 'item_code')->first();
+    $columnDefinition = static function (string $table, string $column) use ($database): ?object {
+        return DB::table('information_schema.columns')
+            ->selectRaw('COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default')
+            ->where('table_schema', $database)->where('table_name', $table)->where('column_name', $column)
+            ->first();
+    };
+    $itemCode = $columnDefinition('products', 'item_code');
     if ($itemCode === null || strtolower((string) $itemCode->column_type) !== 'varchar(50)') {
         $fail('products.item_code is not varchar(50).');
     }
@@ -90,7 +101,7 @@ try {
         'line_total' => ['decimal(19,4)', 'NO', '0.0000'],
     ];
     foreach ($expected as $column => [$type, $nullable, $default]) {
-        $actual = DB::table('information_schema.columns')->where('table_schema', $database)->where('table_name', 'purchase_order_lines')->where('column_name', $column)->first();
+        $actual = $columnDefinition('purchase_order_lines', $column);
         if ($actual === null || strtolower((string) $actual->column_type) !== $type || strtoupper((string) $actual->is_nullable) !== $nullable || $actual->column_default !== $default) {
             $fail("Unexpected purchase_order_lines.{$column} definition.");
         }
