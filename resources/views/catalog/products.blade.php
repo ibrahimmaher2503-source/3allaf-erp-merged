@@ -202,7 +202,7 @@ new #[Title('Product Masters')] class extends Component
                 Rule::unique('products', 'item_code')->ignore($this->editingProductId),
             ],
             'productForm.name_ar' => ['required', 'string', 'max:255'],
-            'productForm.name_en' => ['required', 'string', 'max:255'],
+            'productForm.name_en' => ['nullable', 'string', 'max:255'],
             'productForm.product_type' => ['required', 'in:standard,composite,service,digital'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
@@ -675,7 +675,7 @@ new #[Title('Product Masters')] class extends Component
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="productForm.name_ar" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المنتج بالعربية' : __('Arabic product name')" required />
-                <flux:input wire:model="productForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المنتج بالإنجليزية' : __('English product name')" required />
+                <flux:input wire:model="productForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المنتج بالإنجليزية' : __('English product name')" />
             </div>
             <flux:select wire:model="productForm.product_type" :label="str_starts_with(app()->getLocale(), 'ar') ? 'نوع المنتج' : __('Product type')" required>
                 <flux:select.option value="standard">{{ str_starts_with(app()->getLocale(), 'ar') ? 'منتج عادي' : __('Standard') }}</flux:select.option>

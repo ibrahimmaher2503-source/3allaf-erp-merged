@@ -12,4 +12,4 @@ The root-only receipt at `/home/rajeh/shared/toyjoy/deployment/hotfix42-backup-r
 
 ## Isolated-only checks
 
-After restoring the Hotfix41 baseline, run `migrate:status`, `schema-guard.php before`, only migration 000115 then 000116, `schema-guard.php after`, the focused Hotfix42 verifier, and the transactional authenticated three-locale smoke. Draft completion/immutable identity and partial-PO conversion require operator-supplied disposable fixture identifiers and values; do not point them at production records or substitute static checks.
+After restoring the Hotfix41 baseline, run `migrate:status`, `schema-guard.php before`, only migration 000115 then 000116, `schema-guard.php after`, the focused Hotfix42 verifier, and the transactional authenticated three-locale smoke. Draft completion/immutable identity and partial-PO conversion require operator-supplied disposable fixture identifiers and values; do not point them at production records or substitute static checks. Product `name_en` is optional; supplier `name_en` remains required by the existing supplier schema and form contract.

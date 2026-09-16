@@ -61,8 +61,10 @@ try {
     }
     $product = file_get_contents($root.'/app/Modules/Catalog/Models/Product.php');
     foreach (['blank($this->item_code)', "whereNotNull('products.item_code')", "products.item_code', ''", 'inactive draft'] as $needle) {
-        $assert(str_contains($product, $needle), "Draft isolation omitted {$needle}.");
+    $assert(str_contains($product, $needle), "Draft isolation omitted {$needle}.");
     }
+    $productQuickEditor = file_get_contents($root.'/resources/views/catalog/products.blade.php');
+    $assert(str_contains($productQuickEditor, "'productForm.name_en' => ['nullable', 'string', 'max:255']"), 'Product English name is still required without an approved business rule.');
     $lookup = file_get_contents($root.'/resources/views/components/product-line-lookup.blade.php');
     $assert(! str_contains($lookup, 'data-camera-'), 'Purchase lookup still renders camera controls.');
     $storeAction = file_get_contents($root.'/app/Modules/Platform/Actions/SaveStoreAction.php');

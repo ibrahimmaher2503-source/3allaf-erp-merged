@@ -1143,3 +1143,10 @@
 - **Work completed:** Added an isolated-validation and backup-evidence procedure. The replacement activation handoff requires actual backup/restore paths, checksums, timestamps, pre-migration Hotfix41 identity/status evidence, and matching isolated database/private-storage restore evidence. It preserves the package source scope and does not execute any runtime action.
 - **Verification actually run:** Documentation and replacement operator scripts are reviewed statically only. No previous Hotfix42 implementation, build, package, database, migration, production, promotion, activation, worker, cache, queue, session, or browser check was repeated.
 - **Boundary:** A new documentation/release-closure commit and immutable artifact identity are required before handoff. No production/shared resource was accessed or changed.
+
+## 2026-09-16 — Hotfix42 product-language requirement correction
+
+- **Task:** Reconciled the final Hotfix42 handoff against the owner instruction not to invent an English product-name requirement while retaining the established mandatory English supplier name.
+- **Work completed:** Changed only the compact product identity editor validation and required marker so `productForm.name_en` is nullable, consistent with the full product-card editor and `SaveProductAction`; documented that supplier `name_en` remains mandatory through its existing schema/form contract. Extended the database-free Hotfix42 verifier to fail if the compact editor reintroduces an unapproved product English-name requirement.
+- **Verification actually run:** Re-ran only the affected database-free Hotfix42 verifier, PHP 8.4 syntax for the changed Blade/Livewire file, and diff hygiene; all passed. No migration, database, browser, automated suite, production/shared resource, promotion, activation, root/service action, push, tag, or remote operation occurred.
+- **Boundary / next action:** This narrow correction requires a new clean commit and superseding immutable package/manifest and unexecuted operator-script identity. Required migrated-MariaDB and authenticated-render checks remain blocked pending an operator-provisioned isolated environment.
