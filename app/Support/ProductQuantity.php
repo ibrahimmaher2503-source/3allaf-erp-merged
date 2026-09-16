@@ -23,7 +23,13 @@ final class ProductQuantity
     public static function normalize(mixed $value, string $field = 'quantity', bool $allowZero = false): int
     {
         $raw = trim((string) $value);
-        if (! preg_match('/^\d+$/', $raw) || (!$allowZero && bccomp($raw, '1', 0) < 0) || ($allowZero && bccomp($raw, '0', 0) < 0)) {
+        if (! preg_match('/^\d+(?:\.0+)?$/', $raw)) {
+            throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
+        }
+        // DECIMAL columns retain a zero-only fractional suffix. Validate it
+        // before extracting the integer text; never round or pass through float.
+        $raw = explode('.', $raw, 2)[0];
+        if ((!$allowZero && bccomp($raw, '1', 0) < 0) || ($allowZero && bccomp($raw, '0', 0) < 0)) {
             throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
         }
         if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) throw ValidationException::withMessages([$field => __('Product quantity exceeds the allowed limit.')]);
@@ -33,7 +39,11 @@ final class ProductQuantity
     public static function normalizeSigned(mixed $value, string $field = 'quantity', bool $allowZero = false): int
     {
         $raw = trim((string) $value);
-        if (! preg_match('/^-?\d+$/', $raw) || (! $allowZero && bccomp($raw, '0', 0) === 0)) {
+        if (! preg_match('/^-?\d+(?:\.0+)?$/', $raw)) {
+            throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
+        }
+        $raw = explode('.', $raw, 2)[0];
+        if (! $allowZero && bccomp($raw, '0', 0) === 0) {
             throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
         }
         if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0 || bccomp($raw, (string) PHP_INT_MIN, 0) < 0) {
