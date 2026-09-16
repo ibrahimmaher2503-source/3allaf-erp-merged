@@ -4,7 +4,7 @@ This procedure is prepared only. It is never a production command sequence and i
 
 ## Operator-supplied prerequisites
 
-The operator supplies only: an isolated MariaDB administrator defaults file; authenticated Hotfix41 database/private-storage/application artifacts; a validation `.env` template containing no production database credentials; the prepared validation parent; and two root-owned executable integration controls: one to block all egress for the validation root and one to quiesce/verify/resume production workers at activation. The isolated runner creates a new database, DB-restricted user, storage/cache/session paths, and marked disposable UAT fixtures itself. The receipt is not created until the database and private storage have both restored successfully into distinct, new isolated targets.
+The operator supplies only: an isolated MariaDB administrator defaults file, local MariaDB Unix-socket path, authenticated Hotfix41 database/private-storage/application artifacts, a validation `.env` template containing no endpoint credentials, the prepared validation parent, and the actual discovered application queue/Horizon service name. The runner creates a new database, DB-restricted user, storage/cache/session paths, and marked disposable UAT fixtures itself. Each validation process runs in its own network namespace with only loopback enabled and uses the MariaDB Unix socket; this blocks egress without affecting other `rajeh` processes. The receipt is not created until the database and private storage have both restored successfully into distinct, new isolated targets.
 
 ## Receipt evidence
 
