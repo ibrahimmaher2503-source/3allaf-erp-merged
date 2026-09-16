@@ -48,7 +48,7 @@ try {
         ->orderBy('constraint_name')->orderBy('ordinal_position')->get(['constraint_name', 'column_name', 'referenced_table_name', 'referenced_column_name'])->map(fn ($row) => (array) $row)->all();
     $columnDefinition = static function (string $table, string $column) use ($database): ?object {
         return DB::table('information_schema.columns')
-            ->selectRaw('COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default')
+            ->selectRaw('COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default, COLUMN_DEFAULT IS NULL AS column_default_is_null')
             ->where('table_schema', $database)->where('table_name', $table)->where('column_name', $column)
             ->first();
     };
@@ -102,7 +102,10 @@ try {
     ];
     foreach ($expected as $column => [$type, $nullable, $default]) {
         $actual = $columnDefinition('purchase_order_lines', $column);
-        if ($actual === null || strtolower((string) $actual->column_type) !== $type || strtoupper((string) $actual->is_nullable) !== $nullable || $actual->column_default !== $default) {
+        $defaultMatches = $actual !== null && ($default === null
+            ? (int) $actual->column_default_is_null === 1
+            : (int) $actual->column_default_is_null === 0 && (string) $actual->column_default === $default);
+        if ($actual === null || strtolower((string) $actual->column_type) !== $type || strtoupper((string) $actual->is_nullable) !== $nullable || ! $defaultMatches) {
             $fail("Unexpected purchase_order_lines.{$column} definition.");
         }
     }
