@@ -136,7 +136,7 @@ final class SavePurchaseInvoiceAction
                     throw new InvalidArgumentException(__('The referenced purchase-order line does not belong to the selected product.'));
                 }
                 if ($purchaseOrderLine !== null) {
-                    $requested = ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
+                    $requested = (string) ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
                     $remaining = bcsub((string) $purchaseOrderLine->quantity_ordered, (string) $purchaseOrderLine->quantity_received, 6);
                     if (bccomp($requested, '0', 6) <= 0 || bccomp($requested, $remaining, 6) > 0) {
                         throw new InvalidArgumentException(__('Invoice quantity cannot exceed the remaining purchase-order quantity.'));
