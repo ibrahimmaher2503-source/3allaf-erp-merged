@@ -4,7 +4,7 @@
 **Change class:** Customer-correction hotfix
 **Source and production application baseline:** exact Hotfix41 commit `e4ac8a0a98d788eabcb750c797307fee0aa2efef`
 **Branch:** `hotfix/v0.1.22-hotfix42-customer-corrections`
-**Status:** Replacement candidate `7263bb5949fc5c456d4f3e0e34d8c5d74dd102d7` and separately authenticated guard-after resume tools are prepared after isolated validation confirmed the approved schema but exposed MariaDB SQL-NULL default representation behavior. The replacement has not been promoted or activated; the original before-snapshot and only outstanding isolated runtime checks remain operator-executed and runtime-gated.
+**Status:** Replacement candidate `9f0f9f9303c2362e7e5f8125d51eb493cef7083d` and authenticated guard-after resume tools implement the root-confirmed MariaDB unquoted NULL metadata token. Focused normalization checks passed. The replacement has not been promoted or activated; guard-after and subsequent isolated scenarios remain pending root execution with the original snapshot preserved.
 
 Hotfix42 preserves the Hotfix37–Hotfix41 implementation of the original customer scope and closes the approved corrections:
 
