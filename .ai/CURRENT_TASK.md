@@ -4,7 +4,7 @@
 **Change class:** Customer-correction hotfix
 **Source and production application baseline:** exact Hotfix41 commit `e4ac8a0a98d788eabcb750c797307fee0aa2efef`
 **Branch:** `hotfix/v0.1.22-hotfix42-customer-corrections`
-**Status:** Implementation and the single focused local final verification are complete. Release commit and immutable package/operator-script preparation are the remaining local closure work; promotion and activation remain unexecuted.
+**Status:** Implementation, the single focused local final verification, release commits, immutable package/manifest, and unexecuted operator scripts are complete. Promotion and activation remain unexecuted and runtime-gated.
 
 Hotfix42 preserves the Hotfix37–Hotfix41 implementation of the original customer scope and closes the approved corrections:
 
@@ -15,4 +15,4 @@ Hotfix42 preserves the Hotfix37–Hotfix41 implementation of the original custom
 - Incomplete product saves normalize an absent code to `NULL`, remain inactive/searchable/resumable, and are excluded from transaction-facing complete/sellable scopes. Completion allocates once through the locked global sequence after supplier selection using the first three English supplier-name letters plus the established seven-digit sequence; persisted codes never regenerate.
 - Purchase camera controls are absent, PO lines calculate discounts/taxes/totals immediately, and new user-facing behavior is localized for `ar`, `en`, and `ar-EG`.
 
-No migration, database mutation, production access, promotion, or activation is authorized locally. Runtime checks that require the migrated database are blocked locally and must be enforced by the prepared activation guards instead.
+No migration, database mutation, production access, promotion, or activation is authorized locally. Runtime checks that require the migrated database are blocked locally and must be enforced by the prepared activation guards instead. This package is not ready for activation until those checks are available and pass.
