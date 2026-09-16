@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
@@ -42,6 +43,7 @@ new #[Title('Purchase Orders')] class extends Component
 
     public array $orderForm = [
         'supplier_id' => '',
+        'branch_id' => '',
         'store_id' => '',
         'order_date' => '',
         'expected_delivery_date' => '',
@@ -116,6 +118,7 @@ new #[Title('Purchase Orders')] class extends Component
         $this->paymentTermsManuallyEdited = false;
         $this->orderForm = [
             'supplier_id' => '',
+            'branch_id' => '',
             'store_id' => '',
             'order_date' => now()->toDateString(),
             'expected_delivery_date' => '',
@@ -151,6 +154,7 @@ new #[Title('Purchase Orders')] class extends Component
         $this->paymentTermsManuallyEdited = true;
         $this->orderForm = [
             'supplier_id' => (string) $order->supplier_id,
+            'branch_id' => (string) $order->branch_id,
             'store_id' => $order->store_id ? (string) $order->store_id : '',
             'order_date' => $order->order_date?->format('Y-m-d') ?: now()->toDateString(),
             'expected_delivery_date' => $order->expected_delivery_date?->format('Y-m-d') ?: '',
@@ -165,6 +169,11 @@ new #[Title('Purchase Orders')] class extends Component
                 'product_id' => (string) $line->product_id,
                 'quantity_ordered' => (float) $line->quantity_ordered,
                 'unit_cost' => (float) $line->unit_cost,
+                'discount_type' => $line->discount_type ?: '',
+                'discount_value' => (string) $line->discount_value,
+                'tax_rate' => (string) $line->tax_rate,
+                'tax_code' => $line->tax_code ?: '',
+                'tax_inclusive' => (bool) $line->tax_inclusive,
                 'notes' => $line->notes ?: '',
                 'price_source' => 'saved_draft_cost',
                 'price_date' => '',
@@ -238,6 +247,11 @@ new #[Title('Purchase Orders')] class extends Component
         }
     }
 
+    public function updatedOrderFormBranchId(): void
+    {
+        $this->orderForm['store_id'] = '';
+    }
+
     public function addLine(): void
     {
         if (! filled($this->orderForm['supplier_id'])) {
@@ -260,11 +274,15 @@ new #[Title('Purchase Orders')] class extends Component
         abort_unless(filled($this->orderForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         $product = Product::query()->sellable()->findOrFail($productId);
         $price = $prices->resolve($product, (int) $this->orderForm['supplier_id']);
+        $tax = app(ResolveProductTaxSnapshot::class)->execute($product);
         $this->lineItems[$index]['product_id'] = (string) $product->id;
         $this->lineItems[$index]['unit_cost'] = $price['unit_cost'] ?? '';
         $this->lineItems[$index]['price_source'] = $price['price_source'];
         $this->lineItems[$index]['price_date'] = $price['price_date'] ?? '';
         $this->lineItems[$index]['price_currency'] = $price['price_currency'] ?? '';
+        $this->lineItems[$index]['tax_rate'] = $tax['tax_rate'];
+        $this->lineItems[$index]['tax_code'] = $tax['tax_code'] ?? '';
+        $this->lineItems[$index]['tax_inclusive'] = $tax['tax_inclusive'];
     }
 
     public function saveOrder(): void
@@ -273,6 +291,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $this->validate([
             'orderForm.supplier_id' => 'required|exists:suppliers,id',
+            'orderForm.branch_id' => 'required|exists:branches,id',
             'orderForm.store_id' => 'required|exists:stores,id',
             'orderForm.order_date' => 'required|date',
             'orderForm.expected_delivery_date' => 'nullable|date|after_or_equal:orderForm.order_date',
@@ -280,6 +299,8 @@ new #[Title('Purchase Orders')] class extends Component
             'lineItems.*.product_id' => 'required|exists:products,id',
             'lineItems.*.quantity_ordered' => 'required|integer|min:1',
             'lineItems.*.unit_cost' => 'required|numeric|gte:0',
+            'lineItems.*.discount_type' => 'nullable|in:percentage,amount',
+            'lineItems.*.discount_value' => 'nullable|numeric|gte:0',
         ]);
 
         try {
@@ -304,7 +325,7 @@ new #[Title('Purchase Orders')] class extends Component
     /** @return array<string, int|string> */
     private function emptyOrderLine(): array
     {
-        return ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => '', 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
+        return ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => '', 'discount_type' => '', 'discount_value' => '0', 'tax_rate' => '0', 'tax_code' => '', 'tax_inclusive' => false, 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
     }
 
     public function submitOrder(int $id): void
@@ -388,7 +409,12 @@ new #[Title('Purchase Orders')] class extends Component
     {
         $user = auth()->user();
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
-        $stores = Store::visibleTo($user)->where('status', 'active')->orderBy('name_ar')->get();
+        $branches = Branch::query()->where('status', 'active')
+            ->when($user && ! $user->is_super_admin, fn ($query) => $query->whereIn('id', Store::query()->visibleTo($user)->whereNotNull('branch_id')->select('branch_id')))
+            ->withCount('purchaseOrders')->orderBy('code')->get();
+        $stores = Store::visibleTo($user)->where('status', 'active')
+            ->when(filled($this->orderForm['branch_id']), fn ($query) => $query->where('branch_id', (int) $this->orderForm['branch_id']))
+            ->orderBy('name_ar')->get();
         $products = Product::query()->sellable()->with(['productSuppliers' => fn($query) => $query->when(filled($this->orderForm['supplier_id']), fn($scope) => $scope->where('supplier_id',(int)$this->orderForm['supplier_id']))])->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
         $formSubtotal = collect($this->lineItems)->sum(fn (array $item): float => (float) ($item['quantity_ordered'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
 
@@ -396,6 +422,7 @@ new #[Title('Purchase Orders')] class extends Component
             return view('purchasing.orders', [
                 'createPage' => $this->createPage,
                 'suppliers' => $suppliers,
+                'branches' => $branches,
                 'stores' => $stores,
                 'products' => $products,
                 'formSubtotal' => $formSubtotal,
@@ -460,7 +487,7 @@ new #[Title('Purchase Orders')] class extends Component
             'orders' => $orders,
             'suppliers' => $suppliers,
             'stores' => $stores,
-            'branches' => Branch::query()->visibleTo($user)->where('status', 'active')->withCount('purchaseOrders')->orderBy('code')->get(),
+            'branches' => $branches,
             'products' => $products,
             'viewingOrder' => $viewingOrder,
             'auditLogs' => $auditLogs,
@@ -805,7 +832,9 @@ new #[Title('Purchase Orders')] class extends Component
                                     <th class="px-3 py-2 text-start">{{ __('Product') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Qty') }}</th>
                                     <th class="px-3 py-2 text-end">{{ __('Unit Cost') }}</th>
-                                    <th class="px-3 py-2 text-end">{{ __('Subtotal') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Discount') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Tax') }}</th>
+                                    <th class="px-3 py-2 text-end">{{ __('Line total') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
@@ -814,11 +843,13 @@ new #[Title('Purchase Orders')] class extends Component
                                         <td class="px-3 py-2 font-mono text-zinc-400">{{ $line->line_number }}</td>
                                         <td class="px-3 py-2">
                                             <div class="font-medium text-zinc-900 dark:text-white">{{ str_starts_with(app()->getLocale(), 'ar') ? $line->product->name_ar : ($line->product->name_en ?: $line->product->name_ar) }}</div>
-                                            <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->sku ?: $line->product->code }}</div>
+                                            <div class="text-[11px] font-mono text-zinc-500">{{ $line->product->item_code }}</div>
                                         </td>
                                         <td class="px-3 py-2 text-end font-mono"><x-product-quantity :value="$line->quantity_ordered" /></td>
                                         <td class="px-3 py-2 text-end font-mono">{{ number_format((float) $line->unit_cost, 2) }}</td>
-                                        <td class="px-3 py-2 text-end font-mono font-semibold">{{ number_format((float) $line->subtotal, 2) }}</td>
+                                        <td class="px-3 py-2 text-end font-mono">{{ number_format((float) $line->discount_amount, 2) }}</td>
+                                        <td class="px-3 py-2 text-end"><span class="font-mono">{{ number_format((float) $line->tax_amount, 2) }}</span><div class="text-[10px] text-zinc-500">{{ $line->tax_code ?: '—' }} · {{ number_format((float)$line->tax_rate,2) }}% · {{ $line->tax_inclusive ? __('Inclusive') : __('Exclusive') }}</div></td>
+                                        <td class="px-3 py-2 text-end font-mono font-semibold">{{ number_format((float) $line->line_total, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

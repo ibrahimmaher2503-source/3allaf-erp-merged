@@ -1,8 +1,8 @@
 # Current Milestone
 
-**Date:** 2026-09-14
-**Status:** v0.1.22-hotfix41 runtime repair, its single focused final verification, clean commits and immutable operator package are complete from exact Hotfix40 code commit `08d733692895f1f3bf3f5be70ed17f5c37b5ddb1`. Production application files remain on exact Hotfix39 `76e2f1fa780fb6da758a471902761ca6f40acbd8`, while migration 000114 is already `Ran` and retained.
+**Date:** 2026-09-16
+**Status:** v0.1.22-hotfix42 implementation and its single focused local verification are complete from exact Hotfix41 commit `e4ac8a0a98d788eabcb750c797307fee0aa2efef`; immutable release closure is next. Production promotion and activation remain unexecuted.
 
-Hotfix41 contains the complete Hotfix40 purchase-order approval/receiving lifecycle, concurrency-safe partial invoicing, stored localized PDFs, supplier-aware entry and centralized scoped exports. The repair is limited to scalar translation keys in directly related reporting views and fail-closed runtime permission handling.
+Hotfix42 completes the customer-correction scope carried by Hotfix37–Hotfix41 and adds only the two owner-approved migrations: 000115 for purchase-order line financial snapshots and 000116 for nullable incomplete-draft product codes. Neither migration has been executed locally. Activation must accept exact Hotfix41, require 000111–000114 already `Ran`, run only 000115 then 000116, validate schema/data invariants, smoke authenticated `ar`, `en`, and `ar-EG`, switch atomically, and restore exact Hotfix41 application files on failure while retaining both schema changes and their data.
 
-Activation executes no migrations: it requires 000111, 000112, 000113 and the already-applied 000114 to be `Ran`. Promotion authenticates and verifies the complete manifest exactly once. Activation normalizes active/candidate cache permissions, renders authenticated `/reports` in `ar`, `en` and `ar-EG` before the atomic switch, performs one post-switch health check, and restores exact Hotfix39 application files on failure while retaining migration 000114.
+Deferred C remains deferred because the referenced pair is unidentified. A branch may contain both warehouses and sales outlets; legitimate scope, relationship, and active POS-mapping validation remain intact.

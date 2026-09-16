@@ -169,6 +169,10 @@ new #[Title('Purchase Invoices')] class extends Component
                     return null;
                 }
 
+                $discountValue = $line->discount_type === 'amount' && bccomp((string) $line->quantity_ordered, '0', 6) > 0
+                    ? bcdiv(bcmul((string) $line->discount_amount, $remainingQuantity, 10), (string) $line->quantity_ordered, 4)
+                    : (string) $line->discount_value;
+
                 return [
                     'product_id' => (string) $line->product_id,
                     'purchase_order_line_id' => (string) $line->id,
@@ -177,10 +181,11 @@ new #[Title('Purchase Invoices')] class extends Component
                     'price_source' => 'approved_purchase_order_cost',
                     'price_date' => '',
                     'price_currency' => '',
-                    'discount_type' => '',
-                    'discount_value' => '0',
-                    'tax_rate' => '0',
-                    'tax_code' => '',
+                    'discount_type' => $line->discount_type ?: '',
+                    'discount_value' => $discountValue,
+                    'tax_rate' => (string) $line->tax_rate,
+                    'tax_code' => $line->tax_code ?: '',
+                    'tax_inclusive' => (bool) $line->tax_inclusive,
                 ];
             })
             ->filter()
@@ -889,7 +894,7 @@ new #[Title('Purchase Invoices')] class extends Component
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Base Consumer Price List 0') }}</label><input wire:model="lineItems.{{ $index }}.base_consumer_price" data-line-step type="number" min="0" step="0.001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_list0_price')) required /></div>
                                 <div class="col-span-6 sm:col-span-3 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount type') }}</label><select wire:model.live="lineItems.{{ $index }}.discount_type" data-line-discount-type data-line-step class="mt-1 h-10 w-full rounded-lg border-zinc-300 bg-white text-sm dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">{{ __('Percentage') }}</option><option value="amount">{{ __('Amount') }}</option></select></div>
                                 <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label><input wire:model="lineItems.{{ $index }}.discount_value" data-line-discount data-line-step type="number" min="0" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /></div>
-                                <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Tax %') }}</label><input wire:model="lineItems.{{ $index }}.tax_rate" data-line-tax data-line-final type="number" min="0" max="100" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /></div>
+                                <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Tax %') }}</label><input wire:model="lineItems.{{ $index }}.tax_rate" data-line-tax data-line-final type="number" min="0" max="100" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /><input type="hidden" data-line-tax-inclusive value="{{ !empty($line['tax_inclusive']) ? '1' : '0' }}"></div>
                                 <div class="col-span-10 sm:col-span-2 lg:col-auto"><span class="block text-xs font-semibold lg:sr-only">{{ __('Line total') }}</span><output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-2 font-mono text-sm dark:bg-zinc-900" data-line-total>0.00</output></div>
                                 <div class="col-span-2 pt-1 text-end lg:col-auto">@if(count($lineItems)>1)<flux:button type="button" size="xs" variant="ghost" icon="trash" class="text-rose-600" wire:click="removeLine({{ $index }})" />@endif</div>
                             </div>

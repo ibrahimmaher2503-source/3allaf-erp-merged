@@ -436,11 +436,12 @@ const updateTotal = (line) => {
     const discountType = line.querySelector('[data-line-discount-type]')?.value || '';
     const discountValue = Number(line.querySelector('[data-line-discount]')?.value || 0);
     const taxRate = Number(line.querySelector('[data-line-tax]')?.value || 0);
+    const taxInclusive = line.querySelector('[data-line-tax-inclusive]')?.value === '1';
     const total = line.querySelector('[data-line-total]');
     const gross = quantity * price;
     const discount = discountType === 'percentage' ? gross * discountValue / 100 : (discountType === 'amount' ? discountValue : 0);
     const taxable = Math.max(0, gross - discount);
-    const result = taxable + (taxable * taxRate / 100);
+    const result = taxInclusive ? taxable : taxable + (taxable * taxRate / 100);
     if (total) total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
     updateEditorTotal(line.closest('[data-product-line-editor]'));
 };

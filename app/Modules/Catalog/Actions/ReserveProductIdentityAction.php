@@ -42,15 +42,12 @@ class ReserveProductIdentityAction
             throw new InvalidArgumentException(__('An active preferred supplier is required when no global product code is supplied.'));
         }
 
-        $letters = strtoupper(preg_replace('/[^A-Za-z]/', '', $supplier->name_en) ?? '');
-        if (strlen($letters) < 3) {
-            throw new InvalidArgumentException(__('The preferred supplier English name must contain at least three English letters.'));
-        }
+        $prefix = $this->supplierPrefix($supplier);
 
         $sequence = $this->lockSequence();
         while ($sequence->next_number <= self::MAX_SEQUENCE) {
             $number = $sequence->next_number;
-            $candidate = substr($letters, 0, 3).str_pad((string) $number, 7, '0', STR_PAD_LEFT);
+            $candidate = $prefix.str_pad((string) $number, 7, '0', STR_PAD_LEFT);
             $sequence->update(['next_number' => $number + 1]);
 
             if (! Product::query()->where('item_code', $candidate)->exists()
@@ -60,6 +57,30 @@ class ReserveProductIdentityAction
         }
 
         throw new InvalidArgumentException(__('The seven-digit global product-code sequence is exhausted.'));
+    }
+
+    public function preview(?int $preferredSupplierId): ?string
+    {
+        if ($preferredSupplierId === null) {
+            return null;
+        }
+
+        $supplier = Supplier::query()->whereKey($preferredSupplierId)->where('status', 'active')->first();
+        if ($supplier === null) {
+            return null;
+        }
+
+        $prefix = $this->supplierPrefix($supplier);
+        $next = (int) (GlobalProductCodeSequence::query()->where('sequence_name', self::SEQUENCE_NAME)->value('next_number') ?? 1);
+        while ($next <= self::MAX_SEQUENCE) {
+            $candidate = $prefix.str_pad((string) $next, 7, '0', STR_PAD_LEFT);
+            if (! Product::query()->where('item_code', $candidate)->exists() && ! Barcode::query()->where('barcode', $candidate)->exists()) {
+                return $candidate;
+            }
+            $next++;
+        }
+
+        return null;
     }
 
     public function createPrimaryBarcode(Product $product, string $code, string $source): Barcode
@@ -82,6 +103,16 @@ class ReserveProductIdentityAction
             || Barcode::query()->where('barcode', $code)->exists()) {
             throw new InvalidArgumentException(__('The supplied global product code is already assigned.'));
         }
+    }
+
+    private function supplierPrefix(Supplier $supplier): string
+    {
+        $letters = strtoupper(preg_replace('/[^A-Za-z]/', '', $supplier->name_en) ?? '');
+        if (strlen($letters) < 3) {
+            throw new InvalidArgumentException(__('The preferred supplier English name must contain at least three English letters.'));
+        }
+
+        return substr($letters, 0, 3);
     }
 
     private function lockSequence(): GlobalProductCodeSequence

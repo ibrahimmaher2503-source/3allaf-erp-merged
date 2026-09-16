@@ -3,6 +3,7 @@
 use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\ManageProductMediaAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
@@ -31,6 +32,7 @@ new #[Title('Product Card')] class extends Component {
     public string $mediaRole = 'additional';
     public string $supplierBarcode = '';
     public string $stage = 'basic';
+    public bool $savingDraft = false;
 
     public array $productForm = [
         'item_code' => '',
@@ -93,6 +95,19 @@ new #[Title('Product Card')] class extends Component {
         return ['ages' => AgeLabel::query()->where('status', 'active')->orderBy('sort_order')->get(), 'characters' => Character::query()->where('status', 'active')->orderBy('sort_order')->get(), 'colours' => Colour::query()->where('status', 'active')->orderBy('sort_order')->get(), 'genders' => Gender::query()->where('status', 'active')->orderBy('sort_order')->get()];
     }
 
+    public function localProductCodePreview(): ?string
+    {
+        if (($this->isEditing && filled($this->productForm['item_code'])) || $this->productForm['barcode_registration_type'] !== 'local' || blank($this->productForm['preferred_supplier_id'])) {
+            return null;
+        }
+
+        try {
+            return app(ReserveProductIdentityAction::class)->preview((int) $this->productForm['preferred_supplier_id']);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     public function save(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
     {
         Gate::authorize($this->isEditing ? 'products_categories_brands.edit' : 'products_categories_brands.create');
@@ -102,16 +117,19 @@ new #[Title('Product Card')] class extends Component {
                 $this->productForm['fractional_quantity'] ?? false,
                 FILTER_VALIDATE_BOOLEAN,
             );
+            $needsBarcode = ! $this->savingDraft && ($this->productId === null || ! Product::query()->whereKey($this->productId)->whereHas('barcodes', fn ($query) => $query->where('status', 'active'))->exists());
             $validated = $this->validate([
                 ...$this->rules(),
-                'supplierBarcode' => [Rule::requiredIf(fn (): bool => ! $this->isEditing && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
+                'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
             ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
+            $validated['_save_as_draft'] = $this->savingDraft;
             $product = DB::transaction(function () use ($action, $barcodeAction, $validated) {
                 $product = $action->execute($validated, $this->productId, $this->productVersion);
-                if (! $this->isEditing && $validated['barcode_registration_type'] === 'local') {
+                $hasActiveBarcode = $product->barcodes()->where('status', 'active')->exists();
+                if (! $this->savingDraft && ! $hasActiveBarcode && $validated['barcode_registration_type'] === 'local') {
                     $supplier = Supplier::query()->findOrFail((int) $validated['preferred_supplier_id']);
                     $barcodeAction->allocateLocalBarcode($product->id, $supplier->code, 'product-card:'.$product->id);
-                } elseif ($validated['barcode_registration_type'] === 'international' && filled($this->supplierBarcode)) {
+                } elseif (! $this->savingDraft && ! $hasActiveBarcode && $validated['barcode_registration_type'] === 'international' && filled($this->supplierBarcode)) {
                     $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
                 }
 
@@ -120,7 +138,7 @@ new #[Title('Product Card')] class extends Component {
             $this->supplierBarcode = '';
 
             if (! $this->isEditing) {
-                session()->flash('status', __('Product card created successfully. Add protected images from this page.'));
+                session()->flash('status', $this->savingDraft ? __('Product draft saved. Resume it when the remaining required data is available.') : __('Product card created successfully. Add protected images from this page.'));
                 $this->redirectRoute('catalog.products.edit', ['product' => $product], navigate: true);
 
                 return;
@@ -128,13 +146,13 @@ new #[Title('Product Card')] class extends Component {
 
             $persisted = Product::query()->findOrFail($product->id);
             $this->loadProduct($persisted);
-            if (bccomp((string) $persisted->sale_price, '0', 4) > 0) {
+            if ($persisted->sale_price !== null && bccomp((string) $persisted->sale_price, '0', 4) > 0) {
                 \App\Modules\Reporting\Models\Alert::query()
                     ->where('alert_type', 'unpriced_product')->where('source_id', (string) $persisted->id)
                     ->where('status', '!=', 'resolved')->update(['status' => 'resolved', 'resolved_at' => now()]);
             }
             app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot();
-            Flux::toast(variant: 'success', text: __('Product card saved successfully.'));
+            Flux::toast(variant: 'success', text: $this->savingDraft ? __('Product draft saved successfully.') : __('Product card saved successfully.'));
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
             $field = str((string) $exception->validator->errors()->keys()[0])->afterLast('.')->toString();
@@ -143,6 +161,16 @@ new #[Title('Product Card')] class extends Component {
         } catch (\Throwable $exception) {
             $this->addError('productForm', \App\Support\UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        }
+    }
+
+    public function saveDraft(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
+    {
+        $this->savingDraft = true;
+        try {
+            $this->save($action, $barcodeAction);
+        } finally {
+            $this->savingDraft = false;
         }
     }
 
@@ -278,7 +306,7 @@ new #[Title('Product Card')] class extends Component {
     private function rules(): array
     {
         return [
-            'productForm.item_code' => [$this->isEditing ? 'required' : 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
+            'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
             'productForm.open_price' => ['boolean'],
             'productForm.sell_online' => ['boolean'],
@@ -289,7 +317,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.description_en' => ['nullable', 'string', 'max:5000'],
             'productForm.short_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.short_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.full_description_ar' => ['nullable', 'string', 'max:10000'], 'productForm.full_description_en' => ['nullable', 'string', 'max:10000'],
             'productForm.meta_title_ar' => ['nullable', 'string', 'max:255'], 'productForm.meta_title_en' => ['nullable', 'string', 'max:255'], 'productForm.meta_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.meta_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
-            'productForm.model_number' => ['required', 'string', 'max:100'],
+            'productForm.model_number' => [$this->savingDraft ? 'nullable' : 'required', 'string', 'max:100'],
             'productForm.product_type' => ['required', Rule::in($this->isEditing && $this->productForm['product_type'] === 'digital' ? ['standard', 'composite', 'service', 'digital'] : ['standard', 'composite', 'service'])],
             'productForm.status' => ['required', Rule::in(['active', 'inactive'])],
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
@@ -316,9 +344,9 @@ new #[Title('Product Card')] class extends Component {
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
             'productForm.fractional_quantity' => ['required', 'boolean'],
-            'productForm.average_cost' => ['required', 'numeric', 'min:0'], 'productForm.sale_price' => ['required', 'numeric', 'min:0.01'],
+            'productForm.average_cost' => [$this->savingDraft ? 'nullable' : 'required', 'numeric', 'min:0'], 'productForm.sale_price' => [$this->savingDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
-            'productForm.preferred_supplier_id' => [$this->productForm['barcode_registration_type'] === 'local' ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+            'productForm.preferred_supplier_id' => [! $this->savingDraft && blank($this->productForm['item_code']) ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
             'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
             'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
@@ -428,10 +456,23 @@ new #[Title('Product Card')] class extends Component {
                     <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
                     <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
                 </flux:select>
+                @if ($productForm['barcode_registration_type'] === 'local' && blank($productForm['item_code']))
+                    <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Supplier')" required>
+                        <flux:select.option value="">{{ __('Select supplier first') }}</flux:select.option>
+                        @foreach ($suppliers as $supplier)
+                            <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <div class="rounded-lg border border-border bg-surface-muted/30 p-3 text-sm">
+                        <span class="block text-xs text-text-muted">{{ __('Generated product-code preview') }}</span>
+                        <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? __('Select supplier first') }}</strong>
+                        <span class="mt-1 block text-xs text-text-muted">{{ __('The final unique code is allocated atomically when the product is completed.') }}</span>
+                    </div>
+                @endif
                 @if ($productForm['barcode_registration_type'] === 'international')
                     <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
                 @else
-                    <flux:text class="self-end text-sm text-text-muted">{{ __('A local barcode is generated after saving from the first four numeric digits in the selected supplier code.') }}</flux:text>
+                    <flux:text class="self-end text-sm text-text-muted">{{ __('The local product code uses the first three English letters of the selected supplier name plus the shared seven-digit sequence. The barcode remains a separate identity.') }}</flux:text>
                 @endif
                 <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" required />
                 @if ($isEditing)
@@ -478,12 +519,14 @@ new #[Title('Product Card')] class extends Component {
                         <flux:select.option :value="$taxSetting->id">{{ $taxSetting->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $taxSetting->name_ar : $taxSetting->name_en }} @if($taxSetting->rate !== null)({{ number_format((float) $taxSetting->rate, 2) }}%)@endif</flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
-                    <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
-                    @foreach ($suppliers as $supplier)
-                        <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                @if(filled($productForm['item_code']) || $productForm['barcode_registration_type'] !== 'local')
+                    <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
+                        <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
+                        @foreach ($suppliers as $supplier)
+                            <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @endif
                 <flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product / local code')" dir="ltr" />
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
@@ -666,6 +709,7 @@ new #[Title('Product Card')] class extends Component {
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
             <flux:button href="{{ $isEditing ? route('catalog.products.show', ['product' => $product]) : route('catalog.products') }}" variant="subtle" wire:navigate>{{ __('Cancel') }}</flux:button>
             <flux:text wire:dirty class="self-center text-xs text-text-muted">{{ __('Unsaved changes') }}</flux:text>
+            <x-actions.loading-button type="button" action="saveDraft" :label="__('Save draft')" />
             <x-actions.loading-button type="submit" action="save" :label="__('Save')" />
         </div>
     </form>

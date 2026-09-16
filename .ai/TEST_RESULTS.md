@@ -341,3 +341,10 @@
 - PASS: Hotfix41 changes no migration and `git diff --check` passed.
 - Vite build count: zero; no Vite-managed frontend input changed and exact Hotfix40 compiled assets are retained.
 - NOT RUN: broad legacy suites, browser control, database mutation, migration commands, promotion, activation or post-switch health checks.
+
+## 2026-09-16 — v0.1.22-hotfix42 focused final verification
+
+- **PASS:** The Hotfix42 focused verifier passed with no database mutation or migration execution. It confirmed the exact release version, both migration contracts and fail-closed downs, line discount/tax/inclusive calculations, legacy-header-tax preservation hooks, draft-code isolation, supplier-first locked allocation, camera-control removal, branch/outlet coexistence, exact migration scope, and populated `ar`, `en`, and `ar-EG` keys.
+- **PASS:** PHP 8.4.24 syntax passed for every changed/new PHP source, migration, and evidence file; `git diff --check` passed. The single Node 20.20.0 / Vite 8.2.0 production build passed, and every manifest-referenced asset exists and is nonempty. Final Vite manifest SHA-256: `c43b317d384adee99b6e2c02024f1ac50f5f317dacc7b7f83af222fdd2a8b8f5`.
+- **BLOCKED (not substituted):** No migrated disposable MySQL/MariaDB database credentials are available in this worktree. Therefore migration execution/status, schema/data backfill guards, and authenticated `ar`/`en`/`ar-EG` rendering were not run locally. The unexecuted activation procedure must enforce them before switching and will roll back Hotfix42 application files while retaining migrations/data on failure.
+- **Build note:** The shell-default Node 16.20.2 invocation stopped before Vite compilation because it lacks `node:util.styleText`; it emitted no usable output. The only successful Hotfix42 build used the established Node 20.20.0 binary; no package was installed.

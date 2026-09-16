@@ -22,7 +22,11 @@
         <div class="min-w-0 space-y-1">
             <div class="flex flex-wrap items-center gap-2.5">
                 <flux:heading size="xl" level="1" class="font-bold tracking-[-0.03em] text-text-primary">
-                    {{ $title }}
+                    @if ($description)
+                        <x-context-help :title="$title" :trigger-title="$title"><p>{{ $description }}</p></x-context-help>
+                    @else
+                        {{ $title }}
+                    @endif
                 </flux:heading>
 
                 @if ($badge)
@@ -38,11 +42,6 @@
                 @endif
             </div>
 
-            @if ($description)
-                <flux:subheading class="max-w-2xl text-sm leading-6 text-text-muted">
-                    {{ $description }}
-                </flux:subheading>
-            @endif
         </div>
 
         <div class="flex w-full shrink-0 flex-wrap items-center gap-2 md:w-auto md:justify-end">

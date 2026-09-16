@@ -22,6 +22,15 @@ class Product extends Model
 
     protected static function booted(): void
     {
+        self::saving(function (self $product): void {
+            if (blank($product->item_code)) {
+                $product->item_code = null;
+                if ($product->status === 'active') {
+                    throw new \InvalidArgumentException(__('A product without a final item code must remain an inactive draft.'));
+                }
+            }
+        });
+
         self::deleting(function (self $product): void {
             if (! $product->permanentRemovalAuthorized) {
                 throw new \LogicException('Products must be archived or removed through the guarded product-removal action.');
@@ -118,7 +127,8 @@ class Product extends Model
 
     public function hasIncompleteCard(): bool
     {
-        return blank($this->name_ar)
+        return blank($this->item_code)
+            || blank($this->name_ar)
             || blank($this->model_number)
             || $this->category_id === null
             || $this->sale_price === null
@@ -253,14 +263,16 @@ class Product extends Model
 
     public function scopeCompleteCard(Builder $query): Builder
     {
-        return $query->whereNotNull('products.category_id')->whereNotNull('products.model_number')->where('products.model_number', '<>', '')
+        return $query->whereNotNull('products.item_code')->where('products.item_code', '<>', '')
+            ->whereNotNull('products.category_id')->whereNotNull('products.model_number')->where('products.model_number', '<>', '')
             ->whereNotNull('products.name_ar')->where('products.name_ar', '<>', '')->where('products.sale_price', '>', 0)
             ->where(fn (Builder $scope) => $scope->where('products.product_type', 'service')->orWhereHas('barcodes', fn (Builder $codes) => $codes->where('status', 'active')));
     }
 
     public function scopeIncompleteCard(Builder $query): Builder
     {
-        return $query->where(fn (Builder $scope) => $scope->whereNull('products.category_id')->orWhereNull('products.model_number')->orWhere('products.model_number', '')
+        return $query->where(fn (Builder $scope) => $scope->whereNull('products.item_code')->orWhere('products.item_code', '')
+            ->orWhereNull('products.category_id')->orWhereNull('products.model_number')->orWhere('products.model_number', '')
             ->orWhereNull('products.name_ar')->orWhere('products.name_ar', '')->orWhereNull('products.sale_price')->orWhere('products.sale_price', '<=', 0)
             ->orWhere(fn (Builder $stock) => $stock->where('products.product_type', '<>', 'service')->whereDoesntHave('barcodes', fn (Builder $codes) => $codes->where('status', 'active'))));
     }

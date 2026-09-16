@@ -7,7 +7,7 @@
 
 <form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-autofocus="true">
     @if($editingOrderId)<flux:callout variant="info" icon="pencil-square">{{ __('Draft') }} · {{ __('Next action') }}: {{ __('Submit for Review') }}</flux:callout>@endif
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1.45fr)_minmax(13rem,1.3fr)_10.5rem_10.5rem]">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
             <option value="">{{ __('Select Supplier') }}</option>
             @foreach ($suppliers as $sup)
@@ -15,7 +15,14 @@
             @endforeach
         </flux:select>
 
-        <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'">
+        <flux:select wire:model.live="orderForm.branch_id" :label="__('Creating Branch') . ' *'">
+            <option value="">{{ __('Select Branch') }}</option>
+            @foreach ($branches as $branch)
+                <option value="{{ $branch->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }} ({{ $branch->code }})</option>
+            @endforeach
+        </flux:select>
+
+        <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'" :disabled="blank($orderForm['branch_id'])">
             <option value="">{{ __('Select Store') }}</option>
             @foreach ($stores as $st)
                 <option value="{{ $st->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
@@ -25,6 +32,10 @@
         <flux:input type="date" wire:model="orderForm.order_date" :label="__('Order Date') . ' *'" />
         <flux:input type="date" wire:model="orderForm.expected_delivery_date" :label="__('Expected Delivery Date')" />
     </div>
+    @if(filled($orderForm['branch_id']))
+        @php($creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']))
+        <p class="text-xs text-text-muted">{{ __('Reference allocated on save') }}: <span class="font-mono" dir="ltr">{{ $creatingBranch?->code }}-PO-000001</span> · {{ str_starts_with(app()->getLocale(), 'ar') ? $creatingBranch?->name_ar : $creatingBranch?->name_en }}</p>
+    @endif
 
     <div class="space-y-2 border-t border-border pt-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -36,16 +47,18 @@
         </div>
 
         <div class="max-h-[32rem] overflow-y-auto rounded-lg border border-border" data-order-lines-scroll>
-            <div class="sticky top-0 z-20 hidden grid-cols-[minmax(20rem,1fr)_6rem_9rem_8rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
+            <div class="sticky top-0 z-20 hidden grid-cols-[minmax(16rem,1fr)_5rem_8rem_7rem_7rem_7rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
                 <span>{{ __('Product') }}</span>
                 <span>{{ __('Quantity') }}</span>
                 <span>{{ __('Unit cost') }}</span>
+                <span>{{ __('Discount') }}</span>
+                <span>{{ __('Tax') }}</span>
                 <span>{{ __('Line total') }}</span>
                 <span></span>
             </div>
             <div class="space-y-1.5 p-1.5">
                 @foreach ($lineItems as $index => $item)
-                <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(20rem,1fr)_6rem_9rem_8rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
+                <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(16rem,1fr)_5rem_8rem_7rem_7rem_7rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
                     <div class="col-span-12 min-w-0 lg:col-auto">
                         @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
                         <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
@@ -61,6 +74,17 @@
                         <label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label>
                         <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
                         <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-3 lg:col-auto">
+                        <label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label>
+                        <div class="mt-1 grid grid-cols-2 gap-1"><select data-line-discount-type wire:model.live="lineItems.{{ $index }}.discount_type" class="h-10 rounded-lg border-zinc-300 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">%</option><option value="amount">{{ __('Amount') }}</option></select><input data-line-discount type="number" min="0" step="0.0001" wire:model.live="lineItems.{{ $index }}.discount_value" class="h-10 rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900"></div>
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-3 lg:col-auto">
+                        <span class="block text-xs font-semibold lg:sr-only">{{ __('Tax') }}</span>
+                        <input type="hidden" data-line-tax value="{{ $item['tax_rate'] ?? 0 }}"><input type="hidden" data-line-tax-inclusive value="{{ !empty($item['tax_inclusive']) ? '1' : '0' }}">
+                        <div class="mt-1 flex h-10 items-center rounded-lg bg-white px-2 text-xs dark:bg-zinc-900"><span dir="ltr">{{ number_format((float)($item['tax_rate'] ?? 0), 2) }}%</span><span class="ms-1 text-zinc-500">{{ !empty($item['tax_inclusive']) ? __('Inclusive') : __('Exclusive') }}</span></div>
                     </div>
 
                     <div class="col-span-10 sm:col-span-4 lg:col-auto">
@@ -80,9 +104,9 @@
 
         <div class="flex justify-end pt-2">
             <div class="rounded-lg bg-zinc-100 px-4 py-2 text-end dark:bg-zinc-800">
-                <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
-                <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</span>
-                <span class="mt-0.5 block text-xs text-zinc-400">{{ __('Tax is not configured') }}</span>
+                <span class="text-xs text-zinc-500">{{ __('Estimated total') }}: </span>
+                <output data-editor-total class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</output>
+                <span class="mt-0.5 block text-xs text-zinc-400">{{ __('Tax and discounts are calculated and stored by the server.') }}</span>
             </div>
         </div>
     </div>

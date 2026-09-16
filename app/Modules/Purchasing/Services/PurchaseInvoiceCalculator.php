@@ -19,6 +19,9 @@ final class PurchaseInvoiceCalculator
         $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost');
         $discountType = ($line['discount_type'] ?? '') !== '' ? ($line['discount_type'] ?? null) : null;
         $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, 'Discount');
+        if ($discountType === null) {
+            $discountValue = '0.0000';
+        }
         $taxRate = $this->decimal($line['tax_rate'] ?? 0, 4, 'Tax rate');
 
         if (bccomp($quantity, '0', 6) <= 0) {
@@ -33,22 +36,32 @@ final class PurchaseInvoiceCalculator
         if (bccomp($discountValue, '0', 4) < 0) {
             throw new InvalidArgumentException(__('Discount cannot be negative.'));
         }
-        if (bccomp($taxRate, '0', 4) !== 0) {
-            throw new InvalidArgumentException(__('Purchase tax is disabled in Phase 1; tax rate must be zero.'));
+        if (bccomp($taxRate, '100', 4) > 0) {
+            throw new InvalidArgumentException(__('Tax rate cannot exceed 100 percent.'));
         }
 
         $gross = bcmul($quantity, $unitCost, 8);
-        $discount = $discountType === 'percentage'
-            ? bcdiv(bcmul($gross, $discountValue, 8), '100', 8)
-            : $discountValue;
+        $discount = match ($discountType) {
+            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8),
+            'amount' => $discountValue,
+            default => '0',
+        };
 
         if (bccomp($discount, $gross, 8) > 0) {
             throw new InvalidArgumentException(__('Discount cannot exceed the line value.'));
         }
 
-        $subtotal = bcsub($gross, $discount, 8);
-        $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8);
-        $lineTotal = bcadd($subtotal, $tax, 8);
+        $discounted = bcsub($gross, $discount, 8);
+        $taxInclusive = (bool) ($line['tax_inclusive'] ?? false);
+        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) {
+            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8);
+            $subtotal = bcsub($discounted, $tax, 8);
+            $lineTotal = $discounted;
+        } else {
+            $subtotal = $discounted;
+            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8);
+            $lineTotal = bcadd($subtotal, $tax, 8);
+        }
 
         return [
             'quantity' => bcadd($quantity, '0', 6),

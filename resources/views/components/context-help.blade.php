@@ -2,6 +2,7 @@
     'title' => null,
     'label' => null,
     'sidebar' => false,
+    'triggerTitle' => null,
 ])
 
 @php
@@ -18,14 +19,14 @@
     <button
         x-ref="trigger"
         type="button"
-        class="context-help__trigger {{ $sidebar ? 'context-help__trigger--sidebar' : '' }}"
+        class="{{ $triggerTitle ? 'inline-flex items-center gap-2 text-start font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4' : 'context-help__trigger '.($sidebar ? 'context-help__trigger--sidebar' : '') }}"
         x-on:click="open = true; $nextTick(() => $refs.close.focus())"
         x-bind:aria-expanded="open.toString()"
         x-bind:aria-controls="$id('context-help-panel')"
         aria-haspopup="dialog"
         aria-label="{{ $label }}"
         title="{{ $label }}"
-    >!</button>
+    >@if($triggerTitle)<span>{{ $triggerTitle }}</span><span class="context-help__trigger" aria-hidden="true">!</span>@else!@endif</button>
 
     <template x-teleport="body">
         <div x-cloak x-show="open" class="context-help__layer" x-on:click.self="close()">
