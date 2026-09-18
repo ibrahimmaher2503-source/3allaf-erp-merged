@@ -1,8 +1,8 @@
 # Current Milestone
 
 **Date:** 2026-09-18
-**Status:** Hotfix43 implements the recovered original 1–73 corrections on exact deployed Hotfix42. The final focused restored-MariaDB/browser/document pass and 84-row matrix are complete. Immutable candidate creation, fresh production backup/restore, deployment, and live verification remain.
+**Status:** Hotfix43 candidate `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf` is deployed at `https://rajeh.xyz`. The final focused restored-MariaDB/browser/document pass, immutable package, fresh encrypted production backup/isolated restore, approved migrations, atomic activation and live verification are complete.
 
-Hotfix42 completes the customer-correction scope carried by Hotfix37–Hotfix41 and adds only the two owner-approved migrations: 000115 for purchase-order line financial snapshots and 000116 for nullable incomplete-draft product codes. Neither migration has been executed locally. Activation must accept exact Hotfix41, require 000111–000114 already `Ran`, run only 000115 then 000116, validate schema/data invariants, smoke authenticated `ar`, `en`, and `ar-EG`, switch atomically, and restore exact Hotfix41 application files on failure while retaining both schema changes and their data.
+Production migration 000117 is `Ran` in batch 24 and 000118 is `Ran` in batch 25. Historical purchase-invoice money and tax-setting business fields retained their captured hashes; runtime controls and maintenance state were restored. The exact approved inventory exception remains unchanged and unresolved.
 
 Deferred C remains deferred because the referenced pair is unidentified. A branch may contain both warehouses and sales outlets; legitimate scope, relationship, and active POS-mapping validation remain intact.

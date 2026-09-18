@@ -1,22 +1,33 @@
 # Hotfix43 implementation checkpoint — 2026-09-18
 
-## Continuation update — final candidate preparation
+## Production deployment completed — 2026-09-18
+
+- `https://rajeh.xyz` now serves immutable release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix43-c71d0ad0651e`, commit `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf`, tree `0a797ddfff9ef8f1d8805f1ea3a4ac50b0ab8cf1`.
+- The authenticated archive is `/home/rajeh_ahmed/toyjoy-v0.1.22-hotfix43-c71d0ad0651e.tar.gz` (`7e2078b246ca646581756d4a33d677eeeeebb85c7944660a756f843875729c2d`); its complete 14,779-file manifest is `/home/rajeh_ahmed/.hotfix43-complete-manifest.sha256` (`cad183937f389be1817f2ef045692a024067586e761b1036bfff415a53135bbd`). No Composer or frontend build ran.
+- Deployment journal: `/var/lib/toyjoy/hotfix43-deployment/a8474409199802cfc3`. The fresh AES-256 encrypted database/private-storage backup, isolated file/database restore and full reconciliation passed. Candidate-bound receipt: `verified/candidate-bound-receipt.json`; stable copy: `/home/rajeh/shared/toyjoy/deployment/hotfix43-c71d0ad0651e-r8-receipt.json`.
+- Production migration `000117` is `Ran` in batch 24 and `000118` is `Ran` in batch 25. Exact required columns/indexes/restricted FK/ownership passed. Five historical invoice lines, five invoice headers and four tax-setting business rows retained their pre-migration hashes.
+- Atomic activation, Laravel production caches, required PHP-FPM reload, runtime-control restoration, maintenance removal, and HTTPS `/up` plus `/login` HTTP 200 checks passed. Nine authenticated affected GET pages returned HTTP 200 using array session/cache and a read-only database session; no production test transaction ran. Evidence: `live-smoke/authenticated-pages-r2.json`.
+- The exact approved inventory exception remains unchanged and `UNRESOLVED`: balance `1`, product `2`, store `10`, quantity `0`, value `0`, average cost `10`. Quantity/value mismatches remain `0`; missing balances remain `0`; no inventory repair occurred.
+- The first R1 deployment attempt stopped before maintenance, backup, migration or activation because its MariaDB metadata helper failed to alias information-schema column names. R2 corrected only that deployment helper and completed. A first live-smoke helper used compatibility URLs and received an expected redirect; the corrected canonical tax/printer URLs passed. Neither event exposed an application defect.
+- Requirements 13, 45, 60, `OC-BRANCH-STORE`, and deferred C retain existing behavior pending owner clarification. Microsoft Excel and physical printer/scanner acceptance remain external and do not invalidate this deployment. The 84-row matrix status is not promoted to universal acceptance.
+
+## Pre-deployment candidate snapshot — superseded by completion above
 
 - Owner approval for migrations 000117 and 000118 was received exactly as proposed. Both migrations are implemented with preflight rejection, partially-applied-DDL recovery, and fail-closed rollback protections.
 - The restored isolated MariaDB has both migrations in batch 24 exactly once. Historical purchase-invoice monetary aggregates remained unchanged; all four tax rules were unambiguously assigned to company 1; required nullability, uniqueness, lookup index, and restricted FK checks passed. A migration rerun was a no-op and rollback was refused before schema loss.
 - The single focused database/browser pass passed after correcting a discovered production-data compatibility gap: legacy products without assignment rows remain company-global only when their tax ownership is compatible, while products assigned elsewhere remain excluded.
 - All 12 shared XLSX templates passed ZIP and XML validation. Three localized PO PDFs were generated. Microsoft Excel and physical printer/scanner acceptance remain external.
 - The retained 84-row matrix is updated under `.ai/audits/hotfix43-20260918/`. It explicitly separates verified completion, implemented-but-evidence-limited rows, external acceptance, owner decisions, and the inventory exception.
-- Production remains on Hotfix42 until the immutable Hotfix43 candidate, fresh encrypted backup/isolated restore, controlled migration, activation, and live health checks complete.
+- At this pre-deployment checkpoint, production remained on Hotfix42 pending the release sequence now recorded as complete above.
 
-## Identity and boundaries
+## Pre-deployment identity and boundaries
 
-- Verified production application symlink: `/home/rajeh/laravel` → `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix42-cb8c1f963737`.
-- Verified deployed `RELEASE_COMMIT`: `cb8c1f9637370e531f6ab23f634e70784742cf35`.
+- Pre-deployment production application symlink: `/home/rajeh/laravel` → `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix42-cb8c1f963737`.
+- Pre-deployment `RELEASE_COMMIT`: `cb8c1f9637370e531f6ab23f634e70784742cf35`.
 - Verified production maintenance mode absent; `https://rajeh.xyz/up` and `/login` returned HTTP 200 before edits.
 - Correction worktree: `/home/rajeh/worktrees/rajeh-erp-hotfix43`; branch `hotfix/v0.1.22-hotfix43-original-requirements-corrections`; initial tree `2b43448ebd232734d4b701eedc78720e33e8fb4d`.
 - The older `/home/rajeh/worktrees/rajeh-erp-development` audit/tooling worktree and all immutable audit/deployment artifacts remain untouched.
-- No production database write, test transaction, migration, deployment, service change, commit, push or tag has occurred.
+- As of this pre-deployment snapshot, no production database write, test transaction, migration, deployment, service change, commit, push or tag had occurred.
 - Known inventory exception remains unchanged and unresolved: balance `1`, product `2`, store `10`, quantity `0`, value `0`, average cost `10`.
 
 ## Completed implementation
@@ -49,17 +60,9 @@
 - No tax rates, treatments, dates, defaults, product assignments or historical snapshots change.
 - Rollback is fail-closed because removing company ownership could collapse valid same-code rules and destroy tenant identity.
 
-## Verification completed so far
+## Verification and release closure
 
-- Read-only deployed identity, maintenance and HTTPS health checks passed.
-- Production schema/data facts above were queried read-only.
-- PHP syntax passed for each changed PHP/Blade file checked to date using direct PHP 8.4; translation JSON parsing and `git diff --check` passed after the current edits.
-- No final application suite, isolated database scenario, browser-control run, Vite build, XLSX generation/open check, PDF render, migration or deployment has run yet. Prior Hotfix42 evidence may be reused only where the relevant code/dependencies remain unchanged.
-
-## Remaining release sequence
-
-1. Commit the clean candidate and create its immutable authenticated artifact/manifest.
-2. Use the proven R8 writer-quiescence procedure to take a fresh encrypted database/private-storage backup and reconcile an isolated restore before either migration runs.
-3. Reinspect live migration/schema facts, run only pending 000117 then 000118, validate the exact post-schema/data invariants, build production caches, and activate atomically.
-4. Confirm live release identity, migration state, maintenance/runtime-control restoration, HTTPS health, affected pages, preserved configuration/data fingerprints, and the exact inventory exception.
-5. Append the factual deployment result and update the matrix/checkpoint without changing original requirement IDs or text.
+- The previously recorded focused MariaDB/browser/document/source checks were reused and not rerun.
+- Packaging integrity, fresh encrypted backup and isolated restore, production migration invariants, preservation fingerprints, atomic activation, caches, runtime controls, HTTPS health and authenticated affected-page smoke all passed as recorded above.
+- No PHPUnit/Pest/broad suite, seed, production test transaction, frontend rebuild, Microsoft Excel acceptance or physical printer/scanner acceptance ran during deployment.
+- Hotfix43 packaging and production deployment are complete. Remaining items are only the named owner decisions, external acceptance, and the separately approved unchanged inventory exception.

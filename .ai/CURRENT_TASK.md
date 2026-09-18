@@ -10,7 +10,7 @@
 
 **Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix43`
 
-**Status:** Implementation and the single focused isolated acceptance pass are complete. Candidate closure, fresh production-consistent backup/restore, deployment, and live verification remain.
+**Status:** Completed and deployed. Production serves exact Hotfix43 candidate `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf`; fresh encrypted backup/isolated restore, migrations 000117/000118, atomic activation and live verification passed.
 
 Implement every concrete defect identified by the recovered 73-row Hotfix42 audit and owner corrections, then obtain missing acceptance evidence without treating every prior PARTIAL row as broken code. Preserve the known inventory exception without modifying stock.
 
@@ -21,6 +21,6 @@ Approved schema scope is limited to:
 1. `purchase_invoice_lines.tax_inclusive BOOLEAN NOT NULL DEFAULT FALSE` to retain the immutable inclusive/exclusive line snapshot through conversion, save, reload and edit.
 2. `tax_settings.company_id BIGINT UNSIGNED NOT NULL` with company foreign key and company/code uniqueness to make product/default tax resolution company-owned.
 
-Migrations 000117 and 000118 and all affected company-scoped tax consumers are implemented. The isolated MariaDB/browser pass, all 12 shared XLSX generator structural checks, localized PDF generation, and final 84-row matrix are complete. Next: create the immutable candidate, perform the fresh encrypted backup and isolated restore, deploy with the proven R8 procedure, and record live health/identity. Microsoft Excel and physical printer/scanner acceptance remain explicitly external.
+Migrations 000117 and 000118 and all affected company-scoped tax consumers are implemented and deployed. Production records 000117 in batch 24 and 000118 in batch 25. The isolated MariaDB/browser pass, all 12 shared XLSX structural checks, localized PDF generation, final 84-row matrix, fresh encrypted production backup/restore reconciliation, live health and read-only authenticated affected-page smoke are complete. Microsoft Excel and physical printer/scanner acceptance remain explicitly external.
 
 The unresolved owner decisions remain: cross-branch receiving; whether globally unique `CUS-*` plus company visibility satisfies the customer-code contract; whether document timezone fields are distinct from global timezone configuration; and the unidentified deferred comparison C.

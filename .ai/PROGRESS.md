@@ -27,6 +27,12 @@
 
 # UI/UX Release Progress
 
+## 2026-09-18 — Hotfix43 deployed
+
+- Deployed immutable candidate `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf` from exact Hotfix42 baseline after a fresh AES-256 encrypted database/private-storage backup and isolated full restore reconciliation.
+- Applied only approved pending migrations 000117 and 000118; exact schema, ownership, monetary-preservation and inventory-preservation checks passed. Atomic activation, caches, PHP-FPM reload, runtime-control restoration, maintenance removal, HTTPS health and nine read-only authenticated affected-page renders passed.
+- Deployment evidence is under `/var/lib/toyjoy/hotfix43-deployment/a8474409199802cfc3`; the known inventory exception remains exactly unchanged and unresolved. Owner decisions and external Excel/printer/scanner acceptance remain separate.
+
 ## 2026-09-18 — Hotfix43 candidate verification complete
 
 - Owner-approved migrations 000117/000118 and all tax/company consumers are implemented. The restored MariaDB schema/data guards, focused finance/scope/workflow scenarios, affected authenticated browser paths, all 12 XLSX generators, and three localized PO PDFs passed within their recorded boundaries.

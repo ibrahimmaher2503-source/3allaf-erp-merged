@@ -1,5 +1,13 @@
 # Test and Verification Results
 
+## 2026-09-18 — Hotfix43 production deployment verification
+
+- **PASS — package/restore:** The immutable 14,779-file candidate manifest passed. A fresh AES-256 encrypted database/private-storage backup was fully decrypted, restored to isolated MariaDB `toyjoy_hf43_restore_78b1e7d1d7887b46a9`, and reconciled by files, complete database schema/rows and stock state.
+- **PASS — production migrations:** Only pending 000117 then 000118 ran. Production records batches 24 and 25 respectively. Required tax snapshot/ownership schema and constraints passed; captured invoice-line, invoice-header and tax-setting business hashes were unchanged.
+- **PASS — activation/live:** Exact release identity, atomic link switch, Laravel caches, required PHP-FPM reload, runtime controls, absent maintenance and HTTPS `/up` and `/login` HTTP 200 passed. Nine affected authenticated GET pages returned 200 in English/LTR under a read-only database session with array cache/session state and no test transaction.
+- **PASS — preservation:** Quantity/value mismatch count `0`, missing balance count `0`, and the single approved unresolved average-cost exception remained exactly balance 1/product 2/store 10/quantity 0/value 0/average cost 10.
+- Existing focused application/browser/document checks were not repeated. No automated suite, seed, frontend build, production test transaction, Excel application, or physical printer/scanner acceptance ran.
+
 ## 2026-09-18 — Hotfix43 focused isolated acceptance
 
 - **PASS — MariaDB:** A production-derived isolated MariaDB restore applied migrations 000117 and 000118 exactly once. Exact column definitions, unchanged historical invoice money, tax ownership backfill, company/code uniqueness, lookup index, restricted FK, safe no-op rerun, and fail-closed rollback were checked. No SQLite operation occurred.
