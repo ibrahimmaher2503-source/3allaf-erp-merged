@@ -14,8 +14,9 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -63,14 +64,13 @@ class SaveProductAction
                     throw new InvalidArgumentException(__('The selected brand must exist and be active.'));
                 }
 
+                $actor = Auth::user() ?? throw new InvalidArgumentException(__('An authenticated user is required.'));
+                $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
                 $taxSettingId = ! empty($data['tax_setting_id']) ? (int) $data['tax_setting_id'] : null;
                 if ($taxSettingId !== null) {
-                    if (Company::query()->count() !== 1 || ! Company::query()->where('status', 'active')->exists()) {
-                        throw new InvalidArgumentException(__('A single active company is required before assigning product tax.'));
-                    }
-
                     $taxSetting = TaxSetting::query()
                         ->whereKey($taxSettingId)
+                        ->where('company_id', $company->id)
                         ->where('status', 'active')
                         ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                         ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))

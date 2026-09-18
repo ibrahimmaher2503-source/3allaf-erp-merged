@@ -72,7 +72,7 @@ final class RetailSaleAction
         }
 
         $lines = $this->resolveLines($cashier, $store, $requestedLines);
-        $tax = $this->resolveTax($cashier, (bool) ($financial['tax_applicable'] ?? false));
+        $tax = $this->resolveTax($cashier, (int) $store->company_id, (bool) ($financial['tax_applicable'] ?? false));
         $tenders = $this->orderedTenders($tenders);
         $fingerprint = $this->fingerprint($store, $cashier, $lines, $tax, $tenders, $suspend, $customer);
 
@@ -768,25 +768,27 @@ final class RetailSaleAction
         return (int) $approval->approver_id;
     }
 
-    private function resolveTax(User $cashier, bool $applicable): ?TaxSetting
+    private function resolveTax(User $cashier, int $companyId, bool $applicable): ?TaxSetting
     {
         if (! $applicable) {
             return null;
         }
         abort_unless($cashier->can('pos_sales.apply_tax'), 403);
 
-        $setting = TaxSetting::query()
+        $settings = TaxSetting::query()
+            ->where('company_id', $companyId)
             ->where('status', 'active')
             ->where('is_default', true)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->first();
+            ->limit(2)
+            ->get();
 
-        if ($setting === null || $setting->rate === null) {
-            throw new InvalidArgumentException(__('Tax was enabled, but one effective company default tax rule with an explicit rate is required.'));
+        if ($settings->count() !== 1 || $settings->first()?->rate === null) {
+            throw new InvalidArgumentException(__('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.'));
         }
 
-        return $setting;
+        return $settings->first();
     }
 
     /** @param array<int, array<string, mixed>> $tenders @return array<int, array<string, mixed>> */
@@ -1045,7 +1047,7 @@ final class RetailSaleAction
         $this->assertPricesRemainCurrent($store, $lines);
         $this->assertOpenPriceApprovalsRemainCurrent($cashier, $store, $lines);
         $this->assertDiscountApprovalsRemainCurrent($cashier, $store, $lines);
-        $tax = $this->resolveTax($cashier, (bool) $sale->tax_applicable);
+        $tax = $this->resolveTax($cashier, (int) $store->company_id, (bool) $sale->tax_applicable);
         $totals = $this->calculator->calculate(
             array_map(static fn (array $line): array => [
                 'quantity' => $line['quantity'],

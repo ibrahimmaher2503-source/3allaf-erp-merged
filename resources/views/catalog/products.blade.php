@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
@@ -193,6 +194,7 @@ new #[Title('Product Masters')] class extends Component
     {
         Gate::authorize($this->editingProductId ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         $validated = $this->validate([
             'productForm.item_code' => [
                 'nullable',
@@ -209,7 +211,7 @@ new #[Title('Product Masters')] class extends Component
             'productForm.tax_setting_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('tax_settings', 'id')->where(fn ($query) => $query
+                Rule::exists('tax_settings', 'id')->where(fn ($query) => $query->where('company_id', $companyId)
                     ->where('status', 'active')
                     ->where(fn ($dates) => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                     ->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now()))),
@@ -364,6 +366,7 @@ new #[Title('Product Masters')] class extends Component
     #[Computed]
     public function catalogLookups(): array
     {
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         return [
             'categories' => Category::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'brands' => Brand::query()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
@@ -371,6 +374,7 @@ new #[Title('Product Masters')] class extends Component
             'activeBrands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeSuppliers' => Supplier::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'activeTaxSettings' => TaxSetting::query()
+                ->forCompany($companyId)
                 ->where('status', 'active')
                 ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                 ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
@@ -459,18 +463,14 @@ new #[Title('Product Masters')] class extends Component
     data-guide="products-header"
 >
     <x-slot:actions>
-        <x-tables.resource-toolbar filter-target="products-filters">
+        <div class="flex flex-wrap gap-2">
             @can('products_categories_brands.create')
-                <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
                 <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
-                <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
+                <flux:button href="{{ route('catalog.products.create') }}" icon="plus" variant="primary" wire:navigate data-guide="products-add-action">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة كارت صنف' : 'Add Product Card' }}</flux:button>
             @endcan
-        </x-tables.resource-toolbar>
+        </div>
     </x-slot:actions>
 
-    @can('products_categories_brands.create')
-        <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
-    @endcan
     @if ($activeCategories->isEmpty())
         <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Product entry needs an active category') }}">
             <div class="space-y-2">
@@ -492,58 +492,14 @@ new #[Title('Product Masters')] class extends Component
         </flux:callout>
     @endif
 
-    <div id="products-filters" class="catalog-filter-card scroll-mt-24 rounded-xl p-4 sm:p-5" data-guide="products-filters">
-        <div class="catalog-filter-heading mb-4">
-            <div>
-                <flux:heading size="sm">{{ __('Search') }}</flux:heading>
-                <flux:text class="mt-1 text-xs text-text-muted">{{ __('Exact code and barcode matches are prioritized before name matches.') }}</flux:text>
-            </div>
-            <span class="hidden rounded-full bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary sm:inline-flex">{{ __('12 per page') }}</span>
-        </div>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Exact code/barcode or Arabic/English name...')" />
-        <flux:select wire:model.live="categoryFilter" :label="__('Category')">
-            <flux:select.option value="all">{{ __('All categories') }}</flux:select.option>
-            @foreach ($categories as $category)
-                <flux:select.option :value="$category->id">{{ $category->code }} &middot; {{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }}</flux:select.option>
-            @endforeach
-        </flux:select>
-        <flux:select wire:model.live="brandFilter" :label="__('Brand')">
-            <flux:select.option value="all">{{ __('All brands') }}</flux:select.option>
-            @foreach ($brands as $brand)
-                <flux:select.option :value="$brand->id">{{ $brand->code }} &middot; {{ str_starts_with(app()->getLocale(), 'ar') ? $brand->name_ar : $brand->name_en }}</flux:select.option>
-            @endforeach
-        </flux:select>
-        <flux:select wire:model.live="statusFilter" :label="__('Status')">
-            <flux:select.option value="all">{{ __('All statuses') }}</flux:select.option>
-            <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
-            <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
-            <flux:select.option value="draft">{{ __('Draft') }}</flux:select.option>
-        </flux:select>
-        <flux:select wire:model.live="productTypeFilter" :label="__('Product type')">
-            <flux:select.option value="all">{{ __('All product types') }}</flux:select.option>
-            @foreach ($productTypes as $type)
-                <flux:select.option :value="$type">{{ __(ucfirst($type)) }}</flux:select.option>
-            @endforeach
-        </flux:select>
-        <flux:select wire:model.live="genderFilter" :label="__('Gender')">
-            <flux:select.option value="all">{{ __('All genders') }}</flux:select.option>
-            @foreach ($genderOptions as $gender)
-                <flux:select.option :value="$gender">{{ __(ucfirst($gender)) }}</flux:select.option>
-            @endforeach
-        </flux:select>
-        <flux:input wire:model.live.debounce.300ms="colourFilter" :label="__('Colour')" :placeholder="__('Filter colour')" />
-        <flux:input wire:model.live.debounce.300ms="ageFilter" :label="__('Target age')" :placeholder="__('Filter age')" />
-        <flux:input wire:model.live.debounce.300ms="characterFilter" :label="__('Character')" :placeholder="__('Filter character')" />
-        </div>
-    </div>
+    <div class="max-w-xl" data-guide="products-search"><flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :label="__('Search products')" :placeholder="__('Exact code/barcode or Arabic/English name...')" clearable /></div>
 
     <div wire:loading.flex wire:target="search,categoryFilter,brandFilter,statusFilter,productTypeFilter,colourFilter,ageFilter,genderFilter,characterFilter,gotoPage,previousPage,nextPage" role="status" aria-live="polite" class="catalog-loading">
         <flux:icon name="arrow-path" class="size-4 animate-spin" />
         {{ __('Loading catalog...') }}
     </div>
 
-    @php($hasProductFilters = trim($search) !== '' || $categoryFilter !== 'all' || $brandFilter !== 'all' || $statusFilter !== 'all' || $productTypeFilter !== 'all' || trim($colourFilter) !== '' || trim($ageFilter) !== '' || $genderFilter !== 'all' || trim($characterFilter) !== '')
+    @php($hasProductFilters = trim($search) !== '')
     @if ($products->isEmpty())
         <flux:card class="space-y-3 p-10 text-center" data-guide="products-empty">
             <flux:icon name="cube" class="mx-auto size-12 text-zinc-400" />
@@ -553,7 +509,7 @@ new #[Title('Product Masters')] class extends Component
                 <div class="flex flex-wrap justify-center gap-2">
                     <flux:button href="{{ route('catalog.products') }}" icon="arrow-path" variant="subtle" wire:navigate>{{ __('Clear filters') }}</flux:button>
                     @can('products_categories_brands.create')
-                        <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
+                        <flux:button icon="plus" variant="primary" href="{{ route('catalog.products.create') }}" wire:navigate>{{ __('Add Product Card') }}</flux:button>
                     @endcan
                 </div>
             @else
@@ -561,8 +517,7 @@ new #[Title('Product Masters')] class extends Component
                 <flux:text class="mx-auto max-w-lg text-zinc-500">{{ __('No product master records exist in your authorized scope yet. Create one manually or use the reviewed Excel import flow.') }}</flux:text>
                 @can('products_categories_brands.create')
                     <div class="flex flex-wrap justify-center gap-2">
-                        <flux:button icon="plus" variant="primary" wire:click="openCreateProductModal">{{ __('Manual entry') }}</flux:button>
-                <flux:button href="{{ route('catalog.products.import.template.xlsx') }}" icon="arrow-down-tray" variant="subtle">{{ __('Import template') }}</flux:button>
+                        <flux:button icon="plus" variant="primary" href="{{ route('catalog.products.create') }}" wire:navigate>{{ __('Add Product Card') }}</flux:button>
                         <flux:button href="{{ route('catalog.products.import') }}" icon="arrow-up-tray" variant="subtle" wire:navigate>{{ __('Excel import') }}</flux:button>
                     </div>
                 @else
@@ -689,9 +644,6 @@ new #[Title('Product Masters')] class extends Component
                     <flux:select.option :value="$category->id">{{ $category->parent ? (str_starts_with(app()->getLocale(), 'ar') ? $category->parent->name_ar : $category->parent->name_en).' / ' : '' }}{{ str_starts_with(app()->getLocale(), 'ar') ? $category->name_ar : $category->name_en }} · {{ $category->code }}</flux:select.option>
                 @endforeach
             </flux:select>
-    @can('products_categories_brands.create')
-        <details class="rounded-xl border border-border bg-surface p-4"><summary class="cursor-pointer font-semibold">{{ __('Product Card Excel import') }}</summary><form method="POST" enctype="multipart/form-data" action="{{ route('catalog.products.import-card') }}" class="mt-4 flex flex-wrap items-end gap-3">@csrf<flux:input type="file" name="workbook" accept=".xlsx" :label="__('Product Card XLSX workbook')" required/><x-actions.button type="submit" semantic="create" :label="__('Validate and import valid rows')">{{ __('Validate and import valid rows') }}</x-actions.button>@if(session('product_card_import_rejections'))<flux:button href="{{ route('catalog.products.import-card.rejections') }}" icon="arrow-down-tray">{{ __('Download rejected rows') }}</flux:button>@endif</form></details>
-    @endcan
             @if ($activeCategories->isEmpty())
                 <flux:callout variant="warning" icon="exclamation-triangle">{{ str_starts_with(app()->getLocale(), 'ar') ? 'لا توجد فئات نشطة. أضف فئة قبل حفظ المنتج.' : __('No active categories exist yet. Configure a category before saving this product.') }} <a class="font-medium underline" href="{{ route('catalog.categories') }}" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'إعداد الفئات' : __('Configure categories') }}</a></flux:callout>
             @endif

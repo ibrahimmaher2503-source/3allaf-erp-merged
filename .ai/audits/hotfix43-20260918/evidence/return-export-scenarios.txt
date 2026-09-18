@@ -1,0 +1,9 @@
+PASS submitted PO returned to draft with optimistic version
+PASS PO return reason preserved in approval history
+PASS products_barcodes company-scoped complete export snapshot (7 rows)
+PASS customers_groups company-scoped complete export snapshot (10 rows)
+PASS suppliers_groups company-scoped complete export snapshot (10 rows)
+PASS purchase_orders company-scoped complete export snapshot (1 rows)
+PASS purchase_invoices_receiving company-scoped complete export snapshot (5 rows)
+PASS opening_inventory company-scoped complete export snapshot (0 rows)
+PASS inventory_movements company-scoped complete export snapshot (7 rows)

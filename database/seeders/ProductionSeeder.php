@@ -310,7 +310,7 @@ final class ProductionSeeder extends Seeder
         ] as $method) {
             PaymentMethod::query()->firstOrCreate(['code' => $method['code']], $method + ['status' => 'active']);
         }
-        TaxSetting::query()->firstOrCreate(['code' => 'ZERO'], [
+        TaxSetting::query()->firstOrCreate(['company_id' => $company->id, 'code' => 'ZERO'], [
             'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero Rated', 'rate' => '0.00',
             'treatment' => 'zero_rated', 'is_default' => true, 'is_tax_inclusive' => true, 'status' => 'active',
         ]);

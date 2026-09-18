@@ -27,6 +27,19 @@
 
 # UI/UX Release Progress
 
+## 2026-09-18 — Hotfix43 candidate verification complete
+
+- Owner-approved migrations 000117/000118 and all tax/company consumers are implemented. The restored MariaDB schema/data guards, focused finance/scope/workflow scenarios, affected authenticated browser paths, all 12 XLSX generators, and three localized PO PDFs passed within their recorded boundaries.
+- Corrected the focused-pass finding that production has no product assignment rows: unassigned legacy products remain safely company-global only with compatible tax ownership; explicitly assigned products still require an active matching company/branch/store scope.
+- Updated the full 84-row recovered matrix without changing original IDs/text. It now distinguishes verified completion, implemented-but-evidence-limited rows, external acceptance, unresolved owner decisions, and the exact approved inventory exception.
+- Candidate commit/artifact, fresh production-consistent encrypted backup/restore, deployment, and live verification remain. Production is still exact Hotfix42 at this point.
+
+## 2026-09-18 — Hotfix43 original-requirements correction in progress
+
+- Verified exact deployed Hotfix42 `cb8c1f9637370e531f6ab23f634e70784742cf35` and created an isolated correction worktree from it.
+- Implemented the first complete source pass for audited numbering, export, opening-inventory, navigation, printer/template, product/help, customer-group, supplier, PO workflow/PDF outcome and translation defects. Preserved unrelated worktrees, historic references and the known inventory exception.
+- Final financial work is waiting only on the exact additive `purchase_invoice_lines.tax_inclusive` and `tax_settings.company_id` schema decision recorded in `.ai/HOTFIX43_CHECKPOINT.md`. No migration, final acceptance, commit, artifact, production write or deployment has occurred.
+
 ## 2026-09-08 — v0.1.22-hotfix22 navigation runtime normalization
 
 - Preserved Hotfix21 payment and sidebar behavior while normalizing every renderer-facing navigation field before Blade access.

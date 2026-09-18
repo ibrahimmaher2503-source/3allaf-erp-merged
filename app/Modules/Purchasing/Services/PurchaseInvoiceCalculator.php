@@ -11,7 +11,7 @@ final class PurchaseInvoiceCalculator
 {
     /**
      * @param  array<string, mixed>  $line
-     * @return array{quantity: numeric-string, unit_cost: numeric-string, discount_type: null|string, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null|string, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}
+     * @return array{quantity: numeric-string, unit_cost: numeric-string, discount_type: null|string, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null|string, tax_inclusive: bool, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}
      */
     public function calculateLine(array $line): array
     {
@@ -71,6 +71,7 @@ final class PurchaseInvoiceCalculator
             'discount_amount' => bcadd($discount, '0', 4),
             'tax_rate' => bcadd($taxRate, '0', 4),
             'tax_code' => (($line['tax_code'] ?? '') !== '') ? ($line['tax_code'] ?? null) : null,
+            'tax_inclusive' => $taxInclusive,
             'tax_amount' => bcadd($tax, '0', 4),
             'subtotal' => bcadd($subtotal, '0', 4),
             'line_total' => bcadd($lineTotal, '0', 4),
@@ -79,7 +80,7 @@ final class PurchaseInvoiceCalculator
 
     /**
      * @param  array<int, array<string, mixed>>  $lines
-     * @return array{subtotal: numeric-string, discountAmount: numeric-string, taxAmount: numeric-string, totalAmount: numeric-string, calculated: list<array{quantity: numeric-string, unit_cost: numeric-string, discount_type: null|string, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null|string, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}>}
+     * @return array{subtotal: numeric-string, discountAmount: numeric-string, taxAmount: numeric-string, totalAmount: numeric-string, calculated: list<array<string, mixed>>}
      */
     public function calculateDocument(array $lines): array
     {

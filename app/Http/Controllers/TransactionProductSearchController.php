@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
@@ -62,10 +63,16 @@ final class TransactionProductSearchController extends Controller
                 ->findOrFail($sourceInvoiceId);
         }
 
+        $company = app(AuthorizedCompanyContext::class)->resolve(
+            $actor,
+            $request->integer('company_id') ?: $sourceInvoice?->store?->company_id,
+        );
+
         $escaped = addcslashes($term, '\\%_');
         $prefix = $escaped.'%';
         $contained = '%'.$escaped.'%';
         $productsQuery = Product::query()->sellable()
+            ->availableToCompany((int) $company->id)
             ->with([
                 'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary'),
                 'productSuppliers' => fn ($query) => $query->where('supplier_id', $supplierId),
@@ -104,12 +111,12 @@ final class TransactionProductSearchController extends Controller
 
         $supplierProductsEmpty = $supplierOnly && ! ProductSupplier::query()->where('supplier_id', $supplierId)->exists();
 
-        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId): array {
+        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId, $company): array {
             $barcodes = $product->barcodes->pluck('barcode')->filter()->values();
             $supplierProduct = $product->productSuppliers->first();
             $identifiers = collect([$product->item_code, $product->model_number, $supplierProduct?->supplier_item_code])->merge($barcodes)->filter()->map(fn ($value) => mb_strtolower(trim((string) $value)))->unique()->values();
             $price = $supplierId > 0 && $mayViewCost
-                ? $prices->resolve($product, $supplierId, $currencyCode)
+                ? $prices->resolve($product, $supplierId, (int) $company->id, $currencyCode)
                 : ['unit_cost' => $mayViewCost ? $product->average_cost : null, 'price_source' => $mayViewCost ? 'fallback_cost' : 'none', 'price_date' => null, 'price_currency' => $currencyCode];
 
             return [

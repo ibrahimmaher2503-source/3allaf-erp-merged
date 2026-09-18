@@ -31,6 +31,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\OpenPricePolicy;
 use App\Modules\Retail\Actions\EnrollOfflineDeviceAction;
@@ -742,10 +743,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         app(\App\Modules\Retail\Support\PosOpenOrderManager::class)->persistSession($request, $user, $context);
         $taxApplicable = (bool) $request->session()->get('pos.tax_applicable', false);
         $effectiveTaxes = TaxSetting::query()
+            ->where('company_id', $store->company_id)
             ->where('status', 'active')
+            ->where('is_default', true)
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
             ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-            ->get();
+            ->limit(2)->get();
         $taxSetting = $effectiveTaxes->count() === 1 && filled($effectiveTaxes->first()?->rate) ? $effectiveTaxes->first() : null;
         $previewError = null;
         try {
@@ -1342,10 +1345,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->get()
             ->groupBy('key')
             ->map(fn ($versions) => $versions->first());
+        $company = app(AuthorizedCompanyContext::class)->resolve($user, $request->input('company_id'));
 
         return view('pages.pos.financial-readiness', [
             'activePaymentMethods' => PaymentMethod::query()->where('status', 'active')->count(),
-            'activeTaxSettings' => TaxSetting::query()->where('status', 'active')->count(),
+            'activeTaxSettings' => TaxSetting::query()->forCompany((int) $company->id)->where('status', 'active')->count(),
             'definitions' => PosFinancialSettingRegistry::all(),
             'latestSettings' => $latest,
         ]);
@@ -1647,12 +1651,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $setting = null;
         if ($applicable) {
             $effective = TaxSetting::query()
+                ->where('company_id', $store->company_id)
                 ->where('status', 'active')
+                ->where('is_default', true)
                 ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))
                 ->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>', now()))
-                ->get();
+                ->limit(2)->get();
             if ($effective->count() !== 1 || blank($effective->first()?->rate)) {
-                return back()->withErrors(['tax' => __('Tax cannot be enabled until exactly one effective policy with a configured rate exists.')]);
+                return back()->withErrors(['tax' => __('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.')]);
             }
             $setting = $effective->first();
         }

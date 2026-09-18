@@ -1,5 +1,20 @@
 # Test and Verification Results
 
+## 2026-09-18 — Hotfix43 focused isolated acceptance
+
+- **PASS — MariaDB:** A production-derived isolated MariaDB restore applied migrations 000117 and 000118 exactly once. Exact column definitions, unchanged historical invoice money, tax ownership backfill, company/code uniqueness, lookup index, restricted FK, safe no-op rerun, and fail-closed rollback were checked. No SQLite operation occurred.
+- **PASS — focused transactions:** Inclusive/exclusive invoice math and snapshots; company tax ownership, duplicate rejection, restricted deletion and cross-company rejection; branch PO numbering continuity; supplier English-name enforcement; submitted-PO return/reason history; and all seven central export datasets passed. Scenario writes occurred only in the isolated database and rollback-only transactions where applicable.
+- **PASS — browser:** Authenticated affected routes rendered HTTP 200 in English; Arabic and Egyptian Arabic rendered RTL; explicit-company product lookup selected through Arrow/Enter; zero-opening refused existing stock history; 390 px Product Cards rendered; zero console/page errors. Browser control was explicitly authorized by the active task.
+- **PASS — documents:** All 12 shared XLSX generators passed ZIP integrity and XML parsing for every workbook XML part. Three localized PO PDFs were generated and identified as PDF 1.7. Microsoft Excel and physical printer/scanner acceptance were not performed and remain external.
+- **PASS — source/build artifacts:** 49 changed/new PHP and Blade sources passed PHP 8.4 syntax; Blade cache generation passed and 716 compiled views passed syntax; 405 routes listed; all 99 changed locale keys exist and are nonempty in `en`, `ar`, and `ar-EG`; `git diff --check` passed. The existing Node 20/Vite build is newer than the unchanged frontend source and every manifest asset is nonempty; no redundant build ran.
+- **NOT RUN:** PHPUnit, Pest, Laravel automated suites, Cypress, or an automated broad regression suite.
+
+## 2026-09-18 — Hotfix43 pre-schema implementation checkpoint
+
+- Read-only production checks confirmed the active Hotfix42 commit/release, maintenance off, and HTTP 200 for `/up` and `/login` before correction work.
+- Direct PHP 8.4 syntax checks passed for changed PHP/Blade files checked during the implementation pass. All three locale JSON files parse, and `git diff --check` passes.
+- These are interim structural checks only. No automated application suite, final Blade compilation, browser control, MariaDB mutation, migration, XLSX generation/open validation, PDF rendering, frontend build, deployment, commit, push or tag has occurred.
+
 ## 2026-09-05 — v0.1.22-hotfix14 focused verification
 
 - Direct database-free arithmetic/source verification passed 20 assertions covering all required upward-derived-price examples, nearest-5 cash examples, unchanged base/manual price boundaries, exact non-cash settlement, append-only setting migration, and safe missing/invalid configuration handling.

@@ -15,6 +15,16 @@ class Supplier extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $supplier): void {
+            $supplier->name_en = trim((string) $supplier->name_en);
+            if ($supplier->name_en === '') {
+                throw new \InvalidArgumentException(__('Supplier English name is required.'));
+            }
+        });
+    }
+
     protected $fillable = [
         'code',
         'barcode_prefix',

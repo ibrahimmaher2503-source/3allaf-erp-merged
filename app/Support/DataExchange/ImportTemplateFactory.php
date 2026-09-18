@@ -38,7 +38,7 @@ final class ImportTemplateFactory
     {
         $company = $this->companies->resolve($actor, $companyId);
         $rows = Product::query()->sellable()->where('product_type', '!=', 'service')->whereNotNull('average_cost')
-            ->where(fn ($query) => $query->whereDoesntHave('storeAssignments')->orWhereHas('storeAssignments', fn ($assignments) => $assignments->where('company_id', $company->id)->where('status', 'active')))
+            ->availableToCompany((int) $company->id)
             ->with([
                 'barcodes' => fn ($query) => $query->where('status', 'active')->orderByDesc('is_primary'),
                 'preferredProductSupplier' => fn ($query) => $query->whereHas('supplier', fn ($suppliers) => $suppliers->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id))),

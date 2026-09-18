@@ -1,0 +1,10 @@
+migrations	2026_09_18_000117_preserve_purchase_invoice_line_tax_mode	24
+migrations	2026_09_18_000118_scope_tax_settings_to_company	24
+invoice_column	tax_inclusive	tinyint(1)	NO	0
+tax_column	company_id	bigint(20) unsigned	NO	NULL
+tax_indexes	PRIMARY	0	id
+tax_indexes	tax_settings_company_code_unique	0	company_id,code
+tax_indexes	tax_settings_company_status_default_index	1	company_id,status,is_default
+tax_indexes	tax_settings_effective_default_index	1	status,is_default,effective_from
+invoice_facts	5	0	0.0000
+tax_facts	4	1	0

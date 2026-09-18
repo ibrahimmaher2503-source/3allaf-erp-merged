@@ -48,12 +48,14 @@ final class InitialSetupStatus
         }
 
         $actor = auth()->user();
-        $companyId = (int) Company::query()->where('status', 'active')->value('id');
+        $companyId = $actor instanceof User
+            ? (int) app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'))->id
+            : (int) Company::query()->where('status', 'active')->value('id');
         $permissions = $actor instanceof User ? array_keys(app(RequestPermissionLookup::class)->for($actor)) : [];
         sort($permissions);
         $version = (int) Cache::get('setup-readiness-version', 1);
         $key = sprintf('setup-ready:v%d:c%d:u%d:p%s:l%s', $version, $companyId, (int) ($actor?->id ?? 0), hash('xxh3', implode('|', $permissions)), app()->getLocale());
-        $this->requestSnapshot = Cache::remember($key, now()->addMinutes(10), fn (): array => $this->buildSnapshot());
+        $this->requestSnapshot = Cache::remember($key, now()->addMinutes(10), fn (): array => $this->buildSnapshot($companyId));
         if (app()->bound('request')) {
             request()->attributes->set('initial_setup_snapshot', $this->requestSnapshot);
         }
@@ -61,12 +63,11 @@ final class InitialSetupStatus
         return $this->requestSnapshot;
     }
 
-    private function buildSnapshot(): array
+    private function buildSnapshot(int $activeCompanyId): array
     {
         $companyReady = $this->companyReady();
         $branchesReady = $this->branchesReady();
         $branchStoreSetupReady = $this->branchesAndStoresReady();
-        $activeCompanyId = (int) Company::query()->where('status', 'active')->value('id');
         $productPricing = app(ProductPricingReadiness::class)->snapshot($activeCompanyId);
         $catalogReady = $this->catalogReady($productPricing);
         $activeCustomerGroups = CustomerGroup::query()->forCompany($activeCompanyId)->active();
@@ -86,7 +87,7 @@ final class InitialSetupStatus
             $this->step('cash-drawers', $this->cashDrawersReady(), CashDrawer::query()->count()),
             $this->step('users-scopes', $this->usersAndScopesReady(), User::query()->where('status', 'active')->count()),
             $this->step('payment-methods', $this->paymentMethodsReady(), PaymentMethod::query()->count()),
-            $this->step('taxes', $this->taxesReady(), TaxSetting::query()->count()),
+            $this->step('taxes', $this->taxesReady($activeCompanyId), TaxSetting::query()->forCompany($activeCompanyId)->count()),
             $this->step('document-sequences', $this->documentSequencesReady(), DocumentSequence::query()->count()),
             $this->step('printers', $this->printersReady(), PrinterConfiguration::query()->count()),
             $this->step('print-templates', $this->printTemplatesReady(), PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->count()),
@@ -99,7 +100,7 @@ final class InitialSetupStatus
             $this->step('product-options', $activeProductOptionGroups->exists(), $activeProductOptionGroups->count()),
             $this->step('product-masters', $catalogReady, Product::query()->where('status', 'active')->count(), $this->productReadinessReason($productPricing), $productPricing),
             $this->step('prices', $this->pricesReady($productPricing), PriceList::query()->count(), $this->pricingReadinessReason($productPricing), $productPricing),
-            $this->step('opening-configuration', $this->openingInventoryReady(), OpeningInventoryDocument::query()->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
+            $this->step('opening-configuration', $this->openingInventoryReady($activeCompanyId), OpeningInventoryDocument::query()->where('company_id', $activeCompanyId)->count(), $branchStoreSetupReady && $catalogReady ? null : __('Complete active branches, stores, categories, and product masters before opening inventory.')),
         ];
 
         $steps = array_map(function (array $step) use ($latestDecisions): array {
@@ -188,9 +189,9 @@ final class InitialSetupStatus
         return PaymentMethod::query()->where('status', 'active')->exists();
     }
 
-    private function taxesReady(): bool
+    private function taxesReady(int $companyId): bool
     {
-        return TaxSetting::query()->where('status', 'active')->exists();
+        return TaxSetting::query()->forCompany($companyId)->where('status', 'active')->exists();
     }
 
     private function documentSequencesReady(): bool
@@ -298,10 +299,10 @@ final class InitialSetupStatus
         return __('Sellable Product Cards requiring completion: :count', ['count' => $count]);
     }
 
-    private function openingInventoryReady(): bool
+    private function openingInventoryReady(int $companyId): bool
     {
-        return OpeningInventoryDocument::query()->where('status', 'approved')->whereNull('reversal_of_id')->exists()
-            || OpeningInventoryZeroDecision::query()->exists();
+        return OpeningInventoryDocument::query()->where('company_id', $companyId)->where('status', 'approved')->whereNull('reversal_of_id')->exists()
+            || OpeningInventoryZeroDecision::query()->where('company_id', $companyId)->exists();
     }
 
     private function customerConsentPolicyRecords(): int

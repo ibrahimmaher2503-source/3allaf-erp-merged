@@ -16,6 +16,8 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Models\User;
 use App\Modules\Pricing\Actions\EnsureBasePriceList;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
@@ -172,6 +174,13 @@ class SaveLocalSettingsAction
     private function persistTaxSetting(array $data, ?int $id = null, array $metadata = []): TaxSetting
     {
         return DB::transaction(function () use ($data, $id, $metadata) {
+            $companyId = (int) ($data['company_id'] ?? 0);
+            if ($companyId < 1) {
+                throw ValidationException::withMessages(['company_id' => __('An authorized company is required for the tax rule.')]);
+            }
+            $actor = Auth::user();
+            abort_unless($actor instanceof User, 403);
+            app(AuthorizedCompanyContext::class)->resolve($actor, $companyId);
             $treatment = (string) ($data['treatment'] ?? TaxTreatment::Standard->value);
             if (! in_array($treatment, TaxTreatment::values(), true)) {
                 throw ValidationException::withMessages(['taxSettingForm.treatment' => __('The selected tax treatment is not supported.')]);
@@ -185,6 +194,7 @@ class SaveLocalSettingsAction
             }
 
             $attributes = [
+                'company_id' => $companyId,
                 'code' => strtoupper($data['code']),
                 'name_ar' => $data['name_ar'],
                 'name_en' => $data['name_en'],
@@ -199,10 +209,11 @@ class SaveLocalSettingsAction
                 'policy_notes' => $data['policy_notes'] ?? 'TBD: Production tax policy pending owner approval.',
             ];
 
-            $this->assertTaxPeriodDoesNotOverlap($attributes, $id);
-            $currentTax = $id ? TaxSetting::query()->lockForUpdate()->findOrFail($id) : null;
+            $this->assertTaxPeriodDoesNotOverlap($attributes, $id, $companyId);
+            $currentTax = $id ? TaxSetting::query()->forCompany($companyId)->lockForUpdate()->findOrFail($id) : null;
             if ($currentTax?->status === 'active' && $currentTax->is_default && $attributes['status'] === 'inactive') {
                 $hasEligibleReplacement = TaxSetting::query()
+                    ->forCompany($companyId)
                     ->lockForUpdate()
                     ->whereKeyNot($currentTax->id)
                     ->where('status', 'active')
@@ -215,9 +226,9 @@ class SaveLocalSettingsAction
                         : __('Cannot deactivate the only active default tax rule. Create or activate another tax rule with an explicit rate and set it as Default first.'),
                 ]);
             }
-            $existingDefault = TaxSetting::query()->lockForUpdate()->where('status', 'active')->where('is_default', true)->first();
+            $existingDefault = TaxSetting::query()->forCompany($companyId)->lockForUpdate()->where('status', 'active')->where('is_default', true)->first();
             if ($attributes['is_default']) {
-                TaxSetting::query()->where('status', 'active')->where('is_default', true)->when($id, fn ($query) => $query->whereKeyNot($id))->update(['is_default' => false]);
+                TaxSetting::query()->forCompany($companyId)->where('status', 'active')->where('is_default', true)->when($id, fn ($query) => $query->whereKeyNot($id))->update(['is_default' => false]);
             } elseif ($attributes['status'] === 'active' && $existingDefault?->id === $id) {
                 // Keep the current default when editing it; choose another default first to replace it safely.
                 $attributes['is_default'] = true;
@@ -227,7 +238,7 @@ class SaveLocalSettingsAction
             }
 
             if ($id) {
-                $tax = $currentTax ?? TaxSetting::findOrFail($id);
+                $tax = $currentTax ?? TaxSetting::query()->forCompany($companyId)->findOrFail($id);
                 $before = $tax->getAttributes();
                 $tax->update($attributes);
                 $action = 'update_tax_setting';
@@ -244,7 +255,7 @@ class SaveLocalSettingsAction
     }
 
     /** @param array<string, mixed> $attributes */
-    private function assertTaxPeriodDoesNotOverlap(array $attributes, ?int $id): void
+    private function assertTaxPeriodDoesNotOverlap(array $attributes, ?int $id, int $companyId): void
     {
         if (($attributes['status'] ?? 'active') !== 'active') {
             return;
@@ -266,6 +277,7 @@ class SaveLocalSettingsAction
         }
 
         $overlap = TaxSetting::query()
+            ->forCompany($companyId)
             ->where('status', 'active')
             ->when($id, fn ($query) => $query->whereKeyNot($id))
             ->get(['effective_from', 'effective_to']);
@@ -377,16 +389,20 @@ class SaveLocalSettingsAction
         $target = $id === null
             ? null
             : ($resource === 'tax_setting'
-                ? TaxSetting::query()->lockForUpdate()->findOrFail($id)
+                ? TaxSetting::query()->where('company_id', (int) ($proposed['company_id'] ?? 0))->lockForUpdate()->findOrFail($id)
                 : DocumentSequence::query()->lockForUpdate()->findOrFail($id));
         $canonicalBefore = $target?->getAttributes();
         if ($canonicalBefore !== null) {
             unset($canonicalBefore['created_at'], $canonicalBefore['updated_at']);
         }
-        $scopeMatches = $resource !== 'document_sequence' || $target === null || (is_array($proposed) && (
-            strtolower(trim((string) ($proposed['scope_type'] ?? ''))) === $target->scope_type
-            && (($target->scope_type === 'branch' && filled($proposed['scope_id'] ?? null) ? (int) $proposed['scope_id'] : null) === $target->scope_id)
-        ));
+        $scopeMatches = match ($resource) {
+            'tax_setting' => $target === null || (is_array($proposed) && (int) ($proposed['company_id'] ?? 0) === (int) $target->company_id),
+            'document_sequence' => $target === null || (is_array($proposed) && (
+                strtolower(trim((string) ($proposed['scope_type'] ?? ''))) === $target->scope_type
+                && (($target->scope_type === 'branch' && filled($proposed['scope_id'] ?? null) ? (int) $proposed['scope_id'] : null) === $target->scope_id)
+            )),
+            default => true,
+        };
 
         if ($actor === null
             || $approval->approval_state !== ApprovalState::Approved

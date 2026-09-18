@@ -176,4 +176,24 @@ class PurchaseOrder extends Model implements ImmutableSourceContract
             default => ucfirst(str_replace('_', ' ', $this->status)),
         };
     }
+
+    public function responsiblePermission(): ?string
+    {
+        return match (true) {
+            $this->status === 'draft' => 'purchase_orders.edit',
+            $this->status === 'submitted' => 'purchase_orders.approve',
+            $this->isApproved() && $this->receivingState() !== 'fully_received' => 'purchase_invoices_supplier_returns.create',
+            default => null,
+        };
+    }
+
+    public function responsibleRoleLabel(): string
+    {
+        return match ($this->responsiblePermission()) {
+            'purchase_orders.edit' => 'Purchase order editor',
+            'purchase_orders.approve' => 'Procurement manager',
+            'purchase_invoices_supplier_returns.create' => 'Purchasing and receiving team',
+            default => 'No further action required',
+        };
+    }
 }

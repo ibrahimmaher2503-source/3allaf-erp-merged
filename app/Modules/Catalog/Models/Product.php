@@ -261,6 +261,38 @@ class Product extends Model
         });
     }
 
+    /**
+     * Preserve legacy products with no assortment rows as company-global while
+     * requiring assigned products and company-owned tax overrides to match the
+     * requested operational scope.
+     *
+     * @param  list<int>  $companyIds
+     */
+    public function scopeAvailableToCompanies(Builder $query, array $companyIds, ?int $branchId = null, ?int $storeId = null): Builder
+    {
+        $companyIds = collect($companyIds)->map(fn ($id): int => (int) $id)->filter(fn (int $id): bool => $id > 0)->unique()->values()->all();
+        if ($companyIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $scope) use ($companyIds, $branchId, $storeId): void {
+            $scope->where(function (Builder $legacy) use ($companyIds): void {
+                $legacy->whereDoesntHave('storeAssignments')
+                    ->where(fn (Builder $tax): Builder => $tax->whereNull('products.tax_setting_id')
+                        ->orWhereHas('taxSetting', fn (Builder $setting): Builder => $setting->whereIn('company_id', $companyIds)));
+            })->orWhereHas('storeAssignments', fn (Builder $assignments): Builder => $assignments
+                ->whereIn('company_id', $companyIds)
+                ->where('status', 'active')
+                ->when($branchId !== null, fn (Builder $branch): Builder => $branch->where('branch_id', $branchId))
+                ->when($storeId !== null, fn (Builder $store): Builder => $store->where('store_id', $storeId)));
+        });
+    }
+
+    public function scopeAvailableToCompany(Builder $query, int $companyId, ?int $branchId = null, ?int $storeId = null): Builder
+    {
+        return $query->availableToCompanies([$companyId], $branchId, $storeId);
+    }
+
     public function scopeCompleteCard(Builder $query): Builder
     {
         return $query->whereNotNull('products.item_code')->where('products.item_code', '<>', '')

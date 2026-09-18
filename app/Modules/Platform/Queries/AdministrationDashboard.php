@@ -17,6 +17,7 @@ use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Support\InitialSetupStatus;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Illuminate\Support\Facades\Gate;
 
 final class AdministrationDashboard
@@ -34,13 +35,14 @@ final class AdministrationDashboard
         $roles = $canUsers ? Role::query() : null;
         $branches = $canLocations ? Branch::query()->visibleTo($user) : null;
         $stores = $canLocations ? Store::query()->visibleTo($user) : null;
+        $companyIds = $canSettings ? app(AuthorizedCompanyContext::class)->companies($user)->pluck('id') : collect();
 
         return [
             'setup' => $this->setupStatus->snapshot(),
             'users' => $canUsers ? ['active' => (clone $users)->where('status', 'active')->count(), 'inactive' => (clone $users)->where('status', 'inactive')->count(), 'unverified' => (clone $users)->whereNull('email_verified_at')->count()] : null,
             'roles' => $canUsers ? ['active' => (clone $roles)->where('status', 'active')->count(), 'inactive' => (clone $roles)->where('status', 'inactive')->count(), 'permissions' => Permission::query()->where('status', 'active')->count(), 'unassigned' => Permission::query()->where('status', 'active')->whereDoesntHave('roles', fn ($query) => $query->where('roles.status', 'active'))->count()] : null,
             'locations' => $canLocations ? ['active_branches' => (clone $branches)->where('status', 'active')->count(), 'active_stores' => (clone $stores)->where('status', 'active')->count()] : null,
-            'configuration' => $canSettings ? ['payment_methods' => PaymentMethod::query()->where('status', 'active')->count(), 'tax_rules' => TaxSetting::query()->where('status', 'active')->count(), 'numbering_rules' => DocumentSequence::query()->where('status', 'active')->count(), 'printer_profiles' => PrinterConfiguration::query()->where('status', 'active')->count()] : null,
+            'configuration' => $canSettings ? ['payment_methods' => PaymentMethod::query()->where('status', 'active')->count(), 'tax_rules' => TaxSetting::query()->whereIn('company_id', $companyIds)->where('status', 'active')->count(), 'numbering_rules' => DocumentSequence::query()->where('status', 'active')->count(), 'printer_profiles' => PrinterConfiguration::query()->where('status', 'active')->count()] : null,
             'pending_approvals' => ApprovalRecord::query()->visibleTo($user)->where('approval_state', ApprovalState::Pending->value)->count(),
             'recent_audit' => $canAudit ? AuditLog::query()->visibleTo($user)->select(['id', 'category', 'event', 'actor_name', 'created_at'])->latest('id')->limit(8)->get() : collect(),
         ];

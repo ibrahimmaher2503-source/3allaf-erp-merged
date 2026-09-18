@@ -18,6 +18,7 @@ return [
         ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
+        ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'users', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
         ['route' => 'customers.groups.index', 'permission' => 'customers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات العملاء', 'en' => 'Customer groups']],
         ['route' => 'pos.shift', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'الورديات والتحصيل', 'en' => 'Shifts & collections']],
     ]],
@@ -55,6 +56,7 @@ return [
     ['key' => 'administration', 'icon' => 'cog-6-tooth', 'label' => ['ar' => 'الإدارة والإعدادات', 'en' => 'Administration & settings'], 'items' => [
         ['route' => 'admin.overview', 'permission' => 'access-administration-center', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
         ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],
+        ['route' => 'admin.settings', 'parameters' => ['tab' => 'printers'], 'permission' => 'company_settings.view', 'icon' => 'printer', 'label' => ['ar' => 'الطابعات وقوالب الطباعة', 'en' => 'Printers & print templates']],
         ['route' => 'admin.audit', 'permission' => 'access-activity-log', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
     ]],
 ];

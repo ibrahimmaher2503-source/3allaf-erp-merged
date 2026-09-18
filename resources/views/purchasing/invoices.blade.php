@@ -7,6 +7,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseInvoiceAction;
@@ -246,6 +247,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'discount_value' => (string) $line->discount_value,
             'tax_rate' => (string) $line->tax_rate,
             'tax_code' => $line->tax_code ?: '',
+            'tax_inclusive' => (bool) $line->tax_inclusive,
             'price_source' => 'saved_draft_cost',
             'price_date' => '',
             'price_currency' => $invoice->currency_code ?: '',
@@ -312,30 +314,34 @@ new #[Title('Purchase Invoices')] class extends Component
     {
         abort_unless(filled($this->invoiceForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         abort_unless(array_key_exists($index, $this->lineItems), 422);
-        $product = Product::query()->sellable()->findOrFail($productId);
-        $price = $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null);
+        $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
+        $product = Product::query()->sellable()->availableToCompany((int) $store->company_id)->findOrFail($productId);
+        $price = $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], (int) $store->company_id, $this->invoiceForm['currency_code'] ?: null);
         $this->insertProduct($product, $price, $index);
     }
 
     public function addItemEntry(SupplierProductPrice $prices): void
     {
         if (! filled($this->invoiceForm['supplier_id'])) { Flux::toast(__('Select a supplier before adding products.'), variant: 'warning'); return; }
+        $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
         $lookup = trim($this->itemEntry);
         if ($lookup === '') { $this->dispatch('invoice-scanner-focus'); return; }
         $product = Product::query()->sellable()
+            ->availableToCompany((int) $store->company_id)
             ->when($this->supplierProductsOnly, fn ($query) => $query->whereHas('productSuppliers', fn ($relations) => $relations->where('supplier_id', (int) $this->invoiceForm['supplier_id'])))
             ->where(function ($query) use ($lookup): void {
             $query->where('item_code', $lookup)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', $lookup)->where('status', 'active'));
         })->first();
         if (! $product) { $this->openQuickProduct($lookup); return; }
-        $this->insertProduct($product, $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null));
+        $this->insertProduct($product, $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], (int) $store->company_id, $this->invoiceForm['currency_code'] ?: null));
     }
 
     public function selectSearchProduct(int $productId, SupplierProductPrice $prices): void
     {
         abort_unless(filled($this->invoiceForm['supplier_id']), 422, __('Select a supplier before adding products.'));
-        $product = Product::query()->sellable()->findOrFail($productId);
-        $price = $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null);
+        $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
+        $product = Product::query()->sellable()->availableToCompany((int) $store->company_id)->findOrFail($productId);
+        $price = $prices->resolve($product, (int) $this->invoiceForm['supplier_id'], (int) $store->company_id, $this->invoiceForm['currency_code'] ?: null);
         $this->insertProduct($product, $price);
         $this->productSearch = '';
     }
@@ -401,8 +407,10 @@ new #[Title('Purchase Invoices')] class extends Component
                 return;
             }
         }
-        $price ??= app(SupplierProductPrice::class)->resolve($product, (int) $this->invoiceForm['supplier_id'], $this->invoiceForm['currency_code'] ?: null);
-        $productLine = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>$price['unit_cost'] ?? '', 'base_consumer_price'=>(string)($product->sale_price ?? 0), 'price_source'=>$price['price_source'], 'price_date'=>$price['price_date'] ?? '', 'price_currency'=>$price['price_currency'] ?? ''];
+        $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
+        $price ??= app(SupplierProductPrice::class)->resolve($product, (int) $this->invoiceForm['supplier_id'], (int) $store->company_id, $this->invoiceForm['currency_code'] ?: null);
+        $tax = app(ResolveProductTaxSnapshot::class)->execute($product, (int) $store->company_id);
+        $productLine = [...$this->emptyLine(), 'product_id'=>(string)$product->id, 'unit_cost'=>$price['unit_cost'] ?? '', 'base_consumer_price'=>(string)($product->sale_price ?? 0), 'price_source'=>$price['price_source'], 'price_date'=>$price['price_date'] ?? '', 'price_currency'=>$price['price_currency'] ?? '', ...$tax];
         if ($targetIndex !== null && array_key_exists($targetIndex, $this->lineItems)) {
             $this->lineItems[$targetIndex] = [...$this->lineItems[$targetIndex], ...$productLine];
         } else {
@@ -690,6 +698,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'discount_value' => '0',
             'tax_rate' => '0',
             'tax_code' => '',
+            'tax_inclusive' => false,
             'price_source' => 'none',
             'price_date' => '',
             'price_currency' => '',
@@ -887,7 +896,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(14rem,1fr)_4.5rem_6.5rem_6.5rem_6.5rem_5rem_4.5rem_6rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
                                 <div class="col-span-12 min-w-0 lg:col-auto">
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
-                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :disabled="blank($invoiceForm['supplier_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
+                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                                 </div>
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
                                 <div class="col-span-4 min-w-0 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label><input wire:model="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" data-line-price data-price-kind="cost" type="number" min="0" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /><p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($line['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), 'approved_purchase_order_cost' => __('Approved purchase-order cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($line['price_date'] ?? '')) · {{ $line['price_date'] }}@endif @if(filled($line['price_currency'] ?? '')) · {{ $line['price_currency'] }}@endif</p></div>

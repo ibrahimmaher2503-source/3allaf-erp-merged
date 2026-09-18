@@ -74,28 +74,68 @@ new class extends Component
     {
         $lines = preg_split('/\R/u', trim($this->pasteRows)) ?: [];
         if (count($lines) > 500) { $this->addError('pasteRows', __('Paste at most 500 rows.')); return; }
-        $wanted = [];
-        foreach ($lines as $line) {
+        $wanted = []; $errors = []; $duplicateCodes = [];
+        foreach ($lines as $offset => $line) {
             $parts = preg_split('/[\t,;]+/', trim($line)) ?: [];
-            if (filled($parts[0] ?? null)) $wanted[trim($parts[0])] = [trim($parts[1] ?? '1'), trim($parts[2] ?? '')];
+            $code = trim((string) ($parts[0] ?? ''));
+            if ($code === '') continue;
+            $quantity = trim((string) ($parts[1] ?? '1'));
+            $cost = trim((string) ($parts[2] ?? ''));
+            $lineNumber = $offset + 1;
+            if (array_key_exists($code, $wanted)) {
+                $duplicateCodes[$code] = true;
+                $errors[] = __('Line :line repeats code :code; duplicate pasted rows were not added.', ['line' => $lineNumber, 'code' => $code]);
+                continue;
+            }
+            if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) {
+                $errors[] = __('Line :line has an invalid quantity; use a positive whole number.', ['line' => $lineNumber]);
+                continue;
+            }
+            if ($cost !== '' && ! preg_match('/^\d+(?:\.\d{1,4})?$/', $cost)) {
+                $errors[] = __('Line :line has an invalid unit cost; use zero or a positive number with up to four decimals.', ['line' => $lineNumber]);
+                continue;
+            }
+            $wanted[$code] = ['quantity' => $quantity, 'cost' => $cost, 'line' => $lineNumber];
+        }
+        foreach (array_keys($duplicateCodes) as $code) unset($wanted[$code]);
+        if ($wanted === []) {
+            $this->addError('pasteRows', implode(' ', $errors ?: [__('No valid pasted rows were found.')]));
+            return;
         }
         $products = Product::query()->sellable()->where('product_type', '!=', 'service')->with(['barcodes', 'productSuppliers'])
             ->where(fn ($query) => $query->whereIn('item_code', array_keys($wanted))->orWhereIn('model_number', array_keys($wanted))
                 ->orWhereHas('barcodes', fn ($codes) => $codes->whereIn('barcode', array_keys($wanted))->where('status', 'active'))
                 ->orWhereHas('productSuppliers', fn ($links) => $links->whereIn('supplier_item_code', array_keys($wanted))))->get();
-        $matched = [];
+        $matchesByCode = [];
         foreach ($products as $product) {
             $keys = collect([$product->item_code, $product->model_number, ...$product->barcodes->pluck('barcode'), ...$product->productSuppliers->pluck('supplier_item_code')])->filter();
-            $key = $keys->first(fn ($candidate) => array_key_exists((string) $candidate, $wanted));
-            if ($key === null || isset($matched[$product->id])) continue;
-            $matched[$product->id] = true;
-            [$quantity, $cost] = $wanted[$key];
-            $this->quantities[(string) $product->id] = $quantity ?: '1';
-            $this->costs[(string) $product->id] = $cost !== '' ? $cost : bcadd((string) ($product->average_cost ?? 0), '0', 4);
+            foreach ($keys as $candidate) {
+                $code = (string) $candidate;
+                if (array_key_exists($code, $wanted)) $matchesByCode[$code][$product->id] = $product;
+            }
         }
-        if (count($matched) !== count($wanted)) $this->addError('pasteRows', __('Some pasted codes were invalid or duplicated. Valid rows were added once.'));
-        else $this->resetErrorBag('pasteRows');
-        $this->pasteRows = '';
+        $matched = [];
+        foreach ($wanted as $code => $row) {
+            $matches = array_values($matchesByCode[$code] ?? []);
+            if (count($matches) === 0) {
+                $errors[] = __('Line :line uses unknown product code :code.', ['line' => $row['line'], 'code' => $code]);
+                continue;
+            }
+            if (count($matches) > 1) {
+                $errors[] = __('Line :line uses ambiguous product code :code; use a unique internal code or barcode.', ['line' => $row['line'], 'code' => $code]);
+                continue;
+            }
+            $product = $matches[0];
+            if (isset($matched[$product->id]) || array_key_exists((string) $product->id, $this->quantities)) {
+                $errors[] = __('Line :line resolves to a product already present in the opening inventory grid.', ['line' => $row['line']]);
+                continue;
+            }
+            $matched[$product->id] = true;
+            $this->quantities[(string) $product->id] = $row['quantity'];
+            $this->costs[(string) $product->id] = $row['cost'] !== '' ? $row['cost'] : bcadd((string) ($product->average_cost ?? 0), '0', 4);
+        }
+        if ($errors !== []) $this->addError('pasteRows', implode(' ', $errors));
+        else { $this->resetErrorBag('pasteRows'); $this->pasteRows = ''; }
     }
 
     public function removeLine(int $productId): void
@@ -162,6 +202,6 @@ new class extends Component
         @endif
 
         <details class="rounded-xl border border-border p-3"><summary class="cursor-pointer font-semibold">{{ __('Paste codes and quantities') }}</summary><div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]"><flux:textarea wire:model="pasteRows" rows="3" :label="__('One row: code, quantity, optional unit cost')" placeholder="SKU-1001, 5, 12.50"/><flux:button type="button" class="self-end" wire:click="parsePastedRows">{{ __('Add pasted rows') }}</flux:button></div>@error('pasteRows')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</details>
-        <div class="flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-2"><p class="text-xs text-text-muted">{{ __('Website products map through the same internal, supplier, model, or barcode identity. Use Product Excel Import first when an external item has no internal product.') }}</p>@can('products_categories_brands.create')<flux:button size="xs" variant="subtle" :href="route('catalog.products.import')" wire:navigate>{{ __('Map / import products') }}</flux:button>@endcan</div><flux:button type="button" variant="primary" wire:click="saveDraft" wire:loading.attr="disabled" wire:target="saveDraft"><span wire:loading.remove wire:target="saveDraft">{{ __('Save as Draft') }}</span><span wire:loading wire:target="saveDraft">{{ __('Saving…') }}</span></flux:button></div>
+        <div class="flex flex-wrap items-center justify-between gap-3"><div>@can('products_categories_brands.create')<flux:button size="xs" variant="subtle" :href="route('catalog.products.import')" wire:navigate>{{ __('Map / import products') }}</flux:button>@endcan</div><flux:button type="button" variant="primary" wire:click="saveDraft" wire:loading.attr="disabled" wire:target="saveDraft"><span wire:loading.remove wire:target="saveDraft">{{ __('Save as Draft') }}</span><span wire:loading wire:target="saveDraft">{{ __('Saving…') }}</span></flux:button></div>
     </flux:card>
 </div>

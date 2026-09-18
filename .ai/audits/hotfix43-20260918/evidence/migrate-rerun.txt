@@ -1,0 +1,2 @@
+PASS: php artisan migrate --force reported "Nothing to migrate."
+Migrations 000117 and 000118 remained Ran in batch 24.

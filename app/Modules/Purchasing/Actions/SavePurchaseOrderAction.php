@@ -90,14 +90,14 @@ class SavePurchaseOrderAction
 
             foreach ($lines as $index => $line) {
                 $productId = (int) ($line['product_id'] ?? 0);
-                $product = Product::query()->sellable()->findOrFail($productId);
+                $product = Product::query()->sellable()->availableToCompany((int) $branch->company_id)->findOrFail($productId);
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be ordered.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
 
                 $existingLine = $existingLines->get($product->id);
                 $tax = $existingLine === null
-                    ? app(ResolveProductTaxSnapshot::class)->execute($product)
+                    ? app(ResolveProductTaxSnapshot::class)->execute($product, (int) $branch->company_id)
                     : ['tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
 
                 $validatedLines[] = [

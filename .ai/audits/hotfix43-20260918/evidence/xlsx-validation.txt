@@ -1,0 +1,12 @@
+VALID	catalog-age.xlsx	13 XML parts
+VALID	catalog-brand.xlsx	13 XML parts
+VALID	catalog-category.xlsx	13 XML parts
+VALID	catalog-character.xlsx	13 XML parts
+VALID	catalog-colour.xlsx	13 XML parts
+VALID	catalog-gender.xlsx	13 XML parts
+VALID	customer-groups.xlsx	13 XML parts
+VALID	customers.xlsx	17 XML parts
+VALID	opening-inventory.xlsx	13 XML parts
+VALID	product-card.xlsx	19 XML parts
+VALID	products-staged.xlsx	19 XML parts
+VALID	suppliers.xlsx	15 XML parts

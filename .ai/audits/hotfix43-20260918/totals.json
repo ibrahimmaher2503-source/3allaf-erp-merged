@@ -1,0 +1,25 @@
+{
+  "original_requirement_rows": 73,
+  "original_status_totals": {
+    "IMPLEMENTED — EVIDENCE LIMITED": 28,
+    "IMPLEMENTED — EXTERNAL ACCEPTANCE PENDING": 4,
+    "REQUIRES OWNER DECISION": 3,
+    "VERIFIED COMPLETE": 38
+  },
+  "owner_correction_rows": 10,
+  "owner_correction_status_totals": {
+    "IMPLEMENTED — EVIDENCE LIMITED": 5,
+    "REQUIRES OWNER DECISION": 1,
+    "VERIFIED COMPLETE": 4
+  },
+  "baseline_issue_rows": 1,
+  "all_matrix_rows": 84,
+  "all_status_totals": {
+    "IMPLEMENTED — EVIDENCE LIMITED": 33,
+    "IMPLEMENTED — EXTERNAL ACCEPTANCE PENDING": 4,
+    "REQUIRES OWNER DECISION": 4,
+    "UNRESOLVED — APPROVED EXCEPTION": 1,
+    "VERIFIED COMPLETE": 42
+  },
+  "candidate": "v0.1.22-hotfix43 final candidate"
+}

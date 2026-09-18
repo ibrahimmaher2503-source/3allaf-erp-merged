@@ -215,13 +215,18 @@ final class ProductionSetupSeeder extends Seeder
 
     private function seedOperationalSettings(): void
     {
+        $company = Company::query()->where('code', $this->data['company']['code'])->firstOrFail();
+
         foreach ($this->rows('payment_methods') as $row) {
             $this->requireKeys($row, ['code', 'name_ar', 'name_en', 'type'], 'payment_methods');
             PaymentMethod::query()->updateOrCreate(['code' => $row['code']], $this->defaults($row, ['requires_evidence' => false, 'offline_eligible' => false, 'status' => 'active']));
         }
         foreach ($this->rows('tax_settings') as $row) {
             $this->requireKeys($row, ['code', 'name_ar', 'name_en', 'rate'], 'tax_settings');
-            TaxSetting::query()->updateOrCreate(['code' => $row['code']], $this->defaults($row, ['is_tax_inclusive' => false, 'status' => 'active']));
+            TaxSetting::query()->updateOrCreate(
+                ['company_id' => $company->id, 'code' => $row['code']],
+                $this->defaults($row, ['is_tax_inclusive' => false, 'status' => 'active']),
+            );
         }
         foreach ($this->rows('document_sequences') as $row) {
             $this->requireKeys($row, ['document_type'], 'document_sequences');

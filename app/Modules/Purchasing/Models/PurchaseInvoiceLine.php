@@ -17,7 +17,7 @@ final class PurchaseInvoiceLine extends Model
     protected $fillable = [
         'purchase_invoice_id', 'purchase_order_line_id', 'product_id', 'quantity', 'quantity_received',
         'unit_cost', 'base_consumer_price', 'previous_product_cost', 'previous_base_consumer_price', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_code',
-        'tax_amount', 'subtotal', 'line_total',
+        'tax_inclusive', 'tax_amount', 'subtotal', 'line_total',
     ];
 
     protected $casts = [
@@ -30,6 +30,7 @@ final class PurchaseInvoiceLine extends Model
         'discount_value' => 'decimal:4',
         'discount_amount' => 'decimal:4',
         'tax_rate' => 'decimal:4',
+        'tax_inclusive' => 'boolean',
         'tax_amount' => 'decimal:4',
         'subtotal' => 'decimal:4',
         'line_total' => 'decimal:4',

@@ -111,6 +111,7 @@ class ProductLookup {
         if (this.root.dataset.supplierId) params.set('supplier_id', this.root.dataset.supplierId);
         if (this.root.dataset.supplierOnly) params.set('supplier_only', this.root.dataset.supplierOnly);
         if (this.root.dataset.currencyCode) params.set('currency_code', this.root.dataset.currencyCode);
+        if (this.root.dataset.companyId) params.set('company_id', this.root.dataset.companyId);
         if (this.root.dataset.purchaseInvoiceId) params.set('purchase_invoice_id', this.root.dataset.purchaseInvoiceId);
         const requestKey = params.toString();
         if (requestKey === this.pendingKey && this.pendingRequest) return this.pendingRequest;

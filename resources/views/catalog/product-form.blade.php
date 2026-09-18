@@ -13,6 +13,7 @@ use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -305,6 +306,7 @@ new #[Title('Product Card')] class extends Component {
     /** @return array<string, array<int, mixed>> */
     private function rules(): array
     {
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         return [
             'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
@@ -323,7 +325,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
             'productForm.category_id' => ['required', 'integer', 'exists:categories,id'],
             'productForm.brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-            'productForm.tax_setting_id' => ['nullable', 'integer', Rule::exists('tax_settings', 'id')->where(fn ($query) => $query->where('status', 'active')->where(fn ($dates) => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now())))],
+            'productForm.tax_setting_id' => ['nullable', 'integer', Rule::exists('tax_settings', 'id')->where(fn ($query) => $query->where('company_id', $companyId)->where('status', 'active')->where(fn ($dates) => $dates->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($dates) => $dates->whereNull('effective_to')->orWhere('effective_to', '>=', now())))],
             'productForm.reorder_threshold' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_length' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_width' => ['nullable', 'numeric', 'min:0'],
@@ -386,6 +388,7 @@ new #[Title('Product Card')] class extends Component {
 
     public function render()
     {
+        $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         $product = $this->productId === null ? null : Product::query()
             ->with(['category', 'brand', 'barcodes', 'images.attachment'])
             ->findOrFail($this->productId);
@@ -394,7 +397,7 @@ new #[Title('Product Card')] class extends Component {
             'product' => $product,
             'categories' => Category::query()->active()->with('parent:id,code,name_ar,name_en')->orderBy('sort_order')->orderBy('code')->get(['id', 'parent_id', 'code', 'name_ar', 'name_en']),
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
-            'taxSettings' => TaxSetting::query()->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
+            'taxSettings' => TaxSetting::query()->forCompany($companyId)->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'lookups' => $this->lookupOptions(),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
@@ -404,7 +407,6 @@ new #[Title('Product Card')] class extends Component {
 
 <x-app.page
     :title="$isEditing ? __('Edit product card') : __('Add Product Card')"
-    :description="__('Maintain bilingual product identity, approved type, reportable attributes, and protected media in one focused card.')"
     max-width="7xl"
     class="catalog-screen product-form-page"
     data-guide="product-form-header"
@@ -441,15 +443,10 @@ new #[Title('Product Card')] class extends Component {
     </nav>
 
     <form wire:submit="save" class="flex flex-col gap-4 sm:gap-5" novalidate x-data x-on:product-validation-failed.window="$nextTick(() => { const field = document.getElementById('product-field-' + $event.detail.field); if (field) { field.scrollIntoView({ behavior: 'smooth', block: 'center' }); field.focus(); } })">
-        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30">
-            <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage A — Required basic data') }}</h2>
-            <p class="mt-1 text-sm text-text-muted">{{ __('Save the required barcode, model, identity, cost, consumer price, category, brand, price behavior, and product type before adding optional details.') }}</p>
-        </div>
-
         <flux:card id="product-identity" class="order-1 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-identity">
             <div class="flex items-center justify-between gap-3 border-b border-border pb-3">
                 <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
-                <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
+                <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Complete barcode, model, identity, cost, consumer price, category, product type, and the applicable supplier before activating the Product Card.') }}</li><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:select wire:model.live="productForm.barcode_registration_type" :label="__('Barcode registration type')" required>
@@ -549,9 +546,9 @@ new #[Title('Product Card')] class extends Component {
         </flux:card>
 
         <flux:card id="product-pricing" class="order-3 catalog-form-card space-y-5 p-4 sm:p-5">
-            <div>
+            <div class="flex items-center justify-between gap-3">
                 <flux:heading size="lg">{{ __('Commercial and descriptive master fields') }}</flux:heading>
-                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Set the product cost and reference selling price. Open pricing stays in the approved pricing workflow.') }}</flux:text>
+                <x-context-help :title="__('Product pricing help')" :label="__('Open product pricing help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('The base consumer selling price is the fallback price when no effective branch or store price-list value applies.') }}</li><li>{{ __('At sale time, the assigned active store price list is used first, then the branch default price list, then the base consumer selling price.') }}</li><li>{{ __('Approved purchasing updates cost; cost is never used as the selling price.') }}</li><li>{{ __('Open-price rules remain in the approved Pricing workflow.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" :description="__('Cost is updated by approved purchasing and is not the selling price.')" />

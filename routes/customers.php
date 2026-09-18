@@ -144,8 +144,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->get();
         $groups = GroupHierarchy::flatten($allGroups, $term);
         $parentOptions = GroupHierarchy::flatten(CustomerGroup::query()->forCompany((int) $store->company_id)->active()->get());
+        $editingGroup = null;
+        if ($request->string('mode')->value() === 'edit') {
+            abort_unless($user->can('customers.edit'), 403);
+            $editingGroup = CustomerGroup::query()->forCompany((int) $store->company_id)->findOrFail((int) $request->integer('group'));
+            $parentOptions = $parentOptions->reject(fn (CustomerGroup $candidate): bool => $candidate->id === $editingGroup->id);
+        }
+        $showGroupForm = $user->can('customers.edit') && (in_array($request->string('mode')->value(), ['create', 'edit'], true) || $request->session()->getOldInput() !== [] || $request->session()->has('errors'));
 
-        return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store'));
+        return view('pages.customers.groups', compact('groups', 'parentOptions', 'term', 'store', 'editingGroup', 'showGroupForm'));
     })->middleware('can:customers.view')->name('customers.groups.index');
     Route::get('customers/groups/export/{format}', function (Request $request, string $format, MasterDataDocument $documents) use ($sellingStore) {
         abort_unless($request->user()->can('customers.export') && in_array($format, ['xlsx', 'pdf'], true), 403);

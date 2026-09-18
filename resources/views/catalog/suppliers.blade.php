@@ -398,11 +398,12 @@ new #[Title('Supplier Masters')] class extends Component
         }
     }
 
-    public function openCreateSupplierContactModal(): void
+    public function openCreateSupplierContactModal(string $role = 'representative'): void
     {
+        abort_unless(in_array($role, ['owner', 'accounting', 'representative', 'order', 'general'], true), 422);
         Gate::authorize('suppliers.edit');
         $this->editingSupplierContactId = null;
-        $this->supplierContactForm = ['role' => 'representative', 'name' => '', 'email' => '', 'phone' => '', 'mobile' => '', 'whatsapp' => '', 'notes' => '', 'is_primary' => false, 'status' => 'active'];
+        $this->supplierContactForm = ['role' => $role, 'name' => '', 'email' => '', 'phone' => '', 'mobile' => '', 'whatsapp' => '', 'notes' => '', 'is_primary' => true, 'status' => 'active'];
         $this->resetValidation();
         $this->showSupplierContactModal = true;
     }
@@ -943,28 +944,22 @@ new #[Title('Supplier Masters')] class extends Component
                     </dl>
                 @elseif ($detailTab === 'contacts')
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <flux:heading size="sm">{{ __('Structured supplier contacts') }}</flux:heading>
-                            @if ($canEdit)
-                                <flux:button size="xs" variant="primary" icon="plus" wire:click="openCreateSupplierContactModal">{{ __('Add contact') }}</flux:button>
-                            @endif
+                        <flux:heading size="sm">{{ __('Structured supplier contacts') }}</flux:heading>
+                        <div class="grid gap-3 lg:grid-cols-3">
+                            @foreach(['owner' => __('Owner contact'), 'accounting' => __('Accountant contact'), 'representative' => __('Sales representative contact')] as $contactRole => $contactHeading)
+                                @php($roleContacts = $viewingSupplier->contacts->where('role', $contactRole)->sortByDesc('is_primary'))
+                                <section class="rounded-lg border border-border p-3 space-y-3">
+                                    <div class="flex items-center justify-between gap-2"><flux:heading size="sm">{{ $contactHeading }}</flux:heading>@if($canEdit)<flux:button size="xs" variant="subtle" icon="plus" wire:click="openCreateSupplierContactModal('{{ $contactRole }}')">{{ __('Add') }}</flux:button>@endif</div>
+                                    @forelse($roleContacts as $contact)
+                                        <div class="rounded-lg bg-surface-muted p-3 space-y-1"><div class="flex items-center justify-between gap-2"><span class="font-medium">{{ $contact->name }}</span>@if($contact->is_primary)<flux:badge size="sm" color="emerald">{{ __('Primary') }}</flux:badge>@endif</div><div class="text-xs text-text-muted" dir="ltr">{{ $contact->email ?: __('No email') }}<br>{{ $contact->phone ?: $contact->mobile ?: __('No phone') }}</div>@if($contact->notes)<p class="text-xs text-text-muted">{{ $contact->notes }}</p>@endif @if($canEdit)<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif</div>
+                                    @empty
+                                        <p class="text-sm text-text-muted">{{ __('No contact recorded for this section.') }}</p>
+                                    @endforelse
+                                </section>
+                            @endforeach
                         </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            @forelse ($viewingSupplier->contacts as $contact)
-                                <div class="rounded-lg border border-border p-3 space-y-1">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="font-medium">{{ $contact->name }}</span>
-                                        <flux:badge size="sm" color="zinc">{{ __(ucwords(str_replace('_', ' ', $contact->role))) }}</flux:badge>
-                                    </div>
-                                    <div class="text-xs text-text-muted">{{ $contact->email ?: __('No email') }} · {{ $contact->phone ?: __('No phone') }} @if($contact->mobile)· {{ $contact->mobile }}@endif</div>
-                                    @if($contact->notes)<p class="text-xs text-text-muted">{{ $contact->notes }}</p>@endif
-                                    @if ($contact->is_primary)<flux:badge size="sm" color="emerald">{{ __('Primary') }}</flux:badge>@endif
-                                    @if ($canEdit)<flux:button size="xs" variant="subtle" icon="pencil" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif
-                                </div>
-                            @empty
-                                <div class="sm:col-span-2"><x-state.empty :title="__('No structured contacts yet')" :message="__('Add owner, representative, order, or accounting contacts without changing the legacy supplier fields.')" icon="users" /></div>
-                            @endforelse
-                        </div>
+                        @php($otherContacts = $viewingSupplier->contacts->whereIn('role', ['order', 'general']))
+                        @if($otherContacts->isNotEmpty())<div class="border-t border-border pt-3"><flux:heading size="sm">{{ __('Other contacts') }}</flux:heading><div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($otherContacts as $contact)<div class="rounded-lg border border-border p-3"><strong>{{ $contact->name }}</strong><div class="text-xs text-text-muted">{{ __(ucwords($contact->role)) }} · {{ $contact->email ?: $contact->phone }}</div>@if($canEdit)<flux:button size="xs" variant="subtle" wire:click="openEditSupplierContactModal({{ $contact->id }})">{{ __('Edit') }}</flux:button>@endif</div>@endforeach</div></div>@endif
                     </div>
                 @elseif ($detailTab === 'products')
                     <div class="space-y-4">

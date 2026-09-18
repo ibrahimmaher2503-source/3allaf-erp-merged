@@ -8,10 +8,8 @@ use App\Modules\Platform\Actions\AllocateDocumentNumber;
 
 final class AllocatePurchaseReturnNumberAction
 {
-    public function execute(?int $branchId = null): string
+    public function execute(int $branchId): string
     {
-        return $branchId === null
-            ? app(AllocateDocumentNumber::class)->execute('supplier_return')
-            : app(AllocateDocumentNumber::class)->executeForBranch('supplier_return', $branchId);
+        return app(AllocateDocumentNumber::class)->executeForBranch('supplier_return', $branchId);
     }
 }

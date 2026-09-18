@@ -34,7 +34,15 @@
     </div>
     @if(filled($orderForm['branch_id']))
         @php($creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']))
-        <p class="text-xs text-text-muted">{{ __('Reference allocated on save') }}: <span class="font-mono" dir="ltr">{{ $creatingBranch?->code }}-PO-000001</span> · {{ str_starts_with(app()->getLocale(), 'ar') ? $creatingBranch?->name_ar : $creatingBranch?->name_en }}</p>
+        <p class="text-xs text-text-muted">
+            @if($editingOrderId && filled($editingOrderNumber))
+                {{ __('Saved reference') }}: <span class="font-mono" dir="ltr">{{ $editingOrderNumber }}</span>
+            @else
+                {{ __('Unallocated preview') }}: <span class="font-mono" dir="ltr">{{ $creatingBranch?->code }}-PO-000000</span>
+                <span class="ms-1">{{ __('The final sequence is allocated only when the draft is saved.') }}</span>
+            @endif
+            · {{ str_starts_with(app()->getLocale(), 'ar') ? $creatingBranch?->name_ar : $creatingBranch?->name_en }}
+        </p>
     @endif
 
     <div class="space-y-2 border-t border-border pt-3">
@@ -61,7 +69,7 @@
                 <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(16rem,1fr)_5rem_8rem_7rem_7rem_7rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
                     <div class="col-span-12 min-w-0 lg:col-auto">
                         @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
-                        <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :disabled="blank($orderForm['supplier_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
+                        <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :company-id="filled($orderForm['branch_id']) ? \App\Modules\Platform\Models\Branch::query()->whereKey($orderForm['branch_id'])->value('company_id') : ''" :disabled="blank($orderForm['supplier_id']) || blank($orderForm['branch_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
                         @if($selectedProduct)<p class="mt-0.5 truncate text-[10px] text-zinc-500">{{ __('Internal code') }}: {{ $selectedProduct->item_code }} · {{ __('Supplier code') }}: {{ $selectedProduct->productSuppliers->first()?->supplier_item_code ?: '—' }} · {{ __('Model') }}: {{ $selectedProduct->model_number ?: '—' }}</p>@endif
                     </div>
 
@@ -73,7 +81,7 @@
                     <div class="col-span-7 min-w-0 sm:col-span-4 lg:col-auto">
                         <label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label>
                         <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                        <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
+                        <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Latest approved cost from this supplier'), 'last_general_purchase_price' => __('Latest approved general purchase cost'), 'fallback_average_cost', 'fallback_cost' => __('Fallback product average cost'), 'saved_draft_cost' => __('Saved draft cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved purchase cost or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
                     </div>
 
                     <div class="col-span-6 sm:col-span-3 lg:col-auto">

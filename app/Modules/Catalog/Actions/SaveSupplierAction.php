@@ -32,6 +32,10 @@ class SaveSupplierAction
             if (! in_array($status, ['active', 'inactive'], true)) {
                 throw new InvalidArgumentException(__('The selected supplier status is not supported.'));
             }
+            $englishName = trim((string) ($data['name_en'] ?? ''));
+            if ($englishName === '') {
+                throw new InvalidArgumentException(__('Supplier English name is required.'));
+            }
 
             $barcodePrefix = strtoupper(trim((string) ($data['barcode_prefix'] ?? '')));
             if ($barcodePrefix !== '' && ! preg_match('/^[A-Z0-9]{1,12}$/', $barcodePrefix)) {
@@ -73,7 +77,7 @@ class SaveSupplierAction
                 'code' => strtoupper(trim((string) $data['code'])),
                 'barcode_prefix' => $barcodePrefix !== '' ? $barcodePrefix : null,
                 'name_ar' => trim((string) $data['name_ar']),
-                'name_en' => trim((string) ($data['name_en'] ?? '')),
+                'name_en' => $englishName,
                 'contact_name' => ! empty($data['contact_name']) ? trim((string) $data['contact_name']) : null,
                 'email' => ! empty($data['email']) ? trim((string) $data['email']) : null,
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,

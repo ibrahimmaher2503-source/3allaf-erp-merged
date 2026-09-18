@@ -10,6 +10,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,9 @@ final class PlatformSettingsApprovalAction
         $requester = auth()->user() ?? throw new \LogicException('An authenticated requester is required.');
 
         if ($resource === 'tax_setting') {
-            $before = $id === null ? null : $this->snapshot(TaxSetting::query()->findOrFail($id));
+            $company = app(AuthorizedCompanyContext::class)->resolve($requester, $proposed['company_id'] ?? null);
+            $proposed['company_id'] = (int) $company->id;
+            $before = $id === null ? null : $this->snapshot(TaxSetting::query()->forCompany((int) $company->id)->findOrFail($id));
         } elseif ($resource === 'document_sequence') {
             if ($id !== null) {
                 $sequence = DocumentSequence::visibleTo($requester)->findOrFail($id);
@@ -305,7 +308,7 @@ final class PlatformSettingsApprovalAction
 
         try {
             [$branchId, $storeId] = $this->targetScope($resource, $id, $proposed);
-            $canonicalBefore = $this->canonicalBefore($resource, $id);
+            $canonicalBefore = $this->canonicalBefore($resource, $id, is_array($proposed) ? $proposed : null);
         } catch (ModelNotFoundException) {
             throw ValidationException::withMessages(['approval' => __('The approval request source no longer exists.')]);
         }
@@ -340,7 +343,7 @@ final class PlatformSettingsApprovalAction
             })(),
             'document_sequence' => $this->sequenceScope($id, $proposed),
             'document_sequence_override' => $this->sequenceScope($id, $proposed),
-            'tax_setting' => $this->taxSettingScope($id),
+            'tax_setting' => $this->taxSettingScope($id, $proposed),
             default => throw ValidationException::withMessages(['approval' => __('This platform setting approval source is not supported.')]),
         };
     }
@@ -361,24 +364,31 @@ final class PlatformSettingsApprovalAction
     }
 
     /** @return array{0: null, 1: null} */
-    private function taxSettingScope(?int $id): array
+    private function taxSettingScope(?int $id, ?array $proposed): array
     {
         if ($id !== null) {
-            TaxSetting::query()->lockForUpdate()->findOrFail($id);
+            $companyId = (int) ($proposed['company_id'] ?? 0);
+            if ($companyId <= 0) {
+                throw ValidationException::withMessages(['approval' => __('An authorized company is required for the tax rule.')]);
+            }
+            TaxSetting::query()->where('company_id', $companyId)->lockForUpdate()->findOrFail($id);
         }
 
         return [null, null];
     }
 
     /** @return array<string, mixed>|null */
-    private function canonicalBefore(string $resource, ?int $id): ?array
+    private function canonicalBefore(string $resource, ?int $id, ?array $proposed = null): ?array
     {
         if ($id === null) {
             return null;
         }
 
         $target = match ($resource) {
-            'tax_setting' => TaxSetting::query()->lockForUpdate()->findOrFail($id),
+            'tax_setting' => TaxSetting::query()
+                ->where('company_id', (int) ($proposed['company_id'] ?? 0))
+                ->lockForUpdate()
+                ->findOrFail($id),
             'document_sequence', 'document_sequence_override' => DocumentSequence::query()->lockForUpdate()->findOrFail($id),
             'branch_delete' => Branch::query()->lockForUpdate()->findOrFail($id),
             'store_delete', 'store_archive' => Store::query()->lockForUpdate()->findOrFail($id),
@@ -423,7 +433,11 @@ final class PlatformSettingsApprovalAction
             return;
         }
 
-        $record = $model::query()->lockForUpdate()->find($id);
+        $recordQuery = $model::query();
+        if ($resource === 'tax_setting' && isset($context['proposed']['company_id'])) {
+            $recordQuery->where('company_id', (int) $context['proposed']['company_id']);
+        }
+        $record = $recordQuery->lockForUpdate()->find($id);
         $sourceChanged = $record === null;
         if (! $sourceChanged) {
             foreach ($before as $key => $expected) {

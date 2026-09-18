@@ -59,6 +59,9 @@ final class SavePurchaseInvoiceAction
                 ->lockForUpdate()
                 ->findOrFail((int) ($data['store_id'] ?? 0));
             $operationalCompanyId = $store->company_id ?? $store->branch?->company_id;
+            if ($operationalCompanyId === null) {
+                throw new InvalidArgumentException(__('The selected receiving store has no company ownership.'));
+            }
             if ($store->company_id !== null && $store->branch?->company_id !== null && (int) $store->company_id !== (int) $store->branch->company_id) {
                 throw new InvalidArgumentException(__('The selected receiving store has inconsistent company ownership.'));
             }
@@ -126,7 +129,7 @@ final class SavePurchaseInvoiceAction
 
             $normalizedLines = [];
             foreach ($lines as $index => $line) {
-                $product = Product::query()->sellable()->findOrFail((int) ($line['product_id'] ?? 0));
+                $product = Product::query()->sellable()->availableToCompany((int) $operationalCompanyId)->findOrFail((int) ($line['product_id'] ?? 0));
                 if ($product->status !== 'active') {
                     throw new InvalidArgumentException(__('Product :name is inactive and cannot be invoiced.', ['name' => $product->name_en ?: $product->name_ar]));
                 }
@@ -141,6 +144,14 @@ final class SavePurchaseInvoiceAction
                     if (bccomp($requested, '0', 6) <= 0 || bccomp($requested, $remaining, 6) > 0) {
                         throw new InvalidArgumentException(__('Invoice quantity cannot exceed the remaining purchase-order quantity.'));
                     }
+                    $line['unit_cost'] = (string) $purchaseOrderLine->unit_cost;
+                    $line['discount_type'] = $purchaseOrderLine->discount_type;
+                    $line['discount_value'] = $purchaseOrderLine->discount_type === 'amount'
+                        ? bcdiv(bcmul((string) $purchaseOrderLine->discount_amount, $requested, 10), (string) $purchaseOrderLine->quantity_ordered, 4)
+                        : (string) $purchaseOrderLine->discount_value;
+                    $line['tax_rate'] = (string) $purchaseOrderLine->tax_rate;
+                    $line['tax_code'] = $purchaseOrderLine->tax_code;
+                    $line['tax_inclusive'] = (bool) $purchaseOrderLine->tax_inclusive;
                 }
                 $normalizedLines[] = [...$line, 'product_id' => $product->id, 'purchase_order_line_id' => $purchaseOrderLine?->id, 'line_number' => $index + 1];
             }

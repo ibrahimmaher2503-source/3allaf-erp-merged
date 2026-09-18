@@ -1,0 +1,12 @@
+67a542ac27bd56f4ca9faf97d51c9a2017a578a171c76228d0ed90fdd30e9eff  /var/tmp/hotfix43-xlsx/catalog-age.xlsx
+63572fa7fbb4e9555aa0363a10d78d01657e6a0a9a689a7a06cafde5c4bf62a1  /var/tmp/hotfix43-xlsx/catalog-brand.xlsx
+d68ad279ec9c37a9e688524ff0680b0d808392b4cd4c68803c0893d1f1613e63  /var/tmp/hotfix43-xlsx/catalog-category.xlsx
+260a915aeb31fe61cb84555419dc09e7613e543187be7b436b22b2f20d33baa3  /var/tmp/hotfix43-xlsx/catalog-character.xlsx
+c254e264b0a4ee0e517878105e99058f61d3c546be695e185ec13f2118e03e66  /var/tmp/hotfix43-xlsx/catalog-colour.xlsx
+ecfa6ae703774fd6ff8d9c81c74f9b764cf0a27ec4d518d03f0c516003c5f63e  /var/tmp/hotfix43-xlsx/catalog-gender.xlsx
+931829d941e13ee5f53eaccdc86bd26768ee6079a46c88da4afa984ca39719b4  /var/tmp/hotfix43-xlsx/customer-groups.xlsx
+79d9d77454125d586fd945c39f31b320701eee28d5b5ede1ae9a682179d425ae  /var/tmp/hotfix43-xlsx/customers.xlsx
+8d0d3ca554f488b1f7fa7d9f417df0c7d6b3aed08050702558fd0b7c3e0ab6ac  /var/tmp/hotfix43-xlsx/opening-inventory.xlsx
+9586999d672c5aae6565b1d883d3754244b48e5c5760a1b187a9fa5a64b12026  /var/tmp/hotfix43-xlsx/product-card.xlsx
+9861b05a8a4e5a55a8a20c583da80ca060905dca7a6f0fc445424080fd01c69b  /var/tmp/hotfix43-xlsx/products-staged.xlsx
+eb673124cd12ae277179783069a45cdc9d9f93711a7c38bdce9d3a7c9aee054c  /var/tmp/hotfix43-xlsx/suppliers.xlsx

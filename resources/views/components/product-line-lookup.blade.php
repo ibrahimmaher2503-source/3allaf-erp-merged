@@ -10,6 +10,7 @@
     'supplierId' => '',
     'supplierOnly' => true,
     'currencyCode' => '',
+    'companyId' => '',
     'purchaseInvoiceId' => '',
     'disabled' => false,
 ])
@@ -23,6 +24,7 @@
     data-supplier-id="{{ $supplierId }}"
     data-supplier-only="{{ $supplierOnly ? '1' : '0' }}"
     data-currency-code="{{ $currencyCode }}"
+    data-company-id="{{ $companyId }}"
     data-purchase-invoice-id="{{ $purchaseInvoiceId }}"
     data-message-empty="{{ __('No matching products.') }}"
     data-message-loading="{{ __('Searching products…') }}"

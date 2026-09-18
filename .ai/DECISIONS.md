@@ -127,3 +127,10 @@
 - Hotfix19 retains all Hotfix17/18 POS and refund behavior. The closed refund wizard must still render one permanent Livewire root; its dialog and every conditional state remain inside that wrapper.
 - Promotion must create the extracted target bootstrap cache with mode `0775`, recursively set `rajeh:rajeh` ownership, and verify writability as `rajeh`. Activation repeats that preparation before any Artisan command and verifies writability immediately before and after cache generation.
 - Exact active Hotfix16 is the only accepted activation baseline and exact rollback target. Migration 000111 is already Ran and must remain Ran; Hotfix19 adds no migration and activation does not execute a migration command.
+
+## 2026-09-18 — Hotfix43 financial snapshot and tax ownership — Approved
+
+- Existing schema cannot preserve the PO `tax_inclusive` fact on `purchase_invoice_lines`; inferring it after settings or amounts change is ambiguous. Proposed migration 000117 adds only a non-null boolean snapshot, backfills linked rows from immutable PO lines, keeps confirmed zero-tax unlinked production rows false, changes no money, and fails closed on rollback if inclusive history exists.
+- Existing `tax_settings` rows have no company owner, so a company-specific default or product override cannot be authorized reliably. Proposed migration 000118 adds only restricted company ownership, replaces global code uniqueness with company/code uniqueness, and adds the scoped lookup index. Legacy backfill proceeds only when company ownership is unambiguous; current production has one company and four rules.
+- The owner approved migrations 000117 and 000118 exactly as proposed. Both use fail-closed preflight/down behavior, tolerate their own partially applied DDL, and may run only after actual schema/migration inspection. They are required to close original requirements 10, 11 and 65 plus OC-PO-SNAPSHOTS.
+- Remain unresolved without invention: cross-branch receiving; independent customer-code sequence interpretation; removal of document timezone fields; and deferred comparison C whose two referenced items are unidentified.
