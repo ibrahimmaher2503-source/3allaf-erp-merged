@@ -8,9 +8,9 @@ new class extends Component {
  public function with():array{$product=Product::findOrFail($this->productId);$companyId=(int)Company::where('status','active')->value('id');$resolver=app(PriceListResolver::class);$rows=PriceList::where('company_id',$companyId)->where('status','active')->orderBy('list_number')->get()->map(function($list)use($resolver,$product){try{return['list'=>$list,'resolved'=>$resolver->resolve($product,$list),'error'=>null];}catch(\Throwable $e){return['list'=>$list,'resolved'=>null,'error'=>\App\Support\UserSafeError::message($e)];}});return compact('product','rows');}
 }; ?>
 <section class="form-section space-y-4" aria-labelledby="product-pricing-title">
-    <div>
+    <div class="flex items-center gap-2">
         <h2 id="product-pricing-title" class="text-lg font-semibold">{{ __('Pricing matrix') }}</h2>
-        <p class="text-sm text-zinc-600">{{ __('List 0 comes directly from the Product Card. Overrides win without automatic rounding; removing one restores the percentage calculation.') }}</p>
+        <x-context-help :title="__('Pricing matrix')" :label="__('Open contextual help')"><p>{{ __('List 0 comes directly from the Product Card. Overrides win without automatic rounding; removing one restores the percentage calculation.') }}</p></x-context-help>
     </div>
     <div class="table-panel-surface">
         <table class="data-table">

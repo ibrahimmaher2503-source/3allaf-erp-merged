@@ -891,8 +891,8 @@ new #[Title('System Settings')] class extends Component
             </form>
 
             <flux:card class="space-y-4">
-                <div><flux:heading size="lg">{{ __('List display') }}</flux:heading><flux:subheading>{{ __('Choose whether list search and filter panels open automatically.') }}</flux:subheading></div>
-                <flux:switch wire:model="showSearchFiltersByDefault" :label="__('Show search and filters by default')" :description="__('When off, use the compact Filter / Search control to open them when needed.')" />
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('List display') }}</flux:heading><x-context-help :title="__('List display')" :label="__('Open contextual help')"><p>{{ __('Choose whether list search and filter panels open automatically.') }}</p></x-context-help></div>
+                <div><flux:switch wire:model="showSearchFiltersByDefault" :label="__('Show search and filters by default')" /><x-context-help :title="__('Show search and filters by default')" :label="__('Open contextual help')"><p>{{ __('When off, use the compact Filter / Search control to open them when needed.') }}</p></x-context-help></div>
                 <div class="flex justify-end"><flux:button type="button" variant="primary" wire:click="saveListDisplayPreference" wire:loading.attr="disabled" wire:target="saveListDisplayPreference">{{ __('Save list display') }}</flux:button></div>
             </flux:card>
 
@@ -956,7 +956,7 @@ new #[Title('System Settings')] class extends Component
                                 wire:model="paymentMethodForm.requires_evidence"
                                 :label="__('Requires payment evidence')"
                             />
-                            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('When enabled, staff must attach or reference payment evidence before this payment can be approved.') }}</p>
+                            <x-context-help :title="__('Requires payment evidence')" :label="__('Open contextual help')"><p>{{ __('When enabled, staff must attach or reference payment evidence before this payment can be approved.') }}</p></x-context-help>
                         </div>
 
                     </div>
@@ -976,8 +976,7 @@ new #[Title('System Settings')] class extends Component
             </flux:modal>
 
             <flux:card class="space-y-4">
-                <flux:heading size="lg">{{ __('Configured Payment Methods') }}</flux:heading>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Review saved methods below. Add a new method using the form above.') }}</p>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Configured Payment Methods') }}</flux:heading><x-context-help :title="__('Configured Payment Methods')" :label="__('Open contextual help')"><p>{{ __('Review saved methods below. Add a new method using the form above.') }}</p></x-context-help></div>
 
                 <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
                     <flux:table class="min-w-[880px]" aria-label="{{ __('Configured Payment Methods') }}">
@@ -1135,7 +1134,7 @@ new #[Title('System Settings')] class extends Component
                             :label="__('Default Prices Are Tax Inclusive')"
                         />
                     </div>
-                    <flux:text class="text-sm text-text-muted">{{ __('Tax inclusive means the displayed price already includes the tax amount.') }}</flux:text>
+                    <x-context-help :title="__('Default Prices Are Tax Inclusive')" :label="__('Open contextual help')"><p>{{ __('Tax inclusive means the displayed price already includes the tax amount.') }}</p></x-context-help>
 
                     <div class="flex flex-wrap items-center justify-end gap-3">
                         <?php if ($taxSettingForm['id']): ?>
@@ -1232,21 +1231,21 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 4: Document Sequences -->
     <?php if ($activeTab === 'sequences'): ?>
         <div id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3"><div><flux:heading size="lg">{{ __('Document Numbering') }}</flux:heading><flux:subheading>{{ __('Each branch and document type keeps its own continuous counter.') }}</flux:subheading></div><flux:button type="button" variant="primary" icon="plus" wire:click="openDocumentSequenceModal">{{ __('Add Numbering Rule') }}</flux:button></div>
+            <div class="flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Document Numbering') }}</flux:heading><x-context-help :title="__('Document Numbering')" :label="__('Open contextual help')"><p>{{ __('Each branch and document type keeps its own continuous counter.') }}</p></x-context-help></div><flux:button type="button" variant="primary" icon="plus" wire:click="openDocumentSequenceModal">{{ __('Add Numbering Rule') }}</flux:button></div>
             <flux:modal wire:model="sequenceModalOpen" class="max-w-3xl">
             <flux:card class="space-y-6">
-                <div class="space-y-1">
+                <div class="flex items-center gap-2">
                     <flux:heading size="lg">
                         {{ $documentSequenceForm['id'] ? __('Edit document-numbering rule') : __('Add document-numbering rule') }}
                     </flux:heading>
-                    <flux:text class="text-text-muted">{{ __('Set the document code, where it applies, and how its next number is displayed.') }}</flux:text>
+                    <x-context-help :title="$documentSequenceForm['id'] ? __('Edit document-numbering rule') : __('Add document-numbering rule')" :label="__('Open contextual help')"><p>{{ __('Set the document code, where it applies, and how its next number is displayed.') }}</p></x-context-help>
                 </div>
 
                 <form wire:submit="saveDocumentSequence" class="space-y-5">
                     <section class="space-y-4 rounded-xl border border-border-subtle bg-surface-muted/40 p-4" aria-labelledby="sequence-basics-heading">
-                        <div>
+                        <div class="flex items-center gap-2">
                             <flux:heading id="sequence-basics-heading" size="sm">{{ __('Rule details') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the document and the level that uses this numbering rule.') }}</flux:text>
+                            <x-context-help :title="__('Rule details')" :label="__('Open contextual help')"><p>{{ __('Choose the document and the level that uses this numbering rule.') }}</p></x-context-help>
                         </div>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 {{ ($documentSequenceForm['scope_type'] ?? 'company') === 'branch' ? 'xl:grid-cols-3' : '' }}">
                         <flux:select autofocus wire:model.live="documentSequenceForm.document_type" :label="__('Document type')" required>
@@ -1268,9 +1267,9 @@ new #[Title('System Settings')] class extends Component
                     </section>
 
                     <section class="space-y-4" aria-labelledby="sequence-format-heading">
-                        <div>
+                        <div class="flex items-center gap-2">
                             <flux:heading id="sequence-format-heading" size="sm">{{ __('Number format') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Arrange the text and digits exactly as they should appear on the document.') }}</flux:text>
+                            <x-context-help :title="__('Number format')" :label="__('Open contextual help')"><p>{{ __('Arrange the text and digits exactly as they should appear on the document.') }}</p></x-context-help>
                         </div>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <flux:input wire:model="documentSequenceForm.padding_length" :label="__('Counter digits (padding)')" type="number" readonly />
@@ -1279,19 +1278,18 @@ new #[Title('System Settings')] class extends Component
                     </section>
 
                     <section class="space-y-4 rounded-xl border border-border-subtle p-4" aria-labelledby="sequence-counter-heading">
-                        <div>
+                        <div class="flex items-center gap-2">
                             <flux:heading id="sequence-counter-heading" size="sm">{{ __('Counter settings') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ __('Choose the first number and whether counting restarts on a schedule.') }}</flux:text>
+                            <x-context-help :title="__('Counter settings')" :label="__('Open contextual help')"><p>{{ __('Choose the first number and whether counting restarts on a schedule.') }}</p></x-context-help>
                         </div>
                         <div class="grid grid-cols-1 gap-4">
-                        <flux:input
+                        <div><flux:input
                             wire:model="documentSequenceForm.next_value"
                             :label="$documentSequenceForm['id'] ? __('Current next number (read-only)') : __('First number to use')"
                             type="number"
                             :readonly="(bool) $documentSequenceForm['id']"
-                            :description="$documentSequenceForm['id'] ? __('Shown for information while editing. Use the separate authorized correction below to change it.') : __('First number allocated by this sequence.')"
                             :required="! $documentSequenceForm['id']"
-                        />
+                        /><x-context-help :title="$documentSequenceForm['id'] ? __('Current next number (read-only)') : __('First number to use')" :label="__('Open contextual help')"><p>{{ $documentSequenceForm['id'] ? __('Shown for information while editing. Use the separate authorized correction below to change it.') : __('First number allocated by this sequence.') }}</p></x-context-help></div>
                         </div>
                     </section>
 
@@ -1306,9 +1304,9 @@ new #[Title('System Settings')] class extends Component
                     ?>
                     <div class="rounded-xl border border-primary/25 bg-primary/5 px-5 py-4" data-sequence-preview>
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div>
+                            <div class="flex items-center gap-2">
                                 <flux:heading size="sm">{{ __('Preview of the next document number') }}</flux:heading>
-                                <flux:text class="mt-1 text-sm text-text-muted">{{ __('Changes here do not reserve a number until you save the rule.') }}</flux:text>
+                                <x-context-help :title="__('Preview of the next document number')" :label="__('Open contextual help')"><p>{{ __('Changes here do not reserve a number until you save the rule.') }}</p></x-context-help>
                             </div>
                             <output class="rounded-lg bg-surface px-4 py-2 font-mono text-lg font-semibold tracking-wide text-primary shadow-sm" aria-live="polite">{{ $previewNumber }}</output>
                         </div>
@@ -1329,9 +1327,9 @@ new #[Title('System Settings')] class extends Component
                 <?php if ($documentSequenceForm['id']): ?>
                     <?php if (Gate::allows('drawers_payments_tax_numbering_printers.override')): ?>
                         <form wire:submit="overrideSequenceCounter" class="space-y-4 border-t border-border-subtle pt-5" aria-labelledby="sequence-override-heading">
-                            <div>
+                            <div class="flex items-center gap-2">
                                 <flux:heading id="sequence-override-heading" size="md">{{ __('Authorized counter correction') }}</flux:heading>
-                                <flux:text class="mt-1 text-text-muted">{{ __('Use this separate action to change the current counter. Enter a reason; the change is audited.') }}</flux:text>
+                                <x-context-help :title="__('Authorized counter correction')" :label="__('Open contextual help')"><p>{{ __('Use this separate action to change the current counter. Enter a reason; the change is audited.') }}</p></x-context-help>
                             </div>
                             <div class="grid gap-4 md:grid-cols-2">
                                 <flux:input wire:model="sequenceOverride.next_value" type="number" min="1" :label="__('Replacement next number')" required />
@@ -1412,9 +1410,9 @@ new #[Title('System Settings')] class extends Component
     <!-- TAB 5: Printer Configurations -->
     <?php if ($activeTab === 'printers'): ?>
         <div id="panel-printers" role="tabpanel" aria-labelledby="tab-printers" data-settings-active-section="{{ $printerSection }}" class="space-y-6">
-            <div class="rounded-xl border border-border-subtle bg-surface-muted/40 p-5">
+            <div class="flex items-center gap-2 rounded-xl border border-border-subtle bg-surface-muted/40 p-5">
                 <flux:heading size="lg">{{ __('Printers and print settings') }}</flux:heading>
-                <flux:text class="mt-1 text-text-muted">{{ __('Add the printers available at your branch, then choose where each document is printed.') }}</flux:text>
+                <x-context-help :title="__('Printers and print settings')" :label="__('Open contextual help')"><p>{{ __('Add the printers available at your branch, then choose where each document is printed.') }}</p></x-context-help>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-3" aria-label="{{ __('Printer workspace') }}">
@@ -1426,9 +1424,9 @@ new #[Title('System Settings')] class extends Component
             <flux:card id="printer-profiles" class="scroll-mt-24 space-y-6">
                 <flux:modal wire:model="printerModalOpen" class="max-w-3xl">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <flux:heading size="lg">{{ $printerForm['id'] ? __('Edit printer') : __('Add printer') }}</flux:heading>
-                        <flux:subheading>{{ __('Enter the printer details used by the team. Advanced connection settings are optional.') }}</flux:subheading>
+                        <x-context-help :title="$printerForm['id'] ? __('Edit printer') : __('Add printer')" :label="__('Open contextual help')"><p>{{ __('Enter the printer details used by the team. Advanced connection settings are optional.') }}</p></x-context-help>
                     </div>
         <?php if ($printerForm['id']): ?>
             <flux:button
@@ -1520,7 +1518,7 @@ new #[Title('System Settings')] class extends Component
                         align="start"
                         :label="__('Make this the default printer for this location')"
                     />
-                    <p class="-mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Use one default printer per location and printer type.') }}</p>
+                    <x-context-help :title="__('Make this the default printer for this location')" :label="__('Open contextual help')"><p>{{ __('Use one default printer per location and printer type.') }}</p></x-context-help>
 
                     <div class="flex items-center justify-end gap-3">
                         <?php if ($printerForm['id']): ?>
@@ -1536,9 +1534,9 @@ new #[Title('System Settings')] class extends Component
 
                 <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store', 'printTemplate'])->orderBy('name')->limit(100)->get(); ?>
                 <div class="border-t border-border-subtle pt-5">
-                    <div class="mb-4">
+                    <div class="mb-4 flex items-center gap-2">
                         <flux:heading size="md">{{ __('Configured printers') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm text-text-muted">{{ __('Review availability and update the printer that is used at each location.') }}</flux:text>
+                        <x-context-help :title="__('Configured printers')" :label="__('Open contextual help')"><p>{{ __('Review availability and update the printer that is used at each location.') }}</p></x-context-help>
                     </div>
                     <flux:table aria-label="{{ __('Configured printers') }}">
                         <flux:table.columns>
@@ -1589,7 +1587,7 @@ new #[Title('System Settings')] class extends Component
             <?php if (true): ?>
             <flux:card id="print-templates" class="scroll-mt-24 space-y-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div><flux:heading size="lg">{{ __('Printing Template Library') }}</flux:heading><flux:subheading>{{ __('Create reusable document layouts by document type, paper size, and language, then assign compatible templates to printers.') }}</flux:subheading></div>
+                    <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Printing Template Library') }}</flux:heading><x-context-help :title="__('Printing Template Library')" :label="__('Open contextual help')"><p>{{ __('Create reusable document layouts by document type, paper size, and language, then assign compatible templates to printers.') }}</p></x-context-help></div>
                 </div>
                 <flux:modal wire:model="templateModalOpen" class="max-w-3xl"><form wire:submit="savePrintTemplate" class="grid gap-4 rounded-xl border border-border-subtle p-4 md:grid-cols-2 xl:grid-cols-3">
                     <flux:input autofocus wire:model="templateForm.code" :label="__('Code')" required />
@@ -1659,9 +1657,9 @@ new #[Title('System Settings')] class extends Component
 
                 <div class="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
                     <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ __('Print assignments') }}</flux:heading>
-                            <flux:subheading>{{ __('Choose the document, a compatible template, and the printer that will output it.') }}</flux:subheading>
+                            <x-context-help :title="__('Print assignments')" :label="__('Open contextual help')"><p>{{ __('Choose the document, a compatible template, and the printer that will output it.') }}</p></x-context-help>
                         </div>
                         <flux:button size="sm" variant="primary" href="{{ route('admin.settings', ['tab' => 'printers', 'section' => 'printer-profiles']) }}">
                             {{ __('Manage printers') }}
@@ -1782,9 +1780,9 @@ new #[Title('System Settings')] class extends Component
             <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('activeTab', 'printers')">{{ str_starts_with(app()->getLocale(), 'ar') ? 'السابق →' : '← Previous' }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
             <flux:card class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <flux:heading size="lg">{{ __('Configuration Change History') }}</flux:heading>
-                        <flux:subheading>{{ __('Read-only history. Edit settings from the tabs above.') }}</flux:subheading>
+                        <x-context-help :title="__('Configuration Change History')" :label="__('Open contextual help')"><p>{{ __('Read-only history. Edit settings from the tabs above.') }}</p></x-context-help>
                     </div>
                     <flux:badge size="sm" color="zinc" icon="shield-check">
                         {{ __('Settings history') }}

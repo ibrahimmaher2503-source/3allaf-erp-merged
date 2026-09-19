@@ -1,14 +1,13 @@
 <x-layouts::app :title="__('Customer Import')">
     <x-app.page :title="__('Customer Import')" :description="__('Upload, validate, review errors, and obtain independent approval before importing customers.')" max-width="7xl" class="space-y-6">
         <x-slot:actions><flux:button href="{{ route('customers.index') }}" variant="subtle" wire:navigate>{{ __('Back to customers') }}</flux:button></x-slot:actions>
-        <flux:callout variant="info" title="{{ __('Reviewed customer import') }}">
+        <x-context-help :title="__('Reviewed customer import')" :label="__('Open contextual help')">
             <p>{{ __('Valid rows are imported after independent approval. Rejected rows remain downloadable and no customer is overwritten or merged automatically.') }}</p>
             @can('customers.create')<flux:button href="{{ route('customers.import.template') }}" variant="subtle" icon="arrow-down-tray">{{ __('Download Excel template') }}</flux:button>@endcan
-        </flux:callout>
+        </x-context-help>
         @can('customers.create')
             <flux:card>
-                <flux:heading size="lg">{{ __('Upload and validate') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('The Excel workbook validates stable group and residence codes, Arabic identity, consent fields, and duplicate normalized phones before writing any customer.') }}</flux:text>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Upload and validate') }}</flux:heading><x-context-help :title="__('Upload and validate')" :label="__('Open contextual help')"><p>{{ __('The Excel workbook validates stable group and residence codes, Arabic identity, consent fields, and duplicate normalized phones before writing any customer.') }}</p></x-context-help></div>
                 <form method="POST" action="{{ route('customers.import.stage') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
                     @csrf
                     <flux:input type="file" name="import_file" accept=".xlsx" :label="__('Excel file')" required />

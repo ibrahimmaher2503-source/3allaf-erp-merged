@@ -6,9 +6,9 @@
 
     <div class="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div class="flex items-center gap-2">
                 <flux:heading size="xl">{{ __('Complete suspended sale') }}</flux:heading>
-                <flux:text class="mt-1">{{ __('Review the saved items, take payment, and complete the sale.') }}</flux:text>
+                <x-context-help :title="__('Complete suspended sale')" :label="__('Open contextual help')"><p>{{ __('Review the saved items, take payment, and complete the sale.') }}</p></x-context-help>
             </div>
             <flux:button href="{{ route('pos.suspended') }}" variant="subtle" icon="arrow-left">{{ __('Back to suspended sales') }}</flux:button>
         </div>
@@ -25,7 +25,7 @@
             <section class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                 <div class="border-b border-zinc-200 p-4 dark:border-zinc-800">
                     <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Saved items') }}</flux:heading><flux:badge color="emerald">{{ __('Ready for payment') }}</flux:badge></div>
-                    <flux:text class="mt-1 text-sm">{{ __('Active drawer') }}: {{ $preview['shift']->cashDrawer?->code }} · {{ __('Prices and stock are checked again when you complete payment.') }}</flux:text>
+                    <div class="mt-1 flex items-center gap-2 text-sm"><span>{{ __('Active drawer') }}: {{ $preview['shift']->cashDrawer?->code }}</span><x-context-help :title="__('Complete suspended sale')" :label="__('Open contextual help')"><p>{{ __('Prices and stock are checked again when you complete payment.') }}</p></x-context-help></div>
                 </div>
                 <div class="space-y-2 p-3" role="region" aria-label="{{ __('Saved suspended-sale items') }}">
                     @foreach ($preview['lines'] as $index => $line)

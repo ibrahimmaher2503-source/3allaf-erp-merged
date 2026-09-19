@@ -1,7 +1,7 @@
 <x-layouts::pos :title="__('Suspended Sales')" :store="null" :shift="null">
     <div class="mx-auto w-full max-w-6xl space-y-4">
         <div class="flex flex-wrap items-start justify-between gap-3" data-guide="suspended-header">
-            <div><flux:heading size="xl">{{ __('Suspended Sales') }}</flux:heading><flux:text class="mt-1">{{ __('Local suspended carts awaiting resume by the cashier.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Suspended Sales') }}</flux:heading><x-context-help :title="__('Suspended Sales')" :label="__('Open contextual help')"><p>{{ __('Local suspended carts awaiting resume by the cashier.') }}</p></x-context-help></div>
             <flux:button href="{{ route('pos') }}" variant="subtle" icon="arrow-left">{{ __('Back to POS') }}</flux:button>
         </div>
         <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">

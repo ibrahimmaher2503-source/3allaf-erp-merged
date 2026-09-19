@@ -500,7 +500,7 @@ new #[Title('Supplier Returns')] class extends Component
                             <div class="flex flex-col items-center gap-2 py-10 text-center">
                                 <flux:icon name="arrow-uturn-left" class="size-8 text-text-muted" />
                                 <flux:heading size="sm">{{ __('No supplier returns yet.') }}</flux:heading>
-                                <flux:text>{{ __('Create a supplier return from an approved purchase invoice.') }}</flux:text>
+                                <x-context-help :title="__('No supplier returns yet.')" :label="__('Open contextual help')"><p>{{ __('Create a supplier return from an approved purchase invoice.') }}</p></x-context-help>
                             </div>
                         </flux:table.cell>
                     </flux:table.row>
@@ -552,7 +552,7 @@ new #[Title('Supplier Returns')] class extends Component
                         </div>
                     </div>
                     <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
-                    @if($selectedSupplierId !== null && $selectedInvoiceId === null)<p class="text-xs text-zinc-500">{{ __('Select an approved invoice before searching its returnable products.') }}</p>@endif
+                    @if($selectedSupplierId !== null && $selectedInvoiceId === null)<x-context-help :title="__('Return product lines')" :label="__('Open contextual help')"><p>{{ __('Select an approved invoice before searching its returnable products.') }}</p></x-context-help>@endif
                 </div>
                 <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>

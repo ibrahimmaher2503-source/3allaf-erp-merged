@@ -72,10 +72,10 @@ new #[Title('UI Pattern Showcase')] class extends Component {
 
     @if ($activeSection === 'overview')
         <section id="showcase-panel-overview" role="tabpanel" tabindex="0" class="rounded-lg border border-primary/20 bg-primary-soft px-5 py-6 sm:px-6" aria-labelledby="showcase-tab-overview">
-            <div class="max-w-3xl space-y-2">
+            <div class="flex max-w-3xl flex-wrap items-center gap-2">
                 <p class="text-xs font-semibold uppercase tracking-[0.08em] text-primary">{{ __('Shared foundation') }}</p>
                 <flux:heading id="showcase-overview-title" size="xl" class="text-text-primary">{{ __('Compact, operational, and readable') }}</flux:heading>
-                <flux:text class="max-w-2xl text-text-muted">{{ __('Platform screens use a small set of stable surfaces, logical spacing, and server-driven interactions. Arabic RTL and English LTR use the same patterns.') }}</flux:text>
+                <x-context-help :title="__('Compact, operational, and readable')" :label="__('Open contextual help')"><p>{{ __('Platform screens use a small set of stable surfaces, logical spacing, and server-driven interactions. Arabic RTL and English LTR use the same patterns.') }}</p></x-context-help>
             </div>
         </section>
 
@@ -97,7 +97,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                     <div class="rounded-md border border-border bg-surface-muted/70 p-4">
                         <p class="text-xs font-medium text-text-muted">{{ __('Recent activity') }}</p>
                         <p class="mt-1 text-lg font-semibold text-text-primary">{{ __('Settings reviewed') }}</p>
-                        <p class="mt-2 text-sm text-text-muted">{{ __('Append-only audit records remain available to authorized users.') }}</p>
+                        <x-context-help :title="__('Recent activity')" :label="__('Open contextual help')"><p>{{ __('Append-only audit records remain available to authorized users.') }}</p></x-context-help>
                     </div>
                 </div>
             </x-cards.section-card>
@@ -143,9 +143,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                     <flux:button size="sm" icon="check-circle" variant="primary" wire:click="triggerToast">{{ __('Success feedback') }}</flux:button>
                     <flux:button size="sm" icon="window" variant="subtle" wire:click="$set('showDialog', true)">{{ __('Open dialog') }}</flux:button>
                 </div>
-                <flux:callout variant="info" icon="information-circle" title="{{ __('Inline guidance') }}">
-                    {{ __('Reserve callouts for context that helps a user act safely.') }}
-                </flux:callout>
+                <x-context-help :title="__('Inline guidance')" :label="__('Open contextual help')"><p>{{ __('Reserve callouts for context that helps a user act safely.') }}</p></x-context-help>
             </x-cards.section-card>
         </div>
     @endif
@@ -195,7 +193,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
                 ]" />
             </x-cards.section-card>
             <section class="space-y-2">
-                <div><flux:heading size="lg">{{ __('Audit panel') }}</flux:heading><flux:text size="sm" class="text-text-muted">{{ __('Surface protected before and after values only to authorized users.') }}</flux:text></div>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Audit panel') }}</flux:heading><x-context-help :title="__('Audit panel')" :label="__('Open contextual help')"><p>{{ __('Surface protected before and after values only to authorized users.') }}</p></x-context-help></div>
                 <x-audit-panel
                     :created-by-name="__('Platform administrator')"
                     created-at="2026-08-03 09:48"
@@ -227,8 +225,7 @@ new #[Title('UI Pattern Showcase')] class extends Component {
 
     <flux:modal wire:model="showDialog" class="max-w-md">
         <div class="space-y-4">
-            <flux:heading size="lg">{{ __('Confirmation pattern') }}</flux:heading>
-            <flux:text>{{ __('Use a dialog only when a consequential action needs an explicit confirmation.') }}</flux:text>
+            <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Confirmation pattern') }}</flux:heading><x-context-help :title="__('Confirmation pattern')" :label="__('Open contextual help')"><p>{{ __('Use a dialog only when a consequential action needs an explicit confirmation.') }}</p></x-context-help></div>
             <div class="flex justify-end gap-2"><flux:button variant="subtle" wire:click="$set('showDialog', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="$set('showDialog', false)">{{ __('Confirm') }}</flux:button></div>
         </div>
     </flux:modal>

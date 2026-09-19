@@ -2,7 +2,7 @@
     <x-app.page :title="__('Gift Receipts')" :description="__('Issue and reprint a privacy-safe receipt linked to a completed sale. Prices never leave the server-side return calculation.')" max-width="7xl">
         @if(session('success'))<flux:callout variant="success">{{ session('success') }}</flux:callout>@endif
         @if(session('errors')?->any())<flux:callout variant="danger">{{ session('errors')->first() }}</flux:callout>@endif
-        <flux:callout variant="info" icon="shield-check">{{ __('Gift Receipts show item identity and quantity only. They never include price, discount, tax, total, or hidden price metadata.') }}</flux:callout>
+        <x-context-help :title="__('Gift Receipts')" :label="__('Open contextual help')"><p>{{ __('Gift Receipts show item identity and quantity only. They never include price, discount, tax, total, or hidden price metadata.') }}</p></x-context-help>
 
         @can('gift_receipts.issue')
             <flux:card class="mt-6">
@@ -35,12 +35,12 @@
                             @endforeach
                         </fieldset>
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Only checked lines are copied. Prices and payment details remain suppressed.') }}</p>
+                            <x-context-help :title="__('Select eligible lines')" :label="__('Open contextual help')"><p>{{ __('Only checked lines are copied. Prices and payment details remain suppressed.') }}</p></x-context-help>
                             <flux:button type="submit" variant="primary">{{ __('Issue price-free Gift Receipt') }}</flux:button>
                         </div>
                     </form>
                 @else
-                    <p class="mt-4 text-sm text-zinc-600 dark:text-zinc-300">{{ __('Choose a completed sale to review and select its eligible lines.') }}</p>
+                    <x-context-help class="mt-4" :title="__('Gift Receipt')" :label="__('Open contextual help')"><p>{{ __('Choose a completed sale to review and select its eligible lines.') }}</p></x-context-help>
                 @endif
             </flux:card>
         @endcan

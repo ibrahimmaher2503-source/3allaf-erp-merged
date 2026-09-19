@@ -574,15 +574,14 @@ new #[Title('Supplier Masters')] class extends Component
     <div class="space-y-5" data-supplier-workspace="{{ $section }}">
         @if ($section === 'supplier-groups')
             <section class="space-y-5" data-guide="supplier-groups-workspace">
-                <flux:callout variant="info" icon="information-circle" :title="str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')">
-                    {{ str_starts_with(app()->getLocale(), 'ar') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}
-                </flux:callout>
-
                 <flux:card class="space-y-4 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div class="flex flex-wrap items-center gap-2">
                             <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مجموعات الموردين' : __('Supplier groups') }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</flux:text>
+                            <x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'تهيئة مجموعات الموردين' : __('Supplier group setup')" :label="__('Open contextual help')">
+                                <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'قسّم الموردين إلى مجموعات لتسهيل البحث وتنظيم بيانات الشراء.' : __('Create and maintain the supplier hierarchy here. Supplier master records are assigned to a group from the Supplier masters workspace.') }}</p>
+                                <p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ مجموعة رئيسية، ثم أضف مجموعات فرعية عند الحاجة.' : __('Use parent groups to keep related suppliers organized. Group status does not alter historical supplier records.') }}</p>
+                            </x-context-help>
                         </div>
                         @if ($canCreate)
                             <flux:button icon="folder-plus" variant="primary" wire:click="openCreateSupplierGroupModal">
@@ -1080,14 +1079,14 @@ new #[Title('Supplier Masters')] class extends Component
                 <flux:input wire:model="supplierGroupForm.name_en" :label="str_starts_with(app()->getLocale(), 'ar') ? 'اسم المجموعة بالإنجليزية (اختياري)' : __('English group name (optional)')" dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.code" :label="__('Stable code')" required dir="ltr" />
                 <flux:input wire:model="supplierGroupForm.sort_order" :label="__('Order')" type="number" min="0" />
-                <flux:select wire:model="supplierGroupForm.parent_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.')">
+                <div><flux:select wire:model="supplierGroupForm.parent_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')">
                     <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون مجموعة رئيسية' : __('No parent group') }}</option>
                     @foreach ($supplierGroupParents as $parent)
                         @if ($parent->id !== $editingSupplierGroupId)
                             <option value="{{ $parent->id }}">{{ $parent->name_ar }}{{ $parent->name_en ? ' — '.$parent->name_en : '' }}</option>
                         @endif
                     @endforeach
-                </flux:select>
+                </flux:select><x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'المجموعة الرئيسية (اختياري)' : __('Parent group (optional)')" :label="__('Open contextual help')"><p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'اتركه فارغاً لإنشاء مجموعة رئيسية.' : __('Leave empty for a root group; child groups stay beneath their selected parent.') }}</p></x-context-help></div>
                 <flux:select wire:model="supplierGroupForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')"><option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشطة' : __('Active') }}</option><option value="inactive">{{ str_starts_with(app()->getLocale(), 'ar') ? 'غير نشطة' : __('Inactive') }}</option></flux:select>
                 @error('supplierGroupForm')<flux:callout variant="danger">{{ $message }}</flux:callout>@enderror
                 <div class="flex justify-end gap-3 border-t border-border pt-3"><flux:button variant="subtle" wire:click="$set('showSupplierGroupModal', false)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إلغاء' : __('Cancel') }}</flux:button><flux:button variant="primary" type="submit" wire:loading.attr="disabled" wire:target="saveSupplierGroup"><span wire:loading.remove wire:target="saveSupplierGroup">{{ __('Save') }}</span><span wire:loading wire:target="saveSupplierGroup">{{ str_starts_with(app()->getLocale(), 'ar') ? 'جارٍ الحفظ...' : __('Saving...') }}</span></flux:button></div>

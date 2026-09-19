@@ -317,9 +317,9 @@ new #[Title('Pricing Workspace')] class extends Component
     <x-slot:actions><x-tables.resource-toolbar filter-target="pricing-filters">@can('pricing_labels.create')<flux:button variant="subtle" wire:click="openImportForm" icon="arrow-up-tray">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استيراد CSV' : 'Import CSV' }}</flux:button><flux:button variant="primary" wire:click="openProposalForm" icon="plus">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مقترح سعر جديد' : 'New price proposal' }}</flux:button>@endcan</x-tables.resource-toolbar></x-slot:actions>
     <div class="space-y-5">
     <div class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div class="flex items-center gap-2">
             <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $modeTitles[$mode] }}</h1>
-            <flux:text class="mt-1 max-w-3xl">{{ __('The Product Card base consumer price is immediately sellable. Optional active price lists override it only when applicable. Cost changes never rewrite sale prices.') }}</flux:text>
+            <x-context-help :title="$modeTitles[$mode]" :label="__('Open contextual help')"><p>{{ __('The Product Card base consumer price is immediately sellable. Optional active price lists override it only when applicable. Cost changes never rewrite sale prices.') }}</p></x-context-help>
         </div>
         <flux:button href="{{ route('pricing.labels') }}" variant="subtle" icon="printer" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملصقات الأسعار' : 'Price labels' }}</flux:button>
     </div>
@@ -397,10 +397,8 @@ new #[Title('Pricing Workspace')] class extends Component
     @if ($showImportForm)
         <flux:modal wire:model="showImportForm" name="price-import" class="md:w-[48rem]">
             <div class="space-y-5">
-                <flux:heading size="lg">{{ __('Import price proposals') }}</flux:heading>
-                <flux:callout variant="info">{{ __('Each imported row starts as a draft and requires approval before it affects selling prices.') }}</flux:callout>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Import price proposals') }}</flux:heading><x-context-help :title="__('Import price proposals')" :label="__('Open contextual help')"><p>{{ __('Each imported row starts as a draft and requires approval before it affects selling prices.') }}</p><p>{{ __('Columns: item_code, store_code, amount, effective_from, source_reference. Header optional; maximum 200 rows.') }}</p></x-context-help></div>
                 <flux:textarea wire:model="importCsv" label="{{ __('CSV rows') }}" rows="10" />
-                <flux:text class="text-xs">{{ __('Columns: item_code, store_code, amount, effective_from, source_reference. Header optional; maximum 200 rows.') }}</flux:text>
                 <div class="flex justify-end gap-2"><flux:button wire:click="$set('showImportForm', false)">{{ __('Cancel') }}</flux:button><flux:button variant="primary" wire:click="importProposals">{{ __('Import as Draft') }}</flux:button></div>
             </div>
         </flux:modal>
@@ -424,8 +422,7 @@ new #[Title('Pricing Workspace')] class extends Component
     @if ($showProposalForm)
         <flux:modal wire:model="showProposalForm" name="price-proposal" class="md:w-[48rem]">
             <div class="space-y-5">
-                <flux:heading size="lg">{{ __('New price proposal') }}</flux:heading>
-                <flux:text>{{ __('A proposal is Draft until submitted and approved. It cannot change historical sales or activate by itself.') }}</flux:text>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('New price proposal') }}</flux:heading><x-context-help :title="__('New price proposal')" :label="__('Open contextual help')"><p>{{ __('A proposal is Draft until submitted and approved. It cannot change historical sales or activate by itself.') }}</p></x-context-help></div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <flux:input wire:model="form.price_list_code" label="{{ __('Price list code') }}" />
                     <flux:input wire:model="form.price_list_name_en" label="{{ __('Price list name') }}" />

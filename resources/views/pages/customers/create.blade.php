@@ -35,9 +35,9 @@
             <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
 
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-                <div class="border-b border-border pb-4">
+                <div class="flex items-center gap-2 border-b border-border pb-4">
                     <flux:heading size="lg">{{ __('Identity and contact') }}</flux:heading>
-                    <flux:text class="mt-1 text-sm">{{ __('Enter the customer name and the contact details needed to reach them.') }}</flux:text>
+                    <x-context-help :title="__('Identity and contact')" :label="__('Open contextual help')"><p>{{ __('Enter the customer name and the contact details needed to reach them.') }}</p></x-context-help>
                 </div>
 
                 <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]">
@@ -67,15 +67,15 @@
                     <div class="rounded-xl border border-border bg-surface p-4">
                         <p class="mb-4 text-sm font-semibold text-text-primary">{{ __('Contact details') }}</p>
                         <div class="grid gap-4">
-                            <flux:input name="phone" :label="__('Primary phone')" :value="old('phone')" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian phone numbers are accepted in local or international format.')" dir="ltr" />
+                            <div><flux:input name="phone" :label="__('Primary phone')" :value="old('phone')" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" dir="ltr" /><x-context-help :title="__('Primary phone')" :label="__('Open contextual help')"><p>{{ __('Egyptian phone numbers are accepted in local or international format.') }}</p></x-context-help></div>
                             <flux:input name="email" :label="__('Email')" :value="old('email')" type="email" autocomplete="email" />
                             <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="old('secondary_phone')" autocomplete="tel" :placeholder="__('Optional Egyptian phone number')" dir="ltr" />
-                            <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
+                            <div><flux:select name="customer_group_id" :label="__('Customer group')">
                                 <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
                                 @foreach ($groupOptions as $group)
                                     <flux:select.option value="{{ $group->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
                                 @endforeach
-                            </flux:select>
+                            </flux:select><x-context-help :title="__('Customer group')" :label="__('Open contextual help')"><p>{{ __('Optional hierarchical group for customer search and reporting.') }}</p></x-context-help></div>
                         </div>
                     </div>
                 </div>
@@ -83,9 +83,9 @@
 
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" x-data="{ children: @js(old('children', [])), childPurpose: @js($childPurposes[0] ?? '') }" x-init="children.forEach(child => child.purpose ||= childPurpose)">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بيانات الأطفال (اختياري)' : __('Child profiles (optional)') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أضف بيانات طفل أو أكثر عند الحاجة.' : 'Add one or more child profiles when needed.' }}</flux:text>
+                        <x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'بيانات الأطفال (اختياري)' : __('Child profiles (optional)')" :label="__('Open contextual help')"><p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'أضف بيانات طفل أو أكثر عند الحاجة.' : 'Add one or more child profiles when needed.' }}</p></x-context-help>
                     </div>
                     @if ($childPurposes !== [])
                         <flux:button type="button" variant="subtle" icon="plus" x-on:click="children.push({ name_ar: '', name_en: '', birth_date: '', purpose: childPurpose })" x-bind:disabled="children.length >= 10">

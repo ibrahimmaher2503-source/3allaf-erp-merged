@@ -1,12 +1,12 @@
 <x-layouts::app :title="__('offline.title')">
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6" data-offline-policy data-offline-enabled="{{ $enabled ? 'true' : 'false' }}" data-offline-schema="{{ config('offline.schema_version') }}">
         <header class="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div class="min-w-0 max-w-3xl">
+            <div class="flex min-w-0 max-w-3xl flex-wrap items-center gap-2">
                 <div class="flex flex-wrap items-center gap-2">
                     <h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ __('offline.title') }}</h1>
                     <flux:badge :color="$enabled ? 'green' : 'amber'">{{ $enabled ? __('offline.enabled') : __('offline.disabled') }}</flux:badge>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-text-muted">{{ $enabled ? __('offline.enabled_description') : (app()->isProduction() ? __('offline.production_disabled') : __('offline.disabled_description')) }}</p>
+                <x-context-help :title="__('offline.title')" :label="__('Open contextual help')"><p>{{ $enabled ? __('offline.enabled_description') : (app()->isProduction() ? __('offline.production_disabled') : __('offline.disabled_description')) }}</p></x-context-help>
             </div>
             @if ($enabled && auth()->user()->hasPermission('offline_queue_conflicts.view'))
                 <flux:button href="{{ route('pos.offline.queue') }}" variant="primary" icon="arrow-path" wire:navigate>{{ __('offline.queue_title') }}</flux:button>
@@ -31,7 +31,7 @@
 
         <section class="rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="offline-devices-title">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div><h2 id="offline-devices-title" class="text-base font-semibold text-text-primary">{{ __('offline.devices') }}</h2><p class="mt-1 text-sm text-text-muted">{{ __('offline.device_token_help') }}</p></div>
+                <div class="flex items-center gap-2"><h2 id="offline-devices-title" class="text-base font-semibold text-text-primary">{{ __('offline.devices') }}</h2><x-context-help :title="__('offline.devices')" :label="__('Open contextual help')"><p>{{ __('offline.device_token_help') }}</p></x-context-help></div>
             </div>
             @if ($devices->isEmpty())
                 <div class="mt-4" role="status">{{ __('offline.no_devices') }}</div>

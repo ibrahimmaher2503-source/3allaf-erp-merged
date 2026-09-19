@@ -24,9 +24,13 @@
 
 <article data-report-visual class="min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-surface shadow-card">
     <header class="flex flex-col gap-3 border-b border-border/70 bg-surface-muted/35 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="min-w-0">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
             <h3 id="{{ $chartId }}-title" class="text-base font-semibold text-text-primary">{{ $visual['title'] ?? __('Report visual') }}</h3>
-            @if(filled($visual['description'] ?? null))<p id="{{ $chartId }}-description" class="mt-1 max-w-2xl text-sm leading-5 text-text-muted">{{ $visual['description'] }}</p>@endif
+            @if(filled($visual['description'] ?? null))
+                <x-context-help :title="$visual['title'] ?? __('Report visual')" :label="__('Open contextual help')">
+                    <p>{{ $visual['description'] }}</p>
+                </x-context-help>
+            @endif
         </div>
         <div class="flex shrink-0 flex-wrap gap-3" aria-label="{{ __('Chart legend') }}">
             @foreach($series as $seriesIndex => $item)
@@ -36,12 +40,12 @@
     </header>
 
     <div class="p-5 sm:p-6">
-        <div data-report-chart role="img" aria-label="{{ $visual['title'] ?? __('Report visual') }}" aria-labelledby="{{ $chartId }}-title" @if(filled($visual['description'] ?? null)) aria-describedby="{{ $chartId }}-description" @endif>
+        <div data-report-chart role="img" aria-label="{{ $visual['title'] ?? __('Report visual') }}" aria-labelledby="{{ $chartId }}-title">
             @if(!$hasData)
                 <div class="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-muted/25 px-6 text-center">
                     <span class="flex size-11 items-center justify-center rounded-full bg-primary-soft text-primary"><flux:icon name="chart-bar" class="size-5" /></span>
                     <p class="mt-3 text-sm font-semibold text-text-primary">{{ __('No chart activity in this range') }}</p>
-                    <p class="mt-1 text-xs text-text-muted">{{ __('Adjust the filters or date range to compare activity.') }}</p>
+                    <x-context-help :title="__('No chart activity in this range')" :label="__('Open contextual help')"><p>{{ __('Adjust the filters or date range to compare activity.') }}</p></x-context-help>
                 </div>
             @elseif($type === 'line')
                 <div class="min-h-56" dir="ltr">

@@ -439,9 +439,7 @@ new #[Title('Branch Management')] class extends Component
                 <flux:icon icon="building-office-2" class="size-12 text-zinc-400" />
             </div>
             <flux:heading level="3" size="lg">{{ __('No Branches Configured') }}</flux:heading>
-            <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('Add a branch to organize stores and daily operations.') }}
-            </flux:text>
+            <x-context-help :title="__('No Branches Configured')" :label="__('Open contextual help')"><p>{{ __('Add a branch to organize stores and daily operations.') }}</p></x-context-help>
             <div class="pt-2">
                 @can('branches_stores.create')
                     <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateBranchModal">{{ __('Add Branch') }}</flux:button>
@@ -539,9 +537,9 @@ new #[Title('Branch Management')] class extends Component
 
     <!-- Create / Edit Branch Modal -->
     <flux:modal wire:model="showBranchModal" class="md:w-160 space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">{{ $editingBranchId ? __('Edit Branch Master') : __('Create Branch Master') }}</flux:heading>
-            <flux:subheading>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</flux:subheading>
+            <x-context-help :title="$editingBranchId ? __('Edit Branch Master') : __('Create Branch Master')" :label="__('Open contextual help')"><p>{{ __('Define the branch code, bilingual name, contact information, and operating policies.') }}</p></x-context-help>
         </div>
 
         <form wire:submit="saveBranch" novalidate class="space-y-4" data-guide="branch-master-form">
@@ -647,7 +645,7 @@ new #[Title('Branch Management')] class extends Component
                 @endforeach
             </flux:select>
             @if ($availableSellingStores->isNotEmpty())
-                <p class="text-xs text-zinc-500">{{ __('Only active points of sale for this branch are shown.') }}</p>
+                <x-context-help :title="__('Choose primary point of sale')" :label="__('Open contextual help')"><p>{{ __('Only active points of sale for this branch are shown.') }}</p></x-context-help>
             @endif
 
             <flux:textarea

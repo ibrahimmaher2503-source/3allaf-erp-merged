@@ -9,7 +9,7 @@
 <x-layouts::pos :title="__('Cash Shift')" :store="$shift?->store" :shift="$shift">
     <div class="mx-auto w-full max-w-3xl p-4 sm:p-6">
         <header class="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
-            <div><flux:heading size="xl">{{ __('Shifts & collections') }}</flux:heading><flux:text class="mt-1">{{ __('Manage your active drawer and review recent immutable shift closes.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Shifts & collections') }}</flux:heading><x-context-help :title="__('Shifts & collections')" :label="__('Open contextual help')"><p>{{ __('Manage your active drawer and review recent immutable shift closes.') }}</p></x-context-help></div>
             <nav class="flex flex-wrap gap-2" aria-label="{{ __('Sales navigation') }}">
                 <flux:button href="{{ route('sales.index') }}" variant="subtle" icon="presentation-chart-line" wire:navigate>{{ __('Sales overview') }}</flux:button>
                 @can('pos_sales.create')<flux:button href="{{ route('pos') }}" variant="primary" icon="shopping-cart" wire:navigate>{{ __('Open POS') }}</flux:button>@endcan
@@ -52,9 +52,9 @@
             @if ($closedShifts->isNotEmpty())
                 <section class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="closed-shifts-heading">
                     <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div class="flex items-center gap-2">
                             <flux:heading id="closed-shifts-heading" size="lg">{{ __('Closed shifts') }}</flux:heading>
-                            <flux:text class="mt-1">{{ __('Print a historical close without changing its immutable record.') }}</flux:text>
+                            <x-context-help :title="__('Closed shifts')" :label="__('Open contextual help')"><p>{{ __('Print a historical close without changing its immutable record.') }}</p></x-context-help>
                         </div>
                         <flux:badge color="zinc">{{ $closedShifts->count() }}</flux:badge>
                     </div>

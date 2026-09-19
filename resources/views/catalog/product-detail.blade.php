@@ -192,7 +192,7 @@ new #[Title('Product Details')] class extends Component {
                 </flux:card>
             @endif
 
-            <flux:callout variant="success" icon="shield-check" title="{{ __('Audit and scope protected') }}">{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</flux:callout>
+            <x-context-help :title="__('Audit and scope protected')" :label="__('Open contextual help')"><p>{{ __('Product card, type, status, and media changes are recorded through the shared audit foundation. No stock or price side effect is created here.') }}</p></x-context-help>
         </aside>
     </div>
 </x-app.page>

@@ -841,7 +841,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 </div>
             </flux:card>
         @empty
-            <flux:card><div class="flex flex-col items-center gap-2 py-10 text-center"><flux:icon name="document-text" class="size-8 text-text-muted" /><flux:heading size="sm">{{ __('No purchase invoices yet.') }}</flux:heading><flux:text>{{ __('Create a draft invoice to begin reviewing purchases.') }}</flux:text></div></flux:card>
+            <flux:card><div class="flex flex-col items-center gap-2 py-10 text-center"><flux:icon name="document-text" class="size-8 text-text-muted" /><flux:heading size="sm">{{ __('No purchase invoices yet.') }}</flux:heading><x-context-help :title="__('No purchase invoices yet.')" :label="__('Open contextual help')"><p>{{ __('Create a draft invoice to begin reviewing purchases.') }}</p></x-context-help></div></flux:card>
         @endforelse
         <x-tables.pagination :paginator="$invoices" />
     </div>
@@ -850,7 +850,7 @@ new #[Title('Purchase Invoices')] class extends Component
     @if ($showFormModal)
         <flux:card class="space-y-3 p-3 sm:p-4" aria-label="{{ __('Stage 1 — Purchase invoice') }}" data-purchase-invoice-editor>
             <form wire:submit.prevent="saveInvoice" class="space-y-4" data-product-line-editor data-autofocus="true">
-                <div class="flex flex-wrap items-baseline justify-between gap-2"><flux:heading size="lg">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><flux:text class="text-xs">{{ __('Scan or search products, then save the invoice safely as a draft.') }}</flux:text></div>
+                <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><x-context-help :title="__('Stage 1 — Purchase invoice')" :label="__('Open contextual help')"><p>{{ __('Scan or search products, then save the invoice safely as a draft.') }}</p></x-context-help></div>
                 @if (filled($invoiceForm['purchase_order_id']))
                     <input type="hidden" wire:model="invoiceForm.purchase_order_id" />
                     <flux:callout icon="inbox-arrow-down" variant="info">
@@ -937,7 +937,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     @if($showDistribution && $distributionInvoice)
         <flux:card class="space-y-5" aria-label="{{ __('Stage 2 — Mandatory distribution') }}">
-            <div><flux:heading size="xl">{{ __('Stage 2 — Mandatory distribution') }}</flux:heading><flux:text>{{ __('Select destinations and allocate every purchased unit. The receiving warehouse is temporary and must finish at zero.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Stage 2 — Mandatory distribution') }}</flux:heading><x-context-help :title="__('Stage 2 — Mandatory distribution')" :label="__('Open contextual help')"><p>{{ __('Select destinations and allocate every purchased unit. The receiving warehouse is temporary and must finish at zero.') }}</p></x-context-help></div>
             <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($stores->where('id','!=',$distributionInvoice->store_id) as $store)
                     <flux:checkbox wire:model.live="selectedDestinationIds" value="{{ $store->id }}" :label="str_starts_with(app()->getLocale(), 'ar') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—')" />
@@ -959,9 +959,9 @@ new #[Title('Purchase Invoices')] class extends Component
         <flux:modal wire:model.self="showQuickProduct" class="md:max-w-5xl xl:max-w-6xl">
             <form wire:submit="createQuickProduct" class="space-y-3" novalidate>
                 <div class="flex flex-wrap items-start justify-between gap-2">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <flux:heading size="lg">{{ __('Unknown barcode — create Product Card') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('The invoice remains open. Create the complete Phase 1 product card and it will be inserted immediately.') }}</flux:text>
+                        <x-context-help :title="__('Unknown barcode — create Product Card')" :label="__('Open contextual help')"><p>{{ __('The invoice remains open. Create the complete Phase 1 product card and it will be inserted immediately.') }}</p></x-context-help>
                     </div>
                     <flux:badge color="sky" size="sm">{{ __('Draft invoice preserved') }}</flux:badge>
                 </div>
@@ -1017,8 +1017,10 @@ new #[Title('Purchase Invoices')] class extends Component
     @if ($showTransitionModal)
         <flux:modal wire:model.self="showTransitionModal" class="md:max-w-lg">
             <form wire:submit="executeTransition" class="space-y-5">
-                <flux:heading size="lg">{{ __(ucfirst($transitionType)) }} {{ __('purchase invoice') }}</flux:heading>
-                <flux:text>{{ __('A reason is required and will be written to the audit trail.') }}</flux:text>
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __(ucfirst($transitionType)) }} {{ __('purchase invoice') }}</flux:heading>
+                    <x-context-help :title="__('Purchase invoice transition')" :label="__('Open contextual help')"><p>{{ __('A reason is required and will be written to the audit trail.') }}</p></x-context-help>
+                </div>
                 <flux:textarea wire:model="transitionReason" :label="__('Reason')" rows="4" required />
                 @error('transitionReason') <flux:text class="text-red-600">{{ $message }}</flux:text> @enderror
                 <div class="flex justify-end gap-2">

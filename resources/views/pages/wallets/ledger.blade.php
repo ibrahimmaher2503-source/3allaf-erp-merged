@@ -11,8 +11,12 @@
         <div class="flex min-w-0 flex-wrap items-start justify-between gap-4" data-guide="{{ $guidePrefix }}-header">
             <div class="min-w-0">
                 <p class="text-xs font-semibold tracking-wide text-cyan-700">{{ $isCustomerWallet ? __('Customer wallet') : __('Wallet ledger') }}</p>
-                <h1 class="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-950">{{ $title }}</h1>
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $description }}</p>
+                <div class="mt-2 flex items-center gap-2">
+                    <h1 class="break-words text-2xl font-semibold tracking-tight text-slate-950">{{ $title }}</h1>
+                    <x-context-help :title="$title" :label="__('Open contextual help')">
+                        <p>{{ $description }}</p>
+                    </x-context-help>
+                </div>
                 @if ($customer !== null)
                     <p class="mt-2 text-sm text-slate-500">{{ __('Customer') }}: <span class="font-semibold text-slate-900">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en }}</span> · <span dir="ltr" class="font-mono">{{ $customer->phone_display }}</span></p>
                 @endif
@@ -74,9 +78,11 @@
         @if ($customer !== null && ! $policyError && $canSettle)
             <section class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm" data-guide="{{ $guidePrefix }}-settlement">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <h2 class="text-lg font-semibold text-emerald-950">{{ __('Post source-linked settlement') }}</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-emerald-900">{{ $wallet === 'product' ? __('Product Wallet accepts an approved retail sale source.') : __('Party Wallet accepts an approved party invoice or payment source.') }}</p>
+                        <x-context-help :title="__('Post source-linked settlement')" :label="__('Open contextual help')">
+                            <p>{{ $wallet === 'product' ? __('Product Wallet accepts an approved retail sale source.') : __('Party Wallet accepts an approved party invoice or payment source.') }}</p>
+                        </x-context-help>
                     </div>
                     <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-800">{{ __('Transaction protected') }}</span>
                 </div>
@@ -101,9 +107,11 @@
         @if ($customer !== null && ! $policyError && $canAdjust)
             @php($superAdminDirectAction = auth()->user()?->canBypassApproval())
             <section class="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm" data-guide="{{ $guidePrefix }}-adjustment">
-                <div>
+                <div class="flex items-center gap-2">
                     <h2 class="text-lg font-semibold text-violet-950">{{ $superAdminDirectAction ? __('Apply sensitive adjustment') : __('Request sensitive adjustment') }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-violet-900">{{ $superAdminDirectAction ? __('Super Admin adjustments are applied immediately and recorded in the approval history.') : __('A correction requires a separate approval before it changes the balance.') }}</p>
+                    <x-context-help :title="$superAdminDirectAction ? __('Apply sensitive adjustment') : __('Request sensitive adjustment')" :label="__('Open contextual help')">
+                        <p>{{ $superAdminDirectAction ? __('Super Admin adjustments are applied immediately and recorded in the approval history.') : __('A correction requires a separate approval before it changes the balance.') }}</p>
+                    </x-context-help>
                 </div>
                 <form method="POST" action="{{ $adjustmentRoute }}" class="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @csrf
@@ -126,7 +134,7 @@
         @if ($pendingAdjustments->isNotEmpty())
             <section class="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm" data-guide="{{ $guidePrefix }}-approvals">
                 <div class="flex flex-wrap items-end justify-between gap-3">
-                    <div><h2 class="text-lg font-semibold text-slate-950">{{ __('Pending adjustments') }}</h2><p class="mt-1 text-sm text-slate-600">{{ __('Approval remains separate from the requester and never edits a ledger row.') }}</p></div>
+                    <div class="flex items-center gap-2"><h2 class="text-lg font-semibold text-slate-950">{{ __('Pending adjustments') }}</h2><x-context-help :title="__('Pending adjustments')" :label="__('Open contextual help')"><p>{{ __('Approval remains separate from the requester and never edits a ledger row.') }}</p></x-context-help></div>
                 </div>
                 <x-tables.table-shell class="mt-5" label="{{ __('Pending wallet adjustments') }}">
                     <table class="data-table min-w-[46rem] text-sm">
@@ -144,7 +152,7 @@
 
         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" data-guide="{{ $guidePrefix }}-ledger">
             <div class="flex min-w-0 flex-wrap items-end justify-between gap-3">
-                <div><h2 class="text-lg font-semibold text-slate-950">{{ __('Wallet history') }}</h2><p class="mt-1 text-sm text-slate-600">{{ __('Review wallet entries, sources, amounts, and balances.') }}</p></div>
+                <div class="flex items-center gap-2"><h2 class="text-lg font-semibold text-slate-950">{{ __('Wallet history') }}</h2><x-context-help :title="__('Wallet history')" :label="__('Open contextual help')"><p>{{ __('Review wallet entries, sources, amounts, and balances.') }}</p></x-context-help></div>
                 @if ($exportRoute)<a href="{{ $exportRoute }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-300">{{ __('Export visible statement') }}</a>@endif
             </div>
             @if ($entries->isEmpty())

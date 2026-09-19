@@ -670,7 +670,7 @@ new #[Title('Product Masters')] class extends Component
                     @endforeach
                 </flux:select>
             @endif
-            <flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product code')" :description="__('Kept separately from the internal item code and barcode.')" dir="ltr" />
+            <div><flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product code')" dir="ltr" /><x-context-help :title="__('Supplier product code')" :label="__('Open contextual help')"><p>{{ __('Kept separately from the internal item code and barcode.') }}</p></x-context-help></div>
             </div>
             <flux:select wire:model="productForm.status" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحالة' : __('Status')" required>
                 <flux:select.option value="active">{{ str_starts_with(app()->getLocale(), 'ar') ? 'نشط' : __('Active') }}</flux:select.option>

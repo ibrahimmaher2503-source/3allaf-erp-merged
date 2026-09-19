@@ -16,7 +16,7 @@
                 <flux:input name="to" type="date" :label="__('To')" :value="$to->toDateString()" required />
                 <flux:button type="submit" variant="primary" icon="calendar-days">{{ __('Show calendar') }}</flux:button>
             </form>
-            <flux:text class="mt-3 text-sm">{{ __('Choose up to 31 days. Only overlapping reservations in your authorized branch or Party-store scope are shown.') }}</flux:text>
+            <div class="mt-3"><x-context-help :title="__('Party calendar')" :label="__('Open contextual help')"><p>{{ __('Choose up to 31 days. Only overlapping reservations in your authorized branch or Party-store scope are shown.') }}</p></x-context-help></div>
         </flux:card>
 
         @can('party_bookings_invoices.view')

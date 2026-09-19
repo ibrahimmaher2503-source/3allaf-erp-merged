@@ -1,7 +1,12 @@
 <x-layouts::app :title="__('Sale :number', ['number' => $sale->document_number ?: $sale->id])">
     <div class="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
-            <div><flux:heading size="xl">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</flux:heading><flux:text class="mt-1">{{ __('Retail sale source, financial snapshots, payments, and stock-linked lines.') }}</flux:text></div>
+            <div class="flex items-center gap-2">
+                <flux:heading size="xl">{{ $sale->document_number ?: __('Sale #:id', ['id' => $sale->id]) }}</flux:heading>
+                <x-context-help :title="$sale->document_number ?: __('Sale #:id', ['id' => $sale->id])" :label="__('Open contextual help')">
+                    <p>{{ __('Retail sale source, financial snapshots, payments, and stock-linked lines.') }}</p>
+                </x-context-help>
+            </div>
             <div class="flex flex-wrap gap-2">
                 @if ($sale->status === 'approved')
                     @can('pos_sales.print')

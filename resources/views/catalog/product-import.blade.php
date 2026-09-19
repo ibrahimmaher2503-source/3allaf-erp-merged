@@ -137,7 +137,7 @@ new #[Title('Product Import')] class extends Component {
         @endcan
     </x-slot:actions>
 
-    <flux:callout variant="info" icon="information-circle" title="{{ __('Two ways to add products') }}">
+    <x-context-help :title="__('Two ways to add products')" :label="__('Open contextual help')">
         <div class="space-y-3">
             <p>{{ __('Manual entry is best for one product. Excel import is for a reviewed batch: upload, validate, review errors, then approve. Nothing is written to products during staging.') }}</p>
             <div class="flex flex-wrap gap-2">
@@ -147,7 +147,7 @@ new #[Title('Product Import')] class extends Component {
                 <flux:button href="{{ route('catalog.products.import.staged-template.xlsx') }}" variant="subtle" icon="arrow-down-tray">{{ __('Download spreadsheet template') }}</flux:button>
             </div>
         </div>
-    </flux:callout>
+    </x-context-help>
 
     @if (! Category::query()->active()->exists())
         <flux:callout variant="warning" icon="exclamation-triangle" title="{{ __('Import needs an active category') }}">

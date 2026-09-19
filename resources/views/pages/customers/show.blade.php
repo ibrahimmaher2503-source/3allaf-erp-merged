@@ -48,18 +48,18 @@
                         <form method="POST" action="{{ route('customers.update', $customer) }}" class="mt-4 grid gap-4 sm:grid-cols-2" x-data="{ governorate: @js((string) old('governorate_id',$customer->governorate_id)), city: @js((string) old('city_id',$customer->city_id)), cityCounts: @js($cities->countBy('governorate_id')->mapWithKeys(fn($count,$id)=>[(string)$id=>$count])) }">
                             @csrf
                             @method('PUT')
-                            <flux:input name="phone" :label="__('Primary phone')" :value="old('phone', $customer->phone_display)" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" :description="__('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.')" dir="ltr" />
+                            <div><flux:input name="phone" :label="__('Primary phone')" :value="old('phone', $customer->phone_display)" required autocomplete="tel" :placeholder="__('e.g. 01012345678 or +20 1012345678')" dir="ltr" /><x-context-help :title="__('Primary phone')" :label="__('Open contextual help')"><p>{{ __('Egyptian numbers accept local, +20, 0020, spaces, and Arabic numerals.') }}</p></x-context-help></div>
                             <flux:input name="secondary_phone" :label="__('Secondary phone')" :value="old('secondary_phone', $customer->secondary_phone)" autocomplete="tel" :placeholder="__('Optional Egyptian phone number')" dir="ltr" />
                             <flux:input name="first_name_ar" :label="__('Arabic first name')" :value="old('first_name_ar', $customer->first_name_ar ?: \Illuminate\Support\Str::of($customer->name_ar)->before(' '))" required dir="rtl" />
                             <flux:input name="last_name_ar" :label="__('Arabic last name')" :value="old('last_name_ar', $customer->last_name_ar ?: \Illuminate\Support\Str::of($customer->name_ar)->after(' '))" required dir="rtl" />
                             <flux:input name="first_name_en" :label="__('English first name (optional)')" :value="old('first_name_en', $customer->first_name_en)" dir="ltr" />
                             <flux:input name="last_name_en" :label="__('English last name (optional)')" :value="old('last_name_en', $customer->last_name_en)" dir="ltr" />
-                            <flux:select name="customer_group_id" :label="__('Customer group')" :description="__('Optional hierarchical group for customer search and reporting.')">
+                            <div><flux:select name="customer_group_id" :label="__('Customer group')">
                                 <flux:select.option value="">{{ __('No group assigned') }}</flux:select.option>
                                 @foreach ($groupOptions as $group)
                                     <flux:select.option value="{{ $group->id }}" :selected="old('customer_group_id', $customer->customer_group_id) == $group->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->hierarchy_path : collect(explode(' / ', $group->hierarchy_path))->map(fn($name) => $groupOptions->first(fn($candidate) => ($candidate->name_ar ?: $candidate->name_en) === $name)?->name_en ?: $name)->implode(' / ') }}</flux:select.option>
                                 @endforeach
-                            </flux:select>
+                            </flux:select><x-context-help :title="__('Customer group')" :label="__('Open contextual help')"><p>{{ __('Optional hierarchical group for customer search and reporting.') }}</p></x-context-help></div>
                             @can('customers.sensitive')
                                 <flux:input name="email" :label="__('Email')" :value="old('email', $customer->email)" type="email" autocomplete="email" />
                                 <flux:select name="governorate_id" x-model="governorate" x-on:change="city=''" :label="__('Governorate')"><flux:select.option value="">{{ __('Legacy — not recorded') }}</flux:select.option>@foreach($governorates as $g)<flux:select.option value="{{ $g->id }}">{{ str_starts_with(app()->getLocale(), 'ar')?$g->name_ar:$g->name_en }}</flux:select.option>@endforeach</flux:select>
@@ -124,8 +124,8 @@
                             <form method="POST" action="{{ route('customers.consents.store', $customer) }}" class="mt-5 grid gap-3 sm:grid-cols-3">
                                 @csrf
                                 <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                                <flux:input name="purpose" :label="__('Configured consent purpose')" :description="__('Use a purpose listed in customer policy settings.')" required />
-                                <flux:select name="status" :label="__('Consent response')" :description="__('Granted, withdrawn, or denied.')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select>
+                                <div><flux:input name="purpose" :label="__('Configured consent purpose')" required /><x-context-help :title="__('Configured consent purpose')" :label="__('Open contextual help')"><p>{{ __('Use a purpose listed in customer policy settings.') }}</p></x-context-help></div>
+                                <div><flux:select name="status" :label="__('Consent response')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select><x-context-help :title="__('Consent response')" :label="__('Open contextual help')"><p>{{ __('Granted, withdrawn, or denied.') }}</p></x-context-help></div>
                                 <div class="flex items-end"><flux:button type="submit" variant="subtle">{{ __('Record consent') }}</flux:button></div>
                             </form>
                         </div>@endif

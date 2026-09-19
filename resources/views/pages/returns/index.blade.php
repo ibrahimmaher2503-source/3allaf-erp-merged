@@ -13,8 +13,12 @@
 
         @can('returns.create')
             <flux:card class="mt-6">
-                <flux:heading size="lg">{{ __('New return or exchange') }}</flux:heading>
-                <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ __('For an exchange, add every replacement line below. Any difference requires an active payment method when the approved return is completed.') }}</p>
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('New return or exchange') }}</flux:heading>
+                    <x-context-help :title="__('New return or exchange')" :label="__('Open contextual help')">
+                        <p>{{ __('For an exchange, add every replacement line below. Any difference requires an active payment method when the approved return is completed.') }}</p>
+                    </x-context-help>
+                </div>
 
                 <form method="POST" action="{{ route('returns.store') }}" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" x-data="{ settlement: @js(old('settlement_type', 'cash_refund')) }" data-product-line-editor data-next-index="1">
                     @csrf

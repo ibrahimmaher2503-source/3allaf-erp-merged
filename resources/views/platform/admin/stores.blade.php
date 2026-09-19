@@ -365,7 +365,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
     class="space-y-6"
     data-guide="stores-header"
 >
-    <flux:callout variant="info" icon="information-circle"><strong>{{ __('Sales Outlet') }}:</strong> {{ __('Sales Outlet help') }}</flux:callout>
+    <x-context-help :title="__('Sales Outlet')" :label="__('Open contextual help')"><p>{{ __('Sales Outlet help') }}</p></x-context-help>
     <x-slot:actions>
         <x-tables.resource-toolbar>
             @can('branches_stores.create')
@@ -420,9 +420,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 <flux:icon icon="building-storefront" class="size-12 text-zinc-400" />
             </div>
             <flux:heading level="3" size="lg">{{ __('No Warehouses Configured') }}</flux:heading>
-            <flux:text class="text-zinc-500 max-w-md mx-auto">
-                {{ __('Add a warehouse to make it available for inventory or selling-store operations.') }}
-            </flux:text>
+            <x-context-help :title="__('No Warehouses Configured')" :label="__('Open contextual help')"><p>{{ __('Add a warehouse to make it available for inventory or selling-store operations.') }}</p></x-context-help>
             <div class="pt-2">
                 @can('branches_stores.create')
                     <flux:button icon="plus" variant="primary" size="sm" wire:click="openCreateStoreModal">{{ __('Add warehouse') }}</flux:button>
@@ -631,9 +629,9 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     <!-- Create / Edit Store Modal -->
     <flux:modal wire:model="showStoreModal" class="md:w-160 space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">{{ $editingStoreId ? __('Edit warehouse or point of sale') : __('Create warehouse or point of sale') }}</flux:heading>
-            <flux:subheading>{{ __('Define a location code, location type, bilingual names, branch context, and negative stock policy.') }}</flux:subheading>
+            <x-context-help :title="$editingStoreId ? __('Edit warehouse or point of sale') : __('Create warehouse or point of sale')" :label="__('Open contextual help')"><p>{{ __('Define a location code, location type, bilingual names, branch context, and negative stock policy.') }}</p></x-context-help>
         </div>
 
         <form wire:submit="saveStore" novalidate class="space-y-4">
@@ -665,9 +663,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                         <flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option>
                     </flux:select>
                 @else
-                    <flux:callout icon="information-circle" variant="info">
-                        {{ __('Use Deactivate for a reversible status change, or Request archive for the approval-backed Inactive / Archived transition.') }}
-                    </flux:callout>
+                    <x-context-help :title="__('Status')" :label="__('Open contextual help')"><p>{{ __('Use Deactivate for a reversible status change, or Request archive for the approval-backed Inactive / Archived transition.') }}</p></x-context-help>
                 @endif
             </div>
 
@@ -691,7 +687,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
                 @endforeach
             </flux:select>
             @if ($storeForm['type'] === 'selling')
-                <p class="text-xs text-zinc-500">{{ __('A sales outlet must belong to an active branch. Its own linked cash drawer identifies the exact POS stock source.') }}</p>
+                <x-context-help :title="__('Sales Outlet')" :label="__('Open contextual help')"><p>{{ __('A sales outlet must belong to an active branch. Its own linked cash drawer identifies the exact POS stock source.') }}</p></x-context-help>
                 <flux:select wire:model="storeForm.price_list_id" :label="__('Price list')"><flux:select.option value="">{{ __('Inherit branch default or List 0') }}</flux:select.option>@foreach($activePriceLists as $priceList)<flux:select.option :value="$priceList->id">{{ $priceList->code }} · {{ str_starts_with(app()->getLocale(), 'ar')?$priceList->name_ar:$priceList->name_en }}</flux:select.option>@endforeach</flux:select>
             @endif
 
@@ -720,9 +716,9 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
 
     <!-- Archive approval confirmation -->
     <flux:modal wire:model="showArchiveModal" class="md:w-140 space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">{{ __('Request archive approval') }}</flux:heading>
-            <flux:subheading>{{ __('Review the location context before submitting this approval-backed status change.') }}</flux:subheading>
+            <x-context-help :title="__('Request archive approval')" :label="__('Open contextual help')"><p>{{ __('Review the location context before submitting this approval-backed status change.') }}</p></x-context-help>
         </div>
 
         <dl class="grid gap-3 rounded-xl border border-border-subtle bg-zinc-50 p-4 text-sm dark:bg-zinc-900 sm:grid-cols-2">
@@ -760,7 +756,7 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         </div>
 
         <form wire:submit="saveStoreMapping" class="space-y-4">
-            <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('This changes the primary point of sale for the branch. The previous choice stays in the history.') }}</p>
+            <x-context-help :title="__('Set as primary point of sale')" :label="__('Open contextual help')"><p>{{ __('This changes the primary point of sale for the branch. The previous choice stays in the history.') }}</p></x-context-help>
 
             <flux:textarea
                 wire:model="mappingApprovalNotes"

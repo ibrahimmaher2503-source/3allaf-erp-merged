@@ -239,7 +239,7 @@ new #[Title('Authorization Baseline')] class extends Component
 
     <flux:modal wire:model="authorizationModalOpen" class="max-w-2xl">
         <form wire:submit="saveAuthorization" class="space-y-5">
-            <div><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('Assign only approved roles and approved branch or store scope.') }}</flux:text></div>
+            <div class="flex items-center gap-2"><flux:heading size="lg">{{ $editingUserId === null ? __('Create user') : __('User authorization') }}</flux:heading><x-context-help :title="$editingUserId === null ? __('Create user') : __('User authorization')" :label="__('Open contextual help')"><p>{{ __('Assign only approved roles and approved branch or store scope.') }}</p></x-context-help></div>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:input wire:model="userForm.name" :label="__('Name')" required />

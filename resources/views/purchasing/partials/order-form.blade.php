@@ -1,7 +1,7 @@
 @if (! $fullPage)
-    <div>
+    <div class="flex items-center gap-2">
         <h2 class="text-lg font-bold text-zinc-900 dark:text-white">{{ __('Edit Draft Purchase Order') }}</h2>
-        <p class="mt-1 text-xs text-zinc-500">{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p>
+        <x-context-help :title="__('Edit Draft Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p></x-context-help>
     </div>
 @endif
 
@@ -34,15 +34,19 @@
     </div>
     @if(filled($orderForm['branch_id']))
         @php($creatingBranch = $branches->firstWhere('id', (int) $orderForm['branch_id']))
-        <p class="text-xs text-text-muted">
+        <div class="flex items-center gap-2 text-xs text-text-muted">
+            <p>
             @if($editingOrderId && filled($editingOrderNumber))
                 {{ __('Saved reference') }}: <span class="font-mono" dir="ltr">{{ $editingOrderNumber }}</span>
             @else
                 {{ __('Unallocated preview') }}: <span class="font-mono" dir="ltr">{{ $creatingBranch?->code }}-PO-000000</span>
-                <span class="ms-1">{{ __('The final sequence is allocated only when the draft is saved.') }}</span>
             @endif
             · {{ str_starts_with(app()->getLocale(), 'ar') ? $creatingBranch?->name_ar : $creatingBranch?->name_en }}
-        </p>
+            </p>
+            @unless($editingOrderId && filled($editingOrderNumber))
+                <x-context-help :title="__('Unallocated preview')" :label="__('Open contextual help')"><p>{{ __('The final sequence is allocated only when the draft is saved.') }}</p></x-context-help>
+            @endunless
+        </div>
     @endif
 
     <div class="space-y-2 border-t border-border pt-3">

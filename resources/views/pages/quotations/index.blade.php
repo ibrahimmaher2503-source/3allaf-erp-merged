@@ -6,8 +6,7 @@
         <flux:callout variant="warning" icon="exclamation-triangle">{{ __('NON-POSTING: a quotation is an offer only. Phase 1 has no one-click conversion and it never changes inventory or financial records.') }}</flux:callout>
         @can('quotations.create')
             <flux:card>
-                <flux:heading size="lg">{{ __('New quotation') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('Retail quotations use catalog products. Party quotations use service or rental-asset lines so retail and Party activity stay separate.') }}</flux:text>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('New quotation') }}</flux:heading><x-context-help :title="__('New quotation')" :label="__('Open contextual help')"><p>{{ __('Retail quotations use catalog products. Party quotations use service or rental-asset lines so retail and Party activity stay separate.') }}</p></x-context-help></div>
                 <form method="POST" action="{{ route('quotations.store') }}" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-product-line-editor data-autofocus="true" data-next-index="1">
                     @csrf<input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                     <flux:select name="activity_type" :label="__('Activity type')" required><flux:select.option value="retail">{{ __('Retail') }}</flux:select.option><flux:select.option value="party">{{ __('Party') }}</flux:select.option></flux:select>

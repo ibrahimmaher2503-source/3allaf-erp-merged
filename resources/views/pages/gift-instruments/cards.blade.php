@@ -6,7 +6,7 @@
         @if(isset($errors) && $errors->any())
             <flux:callout variant="danger">{{ $errors->first() }}</flux:callout>
         @endif
-        <flux:callout variant="info" icon="lock-closed">{{ __('Every issue, redemption, void, and expiry writes an immutable ledger entry. Balance is checked under a database row lock.') }}</flux:callout>
+        <x-context-help :title="__('Gift Cards')" :label="__('Open contextual help')"><p>{{ __('Every issue, redemption, void, and expiry writes an immutable ledger entry. Balance is checked under a database row lock.') }}</p></x-context-help>
 
         @can('gift_cards.issue')
             <flux:card class="mt-6">

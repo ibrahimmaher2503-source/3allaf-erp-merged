@@ -179,7 +179,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     class="space-y-6"
     data-guide="drawers-header"
 >
-    <flux:callout variant="info" icon="information-circle"><strong>{{ __('Cashier Till') }}:</strong> {{ __('Cashier Till help') }} <span class="ms-2 text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</span></flux:callout>
+    <x-context-help :title="__('Cashier Till')" :label="__('Open contextual help')"><p>{{ __('Cashier Till help') }}</p><p>{{ __('Branch → Sales Outlet → Cashier Till') }} → {{ __('Shift') }}</p></x-context-help>
     <x-slot:actions>
         <x-tables.resource-toolbar>
             @can('drawers_payments_tax_numbering_printers.create')
@@ -377,13 +377,11 @@ new #[Title('Cash Drawer Masters')] class extends Component
     <!-- Modal: Create / Edit Cash Drawer -->
     @if ($showDrawerModal)
     <flux:modal wire:model.self="showDrawerModal" class="max-w-xl space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <flux:heading size="lg">
                 {{ $editingDrawerId ? __('Edit Cash Drawer') : __('Add Cash Drawer') }}
             </flux:heading>
-            <flux:subheading>
-                {{ __('Configure the drawer identifier and its required POS selling location / stock source for shifts.') }}
-            </flux:subheading>
+            <x-context-help :title="$editingDrawerId ? __('Edit Cash Drawer') : __('Add Cash Drawer')" :label="__('Open contextual help')"><p>{{ __('Configure the drawer identifier and its required POS selling location / stock source for shifts.') }}</p></x-context-help>
         </div>
 
         <form wire:submit="saveDrawer" novalidate class="space-y-4">
@@ -453,7 +451,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                         {{ __('No active POS selling location / stock source is assigned to this branch. Configure the branch POS selling-location assignment first, then return here.') }}
                     </flux:callout>
                 @else
-                    <flux:text class="md:col-span-2 -mt-2 text-xs text-zinc-500">{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</flux:text>
+                    <div class="md:col-span-2 -mt-2"><x-context-help :title="__('POS selling location / stock source')" :label="__('Open contextual help')"><p>{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</p></x-context-help></div>
                 @endif
 
                 <flux:select

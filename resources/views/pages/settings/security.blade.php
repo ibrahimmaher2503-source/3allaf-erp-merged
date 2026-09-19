@@ -292,8 +292,7 @@ new #[Title('Security settings')] class extends Component {
                                 <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
                                     <flux:icon.key class="size-7 text-zinc-400 dark:text-zinc-500" />
                                 </div>
-                                <p class="font-medium">{{ __('No passkeys yet') }}</p>
-                                <flux:text class="mt-1">{{ __('Add a passkey to sign in without a password') }}</flux:text>
+                                <div class="flex items-center justify-center gap-2"><p class="font-medium">{{ __('No passkeys yet') }}</p><x-context-help :title="__('No passkeys yet')" :label="__('Open contextual help')"><p>{{ __('Add a passkey to sign in without a password') }}</p></x-context-help></div>
                             </div>
                         @endforelse
                     </div>

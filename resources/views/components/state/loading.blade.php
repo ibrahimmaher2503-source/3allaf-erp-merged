@@ -22,9 +22,9 @@
             </flux:heading>
 
             @if ($description)
-                <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">
-                    {{ $description }}
-                </flux:text>
+                <x-context-help :title="$title ?? __('Loading')" :label="__('Open contextual help')">
+                    <p>{{ $description }}</p>
+                </x-context-help>
             @endif
         </div>
         <span class="sr-only">{{ __('Loading...') }}</span>

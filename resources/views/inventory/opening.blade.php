@@ -8,7 +8,7 @@
     @if($documentManualEditable)
         <livewire:inventory::opening-workflow :document-id="$document?->id" />
     @elseif($document?->status === 'draft')
-        <flux:callout variant="info" icon="document-check">{{ app()->isLocale('ar-EG') ? 'المسودة دي كبيرة أو موزعة على عدة مواقع؛ راجع الصفوف المرقمة ثم اعتمدها دون تحويلها إلى شبكة الإدخال اليدوي المحدودة.' : ($ar ? 'هذه المسودة كبيرة أو موزعة على عدة مواقع؛ راجع الصفوف المرقمة ثم اعتمدها دون تحويلها إلى شبكة الإدخال اليدوي المحدودة.' : 'This draft is large or spans multiple locations. Review its paginated lines, then approve it without converting it into the bounded manual-entry grid.') }}</flux:callout>
+        <x-context-help :title="$ar ? 'مراجعة مسودة الرصيد الافتتاحي' : __('Opening inventory draft review')" :label="__('Open contextual help')"><p>{{ app()->isLocale('ar-EG') ? 'المسودة دي كبيرة أو موزعة على عدة مواقع؛ راجع الصفوف المرقمة ثم اعتمدها دون تحويلها إلى شبكة الإدخال اليدوي المحدودة.' : ($ar ? 'هذه المسودة كبيرة أو موزعة على عدة مواقع؛ راجع الصفوف المرقمة ثم اعتمدها دون تحويلها إلى شبكة الإدخال اليدوي المحدودة.' : 'This draft is large or spans multiple locations. Review its paginated lines, then approve it without converting it into the bounded manual-entry grid.') }}</p></x-context-help>
     @endif
     @if($document)
         <flux:card class="space-y-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><flux:heading>{{ $document->document_number }}</flux:heading><p class="text-sm text-text-muted">{{ __($document->status) }} · {{ $document->document_date?->format('Y-m-d') ?? $document->created_at->format('Y-m-d') }}</p></div><strong>{{ number_format((float) $documentTotal, 2) }} EGP</strong></div>

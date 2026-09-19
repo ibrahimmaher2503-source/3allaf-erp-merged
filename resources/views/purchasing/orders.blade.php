@@ -709,8 +709,7 @@ new #[Title('Purchase Orders')] class extends Component
                             <td colspan="7" class="px-4 py-12 text-center" data-guide="po-empty">
                                 <div class="max-w-xs mx-auto space-y-3">
                                     <flux:icon name="document-text" class="size-10 mx-auto text-zinc-400" />
-                                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No purchase orders found') }}</h3>
-                                    <p class="text-xs text-zinc-500">{{ __('Try adjusting search query or filters, or create a new draft purchase order.') }}</p>
+                                    <div class="flex items-center justify-center gap-2"><h3 class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('No purchase orders found') }}</h3><x-context-help :title="__('No purchase orders found')" :label="__('Open contextual help')"><p>{{ __('Try adjusting search query or filters, or create a new draft purchase order.') }}</p></x-context-help></div>
                                 </div>
                             </td>
                         </tr>
@@ -725,11 +724,11 @@ new #[Title('Purchase Orders')] class extends Component
     <!-- Create / Edit Form Modal -->
     @if(false) {{-- Retained only as inert rollback-compatible markup; create/edit routes are full-page. --}}
     <flux:modal wire:model="showFormModal" class="md:max-w-4xl space-y-6">
-        <div>
+        <div class="flex items-center gap-2">
             <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
                 {{ $editingOrderId ? __('Edit Draft Purchase Order') : __('New Purchase Order') }}
             </h2>
-            <p class="text-xs text-zinc-500 mt-1">{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p>
+            <x-context-help :title="$editingOrderId ? __('Edit Draft Purchase Order') : __('New Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Enter supplier, destination store, order dates, and item lines.') }}</p></x-context-help>
         </div>
 
         <form wire:submit.prevent="saveOrder" class="space-y-6" data-product-line-editor data-autofocus="true">
@@ -979,9 +978,9 @@ new #[Title('Purchase Orders')] class extends Component
 
     <!-- Cancel Confirmation Modal -->
     <flux:modal wire:model="showCancelModal" class="md:max-w-md space-y-4">
-        <div>
+        <div class="flex items-center gap-2">
             <h2 class="text-lg font-bold text-zinc-900 dark:text-white">{{ __('Cancel Purchase Order') }}</h2>
-            <p class="text-xs text-zinc-500 mt-1">{{ __('Please provide a reason for cancelling this purchase order.') }}</p>
+            <x-context-help :title="__('Cancel Purchase Order')" :label="__('Open contextual help')"><p>{{ __('Please provide a reason for cancelling this purchase order.') }}</p></x-context-help>
         </div>
 
         <form wire:submit.prevent="cancelOrder" class="space-y-4">
@@ -995,7 +994,7 @@ new #[Title('Purchase Orders')] class extends Component
     </flux:modal>
 
     <flux:modal wire:model="showReturnModal" class="md:max-w-md space-y-4">
-        <div><flux:heading size="lg">{{ __('Return purchase order to draft') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ __('The requester can edit and resubmit after the review reason is recorded.') }}</flux:text></div>
+        <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Return purchase order to draft') }}</flux:heading><x-context-help :title="__('Return purchase order to draft')" :label="__('Open contextual help')"><p>{{ __('The requester can edit and resubmit after the review reason is recorded.') }}</p></x-context-help></div>
         <form wire:submit="returnOrderToDraft" class="space-y-4"><flux:textarea wire:model="returnReason" :label="__('Review / return reason')" required rows="4" />@error('returnReason')<p class="text-sm text-danger">{{ $message }}</p>@enderror<div class="flex justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showReturnModal', false)">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="returnOrderToDraft">{{ __('Return to draft') }}</flux:button></div></form>
     </flux:modal>
 </x-app.page>

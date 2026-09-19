@@ -62,7 +62,7 @@ new #[Title('Backup & Restore')] class extends Component
 
     <div class="grid gap-4 md:grid-cols-2">
         <flux:card class="space-y-2"><flux:heading size="sm">{{ __('Integrity verification') }}</flux:heading><flux:badge color="{{ $verifyBackup ? 'green' : 'amber' }}">{{ $verifyBackup ? __('Configured') : __('Not configured') }}</flux:badge></flux:card>
-        <flux:card class="space-y-2"><flux:heading size="sm">{{ __('Recovery control') }}</flux:heading><flux:text class="text-sm text-text-muted">{{ __('Restores are performed only into a separately identified disposable database, then verified by application boot, integrity counts, protected attachment checks, and audit history.') }}</flux:text></flux:card>
+        <flux:card class="space-y-2"><div class="flex items-center gap-2"><flux:heading size="sm">{{ __('Recovery control') }}</flux:heading><x-context-help :title="__('Recovery control')" :label="__('Open contextual help')"><p>{{ __('Restores are performed only into a separately identified disposable database, then verified by application boot, integrity counts, protected attachment checks, and audit history.') }}</p></x-context-help></div></flux:card>
     </div>
 
     <flux:card class="space-y-4">
@@ -76,7 +76,7 @@ new #[Title('Backup & Restore')] class extends Component
         </flux:table.rows></flux:table>
     </flux:card>
 
-    <flux:card class="space-y-3"><flux:heading size="lg">{{ __('Restore workflow') }}</flux:heading><ol class="list-decimal space-y-2 ps-5 text-sm text-text-muted"><li>{{ __('Select an encrypted, integrity-verified backup.') }}</li><li>{{ __('Restore it only to the named isolated MariaDB verification database.') }}</li><li>{{ __('Boot the application against that database and reconcile configuration, audit, and protected attachments.') }}</li><li>{{ __('Record the exact commands, timestamps, counts, and outcome in the recovery evidence.') }}</li></ol></flux:card>
+    <flux:card class="space-y-3"><div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Restore workflow') }}</flux:heading><x-context-help :title="__('Restore workflow')" :label="__('Open contextual help')"><ol class="list-decimal space-y-2 ps-5"><li>{{ __('Select an encrypted, integrity-verified backup.') }}</li><li>{{ __('Restore it only to the named isolated MariaDB verification database.') }}</li><li>{{ __('Boot the application against that database and reconcile configuration, audit, and protected attachments.') }}</li><li>{{ __('Record the exact commands, timestamps, counts, and outcome in the recovery evidence.') }}</li></ol></x-context-help></div></flux:card>
 
     <flux:card class="space-y-4"><flux:heading size="lg">{{ __('Recovery audit history') }}</flux:heading><flux:table aria-label="{{ __('Recovery audit history') }}"><flux:table.columns><flux:table.column>{{ __('When') }}</flux:table.column><flux:table.column>{{ __('Event') }}</flux:table.column><flux:table.column>{{ __('Actor') }}</flux:table.column></flux:table.columns><flux:table.rows>@forelse($history as $entry)<flux:table.row><flux:table.cell>{{ $entry->created_at }}</flux:table.cell><flux:table.cell>{{ $entry->event }}</flux:table.cell><flux:table.cell>{{ $entry->actor_name ?? __('System') }}</flux:table.cell></flux:table.row>@empty<flux:table.row><flux:table.cell colspan="3"><x-state.empty :title="__('No recovery activity recorded')" :description="__('No backup creation or restore verification has been claimed.')" /></flux:table.cell></flux:table.row>@endforelse</flux:table.rows></flux:table></flux:card>
 </x-app.page>

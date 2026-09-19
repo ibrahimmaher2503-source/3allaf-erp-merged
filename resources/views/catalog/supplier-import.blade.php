@@ -66,7 +66,7 @@ new #[Title('Supplier Import')] class extends Component
 ?>
 <x-app.page :title="__('Supplier Import')" :description="__('Upload, validate, preview, and independently approve supplier master data.')" max-width="7xl" class="space-y-6">
     <x-slot:actions><flux:button href="{{ route('catalog.suppliers') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to suppliers') }}</flux:button><flux:button href="{{ route('catalog.suppliers.import.template') }}">{{ __('Download template') }}</flux:button></x-slot:actions>
-    <flux:callout variant="info" title="{{ __('Safe staged import') }}">{{ __('Valid rows may be approved while rejected rows remain downloadable. Existing suppliers are never overwritten in Create Only mode.') }}</flux:callout>
+    <x-context-help :title="__('Safe staged import')" :label="__('Open contextual help')"><p>{{ __('Valid rows may be approved while rejected rows remain downloadable. Existing suppliers are never overwritten in Create Only mode.') }}</p></x-context-help>
     <flux:card class="space-y-4">
         <flux:heading size="lg">{{ __('Upload and stage') }}</flux:heading>
         <form wire:submit="stage" class="grid gap-4 md:grid-cols-3">

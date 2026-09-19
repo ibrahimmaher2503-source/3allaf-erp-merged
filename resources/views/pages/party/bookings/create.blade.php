@@ -10,8 +10,7 @@
             @csrf
             <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
             <section class="rounded-2xl border border-border bg-surface p-5 shadow-card">
-                <flux:heading size="lg">{{ __('Party identity and scope') }}</flux:heading>
-                <flux:text class="mt-1 text-sm">{{ __('This booking is scoped to a Party store. Retail/POS lines are rejected server-side.') }}</flux:text>
+                <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Party identity and scope') }}</flux:heading><x-context-help :title="__('Party identity and scope')" :label="__('Open contextual help')"><p>{{ __('This booking is scoped to a Party store. Retail/POS lines are rejected server-side.') }}</p></x-context-help></div>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <flux:select name="store_id" :label="__('Party store')" required><flux:select.option value="">{{ __('Choose Party store') }}</flux:select.option>@foreach($stores as $store)<flux:select.option value="{{ $store->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</flux:select.option>@endforeach</flux:select>
                     <flux:select name="customer_id" :label="__('Customer')" required><flux:select.option value="">{{ __('Choose customer') }}</flux:select.option>@foreach($customers as $customer)<flux:select.option value="{{ $customer->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en }} · {{ $customer->phone_display }}</flux:select.option>@endforeach</flux:select>
@@ -29,7 +28,7 @@
 
             <section class="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-5 shadow-card dark:border-cyan-900 dark:bg-cyan-950/20">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div><flux:heading size="lg">{{ __('Working invoice lines') }}</flux:heading><flux:text class="mt-1 text-sm">{{ __('Services, consumables, rental assets, and other Party charges only. Prices are recalculated on the server.') }}</flux:text></div>
+                    <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Working invoice lines') }}</flux:heading><x-context-help :title="__('Working invoice lines')" :label="__('Open contextual help')"><p>{{ __('Services, consumables, rental assets, and other Party charges only. Prices are recalculated on the server.') }}</p></x-context-help></div>
                     <flux:badge color="cyan">{{ __('Party only') }}</flux:badge>
                 </div>
                 <div class="mt-4 space-y-3">
@@ -49,7 +48,7 @@
                 </div>
             </section>
 
-            <div class="flex flex-wrap items-center justify-between gap-3"><flux:text class="max-w-2xl text-sm text-text-muted">{{ __('Saving creates a draft booking and editable working invoice. Confirmation rechecks schedule conflicts before operations can begin.') }}</flux:text><flux:button type="submit" variant="primary">{{ __('Create booking') }}</flux:button></div>
+            <div class="flex flex-wrap items-center justify-between gap-3"><x-context-help :title="__('Create booking')" :label="__('Open contextual help')"><p>{{ __('Saving creates a draft booking and editable working invoice. Confirmation rechecks schedule conflicts before operations can begin.') }}</p></x-context-help><flux:button type="submit" variant="primary">{{ __('Create booking') }}</flux:button></div>
         </form>
     </div>
 </x-layouts::app>
