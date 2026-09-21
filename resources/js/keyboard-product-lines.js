@@ -347,7 +347,19 @@ class ProductLookup {
 const lineIsBlank = (line) => !(line.querySelector('[data-product-id]')?.value || line.querySelector('[data-product-search]')?.value.trim());
 
 const initializeEditor = (editor) => {
-    if (editor.dataset.productLineEditorReady) return;
+    // Livewire can morph the line controls and outputs while retaining the
+    // editor element. Forms with server-authoritative previews already arrive
+    // with recalculated line and document totals; other editors still need a
+    // client-side initialization pass for newly morphed children.
+    if (!editor.hasAttribute('data-authoritative-financial-preview')) {
+        editor.querySelectorAll('[data-product-line]').forEach(updateTotal);
+    } else {
+        updateEditorTotal(editor);
+    }
+    if (editor.dataset.productLineEditorReady) {
+        focusBlank(editor);
+        return;
+    }
     editor.dataset.productLineEditorReady = 'true';
     editor.addEventListener('product-selected', (event) => {
         const line = event.target.closest('[data-product-line]');
@@ -418,7 +430,6 @@ const initializeEditor = (editor) => {
         boot();
         focusBlank(editor);
     });
-    editor.querySelectorAll('[data-product-line]').forEach(updateTotal);
     focusBlank(editor);
 };
 
@@ -443,16 +454,20 @@ const updateTotal = (line) => {
     const discount = discountType === 'percentage' ? gross * discountValue / 100 : (discountType === 'amount' ? discountValue : 0);
     const taxable = Math.max(0, gross - discount);
     const result = taxInclusive ? taxable : taxable + (taxable * taxRate / 100);
-    if (total) total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+    if (total) {
+        total.dataset.rawTotal = Number.isFinite(result) ? String(result) : '0';
+        total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+    }
     updateEditorTotal(line.closest('[data-product-line-editor]'));
 };
 
 const updateEditorTotal = (editor) => {
     if (!editor) return;
     const total = [...editor.querySelectorAll('[data-line-total]')]
-        .reduce((sum, output) => sum + Number(output.textContent || 0), 0);
+        .reduce((sum, output) => sum + Number(output.dataset.rawTotal ?? output.textContent ?? 0), 0);
     editor.querySelectorAll('[data-editor-total]').forEach((output) => {
-        output.textContent = Number.isFinite(total) ? total.toFixed(2) : '0.00';
+        const formatted = Number.isFinite(total) ? total.toFixed(2) : '0.00';
+        if (output.textContent !== formatted) output.textContent = formatted;
     });
 };
 
@@ -535,8 +550,12 @@ const initializeCompactFilterRow = (row) => {
 
 const boot = (scope = document) => {
     matchingElements(scope, '[data-product-lookup]').forEach((root) => new ProductLookup(root));
-    matchingElements(scope, '[data-product-line-editor]').forEach(initializeEditor);
-    matchingElements(scope, '[data-product-line-editor]').forEach(focusBlank);
+    const editors = [...new Set([
+        scope.closest?.('[data-product-line-editor]'),
+        ...matchingElements(scope, '[data-product-line-editor]'),
+    ].filter(Boolean))];
+    editors.forEach(initializeEditor);
+    editors.forEach(focusBlank);
     matchingElements(scope, '[data-compact-filter-row]').forEach(initializeCompactFilterRow);
 };
 

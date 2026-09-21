@@ -16,6 +16,7 @@ use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\PurchasingDashboard;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
+use App\Modules\Purchasing\Services\PurchaseOrderCalculator;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -355,6 +356,26 @@ new #[Title('Purchase Orders')] class extends Component
         return ['product_id' => '', 'quantity_ordered' => 1, 'unit_cost' => '', 'discount_type' => '', 'discount_value' => '0', 'tax_rate' => '0', 'tax_code' => '', 'tax_inclusive' => false, 'notes' => '', 'price_source' => 'none', 'price_date' => '', 'price_currency' => ''];
     }
 
+    /** @return array{lines: array<int, string>, total: string} */
+    private function orderPreview(): array
+    {
+        $calculator = app(PurchaseOrderCalculator::class);
+        $lines = [];
+        $total = '0.0000';
+
+        foreach ($this->lineItems as $index => $line) {
+            try {
+                $calculated = $calculator->calculateLine($line);
+                $lines[$index] = $calculated['line_total'];
+                $total = bcadd($total, $calculated['line_total'], 4);
+            } catch (InvalidArgumentException) {
+                $lines[$index] = '0.0000';
+            }
+        }
+
+        return compact('lines', 'total');
+    }
+
     public function submitOrder(int $id): void
     {
         Gate::authorize('purchase_orders.edit');
@@ -470,7 +491,7 @@ new #[Title('Purchase Orders')] class extends Component
             ->when(filled($this->orderForm['branch_id']), fn ($query) => $query->where('branch_id', (int) $this->orderForm['branch_id']))
             ->orderBy('name_ar')->get();
         $products = Product::query()->sellable()->with(['productSuppliers' => fn($query) => $query->when(filled($this->orderForm['supplier_id']), fn($scope) => $scope->where('supplier_id',(int)$this->orderForm['supplier_id']))])->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
-        $formSubtotal = collect($this->lineItems)->sum(fn (array $item): float => (float) ($item['quantity_ordered'] ?? 0) * (float) ($item['unit_cost'] ?? 0));
+        $orderPreview = $this->orderPreview();
 
         if ($this->createPage) {
             return view('purchasing.orders', [
@@ -479,7 +500,7 @@ new #[Title('Purchase Orders')] class extends Component
                 'branches' => $branches,
                 'stores' => $stores,
                 'products' => $products,
-                'formSubtotal' => $formSubtotal,
+                'orderPreview' => $orderPreview,
                 'viewingOrder' => null,
                 'auditLogs' => collect(),
                 'approvalHistory' => collect(),
@@ -548,7 +569,7 @@ new #[Title('Purchase Orders')] class extends Component
             'viewingOrder' => $viewingOrder,
             'auditLogs' => $auditLogs,
             'approvalHistory' => $approvalHistory,
-            'formSubtotal' => $formSubtotal,
+            'orderPreview' => $orderPreview,
             'canCreate' => Gate::allows('purchase_orders.create'),
             'canEdit' => Gate::allows('purchase_orders.edit'),
             'canCancel' => Gate::allows('purchase_orders.cancel'),
@@ -781,7 +802,6 @@ new #[Title('Purchase Orders')] class extends Component
                             <div class="col-span-4 sm:col-span-2">
                                 <label class="text-xs font-semibold">{{ __('Unit cost') }}</label>
                                 <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                                <p class="mt-1 text-[11px] text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Last supplier price'), 'fallback_cost' => __('Fallback product cost'), 'saved_draft_cost' => __('Saved draft cost'), default => __('No saved supplier price or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
                             </div>
 
                             <div class="col-span-3 sm:col-span-2">
@@ -802,7 +822,6 @@ new #[Title('Purchase Orders')] class extends Component
                     <div class="bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-lg text-end">
                         <span class="text-xs text-zinc-500">{{ __('Estimated Subtotal') }}: </span>
                         <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</span>
-                        <span class="text-xs text-zinc-400 block mt-0.5">{{ __('Tax is not configured') }}</span>
                     </div>
                 </div>
             </div>

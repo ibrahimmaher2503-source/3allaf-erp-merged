@@ -3062,4 +3062,10 @@
     ,"Open payment-method help": "Open payment-method help"
     ,"Choose the business name customers and staff recognize. The method type remains its accounting classification.": "Choose the business name customers and staff recognize. The method type remains its accounting classification."
     ,"Historical document tax snapshots do not change when a tax rule changes.": "Historical document tax snapshots do not change when a tax rule changes."
+    ,"Purchase unit cost": "Purchase unit cost"
+    ,"Enter cost": "Enter cost"
+    ,"Purchase cost and totals": "Purchase cost and totals"
+    ,"Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.": "Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually."
+    ,"The selling price is never used as purchase cost. Line and document totals include the selected discount and the product tax treatment.": "The selling price is never used as purchase cost. Line and document totals include the selected discount and the product tax treatment."
+    ,"The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals include discounts and inclusive or exclusive tax according to the saved tax treatment.": "The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals include discounts and inclusive or exclusive tax according to the saved tax treatment."
 }

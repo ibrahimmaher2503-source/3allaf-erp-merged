@@ -6222,4 +6222,10 @@
     ,"Open payment-method help": "فتح مساعدة طرق الدفع"
     ,"Choose the business name customers and staff recognize. The method type remains its accounting classification.": "اختر الاسم التجاري الذي يعرفه العملاء والموظفون. ويظل نوع الطريقة هو تصنيفها المحاسبي."
     ,"Historical document tax snapshots do not change when a tax rule changes.": "لا تتغير لقطات ضريبة المستندات التاريخية عند تغيير قاعدة ضريبية."
+    ,"Purchase unit cost": "تكلفة شراء الوحدة"
+    ,"Enter cost": "أدخل التكلفة"
+    ,"Purchase cost and totals": "تكلفة الشراء والإجماليات"
+    ,"Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.": "تُستخدم أحدث تكلفة معتمدة من هذا المورد، ثم أحدث تكلفة شراء عامة معتمدة، ثم متوسط تكلفة المنتج. إذا لم تتوفر أي منها، فأدخل تكلفة الشراء يدوياً."
+    ,"The selling price is never used as purchase cost. Line and document totals include the selected discount and the product tax treatment.": "لا يُستخدم سعر البيع أبداً كتكلفة شراء. تشمل إجماليات البنود والمستند الخصم المحدد والمعالجة الضريبية للمنتج."
+    ,"The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals include discounts and inclusive or exclusive tax according to the saved tax treatment.": "قيمة قائمة أسعار المستهلك الأساسية 0 هي سعر بيع مستقل ولا تُستخدم أبداً كتكلفة شراء. تشمل إجماليات البنود والفاتورة الخصومات والضريبة الشاملة أو غير الشاملة وفق المعالجة الضريبية المحفوظة."
 }

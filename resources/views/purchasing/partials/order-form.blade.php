@@ -5,7 +5,7 @@
     </div>
 @endif
 
-<form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-autofocus="true">
+<form wire:submit.prevent="saveOrder" class="space-y-4" data-product-line-editor data-authoritative-financial-preview data-autofocus="true">
     @if($editingOrderId)<flux:callout variant="info" icon="pencil-square">{{ __('Draft') }} · {{ __('Next action') }}: {{ __('Submit for Review') }}</flux:callout>@endif
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <flux:select wire:model.live="orderForm.supplier_id" :label="__('Supplier') . ' *'">
@@ -51,7 +51,13 @@
 
     <div class="space-y-2 border-t border-border pt-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
+            <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
+                <x-context-help :title="__('Purchase cost and totals')" :label="__('Open contextual help')">
+                    <p>{{ __('Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.') }}</p>
+                    <p>{{ __('The selling price is never used as purchase cost. Line and document totals include the selected discount and the product tax treatment.') }}</p>
+                </x-context-help>
+            </div>
             <div class="flex flex-wrap items-center gap-3 sm:justify-end">
                 <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="blank($orderForm['supplier_id'])" />
                 <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line :disabled="blank($orderForm['supplier_id'])">{{ __('Add item') }}</flux:button>
@@ -84,8 +90,7 @@
 
                     <div class="col-span-7 min-w-0 sm:col-span-4 lg:col-auto">
                         <label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label>
-                        <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                        <p class="mt-0.5 truncate text-[9px] leading-none text-zinc-500" data-price-source>{{ match($item['price_source'] ?? 'none') { 'last_supplier_price' => __('Latest approved cost from this supplier'), 'last_general_purchase_price' => __('Latest approved general purchase cost'), 'fallback_average_cost', 'fallback_cost' => __('Fallback product average cost'), 'saved_draft_cost' => __('Saved draft cost'), 'manual_authorized_cost' => __('Manually authorized cost'), default => __('No saved purchase cost or fallback cost') } }}@if(filled($item['price_date'] ?? '')) · {{ $item['price_date'] }}@endif @if(filled($item['price_currency'] ?? '')) · {{ $item['price_currency'] }}@endif</p>
+                        <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
                     </div>
 
                     <div class="col-span-6 sm:col-span-3 lg:col-auto">
@@ -101,7 +106,7 @@
 
                     <div class="col-span-10 sm:col-span-4 lg:col-auto">
                         <span class="block text-xs font-semibold lg:sr-only">{{ __('Line total') }}</span>
-                        <output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-3 font-mono text-sm dark:bg-zinc-900" data-line-total>0.00</output>
+                        <output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-3 font-mono text-sm dark:bg-zinc-900" data-line-total data-raw-total="{{ $orderPreview['lines'][$index] ?? '0.0000' }}">{{ number_format((float) ($orderPreview['lines'][$index] ?? 0), 2) }}</output>
                     </div>
 
                     <div class="col-span-2 pt-1 text-end lg:col-auto">
@@ -117,8 +122,7 @@
         <div class="flex justify-end pt-2">
             <div class="rounded-lg bg-zinc-100 px-4 py-2 text-end dark:bg-zinc-800">
                 <span class="text-xs text-zinc-500">{{ __('Estimated total') }}: </span>
-                <output data-editor-total class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format($formSubtotal, 2) }}</output>
-                <span class="mt-0.5 block text-xs text-zinc-400">{{ __('Tax and discounts are calculated and stored by the server.') }}</span>
+                <output data-editor-total class="font-mono font-bold text-zinc-900 dark:text-white">{{ number_format((float) $orderPreview['total'], 2) }}</output>
             </div>
         </div>
     </div>
