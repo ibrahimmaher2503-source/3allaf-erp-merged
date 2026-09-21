@@ -1,8 +1,9 @@
 # Current Milestone
 
-**Date:** 2026-09-18
-**Status:** Hotfix43 candidate `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf` is deployed at `https://rajeh.xyz`. The final focused restored-MariaDB/browser/document pass, immutable package, fresh encrypted production backup/isolated restore, approved migrations, atomic activation and live verification are complete.
+**Date:** 2026-09-21
 
-Production migration 000117 is `Ran` in batch 24 and 000118 is `Ran` in batch 25. Historical purchase-invoice money and tax-setting business fields retained their captured hashes; runtime controls and maintenance state were restored. The exact approved inventory exception remains unchanged and unresolved.
+**Status:** Hotfix45 application commit `7a327b93abc48987eab7238e6bcd125635413fbb` is deployed at `https://rajeh.xyz` from exact Hotfix44.
 
-Deferred C remains deferred because the referenced pair is unidentified. A branch may contain both warehouses and sales outlets; legitimate scope, relationship, and active POS-mapping validation remain intact.
+Purchase-order and purchase-invoice line/document totals now remain synchronized through Livewire morphs and use the existing financial calculators for discount and inclusive/exclusive tax treatment. Purchase cost is visible and editable under existing authorization, supplier/general/average-cost fallback remains authoritative, and Base Consumer Price List 0 is kept separate from purchase cost. Explanations are in contextual help rather than ordinary inline notes.
+
+The release is schema-free. Fresh encrypted backup and isolated restore/reconciliation passed; focused order/invoice save-reload verification passed with transaction rollback; production activation, runtime restoration, read-only authenticated rendering, and live browser interaction passed. Deployment journal: `/var/lib/toyjoy/hotfix45-deployment/54f67f3a27b35e6e04`.

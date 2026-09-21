@@ -27,6 +27,12 @@
 
 # UI/UX Release Progress
 
+## 2026-09-21 — Hotfix45 purchasing form repair deployed
+
+- Fixed purchase-order and purchase-invoice reactive line/document totals at their binding and Livewire-morph source, backed by the existing server calculators and decimal snapshots.
+- Kept purchase cost distinct from consumer selling price; retained supplier/general/average-cost fallback, existing permissions and required validation, and moved ordinary explanatory notes into contextual help.
+- Focused DOM interaction, discount/tax cases, isolated MariaDB save/reload, immutable packaging, fresh encrypted backup/restore, schema preservation, atomic activation, authenticated rendering, and live browser interaction passed. Production serves commit `7a327b93abc48987eab7238e6bcd125635413fbb`; no migration ran.
+
 ## 2026-09-18 — Hotfix43 deployed
 
 - Deployed immutable candidate `c71d0ad0651e62aa30c537e0f75fb8fdc6b4d8cf` from exact Hotfix42 baseline after a fresh AES-256 encrypted database/private-storage backup and isolated full restore reconciliation.
