@@ -1,3 +1,10 @@
+## 2026-09-26 — Hotfix46 user-management and admin-verification repair
+
+- **Task/work:** Traced the generic authorization banner and recent immutable authorization events to user ID 2 / username `karim`, created by ID 1 and assigned the active System Administrator role with no branch/store scopes. Fixed `UserManagementScope` so that role receives its documented global user-management scope without the operational super-admin bypass; replaced the generic banner body with exact validation messages and added Arabic translations. The authorized admin creation action now verifies email immediately, sends no verification message, and records creator/verifier audits.
+- **Data repair:** Verified only the audit-proven admin-created unverified account ID 2. Preserved password, MFA/passkeys, active status, `is_super_admin=false`, System Administrator role, and empty administrator branch/store scope. ID 1 / `hassan` remains active and unchanged as the protected bootstrap super-admin.
+- **Verification actually run:** PHP/JSON/diff and immutable-manifest checks; one isolated current-database-copy scenario covering admin creation, verification audit/no mail, credential login, verification middleware, user-list visibility and role assignment with transaction rollback; one live read-only identity/role/scope/list/audit check. Fresh verified platform backup completed. Atomic activation, runtime restoration, maintenance-off state, active PHP-FPM, and HTTPS `/up` and `/login` 200 passed.
+- **Result/boundary:** Production serves commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` at `https://rajeh.xyz`. Evidence is retained under `/var/lib/toyjoy/hotfix46-deployment/345c3af3f34a-20260926` and `/var/lib/toyjoy/hotfix46-validation.141Les2c`. Code and documentation changed; no migration, reset, production test account, automated suite, browser-control run, dependency/asset change, push or tag occurred.
+
 ## 2026-08-22 — Local dashboard schema remediation
 
 - **Task:** Resolved the local `/dashboard` 500 on `toyjoy_local` (MySQL at `127.0.0.1:3306`).

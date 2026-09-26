@@ -1,9 +1,9 @@
 # Current Milestone
 
-**Date:** 2026-09-21
+**Date:** 2026-09-26
 
-**Status:** Hotfix45 application commit `7a327b93abc48987eab7238e6bcd125635413fbb` is deployed at `https://rajeh.xyz` from exact Hotfix44.
+**Status:** Hotfix46 commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` is deployed at `https://rajeh.xyz` from exact Hotfix45.
 
-Purchase-order and purchase-invoice line/document totals now remain synchronized through Livewire morphs and use the existing financial calculators for discount and inclusive/exclusive tax treatment. Purchase cost is visible and editable under existing authorization, supplier/general/average-cost fallback remains authoritative, and Base Consumer Price List 0 is kept separate from purchase cost. Explanations are in contextual help rather than ordinary inline notes.
+The reported role-based System Administrator can now list and manage users through the existing authorized global user-management boundary while remaining a non-super-admin for operational tenant and maker/checker enforcement. Admin-created accounts are verified in the server transaction, no verification notification is sent, and creator/verifier identity is audited. Exact validation messages replace the generic authorization banner text.
 
-The release is schema-free. Fresh encrypted backup and isolated restore/reconciliation passed; focused order/invoice save-reload verification passed with transaction rollback; production activation, runtime restoration, read-only authenticated rendering, and live browser interaction passed. Deployment journal: `/var/lib/toyjoy/hotfix45-deployment/54f67f3a27b35e6e04`.
+Fresh platform backup, isolated MariaDB restore, one rolled-back creation/login/list/role check, targeted live repair, atomic activation, runtime restoration and live read-only verification passed. Deployment evidence: `/var/lib/toyjoy/hotfix46-deployment/345c3af3f34a-20260926`; isolated evidence: `/var/lib/toyjoy/hotfix46-validation.141Les2c`.

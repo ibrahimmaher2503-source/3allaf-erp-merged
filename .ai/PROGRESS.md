@@ -1,3 +1,9 @@
+## 2026-09-26 — Hotfix46 user management repair deployed
+
+- Corrected the split between the active System Administrator role and bootstrap-only `is_super_admin` flag for user management, preserving operational tenant boundaries and approval behavior.
+- Admin-created accounts are now immediately verified without email and record both creation and verification actors; the page lists exact validation messages.
+- Repaired only audit-proven admin-created unverified user ID 2 (`karim`), preserving credentials, MFA/passkeys, active status, role and scopes. Focused isolated verification and live read-only verification passed; production serves commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99`.
+
 ## 2026-09-14 — v0.1.22-hotfix37 Customer Notes Batch 1
 
 - Implemented the scoped navigation, contextual help, branch presentation, General Settings list-display preference, and user/role card cleanup directly from exact Hotfix36.

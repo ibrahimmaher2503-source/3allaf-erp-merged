@@ -1,17 +1,17 @@
-# Current Task — Hotfix45 Purchasing Form Financial Repair
+# Current Task — Hotfix46 User Management and Admin Verification Repair
 
-**Date:** 2026-09-21
+**Date:** 2026-09-26
 
 **Change class:** I4
 
-**Source baseline:** deployed Hotfix44 commit `d94384eabe1890889a6c2acac44c6461ab0962bc`, tree `6660d3e6c4542dfe5100076a6642ed0394384cb0`
+**Source baseline:** deployed Hotfix45 commit `7a327b93abc48987eab7238e6bcd125635413fbb`
 
-**Branch:** `hotfix/v0.1.22-hotfix45-purchasing-form-calculations`
+**Branch:** `hotfix/v0.1.22-hotfix46-user-management`
 
-**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix45`
+**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix46`
 
-**Status:** Completed and deployed. Production serves exact Hotfix45 application commit `7a327b93abc48987eab7238e6bcd125635413fbb`, tree `81aa595c614fec6812e64370212bb7894f8d7df4`.
+**Status:** Completed and deployed. Production serves Hotfix46 application commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` at `https://rajeh.xyz`.
 
-Hotfix45 repairs purchase-order and purchase-invoice reactive financial previews using the existing authoritative calculators, including discounts and inclusive/exclusive tax. Purchase-invoice cost remains distinct from consumer selling price, uses the established supplier/general/average-cost fallback, stays editable under the existing permission, and remains blank and required when no purchase cost exists. Ordinary cost-source/server-calculation notes were removed from the forms and retained as contextual help.
+Hotfix46 makes the active System Administrator role authoritative for the existing global user-management scope without granting the operational `is_super_admin` bypass. It displays exact authorization validation messages, immediately verifies accounts created by the authorized admin flow without sending verification mail, and records the authenticated creator/verifier in append-only audit events.
 
-The focused browser interaction pass, isolated MariaDB save/reload pass, fresh encrypted production backup/restore reconciliation, schema-preservation gate, atomic activation, authenticated read-only render, and authenticated live browser interaction all passed. No schema change or production test document was created.
+The only demonstrated legacy target, user ID 2 / username `karim`, was verified from its immutable `create_user` audit proving creation by user ID 1. Password, MFA/passkeys, status, role and empty administrator location scope were preserved. No migration, reset, public-registration change, or production test account was created.

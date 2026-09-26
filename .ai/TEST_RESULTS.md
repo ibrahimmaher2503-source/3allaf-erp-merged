@@ -1,5 +1,13 @@
 # Test and Verification Results
 
+## 2026-09-26 — Hotfix46 focused user-management verification
+
+- **PASS:** PHP syntax, Arabic/Arabic-Egyptian/English JSON parsing, Git diff hygiene, immutable candidate manifest and Laravel cache preparation.
+- **PASS (one isolated MariaDB scenario):** From a current production copy, an authorized administrator created an account with the System Administrator role and empty administrator location scope. The account was immediately verified, no notification was recorded, creator/verifier audits pointed to the authenticated administrator, credential login passed, verification middleware returned 204, user IDs 1 and 2 were visible, and same-role assignment to the affected account succeeded. The transaction rolled back.
+- **PASS (live read-only):** Commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` is active; ID 1 / `hassan` remains the protected super-admin; ID 2 / `karim` is active, verified, non-super-admin, has only the active System Administrator role, retains zero branch/store scopes, sees user IDs 1 and 2, and has view/create/edit user permissions. Verification middleware returned 204 and remediation audit records system Hotfix46 with creator actor ID 1 and no notification.
+- **PASS (operations):** Fresh verified platform backup completed, activation was atomic, Rajeh runtime controls were restored, maintenance is off, PHP-FPM is active, and live `/up` plus `/login` return 200.
+- **Boundary:** No migration, reset, production test user/transaction, automated suite, browser-control run, dependency update, asset build, push or tag occurred.
+
 ## 2026-09-18 — Hotfix43 production deployment verification
 
 - **PASS — package/restore:** The immutable 14,779-file candidate manifest passed. A fresh AES-256 encrypted database/private-storage backup was fully decrypted, restored to isolated MariaDB `toyjoy_hf43_restore_78b1e7d1d7887b46a9`, and reconciled by files, complete database schema/rows and stock state.
