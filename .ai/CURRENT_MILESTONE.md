@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-26
 
-**Status:** Hotfix46 commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` is deployed at `https://rajeh.xyz` from exact Hotfix45.
+**Status:** Hotfix47 application commit `3ed4a9529c45806175424f70e8ce05993e8233cb` is deployed at `https://rajeh.xyz` from exact Hotfix46.
 
-The reported role-based System Administrator can now list and manage users through the existing authorized global user-management boundary while remaining a non-super-admin for operational tenant and maker/checker enforcement. Admin-created accounts are verified in the server transaction, no verification notification is sent, and creator/verifier identity is audited. Exact validation messages replace the generic authorization banner text.
+Post-login navigation now uses one shared landing policy. A global System Administrator who has no operational location scope is sent to the existing authenticated, verified and permission-gated Users, Roles & Scopes setup step. Dashboard and initial-setup entry points converge on that destination before company context resolution; users with visible stores retain their normal landing behavior. The fix grants no store visibility, branch/store scope, `is_super_admin` bypass or verification exception.
 
-Fresh platform backup, isolated MariaDB restore, one rolled-back creation/login/list/role check, targeted live repair, atomic activation, runtime restoration and live read-only verification passed. Deployment evidence: `/var/lib/toyjoy/hotfix46-deployment/345c3af3f34a-20260926`; isolated evidence: `/var/lib/toyjoy/hotfix46-validation.141Les2c`.
+A fresh encrypted backup, isolated full restore and reconciliation, immutable-payload verification, atomic activation, runtime restoration and focused live authenticated navigation checks passed. No migration or production business-data write occurred. Deployment evidence: `/var/lib/toyjoy/hotfix47-deployment/3ed4a9529c45-20260926.ek14It`; isolated restore database: `toyjoy_hf47_restore_d3f54ec2406121368e` (locked, with no retained generated credentials).

@@ -1,5 +1,14 @@
 # Test and Verification Results
 
+## 2026-09-26 — Hotfix47 focused authenticated-navigation verification
+
+- **CONFIRMED (pre-fix live trace):** For ID 2 / `karim`, the login response sent the verified authenticated user to `/dashboard`; dashboard company-context resolution redirected to `/login`; authenticated guest handling sent `/login` back to `/dashboard`; the verification notice also redirected to `/dashboard`; `/initial-setup` failed while resolving the same missing context. The existing `/admin/authorization-baseline?setup=true&setup_step=users-scopes` route rendered HTTP 200 for this user.
+- **PASS (package/restore):** Immutable Hotfix47 application package SHA-256 `255edc32ba4f727d458d2c4ac1faaf70a491da37c93fe710859188fb614d7aff` passed. A fresh encrypted backup was restored and fully reconciled in isolated MariaDB database `toyjoy_hf47_restore_d3f54ec2406121368e`; the account is locked and no generated credentials are retained. Migrations and compiled assets were unchanged from Hotfix46.
+- **PASS (live authenticated ID 2 / `karim`):** Login response, direct dashboard, authenticated `/login`, and `/initial-setup` each terminated at the protected Users, Roles & Scopes setup URL. The verification notice retained its normal dashboard redirect, whose next decision terminated at that same setup destination. The final setup page rendered HTTP 200 with the expected authenticated marker.
+- **PASS (live authenticated ID 1 / `hassan`):** Login and authenticated `/login` retained the normal dashboard destination; dashboard and `/initial-setup` rendered HTTP 200 with their expected markers. The protected setup route also remained accessible.
+- **PASS (operations):** Production serves exact application commit `3ed4a9529c45806175424f70e8ce05993e8233cb`; maintenance is off, PHP-FPM is active, and runtime controls are restored. Two earlier operator attempts stopped before activation and recovered exact Hotfix46; the successful journal is `/var/lib/toyjoy/hotfix47-deployment/3ed4a9529c45-20260926.ek14It`.
+- **Boundary:** One focused live authenticated navigation pass was run after deployment and was not repeated. No broad suite, migration, reset, account creation, credential request, business-data mutation, dependency update, asset build, tenant-scope change, push or tag occurred.
+
 ## 2026-09-26 — Hotfix46 focused user-management verification
 
 - **PASS:** PHP syntax, Arabic/Arabic-Egyptian/English JSON parsing, Git diff hygiene, immutable candidate manifest and Laravel cache preparation.

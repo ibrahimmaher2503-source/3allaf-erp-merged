@@ -1,3 +1,9 @@
+## 2026-09-26 — Hotfix47 authenticated setup redirect repair deployed
+
+- Replaced the conflicting fixed `/dashboard` post-login destinations with one shared authenticated landing decision and intercepted dashboard/initial-setup entry before company readiness resolves a missing operational context.
+- A global System Administrator with no visible active store now reaches the existing protected Users, Roles & Scopes setup step; no tenant visibility, administrator bypass, route middleware or verification rule changed.
+- A fresh encrypted backup and isolated full restore passed before atomic activation. Focused live authenticated navigation passed for ID 2 (`karim`) and confirmed protected ID 1 (`hassan`) retains normal dashboard/setup access. Production serves application commit `3ed4a9529c45806175424f70e8ce05993e8233cb`.
+
 ## 2026-09-26 — Hotfix46 user management repair deployed
 
 - Corrected the split between the active System Administrator role and bootstrap-only `is_super_admin` flag for user management, preserving operational tenant boundaries and approval behavior.

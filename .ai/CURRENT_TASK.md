@@ -1,17 +1,17 @@
-# Current Task — Hotfix46 User Management and Admin Verification Repair
+# Current Task — Hotfix47 Authenticated Setup Redirect Repair
 
 **Date:** 2026-09-26
 
 **Change class:** I4
 
-**Source baseline:** deployed Hotfix45 commit `7a327b93abc48987eab7238e6bcd125635413fbb`
+**Source baseline:** deployed Hotfix46 application commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99`
 
 **Branch:** `hotfix/v0.1.22-hotfix46-user-management`
 
 **Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix46`
 
-**Status:** Completed and deployed. Production serves Hotfix46 application commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99` at `https://rajeh.xyz`.
+**Status:** Completed and deployed. Production serves Hotfix47 application commit `3ed4a9529c45806175424f70e8ce05993e8233cb` at `https://rajeh.xyz`.
 
-Hotfix46 makes the active System Administrator role authoritative for the existing global user-management scope without granting the operational `is_super_admin` bypass. It displays exact authorization validation messages, immediately verifies accounts created by the authorized admin flow without sending verification mail, and records the authenticated creator/verifier in append-only audit events.
+Hotfix47 gives authenticated users one shared landing decision. An active global System Administrator who is authorized to manage users but has no visible active store is directed to the existing protected Users, Roles & Scopes setup step before dashboard readiness resolves company context. Dashboard and initial-setup entry points use the same decision, so incomplete setup reaches an accessible destination instead of redirecting through login. Tenant visibility, operational scopes, `is_super_admin`, verification, and all route middleware remain unchanged.
 
-The only demonstrated legacy target, user ID 2 / username `karim`, was verified from its immutable `create_user` audit proving creation by user ID 1. Password, MFA/passkeys, status, role and empty administrator location scope were preserved. No migration, reset, public-registration change, or production test account was created.
+The focused live authenticated check confirmed user ID 2 / `karim` reaches the rendered Users, Roles & Scopes page from login, dashboard, authenticated-login, verification, and initial-setup entry paths. User ID 1 / `hassan` continues to reach the rendered dashboard and initial-setup pages normally. No account, role, permission, scope, business record, schema, migration, dependency, asset, or verification state changed.
