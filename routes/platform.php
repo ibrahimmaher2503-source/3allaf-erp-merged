@@ -14,6 +14,7 @@ use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Queries\AdministrationDashboard;
+use App\Modules\Platform\Support\AuthenticatedLanding;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use App\Modules\Platform\Support\SetupContinuation;
 use App\Modules\Platform\Support\TutorialRegistry;
@@ -40,7 +41,16 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->get('help/screens/{screenId}', [DashboardAssistantController::class, 'screen'])->whereIn('screenId', TutorialRegistry::screenIds())->name('platform.help.screen');
     $router->get('help/flows/{flowId}', [DashboardAssistantController::class, 'flow'])->whereIn('flowId', array_keys(UserFlowRegistry::all()))->name('platform.help.flow');
 
-    $router->view('initial-setup', 'platform.initial-setup')->middleware('can:company_settings.edit')->name('initial-setup');
+    $router->get('initial-setup', function (Request $request, AuthenticatedLanding $landing) {
+        $user = $request->user();
+        abort_unless($user instanceof \App\Models\User, 403);
+
+        if (($scopeSetup = $landing->scopeSetupDestination($user)) !== null) {
+            return redirect()->to($scopeSetup);
+        }
+
+        return view('platform.initial-setup');
+    })->middleware('can:company_settings.edit')->name('initial-setup');
     $router->post('initial-setup/decisions', function (Request $request, RecordSetupDecision $action, InitialSetupStatus $status, SetupContinuation $continuation) {
         $validated = $request->validate([
             'step_key' => ['required', 'string', 'max:80'],
