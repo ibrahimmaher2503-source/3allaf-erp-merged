@@ -167,7 +167,11 @@ new #[Title('Authorization Baseline')] class extends Component
 
     @if ($errors->any())
         <flux:callout variant="danger" title="{{ __('Authorization change could not be completed') }}">
-            {{ __('Review the highlighted values. No partial authorization change was performed.') }}
+            <ul class="list-disc space-y-1 ps-5">
+                @foreach ($errors->all() as $message)
+                    <li>{{ $message }}</li>
+                @endforeach
+            </ul>
         </flux:callout>
     @endif
 

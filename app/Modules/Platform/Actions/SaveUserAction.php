@@ -44,6 +44,7 @@ final class SaveUserAction
 
                 if ($user === null) {
                     $saved = User::query()->create($attributes);
+                    $saved->forceFill(['email_verified_at' => now()])->save();
                     $event = 'create_user';
                     $before = null;
                 } else {
@@ -51,7 +52,7 @@ final class SaveUserAction
                     $actor = Auth::user();
                     abort_unless($actor instanceof User, 403);
                     app(UserManagementScope::class)->assertTargetIsManageable($actor, $saved);
-                    $before = $saved->only(['name', 'username', 'email', 'status']);
+                    $before = $saved->only(['name', 'username', 'email', 'status', 'email_verified_at']);
                     $saved->update($attributes);
                     $event = 'update_user';
                 }
@@ -63,8 +64,25 @@ final class SaveUserAction
                     event: $event,
                     source: $saved,
                     before: $before,
-                    after: $saved->fresh()->only(['name', 'username', 'email', 'status']),
+                    after: $saved->fresh()->only(['name', 'username', 'email', 'status', 'email_verified_at']),
+                    metadata: $creating ? [
+                        'account_source' => 'authorized_administrator',
+                        'email_verification' => 'immediate',
+                        'verification_notification_sent' => false,
+                    ] : [],
                 );
+
+                if ($creating) {
+                    app(RecordAuditEvent::class)->execute(
+                        category: 'authorization',
+                        event: 'verify_user_email',
+                        source: $saved,
+                        before: ['email_verified_at' => null],
+                        after: ['email_verified_at' => $saved->email_verified_at?->toISOString()],
+                        reasonCode: 'authorized_admin_creation',
+                        metadata: ['verification_notification_sent' => false],
+                    );
+                }
 
                 return $saved->fresh();
             });
