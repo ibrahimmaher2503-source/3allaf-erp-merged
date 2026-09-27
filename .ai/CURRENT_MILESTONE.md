@@ -2,8 +2,6 @@
 
 **Date:** 2026-09-27
 
-**Status:** Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b` is deployed at `https://rajeh.xyz` from exact Hotfix47.
+**Status:** Hotfix49 implementation and its single focused check are complete from exact deployed Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b`, with newer completed documentation preserved. Candidate commit and deployment are pending.
 
-The candidate corrects purchase-order cost/default-warehouse behavior while retaining historical snapshots; separates invoice purchase cost and Base selling price with draft-safe approval-only product/supplier updates; preserves inline-product identities and entered prices; restores supplier-return opening; adds reservation-aware transfer presentation and enforcement; uses immutable source-branch six-digit transfer numbering; and gives active System Administrators every active application permission plus global company/location visibility without granting maker/checker bypass.
-
-No migration was added or run. Fresh encrypted backup, isolated restore/reconciliation, atomic activation, runtime restoration, release identity, HTTPS health, administrator login/landing, and affected authenticated page checks all passed. No in-scope item remains unresolved.
+The authorized slice is limited to purchasing product-row label/alignment presentation and the generated local Product Card code rule. It adds no migration, needs no asset rebuild, and preserves saved codes, barcode behavior, inactive drafts, final-code immutability, and unrelated purchasing/catalog behavior. The focused rollback-only MariaDB/source/Blade check passed; the established verified-backup deployment process remains.

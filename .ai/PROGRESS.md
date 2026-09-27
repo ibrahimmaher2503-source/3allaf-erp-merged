@@ -1,3 +1,9 @@
+## 2026-09-27 — v0.1.22-hotfix49 product-code and purchasing row corrections
+
+- In progress from deployed Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b`, preserving post-deployment documentation commit `cc1dd2f90d06972009a643ed3dac5da5e5fd1c46`.
+- Scope is limited to screen-reader-only product labels/aligned selectors in purchase-order and purchase-invoice draft rows plus prefix-shared `<four supplier-code digits>-<six digits>` generated Product Card identities.
+- No migration or frontend build is needed. The single rollback-only focused check passed 23 assertions for row alignment/accessibility and code generation/preservation in `toyjoy_hf49_verify_2aa6628094c5`; deployment remains pending. See `.ai/HOTFIX49_CHECKPOINT.md`.
+
 ## 2026-09-27 — v0.1.22-hotfix48 purchasing and transfer corrections
 
 - Completed the approved PO, invoice, approval-time product/supplier history, inline-product, supplier-return, transfer presentation/enforcement/numbering, and global System Administrator changes without a migration.

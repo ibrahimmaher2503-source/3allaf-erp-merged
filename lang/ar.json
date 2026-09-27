@@ -6249,4 +6249,7 @@
     ,"The selected supplier English name must contain at least three English letters.": "يجب أن يحتوي الاسم الإنجليزي للمورد المحدد على ثلاثة أحرف إنجليزية على الأقل."
     ,"The source store must belong to a branch.": "يجب أن ينتمي المتجر المصدر إلى فرع."
     ,"Transfer quantity": "كمية التحويل"
+    ,"The local product code uses the first four digits of the selected supplier code, a hyphen, and the shared six-digit prefix sequence. Leading zeros are preserved, and the barcode remains a separate identity.": "يستخدم كود المنتج المحلي أول أربعة أرقام من كود المورد المحدد، ثم شرطة، ثم التسلسل المشترك المكون من ستة أرقام لهذه البادئة. تُحفظ الأصفار البادئة، ويظل الباركود هوية منفصلة."
+    ,"The selected supplier code must start with four digits before a local product code can be generated.": "يجب أن يبدأ كود المورد المحدد بأربعة أرقام قبل إنشاء كود منتج محلي."
+    ,"The six-digit product-code sequence is exhausted for supplier prefix :prefix.": "استُنفد تسلسل كود المنتج المكون من ستة أرقام لبادئة المورد :prefix."
 }

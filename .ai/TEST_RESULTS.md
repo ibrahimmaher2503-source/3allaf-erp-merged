@@ -1,5 +1,14 @@
 # Test and Verification Results
 
+## 2026-09-27 — v0.1.22-hotfix49 focused verification
+
+- **PASS:** The one owner-authorized focused verifier completed 23 assertions in dedicated MariaDB `toyjoy_hf49_verify_2aa6628094c5`, with every data mutation inside a rolled-back transaction. The account is locked and no generated credential was retained.
+- **PASS — rows:** Purchase-order create/edit share the corrected full-page line partial; purchase-invoice create/edit share the corrected modal line editor. Both retain their desktop Product column heading, use a screen-reader-only Product label plus direct `aria-label`, align the selector with sibling `mt-1`/`h-10` controls, and retain responsive RTL/LTR classes. Affected Blade sources compiled during the verifier.
+- **PASS — codes:** Supplier code `0123456…` previewed/allocated `0123-000001`; a second supplier beginning `0123` allocated shared next code `0123-000002`; an existing `0456-000001` collision was preserved and skipped to `0456-000002`. Invalid nonnumeric starts and missing suppliers were refused clearly. Existing saved codes, inactive NULL-code drafts, final-code immutability, generated local barcode behavior, and an international barcode remained preserved.
+- **PASS — structure:** Allocation uses prefix-scoped rows in `global_product_code_sequences`, `lockForUpdate`, advancement before collision checks, and no `MAX` query. Changed PHP/verifier syntax, three locale JSON files, existing compiled CSS utility presence, and Git diff hygiene passed.
+- **INFO:** The first verifier invocation stopped before its transaction because a verifier-only source assertion interpolated `$prefix`. The assertion literal was corrected and only the same focused verifier/database was resumed; no reset, application failure, or persisted verification record resulted.
+- **Boundary:** No PHPUnit/Pest/broad suite, browser control, production test record, migration, data reset, dependency change, or Vite build ran. Deployment verification is pending.
+
 ## 2026-09-27 — v0.1.22-hotfix48 focused verification
 
 - **PASS:** All changed/new PHP syntax, changed JavaScript syntax, `ar`, `en`, and `ar-EG` JSON parsing, six changed Blade compilations with compiled PHP syntax, and Git diff hygiene.

@@ -109,6 +109,23 @@ new #[Title('Product Card')] class extends Component {
         }
     }
 
+    public function localProductCodePreviewError(): ?string
+    {
+        if (($this->isEditing && filled($this->productForm['item_code'])) || $this->productForm['barcode_registration_type'] !== 'local' || blank($this->productForm['preferred_supplier_id'])) {
+            return null;
+        }
+
+        try {
+            app(ReserveProductIdentityAction::class)->preview((int) $this->productForm['preferred_supplier_id']);
+
+            return null;
+        } catch (\InvalidArgumentException $exception) {
+            return $exception->getMessage();
+        } catch (Throwable $exception) {
+            return \App\Support\UserSafeError::message($exception);
+        }
+    }
+
     public function save(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
     {
         Gate::authorize($this->isEditing ? 'products_categories_brands.edit' : 'products_categories_brands.create');
@@ -124,6 +141,13 @@ new #[Title('Product Card')] class extends Component {
                 'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
             ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
             $validated['_save_as_draft'] = $this->savingDraft;
+            if (! $this->savingDraft && $validated['barcode_registration_type'] === 'local' && blank($validated['item_code'])) {
+                try {
+                    app(ReserveProductIdentityAction::class)->preview((int) $validated['preferred_supplier_id']);
+                } catch (\InvalidArgumentException $exception) {
+                    throw ValidationException::withMessages(['productForm.preferred_supplier_id' => $exception->getMessage()]);
+                }
+            }
             $product = DB::transaction(function () use ($action, $barcodeAction, $validated) {
                 $product = $action->execute($validated, $this->productId, $this->productVersion);
                 $hasActiveBarcode = $product->barcodes()->where('status', 'active')->exists();
@@ -462,14 +486,18 @@ new #[Title('Product Card')] class extends Component {
                     </flux:select>
                     <div class="rounded-lg border border-border bg-surface-muted/30 p-3 text-sm">
                         <span class="block text-xs text-text-muted">{{ __('Generated product-code preview') }}</span>
-                        <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? __('Select supplier first') }}</strong>
+                        @php($previewError = $this->localProductCodePreviewError())
+                        <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? ($previewError ? '—' : __('Select supplier first')) }}</strong>
+                        @if ($previewError)
+                            <span class="mt-1 block text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</span>
+                        @endif
                         <span class="mt-1 block text-xs text-text-muted">{{ __('The final unique code is allocated atomically when the product is completed.') }}</span>
                     </div>
                 @endif
                 @if ($productForm['barcode_registration_type'] === 'international')
                     <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
                 @else
-                    <flux:text class="self-end text-sm text-text-muted">{{ __('The local product code uses the first three English letters of the selected supplier name plus the shared seven-digit sequence. The barcode remains a separate identity.') }}</flux:text>
+                    <flux:text class="self-end text-sm text-text-muted">{{ __('The local product code uses the first four digits of the selected supplier code, a hyphen, and the shared six-digit prefix sequence. Leading zeros are preserved, and the barcode remains a separate identity.') }}</flux:text>
                 @endif
                 <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" required />
                 @if ($isEditing)

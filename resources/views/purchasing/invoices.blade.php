@@ -426,6 +426,24 @@ new #[Title('Purchase Invoices')] class extends Component
         }
     }
 
+    public function quickProductLocalPreviewError(): ?string
+    {
+        $supplierId = filled($this->invoiceForm['supplier_id']) ? (int) $this->invoiceForm['supplier_id'] : null;
+        if ($supplierId === null) {
+            return __('Select a supplier before adding products.');
+        }
+
+        try {
+            app(ReserveProductIdentityAction::class)->preview($supplierId);
+
+            return null;
+        } catch (\InvalidArgumentException $exception) {
+            return $exception->getMessage();
+        } catch (Throwable $exception) {
+            return \App\Support\UserSafeError::message($exception);
+        }
+    }
+
     /** @param array{unit_cost: string|null, price_source: string, price_date: string|null, price_currency: string|null}|null $price */
     private function insertProduct(Product $product, ?array $price = null, ?int $targetIndex = null): void
     {
@@ -493,8 +511,12 @@ new #[Title('Purchase Invoices')] class extends Component
 
             $validated['preferred_supplier_id'] = (int) $this->invoiceForm['supplier_id'];
             $supplier = Supplier::query()->whereKey($validated['preferred_supplier_id'])->where('status', 'active')->firstOrFail();
-            if ($validated['barcode_registration_type'] === 'local' && preg_match('/[A-Za-z].*[A-Za-z].*[A-Za-z]/', (string) $supplier->name_en) !== 1) {
-                throw ValidationException::withMessages(['quickProduct.preferred_supplier_id' => __('The selected supplier English name must contain at least three English letters.')]);
+            if ($validated['barcode_registration_type'] === 'local') {
+                try {
+                    app(ReserveProductIdentityAction::class)->preview($supplier->id);
+                } catch (\InvalidArgumentException $exception) {
+                    throw ValidationException::withMessages(['quickProduct.preferred_supplier_id' => $exception->getMessage()]);
+                }
             }
 
             $lookup = trim((string) $validated['barcode']);
@@ -958,7 +980,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(14rem,1fr)_4.5rem_7.5rem_6.5rem_6.5rem_5rem_4.5rem_6rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
                                 <div class="col-span-12 min-w-0 lg:col-auto">
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
-                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" result-presentation="name-code" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
+                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :label-visually-hidden="true" result-presentation="name-code" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                                 </div>
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
                                 <div class="col-span-4 min-w-[7.5rem] sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Purchase unit cost') }}</label><input wire:model="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" data-line-price data-price-kind="cost" data-purchase-cost-input type="number" min="0" step="0.0001" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /></div>
@@ -1042,7 +1064,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
                         </flux:select>
                         @if($quickProduct['barcode_registration_type'] === 'local')
-                            <div><span class="text-xs font-semibold">{{ __('Generated local code') }}</span><div class="mt-1 flex h-10 items-center rounded-lg bg-zinc-100 px-3 font-mono text-sm dark:bg-zinc-800" dir="ltr">{{ $this->quickProductLocalPreview() ?: '—' }}</div><p class="mt-1 text-xs text-amber-700">{{ __('Preview only. The final immutable code is reserved atomically when the product is created.') }}</p></div>
+                            <div><span class="text-xs font-semibold">{{ __('Generated local code') }}</span><div class="mt-1 flex h-10 items-center rounded-lg bg-zinc-100 px-3 font-mono text-sm dark:bg-zinc-800" dir="ltr">{{ $this->quickProductLocalPreview() ?: '—' }}</div>@if($previewError = $this->quickProductLocalPreviewError())<p class="mt-1 text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</p>@else<p class="mt-1 text-xs text-amber-700">{{ __('Preview only. The final immutable code is reserved atomically when the product is created.') }}</p>@endif</div>
                         @else
                             <flux:input wire:model="quickProduct.barcode" :label="__('International barcode')" dir="ltr" required />
                         @endif

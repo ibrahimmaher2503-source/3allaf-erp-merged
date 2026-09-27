@@ -16,6 +16,7 @@
     'resultPresentation' => 'full',
     'transfer' => false,
     'sourceStoreSelector' => '',
+    'labelVisuallyHidden' => false,
 ])
 
 <div
@@ -43,7 +44,7 @@
     data-label-fallback-price="{{ __('Fallback product cost') }}"
     data-label-no-price="{{ __('No approved cost history for this supplier') }}"
 >
-    <label class="mb-1 block text-xs font-semibold" data-product-label>{{ $label }}</label>
+    <label class="{{ $labelVisuallyHidden ? 'sr-only' : 'mb-1 block text-xs font-semibold' }}" data-product-label>{{ $label }}</label>
     <input
         type="hidden"
         @if($name) name="{{ $name }}" @endif
@@ -51,11 +52,12 @@
         data-product-id
         {{ $attributes->whereStartsWith('wire:model') }}
     >
-    <div class="flex items-stretch gap-1.5">
+    <div class="flex items-stretch gap-1.5 {{ $labelVisuallyHidden ? 'mt-1' : '' }}">
         <div class="relative min-w-0 flex-1">
             <input
                 type="search"
                 role="combobox"
+                aria-label="{{ $label }}"
                 aria-autocomplete="list"
                 aria-expanded="false"
                 autocomplete="off"

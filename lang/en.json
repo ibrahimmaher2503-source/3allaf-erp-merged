@@ -3084,4 +3084,7 @@
     ,"The selected supplier English name must contain at least three English letters.": "The selected supplier English name must contain at least three English letters."
     ,"The source store must belong to a branch.": "The source store must belong to a branch."
     ,"Transfer quantity": "Transfer quantity"
+    ,"The local product code uses the first four digits of the selected supplier code, a hyphen, and the shared six-digit prefix sequence. Leading zeros are preserved, and the barcode remains a separate identity.": "The local product code uses the first four digits of the selected supplier code, a hyphen, and the shared six-digit prefix sequence. Leading zeros are preserved, and the barcode remains a separate identity."
+    ,"The selected supplier code must start with four digits before a local product code can be generated.": "The selected supplier code must start with four digits before a local product code can be generated."
+    ,"The six-digit product-code sequence is exhausted for supplier prefix :prefix.": "The six-digit product-code sequence is exhausted for supplier prefix :prefix."
 }
