@@ -1,3 +1,10 @@
+## 2026-09-27 — v0.1.22-hotfix48 purchasing and transfer corrections
+
+- Completed the approved PO, invoice, approval-time product/supplier history, inline-product, supplier-return, transfer presentation/enforcement/numbering, and global System Administrator changes without a migration.
+- Focused isolated MariaDB verification passed across non-overlapping rollback-only segments; immediate active System Administrator permission/scope behavior also passed and the disposable account is locked.
+- Exactly one Node 20/Vite 8.2.0 production build and focused syntax/Blade/locale/diff checks passed.
+- Remaining: immutable commit/package, fresh protected backup and isolated restore, atomic production activation, focused live checks, and closure records.
+
 ## 2026-09-26 — Hotfix47 authenticated setup redirect repair deployed
 
 - Replaced the conflicting fixed `/dashboard` post-login destinations with one shared authenticated landing decision and intercepted dashboard/initial-setup entry before company readiness resolves a missing operational context.

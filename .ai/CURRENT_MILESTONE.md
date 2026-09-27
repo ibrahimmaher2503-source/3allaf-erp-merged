@@ -1,9 +1,9 @@
 # Current Milestone
 
-**Date:** 2026-09-26
+**Date:** 2026-09-27
 
-**Status:** Hotfix47 application commit `3ed4a9529c45806175424f70e8ce05993e8233cb` is deployed at `https://rajeh.xyz` from exact Hotfix46.
+**Status:** Hotfix48 purchasing/transfer implementation is verified locally and awaiting authorized immutable deployment from exact Hotfix47.
 
-Post-login navigation now uses one shared landing policy. A global System Administrator who has no operational location scope is sent to the existing authenticated, verified and permission-gated Users, Roles & Scopes setup step. Dashboard and initial-setup entry points converge on that destination before company context resolution; users with visible stores retain their normal landing behavior. The fix grants no store visibility, branch/store scope, `is_super_admin` bypass or verification exception.
+The candidate corrects purchase-order cost/default-warehouse behavior while retaining historical snapshots; separates invoice purchase cost and Base selling price with draft-safe approval-only product/supplier updates; preserves inline-product identities and entered prices; restores supplier-return opening; adds reservation-aware transfer presentation and enforcement; uses immutable source-branch six-digit transfer numbering; and gives active System Administrators every active application permission plus global company/location visibility without granting maker/checker bypass.
 
-A fresh encrypted backup, isolated full restore and reconciliation, immutable-payload verification, atomic activation, runtime restoration and focused live authenticated navigation checks passed. No migration or production business-data write occurred. Deployment evidence: `/var/lib/toyjoy/hotfix47-deployment/3ed4a9529c45-20260926.ek14It`; isolated restore database: `toyjoy_hf47_restore_d3f54ec2406121368e` (locked, with no retained generated credentials).
+No migration is added. The remaining phase gate is a fresh encrypted production backup, isolated restore/reconciliation, atomic release activation, runtime restoration, and focused live identity/health/authenticated affected-route verification.

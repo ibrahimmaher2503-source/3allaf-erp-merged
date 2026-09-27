@@ -6,6 +6,8 @@ namespace App\Modules\Inventory\Actions;
 
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -42,8 +44,22 @@ final class UpdateStockTransferDraftAction
             }
             $this->scope->execute($sourceStoreId);
             $this->scope->execute($destinationStoreId);
+            $source = Store::query()->findOrFail($sourceStoreId);
+            $destination = Store::query()->findOrFail($destinationStoreId);
+            $originalSourceBranchId = Store::query()->whereKey($transfer->source_store_id)->value('branch_id');
+            if ($source->branch_id === null || (int) $source->branch_id !== (int) $originalSourceBranchId) {
+                throw new InvalidArgumentException(__('A numbered transfer cannot move to another source branch. Create a new transfer instead.'));
+            }
+            $sourceBranchCompanyId = $source->branch()->value('company_id');
+            if ($source->company_id === null
+                || $destination->company_id === null
+                || $sourceBranchCompanyId === null
+                || (int) $source->company_id !== (int) $sourceBranchCompanyId
+                || (int) $source->company_id !== (int) $destination->company_id) {
+                throw new InvalidArgumentException(__('Source and destination stores must belong to the same company.'));
+            }
             app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
-            $normalized = $this->normalizeLines($lines);
+            $normalized = $this->normalizeLines($lines, $sourceStoreId);
             $before = $transfer->only(['source_store_id', 'destination_store_id', 'reason_code', 'notes', 'status', 'lock_version']);
             $transfer->mutateApprovedDocument([
                 'source_store_id' => $sourceStoreId,
@@ -73,7 +89,7 @@ final class UpdateStockTransferDraftAction
     }
 
     /** @param array<int, array{product_id: int, quantity_requested: string}> $lines @return array<int, array<string, mixed>> */
-    private function normalizeLines(array $lines): array
+    private function normalizeLines(array $lines, int $sourceStoreId): array
     {
         if ($lines === []) {
             throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
@@ -95,7 +111,12 @@ final class UpdateStockTransferDraftAction
             if (isset($normalized[$product->id])) {
                 throw new InvalidArgumentException(__('A transfer cannot contain the same product more than once.'));
             }
-            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($product->average_cost ?? '0'), '0', 4)];
+            $balance = StockBalance::query()->where('product_id', $product->id)->where('store_id', $sourceStoreId)->lockForUpdate()->first();
+            $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
+            if (bccomp($available, $quantity, 6) < 0) {
+                throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
+            }
+            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($balance?->average_cost ?? '0'), '0', 4)];
         }
         return array_values($normalized);
     }

@@ -68,7 +68,7 @@ final class CustomerChild extends Model
     /** @param Builder<CustomerChild> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

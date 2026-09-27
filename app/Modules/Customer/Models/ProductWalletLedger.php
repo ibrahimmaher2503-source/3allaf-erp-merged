@@ -99,7 +99,7 @@ final class ProductWalletLedger extends Model
     /** @param Builder<ProductWalletLedger> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

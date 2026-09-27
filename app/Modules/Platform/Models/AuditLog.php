@@ -66,7 +66,7 @@ class AuditLog extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

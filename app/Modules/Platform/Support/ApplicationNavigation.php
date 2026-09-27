@@ -136,7 +136,7 @@ final class ApplicationNavigation
     private function withSetupSteps(array $item, User $user): array
     {
         $steps = collect(InitialSetupStepRegistry::activeSteps());
-        $permissions = $user->is_super_admin ? null : app(RequestPermissionLookup::class)->for($user);
+        $permissions = $user->hasGlobalApplicationAccess() ? null : app(RequestPermissionLookup::class)->for($user);
         $labels = ['basics' => __('Essentials'), 'settings' => __('Settings'), 'operations' => __('Operational Readiness')];
         $icons = ['basics' => 'building-office', 'settings' => 'cog-6-tooth', 'operations' => 'check-circle'];
 

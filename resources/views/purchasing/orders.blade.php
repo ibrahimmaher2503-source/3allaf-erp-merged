@@ -2,7 +2,6 @@
 
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
@@ -17,6 +16,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\PurchasingDashboard;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use App\Modules\Purchasing\Services\PurchaseOrderCalculator;
+use App\Modules\Purchasing\Support\DefaultReceivingWarehouse;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -142,6 +142,15 @@ new #[Title('Purchase Orders')] class extends Component
         $this->confirmedSupplierId = '';
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
+
+        $actor = auth()->user();
+        $contextStoreId = $actor ? app(\App\Modules\Platform\Support\WorkContext::class)->id($actor) : null;
+        $contextStore = $contextStoreId ? Store::query()->visibleTo($actor)->find($contextStoreId) : null;
+        if ($actor && $contextStore?->branch_id && $contextStore?->company_id) {
+            $this->orderForm['branch_id'] = (string) $contextStore->branch_id;
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextStore->company_id, (int) $contextStore->branch_id);
+            $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+        }
     }
 
     public function openEditModal(int $id): void
@@ -220,12 +229,28 @@ new #[Title('Purchase Orders')] class extends Component
         $this->dispatch('purchasing-product-focus');
     }
 
-    public function confirmSupplierChange(): void
+    public function confirmSupplierChange(SupplierProductPrice $prices): void
     {
         $this->orderForm['supplier_id'] = $this->pendingSupplierId;
         $this->confirmedSupplierId = $this->pendingSupplierId;
         $this->pendingSupplierId = '';
-        $this->lineItems = [$this->emptyOrderLine()];
+        $branch = filled($this->orderForm['branch_id'])
+            ? Branch::query()->visibleTo(auth()->user())->find((int) $this->orderForm['branch_id'])
+            : null;
+        foreach ($this->lineItems as &$line) {
+            if (! filled($line['product_id'] ?? null) || ($line['price_source'] ?? '') === 'manual_authorized_cost') {
+                continue;
+            }
+            $product = Product::query()->sellable()->find((int) $line['product_id']);
+            $price = $product && $branch && filled($this->confirmedSupplierId)
+                ? $prices->resolve($product, (int) $this->confirmedSupplierId, (int) $branch->company_id)
+                : ['unit_cost' => '0.0000', 'price_source' => 'no_supplier_history', 'price_date' => null, 'price_currency' => null];
+            $line['unit_cost'] = $price['unit_cost'];
+            $line['price_source'] = $price['price_source'];
+            $line['price_date'] = $price['price_date'] ?? '';
+            $line['price_currency'] = $price['price_currency'] ?? '';
+        }
+        unset($line);
         $this->supplierProductsOnly = $this->confirmedSupplierId !== '';
         $this->showSupplierChangeConfirmation = false;
         $this->paymentTermsManuallyEdited = false;
@@ -262,7 +287,14 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function updatedOrderFormBranchId(): void
     {
-        $this->orderForm['store_id'] = '';
+        $actor = auth()->user();
+        $branch = $actor && filled($this->orderForm['branch_id'])
+            ? Branch::query()->visibleTo($actor)->find((int) $this->orderForm['branch_id'])
+            : null;
+        $warehouse = $actor && $branch
+            ? app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $branch->company_id, (int) $branch->id)
+            : null;
+        $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
     }
 
     public function addLine(): void
@@ -288,15 +320,11 @@ new #[Title('Purchase Orders')] class extends Component
         $branch = Branch::query()->visibleTo(auth()->user())->findOrFail((int) $this->orderForm['branch_id']);
         $product = Product::query()->sellable()->availableToCompany((int) $branch->company_id)->findOrFail($productId);
         $price = $prices->resolve($product, (int) $this->orderForm['supplier_id'], (int) $branch->company_id);
-        $tax = app(ResolveProductTaxSnapshot::class)->execute($product, (int) $branch->company_id);
         $this->lineItems[$index]['product_id'] = (string) $product->id;
         $this->lineItems[$index]['unit_cost'] = $price['unit_cost'] ?? '';
         $this->lineItems[$index]['price_source'] = $price['price_source'];
         $this->lineItems[$index]['price_date'] = $price['price_date'] ?? '';
         $this->lineItems[$index]['price_currency'] = $price['price_currency'] ?? '';
-        $this->lineItems[$index]['tax_rate'] = $tax['tax_rate'];
-        $this->lineItems[$index]['tax_code'] = $tax['tax_code'] ?? '';
-        $this->lineItems[$index]['tax_inclusive'] = $tax['tax_inclusive'];
     }
 
     public function saveOrder(): void
@@ -485,7 +513,7 @@ new #[Title('Purchase Orders')] class extends Component
         $user = auth()->user();
         $suppliers = Supplier::query()->where('status', 'active')->orderBy('name_ar')->get();
         $branches = Branch::query()->where('status', 'active')
-            ->when($user && ! $user->is_super_admin, fn ($query) => $query->whereIn('id', Store::query()->visibleTo($user)->whereNotNull('branch_id')->select('branch_id')))
+            ->when($user && ! $user->hasGlobalApplicationAccess(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($user)->whereNotNull('branch_id')->select('branch_id')))
             ->withCount('purchaseOrders')->orderBy('code')->get();
         $stores = Store::visibleTo($user)->where('status', 'active')
             ->when(filled($this->orderForm['branch_id']), fn ($query) => $query->where('branch_id', (int) $this->orderForm['branch_id']))
@@ -510,7 +538,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $query = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'lines']);
 
-        if ($user && ! $user->is_super_admin) {
+        if ($user && ! $user->hasGlobalApplicationAccess()) {
             $query->where(function ($scope) use ($user) {
                 $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
                     ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
@@ -544,7 +572,7 @@ new #[Title('Purchase Orders')] class extends Component
 
         $orders = $query->latest('id')->paginate(15);
         $viewingOrderQuery = PurchaseOrder::query()->with(['supplier', 'store', 'branch', 'creator', 'submitter', 'approver', 'canceller', 'closer', 'lines.product', 'invoices.store', 'documents.attachment']);
-        if ($user && ! $user->is_super_admin) {
+        if ($user && ! $user->hasGlobalApplicationAccess()) {
             $viewingOrderQuery->where(function ($scope) use ($user) {
                 $scope->whereIn('store_id', Store::visibleTo($user)->select('id'))
                     ->orWhereIn('branch_id', Branch::visibleTo($user)->select('id'));
@@ -841,7 +869,7 @@ new #[Title('Purchase Orders')] class extends Component
             <flux:callout variant="warning">{{ __('Changing the supplier clears existing product lines and supplier prices so no price is retained for the wrong supplier.') }}</flux:callout>
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="subtle" wire:click="cancelSupplierChange">{{ __('Keep current supplier') }}</flux:button>
-                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and clear lines') }}</flux:button>
+                <flux:button type="button" variant="danger" wire:click="confirmSupplierChange">{{ __('Change supplier and refresh suggested costs') }}</flux:button>
             </div>
         </div>
     </flux:modal>

@@ -49,6 +49,8 @@ class User extends Authenticatable implements PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    private ?bool $systemAdministratorRole = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -76,6 +78,25 @@ class User extends Authenticatable implements PasskeyUser
     public function canBypassApproval(): bool
     {
         return $this->is_super_admin;
+    }
+
+    public function isSystemAdministrator(): bool
+    {
+        return $this->systemAdministratorRole ??= $this->status === 'active'
+            && $this->roles()
+                ->where('roles.code', 'system-administrator')
+                ->where('roles.status', 'active')
+                ->exists();
+    }
+
+    /**
+     * System Administrator is the owner-approved application-wide role. Keep
+     * approval self-bypass tied to the immutable Super Admin flag separately.
+     */
+    public function hasGlobalApplicationAccess(): bool
+    {
+        return $this->status === 'active'
+            && ($this->is_super_admin || $this->isSystemAdministrator());
     }
 
     /**
@@ -121,7 +142,7 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        if ($this->is_super_admin) {
+        if ($this->hasGlobalApplicationAccess()) {
             return true;
         }
 
@@ -137,7 +158,7 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        if ($this->is_super_admin) {
+        if ($this->hasGlobalApplicationAccess()) {
             return true;
         }
 

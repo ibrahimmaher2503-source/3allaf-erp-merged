@@ -6,9 +6,11 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\RejectPurchaseInvoiceAction;
@@ -20,6 +22,7 @@ use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
+use App\Modules\Purchasing\Support\DefaultReceivingWarehouse;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -148,7 +151,26 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->confirmedSupplierId = '';
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
+        $actor = Auth::user();
+        $contextStoreId = $actor instanceof User ? app(\App\Modules\Platform\Support\WorkContext::class)->id($actor) : null;
+        $contextStore = $contextStoreId && $actor instanceof User ? Store::query()->visibleTo($actor)->find($contextStoreId) : null;
+        if ($actor instanceof User && $contextStore?->company_id) {
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextStore->company_id, $contextStore->branch_id ? (int) $contextStore->branch_id : null);
+            $this->invoiceForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+            $this->invoiceForm['currency_code'] = (string) Company::query()->whereKey($contextStore->company_id)->value('currency_code');
+        }
         $this->showFormModal = true;
+    }
+
+    public function updatedInvoiceFormStoreId(): void
+    {
+        $actor = Auth::user();
+        $store = $actor instanceof User && filled($this->invoiceForm['store_id'])
+            ? Store::query()->visibleTo($actor)->find((int) $this->invoiceForm['store_id'])
+            : null;
+        $this->invoiceForm['currency_code'] = $store?->company_id
+            ? (string) Company::query()->whereKey($store->company_id)->value('currency_code')
+            : '';
     }
 
     public function openReceivingModal(int $purchaseOrderId): void
@@ -205,7 +227,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'purchase_order_id' => (string) $order->id,
             'supplier_reference' => '',
             'invoice_date' => now()->toDateString(),
-            'currency_code' => '',
+            'currency_code' => (string) Company::query()->whereKey($order->store?->company_id)->value('currency_code'),
             'notes' => __('Receiving for :number', ['number' => $order->po_number]),
             'lock_version' => 0,
         ];
@@ -394,6 +416,16 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->quickProductLineIndex = null;
     }
 
+    public function quickProductLocalPreview(): ?string
+    {
+        $supplierId = filled($this->invoiceForm['supplier_id']) ? (int) $this->invoiceForm['supplier_id'] : null;
+        try {
+            return app(ReserveProductIdentityAction::class)->preview($supplierId);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     /** @param array{unit_cost: string|null, price_source: string, price_date: string|null, price_currency: string|null}|null $price */
     private function insertProduct(Product $product, ?array $price = null, ?int $targetIndex = null): void
     {
@@ -431,7 +463,7 @@ new #[Title('Purchase Invoices')] class extends Component
         try {
             $validated = $this->validate([
                 'quickProduct.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
-                'quickProduct.barcode' => ['required', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('products', 'item_code'), Rule::unique('barcodes', 'barcode')],
+                'quickProduct.barcode' => [Rule::requiredIf(fn (): bool => $this->quickProduct['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('products', 'item_code'), Rule::unique('barcodes', 'barcode')],
                 'quickProduct.model_number' => ['required', 'string', 'max:100'],
                 'quickProduct.name_ar' => ['required', 'string', 'max:255'],
                 'quickProduct.name_en' => ['nullable', 'string', 'max:255'],
@@ -459,9 +491,14 @@ new #[Title('Purchase Invoices')] class extends Component
                 'quickProduct.open_price' => __('Open-price product'),
             ])['quickProduct'];
 
+            $validated['preferred_supplier_id'] = (int) $this->invoiceForm['supplier_id'];
+            $supplier = Supplier::query()->whereKey($validated['preferred_supplier_id'])->where('status', 'active')->firstOrFail();
+            if ($validated['barcode_registration_type'] === 'local' && preg_match('/[A-Za-z].*[A-Za-z].*[A-Za-z]/', (string) $supplier->name_en) !== 1) {
+                throw ValidationException::withMessages(['quickProduct.preferred_supplier_id' => __('The selected supplier English name must contain at least three English letters.')]);
+            }
+
             $lookup = trim((string) $validated['barcode']);
-            $isInternationalBarcode = $validated['barcode_registration_type'] === 'international'
-                && preg_match('/^\d{8}$|^\d{12,14}$/', $lookup) === 1;
+            $isInternationalBarcode = $validated['barcode_registration_type'] === 'international';
             if ($isInternationalBarcode) {
                 app(\App\Modules\Catalog\Support\ProductBarcodePolicy::class)->international($lookup);
             }
@@ -469,14 +506,11 @@ new #[Title('Purchase Invoices')] class extends Component
             $product = DB::transaction(function () use ($save, $barcodes, $validated, $lookup, $isInternationalBarcode): Product {
                 $product = $save->execute([
                     ...$validated,
-                    'item_code' => $isInternationalBarcode ? '' : strtoupper($lookup),
+                    'item_code' => '',
                     'preferred_supplier_id' => $validated['preferred_supplier_id'] ?: null,
                 ]);
 
-                if ($validated['barcode_registration_type'] === 'local') {
-                    $supplier = Supplier::query()->findOrFail((int) $validated['preferred_supplier_id']);
-                    $barcodes->allocateLocalBarcode($product->id, $supplier->code, 'purchase-invoice-quick-product:'.$product->id);
-                } elseif ($isInternationalBarcode) {
+                if ($isInternationalBarcode) {
                     $barcodes->addSupplierBarcode($product->id, $lookup);
                 }
 
@@ -486,7 +520,12 @@ new #[Title('Purchase Invoices')] class extends Component
             $this->showQuickProduct = false;
             $targetIndex = $this->quickProductLineIndex;
             $this->quickProductLineIndex = null;
-            $this->insertProduct($product, null, $targetIndex);
+            $this->insertProduct($product, [
+                'unit_cost' => (string) $validated['average_cost'],
+                'price_source' => 'manual_quick_product',
+                'price_date' => null,
+                'price_currency' => $this->invoiceForm['currency_code'] ?: null,
+            ], $targetIndex);
             Flux::toast(__('Product card created and added to the draft invoice.'), variant: 'success');
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
@@ -873,7 +912,7 @@ new #[Title('Purchase Invoices')] class extends Component
     @if ($showFormModal)
         <flux:card class="space-y-3 p-3 sm:p-4" aria-label="{{ __('Stage 1 — Purchase invoice') }}" data-purchase-invoice-editor>
             <form wire:submit.prevent="saveInvoice" class="space-y-4" data-product-line-editor data-authoritative-financial-preview data-autofocus="true">
-                <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><x-context-help :title="__('Stage 1 — Purchase invoice')" :label="__('Open contextual help')"><p>{{ __('Scan or search products, then save the invoice safely as a draft.') }}</p><p>{{ __('Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.') }}</p><p>{{ __('The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals include discounts and inclusive or exclusive tax according to the saved tax treatment.') }}</p></x-context-help></div>
+                <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><x-context-help :title="__('Stage 1 — Purchase invoice')" :label="__('Open contextual help')"><p>{{ __('Scan or search products, then save the invoice safely as a draft.') }}</p><p>{{ __('Purchase cost uses only the latest approved cost for this product and supplier in the current company. If no history exists, the cost starts at zero.') }}</p><p>{{ __('The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals include discounts and inclusive or exclusive tax according to the saved tax treatment.') }}</p></x-context-help></div>
                 @if (filled($invoiceForm['purchase_order_id']))
                     <input type="hidden" wire:model="invoiceForm.purchase_order_id" />
                     <flux:callout icon="inbox-arrow-down" variant="info">
@@ -887,7 +926,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <flux:select.option value="{{ $supplier->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>
                         @endforeach
                     </flux:select>
-                    <flux:select wire:model="invoiceForm.store_id" :label="__('Receiving store')">
+                    <flux:select wire:model.live="invoiceForm.store_id" :label="__('Receiving warehouse')">
                         <flux:select.option value="">{{ __('Select store') }}</flux:select.option>
                         @foreach ($stores as $store)
                             <flux:select.option value="{{ $store->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—') }}</flux:select.option>
@@ -895,7 +934,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </flux:select>
                     <flux:input wire:model="invoiceForm.invoice_date" type="date" :label="__('Invoice date')" />
                     <flux:input wire:model="invoiceForm.supplier_reference" :label="__('Supplier invoice reference')" />
-                    <flux:input wire:model="invoiceForm.currency_code" maxlength="3" :label="__('Currency code')" placeholder="{{ __('Optional') }}" />
+                    <div><span class="text-xs font-semibold">{{ __('Currency') }}</span><div class="mt-1 flex h-10 items-center rounded-lg bg-zinc-100 px-3 font-mono text-sm dark:bg-zinc-800">{{ $invoiceForm['currency_code'] ?: '—' }}</div></div>
                 </div>
 
                 <div class="space-y-2 border-t border-border pt-3">
@@ -919,7 +958,7 @@ new #[Title('Purchase Invoices')] class extends Component
                             <div class="grid grid-cols-12 items-start gap-1.5 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(14rem,1fr)_4.5rem_7.5rem_6.5rem_6.5rem_5rem_4.5rem_6rem_2.5rem] dark:bg-zinc-800/40" wire:key="invoice-line-{{ $index }}" data-product-line data-product-value="{{ $line['product_id'] ?? '' }}">
                                 <div class="col-span-12 min-w-0 lg:col-auto">
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
-                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
+                                    <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" result-presentation="name-code" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                                 </div>
                                 <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
                                 <div class="col-span-4 min-w-[7.5rem] sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Purchase unit cost') }}</label><input wire:model="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" data-line-price data-price-kind="cost" data-purchase-cost-input type="number" min="0" step="0.0001" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /></div>
@@ -998,11 +1037,15 @@ new #[Title('Purchase Invoices')] class extends Component
                 <fieldset class="rounded-xl border border-border p-3">
                     <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Identity') }}</legend>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        <flux:select wire:model="quickProduct.barcode_registration_type" :label="__('Barcode registration type')" required>
+                        <flux:select wire:model.live="quickProduct.barcode_registration_type" :label="__('Barcode registration type')" required>
                             <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
                             <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
                         </flux:select>
-                        <flux:input wire:model="quickProduct.barcode" :label="__('Barcode / SKU')" dir="ltr" required />
+                        @if($quickProduct['barcode_registration_type'] === 'local')
+                            <div><span class="text-xs font-semibold">{{ __('Generated local code') }}</span><div class="mt-1 flex h-10 items-center rounded-lg bg-zinc-100 px-3 font-mono text-sm dark:bg-zinc-800" dir="ltr">{{ $this->quickProductLocalPreview() ?: '—' }}</div><p class="mt-1 text-xs text-amber-700">{{ __('Preview only. The final immutable code is reserved atomically when the product is created.') }}</p></div>
+                        @else
+                            <flux:input wire:model="quickProduct.barcode" :label="__('International barcode')" dir="ltr" required />
+                        @endif
                         <flux:input wire:model="quickProduct.model_number" :label="__('Model number')" required />
                         <flux:input wire:model="quickProduct.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                         <flux:input wire:model="quickProduct.name_en" :label="__('English product name')" dir="ltr" />
@@ -1014,7 +1057,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         <flux:select wire:model="quickProduct.category_id" :label="__('Category / subcategory')" required><flux:select.option value="">{{ __('Select category') }}</flux:select.option>@foreach($categories as $category)<flux:select.option value="{{ $category->id }}">{{ $category->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? ($category->name_ar ?: '—') : ($category->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
                         <flux:select wire:model="quickProduct.brand_id" :label="__('Brand')"><flux:select.option value="">{{ __('No brand') }}</flux:select.option>@foreach($brands as $brand)<flux:select.option value="{{ $brand->id }}">{{ $brand->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? ($brand->name_ar ?: '—') : ($brand->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
-                        <flux:select wire:model="quickProduct.preferred_supplier_id" :label="__('Supplier')"><flux:select.option value="">{{ __('No supplier') }}</flux:select.option>@foreach($suppliers as $supplier)<flux:select.option value="{{ $supplier->id }}">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->name_ar ?: '—') : ($supplier->name_en ?: '—') }}</flux:select.option>@endforeach</flux:select>
+                        <div><span class="text-xs font-semibold">{{ __('Supplier') }}</span><div class="mt-1 flex h-10 items-center rounded-lg bg-zinc-100 px-3 text-sm dark:bg-zinc-800">{{ \App\Support\HumanName::name($suppliers->firstWhere('id', (int) $invoiceForm['supplier_id'])) }}</div></div>
                         <flux:select wire:model="quickProduct.product_type" :label="__('Product type')" required><flux:select.option value="standard">{{ __('Standard') }}</flux:select.option><flux:select.option value="service">{{ __('Service') }}</flux:select.option><flux:select.option value="composite">{{ __('Composite') }}</flux:select.option></flux:select>
                         <flux:select wire:model="quickProduct.status" :label="__('Status')" required><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select>
                     </div>
@@ -1023,7 +1066,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 <fieldset class="rounded-xl border border-border p-3">
                     <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Commercial fields') }}</legend>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-                        <flux:input wire:model="quickProduct.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" required />
+                        <flux:input wire:model="quickProduct.average_cost" type="number" min="0" step="0.01" :label="__('Purchase unit cost')" required />
                         <flux:input wire:model="quickProduct.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" required />
                         <flux:checkbox wire:model="quickProduct.open_price" :label="__('Open-price product')" />
                     </div>

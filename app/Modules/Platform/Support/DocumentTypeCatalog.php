@@ -59,6 +59,10 @@ final class DocumentTypeCatalog
 
     public static function prefix(string $branchCode, string $type): string
     {
+        if ($type === 'stock_transfer') {
+            return strtoupper(trim($branchCode)).'-';
+        }
+
         $code = self::NUMBERING_TYPES[$type]['code'] ?? strtoupper(substr($type, 0, 3));
 
         return strtoupper(trim($branchCode)).'-'.$code.'-';

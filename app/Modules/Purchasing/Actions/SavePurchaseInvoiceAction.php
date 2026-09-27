@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
@@ -64,6 +65,10 @@ final class SavePurchaseInvoiceAction
             }
             if ($store->company_id !== null && $store->branch?->company_id !== null && (int) $store->company_id !== (int) $store->branch->company_id) {
                 throw new InvalidArgumentException(__('The selected receiving store has inconsistent company ownership.'));
+            }
+            $baseCurrency = strtoupper(trim((string) Company::query()->whereKey($operationalCompanyId)->value('currency_code')));
+            if ($baseCurrency === '') {
+                throw new InvalidArgumentException(__('The receiving store company has no base currency configured.'));
             }
 
             $supplier = Supplier::query()->with('supplierGroup:id,company_id')->lockForUpdate()->findOrFail((int) ($data['supplier_id'] ?? 0));
@@ -164,7 +169,7 @@ final class SavePurchaseInvoiceAction
                 'store_id' => $store->id,
                 'supplier_reference' => ! empty($data['supplier_reference']) ? trim((string) $data['supplier_reference']) : null,
                 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(),
-                'currency_code' => ! empty($data['currency_code']) ? strtoupper(trim((string) $data['currency_code'])) : null,
+                'currency_code' => $baseCurrency,
                 'status' => 'draft',
                 'subtotal' => $totals['subtotal'],
                 'tax_amount' => $totals['taxAmount'],
@@ -197,7 +202,6 @@ final class SavePurchaseInvoiceAction
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
                     'quantity_received' => 0,
                 ]);
-                app(SyncSupplierProductAssociation::class)->associate($supplier->id, $product->id, (int) $userId);
             }
 
             app(RecordAuditEvent::class)->execute(

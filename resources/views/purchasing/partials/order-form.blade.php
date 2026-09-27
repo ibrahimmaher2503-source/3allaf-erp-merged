@@ -54,8 +54,8 @@
             <div class="flex items-center gap-2">
                 <h3 class="text-sm font-bold text-zinc-900 dark:text-white">{{ __('Order Line Items') }}</h3>
                 <x-context-help :title="__('Purchase cost and totals')" :label="__('Open contextual help')">
-                    <p>{{ __('Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.') }}</p>
-                    <p>{{ __('The selling price is never used as purchase cost. Line and document totals include the selected discount and the product tax treatment.') }}</p>
+                    <p>{{ __('Purchase cost uses only the latest approved cost for this product and supplier in the current company. If no history exists, the cost starts at zero.') }}</p>
+                    <p>{{ __('New purchase-order totals are quantity multiplied by unit purchase cost. Invoice discounts and taxes remain available on purchase invoices.') }}</p>
                 </x-context-help>
             </div>
             <div class="flex flex-wrap items-center gap-3 sm:justify-end">
@@ -65,22 +65,19 @@
         </div>
 
         <div class="max-h-[32rem] overflow-y-auto rounded-lg border border-border" data-order-lines-scroll>
-            <div class="sticky top-0 z-20 hidden grid-cols-[minmax(16rem,1fr)_5rem_8rem_7rem_7rem_7rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
+            <div class="sticky top-0 z-20 hidden grid-cols-[minmax(16rem,1fr)_6rem_10rem_9rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
                 <span>{{ __('Product') }}</span>
                 <span>{{ __('Quantity') }}</span>
                 <span>{{ __('Unit cost') }}</span>
-                <span>{{ __('Discount') }}</span>
-                <span>{{ __('Tax') }}</span>
                 <span>{{ __('Line total') }}</span>
                 <span></span>
             </div>
             <div class="space-y-1.5 p-1.5">
                 @foreach ($lineItems as $index => $item)
-                <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(16rem,1fr)_5rem_8rem_7rem_7rem_7rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
+                <div class="grid grid-cols-12 items-start gap-2 rounded-md bg-zinc-50 p-2 lg:grid-cols-[minmax(16rem,1fr)_6rem_10rem_9rem_2.5rem] dark:bg-zinc-800/40" data-product-line wire:key="order-line-{{ $index }}">
                     <div class="col-span-12 min-w-0 lg:col-auto">
                         @php($selectedProduct = $products->firstWhere('id', (int) ($item['product_id'] ?? 0)))
                         <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$item['product_id'] ?? ''" :display="$selectedProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? $selectedProduct->name_ar : ($selectedProduct->name_en ?: $selectedProduct->name_ar)).' · '.$selectedProduct->item_code) : ''" :required="true" :purchasing="true" :supplier-id="$orderForm['supplier_id']" :supplier-only="$supplierProductsOnly" :company-id="filled($orderForm['branch_id']) ? \App\Modules\Platform\Models\Branch::query()->whereKey($orderForm['branch_id'])->value('company_id') : ''" :disabled="blank($orderForm['supplier_id']) || blank($orderForm['branch_id'])" x-on:product-selected="$wire.selectOrderProduct({{ $index }}, $event.detail.id)" />
-                        @if($selectedProduct)<p class="mt-0.5 truncate text-[10px] text-zinc-500">{{ __('Internal code') }}: {{ $selectedProduct->item_code }} · {{ __('Supplier code') }}: {{ $selectedProduct->productSuppliers->first()?->supplier_item_code ?: '—' }} · {{ __('Model') }}: {{ $selectedProduct->model_number ?: '—' }}</p>@endif
                     </div>
 
                     <div class="col-span-5 sm:col-span-3 lg:col-auto">
@@ -91,17 +88,6 @@
                     <div class="col-span-7 min-w-0 sm:col-span-4 lg:col-auto">
                         <label class="text-xs font-semibold lg:sr-only">{{ __('Unit cost') }}</label>
                         <input data-line-price data-price-kind="cost" type="number" step="0.0001" min="0" wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-3 lg:col-auto">
-                        <label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label>
-                        <div class="mt-1 grid grid-cols-2 gap-1"><select data-line-discount-type wire:model.live="lineItems.{{ $index }}.discount_type" class="h-10 rounded-lg border-zinc-300 text-xs dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">%</option><option value="amount">{{ __('Amount') }}</option></select><input data-line-discount type="number" min="0" step="0.0001" wire:model.live="lineItems.{{ $index }}.discount_value" class="h-10 rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900"></div>
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-3 lg:col-auto">
-                        <span class="block text-xs font-semibold lg:sr-only">{{ __('Tax') }}</span>
-                        <input type="hidden" data-line-tax value="{{ $item['tax_rate'] ?? 0 }}"><input type="hidden" data-line-tax-inclusive value="{{ !empty($item['tax_inclusive']) ? '1' : '0' }}">
-                        <div class="mt-1 flex h-10 items-center rounded-lg bg-white px-2 text-xs dark:bg-zinc-900"><span dir="ltr">{{ number_format((float)($item['tax_rate'] ?? 0), 2) }}%</span><span class="ms-1 text-zinc-500">{{ !empty($item['tax_inclusive']) ? __('Inclusive') : __('Exclusive') }}</span></div>
                     </div>
 
                     <div class="col-span-10 sm:col-span-4 lg:col-auto">

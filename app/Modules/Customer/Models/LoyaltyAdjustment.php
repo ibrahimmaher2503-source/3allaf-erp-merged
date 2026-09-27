@@ -82,7 +82,7 @@ final class LoyaltyAdjustment extends Model
     /** @param Builder<LoyaltyAdjustment> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

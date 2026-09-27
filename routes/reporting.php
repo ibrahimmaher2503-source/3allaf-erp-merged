@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $report = $snapshot->execute($user, $filters);
         $branches = Branch::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->get();
-        $users = User::query()->where('status', 'active')->when(! $user->is_super_admin, function (Builder $query) use ($user): void {
+        $users = User::query()->where('status', 'active')->when(! $user->hasGlobalApplicationAccess(), function (Builder $query) use ($user): void {
             $query->where(function (Builder $scope) use ($user): void {
                 $scope->whereHas('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active')->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id')))
                     ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id')));

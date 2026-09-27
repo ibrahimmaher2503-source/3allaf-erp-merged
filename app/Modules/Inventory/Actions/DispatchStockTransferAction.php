@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Actions;
 
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,11 @@ final class DispatchStockTransferAction
             $poster = app(PostInventoryMovement::class);
             foreach ($transfer->lines as $line) {
                 $quantity = (string) $line->quantity_requested;
+                $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $transfer->source_store_id)->lockForUpdate()->first();
+                $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
+                if (bccomp($available, $quantity, 6) < 0) {
+                    throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
+                }
                 $poster->execute($line->product_id, $transfer->source_store_id, '-'.$quantity, 'transfer_dispatch', (string) $line->unit_cost, 'DEMO-TRANSFER-DISPATCH:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
                 $poster->adjustInTransit($line->product_id, $transfer->destination_store_id, $quantity);
                 $line->mutateApprovedParentLine(['quantity_dispatched' => $quantity]);

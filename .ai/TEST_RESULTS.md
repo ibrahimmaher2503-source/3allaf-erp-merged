@@ -1,5 +1,14 @@
 # Test and Verification Results
 
+## 2026-09-27 — v0.1.22-hotfix48 focused verification
+
+- **PASS:** All changed/new PHP syntax, changed JavaScript syntax, `ar`, `en`, and `ar-EG` JSON parsing, six changed Blade compilations with compiled PHP syntax, and Git diff hygiene.
+- **PASS:** Exactly one Node 20.20.2/Vite 8.2.0 production build; no package installation occurred.
+- **PASS:** Dedicated MariaDB `toyjoy_hf48_verify_54d17584239f736c` verified PO supplier-specific approved cost/zero fallback, zero PO discounts/taxes, invoice totals/save/reload, draft-safe product/supplier state, approval-only last cost/Base selling price/supplier history, custom-price and inventory-WAC preservation, inline local/international identities and entered prices, supplier-return opening, transfer availability/WAC/effective price/field order, branch-shared immutable numbering, and source-branch immutability. Every scenario ran inside a rolled-back transaction; production records were untouched.
+- **PASS:** A newly created active non-Super-Admin System Administrator immediately received every active application permission and global active company/branch/store visibility; an undefined dotted ability remained denied and maker/checker bypass remained reserved to Super Admin.
+- **INFO:** Two segment runs initially stopped on verifier-only literal decimal-scale assumptions (`47.0000` versus `decimal:3`, then `11.00` versus `decimal:3`). The assertions were corrected to numeric comparisons and only the outstanding segments resumed.
+- **Database account status:** Locked after verification; no generated credential retained. No migration, broad automated suite, or browser-control run occurred.
+
 ## 2026-09-26 — Hotfix47 focused authenticated-navigation verification
 
 - **CONFIRMED (pre-fix live trace):** For ID 2 / `karim`, the login response sent the verified authenticated user to `/dashboard`; dashboard company-context resolution redirected to `/login`; authenticated guest handling sent `/login` back to `/dashboard`; the verification notice also redirected to `/dashboard`; `/initial-setup` failed while resolving the same missing context. The existing `/admin/authorization-baseline?setup=true&setup_step=users-scopes` route rendered HTTP 200 for this user.

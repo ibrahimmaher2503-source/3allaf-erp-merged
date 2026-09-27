@@ -1,17 +1,17 @@
-# Current Task — Hotfix47 Authenticated Setup Redirect Repair
+# Current Task — Hotfix48 Purchasing and Transfer Corrections
 
-**Date:** 2026-09-26
+**Date:** 2026-09-27
 
 **Change class:** I4
 
-**Source baseline:** deployed Hotfix46 application commit `345c3af3f34a9e0ecd75e6694f3183f8f345cb99`
+**Source baseline:** deployed Hotfix47 application commit `3ed4a9529c45806175424f70e8ce05993e8233cb`
 
-**Branch:** `hotfix/v0.1.22-hotfix46-user-management`
+**Branch:** `hotfix/v0.1.22-hotfix48-purchasing-transfer-corrections`
 
-**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix46`
+**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix48`
 
-**Status:** Completed and deployed. Production serves Hotfix47 application commit `3ed4a9529c45806175424f70e8ce05993e8233cb` at `https://rajeh.xyz`.
+**Status:** Implementation and focused isolated verification complete; immutable packaging and authorized production deployment remain.
 
-Hotfix47 gives authenticated users one shared landing decision. An active global System Administrator who is authorized to manage users but has no visible active store is directed to the existing protected Users, Roles & Scopes setup step before dashboard readiness resolves company context. Dashboard and initial-setup entry points use the same decision, so incomplete setup reaches an accessible destination instead of redirecting through login. Tenant visibility, operational scopes, `is_super_admin`, verification, and all route middleware remain unchanged.
+Hotfix48 contains only the approved purchasing, supplier-return, stock-transfer, and System Administrator scope corrections. It adds no migration and preserves existing production records and historical document numbers/snapshots. A single Node 20/Vite 8.2.0 production build completed. Focused verification ran in recorded disposable MariaDB database `toyjoy_hf48_verify_54d17584239f736c`; all task behavior passed across non-overlapping transactional segments and the database account was locked after use.
 
-The focused live authenticated check confirmed user ID 2 / `karim` reaches the rendered Users, Roles & Scopes page from login, dashboard, authenticated-login, verification, and initial-setup entry paths. User ID 1 / `hassan` continues to reach the rendered dashboard and initial-setup pages normally. No account, role, permission, scope, business record, schema, migration, dependency, asset, or verification state changed.
+Next action: commit the reviewed candidate, create and authenticate the immutable release package, then reuse the Hotfix47 backup/isolated-restore/atomic-activation process against exact Hotfix47. Do not repeat the completed build or isolated behavior checks.

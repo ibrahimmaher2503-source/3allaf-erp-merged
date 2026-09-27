@@ -19,7 +19,7 @@ final class Alert extends Model
     public function store(): BelongsTo { return $this->belongsTo(Store::class); }
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) return $query;
+        if ($user->hasGlobalApplicationAccess()) return $query;
 
         return $query->where(function (Builder $scope) use ($user): void {
             $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))

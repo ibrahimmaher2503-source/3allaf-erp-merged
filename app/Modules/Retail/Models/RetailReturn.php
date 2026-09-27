@@ -33,7 +33,7 @@ final class RetailReturn extends Model
     public function settlements(): HasMany { return $this->hasMany(RetailReturnSettlement::class); }
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) return $query;
+        if ($user->hasGlobalApplicationAccess()) return $query;
         return $query->where(function (Builder $scope) use ($user): void {
             $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))
                 ->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id'));

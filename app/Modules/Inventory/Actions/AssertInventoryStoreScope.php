@@ -18,7 +18,7 @@ final class AssertInventoryStoreScope
         if (! $user instanceof User) {
             throw new AuthorizationException(__('Authentication is required for this inventory operation.'));
         }
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return;
         }
 

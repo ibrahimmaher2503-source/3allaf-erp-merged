@@ -50,7 +50,7 @@ class SaveCashDrawerAction
                     if ((int) $store->company_id !== (int) $branch->company_id) {
                         throw new InvalidArgumentException(__('Selected store does not belong to the chosen company.'));
                     }
-                    if (! $user->is_super_admin && ! $store->visibleTo($user)->whereKey($store->getKey())->exists()) {
+                    if (! $user->hasGlobalApplicationAccess() && ! $store->visibleTo($user)->whereKey($store->getKey())->exists()) {
                         throw new InvalidArgumentException(__('The selected POS selling location is outside your authorized scope.'));
                     }
                 }

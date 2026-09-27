@@ -137,6 +137,20 @@ final class CreateStockTransferDraftAction
 
         $this->scope->execute($sourceStoreId);
         $this->scope->execute($destinationStoreId);
+        $stores = Store::query()->whereKey([$sourceStoreId, $destinationStoreId])->get()->keyBy('id');
+        $source = $stores->get($sourceStoreId);
+        $destination = $stores->get($destinationStoreId);
+        if ($source?->branch_id === null) {
+            throw new InvalidArgumentException(__('The source store must belong to a branch.'));
+        }
+        $sourceBranchCompanyId = $source->branch()->value('company_id');
+        if ($source?->company_id === null
+            || $destination?->company_id === null
+            || $sourceBranchCompanyId === null
+            || (int) $source->company_id !== (int) $sourceBranchCompanyId
+            || (int) $source->company_id !== (int) $destination->company_id) {
+            throw new InvalidArgumentException(__('Source and destination stores must belong to the same company.'));
+        }
     }
 
     /**
@@ -168,18 +182,20 @@ final class CreateStockTransferDraftAction
                 throw new InvalidArgumentException(__('A transfer cannot contain the same product more than once.'));
             }
 
-            $sourceAverageCost = StockBalance::query()
+            $balance = StockBalance::query()
                 ->where('product_id', $productId)
                 ->where('store_id', $sourceStoreId)
-                ->value('average_cost');
+                ->lockForUpdate()
+                ->first();
+            $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
+            if (bccomp($available, $quantity, 6) < 0) {
+                throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
+            }
 
             $normalized[$productId] = [
                 'product_id' => $productId,
                 'quantity_requested' => $quantity,
-                // A transfer moves the source location's current weighted
-                // average cost. Product-card cost is only a fallback for a
-                // pre-stock draft, not the cost of an existing balance.
-                'unit_cost' => $this->decimal($sourceAverageCost ?? $product->average_cost ?? '0'),
+                'unit_cost' => $this->decimal($balance?->average_cost ?? '0'),
             ];
         }
 

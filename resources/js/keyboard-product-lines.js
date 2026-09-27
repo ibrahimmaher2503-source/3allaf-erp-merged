@@ -113,6 +113,11 @@ class ProductLookup {
         if (this.root.dataset.currencyCode) params.set('currency_code', this.root.dataset.currencyCode);
         if (this.root.dataset.companyId) params.set('company_id', this.root.dataset.companyId);
         if (this.root.dataset.purchaseInvoiceId) params.set('purchase_invoice_id', this.root.dataset.purchaseInvoiceId);
+        if (this.root.dataset.sourceStoreSelector) {
+            const sourceStore = document.querySelector(this.root.dataset.sourceStoreSelector)?.value;
+            if (!sourceStore) return this.renderMessage(this.root.dataset.messageSourceRequired);
+            params.set('source_store_id', sourceStore);
+        }
         const requestKey = params.toString();
         if (requestKey === this.pendingKey && this.pendingRequest) return this.pendingRequest;
 
@@ -172,6 +177,9 @@ class ProductLookup {
                 const secondaryName = document.documentElement.lang === 'ar' ? english : arabic;
                 const secondaryDirection = document.documentElement.lang === 'ar' ? 'ltr' : 'rtl';
                 const names = `<strong class="block">${escapeHtml(primaryName)}</strong>${secondaryName && secondaryName !== primaryName ? `<span class="mt-0.5 block text-xs text-zinc-600 dark:text-zinc-300" dir="${secondaryDirection}">${escapeHtml(secondaryName)}</span>` : ''}`;
+                if (this.root.dataset.resultPresentation === 'name-code') {
+                    return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30"><strong class="block">${escapeHtml(primaryName)}</strong><small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)}</small></button>`;
+                }
                 const identity = `${names}<small class="mt-1 block font-mono text-zinc-500" dir="ltr">${escapeHtml(item.item_code)} · ${escapeHtml(item.model_number || '—')} · ${escapeHtml(item.barcodes?.[0] || '—')}</small>`;
                 if (this.root.dataset.context !== 'purchasing') {
                     return `<button type="button" role="option" id="${this.listId}-${index}" aria-selected="false" data-result-index="${index}" class="block w-full border-b border-zinc-100 p-3 text-start text-sm last:border-0 hover:bg-cyan-50 focus:bg-cyan-50 dark:border-zinc-800 dark:hover:bg-cyan-950/30">${identity}</button>`;
@@ -248,6 +256,18 @@ class ProductLookup {
         this.close();
         this.closeCamera();
         this.root.dispatchEvent(new CustomEvent('product-selected', { bubbles: true, detail: item }));
+        const line = this.root.closest('[data-product-line]');
+        if (this.root.dataset.context === 'transfer' && line) {
+            const values = {
+                '[data-line-available]': item.available_quantity,
+                '[data-line-cost]': item.source_unit_cost,
+                '[data-line-selling-price]': item.source_selling_price,
+            };
+            Object.entries(values).forEach(([selector, value]) => {
+                const output = line.querySelector(selector);
+                if (output) output.textContent = value ?? '—';
+            });
+        }
         requestAnimationFrame(() => this.root.closest('[data-product-line]')?.querySelector('[data-line-quantity]')?.focus());
     }
 
@@ -557,6 +577,21 @@ const boot = (scope = document) => {
     editors.forEach(initializeEditor);
     editors.forEach(focusBlank);
     matchingElements(scope, '[data-compact-filter-row]').forEach(initializeCompactFilterRow);
+    matchingElements(scope, '[data-transfer-source]').forEach((source) => {
+        if (source.dataset.transferSourceReady) return;
+        source.dataset.transferSourceReady = 'true';
+        source.addEventListener('change', () => {
+            source.closest('form')?.querySelectorAll('[data-product-lookup][data-context="transfer"]').forEach((root) => {
+                root._productLookup?.destroy();
+                const hidden = root.querySelector('[data-product-id]');
+                const input = root.querySelector('[data-product-search]');
+                if (hidden) { hidden.value = ''; hidden.dispatchEvent(new Event('input', { bubbles: true })); }
+                if (input) { input.value = ''; delete input.dataset.selected; }
+                root.closest('[data-product-line]')?.querySelectorAll('[data-line-available], [data-line-cost], [data-line-selling-price]').forEach((output) => { output.textContent = '—'; });
+                new ProductLookup(root);
+            });
+        });
+    });
 };
 
 const bindLivewireHooks = () => {

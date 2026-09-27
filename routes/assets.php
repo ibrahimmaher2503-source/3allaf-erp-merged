@@ -150,7 +150,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('party/asset-events/{event}/approve', function (Request $request, AssetEvent $event, ApproveAssetEventAction $action) {
         /** @var User $user */ $user = $request->user();
         $event = AssetEvent::query()->whereKey($event->id)->where(function ($q) use ($user): void {
-            if (! $user->is_super_admin) {
+            if (! $user->hasGlobalApplicationAccess()) {
                 $q->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id'));
             }
         })->firstOrFail();

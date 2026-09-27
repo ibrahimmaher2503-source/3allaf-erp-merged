@@ -32,7 +32,7 @@ final class Quotation extends Model
     public function lines(): HasMany { return $this->hasMany(QuotationLine::class); }
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) return $query;
+        if ($user->hasGlobalApplicationAccess()) return $query;
         return $query->where(function (Builder $scope) use ($user): void { $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))->orWhereIn('store_id', $user->storeScopes()->where('status', 'active')->select('store_id')); });
     }
     public function mutate(array $attributes): void

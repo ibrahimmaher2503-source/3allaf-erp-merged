@@ -5,7 +5,6 @@ namespace App\Modules\Purchasing\Actions;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
@@ -59,7 +58,7 @@ class SavePurchaseOrderAction
             abort_unless($actor instanceof User, 403);
             $branchId = (int) ($data['branch_id'] ?? 0);
             $branch = Branch::query()->where('status', 'active')
-                ->when(! $actor->is_super_admin, fn ($query) => $query->whereIn('id', Store::query()->visibleTo($actor)->whereNotNull('branch_id')->select('branch_id')))
+                ->when(! $actor->hasGlobalApplicationAccess(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($actor)->whereNotNull('branch_id')->select('branch_id')))
                 ->findOrFail($branchId);
             $storeId = (int) ($data['store_id'] ?? 0);
             if ($storeId < 1) throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
@@ -96,9 +95,9 @@ class SavePurchaseOrderAction
                 }
 
                 $existingLine = $existingLines->get($product->id);
-                $tax = $existingLine === null
-                    ? app(ResolveProductTaxSnapshot::class)->execute($product, (int) $branch->company_id)
-                    : ['tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
+                $legacyCommercialSnapshot = $existingLine === null
+                    ? ['discount_type' => null, 'discount_value' => '0.0000', 'tax_rate' => '0.0000', 'tax_code' => null, 'tax_inclusive' => false]
+                    : ['discount_type' => $existingLine->discount_type, 'discount_value' => (string) $existingLine->discount_value, 'tax_rate' => (string) $existingLine->tax_rate, 'tax_code' => $existingLine->tax_code, 'tax_inclusive' => (bool) $existingLine->tax_inclusive];
 
                 $validatedLines[] = [
                     'product_id' => $product->id,
@@ -106,9 +105,7 @@ class SavePurchaseOrderAction
                     'quantity_ordered' => $line['quantity_ordered'] ?? null,
                     'quantity_received' => '0.000000',
                     'unit_cost' => $line['unit_cost'] ?? null,
-                    'discount_type' => $line['discount_type'] ?? null,
-                    'discount_value' => $line['discount_value'] ?? 0,
-                    ...$tax,
+                    ...$legacyCommercialSnapshot,
                     'notes' => ! empty($line['notes']) ? trim((string) $line['notes']) : null,
                     'updated_by' => $userId,
                 ];
@@ -181,7 +178,7 @@ class SavePurchaseOrderAction
     private function assertStoreScope(int $storeId): void
     {
         $user = Auth::user();
-        if (! $user instanceof User || $user->is_super_admin) {
+        if (! $user instanceof User || $user->hasGlobalApplicationAccess()) {
             return;
         }
 

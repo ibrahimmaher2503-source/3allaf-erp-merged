@@ -200,6 +200,10 @@ class SaveProductAction
                     $attributes['barcode_mode'] = 'none';
                     $attributes['lock_version'] = 0;
                     $product = Product::query()->create($attributes);
+                    if ($identity !== null) {
+                        app(ReserveProductIdentityAction::class)->createPrimaryBarcode($product, $identity['item_code'], $identity['barcode_source']);
+                        $product->update(['barcode_mode' => $identity['barcode_source']]);
+                    }
                     $event = 'create_product_card';
                     $before = null;
                 } else {

@@ -83,7 +83,7 @@ class Branch extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $user->is_super_admin
+        return $user->hasGlobalApplicationAccess()
             ? $query
             : $query->whereIn('id', $user->branchScopes()->where('status', 'active')->select('branch_id'));
     }

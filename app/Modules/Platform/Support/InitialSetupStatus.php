@@ -245,7 +245,18 @@ final class InitialSetupStatus
     private function usersAndScopesReady(): bool
     {
         $administrator = User::query()->where('status', 'active')->where('is_super_admin', true)->whereHas('roles', fn (Builder $query): Builder => $query->where('roles.code', 'system-administrator')->where('roles.status', 'active'))->exists();
-        $unscoped = User::query()->where('status', 'active')->where('is_super_admin', false)->where(fn (Builder $query): Builder => $query->whereDoesntHave('roles', fn (Builder $role): Builder => $role->where('roles.status', 'active'))->orWhere(fn (Builder $scope): Builder => $scope->whereDoesntHave('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active'))->whereDoesntHave('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active'))))->exists();
+        $unscoped = User::query()
+            ->where('status', 'active')
+            ->where('is_super_admin', false)
+            ->whereDoesntHave('roles', fn (Builder $role): Builder => $role
+                ->where('roles.code', 'system-administrator')
+                ->where('roles.status', 'active'))
+            ->where(fn (Builder $query): Builder => $query
+                ->whereDoesntHave('roles', fn (Builder $role): Builder => $role->where('roles.status', 'active'))
+                ->orWhere(fn (Builder $scope): Builder => $scope
+                    ->whereDoesntHave('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active'))
+                    ->whereDoesntHave('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active'))))
+            ->exists();
 
         return $administrator && ! $unscoped;
     }

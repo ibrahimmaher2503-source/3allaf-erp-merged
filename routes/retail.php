@@ -519,7 +519,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('product_wallet.export'), 403);
         $rows = ProductWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
-        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'product_wallet_exported', metadata: ['wallet' => 'product', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'product_wallet_exported', metadata: ['wallet' => 'product', 'row_count' => $rows->count(), 'scope_limited' => ! $user->hasGlobalApplicationAccess()]);
 
         return response()->streamDownload(static function () use ($rows): void {
             $handle = fopen('php://output', 'wb');
@@ -536,7 +536,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('party_wallet.export'), 403);
         $rows = PartyWalletLedger::query()->visibleTo($user)->latestFirst()->limit(500)->get();
-        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'party_wallet_exported', metadata: ['wallet' => 'party', 'row_count' => $rows->count(), 'scope_limited' => ! $user->is_super_admin]);
+        app(RecordAuditEvent::class)->execute(category: 'reporting', event: 'party_wallet_exported', metadata: ['wallet' => 'party', 'row_count' => $rows->count(), 'scope_limited' => ! $user->hasGlobalApplicationAccess()]);
 
         return response()->streamDownload(static function () use ($rows): void {
             $handle = fopen('php://output', 'wb');
@@ -1184,7 +1184,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
         $query = OfflineTransaction::query()->where('offline_transactions.state', 'conflict');
-        if (! $user->is_super_admin) {
+        if (! $user->hasGlobalApplicationAccess()) {
             $branchIds = $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
             $storeIds = $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
             $query->where(function ($scope) use ($branchIds, $storeIds): void {

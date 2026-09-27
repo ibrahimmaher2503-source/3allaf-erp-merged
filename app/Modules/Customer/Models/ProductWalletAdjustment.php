@@ -90,7 +90,7 @@ final class ProductWalletAdjustment extends Model
     /** @param Builder<ProductWalletAdjustment> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

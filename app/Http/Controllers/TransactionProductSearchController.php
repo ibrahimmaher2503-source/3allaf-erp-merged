@@ -9,6 +9,8 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
@@ -41,10 +43,15 @@ final class TransactionProductSearchController extends Controller
         }
 
         $purchasing = $request->query('context') === 'purchasing';
+        $transferLookup = $request->query('context') === 'transfer';
         $supplierId = $request->integer('supplier_id');
         $supplierOnly = $purchasing && $request->boolean('supplier_only', true);
         $currencyCode = trim((string) $request->query('currency_code', '')) ?: null;
         $sourceInvoiceId = $request->integer('purchase_invoice_id');
+        $sourceStore = null;
+        if ($transferLookup) {
+            $sourceStore = Store::query()->visibleTo($actor)->where('status', 'active')->findOrFail($request->integer('source_store_id'));
+        }
 
         if ($purchasing && $supplierId < 1) {
             return response()->json(['data' => [], 'meta' => ['supplier_required' => true]]);
@@ -65,7 +72,7 @@ final class TransactionProductSearchController extends Controller
 
         $company = app(AuthorizedCompanyContext::class)->resolve(
             $actor,
-            $request->integer('company_id') ?: $sourceInvoice?->store?->company_id,
+            $request->integer('company_id') ?: $sourceInvoice?->store?->company_id ?: $sourceStore?->company_id,
         );
 
         $escaped = addcslashes($term, '\\%_');
@@ -111,13 +118,15 @@ final class TransactionProductSearchController extends Controller
 
         $supplierProductsEmpty = $supplierOnly && ! ProductSupplier::query()->where('supplier_id', $supplierId)->exists();
 
-        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId, $company): array {
+        return response()->json(['data' => $products->map(function (Product $product) use ($term, $mayViewCost, $supplierId, $currencyCode, $prices, $uniqueExactProductId, $company, $sourceStore): array {
             $barcodes = $product->barcodes->pluck('barcode')->filter()->values();
             $supplierProduct = $product->productSuppliers->first();
             $identifiers = collect([$product->item_code, $product->model_number, $supplierProduct?->supplier_item_code])->merge($barcodes)->filter()->map(fn ($value) => mb_strtolower(trim((string) $value)))->unique()->values();
             $price = $supplierId > 0 && $mayViewCost
                 ? $prices->resolve($product, $supplierId, (int) $company->id, $currencyCode)
                 : ['unit_cost' => $mayViewCost ? $product->average_cost : null, 'price_source' => $mayViewCost ? 'fallback_cost' : 'none', 'price_date' => null, 'price_currency' => $currencyCode];
+            $balance = $sourceStore ? StockBalance::query()->where('store_id', $sourceStore->id)->where('product_id', $product->id)->first() : null;
+            $sellingPrice = $sourceStore ? app(EffectivePriceResolver::class)->resolve($product->id, $sourceStore->id)?->amount : null;
 
             return [
                 'id' => $product->id,
@@ -133,6 +142,9 @@ final class TransactionProductSearchController extends Controller
                 'price_date' => $price['price_date'],
                 'price_currency' => $price['price_currency'],
                 'unit_price' => $product->sale_price,
+                'available_quantity' => $sourceStore ? bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6) : null,
+                'source_unit_cost' => $sourceStore ? (string) ($balance?->average_cost ?? '0') : null,
+                'source_selling_price' => $sellingPrice,
                 'exact' => $identifiers->contains(mb_strtolower($term)),
                 'exact_unique' => $uniqueExactProductId === $product->id,
             ];

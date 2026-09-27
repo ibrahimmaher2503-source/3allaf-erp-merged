@@ -38,7 +38,8 @@ final class SubmitStockTransferAction
                     throw new InvalidArgumentException(__('Transfer quantities must be greater than zero.'));
                 }
                 $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $transfer->source_store_id)->lockForUpdate()->first();
-                if ($balance === null || bccomp((string) $balance->on_hand, (string) $line->quantity_requested, 6) < 0) {
+                $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
+                if (bccomp($available, (string) $line->quantity_requested, 6) < 0) {
                     throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
                 }
             }

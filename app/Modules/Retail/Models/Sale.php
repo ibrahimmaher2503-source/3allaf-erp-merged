@@ -100,7 +100,7 @@ final class Sale extends Model implements ImmutableSourceContract
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }
 

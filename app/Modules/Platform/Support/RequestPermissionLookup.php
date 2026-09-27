@@ -20,15 +20,17 @@ final class RequestPermissionLookup
             return request()->attributes->get($requestKey);
         }
 
-        $lookup = $this->lookups[$user->id] ??= DB::table('permissions')
-            ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
-            ->join('roles', 'roles.id', '=', 'role_permissions.role_id')
-            ->join('role_user', 'role_user.role_id', '=', 'roles.id')
-            ->where('role_user.user_id', $user->id)
-            ->where('roles.status', 'active')
-            ->where('permissions.status', 'active')
-            ->distinct()
-            ->pluck('permissions.code')
+        $permissions = DB::table('permissions')->where('permissions.status', 'active');
+        if (! $user->hasGlobalApplicationAccess()) {
+            $permissions->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+                ->join('roles', 'roles.id', '=', 'role_permissions.role_id')
+                ->join('role_user', 'role_user.role_id', '=', 'roles.id')
+                ->where('role_user.user_id', $user->id)
+                ->where('roles.status', 'active')
+                ->distinct();
+        }
+
+        $lookup = $this->lookups[$user->id] ??= $permissions->pluck('permissions.code')
             ->mapWithKeys(static fn (string $code): array => [$code => true])
             ->all();
 

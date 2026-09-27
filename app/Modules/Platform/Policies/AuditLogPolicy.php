@@ -18,7 +18,7 @@ class AuditLogPolicy
             return false;
         }
 
-        if ($user->is_super_admin) {
+        if ($user->hasGlobalApplicationAccess()) {
             return true;
         }
 

@@ -13,6 +13,9 @@
     'companyId' => '',
     'purchaseInvoiceId' => '',
     'disabled' => false,
+    'resultPresentation' => 'full',
+    'transfer' => false,
+    'sourceStoreSelector' => '',
 ])
 
 <div
@@ -20,22 +23,25 @@
     data-product-lookup
     data-search-url="{{ route('transaction-products.search') }}"
     data-value-field="{{ $valueField }}"
-    data-context="{{ $purchasing ? 'purchasing' : 'transaction' }}"
+    data-context="{{ $transfer ? 'transfer' : ($purchasing ? 'purchasing' : 'transaction') }}"
+    data-source-store-selector="{{ $sourceStoreSelector }}"
     data-supplier-id="{{ $supplierId }}"
     data-supplier-only="{{ $supplierOnly ? '1' : '0' }}"
     data-currency-code="{{ $currencyCode }}"
     data-company-id="{{ $companyId }}"
     data-purchase-invoice-id="{{ $purchaseInvoiceId }}"
+    data-result-presentation="{{ $resultPresentation }}"
     data-message-empty="{{ __('No matching products.') }}"
     data-message-loading="{{ __('Searching products…') }}"
     data-message-error="{{ __('Product search could not be completed. Try again.') }}"
     data-message-supplier-required="{{ __('Select a supplier before adding products.') }}"
+    data-message-source-required="{{ __('Select a source store before adding products.') }}"
     data-message-supplier-empty="{{ __('This supplier has no associated products. Uncheck “Use supplier products only” to search all authorized products.') }}"
     data-label-unit="{{ __('Unit') }}"
     data-label-supplier-code="{{ __('Supplier product code') }}"
     data-label-last-price="{{ __('Last supplier price') }}"
     data-label-fallback-price="{{ __('Fallback product cost') }}"
-    data-label-no-price="{{ __('No saved supplier price or fallback cost') }}"
+    data-label-no-price="{{ __('No approved cost history for this supplier') }}"
 >
     <label class="mb-1 block text-xs font-semibold" data-product-label>{{ $label }}</label>
     <input
