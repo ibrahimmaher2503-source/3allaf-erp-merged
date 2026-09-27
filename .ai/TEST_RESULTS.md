@@ -8,6 +8,10 @@
 - **PASS:** A newly created active non-Super-Admin System Administrator immediately received every active application permission and global active company/branch/store visibility; an undefined dotted ability remained denied and maker/checker bypass remained reserved to Super Admin.
 - **INFO:** Two segment runs initially stopped on verifier-only literal decimal-scale assumptions (`47.0000` versus `decimal:3`, then `11.00` versus `decimal:3`). The assertions were corrected to numeric comparisons and only the outstanding segments resumed.
 - **Database account status:** Locked after verification; no generated credential retained. No migration, broad automated suite, or browser-control run occurred.
+- **PASS (package/restore):** The immutable 14,790-file candidate manifest passed. Fresh AES-256 encrypted database/private-storage backup SHA-256 `3be76e31773735291033ba385e19cb2ab29786a5fef01469d3e26cabc0f8fdbb` was fully decrypted and reconciled in isolated MariaDB `toyjoy_hf48_restore_d06b3d85690e33b35d`; database rows/schema, selected files, and inventory state matched. The generated account is locked and credentials were removed.
+- **PASS (activation/live):** Exact release commit/tree/version, atomic link activation, optimized Laravel caches, PHP-FPM reload, restored cron writers, absent maintenance, and HTTPS `/up` plus `/login` HTTP 200 passed. Authenticated user 2 (`karim`) and user 1 (`hassan`) both reached dashboard and initial setup without a loop; user 2 also rendered purchase-order create, purchase invoices, supplier returns, and transfer create with Hotfix48 markers.
+- **INFO (safe retry):** The first operator attempt stopped before maintenance, backup, or activation on an unreadable Hotfix47 cache `.gitignore`. The cache metadata ownership was normalized and candidate cache preparation hardened; the subsequent run passed. Successful journal: `/var/lib/toyjoy/hotfix48-deployment/d59f5644dde5-20260927.oU5iJP`.
+- **Boundary:** No migration, production business test record, broad automated suite, browser-control run, dependency upgrade, push, or tag occurred.
 
 ## 2026-09-26 — Hotfix47 focused authenticated-navigation verification
 

@@ -17,12 +17,11 @@
 - Ran focused transactional MariaDB verification in `toyjoy_hf48_verify_54d17584239f736c`. PO/invoice/approval/System Administrator, inline-product, transfer, and supplier-return behavior passed in non-overlapping segments. Two initial failures were verifier-only decimal display-scale comparisons and were corrected; no application defect or production write resulted.
 - Ran a separate immediate non-Super-Admin System Administrator proof: all active permissions and global company/branch/store visibility passed, undefined permission stayed denied, and maker/checker bypass stayed unavailable.
 - Locked the disposable database account and removed temporary worktree `.env` links.
+- Committed candidate `d59f5644dde57f14e5351194f3f3454ae1364d0b`, authenticated its 14,790-file immutable package, and deployed it atomically from exact Hotfix47.
+- The first operator attempt stopped before maintenance because one Hotfix47 bootstrap-cache `.gitignore` was unreadable to `rajeh`; its ownership was corrected to the established `rajeh:rajeh 0660` pattern and Hotfix48 cache preparation was hardened. No backup or activation occurred in that attempt.
+- The successful run created a fresh encrypted database/private-storage backup, fully reconciled an isolated restore, preserved inventory state, activated Hotfix48, restored runtime controls, and passed live identity, health, login/landing, purchase-order, invoice, supplier-return, and transfer checks.
+- Successful journal: `/var/lib/toyjoy/hotfix48-deployment/d59f5644dde5-20260927.oU5iJP`; isolated restore database: `toyjoy_hf48_restore_d06b3d85690e33b35d` with its generated account locked and credentials removed.
 
 ## Outstanding
 
-1. Commit the reviewed release candidate.
-2. Prepare and authenticate the immutable Hotfix48 package and operator tools.
-3. Reuse the proven Hotfix47 process: fresh encrypted backup, isolated restore/reconciliation, atomic activation, PHP-FPM reload, runtime restoration, live identity and health checks, then focused authenticated affected-route verification.
-4. Update `.ai/` closure records and append the factual session summary.
-
-Do not rebuild Vite or rerun completed isolated behavior checks. Preserve the dirty worktree and exact production data if interrupted.
+None in the approved scope. No Vite rebuild, migration, production test transaction, broad suite, browser-control run, push, or tag is pending.

@@ -3,7 +3,7 @@
 - Completed the approved PO, invoice, approval-time product/supplier history, inline-product, supplier-return, transfer presentation/enforcement/numbering, and global System Administrator changes without a migration.
 - Focused isolated MariaDB verification passed across non-overlapping rollback-only segments; immediate active System Administrator permission/scope behavior also passed and the disposable account is locked.
 - Exactly one Node 20/Vite 8.2.0 production build and focused syntax/Blade/locale/diff checks passed.
-- Remaining: immutable commit/package, fresh protected backup and isolated restore, atomic production activation, focused live checks, and closure records.
+- Deployed immutable application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b` after a fresh encrypted backup and reconciled isolated restore. Atomic activation, runtime restoration, live identity/health, both administrator login/landing paths, and four affected authenticated pages passed. No in-scope item remains.
 
 ## 2026-09-26 — Hotfix47 authenticated setup redirect repair deployed
 
