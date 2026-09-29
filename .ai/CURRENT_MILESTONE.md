@@ -1,7 +1,7 @@
 # Current Milestone
 
-**Date:** 2026-09-27
+**Date:** 2026-09-29
 
-**Status:** Hotfix49 implementation and its single focused check are complete from exact deployed Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b`, with newer completed documentation preserved. Candidate commit and deployment are pending.
+**Status:** Hotfix50 permission-label and section-selection implementation is complete from exact deployed Hotfix49 commit `5c25390599f8d9e431599f0695881123e0f27349`; its focused isolated browser verification passed and production deployment is pending.
 
-The authorized slice is limited to purchasing product-row label/alignment presentation and the generated local Product Card code rule. It adds no migration, needs no asset rebuild, and preserves saved codes, barcode behavior, inactive drafts, final-code immutability, and unrelated purchasing/catalog behavior. The focused rollback-only MariaDB/source/Blade check passed; the established verified-backup deployment process remains.
+The slice is limited to the role-permissions presentation and pending form selection behavior. It preserves permission keys/IDs, roles, grants, server authorization, administrator protections, and the existing audited Save path. It adds no migration, dependency change, or frontend asset build. Owner-authorized deployment must retain current data and use the established verified-backup/recovery process.

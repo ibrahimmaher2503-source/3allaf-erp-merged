@@ -1,5 +1,13 @@
 # Test and Verification Results
 
+## 2026-09-29 — Hotfix50 focused isolated permission-UI check
+
+- **Environment:** Dedicated MariaDB clone `toyjoy_hf50_verify_2b798b36b23f`; temporary database account locked after verification; production remained read-only and no production role or permission grant changed.
+- **Result:** PASS. Authenticated Chromium rendered all 412 permissions in 34 sections with mapped labels/descriptions. Arabic and ar-EG showed Arabic labels without raw keys or English fallback; English showed business labels. Arabic direction/Cairo and English LTR passed.
+- **Interaction:** Purchase Orders began partially selected; `All` selected all 12 permissions in that section and preserved the Supplier section. Clearing one permission immediately restored the indeterminate state. Existing Save persisted 11 Purchase Order permissions, and reload reproduced 11 plus the unchanged Supplier permission.
+- **Evidence:** `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f/focused-result.json`, `permission-ui.png`, and `SHA256SUMS`.
+- **Boundary:** This was one focused scenario with setup/harness retries and implementation corrections before the final pass, not a test suite. No PHPUnit/Pest suite, migration, asset build, production browser mutation, or production permission test was run.
+
 ## 2026-09-27 — v0.1.22-hotfix49 focused verification
 
 - **PASS:** The one owner-authorized focused verifier completed 23 assertions in dedicated MariaDB `toyjoy_hf49_verify_2aa6628094c5`, with every data mutation inside a rolled-back transaction. The account is locked and no generated credential was retained.

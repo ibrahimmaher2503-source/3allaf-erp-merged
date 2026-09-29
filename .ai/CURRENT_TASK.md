@@ -1,15 +1,17 @@
-# Current Task — Hotfix49 Product-Code and Purchasing Row Corrections
+# Current Task — Hotfix50 Permission Labels and Section Selection
 
-**Date:** 2026-09-27
+**Date:** 2026-09-29
 
 **Change class:** I4
 
-**Source baseline:** deployed Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b`; post-deployment documentation commit `cc1dd2f90d06972009a643ed3dac5da5e5fd1c46` is preserved.
+**Source baseline:** exact deployed Hotfix49 application commit `5c25390599f8d9e431599f0695881123e0f27349` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix49-5c25390599f8`.
 
-**Branch:** `hotfix/v0.1.22-hotfix49-product-code-row-alignment`
+**Branch:** `hotfix/v0.1.22-hotfix50-permission-labels`
 
-**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix48`
+**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix50`
 
-**Status:** Implementation and the single focused check are complete; candidate commit and deployment are pending. Purchase-order and purchase-invoice product-row labels are screen-reader-only while the desktop column headings, accessible labels, aligned inputs, responsive grid, and RTL/LTR behavior remain. Generated local Product Card codes use the first four digits of the selected supplier code plus a hyphen and a six-digit prefix-shared sequence through the existing locked sequence table and product/barcode collision checks.
+**Status:** Implementation and the owner-authorized focused isolated verification are complete; candidate commit and production deployment are pending.
 
-No migration or frontend build is required. Existing item codes, international barcodes, inactive drafts, final-code immutability, and supplier English-name requirements remain unchanged. The focused rollback-only check passed in recorded MariaDB `toyjoy_hf49_verify_2aa6628094c5`; its account is locked and no credentials were retained. Deployment must use the established fresh encrypted backup, isolated reconciliation, atomic activation, and recovery process.
+Hotfix50 replaces raw permission codes and fragmentary action names with a shared Arabic/English business presentation for all 412 current permissions and 34 sections. Arabic and ar-EG never use English/key fallback. Each section has a localized `تحديد الكل` / `All` control with unchecked, mixed, and checked states; it changes only the section's complete active assignable set, preserves protected permissions, and remains pending until the existing Save action.
+
+The focused browser check passed against isolated MariaDB `toyjoy_hf50_verify_2b798b36b23f`: 412 labels/34 sections in ar, ar-EG, and en; section-only selection; partial state; Save/reload; RTL/Cairo; and LTR. The isolated account is locked and evidence is retained at `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f`. No production grants changed. No migration, dependency change, or asset build is required. Deployment is explicitly authorized and must use the established encrypted backup, isolated restore/reconciliation, atomic activation, and recovery process.

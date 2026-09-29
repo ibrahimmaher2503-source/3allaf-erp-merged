@@ -1,3 +1,10 @@
+## 2026-09-29 — Hotfix50 permission labels and section selection
+
+- Started from actual active Hotfix49 commit `5c25390599f8d9e431599f0695881123e0f27349`, not the older development checkout.
+- Added one shared Arabic/English presentation catalog for all 412 current permissions and 34 business sections. The role-permissions UI no longer shows raw permission keys, and localized names/descriptions/search apply to ar, ar-EG, and en.
+- Added per-section `تحديد الكل` / `All` controls with unchecked, indeterminate, and checked states. Each control changes the complete active assignable section set only, keeps protected permissions unchanged, and never persists before the existing Save action.
+- Focused isolated browser verification passed in locked MariaDB `toyjoy_hf50_verify_2b798b36b23f`, including section isolation, partial state, Save/reload, full label coverage, RTL/Cairo, and English LTR. Evidence: `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f`. No production permission/grant mutation occurred. Candidate commit and authorized deployment remain pending.
+
 ## 2026-09-27 — v0.1.22-hotfix49 product-code and purchasing row corrections
 
 - In progress from deployed Hotfix48 application commit `d59f5644dde57f14e5351194f3f3454ae1364d0b`, preserving post-deployment documentation commit `cc1dd2f90d06972009a643ed3dac5da5e5fd1c46`.
