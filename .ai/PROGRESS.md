@@ -3,7 +3,8 @@
 - Started from actual active Hotfix49 commit `5c25390599f8d9e431599f0695881123e0f27349`, not the older development checkout.
 - Added one shared Arabic/English presentation catalog for all 412 current permissions and 34 business sections. The role-permissions UI no longer shows raw permission keys, and localized names/descriptions/search apply to ar, ar-EG, and en.
 - Added per-section `تحديد الكل` / `All` controls with unchecked, indeterminate, and checked states. Each control changes the complete active assignable section set only, keeps protected permissions unchanged, and never persists before the existing Save action.
-- Focused isolated browser verification passed in locked MariaDB `toyjoy_hf50_verify_2b798b36b23f`, including section isolation, partial state, Save/reload, full label coverage, RTL/Cairo, and English LTR. Evidence: `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f`. No production permission/grant mutation occurred. Candidate commit and authorized deployment remain pending.
+- Focused isolated browser verification passed in locked MariaDB `toyjoy_hf50_verify_2b798b36b23f`, including section isolation, partial state, Save/reload, full label coverage, RTL/Cairo, and English LTR. Evidence: `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f`.
+- Deployed application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` through a fresh encrypted backup, isolated full restore/reconciliation, cache preparation, atomic activation, runtime restoration, corrected visible-text live Arabic/English page check, and HTTP health checks. Recovery journal: `/var/lib/toyjoy/hotfix50-deployment/0ff36dd24542-20260929.v4d2J5`; archive SHA-256 `113368a0d3c77c3dab45058a9fe72dd21643b0e711a40a0196b24466858da112`. No production permission/grant mutation occurred and no in-scope item remains.
 
 ## 2026-09-27 — v0.1.22-hotfix49 product-code and purchasing row corrections
 

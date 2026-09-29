@@ -8,6 +8,14 @@
 - **Evidence:** `/var/lib/toyjoy/hotfix50-validation/2b798b36b23f/focused-result.json`, `permission-ui.png`, and `SHA256SUMS`.
 - **Boundary:** This was one focused scenario with setup/harness retries and implementation corrections before the final pass, not a test suite. No PHPUnit/Pest suite, migration, asset build, production browser mutation, or production permission test was run.
 
+### Hotfix50 deployment and live verification
+
+- **PASS — package/restore:** Immutable application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` / tree `90d224119ad75269627fce4b2c4cb96a8d02dfb2` was prepared without migrations or rebuilt assets. Fresh encrypted archive `consistent-database-and-private-storage.zip` (39,051,369 bytes; SHA-256 `113368a0d3c77c3dab45058a9fe72dd21643b0e711a40a0196b24466858da112`) restored and reconciled database rows/schema, selected private files, and stock state in isolated MariaDB `toyjoy_hf48_restore_a1fe5362f65997cef4`.
+- **PASS — activation/health:** Production atomically activated `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix50-0ff36dd24542`; release identity, PHP-FPM, restored runtime controls, maintenance-off state, and HTTPS `/up` plus `/login` HTTP 200 passed.
+- **PASS — affected live page:** A read-only authenticated check returned HTTP 200 for the role-permissions page in Arabic and English, rendered all 34 localized sections, the expected purchase labels and localized bulk control, Hotfix50 version/direction, and no raw permission key in visible text. Temporary file sessions were deleted; the check did not save or alter any production grant.
+- **Verifier correction:** The first post-activation assertion searched the complete Livewire HTML payload and treated serialized internal permission state as displayed text; Laravel's console exception renderer also returned zero, allowing the wrapper's success line. The page itself already returned correct localized content. The verifier was corrected to inspect visible text and explicitly exit nonzero on any throwable, then its read-only live check passed. Application rollback was not required.
+- **Evidence/recovery:** `/var/lib/toyjoy/hotfix50-deployment/0ff36dd24542-20260929.v4d2J5`. No broad/automated suite, production permission mutation, migration, dependency update, asset build, push, or tag occurred.
+
 ## 2026-09-27 — v0.1.22-hotfix49 focused verification
 
 - **PASS:** The one owner-authorized focused verifier completed 23 assertions in dedicated MariaDB `toyjoy_hf49_verify_2aa6628094c5`, with every data mutation inside a rolled-back transaction. The account is locked and no generated credential was retained.
