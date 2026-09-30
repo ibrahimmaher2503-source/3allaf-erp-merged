@@ -1,3 +1,11 @@
+## 2026-09-30 — Hotfix51 product/supplier finalization deployed
+
+- Started from exact active Hotfix50 application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` and preserved unrelated worktrees/history.
+- Added the canonical/numeric supplier-code resolver, explicit final-versus-draft Product Card persistence, existing-draft identity-barcode completion, separate international-barcode retention, authorized dependency-safe supplier deletion/deactivation presentation, and contextual product-form help.
+- Focused rollback verification passed 50 assertions in isolated restored MariaDB `toyjoy_hf48_restore_368d44f2acea961a9a`. It covered exact `0002-000001` and `0123-000001` results, invalid-final no-draft behavior, same-ID draft completion/no duplicate, both local/international barcodes, authorized unused deletion/audit, linked restriction/deactivation/history, and unauthorized denial. No real supplier was deleted or deactivated.
+- Deployed application commit `b709193815c548bb0100a0b641171c5af7aaf314` through a fresh encrypted backup, isolated restore/reconciliation, cache preparation, atomic activation, PHP-FPM reload, runtime restoration, read-only bilingual affected-page checks, and health checks. Active release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`; journal: `/var/lib/toyjoy/hotfix51-deployment/b709193815c5-20260930.4qsXOu`; recovery archive SHA-256: `536f3a2998cb0abc376d17e24dd5991ec373ec26050ba343abde1f036a858213`.
+- Migrations and dependencies are unchanged, Hotfix50 assets were reused, no production product/supplier test record was created, and no in-scope blocker remains.
+
 ## 2026-09-29 — Hotfix50 permission labels and section selection
 
 - Started from actual active Hotfix49 commit `5c25390599f8d9e431599f0695881123e0f27349`, not the older development checkout.

@@ -1,7 +1,9 @@
 # Current Milestone
 
-**Date:** 2026-09-29
+**Date:** 2026-09-30
 
-**Status:** Hotfix50 permission-label and section-selection implementation is complete and deployed from exact Hotfix49 commit `5c25390599f8d9e431599f0695881123e0f27349`. Production serves application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74`; focused isolated browser verification, encrypted backup/restore reconciliation, atomic activation, live localized-page verification, and health checks passed.
+**Status:** Hotfix51 product/supplier finalization is complete and deployed from exact Hotfix50 commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74`. Production serves application commit `b709193815c548bb0100a0b641171c5af7aaf314` from `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`.
 
-The slice is limited to the role-permissions presentation and pending form selection behavior. It preserves permission keys/IDs, roles, grants, server authorization, administrator protections, and the existing audited Save path. It added no migration, dependency change, or frontend asset build. Recovery evidence is retained at `/var/lib/toyjoy/hotfix50-deployment/0ff36dd24542-20260929.v4d2J5`; no in-scope blocker remains.
+The scoped correction covers canonical/numeric supplier product-code prefixes, one atomic resolver across preview/final/inline creation, explicit draft versus final Product Card persistence, existing-draft completion, separate international barcodes, authorized unused-supplier deletion with linked-supplier preservation/deactivation, and contextual product-form help. It adds no migration, dependency change, frontend source change, or asset build.
+
+Focused rollback verification, fresh encrypted backup, isolated full restore/reconciliation, cache preparation, atomic activation, runtime restoration, bilingual read-only live rendering, and HTTP health checks passed. Recovery journal: `/var/lib/toyjoy/hotfix51-deployment/b709193815c5-20260930.4qsXOu`; archive SHA-256: `536f3a2998cb0abc376d17e24dd5991ec373ec26050ba343abde1f036a858213`. No real supplier was deleted or deactivated and no in-scope blocker remains.

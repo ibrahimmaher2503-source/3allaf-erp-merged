@@ -29,6 +29,8 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Current Routing Override — Client Feedback Remediation (Expanded Master Request)
 
+Hotfix51 product/supplier finalization is complete and deployed. For its exact closure state, read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, and `.ai/HOTFIX51_CHECKPOINT.md`; this narrow correction does not advance the broader remediation milestone or reopen completed task scope.
+
 The active owner-directed work is the expanded client-feedback remediation request. Read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, the Client Feedback Remediation status-sync section in `TASKS.md`, `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, `docs/client-feedback-remediation-checklist.md`, and DEC-085/DEC-086 in `.ai/DECISIONS.md`. Route only the requirement, acceptance, screen, blocker, and evidence entries needed by the active remediation slice. The simplified CF queue is the factual status ledger; it does not narrow the expanded request. TSK-045 remains historical local implementation traceability and is not the active routing override.
 
 The earlier TSK-004B override below is historical and is superseded while the expanded client-feedback remediation request is active.
