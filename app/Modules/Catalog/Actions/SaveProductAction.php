@@ -200,10 +200,6 @@ class SaveProductAction
                     $attributes['barcode_mode'] = 'none';
                     $attributes['lock_version'] = 0;
                     $product = Product::query()->create($attributes);
-                    if ($identity !== null) {
-                        app(ReserveProductIdentityAction::class)->createPrimaryBarcode($product, $identity['item_code'], $identity['barcode_source']);
-                        $product->update(['barcode_mode' => $identity['barcode_source']]);
-                    }
                     $event = 'create_product_card';
                     $before = null;
                 } else {
@@ -218,6 +214,11 @@ class SaveProductAction
                     if ($product->has_variations) {
                         $this->syncFamilyDescriptions($product);
                     }
+                }
+
+                if ($identity !== null) {
+                    app(ReserveProductIdentityAction::class)->createPrimaryBarcode($product, $identity['item_code'], $identity['barcode_source']);
+                    $product->update(['barcode_mode' => $identity['barcode_source']]);
                 }
 
                 foreach ([['age_label_ids', 'ages'], ['character_ids', 'characters'], ['colour_ids', 'colours'], ['gender_ids', 'genders']] as [$input, $relation]) {

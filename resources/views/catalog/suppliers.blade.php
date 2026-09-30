@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Catalog\Actions\SaveProductSupplierAction;
+use App\Modules\Catalog\Actions\RemoveSupplierAction;
 use App\Modules\Catalog\Actions\SaveSupplierCommunicationDestinationAction;
 use App\Modules\Catalog\Actions\SaveSupplierContactAction;
 use App\Modules\Catalog\Actions\SaveSupplierGroupAction;
@@ -20,6 +21,7 @@ use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -285,6 +287,28 @@ new #[Title('Supplier Masters')] class extends Component
         }
     }
 
+    public function removeSupplier(int $id, RemoveSupplierAction $action): void
+    {
+        Gate::authorize('suppliers.logical_delete');
+
+        try {
+            $action->execute($id);
+            if ($this->viewingSupplierId === $id) {
+                $this->viewingSupplierId = null;
+                $this->showDetailModal = false;
+            }
+            Flux::toast(variant: 'success', text: __('Supplier deleted successfully.'));
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first() ?: __('The supplier cannot be deleted. Deactivate it instead.');
+            $this->addError('supplierDeletion', $message);
+            Flux::toast(variant: 'danger', text: $message);
+        } catch (Throwable $exception) {
+            $message = \App\Support\UserSafeError::message($exception);
+            $this->addError('supplierDeletion', $message);
+            Flux::toast(variant: 'danger', text: $message);
+        }
+    }
+
     public function bulkSetSupplierStatus(string $status, ToggleSupplierStatusAction $action): void
     {
         Gate::authorize('suppliers.edit');
@@ -536,6 +560,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierGroupParents' => $supplierGroupParents,
             'canCreate' => Gate::allows('suppliers.create'),
             'canEdit' => Gate::allows('suppliers.edit'),
+            'canDelete' => Gate::allows('suppliers.logical_delete'),
         ]);
     }
 }; ?>
@@ -614,6 +639,11 @@ new #[Title('Supplier Masters')] class extends Component
             </section>
         @else
             <section class="space-y-5" data-guide="supplier-masters-workspace">
+        @if ($errors->has('supplierDeletion'))
+            <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Supplier could not be deleted') }}">
+                {{ $errors->first('supplierDeletion') }}
+            </flux:callout>
+        @endif
         <flux:card id="suppliers-filters" class="scroll-mt-24 space-y-4 p-5 sm:p-6" data-guide="suppliers-filters">
             <div>
                 <flux:heading size="sm">{{ str_starts_with(app()->getLocale(), 'ar') ? 'البحث والتصفية' : 'Search and filters' }}</flux:heading>
@@ -720,7 +750,7 @@ new #[Title('Supplier Masters')] class extends Component
                                     <flux:badge size="sm" color="zinc">{{ $supplier->product_suppliers_count }}</flux:badge>
                                 </td>
                                 <td data-label="{{ __('Actions') }}" class="px-4 py-3 text-sm text-end whitespace-nowrap space-x-1 rtl:space-x-reverse">
-                                    <x-actions.button semantic="view" :label="__('View supplier details & history')" size="xs" wire:click="openSupplierDetailModal({{ $supplier->id }})" />
+                                        <x-actions.button semantic="view" :label="__('View supplier details & history')" size="xs" wire:click="openSupplierDetailModal({{ $supplier->id }})" />
                                     @if ($canEdit)
                                         <x-actions.button semantic="edit" :label="__('Edit supplier master')" size="xs" wire:click="openEditSupplierModal({{ $supplier->id }})" />
                                         <flux:button
@@ -730,6 +760,16 @@ new #[Title('Supplier Masters')] class extends Component
                                             wire:click="toggleSupplierStatus({{ $supplier->id }})"
                                             wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد؟ سيظل سجله محفوظاً.' : 'تفعيل المورد؟') : __('Change supplier :name to :status? Its historical records are preserved.', ['name' => $supplier->name_en ?: $supplier->name_ar, 'status' => $supplier->status === 'active' ? __('Inactive') : __('Active')]) }}"
                                             title="{{ str_starts_with(app()->getLocale(), 'ar') ? ($supplier->status === 'active' ? 'تعطيل المورد' : 'تفعيل المورد') : ($supplier->status === 'active' ? __('Deactivate supplier') : __('Activate supplier')) }}"
+                                        />
+                                    @endif
+                                    @if ($canDelete)
+                                        <flux:button
+                                            size="xs"
+                                            variant="danger"
+                                            icon="trash"
+                                            wire:click="removeSupplier({{ $supplier->id }})"
+                                            wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد؟ لا يمكن التراجع عن حذف مورد غير مرتبط، وسيتم الاحتفاظ بالسجلات المرتبطة دون حذف متسلسل.' : __('Delete supplier :name? Only an unused supplier can be deleted; linked records are never cascade-deleted.', ['name' => $supplier->name_en ?: $supplier->name_ar]) }}"
+                                            title="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد' : __('Delete supplier') }}"
                                         />
                                     @endif
                                 </td>
@@ -905,6 +945,17 @@ new #[Title('Supplier Masters')] class extends Component
                         >
                             {{ __('Contacts') }} ({{ $viewingSupplier->contacts->count() }})
                         </flux:button>
+                        @if ($canDelete)
+                            <flux:button
+                                size="sm"
+                                variant="danger"
+                                icon="trash"
+                                wire:click="removeSupplier({{ $viewingSupplier->id }})"
+                                wire:confirm="{{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد؟ لا يمكن التراجع عن حذف مورد غير مرتبط، وسيتم الاحتفاظ بالسجلات المرتبطة دون حذف متسلسل.' : __('Delete supplier :name? Only an unused supplier can be deleted; linked records are never cascade-deleted.', ['name' => $viewingSupplier->name_en ?: $viewingSupplier->name_ar]) }}"
+                            >
+                                {{ str_starts_with(app()->getLocale(), 'ar') ? 'حذف المورد' : __('Delete supplier') }}
+                            </flux:button>
+                        @endif
                     </div>
                 </div>
 

@@ -44,7 +44,7 @@ class ReserveProductIdentityAction
             throw new InvalidArgumentException(__('An active preferred supplier is required when no global product code is supplied.'));
         }
 
-        $prefix = $this->supplierPrefix($supplier);
+        $prefix = $this->resolveSupplierPrefix($supplier);
 
         $sequence = $this->lockSequence($this->sequenceName($prefix));
         while ($sequence->next_number <= self::MAX_SEQUENCE) {
@@ -72,7 +72,7 @@ class ReserveProductIdentityAction
             return null;
         }
 
-        $prefix = $this->supplierPrefix($supplier);
+        $prefix = $this->resolveSupplierPrefix($supplier);
         $next = (int) (GlobalProductCodeSequence::query()->where('sequence_name', $this->sequenceName($prefix))->value('next_number') ?? 1);
         while ($next <= self::MAX_SEQUENCE) {
             $candidate = $prefix.'-'.str_pad((string) $next, 6, '0', STR_PAD_LEFT);
@@ -107,14 +107,19 @@ class ReserveProductIdentityAction
         }
     }
 
-    private function supplierPrefix(Supplier $supplier): string
+    public function resolveSupplierPrefix(Supplier $supplier): string
     {
-        $supplierCode = trim((string) $supplier->code);
-        if (preg_match('/^\d{4}/', $supplierCode) !== 1) {
-            throw new InvalidArgumentException(__('The selected supplier code must start with four digits before a local product code can be generated.'));
+        $code = strtoupper(trim((string) $supplier->code));
+
+        if (preg_match('/^\d{4,}$/D', $code) === 1) {
+            return substr($code, 0, 4);
         }
 
-        return substr($supplierCode, 0, 4);
+        if (preg_match('/^SUP-(\d{4})$/D', $code, $matches) === 1) {
+            return $matches[1];
+        }
+
+        throw new InvalidArgumentException(__('The selected supplier code must be numeric with at least four digits or use the canonical SUP-#### format before a local product code can be generated.'));
     }
 
     private function sequenceName(string $prefix): string
