@@ -12,7 +12,9 @@
 
 **Documentation worktree:** `/home/rajeh/worktrees/rajeh-erp-post-hotfix51-operational-baseline`
 
-**Status:** Operational documentation updated for branch review. Commit and push are the authorized handoff steps; merge and deployment are not authorized by this task.
+**Status:** Operational documentation commit `8ccb88c7e90b12883619793d3e1dd934653eadc6` was pushed. The owner-requested pre-merge cleanup restores the actual historical DEC-085/DEC-086 entries, corrects the Translation Editor citation to recovered DEC-087, and checks Git author identity. This cleanup is prepared for one documentation diff review, commit, and branch push; merge and deployment remain excluded.
+
+**Git identity check:** Effective repository identity is `Ibrahim <ibrahim.maher.2503@gmail.com>`, configured in the shared repository's local config. It matches current main and Hotfix51 commit authors. The operating account is `rajeh_ahmed`; one historical commit uses author `rajeh_ahmed <rajeh_ahmed@localhost>`, but that does not establish the configured identity as stale or wrong or supply an approved replacement email. Under the owner's conditional instruction, Git identity and SSH authentication are unchanged. No existing commit history is rewritten.
 
 **Recorded production baseline:** Current application release Hotfix51, application commit `b709193815c548bb0100a0b641171c5af7aaf314` (tree `9be1c3dba9f8ee2be992496487d5d300916e252a`), release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`. This is the preserved deployment record, not a new production check.
 
