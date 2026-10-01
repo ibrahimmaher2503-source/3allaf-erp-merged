@@ -150,3 +150,37 @@
 - Existing `tax_settings` rows have no company owner, so a company-specific default or product override cannot be authorized reliably. Proposed migration 000118 adds only restricted company ownership, replaces global code uniqueness with company/code uniqueness, and adds the scoped lookup index. Legacy backfill proceeds only when company ownership is unambiguous; current production has one company and four rules.
 - The owner approved migrations 000117 and 000118 exactly as proposed. Both use fail-closed preflight/down behavior, tolerate their own partially applied DDL, and may run only after actual schema/migration inspection. They are required to close original requirements 10, 11 and 65 plus OC-PO-SNAPSHOTS.
 - Remain unresolved without invention: cross-branch receiving; independent customer-code sequence interpretation; removal of document timezone fields; and deferred comparison C whose two referenced items are unidentified.
+
+## Historical Decision Records Restored — 2026-10-01
+
+DEC-085, DEC-086, and DEC-087 below are restored verbatim from `.ai/DECISIONS.md` at commit `47da09c15b3d568bb2880a3e8c6d00900fe4c63d` (2026-08-20). Commit `c68f87c20d79085705d3310f1e2c233679dad8e3` (2026-08-22) removed these entries with the earlier decision register. Their restoration resolves surviving documentation references; it does not create new owner decisions or revive historical execution authorization.
+
+The original dates, statuses, and wording below describe their August sessions. In particular, “active” and “current exception” are historical wording, not current testing, browser-control, agent-delegation, production, or release authorization. Current owner instructions, `AGENTS.md`, and `.ai/CURRENT_TASK.md` govern present work. DEC-086 superseded DEC-085's narrow queue sequencing within that historical cycle. DEC-018 and DEC-021 cited inside DEC-086 remain historical provenance references; this bounded restoration does not recreate the rest of the removed register or resolve those owner decisions.
+
+The Translation Editor's surviving DEC-085 citation was incorrect: DEC-085 describes remediation, while DEC-087 records the runtime translation override boundary. Its screen-registry citation now points to the restored DEC-087.
+
+## DEC-085 - Client feedback remediation cycle and task-gated verification
+
+Date: 2026-08-19. Status: active owner-authorized remediation cycle.
+
+The owner supplied `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md` as the primary source for a task-by-task setup remediation cycle. Work is ordered through `docs/client-feedback-remediation-checklist.md`; only one main `CR` task may be active, Luna performs read-heavy discovery, Terra implements and tests only after Sol confirms the root cause, and Sol alone closes a task after independent review.
+
+For this named cycle, the owner explicitly requires focused backend/feature/integration/concurrency tests and visible headed Chromium/Playwright verification for user-facing workflows. This is a current exception to the general deferred-testing directive. Tests and fixtures must use only the dedicated disposable XAMPP MariaDB schema `toyjoy_client_feedback_20260819`; SQLite and Production data are prohibited. The authorization includes deterministic non-owner fixtures needed to reproduce setup, scope, authorization, audit, and persistence behavior, but does not authorize Production access or mutation, fabricated owner business data, physical printer claims, external service actions, human UAT acceptance, release approval, commits, or pushes.
+
+## DEC-086 - Owner-authorized expanded master-request remediation planning
+
+**Date:** 2026-08-19. **Status:** Active owner authorization; implementation and verification incomplete.
+
+The owner directed completion of every remediable note in `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, including requirements 0–72, their acceptance/test obligations, and the document's P0/P1/P2 priority order. This supersedes DEC-085's narrow single-queue sequencing as the implementation-planning boundary. The simplified `CLIENT FIX QUEUE` remains the factual progress ledger and must not be rewritten to imply that unchecked work is complete.
+
+The authorized planning waves are: Wave 0/P0 setup blockers and integrity foundations; Wave 1/P1 setup architecture and business configuration; Wave 2/P1 customer/supplier/category master data; and Wave 3/P2 plus cross-cutting localization, scope, audit, authorization, concurrency, regression, evidence, and final-deliverable closure. Independent work may be coordinated in parallel by multiple agents; shared-file edits require coordination. The expansion does not authorize unrelated product work, silent requirement changes, or claims of completion from static inspection.
+
+The following remain unresolved owner/business decisions or external gates and must not be invented during remediation: Store versus Warehouse domain terminology/model boundary (DEC-021); offline POS enablement, limits, devices, security, and rollout (DEC-018); final tax/payment/proof semantics and legal treatment of zero-rated, exempt, and out-of-scope cases; warehouse physical-versus-virtual taxonomy and deletion/archive policy; document-sequence reset/scope/override/version rules where the master request conflicts with the local company-wide baseline; global-versus-branch scope and inheritance for taxes, payments, printers, sequences, and other masters; customer purpose/classification, duplicate/consent/retention, child-profile, and grouping policy values; supplier payment-term and order-recipient fallback rules; printer hardware/network, approved templates, and physical-output evidence; and real owner master data, human UAT, backup/restore destinations, Production access, and release approval.
+
+Local implementation may use existing repository boundaries and clearly labelled disposable fixtures only where needed for a reproducible scenario. No Production mutation, fabricated owner data, physical-device claim, UAT acceptance, release approval, commit, or push is inferred from this decision.
+
+## DEC-087 - Runtime translation override boundary
+
+Date: 2026-08-20. Status: implemented for Local/Dev verification.
+
+Administrators with `company_settings.edit` may override only keys collected from shipped `lang/ar.json`, `lang/en.json`, and their PHP groups. Overrides are database rows applied by the Laravel translation loader at request load time; they never modify language files. A matching base value deletes the override, placeholders must remain intact, and every actual change is audited.

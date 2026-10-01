@@ -24,6 +24,7 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Operational Governance Files
 
+- `AGENTS.md` contains the post-Hotfix51 GitHub/main, account/remote, dedicated-worktree, and CodeGraph operating rules. `.ai/CURRENT_TASK.md` and `.ai/CURRENT_MILESTONE.md` distinguish main `4182c08` from the deployed Hotfix51 application commit and identify the active documentation worktree. Future tasks start from current `main`; the old hotfix50 worktree is historical.
 - `.ai/ERP_CHANGE_POLICY.md` is mandatory for task classification, separate source/production baselines, escalation, proportional verification, pending UI batching, immutable releases, source control, and reporting.
 - `.ai/PENDING_CHANGE_BATCH.md` is the authoritative open ledger for completed, undeployed V0/V1 changes. Read and update it for V0/V1 work, and read it before any batch-closure or release workflow.
 
@@ -31,7 +32,7 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 Hotfix51 product/supplier finalization is complete and deployed. For its exact closure state, read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, and `.ai/HOTFIX51_CHECKPOINT.md`; this narrow correction does not advance the broader remediation milestone or reopen completed task scope.
 
-The active owner-directed work is the expanded client-feedback remediation request. Read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, the Client Feedback Remediation status-sync section in `TASKS.md`, `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, `docs/client-feedback-remediation-checklist.md`, and DEC-085/DEC-086 in `.ai/DECISIONS.md`. Route only the requirement, acceptance, screen, blocker, and evidence entries needed by the active remediation slice. The simplified CF queue is the factual status ledger; it does not narrow the expanded request. TSK-045 remains historical local implementation traceability and is not the active routing override.
+The current owner-directed task is the post-Hotfix51 operational documentation cleanup in `.ai/CURRENT_TASK.md`; it does not change application behavior or advance remediation. For future implementation, the broader owner-directed scope remains the expanded client-feedback remediation request. Read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, the Client Feedback Remediation status-sync section in `TASKS.md`, `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md`, `docs/client-feedback-remediation-checklist.md`, and the restored historical DEC-085/DEC-086 entries and their provenance/scope note in `.ai/DECISIONS.md`. Those August decisions explain the remediation history; restoring them does not grant current testing, browser-control, delegation, or deployment authority. Route only the requirement, acceptance, screen, blocker, and evidence entries needed by the active remediation slice. The simplified CF queue is the factual status ledger; it does not narrow the expanded request. TSK-045 remains historical local implementation traceability and is not the active routing override.
 
 The earlier TSK-004B override below is historical and is superseded while the expanded client-feedback remediation request is active.
 

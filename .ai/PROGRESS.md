@@ -1,3 +1,22 @@
+## 2026-10-01 — Operational Documentation Pre-Merge Cleanup
+
+- Confirmed original DEC-085/DEC-086 entries in `.ai/DECISIONS.md` at `47da09c15b3d568bb2880a3e8c6d00900fe4c63d` and their removal at `c68f87c20d79085705d3310f1e2c233679dad8e3`. Restored the original text with explicit historical provenance and scope; no historical execution permission is revived.
+- Corrected the Translation Editor's erroneous DEC-085 reference to its actual DEC-087 runtime-translation decision, restored from the same source. No screen behavior or requirement changed.
+- Confirmed `Ibrahim <ibrahim.maher.2503@gmail.com>` matches the current main and Hotfix51 authors. The owner permits author changes only if clearly stale/wrong; account-name difference alone does not prove that condition. Git identity, remote, and SSH authentication remain unchanged.
+- Prior documentation commit `8ccb88c7e90b12883619793d3e1dd934653eadc6` is pushed on `docs/post-hotfix51-operational-baseline`. Cleanup uses the same branch/worktree for one documentation review and a new commit/push. Main remains `4182c08`, and recorded production remains Hotfix51 `b709193815c548bb0100a0b641171c5af7aaf314`. Merge, deployment, and application changes are excluded.
+
+## 2026-10-01 — Post-Hotfix51 Operational Documentation
+
+- V0 operational documentation updated on `docs/post-hotfix51-operational-baseline` in dedicated worktree `/home/rajeh/worktrees/rajeh-erp-post-hotfix51-operational-baseline`, created from main `4182c08e108da7cb3ed1a119470edb65a3681392` (`4182c08`). Commit/push are authorized handoff steps; no merge or deployment is included.
+- Recorded production remains Hotfix51 application commit `b709193815c548bb0100a0b641171c5af7aaf314` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`; this is carried forward from deployment evidence, without new production access.
+- Future work starts from current protected `main` in `IS-Intelligent-Solutions/rajeh-erp`, main worktree `/home/rajeh/worktrees/rajeh-erp-main`, using a new dedicated branch/worktree. The old hotfix50 worktree remains a historical Hotfix51 reference.
+- `AGENTS.md` records the `rajeh_ahmed` account, SSH remote, branch publication rules, unchanged deployment boundary, and CodeGraph 1.6.0 / ast-grep 0.45.3 analysis and exclusion guidance. No index or tool configuration is changed by this task.
+- Historical Hotfix51 evidence and all earlier progress entries remain preserved. No application or business requirement, milestone, Phase Gate, database, service, or deployment workflow changed.
+
+## Historical Progress Records
+
+The dated records below describe their session-time state. Earlier active/pending/deployment statements are not the current operational baseline.
+
 ## 2026-09-30 — Hotfix51 product/supplier finalization deployed
 
 - Started from exact active Hotfix50 application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` and preserved unrelated worktrees/history.
