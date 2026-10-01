@@ -1,3 +1,15 @@
+## 2026-10-01 — Post-Hotfix51 Operational Documentation
+
+- V0 operational documentation updated on `docs/post-hotfix51-operational-baseline` in dedicated worktree `/home/rajeh/worktrees/rajeh-erp-post-hotfix51-operational-baseline`, created from main `4182c08e108da7cb3ed1a119470edb65a3681392` (`4182c08`). Commit/push are authorized handoff steps; no merge or deployment is included.
+- Recorded production remains Hotfix51 application commit `b709193815c548bb0100a0b641171c5af7aaf314` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`; this is carried forward from deployment evidence, without new production access.
+- Future work starts from current protected `main` in `IS-Intelligent-Solutions/rajeh-erp`, main worktree `/home/rajeh/worktrees/rajeh-erp-main`, using a new dedicated branch/worktree. The old hotfix50 worktree remains a historical Hotfix51 reference.
+- `AGENTS.md` records the `rajeh_ahmed` account, SSH remote, branch publication rules, unchanged deployment boundary, and CodeGraph 1.6.0 / ast-grep 0.45.3 analysis and exclusion guidance. No index or tool configuration is changed by this task.
+- Historical Hotfix51 evidence and all earlier progress entries remain preserved. No application or business requirement, milestone, Phase Gate, database, service, or deployment workflow changed.
+
+## Historical Progress Records
+
+The dated records below describe their session-time state. Earlier active/pending/deployment statements are not the current operational baseline.
+
 ## 2026-09-30 — Hotfix51 product/supplier finalization deployed
 
 - Started from exact active Hotfix50 application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` and preserved unrelated worktrees/history.

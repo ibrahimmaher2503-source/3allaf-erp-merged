@@ -13,6 +13,29 @@ Repository-wide mandatory policy: every Codex account and every user working thr
 - Responsive application and authentication shells with locale-aware Arabic RTL and English LTR direction
 - Automated tests remain Not Created and Not Run by explicit project-owner directive
 
+## Post-Hotfix51 Development Operating Model
+
+- GitHub repository: `IS-Intelligent-Solutions/rajeh-erp`.
+- Git/server account: `rajeh_ahmed`. This identifies the operating account, not a change to the configured Git commit author.
+- Git remote: `git@github-rajeh:IS-Intelligent-Solutions/rajeh-erp.git`.
+- `main` is the protected development baseline. Never develop directly on `main`; use a dedicated branch and worktree for each task.
+- The recorded GitHub/main baseline is `4182c08e108da7cb3ed1a119470edb65a3681392` (`4182c08`), and the main worktree is `/home/rajeh/worktrees/rajeh-erp-main`. Start future work from current `main` in a new dedicated branch/worktree; this recorded commit is the post-Hotfix51 reference, not a permanent pin for future tasks.
+- Use `feature/*` for features, `hotfix/*` for fixes, and `release/*` only when needed. The owner-requested operational documentation task uses `docs/post-hotfix51-operational-baseline`.
+- Commit completed work, push only the task branch, and merge to `main` only when the work is ready and the merge is authorized. Never mass-push historical branches or use `--all`/`--mirror` to publish them.
+- Production's recorded current application release is Hotfix51, application commit `b709193815c548bb0100a0b641171c5af7aaf314`, at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`. The application commit and the development documentation baseline are distinct.
+- Keep the established production deployment workflow unchanged unless explicitly requested. A development commit, branch push, or merge does not authorize deployment.
+- The old `/home/rajeh/worktrees/rajeh-erp-hotfix50` worktree and Hotfix51 branch identify completed historical work, not the starting point for future development. Preserve their history and `.ai/HOTFIX51_CHECKPOINT.md` evidence.
+
+## CodeGraph and Bounded Structural Analysis
+
+- Tool baseline: CodeGraph `1.6.0` and ast-grep `0.45.3`.
+- CodeGraph is the preferred tool for semantic analysis, relationships, and change-impact analysis. Use ast-grep for bounded structural searches within the affected source paths.
+- The current main worktree `/home/rajeh/worktrees/rajeh-erp-main` must have its own CodeGraph index. Every new worktree needs its own index; never reuse an index bound to another worktree.
+- Initialize each new worktree once with `codegraph init <exact-root>`, substituting its exact absolute root. Apply and verify indexing exclusions before initialization; initialize the main worktree once if its own index is absent.
+- Ordinary changes use watcher/connect-time synchronization. Run `codegraph sync <exact-root>` only when needed, such as when the watcher was unavailable or the index is stale; use the exact worktree root and avoid routine full synchronization.
+- Never index secrets, `.env` or environment overrides, credentials, keys, sensitive configuration, `storage`, uploads, backups, database dumps, logs, `vendor`, `node_modules`, or build/cache paths. Exclusions apply to every worktree, including linked paths.
+- This documentation-only task records the policy; it does not initialize an index, synchronize code, or change tool configuration.
+
 ## Database Direction
 
 - Use only the XAMPP MySQL/MariaDB server through phpMyAdmin for local, development, staging, and test database operations.

@@ -1,5 +1,17 @@
 # Pending Change Batch
 
+## 2026-10-01 — Current Operational Documentation Entry
+
+| Classification | Short description | Commit | Affected files | Status |
+|---|---|---|---|---|
+| V0 | Post-Hotfix51 main/worktree, GitHub/account/remote, branch publication, and CodeGraph operating guidance; current versus historical status clarification | Documentation commit on `docs/post-hotfix51-operational-baseline`, message `docs: update post-Hotfix51 development baseline` | `AGENTS.md`, `AI_INDEX.md`, `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, `.ai/PROGRESS.md`, `.ai/PENDING_CHANGE_BATCH.md`, `.ai/SESSION_SUMMARY.md` | Documentation updated for branch review; commit/push authorized, merge/deployment excluded |
+
+The current recorded production application is Hotfix51 `b709193815c548bb0100a0b641171c5af7aaf314`; the post-Hotfix51 GitHub/main baseline is `4182c08` at `/home/rajeh/worktrees/rajeh-erp-main`. This documentation entry does not create a release, close an application batch, or authorize deployment. The resulting commit can be resolved from the named branch and message; no self-referential commit hash is asserted here.
+
+## Historical Batch Records
+
+All entries below retain their original session-time wording, including earlier active-release and undeployed labels. They are historical records, not the current production baseline or a current activation prerequisite. Historical ledger reconciliation is outside this task; no prior entry is cleared or rewritten.
+
 ## 2026-09-14 — Hotfix39 Customer Notes Batch 3
 
 - **I4 / release candidate / undeployed:** Compact product/customer/supplier masters, incomplete-product Draft/Resume, supplier item identity, dynamic multi-identifier lookup, branch-priced product matrix reuse, opening-inventory header/keyboard grid/paste/XLSX/totals/draft/post/reversal/zero workflow, stable customer code, loyalty help, and structured supplier contacts.

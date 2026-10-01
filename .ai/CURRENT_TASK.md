@@ -1,16 +1,30 @@
-# Current Task — Hotfix51 Product/Supplier Finalization
+# Current Task — Post-Hotfix51 Operational Documentation
 
-**Date:** 2026-09-30
+**Date:** 2026-10-01
 
-**Change class:** I4
+**Change class:** V0 — documentation only
 
-**Source baseline:** exact deployed Hotfix50 application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` (tree `90d224119ad75269627fce4b2c4cb96a8d02dfb2`) at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix50-0ff36dd24542`.
+**GitHub/main source baseline:** `4182c08e108da7cb3ed1a119470edb65a3681392` (`4182c08`), repository `IS-Intelligent-Solutions/rajeh-erp`.
 
-**Branch:** `hotfix/v0.1.22-hotfix51-product-supplier-finalization`
+**Main worktree:** `/home/rajeh/worktrees/rajeh-erp-main`
 
-**Worktree:** `/home/rajeh/worktrees/rajeh-erp-hotfix50`
+**Documentation branch:** `docs/post-hotfix51-operational-baseline`
 
-**Status:** Complete and deployed. Production serves Hotfix51 application commit `b709193815c548bb0100a0b641171c5af7aaf314` (tree `9be1c3dba9f8ee2be992496487d5d300916e252a`) from `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`.
+**Documentation worktree:** `/home/rajeh/worktrees/rajeh-erp-post-hotfix51-operational-baseline`
+
+**Status:** Operational documentation updated for branch review. Commit and push are the authorized handoff steps; merge and deployment are not authorized by this task.
+
+**Recorded production baseline:** Current application release Hotfix51, application commit `b709193815c548bb0100a0b641171c5af7aaf314` (tree `9be1c3dba9f8ee2be992496487d5d300916e252a`), release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6`. This is the preserved deployment record, not a new production check.
+
+Future development starts from current protected `main` using a new dedicated branch/worktree, never directly on `main`. Follow `AGENTS.md` for branch, remote, account, and CodeGraph guidance. Application code, databases, services, production, deployment workflow, and historical branches remain outside this documentation task. Broader client-feedback remediation scope and Phase Gates are unchanged.
+
+## Historical Hotfix51 Closure — 2026-09-30
+
+**Historical source baseline:** exact deployed Hotfix50 application commit `0ff36dd24542d8378f6e9c24784e992b1d56ad74` (tree `90d224119ad75269627fce4b2c4cb96a8d02dfb2`) at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix50-0ff36dd24542`.
+
+**Historical branch/worktree:** `hotfix/v0.1.22-hotfix51-product-supplier-finalization` at `/home/rajeh/worktrees/rajeh-erp-hotfix50`. These identify the completed Hotfix51 session only; they are not the current development starting point.
+
+**Historical status:** Complete and deployed. The following scope and verification results are preserved from the 2026-09-30 record; they were not rerun for this documentation update.
 
 Hotfix51 uses one product-code resolver for preview, Product Card completion, and purchasing-invoice inline creation. Canonical supplier `SUP-0002` resolves to `0002-000001`; numeric supplier `0123456` resolves to `0123-000001`. Leading zeros, prefix-shared locked sequencing, collision checks, existing product codes, and separate international barcodes are preserved.
 
