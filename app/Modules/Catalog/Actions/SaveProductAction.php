@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionValue;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -81,9 +82,6 @@ class SaveProductAction
                     }
                 }
 
-                $pricing = $saveAsDraft
-                    ? $this->draftPricing($data)
-                    : app(ProductPricingContract::class)->forProductCard($data['average_cost'] ?? null, $data['sale_price'] ?? null);
                 $supplierId = (int) ($data['preferred_supplier_id'] ?? 0);
                 $supplier = $supplierId > 0
                     ? Supplier::query()->whereKey($supplierId)->where('status', 'active')->first()
@@ -105,6 +103,17 @@ class SaveProductAction
                 if ($product !== null && $expectedVersion !== null && $product->lock_version !== $expectedVersion) {
                     throw new StaleCatalogRecordException(__('This product changed in another session. Reload it before saving.'));
                 }
+
+                // Blank or omitted cost on edit retains the locked saved value.
+                // A caller without cost access cannot supply a replacement cost.
+                $pricingData = $data;
+                if ($product !== null && (blank($data['average_cost'] ?? null) || ! $actor->hasPermission('products_categories_brands.cost_view'))) {
+                    $pricingData['average_cost'] = $product->average_cost;
+                    unset($data['average_cost']);
+                }
+                $pricing = $saveAsDraft
+                    ? $this->draftPricing($pricingData)
+                    : app(ProductPricingContract::class)->forProductCard($pricingData['average_cost'] ?? null, $pricingData['sale_price'] ?? null);
 
                 if ($product !== null && ! array_key_exists('product_type', $data)) {
                     $productType = $product->product_type;
@@ -225,6 +234,9 @@ class SaveProductAction
                     if (array_key_exists($input, $data)) {
                         $product->{$relation}()->sync(array_values(array_filter(array_map('intval', (array) $data[$input]))));
                     }
+                }
+                if (array_key_exists('filter_value_ids', $data)) {
+                    $this->syncFilters($product, $data['filter_value_ids']);
                 }
                 if (array_key_exists('preferred_supplier_id', $data)) {
                     $product->productSuppliers()->update(['is_preferred' => false]);
@@ -356,6 +368,34 @@ class SaveProductAction
         $lookup = $model::query()->whereKey((int) $value)->where('status', 'active')->first();
         if ($lookup === null) throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
         return (int) $lookup->id;
+    }
+
+    /** @param array<int, int|string> $valueIds */
+    private function syncFilters(Product $product, array $valueIds): void
+    {
+        $validated = validator(['filter_value_ids' => $valueIds], [
+            'filter_value_ids' => ['array'],
+            'filter_value_ids.*' => ['integer', 'distinct'],
+        ])->validate();
+        $ids = array_map('intval', $validated['filter_value_ids']);
+        $savedIds = $product->filterValues()->pluck('product_option_values.id')->map(fn ($id): int => (int) $id)->all();
+        $values = ProductOptionValue::query()->with('group')->whereIn('id', $ids)->get();
+        if ($values->count() !== count($ids) || $values->contains(fn ($value): bool =>
+            ($value->status !== 'active' || $value->group->status !== 'active') && ! in_array($value->id, $savedIds, true)
+        )) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'productForm.filter_value_ids' => __('Select active Product Filter values or retain the existing saved selections.'),
+            ]);
+        }
+
+        $product->filterValues()->sync($ids);
+        app(RecordAuditEvent::class)->execute(
+            category: 'master_data',
+            event: 'update_product_filters',
+            source: $product,
+            before: ['filter_value_ids' => $savedIds],
+            after: ['filter_value_ids' => $ids],
+        );
     }
 
     private function syncFamilyDescriptions(Product $family): void

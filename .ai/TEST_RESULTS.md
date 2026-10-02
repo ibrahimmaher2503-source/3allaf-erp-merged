@@ -446,3 +446,10 @@
 - **PASS (recorded deployment/live check):** Fresh encrypted backup/restore reconciliation, stock/schema preservation, atomic activation, authenticated read-only renders, and live browser interaction on both forms passed without a production business test document. The live interaction confirmed 120.00 totals, an enabled visible invoice cost input, contextual help, and removal of ordinary inline notes.
 - **PASS (read-only continuation check):** Active release symlink points to Hotfix45 commit `7a327b93abc48987eab7238e6bcd125635413fbb`; all eight changed application files match the worktree bytes. Deployment state says success/finished/switched with maintenance off; `https://rajeh.xyz/up` and `/login` returned HTTP 200, and the compiled asset manifest exists. The calculation and browser scenarios above were reused, not rerun.
 - **Boundary:** No automated suite, migration, new production transaction, extra browser scenario, redeployment, or new asset build ran in this continuation.
+
+
+# 2026-10-02 — Product-card Focused Hotfix Checks
+
+PASS: changed PHP syntax; three changed Blade compilations/compiled syntax; locale JSON; 22 saved-cost runtime/filter/SEO source-contract checks; 98,709-byte real component temporary upload, hydration and protected validation; owner-authorized loopback browser upload HTTP 200 at all four stages, absent/pending-file gating, main/additional roles and readiness reset. Browser fixture writes no database records.
+
+NOT RUN: XAMPP MariaDB migration/backfill/down, product save/reload, filter SQL persistence, SEO database retention and gallery records; environment unavailable. Exact original production request failure was not reproduced. No full suite, production browser/mutation, migration, build, merge or deployment. Evidence: .ai/evidence/product-card-filters-media-cost-seo/RESULTS.md. Integration/release requires those focused database checks.

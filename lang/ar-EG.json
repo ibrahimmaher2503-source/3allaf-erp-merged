@@ -6369,5 +6369,10 @@
     ,"Physical and merchandising attributes help": "مساعدة الخصائص المادية والتسويقية"
     ,"Protected product media help": "مساعدة وسائط المنتج المحمية"
     ,"Optional product content help": "مساعدة محتوى المنتج الاختياري"
-    ,"Product web and SEO help": "مساعدة محتوى المنتج والظهور على الويب"
+    ,"Product web and SEO help": "مساعدة محتوى المنتج والظهور على الويب",
+    "Select an image and wait for its upload to finish before saving it.": "اختار صورة واستنى رفعها يكتمل قبل ما تحفظها.",
+    "Select active Product Filter values or retain the existing saved selections.": "اختار قيم فلاتر المنتجات النشطة أو احتفظ بالاختيارات المحفوظة.",
+    "No filter values configured.": "لسه مفيش قيم للفلتر ده.",
+    "No product filters configured.": "لسه مفيش فلاتر منتجات.",
+    "Build reusable bilingual descriptive filters for product cards.": "أنشئ فلاتر وصفية بالعربي والإنجليزي لاستخدامها في بطاقات المنتجات."
 }

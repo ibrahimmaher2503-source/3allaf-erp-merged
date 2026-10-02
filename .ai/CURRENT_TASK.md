@@ -1,3 +1,17 @@
+# Current Task — Product-card Scoped Hotfix
+
+**Date:** 2026-10-02
+**Class:** I4 — scoped Catalog fixes plus necessary additive product_filter_values assignment migration 000119; same Product Filters configuration library and unchanged variant generation.
+**Source:** c41c5817c76d4f69a42b1888ebe545a3c51bad9d from protected main.
+**Branch/worktree:** hotfix/product-card-filters-media-cost-seo; /tmp/rajeh-erp-product-card-filters-media-cost-seo.
+**Scope:** Configured descriptive filters in optional specifications, separate from variants; upload readiness/diagnosis; saved-cost edit persistence; hide four SEO meta fields without destroying data.
+**Status:** Source implementation complete. Focused syntax/Blade, saved-cost runtime, filter/SEO source contracts and authorized isolated upload-browser checks passed. XAMPP MariaDB migration and actual persistence verification remain unexecuted. See .ai/evidence/product-card-filters-media-cost-seo/RESULTS.md. No milestone/Phase Gate advancement.
+**Current authorization:** Owner requests focused checks and explicitly authorized local browser control for the upload trace in this session. No unrelated suite, production browser control or database outside the XAMPP policy is authorized.
+**Publication:** Commit `fix: align product card filters media and edit persistence`; push only this branch. No merge, deployment, production configuration/workflow change or production migration.
+**Recorded production:** Hotfix51 application b709193815c548bb0100a0b641171c5af7aaf314; /home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-b709193815c5-r6. Distinct from source; no deployment preflight is claimed.
+
+## Previous Operational Documentation Task (Historical)
+
 # Current Task — Post-Hotfix51 Operational Documentation
 
 **Date:** 2026-10-01

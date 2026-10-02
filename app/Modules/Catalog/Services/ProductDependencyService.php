@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 final class ProductDependencyService
 {
     /** @var list<string> */
-    private const CONFIGURATION_TABLES = ['barcodes', 'product_images', 'product_suppliers', 'product_ages', 'product_characters', 'product_colours', 'product_genders', 'product_family_option_groups', 'product_family_option_values', 'product_variant_values', 'product_store_assignments'];
+    private const CONFIGURATION_TABLES = ['barcodes', 'product_images', 'product_suppliers', 'product_ages', 'product_characters', 'product_colours', 'product_genders', 'product_filter_values', 'product_family_option_groups', 'product_family_option_values', 'product_variant_values', 'product_store_assignments'];
 
     /** @var array<string, array{type_column:string,id_column:string,type_values:list<string>}> */
     private const POLYMORPHIC_HISTORY_TABLES = [

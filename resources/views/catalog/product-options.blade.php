@@ -166,7 +166,7 @@ new #[Title('Product Filters')] class extends Component {
 }; ?>
 
 <div class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
-    <x-page-header :title="__('Product Filters')" :description="__('Build reusable bilingual product filters for explicit standard-product variation families.')">
+    <x-page-header :title="__('Product Filters')" :description="__('Build reusable bilingual descriptive filters for product cards.')">
         <x-slot:actions>@can('products_categories_brands.create')<flux:button type="button" wire:click="startGroup" variant="primary" icon="plus">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إضافة مجموعة فلاتر' : 'Add Filter Group' }}</flux:button>@endcan</x-slot:actions>
     </x-page-header>
 

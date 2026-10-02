@@ -1,0 +1,40 @@
+<?php
+if (getenv('APP_ENV') !== 'local') { throw new RuntimeException('This focused verifier requires explicit APP_ENV=local and an isolated worktree.'); }
+$root = dirname(__DIR__, 3);
+require $root.'/vendor/autoload.php';
+$app = require $root.'/bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+config(['app.key' => 'base64:'.base64_encode(random_bytes(32)), 'cache.default' => 'array', 'session.driver' => 'file']);
+$app->instance('translation.loader', new Illuminate\Translation\FileLoader($app['files'], $app->langPath()));
+$app->forgetInstance('translator');
+$checks=0;
+$assert = function (bool $ok, string $message) use (&$checks): void { if (! $ok) throw new RuntimeException($message); $checks++; };
+$source = file_get_contents($app->resourcePath('views/catalog/product-form.blade.php'));
+$php = substr($source, 5, strpos($source, '}; ?>') - 5 + 2);
+$php = str_replace("new #[Title('Product Card')]", "return new #[Title('Product Card')]", $php);
+$component = eval($php);
+Livewire\Livewire::component('product-upload-probe', $component::class);
+$component->setId('product-upload-probe');
+$component->setName('product-upload-probe');
+$component->productId=1;
+$filePath = tempnam(sys_get_temp_dir(), 'product-card-image-');
+$im=imagecreatetruecolor(100,100);imagepng($im,$filePath);imagedestroy($im);
+file_put_contents($filePath, str_repeat("\0", 98709-filesize($filePath)), FILE_APPEND);
+$file=new Illuminate\Http\UploadedFile($filePath,'probe.png','image/png',UPLOAD_ERR_OK,true);
+$controller=new Livewire\Features\SupportFileUploads\FileUploadController();
+$paths=$controller->validateAndStore([$file], Livewire\Features\SupportFileUploads\FileUploadConfiguration::disk());
+$component->_finishUpload('mediaUpload', $paths->all(), false);
+$assert($component->mediaUpload instanceof Livewire\Features\SupportFileUploads\TemporaryUploadedFile && $component->mediaUpload->getSize() === 98709, 'Small image did not complete temporary upload.');
+$handler=app(Livewire\Mechanisms\HandleComponents\HandleComponents::class);
+$snapshot=$handler->snapshot($component);
+$snapshot['memo']['release'] = Livewire\Features\SupportReleaseTokens\ReleaseToken::generate($component);
+unset($snapshot['checksum']);
+$snapshot['checksum'] = Livewire\Mechanisms\HandleComponents\Checksum::generate($snapshot);
+[$hydrated]=$handler->fromSnapshot($snapshot);
+$assert($hydrated->mediaUpload instanceof Livewire\Features\SupportFileUploads\TemporaryUploadedFile && $hydrated->mediaUpload->getSize() === 98709, 'Small image was lost during snapshot hydration.');
+$validated=app(App\Modules\Platform\Actions\ValidateAttachment::class)->execute($hydrated->mediaUpload,'product_image');
+$assert($validated->sizeBytes === 98709 && $validated->detectedMimeType === 'image/png', 'Protected image signature validation failed.');
+$hydrated->mediaUpload->delete();
+unlink($filePath);
+
+echo 'PASS: '.$checks.' focused small-image upload lifecycle checks. No database persistence check is claimed.'.PHP_EOL;
