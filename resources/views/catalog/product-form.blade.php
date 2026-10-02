@@ -7,11 +7,8 @@ use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Catalog\Models\AgeLabel;
-use App\Modules\Catalog\Models\Character;
-use App\Modules\Catalog\Models\Colour;
-use App\Modules\Catalog\Models\Gender;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Flux\Flux;
@@ -44,7 +41,7 @@ new #[Title('Product Card')] class extends Component {
         'description_ar' => '',
         'description_en' => '',
         'short_description_ar' => '', 'short_description_en' => '', 'full_description_ar' => '', 'full_description_en' => '',
-        'meta_title_ar' => '', 'meta_title_en' => '', 'meta_description_ar' => '', 'meta_description_en' => '', 'seo_slug' => '', 'publish_visibility' => '', 'sort_order' => '',
+        'seo_slug' => '', 'publish_visibility' => '', 'sort_order' => '',
         'model_number' => '',
         'product_type' => 'standard',
         'status' => 'active',
@@ -58,23 +55,15 @@ new #[Title('Product Card')] class extends Component {
         'dimension_height' => '',
         'dimension_unit' => '',
         'weight' => '',
-        'target_age' => '',
-        'age_label_id' => '',
-        'suitable_gender' => '',
-        'gender_id' => '',
-        'colour' => '',
-        'colour_id' => '',
-        'size' => '',
-        'character' => '',
-        'character_id' => '',
         'key_points_ar' => '',
         'key_points_en' => '',
         'keywords_ar' => '',
         'keywords_en' => '',
         'fractional_quantity' => false,
         'average_cost' => '', 'sale_price' => '', 'battery_required' => false, 'battery_details' => '',
-        'preferred_supplier_id' => '', 'age_label_ids' => [], 'character_ids' => [], 'colour_ids' => [], 'gender_ids' => [],
+        'preferred_supplier_id' => '',
         'supplier_item_code' => '',
+        'filter_value_ids' => [],
     ];
 
     public function mount(?Product $product = null): void
@@ -87,11 +76,6 @@ new #[Title('Product Card')] class extends Component {
             $this->productVersion = $product->lock_version;
             $this->loadProduct($product);
         }
-    }
-
-    public function lookupOptions(): array
-    {
-        return ['ages' => AgeLabel::query()->where('status', 'active')->orderBy('sort_order')->get(), 'characters' => Character::query()->where('status', 'active')->orderBy('sort_order')->get(), 'colours' => Colour::query()->where('status', 'active')->orderBy('sort_order')->get(), 'genders' => Gender::query()->where('status', 'active')->orderBy('sort_order')->get()];
     }
 
     public function localProductCodePreview(): ?string
@@ -213,7 +197,7 @@ new #[Title('Product Card')] class extends Component {
         }
 
         if ($this->mediaUpload === null) {
-            $this->addError('mediaUpload', __('The image upload was rejected before Laravel could receive it. Check the configured local upload limit.'));
+            $this->addError('mediaUpload', __('Select an image and wait for its upload to finish before saving it.'));
 
             return;
         }
@@ -227,6 +211,7 @@ new #[Title('Product Card')] class extends Component {
             $product = Product::query()->findOrFail($this->productId);
             $action->upload($product, $this->mediaUpload, $this->mediaRole);
             $this->mediaUpload = null;
+            $this->dispatch('product-image-saved');
             Flux::toast(variant: 'success', text: __('Protected product image added successfully.'));
         } catch (\Throwable $exception) {
             $this->addError('mediaUpload', \App\Support\UserSafeError::message($exception));
@@ -281,7 +266,7 @@ new #[Title('Product Card')] class extends Component {
 
     private function loadProduct(Product $product): void
     {
-        $product = $product->load(['category', 'brand', 'images.attachment', 'preferredProductSupplier', 'ages', 'characters', 'colours', 'genders']);
+        $product = $product->load(['category', 'brand', 'images.attachment', 'preferredProductSupplier', 'filterValues']);
         $this->productForm = [
             'item_code' => $product->item_code,
             'barcode_registration_type' => $product->barcode_registration_type ?? 'international',
@@ -293,7 +278,7 @@ new #[Title('Product Card')] class extends Component {
             'description_ar' => $product->description_ar ?? '',
             'description_en' => $product->description_en ?? '',
             'short_description_ar' => $product->short_description_ar ?? '', 'short_description_en' => $product->short_description_en ?? '', 'full_description_ar' => $product->full_description_ar ?? '', 'full_description_en' => $product->full_description_en ?? '',
-            'meta_title_ar' => $product->meta_title_ar ?? '', 'meta_title_en' => $product->meta_title_en ?? '', 'meta_description_ar' => $product->meta_description_ar ?? '', 'meta_description_en' => $product->meta_description_en ?? '', 'seo_slug' => $product->seo_slug ?? '', 'publish_visibility' => $product->publish_visibility ?? '', 'sort_order' => $product->sort_order ?? '',
+            'seo_slug' => $product->seo_slug ?? '', 'publish_visibility' => $product->publish_visibility ?? '', 'sort_order' => $product->sort_order ?? '',
             'model_number' => $product->model_number ?? '',
             'product_type' => $product->product_type,
             'status' => $product->status,
@@ -307,26 +292,17 @@ new #[Title('Product Card')] class extends Component {
             'dimension_height' => $product->dimension_height ?? '',
             'dimension_unit' => $product->dimension_unit ?? '',
             'weight' => $product->weight ?? '',
-            'target_age' => $product->target_age ?? '',
-            'age_label_id' => (string) ($product->age_label_id ?? ''),
-            'suitable_gender' => $product->suitable_gender ?? '',
-            'gender_id' => (string) ($product->gender_id ?? ''),
-            'colour' => $product->colour ?? '',
-            'colour_id' => (string) ($product->colour_id ?? ''),
-            'size' => $product->size ?? '',
-            'character' => $product->character ?? '',
-            'character_id' => (string) ($product->character_id ?? ''),
             'key_points_ar' => $product->key_points_ar ?? '',
             'key_points_en' => $product->key_points_en ?? '',
             'keywords_ar' => $product->keywords_ar ?? '',
             'keywords_en' => $product->keywords_en ?? '',
             'fractional_quantity' => (bool) $product->fractional_quantity,
-            'average_cost' => $product->average_cost ?? '', 'sale_price' => $product->sale_price ?? '',
+            'average_cost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ? ($product->average_cost ?? '') : '', 'sale_price' => $product->sale_price ?? '',
             'battery_required' => (bool) $product->battery_required, 'battery_details' => $product->battery_details ?? '',
             'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
             'supplier_item_code' => (string) ($product->preferredProductSupplier?->supplier_item_code ?? ''),
-            'age_label_ids' => $product->ages->pluck('id')->all(), 'character_ids' => $product->characters->pluck('id')->all(), 'colour_ids' => $product->colours->pluck('id')->all(), 'gender_ids' => $product->genders->pluck('id')->all(),
         ];
+        $this->productForm['filter_value_ids'] = $product->filterValues->pluck('id')->map(fn ($id): string => (string) $id)->all();
         $this->productVersion = $product->lock_version;
     }
 
@@ -334,6 +310,7 @@ new #[Title('Product Card')] class extends Component {
     private function rules(bool $saveAsDraft): array
     {
         $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
+        $savedCost = $this->productId === null ? null : Product::query()->whereKey($this->productId)->value('average_cost');
         return [
             'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
@@ -345,7 +322,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.description_ar' => ['nullable', 'string', 'max:5000'],
             'productForm.description_en' => ['nullable', 'string', 'max:5000'],
             'productForm.short_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.short_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.full_description_ar' => ['nullable', 'string', 'max:10000'], 'productForm.full_description_en' => ['nullable', 'string', 'max:10000'],
-            'productForm.meta_title_ar' => ['nullable', 'string', 'max:255'], 'productForm.meta_title_en' => ['nullable', 'string', 'max:255'], 'productForm.meta_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.meta_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
+            'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
             'productForm.model_number' => [$saveAsDraft ? 'nullable' : 'required', 'string', 'max:100'],
             'productForm.product_type' => ['required', Rule::in($this->isEditing && $this->productForm['product_type'] === 'digital' ? ['standard', 'composite', 'service', 'digital'] : ['standard', 'composite', 'service'])],
             'productForm.status' => ['required', Rule::in(['active', 'inactive'])],
@@ -359,28 +336,17 @@ new #[Title('Product Card')] class extends Component {
             'productForm.dimension_height' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_unit' => ['nullable', 'string', 'max:20'],
             'productForm.weight' => ['nullable', 'numeric', 'min:0'],
-            'productForm.target_age' => ['nullable', 'string', 'max:100'],
-            'productForm.age_label_id' => ['nullable', 'integer', 'exists:age_labels,id'],
-            'productForm.suitable_gender' => ['nullable', 'string', 'max:30'],
-            'productForm.gender_id' => ['nullable', 'integer', 'exists:genders,id'],
-            'productForm.colour' => ['nullable', 'string', 'max:100'],
-            'productForm.colour_id' => ['nullable', 'integer', 'exists:colours,id'],
-            'productForm.size' => ['nullable', 'string', 'max:100'],
-            'productForm.character' => ['nullable', 'string', 'max:100'],
-            'productForm.character_id' => ['nullable', 'integer', 'exists:characters,id'],
             'productForm.key_points_ar' => ['nullable', 'string', 'max:4000'],
             'productForm.key_points_en' => ['nullable', 'string', 'max:4000'],
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
             'productForm.fractional_quantity' => ['required', 'boolean'],
-            'productForm.average_cost' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0'], 'productForm.sale_price' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
+            'productForm.average_cost' => [$saveAsDraft || ($savedCost !== null && is_numeric($savedCost) && (float) $savedCost >= 0) ? 'nullable' : 'required', 'numeric', 'min:0'], 'productForm.sale_price' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [! $saveAsDraft && blank($this->productForm['item_code']) ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
-            'productForm.age_label_ids' => ['array'], 'productForm.age_label_ids.*' => ['integer', 'exists:age_labels,id'],
-            'productForm.character_ids' => ['array'], 'productForm.character_ids.*' => ['integer', 'exists:characters,id'],
-            'productForm.colour_ids' => ['array'], 'productForm.colour_ids.*' => ['integer', 'exists:colours,id'],
-            'productForm.gender_ids' => ['array'], 'productForm.gender_ids.*' => ['integer', 'exists:genders,id'],
+            'productForm.filter_value_ids' => ['array'],
+            'productForm.filter_value_ids.*' => ['integer', 'distinct', 'exists:product_option_values,id'],
         ];
     }
 
@@ -417,8 +383,10 @@ new #[Title('Product Card')] class extends Component {
     {
         $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         $product = $this->productId === null ? null : Product::query()
-            ->with(['category', 'brand', 'barcodes', 'images.attachment'])
+            ->with(['category', 'brand', 'barcodes', 'images.attachment', 'filterValues'])
             ->findOrFail($this->productId);
+
+        $savedFilterIds = $product?->filterValues->pluck('id')->all() ?? [];
 
         return view('catalog.product-form', [
             'product' => $product,
@@ -426,7 +394,10 @@ new #[Title('Product Card')] class extends Component {
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'taxSettings' => TaxSetting::query()->forCompany($companyId)->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
             'suppliers' => Supplier::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
-            'lookups' => $this->lookupOptions(),
+            'filterGroups' => ProductOptionGroup::query()
+                ->where(fn ($query) => $query->where('status', 'active')->orWhereHas('values', fn ($values) => $values->whereIn('id', $savedFilterIds)))
+                ->with(['values' => fn ($query) => $query->where(fn ($values) => $values->where('status', 'active')->orWhereIn('id', $savedFilterIds))])
+                ->orderBy('sort_order')->orderBy('id')->get(),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
         ]);
     }
@@ -581,7 +552,7 @@ new #[Title('Product Card')] class extends Component {
                 <x-context-help :title="__('Product pricing help')" :label="__('Open product pricing help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('The base consumer selling price is the fallback price when no effective branch or store price-list value applies.') }}</li><li>{{ __('At sale time, the assigned active store price list is used first, then the branch default price list, then the base consumer selling price.') }}</li><li>{{ __('Approved purchasing updates cost; cost is never used as the selling price.') }}</li><li>{{ __('Open-price rules remain in the approved Pricing workflow.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <div><flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" /><x-context-help :title="__('Cost price')" :label="__('Open contextual help')"><p>{{ __('Cost is updated by approved purchasing and is not the selling price.') }}</p></x-context-help></div>
+                @if ($canViewCost || ! $isEditing)<div><flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" /><x-context-help :title="__('Cost price')" :label="__('Open contextual help')"><p>{{ __('Cost is updated by approved purchasing and is not the selling price.') }}</p></x-context-help></div>@endif
                 <div id="base-consumer-price"><flux:input id="product-field-sale_price" wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" /><x-context-help :title="__('Base consumer selling price')" :label="__('Open contextual help')"><p>{{ __('Required for sellable products and must be greater than zero.') }}</p></x-context-help></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
@@ -622,25 +593,24 @@ new #[Title('Product Card')] class extends Component {
                     <span class="font-medium text-text-primary">{{ __('Calculated volume') }}:</span>
                     {{ $volume === null ? '—' : rtrim(rtrim(number_format($volume, 3, '.', ''), '0'), '.') }} {{ $productForm['dimension_unit'] ? $productForm['dimension_unit'].'³' : '' }}
                 </div>
-                <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <flux:select wire:model="productForm.gender_id" :label="__('Gender')">
-                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['genders'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
-                    </flux:select>
-                    <flux:select wire:model="productForm.age_label_id" :label="__('Age label')">
-                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['ages'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
-                    </flux:select>
-                    <flux:select wire:model="productForm.character_id" :label="__('Character')">
-                        <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                        @foreach ($lookups['characters'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
-                    </flux:select>
-                    @unless ($product?->has_variations)
-                        <flux:select wire:model="productForm.colour_id" :label="__('Colour')">
-                            <flux:select.option value="">{{ __('Not specified') }}</flux:select.option>
-                            @foreach ($lookups['colours'] as $lookup)<flux:select.option :value="$lookup->id">{{ str_starts_with(app()->getLocale(), 'ar') ? $lookup->name_ar : $lookup->name_en }}</flux:select.option>@endforeach
-                        </flux:select>
-                    @endunless
+                <div class="mt-4 space-y-4" id="product-field-filter_value_ids">
+                    <flux:heading size="lg">{{ __('Product Filters') }}</flux:heading>
+                    @forelse ($filterGroups as $group)
+                        <fieldset wire:key="product-filter-group-{{ $group->id }}" class="rounded-xl border border-border p-3">
+                            <legend class="px-1 text-sm font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $group->name_ar : $group->name_en }}</legend>
+                            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                @forelse ($group->values as $value)
+                                    <flux:checkbox wire:key="product-filter-value-{{ $value->id }}" wire:model="productForm.filter_value_ids" value="{{ $value->id }}" :label="str_starts_with(app()->getLocale(), 'ar') ? $value->name_ar : $value->name_en" :disabled="($group->status !== 'active' || $value->status !== 'active') && ! in_array((string) $value->id, $productForm['filter_value_ids'], true)" />
+                                @empty
+                                    <flux:text>{{ __('No filter values configured.') }}</flux:text>
+                                @endforelse
+                            </div>
+                        </fieldset>
+                    @empty
+                        <flux:text>{{ __('No product filters configured.') }}</flux:text>
+                    @endforelse
+                    <flux:error name="productForm.filter_value_ids" />
+                    <flux:error name="productForm.filter_value_ids.*" />
                 </div>
                 <input type="hidden" wire:model="productForm.fractional_quantity" value="0">
                 <div class="mt-4 grid gap-4 md:grid-cols-2"><flux:checkbox wire:model="productForm.sell_online" :label="__('Sell online')" /><flux:checkbox wire:model="productForm.battery_required" :label="__('Uses battery')" /><flux:input wire:model="productForm.battery_details" :label="__('Battery details')" /></div>
@@ -658,10 +628,6 @@ new #[Title('Product Card')] class extends Component {
                 <flux:textarea wire:model="productForm.short_description_en" :label="__('Short description English')" rows="3" dir="ltr" />
                 <flux:textarea wire:model="productForm.full_description_ar" :label="__('Full description Arabic')" rows="5" dir="rtl" />
                 <flux:textarea wire:model="productForm.full_description_en" :label="__('Full description English')" rows="5" dir="ltr" />
-                <flux:input wire:model="productForm.meta_title_ar" :label="__('Meta title Arabic')" dir="rtl" />
-                <flux:input wire:model="productForm.meta_title_en" :label="__('Meta title English')" dir="ltr" />
-                <flux:textarea wire:model="productForm.meta_description_ar" :label="__('Meta description Arabic')" rows="3" dir="rtl" />
-                <flux:textarea wire:model="productForm.meta_description_en" :label="__('Meta description English')" rows="3" dir="ltr" />
                 <flux:input wire:model="productForm.seo_slug" :label="__('SEO URL slug')" placeholder="toy-name" dir="ltr" />
                 <flux:select wire:model="productForm.publish_visibility" :label="__('Available online')"><flux:select.option value="">{{ __('Not published') }}</flux:select.option><flux:select.option value="catalog">{{ __('Available online') }}</flux:select.option><flux:select.option value="hidden">{{ __('Not available online') }}</flux:select.option></flux:select>
                 <flux:input wire:model="productForm.sort_order" :label="__('Website display order')" type="number" min="0" />
@@ -681,14 +647,14 @@ new #[Title('Product Card')] class extends Component {
             @if (! $isEditing)
                 <flux:callout variant="info" icon="information-circle">{{ __('Save the card first, then upload protected images without losing the draft.') }}</flux:callout>
             @else
-                <div x-data="{ mediaError: '', maxBytes: 8 * 1024 * 1024, oversizedMessage: @js(__('The image is larger than the configured 8 MB local limit.')), validateMediaFile(event) { const file = event.target.files[0]; if (!file) { return; } if (file.size > this.maxBytes) { this.mediaError = this.oversizedMessage; event.target.value = ''; event.stopImmediatePropagation(); return; } this.mediaError = ''; } }" x-on:change.capture="if ($event.target.type === 'file') { validateMediaFile($event); }" class="space-y-3">
+                <div x-data="{ mediaError: '', uploading: false, uploadReady: false, maxBytes: @js(config('attachments.limits.product_image')),  oversizedMessage: @js(__('The image is larger than the configured 8 MB local limit.')), validateMediaFile(event) { this.uploadReady = false; const file = event.target.files[0]; if (!file) { return; } if (file.size > this.maxBytes) { this.mediaError = this.oversizedMessage; event.target.value = ''; event.stopImmediatePropagation(); return; } this.mediaError = ''; } }" x-on:livewire-upload-start="uploading = true; uploadReady = false" x-on:livewire-upload-finish="uploading = false; uploadReady = true" x-on:livewire-upload-error="uploading = false; uploadReady = false" x-on:livewire-upload-cancel="uploading = false; uploadReady = false" x-on:product-image-saved.window="uploadReady = false" x-on:change.capture="if ($event.target.type === 'file') { validateMediaFile($event); }" class="space-y-3">
                     <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                         <flux:input wire:model="mediaUpload" type="file" accept="image/jpeg,image/png,image/webp" :label="__('Image file')" />
                     <flux:select wire:model="mediaRole" :label="__('Image role')">
                         <flux:select.option value="main">{{ __('Main image') }}</flux:select.option>
                         <flux:select.option value="additional">{{ __('Additional image') }}</flux:select.option>
                     </flux:select>
-                    <flux:button class="md:col-span-2 md:justify-self-end" type="button" icon="arrow-up-tray" variant="primary" wire:click="uploadImage" wire:loading.attr="disabled" wire:target="uploadImage,mediaUpload">{{ __('Upload protected image') }}</flux:button>
+                    <flux:button class="md:col-span-2 md:justify-self-end" type="button" icon="arrow-up-tray" variant="primary" wire:click="uploadImage" disabled x-bind:disabled="uploading || ! uploadReady" wire:loading.attr="disabled" wire:target="uploadImage,mediaUpload">{{ __('Upload protected image') }}</flux:button>
                     </div>
                     <flux:text x-show="mediaError" x-cloak class="text-sm text-danger" x-text="mediaError"></flux:text>
                 </div>
@@ -745,7 +711,7 @@ new #[Title('Product Card')] class extends Component {
         @can('pricing_lists.view')<livewire:pricing::product-matrix :product="$product" :key="'product-pricing-'.$product->id" />@endcan
     @endif
 
-    @if ($isEditing && $product && ! $product->isVariant())
+    @if ($isEditing && $product?->has_variations && ! $product->isVariant())
         <livewire:catalog::product-variations :product="$product" :key="'product-variations-'.$product->id" />
     @endif
 </x-app.page>

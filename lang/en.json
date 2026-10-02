@@ -3111,5 +3111,10 @@
     ,"Physical and merchandising attributes help": "Physical and merchandising attributes help"
     ,"Protected product media help": "Protected product media help"
     ,"Optional product content help": "Optional product content help"
-    ,"Product web and SEO help": "Product web and SEO help"
+    ,"Product web and SEO help": "Product web and SEO help",
+    "Select an image and wait for its upload to finish before saving it.": "Select an image and wait for its upload to finish before saving it.",
+    "Select active Product Filter values or retain the existing saved selections.": "Select active Product Filter values or retain the existing saved selections.",
+    "No filter values configured.": "No filter values configured.",
+    "No product filters configured.": "No product filters configured.",
+    "Build reusable bilingual descriptive filters for product cards.": "Build reusable bilingual descriptive filters for product cards."
 }

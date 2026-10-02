@@ -106,6 +106,10 @@ purpose, owner type/id, uploader, scope, names, disk/path, MIME, size, hash, dim
 
 immutable item code, bilingual names/descriptions, type, status, UOM, category, brand, preferred supplier, average cost, reorder threshold, attributes, fractional flag, version.
 
+### product_filter_values
+
+Descriptive product-to-option-value assignments reuse `product_option_groups` / `product_option_values` from Product Filters management. Unique `(product_id, product_option_value_id)` and restricted foreign keys preserve references. These assignments are independent of `product_family_option_groups`, `product_family_option_values`, and child `product_variant_values`; they never generate SKUs. Migration 000119 copies legacy ordinary-product selections without deleting legacy data or interpreting actual family options as filters.
+
 ### categories
 
 parent_id, code/name, status; cycle prevention.

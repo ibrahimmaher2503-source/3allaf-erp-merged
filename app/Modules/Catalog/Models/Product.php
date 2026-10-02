@@ -191,6 +191,11 @@ class Product extends Model
             ->orderBy('id');
     }
 
+    public function filterValues(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductOptionValue::class, 'product_filter_values')->withTimestamps();
+    }
+
     public function familyOptionGroups(): BelongsToMany
     {
         return $this->belongsToMany(ProductOptionGroup::class, 'product_family_option_groups')
