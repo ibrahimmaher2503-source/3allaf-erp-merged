@@ -6375,5 +6375,11 @@
     "No filter values configured.": "لسه مفيش قيم للفلتر ده.",
     "No product filters configured.": "لسه مفيش فلاتر منتجات.",
     "Build reusable bilingual descriptive filters for product cards.": "أنشئ فلاتر وصفية بالعربي والإنجليزي لاستخدامها في بطاقات المنتجات.",
-    "Or continue with username": "أو كمّل باسم المستخدم"
+    "Or continue with username": "أو كمّل باسم المستخدم",
+    "User created": "تم إنشاء المستخدم",
+    "User email verified": "تم التحقق من بريد المستخدم",
+    "Product card created": "تم إنشاء بطاقة المنتج",
+    "Product filters updated": "تم تحديث فلاتر المنتجات",
+    "Authorization": "الصلاحيات",
+    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "أضف مخازن ومنافذ بيع نشطة مرتبطة بفروعها الفعلية. يحدد كل درج نقدي منفذ البيع الخاص به."
 }

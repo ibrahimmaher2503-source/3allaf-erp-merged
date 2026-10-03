@@ -23,7 +23,7 @@
         </flux:select>
 
         <flux:select wire:model="orderForm.store_id" :label="__('Receiving Store / Warehouse') . ' *'" :disabled="blank($orderForm['branch_id'])">
-            <option value="">{{ __('Select Store') }}</option>
+            <option value="">{{ __('Select store') }}</option>
             @foreach ($stores as $st)
                 <option value="{{ $st->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $st->name_ar : $st->name_en }} ({{ $st->code }})</option>
             @endforeach
