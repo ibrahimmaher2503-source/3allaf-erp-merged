@@ -1,12 +1,19 @@
 # Pending Change Batch
 
-## 2026-10-03 — Full-System Audit Login-Copy Correction
+## 2026-10-03 — Full-System Audit Final UI Batch
 
-| Classification | Short description | Commit | Affected files | Status |
-|---|---|---|---|---|
-| V0 | Localized username sign-in separator observed during remaining Arabic/English login visual coverage | `b04924d4c973580249aa999adab34078935cefb3` | `resources/views/pages/auth/login.blade.php`, `lang/ar.json`, `lang/ar-EG.json`, `lang/en.json` | Focused verification passed; pushed on existing audit branch; not merged/deployed; final audit batch remains open |
+Owner explicitly authorized closure, integration and deployment of the remaining audit fixes. Exactly two existing-user temporary sessions were authorized for authenticated browser coverage; no grant or business-record mutation is included.
 
-Owner authorized final audit integration/release, but authenticated coverage is currently awaiting explicit temporary-session authorization following automatic approval review rejection. Preserve the existing e6d2d1e artifact; no separate V0 release or version/artifact rebuild was performed in this continuation.
+| Class | Repair | Commit | Verification/status |
+|---|---|---|---|
+| V0 | Username sign-in separator in ar/ar-EG/en | `b04924d` | Prior focused three-locale render passed; included in final batch |
+| V1 | Safely encoded Translation Editor action arguments | `1d2a363` | Five controls × three quote/markup fixtures passed; no saves/resets |
+| V1 | Canonical inventory movement select values | `9842658` | 25 options/selection retention in three locales passed |
+| V1 | Idempotent line-total text updates stop observer loop | `5278c0f` | Previously stalled adjustment/Party/quotation pages rendered with exact candidate asset guard; unsaved input returned to event loop |
+| V0 | Arabic audit/setup/store copy and header grid sizing | `8f80ab4` | Focused copy render passed; measured Arabic overlap 110.797px became 13.594px separation |
+| I4 | One combined version/build/artifact/release | Release commit follows | `0.1.22-audit-final`; one Vite build passed; live activation/affected checks pending |
+
+Final batch remains open until production success and session revocation are recorded. Frozen e6d2d1e archive and all historical records are preserved unchanged.
 
 ## 2026-10-01 — Current Operational Documentation Entry
 
