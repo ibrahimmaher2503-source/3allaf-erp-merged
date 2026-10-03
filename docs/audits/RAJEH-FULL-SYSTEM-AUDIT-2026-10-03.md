@@ -5,22 +5,24 @@
 **Source baseline:** `49f429420b576bb08f05ea757cf44aca9f8e9140`  
 **Audit branch:** `audit/full-system-client-readiness`  
 **Production baseline at audit start:** `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-hotfix51-49f429420b57`  
-**Production target:** `49f429420b576bb08f05ea757cf44aca9f8e9140`  
+**Final application target:** `599a5084f7c1c2bb0aee5d6a67fc5df3d9dfd0be` (`0.1.22-audit-final3`)
 **Audit class:** I4, owner-authorized release and operational verification
 
-**Continuation status:** Incomplete — authenticated Admin/User browser coverage awaits explicit authorization for two temporary audit sessions. Completed scans and historical evidence below are preserved; they were not restarted.
+**Final audit status:** Closed after completing the remaining authorized browser/output coverage and repairing confirmed defects. Original completed scans were preserved. Unavailable populated-workflow, concurrency, hardware and human-UAT acceptance is explicitly unexecuted, rather than counted as passed.
 
 ## Readiness summary
 
-| Severity | Remaining | Disposition |
-|---|---:|---|
-| Critical | 0 confirmed | No confirmed critical application defect in executed coverage; outstanding coverage is not a pass |
-| High | 1 approval review | Confirm the intended existing custom cashier grants; the role spelling alone is not an application defect |
-| Medium | 1 follow-up | Verify the next scheduled backup run; a fresh encrypted backup and monitor check passed during this audit |
-| Low | 1 pending release | Arabic login separator localization/username copy corrected and verified in source; not yet deployed |
-| Verification blocker | 1 | Authenticated Admin/User browser coverage awaits temporary-session approval |
+| Area | Final disposition |
+|---|---|
+| Confirmed application defects in executed coverage | Repaired; no unresolved confirmed critical/high application defect in these paths |
+| Authenticated Admin/User visual coverage | Complete for 386 distinct route/locale/viewport scenarios; two sessions revoked |
+| Production release health | Final immutable release activated; compact smoke recorded separately below |
+| Normal-user operational configuration | Owner review required: custom sensitive grants, denied shift access and no open assigned shift; no grant changes authorized |
+| Financial/inventory acceptance | Populated posting/reversal/concurrency/reconciliation unexecuted: no authorized disposable XAMPP environment available |
+| Output/device acceptance | XLSX/CSV downloads and bilingual catalog PDF verified; transaction receipts, physical printers, scanners, terminals and drawers need actual fixtures/devices |
+| Backup scheduling | Explicit encrypted backup/monitor and caller-cwd regression passed; next scheduled daily run remains a monitoring follow-up |
 
-**Client handover readiness:** **Not approved by this audit.** Active release health and the repaired backup command pass the executed checks. Full Admin/User visual, interactive workflow, and acceptance coverage remains incomplete. No milestone, phase gate, or human UAT sign-off is closed.
+**Production readiness:** The deployed application is operational in executed checks. **Unconditional client handover is NOT approved.** Opening configuration, cashier/shift permissions, populated financial/inventory UAT and physical-device acceptance must be resolved before trading/customer sign-off. No milestone, Phase Gate or human UAT approval is inferred from this audit.
 
 ## Coverage map
 
@@ -39,35 +41,35 @@ The route-name scan found no unresolved application `route()` reference. The two
 
 ## Admin and normal-user visual coverage
 
-The source and HTTP surface was inspected for all navigation groups, route families, Livewire forms, modal/action references, validation and empty-state paths, and locale direction handling.
+The public-login pass from the prior continuation is preserved: Arabic/English 1440px desktop and Arabic 390px mobile, with correct document direction and no page-level overflow. It was not restarted.
 
-Unauthenticated live checks returned the expected login redirect for Admin and user-facing protected paths, including:
+The owner subsequently explicitly authorized exactly two temporary authenticated file sessions: existing administrator ID 1 and existing normal user ID 3. The helper projected identity/status/super-admin fields only. It did not inspect password hashes, change passwords, roles, grants or identities, or alter business records for access. No third user was authenticated. Both sessions were revoked immediately after the last authenticated pass, and the private cookie/token manifest was deleted. Revocation receipt: `.ai/evidence/full-system-audit-2026-10-03/session-revocation.txt`.
 
-`/admin`, `/dashboard`, `/catalog/products`, `/purchasing/orders`, `/pos`, `/inventory`, `/customers`, `/reports`, and `/admin/system/health`.
+| Actor | Arabic desktop | English desktop | Arabic mobile | English mobile | Total |
+|---|---:|---:|---:|---:|---:|
+| Administrator | 145 | 145 | 7 | 7 | 304 |
+| Normal user | 38 | 38 | 3 | 3 | 82 |
+| Total | 183 | 183 | 10 | 10 | 386 |
 
-Public live checks passed:
+Desktop width was 1440px and mobile width 390px. Final unique renders comprise 304 HTTP 200, 80 HTTP 403 and 2 HTTP 404 results. There were no HTTP 5xx, missing visible images or page-level horizontal overflows in the completed render ledger. The only initial application JavaScript exception was Translation Editor (AUD-007), repaired and confirmed after shipping. Representative desktop/mobile screenshots were inspected and preserved.
 
-- `/up` returned HTTP 200.
-- `/login` returned HTTP 200 with CSRF markup, secure session attributes, Arabic locale controls, and English LTR document direction.
-- `/robots.txt` returned HTTP 200.
+Administrator coverage spans administration/setup/settings/authorization/roles/audit/security/backup health, catalog/product/supplier/category/brand/import forms, purchasing, inventory/opening/count/transfer/adjustment forms, pricing, POS/sales/shifts/payments/returns/gift instruments, customers/wallets/loyalty, quotation, reporting/export centers, Party/assets/calendars and existing readiness/approval/offline/conflict screens. Query-tab variants and actual existing product/role IDs were included. Parameterized transaction detail/print routes with no records were not fabricated. Personal account/profile/appearance/security routes and credential-based password/passkey/2FA/recovery flows were excluded from this ERP render ledger; no challenge was bypassed and those paths are not represented as verified.
 
-At the first checkpoint, browser tooling had not been located. The continuation found cached Chromium 151.0.7922.34 and installed an isolated Playwright Core client in `/tmp/rajeh-audit-continuation`, leaving application dependencies unchanged. Current login screenshots passed Arabic RTL and English LTR desktop rendering at 1440px and Arabic mobile rendering at 390px, with no page errors or page-level horizontal overflow. Screenshots exposed AUD-006 below.
+The normal user received HTTP 200 for POS, sales, sales invoices, payments and payment evidence; administrator/configuration/catalog/purchasing/inventory/report/customer/wallet/Party/shift routes returned server-side 403. This is evidence of denial under the current grants, not proof that those grants match intended cashier responsibilities.
 
-Authenticated Admin/User pages have **not been verified** in this continuation. Automatic approval review rejected a proposed helper that would create sessions for all active users and read password hashes. That helper did not execute. Explicit approval was requested for a safer plan: exactly two temporary sessions, one existing administrator and one existing normal user, without password-hash access, grant changes, or business-record changes, followed by session cleanup. Approval remains pending. No credentials or session cookies were created by that helper, printed, or retained. Historical browser evidence remains historical only.
+Administrator stock-card requests for all four products returned 403 because the route requires an existing balance in a visible store; no balance records were available. Label preview returned 404 because no label-preview selection was staged. `/forbidden` intentionally returned 403. These are documented request prerequisites, not unresolved application faults.
 
-| Remaining coverage | Actual result |
-|---|---|
-| Public login desktop Arabic/English and mobile Arabic | Browser screenshots inspected; layout/direction passed; localization defect fixed in source |
-| Authenticated administrator navigation/screens/forms | Blocked pending temporary-session authorization |
-| Authenticated normal-user POS and direct-route denials | Blocked pending temporary-session authorization |
-| Create/edit/save/reload, maker/checker, posting/reversal, concurrency and ledger reconciliation | Current continuation did not execute these workflows; prior static findings remain unchanged |
-| Print/PDF, RTL/LTR output, offline/PWA, hardware | Not verified by the public-login browser pass |
+Twenty-three safe-control/validation assertions passed: scoped navigation-search open/empty/close, contextual help open/Escape/focus return, native required-field rejection without submission, interactive quantity preview, disabled no-shift POS controls and uncovered Arabic mobile states. Initial timeouts on adjustment/Party/quotation forms were traced to AUD-009; only their failed renders resumed with the exact candidate asset guard. Other cascading closed-browser/logging/timing/selector failures were driver incidents, preserved separately from final unique outcomes. No full passing matrix was repeated.
+
+Post-activation checks confirmed shipped login copy, Translation Editor edit modal and safely cancelled reset confirmation, canonical inventory filter round-trip, responsive adjustment form, localized dashboard/store copy, header separation and version. The interceptor initially rejected Livewire's read-only `$set` representation (empty call parameters with `updates.editorOpen=false`); its narrow allowance was corrected and only the failed guard assertion resumed. This was a verifier failure, not an application write failure.
 
 ## Forms and workflows reviewed
 
-Static form and action coverage included product cards and filter values, supplier/customer masters, purchasing orders/invoices/receiving/returns, inventory balances/transfers/counts/adjustments, pricing lists and approvals, POS context/cart/checkout/shift flows, sales/returns/gift instruments, quotations, reports/exports, assets/party flows, settings, roles/scopes, audit views, uploads, and print routes.
+The preserved source review covers product/filter/supplier/customer forms, purchasing orders/invoices/receiving/returns, inventory/opening/transfers/counts/adjustments, pricing and approvals, POS/cart/checkout/shifts, sales/returns/gift instruments, quotations, reporting, Party/assets and platform authorization/settings/audit/upload flows.
 
-The current environment did not permit safe authenticated form submission/reload/edit/browser-state verification. No production QA records were created, so no cleanup was required.
+Authenticated coverage exercised read-only forms, real existing product edit screens, safe modal/search/help controls, native validation and empty/disabled/denied states. Browser guards prevented saves, payments, approvals, resets and uploads. No production QA transactions or fabricated customers/suppliers/orders/stock movements were created. Normal export GETs produced their intended operational audit events; existing business records and grants were preserved.
+
+Save/reload, maker/checker, financial posting/reversal, concurrent writers, persisted inventory/wallet/loyalty/gift-card reconciliation and transaction output acceptance remain unexecuted in this continuation. The required disposable XAMPP MySQL/MariaDB environment was unavailable; SQLite and live business QA writes were not substituted. Earlier named verification remains historical evidence only.
 
 ## Database and schema integrity
 
@@ -88,7 +90,7 @@ One live configuration difference was recorded at the initial checkpoint:
 - Source and canonical seed data use role code `cashier`.
 - Production also contains a live role code `cashir` with 14 permissions, and the cashier account is assigned to that role.
 - The canonical source `cashier` role currently has a different live grant set.
-- The continuation checked `SaveRoleAction`, the Roles screen, and `RequestPermissionLookup`: local custom role codes are explicitly supported, and ordinary authorization resolves active permission pivots rather than comparing the code to `cashier`. Therefore the different spelling alone does not prove a defect. Canonical `cashier` has three POS permissions; custom `cashir` has fourteen, including open-price, export and reversal permissions. Its grants and assignment remain unchanged. The owner must confirm intended sensitive capabilities before any reconciliation; no narrower reassignment is assumed safe. Authenticated behavior remains pending coverage.
+- The continuation checked `SaveRoleAction`, the Roles screen, and `RequestPermissionLookup`: local custom role codes are explicitly supported, and ordinary authorization resolves active permission pivots rather than comparing the code to `cashier`. Therefore the different spelling alone does not prove a defect. Canonical `cashier` has three POS permissions; custom `cashir` has fourteen, including open-price, export and reversal permissions. Its grants and assignment remain unchanged. The owner must confirm intended sensitive capabilities before any reconciliation; no narrower reassignment is assumed safe. Authenticated POS access and direct-route denials now match the existing grants; the user cannot open/view a shift, so operational cashier configuration still requires owner review.
 
 No obvious secret exposure, debug mode, unauthenticated protected route, or CSRF/session misconfiguration was found in the inspected source/live responses. Raw credentials and cookie values were not retained in this report.
 
@@ -106,7 +108,13 @@ No confirmed business-rule defect was found in the inspected source paths. Expec
 
 ## UI/UX findings
 
-The source preserves bilingual labels, RTL/LTR direction handling, shared shell/navigation patterns, loading/empty/error components, confirmation controls, print templates, and responsive utility classes across the inspected modules. A full visual rendering judgment is unavailable without a browser executable. The report does not claim pixel-level, device-level, or print-device acceptance.
+Completed Arabic RTL/English LTR desktop and representative mobile screens have no page-level overflow or missing visible images in the normalized ledger. Existing responsive product forms, purchase/inventory editors, empty/permission-denied panels and POS disabled context were inspected. Confirmed login, Translation Editor, inventory filter, observer-loop, administration copy, header-overlap and PDF defects are recorded below with focused evidence.
+
+The measured Arabic header overlap was 110.797px. Giving the action column its required width and letting search use remaining space produced 13.594px separation, confirmed on the shipped UI release. Table-local scrolling is retained where wide data tables need it.
+
+Twenty-five additional output requests completed: 13 administrator downloads (eight import-template workbooks, product XLSX, Arabic/English product PDFs, empty purchasing/inventory CSV) and 12 normal-user 403 denials. Nine downloaded XLSX archives/worksheet XML and two PDF containers passed integrity checks. PDF raster inspection then found AUD-012; its repaired bilingual A4 landscape rendering from the already-exported workbook was inspected with all columns inside margins, correctly shaped Arabic names in both locales, localized headings/status/type and unchanged numeric prices.
+
+Normal-user empty-cart POS connectivity toggled offline and online successfully without enqueuing a sale/payment. Production offline continuity remains disabled by the existing implementation/configuration; this checks the connectivity indicator only. Populated offline replay/conflicts, transaction receipt/PDF formats, actual printer/scanner/drawer/terminal operation and human UAT were not passed by inference.
 
 ## Error and log findings
 
@@ -150,10 +158,10 @@ The active production log was reviewed for recurring exceptions and recent 4xx/5
 
 ### AUD-004 — Browser verification capability unavailable
 
-**Severity:** Verification limitation; capability gap resolved, authentication approval outstanding
+**Severity:** Initial verification limitation; resolved
 **Initial finding:** No browser-control executable/package was found during the first audit session.
 
-**Continuation disposition:** Cached Chromium was found and an isolated client installed; public-login screenshots were captured and inspected. The wider authenticated pass is blocked by the explicit approval request described above, rather than a missing executable. No unexecuted coverage is counted as passed.
+**Final disposition:** Cached Chromium and the isolated browser client supported the remaining public/authenticated/mobile/output pass. The owner authorized exactly two sessions, both subsequently revoked. No authentication blocker remains; unavailable workflow/device acceptance is separately documented.
 
 ### AUD-005 — Activated release retained staging-directory paths in generated caches
 
@@ -166,18 +174,52 @@ The active production log was reviewed for recurring exceptions and recent 4xx/5
 
 ### AUD-006 — Arabic login separator was untranslated and referred to email
 
-**Severity:** Low UI defect; source repair verified, release pending
+**Severity:** Low UI defect; repaired and deployed
 **Root cause:** The passkey component defaults to sentence-case `Or continue with email`, missing in Arabic; the visible uppercase key in Arabic did not match. Login actually requires a username.
 
 **Repair:** Passed the login-specific `Or continue with username` separator and added its Arabic, Egyptian Arabic and English translations. The shared passkey component and authentication behavior are unchanged.
 
-**Files:** `resources/views/pages/auth/login.blade.php`, `lang/ar.json`, `lang/ar-EG.json`, `lang/en.json`. Source repair commit `b04924d4c973580249aa999adab34078935cefb3` is pushed only on the preserved audit branch; not merged/deployed.
+**Files:** `resources/views/pages/auth/login.blade.php`, `lang/ar.json`, `lang/ar-EG.json`, `lang/en.json`. Source repair commit `b04924d4c973580249aa999adab34078935cefb3` was included in the merged/deployed final UI batch.
 
-**Focused verification:** JSON/translation resolution, changed Blade compilation/compiled PHP syntax and isolated unauthenticated rendering passed for `ar`, `ar-EG` and `en`. The first render verifier lacked the existing Vite manifest; it was corrected to use the existing release's public assets and explicitly exit nonzero on failure. Only that failed verifier was resumed. No asset rebuild or authentication attempt ran. The repair is not yet in production.
+**Focused verification:** JSON/translation resolution, changed Blade compilation/compiled PHP syntax and isolated unauthenticated rendering passed for `ar`, `ar-EG` and `en`. The first render verifier lacked the existing Vite manifest; it was corrected to use the existing release's public assets and explicitly exit nonzero on failure. Only that failed verifier was resumed. No asset rebuild or authentication attempt ran. The shipped Arabic username separator was confirmed after activation.
+
+### AUD-007 — Translation Editor emitted literal Blade directives in action parameters
+
+**Severity:** Medium UI failure; closed. Five desktop/mobile/modal action attributes contained literal `@js(...)`, triggering `Invalid or unexpected token` during Livewire initialization. Bound attributes now evaluate safely encoded `Js::from` arguments. Commit `1d2a363`. Focused verification rendered all five controls across three quote/markup fixtures (15 parsed expressions); live edit opened the modal and reset confirmation was cancelled without saving/resetting.
+
+### AUD-008 — Inventory movement filter submitted localized labels
+
+**Severity:** Medium UI/request-contract defect; closed. `InventoryMovementLabel::options()` preserves canonical keys, but the select iterated translated values and submitted them to a canonical-key allowlist, causing HTTP 422 and unknown-label warnings. The view now submits keys and displays localized values. Commit `9842658`. All 25 options and selection retention passed in three locales; shipped Arabic `movement_type=retail_sale` round-trip returned 200.
+
+### AUD-009 — Product-line observer recursively rewrote unchanged totals
+
+**Severity:** High workflow responsiveness defect; closed. The shared observer calls `boot`/`initializeEditor`/`updateTotal`, which unconditionally replaced total text and retriggered its own child-list observer. Adjustment, Party-create and quotation forms stalled. The updater now writes only changed formatted text, preserving numeric rules and raw totals. Commit `5278c0f`. Only the stalled renders resumed; unsaved quantity input and the shipped adjustment screen remained interactive. Direct observer/editor callers were reviewed; original CodeGraph analysis was not repeated.
+
+### AUD-010 — Arabic administration/setup/purchasing copy remained raw English
+
+**Severity:** Low presentation defect; closed. Dashboard recent activity now reuses the existing audit presentation helper, with labels for the observed user/email/product-card/filter events and authorization category. Added the exact warehouse setup description and reused the existing translated store placeholder. Commit `8f80ab4`; focused three-locale rendering and shipped copy checks passed. Stored audit records/events are unchanged.
+
+### AUD-011 — Arabic desktop header controls overlapped
+
+**Severity:** Low presentation defect; closed. The search column retained 448px while the action content extended into it. Changed the grid to give actions their required width and let search consume remaining space. Commit `8f80ab4`. Exact bounds changed from 110.797px overlap to 13.594px separation, confirmed after activation. Existing mobile layout overrides remain applicable.
+
+### AUD-012 — Master-data PDF page bounds and bilingual Arabic rendering failed
+
+**Severity:** Medium output defect; closed by the final PDF release. Rasterized live downloads exposed clipping and unshaped Arabic names in English exports despite valid PDF containers. The shared PDF formatter now shapes only Arabic-containing strings in either locale, preserving ASCII/numeric values and locale-specific column order. The template no longer overrides page margins on the HTML root, explicitly sizes its table font, uses supported wrapping and proportional header widths, and receives missing display translations. Commit `c48bbfc`.
+
+Direct PDF callers in Catalog, Customers and master-data exports were reviewed. The focused renderer reused the already-exported product workbook without database access or renewed authentication. Initial candidate checks diagnosed the remaining root-margin, default-table-font and long-header issues; only those unresolved PDF renders resumed. Final Arabic/English A4 landscape raster inspection passed. The already-frozen UI artifact was preserved; a new version/artifact was created, with the same built UI assets and no extra Vite build. Supplier/customer transaction-specific content and physical printers still need their own populated UAT; this does not claim all document formats.
+
+### AUD-013 — Product exports bypassed independent cost visibility
+
+**Severity:** High sensitive-data disclosure boundary; closed. Catalog document export required `products_categories_brands.export` but included Unit cost unconditionally, whereas Product Card UI/actions independently enforce `products_categories_brands.cost_view`. An export-enabled/cost-disabled actor could therefore receive the hidden cost. This is a confirmed source-contract defect; no current-user populated-cost leak was reproduced, and no role/grant was changed to obtain one.
+
+**D3 repair:** Commit `5440501` evaluates the existing cost-view gate per request and includes both header and value only when permitted. Base selling price, filters, row limits, product queries, other master types, format validation and export authorization remain unchanged. Both XLSX and PDF consume the same protected row/header shape. No business data or financial calculation changes.
+
+**Focused verification:** Synthetic row passed through the actual changed header/mapper expressions with cost visibility enabled and disabled. Authorized output retains 11 columns and cost; hidden-cost output has 10 aligned columns, never accesses the cost property, omits the sentinel from XLSX XML and renders the PDF. Selling price remains unchanged. Existing export middleware and unsupported-format 404 guard were checked; the earlier actual normal-user 403 results remain evidence for full-route denial. No new user/session/grant or database fixture was created. Final3 release used a new immutable artifact; the PDF/UI snapshots and earlier release receipts were preserved.
 
 ## Focused verification completed
 
-- CodeGraph worktree index: current and up to date.
+- Original CodeGraph initialization/impact results preserved. The continuation CLI later reported this root uninitialized; no reinitialization/index/sync was performed. New bounded JS/PDF impact was reviewed through direct source callers.
 - PHP syntax: all application, route, config, migration, and bootstrap PHP files passed lint in the audit worktree.
 - Blade cache compilation: passed.
 - Runtime route list: 405 routes, 392 named routes, no unresolved route helper names.
@@ -187,25 +229,38 @@ The active production log was reviewed for recurring exceptions and recent 4xx/5
 - Scheduler list: backup, cleanup, monitor jobs registered.
 - Full encrypted backup: passed, archive verified.
 - Backup monitor: passed.
-- No automated PHPUnit/Pest/Playwright/Cypress suite was run, per the active project testing directive and the explicit one-pass audit budget.
+- Remaining authenticated coverage: 386 unique renders, 23 safe-control assertions, shipped affected checks, 25 output requests and 42 final continuation assertions. Driver failures and their limited resumes are explicitly recorded.
+- One Vite build for the UI batch; PDF and confidentiality releases reused those assets. Changed source/helper/template syntax, bilingual PDF rendering and cost visibility output contracts passed.
+- No automated PHPUnit/Pest/Playwright/Cypress suite was created or run. Browser-control scripts were used within the explicit authorization.
 
 ## Release and live status
 
-**Preserved audit application commit:** `e6d2d1e76294a4b77d851d2cc249eaf2ed5512ff`.
+| Release | Application commit | Disposition |
+|---|---|---|
+| Initial baseline | `49f429420b576bb08f05ea757cf44aca9f8e9140` | Preserved |
+| Original audit | `e6d2d1e76294a4b77d851d2cc249eaf2ed5512ff` | Already active at resume; generated caches repaired; frozen artifact preserved |
+| Final UI batch | `af6874e53aff6fbaba523719925658638f7af676` | Merged via `a4d2604`, activated, affected checks passed; immutable archive preserved |
+| PDF repair | `24f1c5a93e6085c1d9a680776bffae6e530288a0` | Merged via `66605f1`; activated and preserved |
+| Final export confidentiality repair | `599a5084f7c1c2bb0aee5d6a67fc5df3d9dfd0be` | Merged via `10957d6`; final application release |
 
-**Observed active application commit:** `e6d2d1e76294a4b77d851d2cc249eaf2ed5512ff`.
+Final version: `0.1.22-audit-final3`. Final release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final3-24f1c5a`. Source tree: `51129f22539a3ceebc14e6b1d0171896f9131886`.
 
-**Observed active release:** `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-e6d2d1e`.
+Final archive: `/tmp/rajeh-audit-cost-599a508.tar.gz`; SHA-256 `35eef98261e033575f4662a99a070b5d0b0ff03fce6654d5b17bfac3905f9286`. Manifest SHA-256 `a0c96bbd206480b75db8e05c8b8bc5cfeded11af82b8583f3dd3b8d570c3aab7`; 14,816 files authenticated before cache generation. Journal: `/var/lib/toyjoy/audit-final3-599a508`. Exact application rollback target is the preserved 24f1c5a PDF release.
 
-**Generated-cache repair:** completed after activation; source commit/artifact unchanged.
+The established workflow packaged source/vendor/public build, verified immutable hashes, used shared `.env`/storage/public-storage links, rejected nested storage, generated caches at the final candidate path, verified runtime paths/version/autoload, used maintenance and the established writer wait, switched the active link atomically, reloaded existing PHP-FPM and restored service. No Composer/Vite operation ran in production, migration/schema/business-data change was introduced, or other project was modified. Separate immutable PDF and export-confidentiality releases were necessary because each defect was confirmed after the preceding freeze; no prior artifact was patched. The single UI Vite build was reused throughout.
 
-**Maintenance:** OFF in the continuation's compact deployment smoke.
-**Queue/PHP-FPM/cron:** no failed queue jobs; backup/cleanup/monitor schedules registered; PHP-FPM and cron services active. The managed per-minute Rajeh scheduler and bounded queue-worker cron entries remain in place. No daemonized Rajeh queue worker is assumed necessary for this cron-driven model.
+**Final-target compact smoke: PASS.** Active release/commit/tree/version match; maintenance is OFF; shared runtime links are correct and nested storage absent; PHP-FPM and cron are active; zero failed queue jobs; backup/cleanup/monitor schedules and scheduler/queue-worker cron entries are registered; HTTPS `/up` and `/login` return 200, unauthenticated `/admin` returns 302. Both audit sessions were already revoked. An earlier unreadable private helper attempt performed no actual smoke checks; the readable helper completed this final smoke once. Receipts are preserved in the evidence directory.
 
-The continuation resumed the saved deployment after observing the already-active target; it did not redeploy the same artifact. Deployment journal: `/var/lib/toyjoy/audit-deployment-e6d2d1e`. Existing archive SHA-256: `206fe0b11ea4e98b672ab03f649bdb861f0f5b018c74de1c732b9255253ef213`. This is a preserved release identity, not a repeated complete manifest verification. The missing compact smoke was completed once after the cache repair; it is not final acceptance of the unfinished full audit. AUD-006 remains in source pending final batch integration/release.
+The exact 24f1c5a rollback target exists and recovery traps are retained; rollback was not deliberately exercised. No new backup/restore loop was required for this data/schema-neutral release; passing earlier encrypted backup/recovery evidence remains preserved. After session revocation, repaired PDF verification used isolated snapshot rendering with artifact/source parity rather than creating another authenticated session.
 
-The release procedure follows the existing Rajeh immutable-release/runbook pattern: authenticated source package, shared environment/storage links, runtime-user cache generation, migration status proof, backup/recovery evidence, atomic active-link switch, PHP-FPM reload, queue/scheduler continuity, health routes, and post-deploy smoke. No migration is included in this audit repair.
+The final2 compact release-health receipt remains historical evidence in `final2-smoke.json`/`final2-http.json`; the later code change required a new target-specific final smoke. No passing browser matrix, financial workflow, graph/index, backup regression or source sweep was repeated. The cost fix was verified with isolated output contracts and preserved denial evidence, without renewed authentication.
+
+Historical e6d2d1e archive SHA-256 remains `206fe0b11ea4e98b672ab03f649bdb861f0f5b018c74de1c732b9255253ef213`. UI af6874e archive SHA-256 is `f6c7e259f0f561abfd8be84e8d4abeba502afca77e99dceccfc0b8bd0231cbe9`. No passing original scan, full source lint, database integrity inventory, CodeGraph analysis, public-login baseline or successful backup regression was restarted. Documentation closure is a later governance commit and does not rebuild the authenticated application artifact.
 
 ## Final decision
 
-The preserved release is operational after AUD-005 and the focused backup regression passes. The full audit is **incomplete**, and unconditional production readiness is **not established**. Outstanding authenticated Admin/User screens, interactive workflows, grants review, output/device/offline acceptance, and the source-only login repair must remain explicit. Complete the approved remaining coverage and release batch before one final full-audit smoke and final handover decision. Do not rerun the completed inventory, lint/Blade sweep, CodeGraph analysis, initial integrity checks, public-login baseline screenshots, runtime-path assertions, or successful backup regression.
+The remaining authorized/executable audit is closed, and confirmed repairs are integrated and deployed. Production is operational in the executed release/browser/output checks. **Unconditional production trading/client handover readiness is NOT established.**
+
+Before operational sign-off, the owner must confirm the custom cashier sensitive grants and intended shift access/opening setup; complete populated financial/inventory posting, reversal, concurrency and reconciliation in the mandated disposable XAMPP environment; complete required transaction print formats and actual printer/scanner/payment/drawer/offline continuity acceptance; and confirm the next scheduled backup run. These are recorded unexecuted acceptance/configuration obligations, not hidden passing checks or new authorization requests.
+
+Detailed evidence is in `.ai/evidence/full-system-audit-2026-10-03/`. All previous findings and history remain preserved. Exactly two audit sessions were created and revoked; no passwords or password hashes were inspected, and no passwords, identities or grants were changed by the access helper, and no business fixture records were created.
