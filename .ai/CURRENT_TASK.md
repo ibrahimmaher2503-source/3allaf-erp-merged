@@ -1,3 +1,18 @@
+# Current Task — Full-System Audit Continuation
+
+**Date:** 2026-10-03
+**Class:** I4 — owner-requested remaining audit, confirmed repairs, integration/release and final smoke.
+**Source baseline:** `49f429420b576bb08f05ea757cf44aca9f8e9140`.
+**Preserved branch/worktree:** `audit/full-system-client-readiness`; `/home/rajeh/worktrees/rajeh-erp-audit-full-system-client-readiness`.
+**Observed active release:** `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-e6d2d1e`, application `e6d2d1e76294a4b77d851d2cc249eaf2ed5512ff`.
+**Owner scope:** Continue remaining Admin/normal-user browser, technical, business, accounting, database, permissions, workflow and UI coverage; fix confirmed defects; merge/deploy validated fixes; complete report. Do not repeat completed scans, tests, CodeGraph work or browser coverage. No role/grant/business-record mutation is inferred from an audit request.
+**Progress:** Completed original scans preserved. Resumed after already-finished activation; repaired stale staging paths in generated runtime caches and passed the six-path check and outstanding caller-cwd backup regression. Completed the prior deployment's missing compact smoke. Public login Arabic/English desktop and Arabic mobile visual coverage passed layout checks and revealed a localized separator defect; source repair and three-locale render passed, release pending.
+**Blocker:** Automatic approval review rejected broad all-user authenticated-session/password-hash manipulation before execution. Approval requested for exactly one existing administrator and one existing normal-user temporary file session, no hash access, no password/role/grant/business-data changes, cleanup afterward. Approval has not arrived; do not create the sessions or claim authenticated browser coverage.
+**Remaining checkpoint/report:** `.ai/FULL_SYSTEM_AUDIT_CHECKPOINT.md`; `docs/audits/RAJEH-FULL-SYSTEM-AUDIT-2026-10-03.md`.
+**Closure:** Full audit and production handover readiness remain incomplete. No new release archive, final full-audit smoke, UAT approval or phase gate closure is claimed for this continuation.
+
+## Previous Task Record (Historical)
+
 # Current Task — Product-card Scoped Hotfix
 
 **Date:** 2026-10-02

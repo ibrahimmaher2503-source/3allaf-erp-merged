@@ -1,5 +1,13 @@
 # Pending Change Batch
 
+## 2026-10-03 — Full-System Audit Login-Copy Correction
+
+| Classification | Short description | Commit | Affected files | Status |
+|---|---|---|---|---|
+| V0 | Localized username sign-in separator observed during remaining Arabic/English login visual coverage | `b04924d4c973580249aa999adab34078935cefb3` | `resources/views/pages/auth/login.blade.php`, `lang/ar.json`, `lang/ar-EG.json`, `lang/en.json` | Focused verification passed; pushed on existing audit branch; not merged/deployed; final audit batch remains open |
+
+Owner authorized final audit integration/release, but authenticated coverage is currently awaiting explicit temporary-session authorization following automatic approval review rejection. Preserve the existing e6d2d1e artifact; no separate V0 release or version/artifact rebuild was performed in this continuation.
+
 ## 2026-10-01 — Current Operational Documentation Entry
 
 The initial documentation commit is `8ccb88c7e90b12883619793d3e1dd934653eadc6` and is pushed on `docs/post-hotfix51-operational-baseline`. The following cleanup remains part of that same documentation branch; neither entry closes an application release batch.
