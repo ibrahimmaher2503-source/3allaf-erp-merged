@@ -6288,5 +6288,9 @@
     "Product card created": "تم إنشاء بطاقة المنتج",
     "Product filters updated": "تم تحديث فلاتر المنتجات",
     "Authorization": "الصلاحيات",
-    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "أضف مخازن ومنافذ بيع نشطة مرتبطة بفروعها الفعلية. يحدد كل درج نقدي منفذ البيع الخاص به."
+    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "أضف مخازن ومنافذ بيع نشطة مرتبطة بفروعها الفعلية. يحدد كل درج نقدي منفذ البيع الخاص به.",
+    "Category path": "مسار التصنيف",
+    "standard": "قياسي",
+    "active": "نشط",
+    "inactive": "غير نشط"
 }

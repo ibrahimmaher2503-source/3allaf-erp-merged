@@ -3123,5 +3123,9 @@
     "Product card created": "Product card created",
     "Product filters updated": "Product filters updated",
     "Authorization": "Authorization",
-    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet."
+    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.",
+    "Category path": "Category path",
+    "standard": "standard",
+    "active": "active",
+    "inactive": "inactive"
 }
