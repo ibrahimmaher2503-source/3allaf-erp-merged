@@ -6281,5 +6281,6 @@
     "Select active Product Filter values or retain the existing saved selections.": "اختر قيم فلاتر المنتجات النشطة أو احتفظ بالاختيارات المحفوظة.",
     "No filter values configured.": "لم تُضبط قيم لهذا الفلتر بعد.",
     "No product filters configured.": "لم تُضبط فلاتر المنتجات بعد.",
-    "Build reusable bilingual descriptive filters for product cards.": "أنشئ فلاتر وصفية ثنائية اللغة لاستخدامها في بطاقات المنتجات."
+    "Build reusable bilingual descriptive filters for product cards.": "أنشئ فلاتر وصفية ثنائية اللغة لاستخدامها في بطاقات المنتجات.",
+    "Or continue with username": "أو المتابعة باستخدام اسم المستخدم"
 }
