@@ -1,0 +1,27 @@
+{
+    "result": "pass",
+    "cases": [
+        {
+            "cost_view": false,
+            "columns": 10,
+            "unit_cost_present": false,
+            "cost_property_reads": 0,
+            "selling_price": "200.00",
+            "xlsx": "pass",
+            "pdf": "pass"
+        },
+        {
+            "cost_view": true,
+            "columns": 11,
+            "unit_cost_present": true,
+            "cost_property_reads": 1,
+            "selling_price": "200.00",
+            "xlsx": "pass",
+            "pdf": "pass"
+        }
+    ],
+    "export_gate": "retained; actual normal-user 403 evidence preserved",
+    "invalid_format": "existing 404 guard retained",
+    "business_or_grant_changes": false,
+    "sessions_created": 0
+}
