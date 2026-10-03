@@ -1,0 +1,15 @@
+{
+  "application_commit": "599a5084f7c1c2bb0aee5d6a67fc5df3d9dfd0be",
+  "tree": "51129f22539a3ceebc14e6b1d0171896f9131886",
+  "version": "0.1.22-audit-final3",
+  "release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final3-599a508",
+  "archive_sha256": "35eef98261e033575f4662a99a070b5d0b0ff03fce6654d5b17bfac3905f9286",
+  "manifest_sha256": "a0c96bbd206480b75db8e05c8b8bc5cfeded11af82b8583f3dd3b8d570c3aab7",
+  "journal": "/var/lib/toyjoy/audit-final3-599a508",
+  "rollback_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final2-24f1c5a",
+  "sessions_created": 2,
+  "sessions_revoked": 2,
+  "private_cookie_token_manifest": "deleted",
+  "final_compact_smoke": "passed",
+  "readiness": "Operational release verified; unconditional client handover not approved; see report acceptance/configuration obligations"
+}

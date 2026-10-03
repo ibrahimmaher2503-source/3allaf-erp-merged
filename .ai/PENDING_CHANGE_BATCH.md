@@ -19,7 +19,13 @@ The af6874e UI batch activated successfully and affected live checks passed. Bot
 
 L2 display-only PDF repair: shape Arabic cells in English exports, retain ASCII/numeric strings, restore page margins, explicitly size the table font and use proportional header widths; add missing display-label translations. The focused bilingual render from the preserved exported workbook passed after diagnosing the HTML-root margin and table default-font overrides. No production data/schema/grants changed and no session was recreated.
 
-I4: `0.1.22-audit-final2` replaces the frozen UI release with a new immutable artifact. Existing e6d2d1e and af6874e artifacts remain unchanged. Reuse the already-built UI assets; no additional Vite build or broad browser pass. PDF release activation and the previously unexecuted final compact smoke remain pending.
+I4: `0.1.22-audit-final2` replaces the frozen UI release with a new immutable artifact. Existing e6d2d1e and af6874e artifacts remain unchanged. Reuse the already-built UI assets; no additional Vite build or broad browser pass. PDF release `24f1c5a` activated successfully; final compact smoke passed. This PDF batch is closed. Prior UI batch remains closed. No further audit application entry is pending.
+
+## 2026-10-03 — D3 Export Confidentiality Repair (Closed)
+
+Product document export admitted the module export permission but included sensitive Unit cost without checking the independent existing `products_categories_brands.cost_view` permission. Route-only repair `5440501` gates both header and mapped value; queries, price calculations, stored records and role/grant definitions remain unchanged. Focused success/hidden-cost/unsupported-format-boundary verification passed with synthetic output rows; 11/10 columns align, hidden cost is not accessed, XLSX omits it and both PDF shapes render. Existing normal-user route-denial evidence retained; no authenticated session recreated.
+
+Dedicated I4 release commit `599a5084f7c1c2bb0aee5d6a67fc5df3d9dfd0be`, version `0.1.22-audit-final3`, merged/pushed via `10957d6`; immutable artifact activated and final-target compact smoke passed. No extra Vite build, schema/data/grant change or backup/test loop. Original/UI/PDF artifacts remain preserved. This batch is closed; no audit application change remains pending.
 
 ## 2026-10-01 — Current Operational Documentation Entry
 
