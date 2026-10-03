@@ -11,9 +11,15 @@ Owner explicitly authorized closure, integration and deployment of the remaining
 | V1 | Canonical inventory movement select values | `9842658` | 25 options/selection retention in three locales passed |
 | V1 | Idempotent line-total text updates stop observer loop | `5278c0f` | Previously stalled adjustment/Party/quotation pages rendered with exact candidate asset guard; unsaved input returned to event loop |
 | V0 | Arabic audit/setup/store copy and header grid sizing | `8f80ab4` | Focused copy render passed; measured Arabic overlap 110.797px became 13.594px separation |
-| I4 | One combined version/build/artifact/release | Release commit follows | `0.1.22-audit-final`; one Vite build passed; live activation/affected checks pending |
+| I4 | One combined version/build/artifact/release | Release commit follows | `0.1.22-audit-final`; one Vite build passed; activated successfully; affected checks passed; both sessions revoked |
 
-Final batch remains open until production success and session revocation are recorded. Frozen e6d2d1e archive and all historical records are preserved unchanged.
+The af6874e UI batch activated successfully and affected live checks passed. Both approved sessions were immediately revoked; cookie/token manifest deleted. This UI batch is closed. Frozen e6d2d1e archive and all historical records are preserved unchanged.
+
+## 2026-10-03 — PDF Output Repair After Immutable UI Freeze
+
+L2 display-only PDF repair: shape Arabic cells in English exports, retain ASCII/numeric strings, restore page margins, explicitly size the table font and use proportional header widths; add missing display-label translations. The focused bilingual render from the preserved exported workbook passed after diagnosing the HTML-root margin and table default-font overrides. No production data/schema/grants changed and no session was recreated.
+
+I4: `0.1.22-audit-final2` replaces the frozen UI release with a new immutable artifact. Existing e6d2d1e and af6874e artifacts remain unchanged. Reuse the already-built UI assets; no additional Vite build or broad browser pass. PDF release activation and the previously unexecuted final compact smoke remain pending.
 
 ## 2026-10-01 — Current Operational Documentation Entry
 

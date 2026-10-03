@@ -1,0 +1,76 @@
+{
+  "results": [
+    {
+      "name": "Translation Editor shipped render HTTP 200",
+      "pass": true
+    },
+    {
+      "name": "Translation action directive compiled",
+      "pass": true
+    },
+    {
+      "name": "Translation edit opens read-only modal",
+      "pass": true
+    },
+    {
+      "name": "Translation reset confirmation safely cancelled",
+      "pass": true
+    },
+    {
+      "name": "Inventory canonical filter round-trip HTTP 200",
+      "pass": true
+    },
+    {
+      "name": "Inventory canonical selection retained",
+      "pass": true
+    },
+    {
+      "name": "Inventory localized options displayed",
+      "pass": true
+    },
+    {
+      "name": "Shipped observer fix yields interactive adjustment form",
+      "pass": true
+    },
+    {
+      "name": "Shipped Arabic header has separated controls",
+      "pass": true
+    },
+    {
+      "name": "shipped header geometry",
+      "overlap": -13.59375,
+      "width": 1440,
+      "viewport": 1440
+    },
+    {
+      "name": "Shipped Arabic audit labels localized",
+      "pass": true
+    },
+    {
+      "name": "Shipped store placeholder localized",
+      "pass": true
+    },
+    {
+      "name": "New release footer displayed",
+      "pass": true
+    },
+    {
+      "name": "Shipped username separator Arabic copy",
+      "pass": true
+    },
+    {
+      "name": "Affected live checks no page errors",
+      "pass": false
+    }
+  ],
+  "errors": [
+    "Object"
+  ],
+  "blocked": [
+    {
+      "path": "/livewire-543cf207/update",
+      "method": "POST"
+    }
+  ],
+  "diagnosis": "The interceptor rejected Livewire $set with empty params and updates.editorOpen=false. Corrected the verifier allowlist only; failed assertion resumed and passed in remaining-outputs-and-guard.json. No application save/reset was called."
+}

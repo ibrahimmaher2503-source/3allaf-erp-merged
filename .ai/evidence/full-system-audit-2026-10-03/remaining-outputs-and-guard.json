@@ -1,0 +1,376 @@
+{
+  "results": [
+    {
+      "name": "Modal close read-only $set protocol returns without blocked request or page error",
+      "pass": true
+    },
+    {
+      "name": "Administrator output /catalog/products/import/template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/products/import/template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/products/import/template.xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 15856,
+      "file": "output-0.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/products/import/staged-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/products/import/staged-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/products/import/staged-template.xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 16095,
+      "file": "output-1.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/suppliers/import/template",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/suppliers/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/suppliers/import/template",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 11659,
+      "file": "output-2.xlsx"
+    },
+    {
+      "name": "Administrator output /customers/import/template",
+      "pass": true
+    },
+    {
+      "name": "Output signature /customers/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/customers/import/template",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 14935,
+      "file": "output-3.xlsx"
+    },
+    {
+      "name": "Administrator output /customers/groups/import/template",
+      "pass": true
+    },
+    {
+      "name": "Output signature /customers/groups/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/customers/groups/import/template",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 9271,
+      "file": "output-4.xlsx"
+    },
+    {
+      "name": "Administrator output /inventory/opening-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /inventory/opening-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/inventory/opening-template.xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 9999,
+      "file": "output-5.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/categories/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/categories/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/categories/import-template.xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 9294,
+      "file": "output-6.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/brands/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/brands/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/brands/import-template.xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 9233,
+      "file": "output-7.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/products/export/xlsx",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/products/export/xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/products/export/xlsx",
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "kind": "xlsx",
+      "bytes": 4940,
+      "file": "output-8.xlsx"
+    },
+    {
+      "name": "Administrator output /catalog/products/export/pdf",
+      "pass": true
+    },
+    {
+      "name": "Output signature /catalog/products/export/pdf",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/products/export/pdf",
+      "status": 200,
+      "contentType": "application/pdf",
+      "kind": "pdf",
+      "bytes": 24457,
+      "file": "output-9.pdf"
+    },
+    {
+      "name": "Administrator output /purchasing/invoices/export",
+      "pass": true
+    },
+    {
+      "name": "Output signature /purchasing/invoices/export",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/purchasing/invoices/export",
+      "status": 200,
+      "contentType": "text/csv; charset=UTF-8",
+      "kind": "csv",
+      "bytes": 128,
+      "file": "output-10.csv"
+    },
+    {
+      "name": "Administrator output /inventory/export",
+      "pass": true
+    },
+    {
+      "name": "Output signature /inventory/export",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/inventory/export",
+      "status": 200,
+      "contentType": "text/csv; charset=UTF-8",
+      "kind": "csv",
+      "bytes": 143,
+      "file": "output-11.csv"
+    },
+    {
+      "name": "English catalog PDF output",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "administrator",
+      "path": "/catalog/products/export/pdf",
+      "locale": "en",
+      "status": 200,
+      "bytes": 18485,
+      "kind": "pdf",
+      "file": "output-catalog-en.pdf"
+    },
+    {
+      "name": "Normal-user empty POS offline indicator",
+      "pass": true
+    },
+    {
+      "name": "Connectivity toggled with empty cart; no queue/payment submission",
+      "pass": true
+    },
+    {
+      "name": "Normal-user output denial /catalog/products/import/template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/products/import/template.xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/products/import/staged-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/products/import/staged-template.xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/suppliers/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/suppliers/import/template",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /customers/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/customers/import/template",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /customers/groups/import/template",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/customers/groups/import/template",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /inventory/opening-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/inventory/opening-template.xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/categories/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/categories/import-template.xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/brands/import-template.xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/brands/import-template.xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/products/export/xlsx",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/products/export/xlsx",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /catalog/products/export/pdf",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/catalog/products/export/pdf",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /purchasing/invoices/export",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/purchasing/invoices/export",
+      "status": 403
+    },
+    {
+      "name": "Normal-user output denial /inventory/export",
+      "pass": true
+    },
+    {
+      "name": "output route",
+      "actor": "normal-user",
+      "path": "/inventory/export",
+      "status": 403
+    },
+    {
+      "name": "Final authenticated continuation no page errors",
+      "pass": true
+    },
+    {
+      "name": "Final authenticated continuation no blocked business write",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "file": "output-0.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 6,
+    "bytes": 15856,
+    "sha256": "0bc1a4d241cf22c8e5e0c8f1be648d43a2a46778df5234f275a055ad930654c1"
+  },
+  {
+    "file": "output-1.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 6,
+    "bytes": 16095,
+    "sha256": "2c88161a95935d6a7aa4676901f696d507e19cb6da39d51a5e48685304f2109b"
+  },
+  {
+    "file": "output-2.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 4,
+    "bytes": 11659,
+    "sha256": "302e43ba9b38ac31d0ac4fc1f4e56947ba6a91ee3d09652fb47c7f927dbe6713"
+  },
+  {
+    "file": "output-3.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 5,
+    "bytes": 14935,
+    "sha256": "2b691822f592fd0987bfcc98c960541ef92c7471fc7305011a6744a5e5072961"
+  },
+  {
+    "file": "output-4.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 3,
+    "bytes": 9271,
+    "sha256": "56b465612269ffaa975b3990a62b3de4186e1126559607fda6e0c2852c9865d3"
+  },
+  {
+    "file": "output-5.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 3,
+    "bytes": 9999,
+    "sha256": "8a1122665cd262cc41e00c7da2ea16d1f00a84d2ed6efa31b8b67c6a76e6a72c"
+  },
+  {
+    "file": "output-6.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 3,
+    "bytes": 9294,
+    "sha256": "0d49b8252482de18ab6e67cc24f78fa08a6d13e5fa7b7e31213ca95e39f45a15"
+  },
+  {
+    "file": "output-7.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 3,
+    "bytes": 9233,
+    "sha256": "49d62b2107f9461769b980f6206c6de5589bb367f2ea9e6a8d7ed1cff902d5a9"
+  },
+  {
+    "file": "output-8.xlsx",
+    "zip_integrity": "pass",
+    "xml_sheets": 1,
+    "bytes": 4940,
+    "sha256": "f0e9431b93f01590b440c30be99daf0c5c90a3ce49b7a5fa66911969989708cb"
+  },
+  {
+    "file": "output-9.pdf",
+    "pdf_structure": "pass",
+    "bytes": 24457,
+    "sha256": "3b0fb5430ac34250c70e366f717d37b079f20b2678667c91df76fa4f7f3581eb"
+  },
+  {
+    "file": "output-catalog-en.pdf",
+    "pdf_structure": "pass",
+    "bytes": 18485,
+    "sha256": "56d865dc1b360441fe9d8aa7f719b89dc454a72bb551aef659cf92c5749db74e"
+  }
+]

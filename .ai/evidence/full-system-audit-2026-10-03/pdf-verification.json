@@ -1,0 +1,16 @@
+{
+  "result": "pass",
+  "locales": [
+    "ar",
+    "en"
+  ],
+  "rows_source": "preserved already-exported product workbook; no database read/write",
+  "format": "A4 landscape",
+  "visual": "all columns within page; Arabic labels/names shaped in both locales; long headers fit; source numeric prices unchanged",
+  "html_margin_root_override": "removed",
+  "table_default_font_override": "explicit size",
+  "files": {
+    "ar": "f46a4b9e60b5b31524eaddfd4448a16d8b3740e0dd7617e4460c14a2ffde5925",
+    "en": "0e6a00c1e614307861ac74f560ec952fb44d0ec8aea6ee7744b6d988855c2153"
+  }
+}
