@@ -24,6 +24,36 @@
 
 **Production readiness:** The deployed application is operational in executed checks. **Unconditional client handover is NOT approved.** Opening configuration, cashier/shift permissions, populated financial/inventory UAT and physical-device acceptance must be resolved before trading/customer sign-off. No milestone, Phase Gate or human UAT approval is inferred from this audit.
 
+## Final client-acceptance pass — 2026-10-03
+
+**Final readiness status: CONDITIONAL HANDOVER — with explicit remaining blockers.** This focused pass did not repeat the 386-state audit, CodeGraph work, or prior test coverage. It used read-only production inspection, the existing backup monitor/restore commands, one isolated restore, and the existing scheduler/runtime checks.
+
+### Cashier and shift
+
+Production company currency is configured as EGP. Branch `DOKKI`, selling store `DO-01`, and active drawer `CDR-001` are assigned to user `cashier1` (user 3), and no active shift currently exists. The user is assigned to the custom `cashir` role. Its live grants include POS sale/payment capabilities but no `shifts_cash_movements.view`, `.create`, `.submit`, or `.print`; the canonical `cashier` role has those shift grants but is not assigned. The actual open/operate/close journey therefore cannot start for the assigned cashier. No role, grant, assignment, drawer, shift, or business record was changed because selecting between the custom grant set and canonical role would invent an owner authorization decision. Required owner action: approve the intended cashier role/grants, then configure and manually run one opening-float → sale → blind close → manager review/close journey.
+
+Additional prerequisites are incomplete: no active document sequence or tax setting is present in the live database. These are configuration blockers for a complete trading journey, not application defects confirmed by this pass.
+
+### Accounting and inventory UAT
+
+The live database has no sales, purchase invoices, stock balances, or stock movements. No approved disposable XAMPP MySQL/MariaDB schema was available in this environment; the only local MariaDB instance contains production and historical verification databases. No production QA records were created. Consequently purchase/receipt, stock movement, sale, return/refund, and accounting/report reconciliation remain **UNEXECUTED**, with no figures claimed as passed. A marked reversible UAT seeder exists in the release, but it was not run against production.
+
+### Printing and device acceptance
+
+The shipped system-side paths remain browser-print based: sales A4 and thermal receipt views, closed-shift A4 and thermal views, purchase/return/order print views, printer/template previews, and label print/PDF views use `window.print()` or the configured PDF response. Barcode camera support is browser capability-gated, and offline/device enrollment is a separate explicit flow. Production currently has zero `printer_configurations` and zero `print_templates`, zero sales/closed shifts to render, and no enrolled device or physical printer available here. System-side output generation was therefore verified only to the existing implementation boundary and prior catalog PDF evidence; transaction receipt content and physical printing were not claimed. On-site confirmation remains required for configured thermal/A4 printers, Arabic/RTL receipt layout, scanner/camera, cash drawer, and any terminal/device bridge.
+
+### Scheduled backup
+
+The scheduler is registered with `platform:backup:run` daily at 02:30, cleanup at 03:30, and `backup:monitor` hourly; the next run is scheduled for the next 02:30 window. The existing monitor returned healthy. The latest archive was restored into an empty isolated `/tmp` directory and produced `db-dumps/mysql-rajeh_toyjoy.sql` (475,050 bytes). The latest full scheduled archive visible on disk is `2026-10-02-02-30-04.zip`; no `2026-10-03-02-30-*` archive exists. The 2026-10-03 archives at 11:14 and 12:22 were ad hoc verification backups, not the scheduled 02:30 run. Thus restore verification passed for an existing archive and monitoring is healthy, but the current scheduled-run evidence is incomplete until the next daily run succeeds. No extra backup was created in this pass.
+
+### Issues and fixes
+
+No confirmed application defect was found in this focused pass, so no application fix, deployment, role/grant change, data mutation, or release replacement was made. The remaining items are owner/configuration, disposable-UAT, physical-device, and scheduled-run evidence blockers.
+
+**Final production release:** `0.1.22-audit-final3`, application commit `599a5084f7c1c2bb0aee5d6a67fc5df3d9dfd0be`, active release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final3-599a508`.
+
+**On-site/client confirmation required:** approve cashier role/grants and opening configuration; execute the populated purchase → stock → sale → return/refund reconciliation in a disposable approved MySQL/MariaDB UAT database; configure and test printers, scanner/camera, drawer and any terminal bridge in Arabic/RTL and English/LTR; and confirm the next scheduled backup completes and its restore evidence is retained.
+
 ## Coverage map
 
 CodeGraph 1.6.0 was initialized for this worktree and reported 1,093 indexed files, 11,575 nodes, and 27,247 edges. It was used before the shared backup-wrapper edit to trace `RunPlatformBackup`, `SaveProductAction`, `RetailReturnAction`, and product cross-module callers.
