@@ -1,3 +1,7 @@
+## 2026-10-03 — Preserved Full-System Audit Continuation
+
+Full audit remains incomplete. Source baseline `49f429420b576bb08f05ea757cf44aca9f8e9140`; existing `audit/full-system-client-readiness` worktree preserved. Observed application e6d2d1e is already active; fixed generated runtime caches that retained renamed staging paths, then passed six-path checks and only the previously failing backup regression. Missing deployment smoke passed once. New public login visual pass found a localized username-separator defect; source repair `b04924d4c973580249aa999adab34078935cefb3` is verified and pushed, release pending. Broad source/CodeGraph/database scans and passing historical checks were not repeated. Authenticated Admin/User coverage awaits explicit approval for exactly two temporary sessions after automatic review rejected the broader all-user/password-hash helper. See `.ai/FULL_SYSTEM_AUDIT_CHECKPOINT.md` and the comprehensive report. No phase gate or handover/UAT approval claimed.
+
 ## 2026-10-01 — Operational Documentation Pre-Merge Cleanup
 
 - Confirmed original DEC-085/DEC-086 entries in `.ai/DECISIONS.md` at `47da09c15b3d568bb2880a3e8c6d00900fe4c63d` and their removal at `c68f87c20d79085705d3310f1e2c233679dad8e3`. Restored the original text with explicit historical provenance and scope; no historical execution permission is revived.

@@ -476,7 +476,8 @@ const updateTotal = (line) => {
     const result = taxInclusive ? taxable : taxable + (taxable * taxRate / 100);
     if (total) {
         total.dataset.rawTotal = Number.isFinite(result) ? String(result) : '0';
-        total.textContent = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+        const formatted = Number.isFinite(result) ? result.toFixed(2) : '0.00';
+        if (total.textContent !== formatted) total.textContent = formatted;
     }
     updateEditorTotal(line.closest('[data-product-line-editor]'));
 };

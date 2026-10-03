@@ -1,5 +1,20 @@
 # Pending Change Batch
 
+## 2026-10-03 — Full-System Audit Final UI Batch
+
+Owner explicitly authorized closure, integration and deployment of the remaining audit fixes. Exactly two existing-user temporary sessions were authorized for authenticated browser coverage; no grant or business-record mutation is included.
+
+| Class | Repair | Commit | Verification/status |
+|---|---|---|---|
+| V0 | Username sign-in separator in ar/ar-EG/en | `b04924d` | Prior focused three-locale render passed; included in final batch |
+| V1 | Safely encoded Translation Editor action arguments | `1d2a363` | Five controls × three quote/markup fixtures passed; no saves/resets |
+| V1 | Canonical inventory movement select values | `9842658` | 25 options/selection retention in three locales passed |
+| V1 | Idempotent line-total text updates stop observer loop | `5278c0f` | Previously stalled adjustment/Party/quotation pages rendered with exact candidate asset guard; unsaved input returned to event loop |
+| V0 | Arabic audit/setup/store copy and header grid sizing | `8f80ab4` | Focused copy render passed; measured Arabic overlap 110.797px became 13.594px separation |
+| I4 | One combined version/build/artifact/release | Release commit follows | `0.1.22-audit-final`; one Vite build passed; live activation/affected checks pending |
+
+Final batch remains open until production success and session revocation are recorded. Frozen e6d2d1e archive and all historical records are preserved unchanged.
+
 ## 2026-10-01 — Current Operational Documentation Entry
 
 The initial documentation commit is `8ccb88c7e90b12883619793d3e1dd934653eadc6` and is pushed on `docs/post-hotfix51-operational-baseline`. The following cleanup remains part of that same documentation branch; neither entry closes an application release batch.

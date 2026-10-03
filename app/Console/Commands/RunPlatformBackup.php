@@ -14,6 +14,13 @@ class RunPlatformBackup extends Command
 
     public function handle(): int
     {
+        if (! @chdir(base_path())) {
+            $this->error('The application base directory is not available for the backup process.');
+            Log::critical('Production backup refused because the application base directory is unavailable.');
+
+            return self::FAILURE;
+        }
+
         if (config('app.env') === 'production' && blank(config('backup.backup.password'))) {
             $this->error('BACKUP_ARCHIVE_PASSWORD must be configured before a production backup can run.');
             Log::critical('Production backup refused because archive encryption is not configured.');

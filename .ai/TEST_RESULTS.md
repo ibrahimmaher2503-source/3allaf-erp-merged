@@ -1,5 +1,15 @@
 # Test and Verification Results
 
+## 2026-10-03 — Full-System Audit Continuation
+
+- Preserved original e6d2d1e code/report, source scans, CodeGraph analysis, lint/Blade sweep, database/integrity and initial backup evidence. Those passing checks were not repeated.
+- Outstanding caller-cwd database-backup regression exposed stale renamed-stage paths in production config cache. Repaired only generated final-release caches and reloaded established PHP-FPM. Six runtime-path assertions passed. Only the affected backup regression resumed and passed encrypted dump/archive integrity/local-copy checks.
+- Resumed the already-active deployment's missing compact smoke once: exact e6d2d1e release, maintenance off, PHP-FPM/cron active, no failed queue jobs, three backup schedules, `/up` and `/login` 200. This is not full-audit acceptance.
+- Newly available Chromium visual pass: ar/en desktop 1440px and ar mobile 390px login layouts/direction passed, no page errors/page overflow. Screenshots inspected and retained in `.ai/evidence/full-system-audit-2026-10-03`. Found untranslated/misleading email separator; source repair changes only login copy and three locale entries.
+- Source copy fix: JSON/translation resolution, changed Blade/compiled PHP syntax and isolated ar/ar-EG/en rendering passed. Initial renderer failed on absent local Vite manifest; corrected to reuse existing public assets with explicit nonzero failures and resumed only affected renderer. No asset rebuild.
+- Authenticated Admin/User browser pass, persisted transaction/workflow/concurrency/ledger/print/offline/device verification remain NOT RUN here. Automatic approval review rejected the broad session/password-hash helper before execution; narrower two-session approval is pending. No cookies from that helper or business test data were created.
+- No automated test suite created/run; no new CodeGraph sync, broad test loop, migration, role/grant change or new frozen release artifact. Source repair `b04924d4c973580249aa999adab34078935cefb3` is committed/pushed only on the preserved audit branch; integration/release pending.
+
 ## 2026-09-30 — Hotfix51 focused product/supplier verification and deployment
 
 - **Focused code/data result:** PASS, 50 assertions in isolated restored MariaDB `toyjoy_hf48_restore_368d44f2acea961a9a`, wrapped in rollback. Exact canonical and numeric results were `SUP-0002 → 0002-000001` and `0123456 → 0123-000001`. Explicit draft save, same-product final completion, local identity barcode creation, no duplicate product, specific invalid-final errors with no draft, and separate international-barcode retention passed.

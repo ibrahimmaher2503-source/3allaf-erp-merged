@@ -3116,5 +3116,12 @@
     "Select active Product Filter values or retain the existing saved selections.": "Select active Product Filter values or retain the existing saved selections.",
     "No filter values configured.": "No filter values configured.",
     "No product filters configured.": "No product filters configured.",
-    "Build reusable bilingual descriptive filters for product cards.": "Build reusable bilingual descriptive filters for product cards."
+    "Build reusable bilingual descriptive filters for product cards.": "Build reusable bilingual descriptive filters for product cards.",
+    "Or continue with username": "Or continue with username",
+    "User created": "User created",
+    "User email verified": "User email verified",
+    "Product card created": "Product card created",
+    "Product filters updated": "Product filters updated",
+    "Authorization": "Authorization",
+    "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet.": "Add active warehouses and explicit sales outlets with their real branch context. Cash drawers select their exact sales outlet."
 }
