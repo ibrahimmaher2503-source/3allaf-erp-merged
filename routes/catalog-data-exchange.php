@@ -44,11 +44,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->get('catalog/{type}/export/{format}', function (string $type, string $format, MasterDataDocument $documents) {
         abort_unless(in_array($type, ['products', 'categories', 'brands'], true) && in_array($format, ['xlsx', 'pdf'], true), 404);
         if ($type === 'products') {
+            $canViewCost = auth()->user()->can('products_categories_brands.cost_view');
             $query = Product::query()->with(['category.parent', 'brand', 'barcodes'])->familiesAndSimple()->limit(5000);
             if ($q = trim((string) request('q'))) $query->where(fn ($nested) => $nested->where('item_code', 'like', '%'.$q.'%')->orWhere('name_ar', 'like', '%'.$q.'%')->orWhere('name_en', 'like', '%'.$q.'%')->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', 'like', '%'.$q.'%')));
             if (in_array(request('status'), ['active', 'inactive'], true)) $query->where('status', request('status'));
-            $headers = [__('Item code'), __('Barcode'), __('Arabic name'), __('English name'), __('Model number'), __('Category path'), __('Brand'), __('Product type'), __('Unit cost'), __('Base consumer selling price'), __('Status')];
-            $rows = $query->get()->map(fn ($p) => [$p->item_code, $p->barcodes->firstWhere('is_primary', true)?->barcode, $p->name_ar, $p->name_en, $p->model_number, collect([$p->category?->parent?->name_ar, $p->category?->name_ar])->filter()->join(' / '), $p->brand?->name_ar, __($p->product_type), $p->average_cost, $p->sale_price, __($p->status)]);
+            $headers = [__('Item code'), __('Barcode'), __('Arabic name'), __('English name'), __('Model number'), __('Category path'), __('Brand'), __('Product type'), ...($canViewCost ? [__('Unit cost')] : []), __('Base consumer selling price'), __('Status')];
+            $rows = $query->get()->map(fn ($p) => [$p->item_code, $p->barcodes->firstWhere('is_primary', true)?->barcode, $p->name_ar, $p->name_en, $p->model_number, collect([$p->category?->parent?->name_ar, $p->category?->name_ar])->filter()->join(' / '), $p->brand?->name_ar, __($p->product_type), ...($canViewCost ? [$p->average_cost] : []), $p->sale_price, __($p->status)]);
         } else {
             $model = $type === 'categories' ? Category::class : Brand::class;
             $query = $model::query()->limit(5000);
