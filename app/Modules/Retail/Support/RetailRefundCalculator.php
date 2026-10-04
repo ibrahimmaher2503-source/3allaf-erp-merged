@@ -41,7 +41,14 @@ final class RetailRefundCalculator
             }
             $seen[$saleLine->id] = true;
             $quantity = trim((string) ($input['quantity'] ?? '0'));
-            if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) {
+            // Decimal casts on persisted return lines render a whole unit as
+            // `1.000000`. Accept that lossless representation while retaining
+            // the whole-unit business rule and reject fractional quantities.
+            if (preg_match('/^(\d+)(?:\.0+)?$/', $quantity, $matches) !== 1) {
+                throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('Refund quantities must be positive whole numbers.')]);
+            }
+            $quantity = $matches[1];
+            if (bccomp($quantity, '0', 0) <= 0) {
                 throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('Refund quantities must be positive whole numbers.')]);
             }
 
