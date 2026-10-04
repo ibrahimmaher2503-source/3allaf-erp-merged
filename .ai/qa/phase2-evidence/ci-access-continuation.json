@@ -1,0 +1,24 @@
+{
+  "checked_at_utc": "2026-10-04T15:23:23.363108+00:00",
+  "result": "UNVERIFIED_ACCESS_UNAVAILABLE",
+  "repository": "IS-Intelligent-Solutions/rajeh-erp",
+  "branch": "feature/qa-hardening-phase2",
+  "published_implementation_commit": "7ec28a2",
+  "published_reports_commit": "de88cbf",
+  "published_workflow_commit": "6536b6d6225fdb9f2f9e5cc7fee5244d919a5c31",
+  "remote_main": "ed0e98e5eb259d1e7289272e2edbf20cd22de0df",
+  "github_actions_tools_exposed": false,
+  "github_cli_available": false,
+  "github_environment_credentials_present": false,
+  "actions_api_http_status": 404,
+  "plugin_discovery": {
+    "name": "github",
+    "installed": false,
+    "status": "ENABLED"
+  },
+  "interpretation": "API 404 without authentication does not establish workflow existence, execution, failure or success.",
+  "qa_sections_rerun": [],
+  "main_merge_performed": false,
+  "deployment_performed": false,
+  "remaining_action": "Read actual Fast workflow result for 6536b6d or its tested source; repair only failed scoped sections if necessary, then clean authorized main integration."
+}

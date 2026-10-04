@@ -4,6 +4,8 @@ Owner-authorized I4 task on `feature/qa-hardening-phase2`, source `ed0e98e5eb259
 
 Local Phase 2: Fast PASS 104s (cold schema 78s, focused tests 88ms); Release financial/matrix/concurrency/mutation sections passed with raw mutation warnings. Raw MSI 79.34%, reviewed MSI 94.14%, 113 visible survivors, 86 individually documented exclusions, 27 retained. Disposable runtimes removed. Source/test implementation `7ec28a2` and dated QA evidence `de88cbf` are pushed on the task branch. Main remains `ed0e98e`; merge waits for actual CI verification. A focused CI shallow-reference fetch/strict syntax guard is included; see `.ai/qa/PHASE2_CHECKPOINT.md`.
 
+Continuation access check (2026-10-04): existing workflow tip `6536b6d` is published; GitHub Actions tools/CLI/token remain unavailable and unauthenticated API returned 404. Actual CI success is unverified; main integration remains pending that result. No completed QA section was repeated. Evidence: `.ai/qa/phase2-evidence/ci-access-continuation.json`.
+
 ## Preserved Phase 1 closure
 
 # Current Task — Permanent Rajeh QA Gate
