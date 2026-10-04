@@ -2,12 +2,8 @@
 
 use App\Models\User;
 use App\Modules\Platform\Actions\DecideApprovalSource;
-use App\Modules\Platform\Actions\RevokeAttachment;
-use App\Modules\Platform\Actions\StoreAttachment;
-use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
-use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApprovalPresentation;
@@ -19,12 +15,10 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new #[Title('Approval Inbox')] class extends Component
 {
-    use WithFileUploads;
     use WithPagination;
 
     public string $search = '';
@@ -43,10 +37,6 @@ new #[Title('Approval Inbox')] class extends Component
     public bool $approvalModalOpen = false;
 
     public string $decisionReason = '';
-
-    public mixed $evidence = null;
-
-    public string $revokeReason = '';
 
     public function mount(): void
     {
@@ -75,8 +65,6 @@ new #[Title('Approval Inbox')] class extends Component
         $this->approvalModalOpen = false;
         $this->selectedApprovalId = null;
         $this->decisionReason = '';
-        $this->evidence = null;
-        $this->revokeReason = '';
         $this->resetValidation();
     }
 
@@ -134,48 +122,6 @@ new #[Title('Approval Inbox')] class extends Component
         }
     }
 
-    public function uploadEvidence(): void
-    {
-        $approval = $this->selectedPendingApproval();
-        Gate::authorize('view', $approval);
-        $this->validate(['evidence' => ['required', 'file', 'max:12288']]);
-        app(StoreAttachment::class)->execute(
-            $this->evidence,
-            'approval_evidence',
-            new AttachmentSourceReference(
-                ApprovalRecord::class,
-                (string) $approval->id,
-                $approval->branch_id,
-                $approval->store_id,
-                'private',
-            ),
-            fn (User $user, AttachmentSourceReference $source): bool => Gate::forUser($user)->allows('view', $approval)
-                && $source->sourceType === ApprovalRecord::class
-                && $source->sourceId === (string) $approval->id,
-        );
-        $this->evidence = null;
-        session()->flash('approval-evidence-success', __('Approval evidence uploaded securely.'));
-    }
-
-    public function revokeEvidence(string $attachmentId): void
-    {
-        $approval = $this->selectedPendingApproval();
-        Gate::authorize('decide', $approval);
-        $validated = $this->validate(['revokeReason' => ['required', 'string', 'min:3', 'max:500']]);
-        $attachment = Attachment::query()
-            ->where('source_type', ApprovalRecord::class)
-            ->where('source_id', (string) $approval->id)
-            ->findOrFail($attachmentId);
-        app(RevokeAttachment::class)->execute(
-            $attachment,
-            $validated['revokeReason'],
-            fn (User $user, Attachment $candidate): bool => Gate::forUser($user)->allows('decide', $approval)
-                && $candidate->source_type === ApprovalRecord::class
-                && $candidate->source_id === (string) $approval->id,
-        );
-        $this->revokeReason = '';
-    }
-
     public function render()
     {
         Gate::authorize('view-approval-inbox');
@@ -215,10 +161,6 @@ new #[Title('Approval Inbox')] class extends Component
             'sourceTypes' => (clone $base)->distinct()->orderBy('source_type')->pluck('source_type'),
             'branches' => Branch::query()->visibleTo($user)->orderBy('code')->get(),
             'stores' => Store::query()->visibleTo($user)->orderBy('code')->get(),
-            'attachments' => $selectedApproval === null ? collect() : Attachment::query()
-                ->where('source_type', ApprovalRecord::class)
-                ->where('source_id', (string) $selectedApproval->id)
-                ->latest()->get(),
             'canDecide' => $selectedApproval !== null && Gate::allows('decide', $selectedApproval),
             'canReject' => $selectedApproval !== null && app(DecideApprovalSource::class)->canReject($selectedApproval),
             'sourceUrl' => $selectedApproval === null ? null : app(DecideApprovalSource::class)->sourceRoute($selectedApproval),
@@ -287,7 +229,7 @@ new #[Title('Approval Inbox')] class extends Component
             <div class="hidden overflow-x-auto md:block">
                 <flux:table class="min-w-[980px] table-fixed" aria-label="{{ __('Approval requests') }}">
                     <flux:table.columns><flux:table.column class="w-[130px] whitespace-nowrap">{{ __('Requested') }}</flux:table.column><flux:table.column class="w-[280px]">{{ __('Source') }}</flux:table.column><flux:table.column class="w-[190px]">{{ __('Requester') }}</flux:table.column><flux:table.column class="w-[170px]">{{ __('Scope') }}</flux:table.column><flux:table.column class="w-[120px] whitespace-nowrap">{{ __('State') }}</flux:table.column><flux:table.column class="w-[110px] whitespace-nowrap">{{ __('Actions') }}</flux:table.column></flux:table.columns>
-                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="w-[130px] whitespace-nowrap align-top font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell class="w-[280px] max-w-[280px] align-top"><div class="break-words font-medium leading-5">{{ ApprovalPresentation::source($approval->source_type, $approval->source_id) }}</div><div class="break-all font-mono text-xs leading-5 text-text-muted">{{ ApprovalPresentation::action($approval->requested_action) }}</div></flux:table.cell><flux:table.cell class="w-[190px] max-w-[190px] break-words align-top leading-5">{{ $approval->requester?->name }}</flux:table.cell><flux:table.cell class="w-[170px] max-w-[170px] break-words align-top font-mono text-xs leading-5">{{ $approval->branch_id ? __('Branch').' #'.$approval->branch_id : '' }} {{ $approval->store_id ? __('Store').' #'.$approval->store_id : '' }}</flux:table.cell><flux:table.cell class="w-[120px] align-top"><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell class="w-[110px] align-top"><x-actions.button semantic="view" :label="__('Review')" size="xs" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
+                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="w-[130px] whitespace-nowrap align-top font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell class="w-[280px] max-w-[280px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-medium leading-5">{{ ApprovalPresentation::source($approval->source_type, $approval->source_id) }}</div><div class="min-w-0 break-all whitespace-normal font-mono text-xs leading-5 text-text-muted">{{ ApprovalPresentation::action($approval->requested_action) }}</div></flux:table.cell><flux:table.cell class="w-[190px] max-w-[190px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal leading-5">{{ $approval->requester?->name }}</div></flux:table.cell><flux:table.cell class="w-[170px] max-w-[170px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-mono text-xs leading-5">{{ $approval->branch_id ? __('Branch').' #'.$approval->branch_id : '' }} {{ $approval->store_id ? __('Store').' #'.$approval->store_id : '' }}</div></flux:table.cell><flux:table.cell class="w-[120px] align-top"><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell class="w-[110px] align-top whitespace-nowrap"><x-actions.button semantic="view" :label="__('Review')" size="xs" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
                 </flux:table>
             </div>
             <div class="space-y-3 md:hidden">@foreach($approvals as $approval)<x-cards.section-card :title="ApprovalPresentation::source($approval->source_type, $approval->source_id)"><div class="space-y-3 text-sm"><div class="flex items-center justify-between gap-3"><x-status.badge :status="$approval->approval_state->value" /><span class="font-mono text-xs text-text-muted">{{ $approval->requested_at->format('Y-m-d H:i') }}</span></div><p>{{ __('Requester') }}: {{ $approval->requester?->name }}</p><x-actions.button semantic="view" :label="__('Review')" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></div></x-cards.section-card>@endforeach</div>
@@ -302,8 +244,6 @@ new #[Title('Approval Inbox')] class extends Component
                 @error('approval')<x-state.error :title="$message" />@enderror
                 <dl class="grid gap-3 text-sm sm:grid-cols-2"><div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ ApprovalPresentation::source($selectedApproval->source_type, $selectedApproval->source_id) }}</dd></div><div><dt class="text-text-muted">{{ __('State') }}</dt><dd><x-status.badge :status="$selectedApproval->approval_state->value" /></dd></div><div><dt class="text-text-muted">{{ __('Requester') }}</dt><dd>{{ $selectedApproval->requester?->name }}</dd></div><div><dt class="text-text-muted">{{ __('Requested action') }}</dt><dd>{{ ApprovalPresentation::action($selectedApproval->requested_action) }}</dd></div>@if($selectedApproval->reason_text)<div class="sm:col-span-2"><dt class="text-text-muted">{{ __('Reason') }}</dt><dd>{{ $selectedApproval->reason_text }}</dd></div>@endif</dl>
                 <flux:button :href="$sourceUrl" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open source') }}</flux:button>
-
-                <section class="space-y-3" aria-labelledby="approval-evidence-heading"><div class="flex items-center gap-2"><h3 id="approval-evidence-heading" class="font-semibold">{{ __('Approval evidence') }}</h3><x-context-help :title="__('Approval evidence')" :label="__('Open contextual help')"><p>{{ __('Private files, maximum five per request. Every download is reauthorized and audited.') }}</p></x-context-help></div>@if(session('approval-evidence-success'))<flux:callout variant="info" icon="check-circle">{{ session('approval-evidence-success') }}</flux:callout>@endif<div class="flex flex-col gap-3 sm:flex-row sm:items-end"><flux:input wire:model="evidence" type="file" :label="__('Evidence file')" accept="image/jpeg,image/png,image/webp,application/pdf" /><flux:button wire:click="uploadEvidence" wire:loading.attr="disabled" wire:target="evidence,uploadEvidence" icon="arrow-up-tray">{{ __('Upload securely') }}</flux:button></div>@error('evidence')<p class="text-sm text-red-600">{{ $message }}</p>@enderror@if($canDecide && $attachments->contains(fn ($attachment) => $attachment->status->isDeliverable()))<div><flux:input wire:model="revokeReason" :label="__('Evidence revocation reason')" /><x-context-help :title="__('Evidence revocation reason')" :label="__('Open contextual help')"><p>{{ __('Required before revoking active evidence; the reason is written to the audit trail.') }}</p></x-context-help></div>@error('revokeReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror@endif<div class="space-y-2">@forelse($attachments as $attachment)<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-subtle p-3"><div><p class="text-sm font-medium">{{ $attachment->original_filename }}</p><p class="text-xs text-text-muted">{{ Number::fileSize($attachment->size_bytes) }} · {{ str($attachment->status->value)->headline() }}</p></div><div class="flex gap-2">@if($attachment->status->isDeliverable())<x-actions.button semantic="download" :label="__('Download')" size="xs" variant="subtle" icon="arrow-down-tray" :href="route('admin.approvals.attachments.download', [$selectedApproval, $attachment])">{{ __('Download') }}</x-actions.button>@if($canDecide)<flux:button size="xs" variant="danger" wire:click="revokeEvidence('{{ $attachment->id }}')" wire:confirm="{{ __('Revoke this evidence file?') }}">{{ __('Revoke') }}</flux:button>@endif@endif</div></div>@empty<p class="text-sm text-text-muted">{{ __('No evidence attached.') }}</p>@endforelse</div></section>
 
                 @if($selectedApproval->approval_state === ApprovalState::Pending && $canDecide)
                     <div class="space-y-3 border-t border-border-subtle pt-4"><div><flux:textarea wire:model="decisionReason" :label="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" /><x-context-help :title="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" :label="__('Open contextual help')"><p>{{ $selectedApproval->source_type === 'pos_shifts' ? __('Returning a shift for recount rejects this exact approval request and preserves its history.') : __('Required only when rejecting. The source keeps this reason in its immutable history.') }}</p></x-context-help></div>@error('decisionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror<div class="flex flex-wrap justify-end gap-2"><flux:button variant="subtle" wire:click="closeApproval">{{ __('Close') }}</flux:button>@if($canReject)<flux:button variant="danger" wire:click="reject" wire:confirm="{{ $selectedApproval->source_type === 'pos_shifts' ? __('Return this shift for recount?') : __('Reject this source record?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Request recount') : __('Reject') }}</flux:button>@endif<flux:button variant="primary" wire:click="approve" wire:confirm="{{ __('Approve this source record and execute its domain effects?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Approve and close') : __('Approve') }}</flux:button></div></div>
