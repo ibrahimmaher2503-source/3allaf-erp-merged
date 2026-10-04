@@ -1,0 +1,1 @@
+Confirmed: shallow checkout of Phase 2 HEAD has no origin/main; current syntax helper can silently fall back.

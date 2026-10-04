@@ -1,0 +1,44 @@
+{
+    "signature": "bb2b135cff1f22209a253cf6ac766722dda6b74d27df1e13ea310a35c1f450c0",
+    "workers": 2,
+    "independent_connections": [
+        7,
+        8
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 7,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `stock_balances` where `product_id` = ? and `store_id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 8,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `stock_balances` where `product_id` = ? and `store_id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 2
+        },
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "Negative stock is blocked by default. An authorized override with a reason is required."
+        }
+    ]
+}

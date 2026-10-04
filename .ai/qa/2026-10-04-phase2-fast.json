@@ -1,0 +1,64 @@
+{
+  "application_tree": "f4f0a6e6ef9ee813e5c0e3ca715689b167cd96c308a1564e777aa0ad7625200b",
+  "elapsed_seconds": 104,
+  "mode": "fast",
+  "status": "PASS",
+  "generated_at": "2026-10-04T14:08:34.581532+00:00",
+  "checks": [
+    {
+      "name": "tool self-check",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "PASS Node 20.20.2 PASS browser executable available PASS required gate tools and assets are available "
+    },
+    {
+      "name": "CodeGraph current-root/index",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "  Modified:  6 files \u2139 Run \"codegraph sync\" to update the index  "
+    },
+    {
+      "name": "PHP syntax changed/relevant files",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "PASS PHP syntax checked 12 changed/critical files. "
+    },
+    {
+      "name": "Larastan/PHPStan controlled baseline",
+      "status": "PASS",
+      "seconds": "10",
+      "detail": "{\"tool\":\"phpstan\",\"result\":\"passed\",\"errors\":0} "
+    },
+    {
+      "name": "focused critical regression suite",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": " OK (25 tests, 126 assertions) {\"tool\":\"phpunit\",\"result\":\"passed\",\"tests\":25,\"passed\":25,\"assertions\":126,\"duration_ms\":88} "
+    },
+    {
+      "name": "isolated MariaDB integrity scanner",
+      "status": "PASS",
+      "seconds": "78",
+      "detail": "PASS catalog create/edit/cost/filter/identity/denial/failure regressions PASS database invariants: foreign keys, identities, pivots, statuses, header/line totals, stock ledger, payments, returns, effective prices, filter/variant separation, migrations. Preserved QA runtime: /tmp/rajeh-qa-mariadb.6hEbHC; DB qa_rajh_20261004140709_19250 "
+    },
+    {
+      "name": "queue/scheduler/runtime configuration",
+      "status": "PASS",
+      "seconds": "2",
+      "detail": " Locale .. en   PASS isolated queue/cache/session/database configuration "
+    },
+    {
+      "name": "compact browser smoke",
+      "status": "PASS",
+      "seconds": "12",
+      "detail": "PASS Guest mobile browser errors:  PASS browser 10 assertions: Guest login/logout, allow/deny, forms, English/Arabic, desktop/mobile, console and overflow. Preserved QA runtime: /tmp/rajeh-qa-mariadb.6hEbHC; DB qa_rajh_20261004140709_19250 "
+    }
+  ],
+  "counts": {
+    "PASS": 8,
+    "PASS WITH WARNINGS": 0,
+    "FAIL": 0,
+    "SKIPPED": 0
+  },
+  "source_identity_note": "Fresh gate ran against the verified working source before its 7ec28a2 commit. Closure binds that same tested application source; only the two documented runtime files differ from ed0e98e."
+}

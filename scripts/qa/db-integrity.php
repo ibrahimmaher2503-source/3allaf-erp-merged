@@ -44,6 +44,8 @@ $assertZero('over-returned sale quantity', 'SELECT COUNT(*) FROM (SELECT l.sale_
 $assertZero('conflicting effective price versions', 'SELECT COUNT(*) FROM price_lines a JOIN price_versions va ON va.id=a.price_version_id JOIN price_lines b ON b.product_id=a.product_id AND b.store_id=a.store_id AND b.price_version_id>a.price_version_id JOIN price_versions vb ON vb.id=b.price_version_id WHERE va.state="approved" AND vb.state="approved" AND (va.effective_to IS NULL OR vb.effective_from IS NULL OR va.effective_to>vb.effective_from) AND (vb.effective_to IS NULL OR va.effective_from IS NULL OR vb.effective_to>va.effective_from)');
 $assertZero('descriptive filter assigned directly to variant', 'SELECT COUNT(*) FROM product_filter_values f JOIN products p ON p.id=f.product_id WHERE p.parent_product_id IS NOT NULL');
 $assertZero('variant value assigned to non-variant', 'SELECT COUNT(*) FROM product_variant_values v JOIN products p ON p.id=v.product_id WHERE p.parent_product_id IS NULL');
+require __DIR__.'/phase2-invariants.php';
+try { qaPhase2Invariants($pdo); } catch (Throwable $e) { $failures[]=$e->getMessage(); }
 foreach ($warnings as $warning) echo "WARN $warning\n";
 foreach ($failures as $failure) echo "FAIL $failure\n";
 if ($failures !== []) exit(1);

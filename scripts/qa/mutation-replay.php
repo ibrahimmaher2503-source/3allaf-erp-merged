@@ -6,7 +6,7 @@ foreach($x['escaped'] as $id=>$entry) {
     $m=$entry['mutator'];$file=$dir.'/'.$id.'.php';file_put_contents($file,$m['mutatedSourceCode']);
     preg_match('/namespace\s+([^;]+);/',$m['mutatedSourceCode'],$ns);$class=trim($ns[1]).'\\'.basename($m['originalFilePath'],'.php');
     $env=getenv();$env['QA_MUTANT_FILE']=$file;$env['QA_MUTANT_CLASS']=$class;
-    $p=proc_open([PHP_BINARY,$root.'/scripts/qa/phpunit-infection.php','--configuration='.$root.'/phpunit.qa.xml'],[0=>STDIN,1=>['pipe','w'],2=>['pipe','w']],$pipes,$root,$env);
+    $p=proc_open([PHP_BINARY,$root.'/scripts/qa/phpunit-infection.php','--configuration='.$root.'/scripts/qa/phpunit.xml'],[0=>STDIN,1=>['pipe','w'],2=>['pipe','w']],$pipes,$root,$env);
     $stdout=stream_get_contents($pipes[1]);$stderr=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$rc=proc_close($p);$entry['processOutput']=$stdout.$stderr;
     if($rc===0) $escaped[]=$entry; else {$x['killed'][]=$entry;$additional++;}
     unlink($file);

@@ -11,6 +11,9 @@
     "node_modules/",
     "public/build/",
     "bootstrap/cache/",
-    ".qa-runtime/"
+    ".qa-runtime/",
+    ".ai/qa/runs/",
+    ".codegraph/",
+    "scripts/qa/__pycache__/"
   ]
 }

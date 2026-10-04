@@ -1,3 +1,13 @@
+# Current Task — QA Hardening Phase 2
+
+Owner-authorized I4 task on `feature/qa-hardening-phase2`, source `ed0e98e5eb259d1e7289272e2edbf20cd22de0df`. Target corrected critical MSI >=85%, preferred >=90%; analyze all 191 preserved survivors, add meaningful financial matrices/domain/concurrency checks and verify GitHub Fast CI. Named authorization covers focused automation and native socket-only disposable MariaDB for this gate. Preserve earlier passing audit/gate evidence. No production writes, broad audit or deployment authorized absent a confirmed runtime fix requiring it.
+
+Local Phase 2: Fast PASS 104s (cold schema 78s, focused tests 88ms); Release financial/matrix/concurrency/mutation sections passed with raw mutation warnings. Raw MSI 79.34%, reviewed MSI 94.14%, 113 visible survivors, 86 individually documented exclusions, 27 retained. Disposable runtimes removed. Source/test implementation `7ec28a2` and dated QA evidence `de88cbf` are pushed on the task branch. Main remains `ed0e98e`; merge waits for actual CI verification. A focused CI shallow-reference fetch/strict syntax guard is included; see `.ai/qa/PHASE2_CHECKPOINT.md`.
+
+Continuation access check (2026-10-04): existing workflow tip `6536b6d` is published; GitHub Actions tools/CLI/token remain unavailable and unauthenticated API returned 404. Actual CI success is unverified; main integration remains pending that result. No completed QA section was repeated. Evidence: `.ai/qa/phase2-evidence/ci-access-continuation.json`.
+
+## Preserved Phase 1 closure
+
 # Current Task — Permanent Rajeh QA Gate
 
 Owner-authorized I4 QA tooling task on `feature/rajeh-qa-gate`, source `1ab5ab534ea76d60b2da2e732fcb6992b3fd7985`. Resumed the preserved checkpoint; completed Fast/Release tooling and only failed/unfinished validation. Fast PASS (15s final resumed invocation); Release PASS WITH WARNINGS (24s final resumed invocation), mutation MSI 53.41% with 191 survivors. Real disposable MariaDB accounting/inventory chain, populated restore, outputs, Semgrep and Admin/User/Cashier checks passed. See `.ai/qa/RESUME_CHECKPOINT.md` and `docs/qa/RAJEH-QA-GATE.md`.

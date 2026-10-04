@@ -1,0 +1,1912 @@
+[
+  {
+    "id": 0,
+    "file": "Modules/Catalog/Support/ProductPricingContract.php",
+    "line": 24,
+    "mutator": "UnwrapTrim",
+    "diff": "-        $value = trim((string) $value); +        $value = (string) $value;",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 1,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 18,
+    "mutator": "DecrementInteger",
+    "diff": "-        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 6); +        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 5);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity normalizes to an in-range integer; added zero/scales 5/6/7 do not change its value. Returned quantity is independently formatted to six places."
+  },
+  {
+    "id": 2,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 18,
+    "mutator": "IncrementInteger",
+    "diff": "-        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 6); +        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 7);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity normalizes to an in-range integer; added zero/scales 5/6/7 do not change its value. Returned quantity is independently formatted to six places."
+  },
+  {
+    "id": 3,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 18,
+    "mutator": "BCMath",
+    "diff": "-        $quantity = bcadd((string) ProductQuantity::normalize($line['quantity'] ?? null), '0', 6); +        $quantity = (string) ((string) ProductQuantity::normalize($line['quantity'] ?? null) + '0');",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity normalizes to an in-range integer; added zero/scales 5/6/7 do not change its value. Returned quantity is independently formatted to six places."
+  },
+  {
+    "id": 4,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 19,
+    "mutator": "DecrementInteger",
+    "diff": "-        $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost'); +        $unitCost = $this->decimal($line['unit_cost'] ?? null, 3, 'Unit cost');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 5,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 19,
+    "mutator": "IncrementInteger",
+    "diff": "-        $unitCost = $this->decimal($line['unit_cost'] ?? null, 4, 'Unit cost'); +        $unitCost = $this->decimal($line['unit_cost'] ?? null, 5, 'Unit cost');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 6,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 21,
+    "mutator": "IncrementInteger",
+    "diff": "-        $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, 'Discount'); +        $discountValue = $this->decimal($line['discount_value'] ?? 1, 4, 'Discount');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 7,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 21,
+    "mutator": "DecrementInteger",
+    "diff": "-        $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, 'Discount'); +        $discountValue = $this->decimal($line['discount_value'] ?? 0, 3, 'Discount');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 8,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 21,
+    "mutator": "IncrementInteger",
+    "diff": "-        $discountValue = $this->decimal($line['discount_value'] ?? 0, 4, 'Discount'); +        $discountValue = $this->decimal($line['discount_value'] ?? 0, 5, 'Discount');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 9,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 25,
+    "mutator": "DecrementInteger",
+    "diff": "-        $taxRate = $this->decimal($line['tax_rate'] ?? 0, 4, 'Tax rate'); +        $taxRate = $this->decimal($line['tax_rate'] ?? 0, 3, 'Tax rate');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 10,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 25,
+    "mutator": "IncrementInteger",
+    "diff": "-        $taxRate = $this->decimal($line['tax_rate'] ?? 0, 4, 'Tax rate'); +        $taxRate = $this->decimal($line['tax_rate'] ?? 0, 5, 'Tax rate');",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 11,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 27,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($quantity, '0', 6) <= 0) { +        if (bccomp($quantity, '0', 5) <= 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity rejects zero/negative before this guard. Both comparisons remain false for every accepted positive integer."
+  },
+  {
+    "id": 12,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 27,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($quantity, '0', 6) <= 0) { +        if (bccomp($quantity, '0', 7) <= 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity rejects zero/negative before this guard. Both comparisons remain false for every accepted positive integer."
+  },
+  {
+    "id": 13,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 27,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($quantity, '0', 6) <= 0) { +        if (($quantity <=> '0') <= 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity rejects zero/negative before this guard. Both comparisons remain false for every accepted positive integer."
+  },
+  {
+    "id": 14,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 27,
+    "mutator": "LessThanOrEqualTo",
+    "diff": "-        if (bccomp($quantity, '0', 6) <= 0) { +        if (bccomp($quantity, '0', 6) < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "ProductQuantity rejects zero/negative before this guard. Both comparisons remain false for every accepted positive integer."
+  },
+  {
+    "id": 15,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 30,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($unitCost, '0', 4) < 0) { +        if (bccomp($unitCost, '0', 3) < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 16,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 30,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($unitCost, '0', 4) < 0) { +        if (bccomp($unitCost, '0', 5) < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 17,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 30,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($unitCost, '0', 4) < 0) { +        if (($unitCost <=> '0') < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 18,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 30,
+    "mutator": "LessThan",
+    "diff": "-        if (bccomp($unitCost, '0', 4) < 0) { +        if (bccomp($unitCost, '0', 4) <= 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 19,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 36,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($discountValue, '0', 4) < 0) { +        if (bccomp($discountValue, '0', 3) < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 20,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 36,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($discountValue, '0', 4) < 0) { +        if (bccomp($discountValue, '0', 5) < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 21,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 36,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($discountValue, '0', 4) < 0) { +        if (($discountValue <=> '0') < 0) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "decimal() rejects a negative sign before this guard. Non-negative normalized values cannot enter the negative-cost/discount branch."
+  },
+  {
+    "id": 22,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 39,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($taxRate, '100', 4) > 0) { +        if (bccomp($taxRate, '100', 3) > 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 23,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 39,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($taxRate, '100', 4) > 0) { +        if (bccomp($taxRate, '100', 5) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Tax rate is normalized to four places; scale 5 adds zeros. Native comparison to 100 cannot obscure the minimum 0.0001 difference at this small boundary."
+  },
+  {
+    "id": 24,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 39,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($taxRate, '100', 4) > 0) { +        if (($taxRate <=> '100') > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Tax rate is normalized to four places; scale 5 adds zeros. Native comparison to 100 cannot obscure the minimum 0.0001 difference at this small boundary."
+  },
+  {
+    "id": 25,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 39,
+    "mutator": "GreaterThan",
+    "diff": "-        if (bccomp($taxRate, '100', 4) > 0) { +        if (bccomp($taxRate, '100', 4) >= 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 26,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 43,
+    "mutator": "DecrementInteger",
+    "diff": "-        $gross = bcmul($quantity, $unitCost, 8); +        $gross = bcmul($quantity, $unitCost, 7);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Integer quantity times four-place cost has at most four fractional places. Scales 7/8/9 produce the same value; final output is four places."
+  },
+  {
+    "id": 27,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 43,
+    "mutator": "IncrementInteger",
+    "diff": "-        $gross = bcmul($quantity, $unitCost, 8); +        $gross = bcmul($quantity, $unitCost, 9);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Integer quantity times four-place cost has at most four fractional places. Scales 7/8/9 produce the same value; final output is four places."
+  },
+  {
+    "id": 28,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 43,
+    "mutator": "BCMath",
+    "diff": "-        $gross = bcmul($quantity, $unitCost, 8); +        $gross = (string) ($quantity * $unitCost);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 29,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "DecrementInteger",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => bcdiv(bcmul($gross, $discountValue, 7), '100', 8),",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Gross and percentage are four-place values. Division by 100 means the output at eight places needs only six numerator places; truncating multiplication at seven or adding a ninth cannot change it."
+  },
+  {
+    "id": 30,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "IncrementInteger",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => bcdiv(bcmul($gross, $discountValue, 9), '100', 8),",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Gross and percentage are four-place values. Division by 100 means the output at eight places needs only six numerator places; truncating multiplication at seven or adding a ninth cannot change it."
+  },
+  {
+    "id": 31,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "BCMath",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => bcdiv((string) ($gross * $discountValue), '100', 8),",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 32,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "DecrementInteger",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 7),",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 33,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "IncrementInteger",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 9),",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 34,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 45,
+    "mutator": "BCMath",
+    "diff": "-            'percentage' => bcdiv(bcmul($gross, $discountValue, 8), '100', 8), +            'percentage' => (string) (bcmul($gross, $discountValue, 8) / '100'),",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 35,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 50,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($discount, $gross, 8) > 0) { +        if (bccomp($discount, $gross, 7) > 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 36,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 50,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($discount, $gross, 8) > 0) { +        if (bccomp($discount, $gross, 9) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Both normalized operands have at most eight fractional places. Comparison at nine appends zeros."
+  },
+  {
+    "id": 37,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 50,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($discount, $gross, 8) > 0) { +        if (($discount <=> $gross) > 0) {",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 38,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 50,
+    "mutator": "GreaterThan",
+    "diff": "-        if (bccomp($discount, $gross, 8) > 0) { +        if (bccomp($discount, $gross, 8) >= 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 39,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 54,
+    "mutator": "DecrementInteger",
+    "diff": "-        $discounted = bcsub($gross, $discount, 8); +        $discounted = bcsub($gross, $discount, 7);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 40,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 54,
+    "mutator": "IncrementInteger",
+    "diff": "-        $discounted = bcsub($gross, $discount, 8); +        $discounted = bcsub($gross, $discount, 9);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Gross has four places and discount has eight. Subtraction at nine adds a zero without changing the subsequent arithmetic."
+  },
+  {
+    "id": 41,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 54,
+    "mutator": "BCMath",
+    "diff": "-        $discounted = bcsub($gross, $discount, 8); +        $discounted = (string) ($gross - $discount);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 42,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 55,
+    "mutator": "CastBool",
+    "diff": "-        $taxInclusive = (bool) ($line['tax_inclusive'] ?? false); +        $taxInclusive = $line['tax_inclusive'] ?? false;",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 43,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 56,
+    "mutator": "DecrementInteger",
+    "diff": "-        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) { +        if ($taxInclusive && bccomp($taxRate, '0', 3) > 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 44,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 56,
+    "mutator": "IncrementInteger",
+    "diff": "-        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) { +        if ($taxInclusive && bccomp($taxRate, '0', 5) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Rate has four places; scale 5 appends zeros, comparison against zero preserves sign, and using the inclusive zero-rate branch also gives zero tax/net total."
+  },
+  {
+    "id": 45,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 56,
+    "mutator": "BCMath",
+    "diff": "-        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) { +        if ($taxInclusive && ($taxRate <=> '0') > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Rate has four places; scale 5 appends zeros, comparison against zero preserves sign, and using the inclusive zero-rate branch also gives zero tax/net total."
+  },
+  {
+    "id": 46,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 56,
+    "mutator": "GreaterThan",
+    "diff": "-        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) { +        if ($taxInclusive && bccomp($taxRate, '0', 4) >= 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Rate has four places; scale 5 appends zeros, comparison against zero preserves sign, and using the inclusive zero-rate branch also gives zero tax/net total."
+  },
+  {
+    "id": 47,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "IncrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 9), bcadd('100', $taxRate, 4), 8);",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 48,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "DecrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 7), bcadd('100', $taxRate, 4), 8);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 49,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "BCMath",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv((string) ($discounted * $taxRate), bcadd('100', $taxRate, 4), 8);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 50,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "DecrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 3), 8);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 51,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "IncrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 5), 8);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Four-place normalized rate plus 100 has four places; divisor scale 5 only appends a zero."
+  },
+  {
+    "id": 52,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "BCMath",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 8), (string) ('100' + $taxRate), 8);",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 53,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "IncrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 9);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 54,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "DecrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 7);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 55,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 57,
+    "mutator": "BCMath",
+    "diff": "-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8); +            $tax = (string) (bcmul($discounted, $taxRate, 8) / bcadd('100', $taxRate, 4));",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 56,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 58,
+    "mutator": "DecrementInteger",
+    "diff": "-            $subtotal = bcsub($discounted, $tax, 8); +            $subtotal = bcsub($discounted, $tax, 7);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "This subtotal is only returned after truncation to four places. Truncating the non-negative subtotal at seven/eight/nine beforehand yields the same four-place prefix; line total is the unchanged discounted base."
+  },
+  {
+    "id": 57,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 58,
+    "mutator": "IncrementInteger",
+    "diff": "-            $subtotal = bcsub($discounted, $tax, 8); +            $subtotal = bcsub($discounted, $tax, 9);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "This subtotal is only returned after truncation to four places. Truncating the non-negative subtotal at seven/eight/nine beforehand yields the same four-place prefix; line total is the unchanged discounted base."
+  },
+  {
+    "id": 58,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 58,
+    "mutator": "BCMath",
+    "diff": "-            $subtotal = bcsub($discounted, $tax, 8); +            $subtotal = (string) ($discounted - $tax);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 59,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "DecrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = bcdiv(bcmul($subtotal, $taxRate, 7), '100', 8);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Exclusive tax divides by 100. Four-place output needs six numerator places. Extra multiplication/division places cannot carry across a four-place boundary when added to the eight-place subtotal."
+  },
+  {
+    "id": 60,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "IncrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = bcdiv(bcmul($subtotal, $taxRate, 9), '100', 8);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Exclusive tax divides by 100. Four-place output needs six numerator places. Extra multiplication/division places cannot carry across a four-place boundary when added to the eight-place subtotal."
+  },
+  {
+    "id": 61,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "BCMath",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = bcdiv((string) ($subtotal * $taxRate), '100', 8);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 62,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "DecrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 7);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 63,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "IncrementInteger",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 9);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Exclusive tax divides by 100. Four-place output needs six numerator places. Extra multiplication/division places cannot carry across a four-place boundary when added to the eight-place subtotal."
+  },
+  {
+    "id": 64,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 62,
+    "mutator": "BCMath",
+    "diff": "-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8); +            $tax = (string) (bcmul($subtotal, $taxRate, 8) / '100');",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 65,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 63,
+    "mutator": "DecrementInteger",
+    "diff": "-            $lineTotal = bcadd($subtotal, $tax, 8); +            $lineTotal = bcadd($subtotal, $tax, 7);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Line total is only returned at four places. Truncating the non-negative sum at seven/eight/nine has the same four-place prefix."
+  },
+  {
+    "id": 66,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 63,
+    "mutator": "IncrementInteger",
+    "diff": "-            $lineTotal = bcadd($subtotal, $tax, 8); +            $lineTotal = bcadd($subtotal, $tax, 9);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Line total is only returned at four places. Truncating the non-negative sum at seven/eight/nine has the same four-place prefix."
+  },
+  {
+    "id": 67,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 63,
+    "mutator": "BCMath",
+    "diff": "-            $lineTotal = bcadd($subtotal, $tax, 8); +            $lineTotal = (string) ($subtotal + $tax);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 68,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 66,
+    "mutator": "ArrayItemRemoval",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 69,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 67,
+    "mutator": "DecrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 5), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 70,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 67,
+    "mutator": "IncrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 7), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 71,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 67,
+    "mutator": "BCMath",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => (string) ($quantity + '0'), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 72,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 67,
+    "mutator": "ArrayItem",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' > bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 73,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 68,
+    "mutator": "DecrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 3), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 74,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 68,
+    "mutator": "IncrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 5), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 75,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 68,
+    "mutator": "BCMath",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => (string) ($unitCost + '0'), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 76,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 68,
+    "mutator": "ArrayItem",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' > bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 77,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 70,
+    "mutator": "DecrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 3), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 78,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 70,
+    "mutator": "IncrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 5), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 79,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 70,
+    "mutator": "BCMath",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => (string) ($discountValue + '0'), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 80,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 70,
+    "mutator": "ArrayItem",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' > bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 81,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 72,
+    "mutator": "DecrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 3), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 82,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 72,
+    "mutator": "IncrementInteger",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 5), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 83,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 72,
+    "mutator": "BCMath",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => (string) ($taxRate + '0'), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 84,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 72,
+    "mutator": "ArrayItem",
+    "diff": "-        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' => bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)]; +        return ['quantity' => bcadd($quantity, '0', 6), 'unit_cost' => bcadd($unitCost, '0', 4), 'discount_type' => $discountType, 'discount_value' => bcadd($discountValue, '0', 4), 'discount_amount' => bcadd($discount, '0', 4), 'tax_rate' > bcadd($taxRate, '0', 4), 'tax_code' => ($line['tax_code'] ?? '') !== '' ? $line['tax_code'] ?? null : null, 'tax_inclusive' => $taxInclusive, 'tax_amount' => bcadd($tax, '0', 4), 'subtotal' => bcadd($subtotal, '0', 4), 'line_total' => bcadd($lineTotal, '0', 4)];",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 85,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 99,
+    "mutator": "CastString",
+    "diff": "-            $subtotal = bcadd($subtotal, (string) $result['subtotal'], 4); +            $subtotal = bcadd($subtotal, $result['subtotal'], 4);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "calculateLine returns these amounts as actual strings from bcadd, so recasting the same string changes neither type nor value."
+  },
+  {
+    "id": 86,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 100,
+    "mutator": "CastString",
+    "diff": "-            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 4); +            $discountAmount = bcadd($discountAmount, $result['discount_amount'], 4);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "calculateLine returns these amounts as actual strings from bcadd, so recasting the same string changes neither type nor value."
+  },
+  {
+    "id": 87,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 100,
+    "mutator": "DecrementInteger",
+    "diff": "-            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 4); +            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 3);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 88,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 100,
+    "mutator": "IncrementInteger",
+    "diff": "-            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 4); +            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 5);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 89,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 100,
+    "mutator": "BCMath",
+    "diff": "-            $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 4); +            $discountAmount = (string) ($discountAmount + (string) $result['discount_amount']);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 90,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 101,
+    "mutator": "CastString",
+    "diff": "-            $taxAmount = bcadd($taxAmount, (string) $result['tax_amount'], 4); +            $taxAmount = bcadd($taxAmount, $result['tax_amount'], 4);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "calculateLine returns these amounts as actual strings from bcadd, so recasting the same string changes neither type nor value."
+  },
+  {
+    "id": 91,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 102,
+    "mutator": "CastString",
+    "diff": "-            $totalAmount = bcadd($totalAmount, (string) $result['line_total'], 4); +            $totalAmount = bcadd($totalAmount, $result['line_total'], 4);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "calculateLine returns these amounts as actual strings from bcadd, so recasting the same string changes neither type nor value."
+  },
+  {
+    "id": 92,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 112,
+    "mutator": "UnwrapTrim",
+    "diff": "-        $value = trim((string) $value); +        $value = (string) $value;",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 93,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 113,
+    "mutator": "PregMatchRemoveCaret",
+    "diff": "-        if ($value === '' || !preg_match('/^\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' || !preg_match('/\\d+(?:\\.\\d+)?$/', $value)) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 94,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 113,
+    "mutator": "PregMatchRemoveDollar",
+    "diff": "-        if ($value === '' || !preg_match('/^\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' || !preg_match('/^\\d+(?:\\.\\d+)?/', $value)) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 95,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 113,
+    "mutator": "LogicalOr",
+    "diff": "-        if ($value === '' || !preg_match('/^\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' && !preg_match('/^\\d+(?:\\.\\d+)?$/', $value)) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 96,
+    "file": "Modules/Purchasing/Services/PurchaseInvoiceCalculator.php",
+    "line": 120,
+    "mutator": "BCMath",
+    "diff": "-        return bcadd($numericValue, '0', $scale); +        return (string) ($numericValue + '0');",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 97,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 65,
+    "mutator": "BCMath",
+    "diff": "-            $gross = $this->money(bcmul($line['quantity'], $line['unit_price'], self::RATE_SCALE)); +            $gross = $this->money((string) ($line['quantity'] * $line['unit_price']));",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 98,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 68,
+    "mutator": "BCMath",
+    "diff": "-            if (bccomp($discount, '0', self::MONEY_SCALE) < 0) { +            if (($discount <=> '0') < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 99,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 71,
+    "mutator": "BCMath",
+    "diff": "-            if (bccomp($discount, $gross, self::MONEY_SCALE) > 0) { +            if (($discount <=> $gross) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 100,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 78,
+    "mutator": "BCMath",
+    "diff": "-            $computed[] = ['gross_amount' => $gross, 'discount_amount' => $discount, 'net_after_line_discount' => bcsub($gross, $discount, self::MONEY_SCALE)]; +            $computed[] = ['gross_amount' => $gross, 'discount_amount' => $discount, 'net_after_line_discount' => (string) ($gross - $discount)];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 101,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 81,
+    "mutator": "BCMath",
+    "diff": "-            $lineDiscountTotal = bcadd($lineDiscountTotal, $discount, self::MONEY_SCALE); +            $lineDiscountTotal = (string) ($lineDiscountTotal + $discount);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 102,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 84,
+    "mutator": "BCMath",
+    "diff": "-        $netAfterLineDiscounts = bcsub($subtotalGross, $lineDiscountTotal, self::MONEY_SCALE); +        $netAfterLineDiscounts = (string) ($subtotalGross - $lineDiscountTotal);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 103,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 88,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($invoiceDiscount, '0', self::MONEY_SCALE) < 0) { +        if (($invoiceDiscount <=> '0') < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 104,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 91,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($invoiceDiscount, $netAfterLineDiscounts, self::MONEY_SCALE) > 0) { +        if (($invoiceDiscount <=> $netAfterLineDiscounts) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 105,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 101,
+    "mutator": "BCMath",
+    "diff": "-            $net = bcsub($line['net_after_line_discount'], $allocations[$index], self::MONEY_SCALE); +            $net = (string) ($line['net_after_line_discount'] - $allocations[$index]);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 106,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 103,
+    "mutator": "ArrayItemRemoval",
+    "diff": "-            $resultLines[] = ['gross_amount' => $line['gross_amount'], 'discount_amount' => $line['discount_amount'], 'allocated_invoice_discount' => $allocations[$index], 'net_amount' => $net]; +            $resultLines[] = ['discount_amount' => $line['discount_amount'], 'allocated_invoice_discount' => $allocations[$index], 'net_amount' => $net];",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 107,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 113,
+    "mutator": "FalseValue",
+    "diff": "-        $total = $tax['applicable'] && ($tax['inclusive'] ?? false) ? $taxableBase : bcadd($taxableBase, $taxTotal, self::MONEY_SCALE); +        $total = $tax['applicable'] && ($tax['inclusive'] ?? true) ? $taxableBase : bcadd($taxableBase, $taxTotal, self::MONEY_SCALE);",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 108,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 141,
+    "mutator": "CastString",
+    "diff": "-        if ($rate === null || trim((string) $rate) === '') { +        if ($rate === null || trim($rate) === '') {",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 109,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 141,
+    "mutator": "UnwrapTrim",
+    "diff": "-        if ($rate === null || trim((string) $rate) === '') { +        if ($rate === null || (string) $rate === '') {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 110,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 141,
+    "mutator": "LogicalOr",
+    "diff": "-        if ($rate === null || trim((string) $rate) === '') { +        if ($rate === null && trim((string) $rate) === '') {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 111,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 148,
+    "mutator": "CastString",
+    "diff": "-        if (bccomp((string) $rate, '0', self::MONEY_SCALE) < 0) { +        if (bccomp($rate, '0', self::MONEY_SCALE) < 0) {",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 112,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 148,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp((string) $rate, '0', self::MONEY_SCALE) < 0) { +        if (((string) $rate <=> '0') < 0) {",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 113,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 148,
+    "mutator": "LessThan",
+    "diff": "-        if (bccomp((string) $rate, '0', self::MONEY_SCALE) < 0) { +        if (bccomp((string) $rate, '0', self::MONEY_SCALE) <= 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 114,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 152,
+    "mutator": "FalseValue",
+    "diff": "-        if ($tax['inclusive'] ?? false) { +        if ($tax['inclusive'] ?? true) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 115,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "CastString",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv($rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 116,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "DecrementInteger",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 1), self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 117,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "IncrementInteger",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 3), self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 118,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "Plus",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE - 2), self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 119,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "BCMath",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', (string) ((string) $rate / '100'), self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 120,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "DecrementInteger",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 1);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 121,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "IncrementInteger",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 3);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 122,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "Plus",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE - 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 123,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 154,
+    "mutator": "BCMath",
+    "diff": "-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2); +            $divisor = (string) ('1' + bcdiv((string) $rate, '100', self::RATE_SCALE + 2));",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 124,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 155,
+    "mutator": "BCMath",
+    "diff": "-            $exclusive = bcdiv($taxableBase, $divisor, self::RATE_SCALE); +            $exclusive = (string) ($taxableBase / $divisor);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 125,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 157,
+    "mutator": "BCMath",
+    "diff": "-            return $this->money(bcsub($taxableBase, $exclusive, self::RATE_SCALE)); +            return $this->money((string) ($taxableBase - $exclusive));",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 126,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 160,
+    "mutator": "CastString",
+    "diff": "-        return $this->money(bcdiv(bcmul($taxableBase, (string) $rate, self::RATE_SCALE), '100', self::RATE_SCALE)); +        return $this->money(bcdiv(bcmul($taxableBase, $rate, self::RATE_SCALE), '100', self::RATE_SCALE));",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 127,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 160,
+    "mutator": "BCMath",
+    "diff": "-        return $this->money(bcdiv(bcmul($taxableBase, (string) $rate, self::RATE_SCALE), '100', self::RATE_SCALE)); +        return $this->money((string) (bcmul($taxableBase, (string) $rate, self::RATE_SCALE) / '100'));",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 128,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 160,
+    "mutator": "BCMath",
+    "diff": "-        return $this->money(bcdiv(bcmul($taxableBase, (string) $rate, self::RATE_SCALE), '100', self::RATE_SCALE)); +        return $this->money(bcdiv((string) ($taxableBase * (string) $rate), '100', self::RATE_SCALE));",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 129,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 177,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($amount, '0', self::MONEY_SCALE) === 0) { +        if (($amount <=> '0') === 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 130,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 183,
+    "mutator": "BCMath",
+    "diff": "-            $totalWeight = bcadd($totalWeight, $weight, self::MONEY_SCALE); +            $totalWeight = (string) ($totalWeight + $weight);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 131,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 186,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($totalWeight, '0', self::MONEY_SCALE) === 0) { +        if (($totalWeight <=> '0') === 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 132,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 186,
+    "mutator": "DecrementInteger",
+    "diff": "-        if (bccomp($totalWeight, '0', self::MONEY_SCALE) === 0) { +        if (bccomp($totalWeight, '0', self::MONEY_SCALE) === -1) {",
+    "classification": "unreachable/dead code",
+    "resolution": "still visible in raw survivors",
+    "reason": "A positive discount was bounded by net weights before allocation, so total weight must be positive; neither the zero nor negative fallback is reachable."
+  },
+  {
+    "id": 133,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "DecrementInteger",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 1), $totalWeight, self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 134,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "IncrementInteger",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 3), $totalWeight, self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 135,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "Plus",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE - 2), $totalWeight, self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 136,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "BCMath",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv((string) ($amount * $weight), $totalWeight, self::RATE_SCALE + 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 137,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "DecrementInteger",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 1);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 138,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "IncrementInteger",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 3);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 139,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "Plus",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE - 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 140,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 194,
+    "mutator": "BCMath",
+    "diff": "-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2); +            $exact = (string) (bcmul($amount, $weight, self::RATE_SCALE + 2) / $totalWeight);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 141,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 197,
+    "mutator": "DecrementInteger",
+    "diff": "-            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 2); +            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 1);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 142,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 197,
+    "mutator": "IncrementInteger",
+    "diff": "-            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 2); +            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 3);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 143,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 197,
+    "mutator": "Plus",
+    "diff": "-            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 2); +            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE - 2);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 144,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 197,
+    "mutator": "BCMath",
+    "diff": "-            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 2); +            $remainders[$index] = (string) ($exact - $floor);",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 145,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 198,
+    "mutator": "BCMath",
+    "diff": "-            $running = bcadd($running, $floor, self::MONEY_SCALE); +            $running = (string) ($running + $floor);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 146,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 201,
+    "mutator": "BCMath",
+    "diff": "-        $shortfall = bcsub($amount, $running, self::MONEY_SCALE); +        $shortfall = (string) ($amount - $running);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 147,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 202,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($shortfall, '0', self::MONEY_SCALE) > 0) { +        if (($shortfall <=> '0') > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 148,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 202,
+    "mutator": "GreaterThan",
+    "diff": "-        if (bccomp($shortfall, '0', self::MONEY_SCALE) > 0) { +        if (bccomp($shortfall, '0', self::MONEY_SCALE) >= 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "At zero shortfall this only sorts remainders; the inner zero guard prevents any allocation change and final key order/output remain identical."
+  },
+  {
+    "id": 149,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 203,
+    "mutator": "FunctionCallRemoval",
+    "diff": "-            arsort($remainders); +            ",
+    "classification": "real coverage gap",
+    "resolution": "superseded by confirmed tax/allocation source correction or newly covered scope; not counted as a kill",
+    "reason": "Original patch no longer matches the current mutation source. Original survivor remains preserved; corrected algorithms and independent matrices replace this implementation path."
+  },
+  {
+    "id": 150,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 206,
+    "mutator": "BCMath",
+    "diff": "-                if (bccomp($shortfall, '0', self::MONEY_SCALE) <= 0) { +                if (($shortfall <=> '0') <= 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Operands are canonical non-negative two-place money within schema limits. PHP numeric-string comparison preserves ordering (including equal-float string fallback); sign/zero comparisons cannot alter cent boundaries."
+  },
+  {
+    "id": 151,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 207,
+    "mutator": "Break_",
+    "diff": "-                    break; +                    continue;",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "After shortfall is exhausted, continue instead of break visits remaining bounded cart indices without changing any monetary value or output."
+  },
+  {
+    "id": 152,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 209,
+    "mutator": "BCMath",
+    "diff": "-                $allocated[$index] = bcadd($allocated[$index], $penny, self::MONEY_SCALE); +                $allocated[$index] = (string) ($allocated[$index] + $penny);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 153,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 210,
+    "mutator": "BCMath",
+    "diff": "-                $shortfall = bcsub($shortfall, $penny, self::MONEY_SCALE); +                $shortfall = (string) ($shortfall - $penny);",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 154,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 214,
+    "mutator": "FunctionCallRemoval",
+    "diff": "-        ksort($allocated); +        ",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Allocated keys are inserted from the normalized sequential cart list; modifying existing values does not reorder keys. ksort is redundant for every accepted cart."
+  },
+  {
+    "id": 155,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 245,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($denomination, '0', self::MONEY_SCALE) <= 0) { +        if (($denomination <=> '0') <= 0) {",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 156,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 245,
+    "mutator": "LessThanOrEqualTo",
+    "diff": "-        if (bccomp($denomination, '0', self::MONEY_SCALE) <= 0) { +        if (bccomp($denomination, '0', self::MONEY_SCALE) < 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 157,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 250,
+    "mutator": "BCMath",
+    "diff": "-        $lower = bcmul($units, $denomination, self::MONEY_SCALE); +        $lower = (string) ($units * $denomination);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 158,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 251,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($lower, $total, self::MONEY_SCALE) === 0) { +        if (($lower <=> $total) === 0) {",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 159,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 255,
+    "mutator": "BCMath",
+    "diff": "-        $upper = bcadd($lower, $denomination, self::MONEY_SCALE); +        $upper = (string) ($lower + $denomination);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 160,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 256,
+    "mutator": "BCMath",
+    "diff": "-        $distanceDown = bcsub($total, $lower, self::MONEY_SCALE); +        $distanceDown = (string) ($total - $lower);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 161,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 257,
+    "mutator": "BCMath",
+    "diff": "-        $distanceUp = bcsub($upper, $total, self::MONEY_SCALE); +        $distanceUp = (string) ($upper - $total);",
+    "classification": "weak assertion",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 162,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 260,
+    "mutator": "BCMath",
+    "diff": "-        return bccomp($distanceUp, $distanceDown, self::MONEY_SCALE) <= 0 ? bcsub($upper, $total, self::MONEY_SCALE) : bcsub($lower, $total, self::MONEY_SCALE); +        return ($distanceUp <=> $distanceDown) <= 0 ? bcsub($upper, $total, self::MONEY_SCALE) : bcsub($lower, $total, self::MONEY_SCALE);",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 163,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 313,
+    "mutator": "UnwrapTrim",
+    "diff": "-        $value = trim($value); +        $value = $value;",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 164,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 314,
+    "mutator": "PregMatchRemoveCaret",
+    "diff": "-        if ($value === '' || !preg_match('/^-?\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' || !preg_match('/-?\\d+(?:\\.\\d+)?$/', $value)) {",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 165,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 314,
+    "mutator": "PregMatchRemoveDollar",
+    "diff": "-        if ($value === '' || !preg_match('/^-?\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' || !preg_match('/^-?\\d+(?:\\.\\d+)?/', $value)) {",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 166,
+    "file": "Modules/Retail/Services/PosCalculationService.php",
+    "line": 314,
+    "mutator": "LogicalOr",
+    "diff": "-        if ($value === '' || !preg_match('/^-?\\d+(?:\\.\\d+)?$/', $value)) { +        if ($value === '' && !preg_match('/^-?\\d+(?:\\.\\d+)?$/', $value)) {",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 167,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 28,
+    "mutator": "IncrementInteger",
+    "diff": "-        [$whole, $fraction] = array_pad(explode('.', $absolute, 2), 2, ''); +        [$whole, $fraction] = array_pad(explode('.', $absolute, 3), 2, '');",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Anchored decimal validation permits at most one dot; explode limits 2/3 give identical components. A third padded item is discarded by two-variable destructuring."
+  },
+  {
+    "id": 168,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 28,
+    "mutator": "IncrementInteger",
+    "diff": "-        [$whole, $fraction] = array_pad(explode('.', $absolute, 2), 2, ''); +        [$whole, $fraction] = array_pad(explode('.', $absolute, 2), 3, '');",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Anchored decimal validation permits at most one dot; explode limits 2/3 give identical components. A third padded item is discarded by two-variable destructuring."
+  },
+  {
+    "id": 169,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 29,
+    "mutator": "IncrementInteger",
+    "diff": "-        $fraction = str_pad($fraction, $scale + 1, '0'); +        $fraction = str_pad($fraction, $scale + 2, '0');",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "One guard digit already exists; padding one extra zero cannot change the kept prefix or guard digit."
+  },
+  {
+    "id": 170,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 30,
+    "mutator": "DecrementInteger",
+    "diff": "-        $kept = $scale === 0 ? '' : substr($fraction, 0, $scale); +        $kept = $scale === -1 ? '' : substr($fraction, 0, $scale);",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "At scale zero substr(...,0,0) equals the empty string. Without substring, the later bcadd truncates the same fraction to the requested scale before/while applying the same increment."
+  },
+  {
+    "id": 171,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 30,
+    "mutator": "UnwrapSubstr",
+    "diff": "-        $kept = $scale === 0 ? '' : substr($fraction, 0, $scale); +        $kept = $scale === 0 ? '' : $fraction;",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "At scale zero substr(...,0,0) equals the empty string. Without substring, the later bcadd truncates the same fraction to the requested scale before/while applying the same increment."
+  },
+  {
+    "id": 172,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 31,
+    "mutator": "UnwrapLtrim",
+    "diff": "-        $normalized = ltrim($whole, '0'); +        $normalized = $whole;",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "bcadd normalizes leading whole-part zeros in both rounding branches; removing the earlier ltrim leaves the identical canonical result."
+  },
+  {
+    "id": 173,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 33,
+    "mutator": "GreaterThan",
+    "diff": "-        if ($scale > 0) { +        if ($scale >= 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "At scale zero the added trailing decimal point is accepted and discarded by bcadd; no numeric or output-format difference remains."
+  },
+  {
+    "id": 174,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 37,
+    "mutator": "CastInt",
+    "diff": "-        if ((int) $fraction[$scale] >= 5) { +        if ($fraction[$scale] >= 5) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "The guard is one validated character 0..9. Numeric-string comparison to integer 5 equals explicit integer conversion."
+  },
+  {
+    "id": 175,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 44,
+    "mutator": "BCMath",
+    "diff": "-        if ($negative && bccomp($normalized, '0', $scale) !== 0) { +        if ($negative && ($normalized <=> '0') !== 0) {",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 176,
+    "file": "Modules/Retail/Support/DecimalMoney.php",
+    "line": 44,
+    "mutator": "DecrementInteger",
+    "diff": "-        if ($negative && bccomp($normalized, '0', $scale) !== 0) { +        if ($negative && bccomp($normalized, '0', $scale) !== -1) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 177,
+    "file": "Support/ProductQuantity.php",
+    "line": 25,
+    "mutator": "CastString",
+    "diff": "-        $raw = trim((string) $value); +        $raw = trim($value);",
+    "classification": "low-value/non-critical path",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained: exception text/coercion or redundant validation differs; no monetary bypass demonstrated. No message-only test added to improve MSI."
+  },
+  {
+    "id": 178,
+    "file": "Support/ProductQuantity.php",
+    "line": 25,
+    "mutator": "UnwrapTrim",
+    "diff": "-        $raw = trim((string) $value); +        $raw = (string) $value;",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 179,
+    "file": "Support/ProductQuantity.php",
+    "line": 31,
+    "mutator": "DecrementInteger",
+    "diff": "-        $raw = explode('.', $raw, 2)[0]; +        $raw = explode('.', $raw, 1)[0];",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Anchored validation allows at most one dot and a zero-only fractional suffix for normalization. Extra split/padding slots are unused; keeping the zero suffix preserves bccomp and integer-return coercion."
+  },
+  {
+    "id": 180,
+    "file": "Support/ProductQuantity.php",
+    "line": 31,
+    "mutator": "IncrementInteger",
+    "diff": "-        $raw = explode('.', $raw, 2)[0]; +        $raw = explode('.', $raw, 3)[0];",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Anchored validation allows at most one dot and a zero-only fractional suffix for normalization. Extra split/padding slots are unused; keeping the zero suffix preserves bccomp and integer-return coercion."
+  },
+  {
+    "id": 181,
+    "file": "Support/ProductQuantity.php",
+    "line": 32,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) { +        if (!$allowZero && bccomp($raw, '1', 1) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Accepted unsigned text is an integer. Scales 0/1 and native comparisons at 0/1 preserve order. The extra negated allowZero arm can only test a negative value, already excluded by the regex."
+  },
+  {
+    "id": 182,
+    "file": "Support/ProductQuantity.php",
+    "line": 32,
+    "mutator": "BCMath",
+    "diff": "-        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) { +        if (!$allowZero && ($raw <=> '1') < 0 || $allowZero && bccomp($raw, '0', 0) < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Accepted unsigned text is an integer. Scales 0/1 and native comparisons at 0/1 preserve order. The extra negated allowZero arm can only test a negative value, already excluded by the regex."
+  },
+  {
+    "id": 183,
+    "file": "Support/ProductQuantity.php",
+    "line": 32,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) { +        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 1) < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Accepted unsigned text is an integer. Scales 0/1 and native comparisons at 0/1 preserve order. The extra negated allowZero arm can only test a negative value, already excluded by the regex."
+  },
+  {
+    "id": 184,
+    "file": "Support/ProductQuantity.php",
+    "line": 32,
+    "mutator": "BCMath",
+    "diff": "-        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) { +        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && ($raw <=> '0') < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Accepted unsigned text is an integer. Scales 0/1 and native comparisons at 0/1 preserve order. The extra negated allowZero arm can only test a negative value, already excluded by the regex."
+  },
+  {
+    "id": 185,
+    "file": "Support/ProductQuantity.php",
+    "line": 32,
+    "mutator": "LogicalAndSingleSubExprNegation",
+    "diff": "-        if (!$allowZero && bccomp($raw, '1', 0) < 0 || $allowZero && bccomp($raw, '0', 0) < 0) { +        if (!$allowZero && bccomp($raw, '1', 0) < 0 || !$allowZero && bccomp($raw, '0', 0) < 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Accepted unsigned text is an integer. Scales 0/1 and native comparisons at 0/1 preserve order. The extra negated allowZero arm can only test a negative value, already excluded by the regex."
+  },
+  {
+    "id": 186,
+    "file": "Support/ProductQuantity.php",
+    "line": 35,
+    "mutator": "CastString",
+    "diff": "-        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) { +        if (bccomp($raw, PHP_INT_MAX, 0) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Validated integer text has no fractional digits; scale 1 adds zeros. In this weakly typed PHP file bccomp coerces the PHP_INT scalar limit to the same numeric string."
+  },
+  {
+    "id": 187,
+    "file": "Support/ProductQuantity.php",
+    "line": 35,
+    "mutator": "IncrementInteger",
+    "diff": "-        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) { +        if (bccomp($raw, (string) PHP_INT_MAX, 1) > 0) {",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "Validated integer text has no fractional digits; scale 1 adds zeros. In this weakly typed PHP file bccomp coerces the PHP_INT scalar limit to the same numeric string."
+  },
+  {
+    "id": 188,
+    "file": "Support/ProductQuantity.php",
+    "line": 35,
+    "mutator": "BCMath",
+    "diff": "-        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) { +        if (($raw <=> (string) PHP_INT_MAX) > 0) {",
+    "classification": "real coverage gap",
+    "resolution": "still visible in raw survivors",
+    "reason": "Retained conservatively: no general equivalence proof. Deterministic monetary/quantity matrices pass, but this intermediate precision/native arithmetic case remains undetected."
+  },
+  {
+    "id": 189,
+    "file": "Support/ProductQuantity.php",
+    "line": 35,
+    "mutator": "GreaterThan",
+    "diff": "-        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) { +        if (bccomp($raw, (string) PHP_INT_MAX, 0) >= 0) {",
+    "classification": "real coverage gap",
+    "resolution": "killed by Phase 2 behavioral/snapshot/matrix tests",
+    "reason": "Exact current-scope patch is present in the killed evidence, with underlying nonzero PHPUnit exit status."
+  },
+  {
+    "id": 190,
+    "file": "Support/ProductQuantity.php",
+    "line": 36,
+    "mutator": "CastInt",
+    "diff": "-        return (int) $raw; +        return $raw;",
+    "classification": "equivalent mutant",
+    "resolution": "still visible in raw survivors",
+    "reason": "The declared int return in this weakly typed file coerces accepted in-range numeric text to the identical integer, including zero-only decimal suffixes."
+  }
+]

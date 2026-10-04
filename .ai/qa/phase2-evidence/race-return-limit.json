@@ -1,0 +1,44 @@
+{
+    "signature": "7d4a56a43a1cc3141287e1b5258e2cc27a31437bf7162939ee8a9005b31fcbd9",
+    "workers": 2,
+    "independent_connections": [
+        8,
+        7
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 7,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `status` = ? and `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 8,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `status` = ? and `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 3
+        },
+        {
+            "status": "rejected",
+            "class": "Illuminate\\Validation\\ValidationException",
+            "message": "The refund quantity exceeds the remaining refundable quantity."
+        }
+    ]
+}

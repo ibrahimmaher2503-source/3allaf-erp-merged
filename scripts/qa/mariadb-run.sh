@@ -36,6 +36,7 @@ if [[ ! -f "$work/schema-ready" ]]; then
 fi
 case "$mode" in
  integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
+ hardening) "$QA_PHP" "$QA_ROOT/scripts/qa/financial-domain.php" ;;
  reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;
  compact|browser)
    if [[ "$mode" == browser ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"

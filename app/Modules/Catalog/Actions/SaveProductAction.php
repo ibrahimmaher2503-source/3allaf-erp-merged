@@ -258,7 +258,7 @@ class SaveProductAction
                 );
 
                 return $product->fresh();
-            });
+            }, attempts: 3);
         } catch (ImmutableItemCodeChangeException $exception) {
             $product = $id === null ? null : Product::query()->find($id);
 

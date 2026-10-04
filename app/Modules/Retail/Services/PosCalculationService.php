@@ -150,11 +150,13 @@ final class PosCalculationService
         }
 
         if ($tax['inclusive'] ?? false) {
-            // base already contains the tax: tax = base - base / (1 + rate)
-            $divisor = bcadd('1', bcdiv((string) $rate, '100', self::RATE_SCALE + 2), self::RATE_SCALE + 2);
-            $exclusive = bcdiv($taxableBase, $divisor, self::RATE_SCALE);
+            // Extract tax directly. Truncating the exclusive portion first can
+            // move a sub-half-cent tax across the final rounding boundary.
+            // Four-place rates and two-place bases multiply exactly at scale 6.
+            $divisor = bcadd('100', (string) $rate, self::RATE_SCALE);
+            $numerator = bcmul($taxableBase, (string) $rate, self::MONEY_SCALE + self::RATE_SCALE);
 
-            return $this->money(bcsub($taxableBase, $exclusive, self::RATE_SCALE));
+            return $this->money(bcdiv($numerator, $divisor, self::MONEY_SCALE + self::RATE_SCALE + 4));
         }
 
         return $this->money(bcdiv(bcmul($taxableBase, (string) $rate, self::RATE_SCALE), '100', self::RATE_SCALE));
@@ -190,17 +192,22 @@ final class PosCalculationService
         $allocated = [];
         $running = '0.00';
         $remainders = [];
+        $amountCents = bcmul($amount, '100', 0);
+        $weightCentsTotal = bcmul($totalWeight, '100', 0);
         foreach ($weights as $index => $weight) {
-            $exact = bcdiv(bcmul($amount, $weight, self::RATE_SCALE + 2), $totalWeight, self::RATE_SCALE + 2);
-            $floor = bcadd($exact, '0', self::MONEY_SCALE); // bcadd truncates toward zero
+            // All shares have the same denominator. Exact integer remainders
+            // retain their ordering even when large weights differ by a cent.
+            $numerator = bcmul($amountCents, bcmul($weight, '100', 0), 0);
+            $floorCents = bcdiv($numerator, $weightCentsTotal, 0);
+            $floor = bcdiv($floorCents, '100', self::MONEY_SCALE);
             $allocated[$index] = $floor;
-            $remainders[$index] = bcsub($exact, $floor, self::RATE_SCALE + 2);
+            $remainders[$index] = bcmod($numerator, $weightCentsTotal, 0);
             $running = bcadd($running, $floor, self::MONEY_SCALE);
         }
 
         $shortfall = bcsub($amount, $running, self::MONEY_SCALE);
         if (bccomp($shortfall, '0', self::MONEY_SCALE) > 0) {
-            arsort($remainders);
+            uasort($remainders, static fn (string $left, string $right): int => bccomp($right, $left, 0));
             $penny = '0.01';
             foreach (array_keys($remainders) as $index) {
                 if (bccomp($shortfall, '0', self::MONEY_SCALE) <= 0) {
