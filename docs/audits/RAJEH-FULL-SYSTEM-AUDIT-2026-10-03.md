@@ -316,3 +316,23 @@ This is the focused continuation of the conditional-handover pass; the deep audi
 **CONDITIONAL HANDOVER — with explicit remaining blockers**
 
 Remaining blocker: physical/on-site acceptance of the actual printer and connected scanner, cash drawer, payment terminal, receipt output, and offline/continuity behavior. The system-side print boundary is verified; physical success is not claimed. The client should also observe the assigned cashier’s first real shift against the corrected permissions and configured opening process on site.
+
+## Final client-acceptance closure — 2026-10-04
+
+This is the focused continuation for the three named pending UI/business issues. The deep audit, CodeGraph analysis, authenticated browser coverage, full test suites and completed UAT evidence were not repeated.
+
+**Cost price persistence:** Already fixed in the current source and verified by bounded source inspection. On final/non-draft edit, the form reads the existing `average_cost` and makes the field nullable when that stored value is a valid nonnegative number. `SaveProductAction` reuses the locked stored cost when the submitted value is blank/omitted or the actor lacks cost access. A missing cost remains required. No code change was needed for this item.
+
+**Approvals Inbox layout:** Fixed in `resources/views/platform/system/approval-inbox.blade.php`. Source/action cells now explicitly contain long identifiers with `min-w-0`, normal wrapping and `break-all` for technical action values; requester/scope cells use the same bounded wrapping and action controls remain separated. The existing RTL shell is preserved. The changed Blade view compiled successfully and the active release contains the exact reviewed file hash.
+
+**Approval action UX:** The existing backend path already authorized decisions through `Gate::authorize('decide', ...)`, executed approval immediately, and validated only `decisionReason` for rejection. The normal inbox modal no longer exposes evidence upload, evidence revocation, file state, or extra evidence metadata. The component no longer mounts `WithFileUploads` or validates an evidence field. Audit recording remains in `DecideApprovalSource`; attachment backend routes and authorization were not changed. The active route map still exposes the approval inbox and attachment boundary.
+
+**Focused verification and deployment:** `git diff --check`, bounded source assertions for all three items, and the changed Blade view cache passed. The fix was committed as `e642c18`, merged to `main` as `ff75916`, and deployed as the immutable release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final5-ff75916`. The active symlink points to final5; the deployed approval view hash matches the reviewed source. Maintenance is off, `ea-php85-php-fpm` is active, and the existing backup monitor reports healthy local backups. Public DNS was unavailable from this execution environment, so no public HTTP success is claimed; the route/cache/source boundary checks passed. The pre-deployment backup was created by the established production process and is distinct from the previously verified scheduled archive.
+
+**Other acceptance results carried forward:** Cashier/shift, documented tax and sequence configuration, isolated MariaDB accounting/inventory UAT, system-side print boundary, and scheduled-backup evidence remain as recorded in the preceding acceptance section. The scheduled `2026-10-04-02-30-04.zip` archive and healthy `backup:monitor` evidence remain verified; next daily execution remains configured at `02:30`. No genuine client record was changed.
+
+## Final readiness status
+
+**CONDITIONAL HANDOVER — with explicit remaining blockers**
+
+Remaining blockers are physical/on-site confirmation of the actual printer and connected scanner, cash drawer, payment terminal, receipt output and offline/continuity behavior, plus client observation of the assigned cashier’s first real shift/opening process. No physical-device success is claimed.
