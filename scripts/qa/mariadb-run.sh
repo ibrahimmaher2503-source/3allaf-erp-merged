@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+mode=${1:?mode is required}
+source "$(dirname "$0")/environment.sh"
+mkdir -p "$QA_ROOT/.qa-runtime"
+if [[ ${QA_REUSE_RUNTIME:-0} == 1 ]]; then
+  mapfile -t saved < "$QA_ROOT/.qa-runtime/last-db"
+  work=${saved[0]}; saved_db=${saved[1]}
+  [[ "$work" == /tmp/rajeh-qa-mariadb.* && -f "$work/schema-ready" && "$saved_db" == qa_rajh_* ]] || exit 1
+else work=$(mktemp -d /tmp/rajeh-qa-mariadb.XXXXXX); fi
+socket=$work/mariadb.sock
+cleanup() {
+  if [[ -n ${http_pid:-} ]]; then kill "$http_pid" 2>/dev/null || true; wait "$http_pid" 2>/dev/null || true; fi
+  if [[ -n ${server_pid:-} ]]; then mariadb-admin --no-defaults --protocol=socket --socket="$socket" -uroot shutdown >/dev/null 2>&1 || true; wait "$server_pid" 2>/dev/null || true; fi
+  if [[ ${QA_PRESERVE_RUNTIME:-0} == 1 ]]; then
+    printf 'Preserved QA runtime: %s; DB %s\n' "$work" "$DB_DATABASE"
+    printf '%s\n%s\n' "$work" "$DB_DATABASE" > "$QA_ROOT/.qa-runtime/last-db"
+  else rm -rf -- "$work"; fi
+}
+trap cleanup EXIT
+if [[ ${QA_REUSE_RUNTIME:-0} != 1 ]]; then mariadb-install-db --no-defaults --datadir="$work/data" --auth-root-authentication-method=normal --skip-test-db >"$work/install.log" 2>&1; fi
+mariadbd --no-defaults --innodb-flush-log-at-trx-commit=0 --sync-binlog=0 --datadir="$work/data" --socket="$socket" --skip-networking --pid-file="$work/server.pid" --log-error="$work/server.log" >"$work/stdout.log" 2>&1 &
+server_pid=$!
+for _ in $(seq 1 60); do mariadb-admin --no-defaults --protocol=socket --socket="$socket" -uroot ping >/dev/null 2>&1 && break; sleep 0.2; done
+mariadb-admin --no-defaults --protocol=socket --socket="$socket" -uroot ping >/dev/null 2>&1 || { cat "$work/server.log" >&2; exit 1; }
+export DB_DATABASE="${saved_db:-qa_rajh_$(date -u +%Y%m%d%H%M%S)_$RANDOM}" DB_USERNAME=root DB_SOCKET="$socket"
+printf 'Disposable database (before creation): %s; socket %s; networking disabled
+' "$DB_DATABASE" "$socket"
+[[ ${#DB_DATABASE} -lt 60 ]]
+if [[ ${QA_REUSE_RUNTIME:-0} != 1 ]]; then mariadb --no-defaults --protocol=socket --socket="$socket" -uroot -e "CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; fi
+export QA_STORAGE="$work/storage"
+mkdir -p "$QA_STORAGE/framework/"{cache/data,sessions,views} "$QA_STORAGE/logs" "$QA_STORAGE/app/private"
+if [[ ! -f "$work/schema-ready" ]]; then
+  "$QA_PHP" "$QA_ROOT/scripts/qa/console.php" migrate --force --no-interaction --quiet
+  touch "$work/schema-ready"
+fi
+case "$mode" in
+ integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
+ reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;
+ compact|browser)
+   if [[ "$mode" == browser ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"
+   export QA_BROWSER_ACCOUNTS="$work/accounts.json"; fi
+   export SESSION_DRIVER=file
+   port=$("$QA_PHP" -r '$s=stream_socket_server("tcp://127.0.0.1:0");echo parse_url("tcp://".stream_socket_get_name($s,false),PHP_URL_PORT);')
+   export QA_BROWSER_URL="http://127.0.0.1:$port"
+   export APP_URL="$QA_BROWSER_URL"
+   "$QA_PHP" -S "127.0.0.1:$port" "$QA_ROOT/scripts/qa/browser-router.php" >"$work/http.log" 2>&1 &
+   http_pid=$!
+   for _ in $(seq 1 50); do curl -fsS "$QA_BROWSER_URL/up" >/dev/null 2>&1 && break; sleep 0.2; done
+   node "$QA_ROOT/scripts/qa/browser-smoke.mjs"
+   ;;
+ export) "$QA_PHP" "$QA_ROOT/scripts/qa/export-check.php" ;;
+ backup) "$QA_PHP" "$QA_ROOT/scripts/qa/backup-fixture.php" "$work/backup.zip"; QA_BACKUP_ARCHIVE="$work/backup.zip" "$QA_ROOT/scripts/qa/backup-restore.sh" ;;
+ *) echo "Unknown mode: $mode" >&2; exit 2;;
+esac

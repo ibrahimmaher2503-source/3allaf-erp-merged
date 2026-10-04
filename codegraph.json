@@ -1,0 +1,16 @@
+{
+  "exclude": [
+    ".env*",
+    "storage/",
+    "uploads/",
+    "backups/",
+    "credentials/",
+    ".secrets/",
+    "logs/",
+    "vendor/",
+    "node_modules/",
+    "public/build/",
+    "bootstrap/cache/",
+    ".qa-runtime/"
+  ]
+}

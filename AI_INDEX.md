@@ -28,6 +28,10 @@ No lower-priority document may silently override a higher-priority source. Recor
 - `.ai/ERP_CHANGE_POLICY.md` is mandatory for task classification, separate source/production baselines, escalation, proportional verification, pending UI batching, immutable releases, source control, and reporting.
 - `.ai/PENDING_CHANGE_BATCH.md` is the authoritative open ledger for completed, undeployed V0/V1 changes. Read and update it for V0/V1 work, and read it before any batch-closure or release workflow.
 
+## Current QA Gate routing override — 2026-10-04
+
+The owner-directed permanent QA Gate task routes to `.ai/qa/RESUME_CHECKPOINT.md`, `docs/qa/RAJEH-QA-GATE.md`, and the dated `.ai/qa/2026-10-04-*` evidence. This scope authorizes its named focused automated checks and preserved disposable MariaDB resources only. It does not reopen completed audits, authorize production business QA/deployment, or advance business milestone gates.
+
 ## Current Routing Override — Client Feedback Remediation (Expanded Master Request)
 
 Hotfix51 product/supplier finalization is complete and deployed. For its exact closure state, read `.ai/CURRENT_TASK.md`, `.ai/CURRENT_MILESTONE.md`, and `.ai/HOTFIX51_CHECKPOINT.md`; this narrow correction does not advance the broader remediation milestone or reopen completed task scope.

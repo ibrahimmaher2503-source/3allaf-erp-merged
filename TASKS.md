@@ -29,6 +29,10 @@ Every task is executable/reviewable, delivers a visible result, and begins `Not 
 
 Reuse Laravel, Flux UI, and a single approved mature package where appropriate. Do not build authentication, permissions, audit, Excel, PDF, barcode, backup, media/upload, data table, pagination, filter/sort, picker, searchable select, modal/drawer, toast/alert, chart, sidebar, breadcrumbs, form controls, loading, or empty state from scratch when an approved capability exists. Package names/versions are not approved until the actual Laravel project is inspected. Automated tests are currently deferred; no task creates or runs automated tests.
 
+## Permanent Rajeh QA Gate — owner-directed operational task, 2026-10-04
+
+**Status:** Tooling/authorized local verification complete with explicit mutation/static/hardware limits; source publication authorized. **Class:** I4. **Traceability:** Operational QA control supporting existing acceptance evidence, not a new business requirement or a milestone gate approval. **Evidence:** `.ai/qa/RESUME_CHECKPOINT.md`, dated QA snapshots and `docs/qa/RAJEH-QA-GATE.md`. **Authorization:** Focused permanent Fast/Release PHPUnit/browser/security/mutation/database checks override the ordinary deferral for this named workflow only; reuse the preserved isolated MariaDB resources. No production transactions or deployment workflow change.
+
 ## Client Feedback Remediation — 2026-08-20 status sync
 
 The owner-expanded scope is tracked in `docs/Master Change Request — Client Feedback Remediation & Setup UX Overhaul.md` and `docs/client-feedback-remediation-checklist.md`, not as a new Phase task. The client-fix queue is **12 DONE / 3 PARTIAL / 0 ACTIVE (CF-01–CF-15)**: CF-08, CF-13, and CF-14 are PARTIAL. The expanded ledger has **8 Local/Dev slices with requirement-level PARTIAL evidence / 7 open**. The earlier **15 DONE / 0 ACTIVE** wording is retained as historical status and explicitly superseded.

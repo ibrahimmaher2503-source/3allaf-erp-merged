@@ -1,0 +1,25 @@
+{
+  "$schema": "vendor/infection/infection/resources/schema.json",
+  "source": {
+    "directories": [
+      "app/Modules/Catalog/Support",
+      "app/Modules/Purchasing/Services",
+      "app/Modules/Retail/Services",
+      "app/Modules/Retail/Support",
+      "app/Support"
+    ]
+  },
+  "phpUnit": {
+    "configDir": "scripts/qa",
+    "customPath": "scripts/qa/phpunit-infection.php"
+  },
+  "testFramework": "phpunit",
+  "mutators": {
+    "@default": true
+  },
+  "logs": {
+    "text": ".ai/qa/infection.log",
+    "summary": ".ai/qa/infection-summary.log",
+    "json": ".ai/qa/infection.json"
+  }
+}
