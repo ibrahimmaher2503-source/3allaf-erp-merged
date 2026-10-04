@@ -4,7 +4,7 @@
 - Eleven isolated financial/concurrency cases, thirteen contention races and five new invariants passed; minimal confirmed tax/allocation/deadlock runtime repairs remain undeployed.
 - Final scoped mutation 434/547 kills after one affected-only replay: raw MSI 79.34%, 113 visible survivors; reviewed MSI 94.14% after 86 explicit equivalents/unreachable guards, 27 retained survivors.
 - Controlled touched-code static baseline passed with no new errors; focused eight-file Semgrep zero findings. Previous broad audit/browser/restore results preserved.
-- Final Fast/CI and publication tracked in `.ai/qa/PHASE2_CHECKPOINT.md`; no business milestone or UAT advancement.
+- Fast PASS 104s and Release PASS WITH WARNINGS (0s preserved report assembly); actual CI/publication tracked in `.ai/qa/PHASE2_CHECKPOINT.md`; no business milestone or UAT advancement.
 
 # 2026-10-04 — Permanent QA Gate continuation
 

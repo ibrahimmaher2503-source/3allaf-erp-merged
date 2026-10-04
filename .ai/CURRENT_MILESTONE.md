@@ -1,6 +1,6 @@
 # Current Milestone — QA Hardening Phase 2 operational override
 
-Current owner-directed I4/D3 task: `feature/qa-hardening-phase2` from main `ed0e98e`. Eleven isolated financial/concurrency cases and five new invariants passed; mutation 434/547 kills, 113 raw survivors, 79.34% raw MSI and 94.14% reviewed MSI after 86 individually documented equivalent/unreachable exclusions. Final Fast/CI/publication remain tracked in `.ai/qa/PHASE2_CHECKPOINT.md`. No business milestone, Phase Gate or UAT advancement is claimed; production final5 `ff75916` remains unchanged.
+Current owner-directed I4/D3 task: `feature/qa-hardening-phase2` from main `ed0e98e`. Eleven isolated financial/concurrency cases and five new invariants passed; mutation 434/547 kills, 113 raw survivors, 79.34% raw MSI and 94.14% reviewed MSI after 86 individually documented equivalent/unreachable exclusions. Fast PASS 104s and Release PASS WITH WARNINGS (0s preserved report assembly); actual CI/publication remain tracked in `.ai/qa/PHASE2_CHECKPOINT.md`. No business milestone, Phase Gate or UAT advancement is claimed; production final5 `ff75916` remains unchanged.
 
 ## Preserved Phase 1 milestone state
 

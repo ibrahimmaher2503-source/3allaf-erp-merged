@@ -1,0 +1,111 @@
+{
+  "application_tree": "f4f0a6e6ef9ee813e5c0e3ca715689b167cd96c308a1564e777aa0ad7625200b",
+  "elapsed_seconds": 0,
+  "mode": "release",
+  "status": "PASS WITH WARNINGS",
+  "generated_at": "2026-10-04T14:18:46.017232+00:00",
+  "checks": [
+    {
+      "name": "tool self-check",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; PASS Node 20.20.2 PASS browser executable available PASS required gate tools and assets are available "
+    },
+    {
+      "name": "CodeGraph current-root/index",
+      "status": "PASS",
+      "seconds": "1",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json;   Modified:  6 files ℹ Run \"codegraph sync\" to update the index  "
+    },
+    {
+      "name": "PHP syntax changed/relevant files",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; PASS PHP syntax checked 12 changed/critical files. "
+    },
+    {
+      "name": "Larastan/PHPStan controlled baseline",
+      "status": "PASS",
+      "seconds": "10",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; {\"tool\":\"phpstan\",\"result\":\"passed\",\"errors\":0} "
+    },
+    {
+      "name": "focused critical regression suite",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json;  OK (25 tests, 126 assertions) {\"tool\":\"phpunit\",\"result\":\"passed\",\"tests\":25,\"passed\":25,\"assertions\":126,\"duration_ms\":88} "
+    },
+    {
+      "name": "isolated MariaDB integrity scanner",
+      "status": "PASS",
+      "seconds": "78",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; PASS catalog create/edit/cost/filter/identity/denial/failure regressions PASS database invariants: foreign keys, identities, pivots, statuses, header/line totals, stock ledger, payments, returns, effective prices, filter/variant separation, migrations. Preserved QA runtime: /tmp/rajeh-qa-mariadb.6hEbHC; DB qa_rajh_20261004140709_19250 "
+    },
+    {
+      "name": "queue/scheduler/runtime configuration",
+      "status": "PASS",
+      "seconds": "2",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json;  Locale .. en   PASS isolated queue/cache/session/database configuration "
+    },
+    {
+      "name": "compact browser smoke",
+      "status": "PASS",
+      "seconds": "12",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; PASS Guest mobile browser errors:  PASS browser 10 assertions: Guest login/logout, allow/deny, forms, English/Arabic, desktop/mobile, console and overflow. Preserved QA runtime: /tmp/rajeh-qa-mariadb.6hEbHC; DB qa_rajh_20261004140709_19250 "
+    },
+    {
+      "name": "strong financial matrix and boundary suite",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved final Infection initial-suite success plus affected-only additions; 3884 unique seeded oracle cases; matrix time included in mutation, not separately timed."
+    },
+    {
+      "name": "isolated financial concurrency hardening",
+      "status": "PASS",
+      "seconds": "15.55",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved 11 successful cases/13 observed races and five new invariant zeros; successful journal durations exclude schema setup and prior partial-case attempts; private DB removed."
+    },
+    {
+      "name": "isolated accounting/inventory reconciliation",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved Phase 1 evidence; unchanged browser/export/backup/security scope independently reviewed against ed0e98e; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release-last.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release.json; Preserved real supplier/product -> PO -> receipt/distribution -> approved price -> sale/payment -> return/refund -> shift closing; stock 2 -> 1 -> 2, value 20 -> 10 -> 20, payment/refund 25, idempotency/rollback/denial/over-return passed. Standalone duration not recorded."
+    },
+    {
+      "name": "export/PDF/receipt system validation",
+      "status": "PASS",
+      "seconds": "2",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved Phase 1 evidence; unchanged browser/export/backup/security scope independently reviewed against ed0e98e; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release-last.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; PASS ar 80mm receipt uses immutable sale totals PASS actual XLSX/PDF cost boundary and bilingual 58/80mm receipt rendering; physical printing remains on-site Preserved QA runtime: /tmp/rajeh-qa-mariadb.voHpmS; DB qa_rajh_20261004110243_20992 "
+    },
+    {
+      "name": "Semgrep Laravel security scan",
+      "status": "PASS",
+      "seconds": "0",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved Phase 1 evidence; unchanged browser/export/backup/security scope independently reviewed against ed0e98e; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release-last.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release.json; Preserved completed Semgrep scan: 4 PHP rules, 605 files, zero findings; standalone duration not recorded."
+    },
+    {
+      "name": "scoped critical mutation testing",
+      "status": "PASS WITH WARNINGS",
+      "seconds": "124.58",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved final full approved scope plus only newly covered default-rule replay: covered 547, killed 434, raw survivors 113, raw MSI 79.34%, reviewed exclusions 86, reviewed MSI 94.14%, errors/ignores/timeouts zero."
+    },
+    {
+      "name": "safe isolated backup/restore verification",
+      "status": "PASS",
+      "seconds": "16",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved Phase 1 evidence; unchanged browser/export/backup/security scope independently reviewed against ed0e98e; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.qa-runtime/resume-release-last.json; Preserved from /home/rajeh/worktrees/rajeh-qa-gate/.ai/qa/latest-release.json; Disposable restore database (before creation): qa_rajh_restore_1921 PASS restored populated QA database counts across seven catalog/financial/stock tables Preserved QA runtime: /tmp/rajeh-qa-mariadb.voHpmS; DB qa_rajh_20261004110243_20992 "
+    },
+    {
+      "name": "expanded Admin/User/Cashier browser journeys",
+      "status": "PASS",
+      "seconds": "23",
+      "detail": "Preserved from /home/rajeh/worktrees/rajeh-qa-hardening-phase2/.qa-runtime/phase2/release-resume.json; Preserved Phase 1 evidence; unchanged browser/export/backup/security scope independently reviewed against ed0e98e; 78 completed assertions across Admin/User/Cashier desktop/mobile: 76 preserved from the previous run, 2 failed User console checks resumed and passed. Intentional 403 document responses distinguished from unexpected browser errors."
+    }
+  ],
+  "counts": {
+    "PASS": 15,
+    "PASS WITH WARNINGS": 1,
+    "FAIL": 0,
+    "SKIPPED": 0
+  }
+}
