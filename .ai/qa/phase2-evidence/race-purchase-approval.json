@@ -1,0 +1,44 @@
+{
+    "signature": "a57f8a114a87eb97a974d2587a013a4c77e14f246dd5e474fb0be19b26061664",
+    "workers": 2,
+    "independent_connections": [
+        19,
+        20
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 19,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `purchase_invoices` where `store_id` in (select `id` from `stores`) and `purchase_invo",
+            "Progress": 0
+        },
+        {
+            "Id": 20,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `purchase_invoices` where `store_id` in (select `id` from `stores`) and `purchase_invo",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "This invoice was modified in another session. Please reload before approving."
+        },
+        {
+            "status": "success",
+            "id": null
+        }
+    ]
+}

@@ -61,6 +61,8 @@ if [[ -f "$root/.qa-runtime/last-db" ]]; then export QA_REUSE_RUNTIME=1;fi
 run_check 'queue/scheduler/runtime configuration'  "$root/scripts/qa/runtime-check.sh"
 run_check 'compact browser smoke' "$root/scripts/qa/mariadb-run.sh" compact
 if [[ "$mode" == release ]]; then
+ run_check 'strong financial matrix and boundary suite' "$QA_PHP" "$root/vendor/bin/phpunit" -c "$root/scripts/qa/phpunit.xml" --filter 'FinancialMatrixTest|FinancialBoundaryTest' --testdox
+ run_check 'isolated financial concurrency hardening' "$root/scripts/qa/hardening-run.sh"
  run_check 'isolated accounting/inventory reconciliation' "$root/scripts/qa/mariadb-run.sh" reconcile
  run_check 'export/PDF/receipt system validation' "$root/scripts/qa/mariadb-run.sh" export
  run_check 'Semgrep Laravel security scan' semgrep --config "$root/.semgrep/laravel.yml" --error --json --output "$run_dir/semgrep.json" "$root/app" "$root/routes" "$root/config"

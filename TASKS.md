@@ -29,6 +29,10 @@ Every task is executable/reviewable, delivers a visible result, and begins `Not 
 
 Reuse Laravel, Flux UI, and a single approved mature package where appropriate. Do not build authentication, permissions, audit, Excel, PDF, barcode, backup, media/upload, data table, pagination, filter/sort, picker, searchable select, modal/drawer, toast/alert, chart, sidebar, breadcrumbs, form controls, loading, or empty state from scratch when an approved capability exists. Package names/versions are not approved until the actual Laravel project is inspected. Automated tests are currently deferred; no task creates or runs automated tests.
 
+## Rajeh QA Hardening Phase 2 — owner-directed operational task, 2026-10-04
+
+Dedicated `feature/qa-hardening-phase2` from main `ed0e98e`. Named automation scope overrides historical deferred-testing policy only for this task. Scope: classify all 191 survivors; exact financial/matrix/property tests; real isolated MariaDB concurrency; new useful invariants; no new touched-code static errors; actual GitHub Fast validation; transparent minimum 85%/preferred 90% mutation effectiveness with individual equivalent exclusions; no broad repeat audit or deployment. Status/evidence: `.ai/qa/PHASE2_CHECKPOINT.md`; authoritative technical closure: `docs/qa/RAJEH-QA-GATE.md` Phase 2. This does not advance business milestones or human UAT.
+
 ## Permanent Rajeh QA Gate — owner-directed operational task, 2026-10-04
 
 **Status:** Tooling/authorized local verification complete with explicit mutation/static/hardware limits; source publication authorized. **Class:** I4. **Traceability:** Operational QA control supporting existing acceptance evidence, not a new business requirement or a milestone gate approval. **Evidence:** `.ai/qa/RESUME_CHECKPOINT.md`, dated QA snapshots and `docs/qa/RAJEH-QA-GATE.md`. **Authorization:** Focused permanent Fast/Release PHPUnit/browser/security/mutation/database checks override the ordinary deferral for this named workflow only; reuse the preserved isolated MariaDB resources. No production transactions or deployment workflow change.

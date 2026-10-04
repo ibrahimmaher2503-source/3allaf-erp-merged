@@ -1,0 +1,16 @@
+# QA Hardening Phase 2 checkpoint — 2026-10-04
+
+- Branch/worktree: `feature/qa-hardening-phase2`, `/home/rajeh/worktrees/rajeh-qa-hardening-phase2`; source baseline `ed0e98e5eb259d1e7289272e2edbf20cd22de0df`.
+- Preserve Phase 1 reports/scans/browser/restore evidence. No broad audit, installation cycle, build, production data write or deployment occurred.
+- Own excluded CodeGraph index initialized once; no rebuild/sync. Existing vendor/node_modules/build and local PCOV reused.
+- Confirmed runtime D3 fixes: direct inclusive-tax extraction; exact cent/remainder allocation; bounded whole-product transaction deadlock retry. See DEC-089. No migration.
+- Original 191 survivors inventoried/classified in `phase2-survivor-inventory.json`. Individual review manifest and raw/adjusted score summaries remain explicit; no whole Infection mutator disabled.
+- Eleven disposable MariaDB financial/concurrency scenarios passed, with successful case/race journals retained. Five new capture/refund/active-assignment invariants passed. Populated original restore/accounting evidence preserved.
+- Private socket-only populated schema `qa_rajh_20261004124454_5166` and directory `/tmp/rajeh-qa-mariadb.pZbIlM` were removed after copying non-secret evidence. Final Fast and focused experiment runtimes also removed; no retained DB/credentials.
+- Focused tax/discount/cost/snapshot/quantity/rounding/property boundaries passed. Fixed seed 20261004, independent Python Fraction oracle, no randomized runtime inputs. FAST contains representative contract examples; RELEASE contains matrices and a separate disposable concurrency fixture.
+- Scoped six-file PHPStan baseline: original twelve arithmetic entries plus three exact pre-existing product diagnostics, verified identical before/after. Focused eight-file Semgrep: zero findings. Preserve those checks.
+- Latest standalone financial boundary additions passed. Final five-file scoped Infection and the affected-only new default-rule replay completed: covered 547, killed 434, raw survivors 113, raw MSI 79.34%, reviewed exclusions 86, retained 27, adjusted MSI 94.14%; zero errors/timeouts/configured ignores. Raw and reviewed MSI must be reported separately; raw <85 remains a Release warning.
+- Final cold Fast PASS 104s: 25 tests/126 assertions in 88ms. Schema preparation dominates (78s); focused 73s I/O experiment discarded, original QA server flags restored. Release report composition, commit/push and CI/main integration remain unfinished. No Phase 2 commit/push yet.
+- GitHub installation/connection reported confirmed by owner, but this session exposes no GitHub repository/Actions tools or tool-search capability. Actual CI verification remains pending; do not report configuration/local execution as GitHub success.
+
+Continuation: retain `.qa-runtime/phase2/final-composite.json`, the completed final Fast, financial cases and score summaries; finish only CI/publication/main integration and final documentation. Never rerun the eleven passed domain cases, old broad Semgrep/browser/restore checks, or setup/index initialization.

@@ -1,3 +1,9 @@
+# Current Milestone — QA Hardening Phase 2 operational override
+
+Current owner-directed I4/D3 task: `feature/qa-hardening-phase2` from main `ed0e98e`. Eleven isolated financial/concurrency cases and five new invariants passed; mutation 434/547 kills, 113 raw survivors, 79.34% raw MSI and 94.14% reviewed MSI after 86 individually documented equivalent/unreachable exclusions. Final Fast/CI/publication remain tracked in `.ai/qa/PHASE2_CHECKPOINT.md`. No business milestone, Phase Gate or UAT advancement is claimed; production final5 `ff75916` remains unchanged.
+
+## Preserved Phase 1 milestone state
+
 # Current Milestone — QA Gate operational override
 
 Owner-authorized I4 QA tooling task on `feature/rajeh-qa-gate`, source `1ab5ab534ea76d60b2da2e732fcb6992b3fd7985`. Resumed the preserved checkpoint; completed Fast/Release tooling and only failed/unfinished validation. Fast PASS (15s final resumed invocation); Release PASS WITH WARNINGS (24s final resumed invocation), mutation MSI 53.41% with 191 survivors. Real disposable MariaDB accounting/inventory chain, populated restore, outputs, Semgrep and Admin/User/Cashier checks passed. See `.ai/qa/RESUME_CHECKPOINT.md` and `docs/qa/RAJEH-QA-GATE.md`.

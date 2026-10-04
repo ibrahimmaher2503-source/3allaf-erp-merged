@@ -89,3 +89,5 @@ testsprite_tests/tmp/config.json
 /.vite/
 
 /.codegraph/
+
+/scripts/qa/__pycache__/

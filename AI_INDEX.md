@@ -30,6 +30,8 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Current QA Gate routing override — 2026-10-04
 
+Phase 2 routes to `.ai/qa/PHASE2_CHECKPOINT.md`, `.ai/qa/phase2-survivor-inventory.json`, `.ai/qa/phase2-mutation-review.json`, and the Phase 2 section of `docs/qa/RAJEH-QA-GATE.md`. Owner explicitly authorizes its critical domain/matrix/concurrency automation, focused static/security, actual Fast CI verification and commit/push/clean main merge. No unrelated audit or production deployment follows from a QA publication.
+
 The owner-directed permanent QA Gate task routes to `.ai/qa/RESUME_CHECKPOINT.md`, `docs/qa/RAJEH-QA-GATE.md`, and the dated `.ai/qa/2026-10-04-*` evidence. This scope authorizes its named focused automated checks and preserved disposable MariaDB resources only. It does not reopen completed audits, authorize production business QA/deployment, or advance business milestone gates.
 
 ## Current Routing Override — Client Feedback Remediation (Expanded Master Request)

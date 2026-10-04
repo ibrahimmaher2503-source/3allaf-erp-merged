@@ -1,0 +1,56 @@
+{
+    "database": "qa_rajh_20261004124454_5166",
+    "completed": {
+        "shift-open": {
+            "status": "PASS",
+            "seconds": 1.483000000000000095923269327613525092601776123046875
+        },
+        "item-code": {
+            "status": "PASS",
+            "seconds": 0.01000000000000000020816681711721685132943093776702880859375
+        },
+        "stock-decrement": {
+            "status": "PASS",
+            "seconds": 1.6990000000000000657252030578092671930789947509765625
+        },
+        "stock-replay": {
+            "status": "PASS",
+            "seconds": 1.78699999999999992184029906638897955417633056640625
+        },
+        "payment-limits": {
+            "status": "PASS",
+            "seconds": 3.109999999999999875655021241982467472553253173828125
+        },
+        "partial-return-snapshots": {
+            "status": "PASS",
+            "seconds": 0.78900000000000003463895836830488406121730804443359375
+        },
+        "tax-snapshot": {
+            "status": "PASS",
+            "seconds": 0.200000000000000011102230246251565404236316680908203125
+        },
+        "purchase-approval-receive": {
+            "status": "PASS",
+            "seconds": 1.556999999999999939603867460391484200954437255859375
+        },
+        "price-activation": {
+            "status": "PASS",
+            "seconds": 0.021999999999999998723243521681069978512823581695556640625
+        },
+        "return-limit-refund-replay": {
+            "status": "PASS",
+            "seconds": 1.7689999999999999058530875117867253720760345458984375
+        },
+        "shift-close-approval": {
+            "status": "PASS",
+            "seconds": 3.124000000000000110134124042815528810024261474609375
+        }
+    },
+    "new_invariants": {
+        "capture never exceeds payable": 0,
+        "refund never exceeds original tender": 0,
+        "closed shift has no active assignment": 0,
+        "one active assignment per drawer": 0,
+        "one active assignment per cashier": 0
+    }
+}

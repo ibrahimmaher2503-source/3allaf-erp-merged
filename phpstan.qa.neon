@@ -1,10 +1,12 @@
 includes:
     - phpstan.qa-baseline.neon
+    - phpstan.phase2-product-baseline.neon
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
 parameters:
     level: 7
     paths:
+        - app/Modules/Catalog/Actions/SaveProductAction.php
         - app/Modules/Retail/Services/PosCalculationService.php
         - app/Modules/Retail/Support/DecimalMoney.php
         - app/Modules/Catalog/Support/ProductPricingContract.php

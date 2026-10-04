@@ -1,0 +1,43 @@
+{
+    "workers": 2,
+    "independent_connections": [
+        8,
+        7
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 7,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `cash_drawers` where `cash_drawers`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 8,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `cash_drawers` where `cash_drawers`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "This cashier already has an active shift."
+        },
+        {
+            "status": "success",
+            "id": 1
+        }
+    ]
+}

@@ -1,0 +1,43 @@
+{
+    "signature": "93c970ab0e8c37622a74867847e5ca25779bd8919cf6744f110f45ce9bad96b9",
+    "workers": 2,
+    "independent_connections": [
+        10,
+        11
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 10,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `price_lines` where `active_key` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 11,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `price_lines` where `active_key` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 4
+        },
+        {
+            "status": "success",
+            "id": 5
+        }
+    ]
+}

@@ -1,3 +1,11 @@
+# 2026-10-04 — QA Hardening Phase 2 focused progress
+
+- Original 191 survivors classified; exact financial contracts and 3,884 deterministic generated calculation cases added.
+- Eleven isolated financial/concurrency cases, thirteen contention races and five new invariants passed; minimal confirmed tax/allocation/deadlock runtime repairs remain undeployed.
+- Final scoped mutation 434/547 kills after one affected-only replay: raw MSI 79.34%, 113 visible survivors; reviewed MSI 94.14% after 86 explicit equivalents/unreachable guards, 27 retained survivors.
+- Controlled touched-code static baseline passed with no new errors; focused eight-file Semgrep zero findings. Previous broad audit/browser/restore results preserved.
+- Final Fast/CI and publication tracked in `.ai/qa/PHASE2_CHECKPOINT.md`; no business milestone or UAT advancement.
+
 # 2026-10-04 — Permanent QA Gate continuation
 
 Owner-authorized I4 QA tooling task on `feature/rajeh-qa-gate`, source `1ab5ab534ea76d60b2da2e732fcb6992b3fd7985`. Resumed the preserved checkpoint; completed Fast/Release tooling and only failed/unfinished validation. Fast PASS (15s final resumed invocation); Release PASS WITH WARNINGS (24s final resumed invocation), mutation MSI 53.41% with 191 survivors. Real disposable MariaDB accounting/inventory chain, populated restore, outputs, Semgrep and Admin/User/Cashier checks passed. See `.ai/qa/RESUME_CHECKPOINT.md` and `docs/qa/RAJEH-QA-GATE.md`.

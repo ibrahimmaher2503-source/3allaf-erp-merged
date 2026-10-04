@@ -1,0 +1,44 @@
+{
+    "signature": "cf10ce7ad799d38940524c3cdc5d6ab99343cc396bc455a24050b9c99e21f4a4",
+    "workers": 2,
+    "independent_connections": [
+        11,
+        10
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 10,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `pos_shifts` where `pos_shifts`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 11,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `pos_shifts` where `pos_shifts`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 1
+        },
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "Only an open shift can be submitted for closing."
+        }
+    ]
+}

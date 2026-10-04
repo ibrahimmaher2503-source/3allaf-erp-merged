@@ -1,0 +1,44 @@
+{
+    "signature": "e45bb866f0b09670ab5071d099bb7dcd6220e2314d6f1698c5765c33312226a7",
+    "workers": 2,
+    "independent_connections": [
+        7,
+        8
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 7,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `stock_transfers` where `stock_transfers`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 8,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `stock_transfers` where `stock_transfers`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 1
+        },
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "Only in-transit transfers can be received."
+        }
+    ]
+}

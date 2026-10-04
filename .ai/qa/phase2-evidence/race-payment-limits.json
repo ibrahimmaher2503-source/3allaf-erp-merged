@@ -1,0 +1,44 @@
+{
+    "signature": "e99d4dd2eb93dbf65fee7ff955243242078f9e548f3537370d7268fac8640239",
+    "workers": 2,
+    "independent_connections": [
+        13,
+        14
+    ],
+    "observed_blocked_lock_requests": 2,
+    "blocking_queries": [
+        {
+            "Id": 13,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        },
+        {
+            "Id": 14,
+            "User": "root",
+            "Host": "localhost",
+            "db": "qa_rajh_20261004124454_5166",
+            "Command": "Execute",
+            "Time": 1,
+            "State": "Statistics",
+            "Info": "select * from `sales` where `sales`.`id` = ? limit 1 for update",
+            "Progress": 0
+        }
+    ],
+    "outcomes": [
+        {
+            "status": "success",
+            "id": 1
+        },
+        {
+            "status": "rejected",
+            "class": "InvalidArgumentException",
+            "message": "An electronic payment cannot exceed the outstanding amount."
+        }
+    ]
+}
