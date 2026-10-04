@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 root=${QA_ROOT:-$(git rev-parse --show-toplevel)}
 base=${QA_BASE:-origin/main}
+git -C "$root" rev-parse --verify "$base^{commit}" >/dev/null 2>&1 || { echo "FAIL missing syntax comparison baseline: $base" >&2;exit 1; }
 mapfile -t changed < <({ git -C "$root" diff --name-only "$base" -- '*.php'; git -C "$root" ls-files --others --exclude-standard -- '*.php'; } | sort -u)
 if [[ ${#changed[@]} -eq 0 ]]; then
   changed=(app/Modules/Retail/Services/PosCalculationService.php app/Modules/Purchasing/Services/PurchaseInvoiceCalculator.php app/Modules/Catalog/Actions/SaveProductAction.php app/Modules/Retail/Actions/RetailSaleAction.php)

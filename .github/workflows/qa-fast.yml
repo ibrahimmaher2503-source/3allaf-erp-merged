@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch syntax comparison baseline
+        run: git fetch --no-tags --depth=1 origin main
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'

@@ -2,7 +2,7 @@
 
 Owner-authorized I4 task on `feature/qa-hardening-phase2`, source `ed0e98e5eb259d1e7289272e2edbf20cd22de0df`. Target corrected critical MSI >=85%, preferred >=90%; analyze all 191 preserved survivors, add meaningful financial matrices/domain/concurrency checks and verify GitHub Fast CI. Named authorization covers focused automation and native socket-only disposable MariaDB for this gate. Preserve earlier passing audit/gate evidence. No production writes, broad audit or deployment authorized absent a confirmed runtime fix requiring it.
 
-Local Phase 2: Fast PASS 104s (cold schema 78s, focused tests 88ms); Release financial/matrix/concurrency/mutation sections passed with raw mutation warnings. Raw MSI 79.34%, reviewed MSI 94.14%, 113 visible survivors, 86 individually documented exclusions, 27 retained. Disposable runtimes removed. Actual GitHub CI and clean source publication/main integration remain pending; see `.ai/qa/PHASE2_CHECKPOINT.md`.
+Local Phase 2: Fast PASS 104s (cold schema 78s, focused tests 88ms); Release financial/matrix/concurrency/mutation sections passed with raw mutation warnings. Raw MSI 79.34%, reviewed MSI 94.14%, 113 visible survivors, 86 individually documented exclusions, 27 retained. Disposable runtimes removed. Source/test implementation `7ec28a2` and dated QA evidence `de88cbf` are pushed on the task branch. Main remains `ed0e98e`; merge waits for actual CI verification. A focused CI shallow-reference fetch/strict syntax guard is included; see `.ai/qa/PHASE2_CHECKPOINT.md`.
 
 ## Preserved Phase 1 closure
 
