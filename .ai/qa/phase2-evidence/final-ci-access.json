@@ -1,0 +1,10 @@
+{
+  "checked_at_utc": "2026-10-04T15:40:26.402740+00:00",
+  "workflow_branch_head": "71902dc",
+  "github_actions_tools_exposed": false,
+  "github_plugin_installed": false,
+  "gh_available": false,
+  "environment_token_present": false,
+  "result": "UNVERIFIED_ACCESS_UNAVAILABLE",
+  "api_http_status": 404
+}

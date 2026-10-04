@@ -1,0 +1,122 @@
+{
+  "closed_at_utc": "2026-10-04T15:53:51.081758+00:00",
+  "delivery_result": "Runtime deployed and main integrated; GitHub CI verification externally unavailable",
+  "main_runtime_merge_commit": "3821af553daca932e36c8a49ab78f911e1cf2379",
+  "report_publication": "Subsequent QA/report-only closure commit is fast-forwarded to main; final exact publication tip is in Git history and local final-publication receipt",
+  "production_application_commit": "3821af553daca932e36c8a49ab78f911e1cf2379",
+  "production_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5",
+  "production_version": "0.1.22-qa-phase2",
+  "rollback_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final5-ff75916",
+  "mutation": {
+    "covered": 547,
+    "killed": 434,
+    "raw_msi": 79.34,
+    "reviewed_msi": 94.14,
+    "raw_survivors": 113,
+    "reviewed_exclusions": 86,
+    "equivalent": 75,
+    "unreachable": 11,
+    "retained": 27,
+    "precision_comparison_gaps": 12,
+    "message_coercion": 15,
+    "no_additional_exclusions": true,
+    "maximum_raw_if_all_retained_killed": 84.28
+  },
+  "concurrency": {
+    "observed_races": 13,
+    "result": "PASS preserved",
+    "financial_scenarios": 11,
+    "new_invariants": 5
+  },
+  "properties": {
+    "preserved_seeded_fraction_cases": 3884,
+    "new_fraction_cases": 54,
+    "total_fraction_cases": 3938,
+    "new_allocation_scenario_lines": 17,
+    "new_test_methods": 3,
+    "new_assertions": 57,
+    "result": "PASS",
+    "affected_only_mutant_replays": 6,
+    "new_kills": 0
+  },
+  "fast": {
+    "result": "PASS preserved",
+    "seconds": 104,
+    "rerun": false
+  },
+  "release": {
+    "result": "PASS WITH WARNINGS preserved plus new precision suite",
+    "original_report_assembly_seconds": 0,
+    "mutation_seconds": 124.58,
+    "financial_case_seconds": 15.55,
+    "final_affected_precision_replay_seconds": 1.493,
+    "full_rerun": false
+  },
+  "github_ci": {
+    "checked_at_utc": "2026-10-04T15:40:26.402740+00:00",
+    "workflow_branch_head": "71902dc",
+    "github_actions_tools_exposed": false,
+    "github_plugin_installed": false,
+    "gh_available": false,
+    "environment_token_present": false,
+    "result": "UNVERIFIED_ACCESS_UNAVAILABLE",
+    "api_http_status": 404
+  },
+  "static_security": {
+    "controlled_phpstan": "PASS preserved; no new errors",
+    "preexisting_scoped_findings": 15,
+    "historical_broad_diagnostics": 1404,
+    "focused_semgrep_findings": 0,
+    "focused_semgrep_scanned_files": 8,
+    "rescanned": false
+  },
+  "runtime_fixes": [
+    {
+      "defect": "POS inclusive-tax extraction truncated the exclusive portion first: 0.04 at 14% incorrectly produced tax 0.01 instead of 0.00",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "module": "Retail",
+      "commit": "7ec28a2661d73ca267e3265587f018c7fe22efe7",
+      "production_impact": "Correct tax snapshots on new inclusive-tax sales; invoice payable and existing snapshots unchanged",
+      "deployment_required": true,
+      "deployed": true,
+      "migration_required": false,
+      "setting_or_environment_change_required": false,
+      "cache_action": "Established final-root optimize preparation",
+      "service_action": "Established ea-php85 PHP-FPM reload"
+    },
+    {
+      "defect": "Six-place remainder truncation tied close large weights and assigned a one-cent discount to the wrong line",
+      "file": "app/Modules/Retail/Services/PosCalculationService.php",
+      "module": "Retail",
+      "commit": "7ec28a2661d73ca267e3265587f018c7fe22efe7",
+      "production_impact": "Exact integer-cent largest-remainder allocation preserves stable ties and correct new line allocations",
+      "deployment_required": true,
+      "deployed": true,
+      "migration_required": false,
+      "setting_or_environment_change_required": false,
+      "cache_action": "Established final-root optimize preparation",
+      "service_action": "Established ea-php85 PHP-FPM reload"
+    },
+    {
+      "defect": "Concurrent product saves contending on a supplier sequence could return SQLSTATE 40001/1213 instead of completing",
+      "file": "app/Modules/Catalog/Actions/SaveProductAction.php",
+      "module": "Catalog",
+      "commit": "7ec28a2661d73ca267e3265587f018c7fe22efe7",
+      "production_impact": "Laravel retries the entire product transaction up to three attempts; codes/barcodes/audits remain atomic",
+      "deployment_required": true,
+      "deployed": true,
+      "migration_required": false,
+      "setting_or_environment_change_required": false,
+      "cache_action": "Established final-root optimize preparation",
+      "service_action": "Established ea-php85 PHP-FPM reload"
+    }
+  ],
+  "production_smoke": "PASS; enforced read-only SQL/in-memory existing-user auth; preserved passed rows plus failed-helper tail resume",
+  "remaining_limits": [
+    "physical printer/scanner/cash drawer/payment terminal",
+    "real offline/client acceptance",
+    "first live cashier shift",
+    "retained precision/message/coercion mutants and controlled/historical static debt"
+  ],
+  "github_follow_up": "Verify actual GitHub Fast against 71902dc or current source when repository/Actions tools or authenticated API access are exposed; no pass is claimed."
+}

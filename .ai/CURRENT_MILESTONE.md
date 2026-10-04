@@ -1,3 +1,11 @@
+# Current Milestone — Phase 2 runtime closure
+
+Owner-authorized end-to-end closure integrated main at `3821af553daca932e36c8a49ab78f911e1cf2379` and deployed three confirmed runtime fixes to`/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5`, version 0.1.22-qa-phase2. Compact read-only smoke PASS; initial helper PATH failure recovered to final5, then only unfinished smoke tail resumed. Exact rollback preserved. No migration, production business fixture/write, grant/password change, repeated broad audit/Gate or client UAT advancement.
+
+Mutation final79.34% raw / 94.14% reviewed,113 raw survivors, 86 documented equivalent/unreachable,27 retained (12 precision/comparison, 15 message/coercion). Thirteen races and3,884 original rational cases preserved PASS;54 new rational cases plus allocation test PASS(3 tests / 57 assertions),six affected mutant replays yield no new kills. Original Fast PASS 104 s and Release PASS WITH WARNINGS preserved. Actual GitHub Fast remains unverified due unavailable repository/Actions tools/CLI/token and unauthenticated 404; owner explicitly authorized integration with that external-only limitation. See `.ai/qa/phase2-evidence/final-closure.json` and`docs/qa/RAJEH-QA-GATE.md`. Report-only publication follows runtime merge; production identity remains the immutable runtime merge.
+
+## Preserved prior Phase 2 checkpoint
+
 # Current Milestone — QA Hardening Phase 2 operational override
 
 Current owner-directed I4/D3 task: `feature/qa-hardening-phase2` from main `ed0e98e`. Eleven isolated financial/concurrency cases and five new invariants passed; mutation 434/547 kills, 113 raw survivors, 79.34% raw MSI and 94.14% reviewed MSI after 86 individually documented equivalent/unreachable exclusions. Fast PASS 104s and Release PASS WITH WARNINGS (0s preserved report assembly); actual CI/publication remain tracked in `.ai/qa/PHASE2_CHECKPOINT.md`. No business milestone, Phase Gate or UAT advancement is claimed; production final5 `ff75916` remains unchanged.

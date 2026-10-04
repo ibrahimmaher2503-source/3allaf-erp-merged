@@ -1,0 +1,114 @@
+{
+  "result": "PASS",
+  "application_commit": "3821af553daca932e36c8a49ab78f911e1cf2379",
+  "version": "0.1.22-qa-phase2",
+  "active_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5",
+  "rollback_release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-audit-final5-ff75916",
+  "journal": "/var/lib/toyjoy/qa-phase2-3821af5",
+  "health": {
+    "result": "PASS",
+    "release": "/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5",
+    "identity": {
+      "commit": "3821af553daca932e36c8a49ab78f911e1cf2379",
+      "tree": "756badffe9b5dfc6e903383044b48281717b083f",
+      "version": "0.1.22-qa-phase2"
+    },
+    "version": "0.1.22-qa-phase2",
+    "maintenance": "OFF",
+    "failed_jobs": 0,
+    "queued_jobs": 0,
+    "schedules_registered": true,
+    "persisted_product_costs_read": 4,
+    "product_save_and_approval_mutations": "Preserved isolated MariaDB QA; not performed against production",
+    "financial_runtime_hashes": {
+      "pos": "34475628da58e9713c8ab13269d09f5149d3156f658da8a17aebc302f2a612f6",
+      "product": "cb594ea435fa1b54461eb84dfc6fcbd48ea5b2fdc8f94b13ee5ce5b02b9c32c2"
+    }
+  },
+  "authenticated_read_routes": [
+    {
+      "route": "/admin",
+      "actor_id": 1,
+      "status": 200,
+      "expected": 200,
+      "bytes": 197436,
+      "read_only_transaction": true,
+      "result": "PASS"
+    },
+    {
+      "route": "/catalog/products/create",
+      "actor_id": 1,
+      "status": 200,
+      "expected": 200,
+      "bytes": 235494,
+      "read_only_transaction": true,
+      "result": "PASS"
+    },
+    {
+      "route": "/approvals",
+      "actor_id": 1,
+      "status": 200,
+      "expected": 200,
+      "bytes": 206484,
+      "read_only_transaction": true,
+      "result": "PASS"
+    },
+    {
+      "route": "/inventory/balances",
+      "actor_id": 1,
+      "status": 200,
+      "expected": 200,
+      "bytes": 172218,
+      "read_only_transaction": true,
+      "result": "PASS"
+    },
+    {
+      "route": "/pos/shift",
+      "actor_id": 1,
+      "status": 200,
+      "expected": 200,
+      "bytes": 69553,
+      "read_only_transaction": true,
+      "result": "PASS"
+    },
+    {
+      "route": "/admin/translations",
+      "actor_id": 3,
+      "status": 403,
+      "expected": 403,
+      "bytes": 2436,
+      "read_only_transaction": true,
+      "result": "PASS"
+    }
+  ],
+  "http": [
+    "/up 200",
+    "/login 200",
+    "/admin 302"
+  ],
+  "services": [
+    "active",
+    "active"
+  ],
+  "cron": [
+    "* * * * * cd /home/rajeh/laravel && /usr/local/bin/php artisan schedule:run >/dev/null 2>&1",
+    "* * * * * flock -n /home/rajeh/shared/toyjoy/queue-worker.lock sh -c 'cd /home/rajeh/laravel && /usr/local/bin/php artisan queue:work database --queue=reports,default --stop-when-empty --sleep=1 --tries=3 --max-time=50' >/dev/null 2>&1"
+  ],
+  "backup_monitor": "The TOY & JOY backups on the local disk are considered healthy.",
+  "new_errors": {
+    "new_bytes": 10235,
+    "new_error_or_critical_count": 0,
+    "result": "PASS"
+  },
+  "fresh_backup_result": "PASS; verified encrypted database-only archive before activation",
+  "first_attempt": "Automatic final5 rollback after smoke helper root PATH lacked rg; completed application/HTTP/service rows retained",
+  "resume": "Only unfinished cron/backup-monitor/recent-log checks resumed; unchanged artifact/caches reused",
+  "production_business_fixtures_created": 0,
+  "production_sessions_persisted": 0,
+  "production_password_role_grant_changes": 0,
+  "migrations_run": 0,
+  "frontend_builds": 0,
+  "dependency_installs": 0,
+  "full_release_gate_reruns": 0,
+  "write_path_scope": "Product cost/save and approval financial write effects verified in preserved isolated MariaDB; production smoke is read-only."
+}

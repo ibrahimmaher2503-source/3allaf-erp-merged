@@ -1,3 +1,11 @@
+# Current Task — Phase 2 runtime closure
+
+Owner-authorized end-to-end closure integrated main at `3821af553daca932e36c8a49ab78f911e1cf2379` and deployed three confirmed runtime fixes to`/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5`, version 0.1.22-qa-phase2. Compact read-only smoke PASS; initial helper PATH failure recovered to final5, then only unfinished smoke tail resumed. Exact rollback preserved. No migration, production business fixture/write, grant/password change, repeated broad audit/Gate or client UAT advancement.
+
+Mutation final79.34% raw / 94.14% reviewed,113 raw survivors, 86 documented equivalent/unreachable,27 retained (12 precision/comparison, 15 message/coercion). Thirteen races and3,884 original rational cases preserved PASS;54 new rational cases plus allocation test PASS(3 tests / 57 assertions),six affected mutant replays yield no new kills. Original Fast PASS 104 s and Release PASS WITH WARNINGS preserved. Actual GitHub Fast remains unverified due unavailable repository/Actions tools/CLI/token and unauthenticated 404; owner explicitly authorized integration with that external-only limitation. See `.ai/qa/phase2-evidence/final-closure.json` and`docs/qa/RAJEH-QA-GATE.md`. Report-only publication follows runtime merge; production identity remains the immutable runtime merge.
+
+## Preserved prior Phase 2 checkpoint
+
 # Current Task — QA Hardening Phase 2
 
 Owner-authorized I4 task on `feature/qa-hardening-phase2`, source `ed0e98e5eb259d1e7289272e2edbf20cd22de0df`. Target corrected critical MSI >=85%, preferred >=90%; analyze all 191 preserved survivors, add meaningful financial matrices/domain/concurrency checks and verify GitHub Fast CI. Named authorization covers focused automation and native socket-only disposable MariaDB for this gate. Preserve earlier passing audit/gate evidence. No production writes, broad audit or deployment authorized absent a confirmed runtime fix requiring it.
