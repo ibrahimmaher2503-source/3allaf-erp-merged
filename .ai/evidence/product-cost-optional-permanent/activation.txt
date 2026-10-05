@@ -1,0 +1,4 @@
+active=/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-cost-optional-1d27f7b
+maintenance=off
+activation=success
+compact_smoke=PASS

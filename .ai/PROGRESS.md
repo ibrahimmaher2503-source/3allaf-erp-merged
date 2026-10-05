@@ -1,6 +1,6 @@
 # 2026-10-05 — Permanent optional Product Card cost
 
-Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Commit/push/clean main merge/deployment/compact smoke remain next. No business milestone or full Gate advancement.
+Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Runtime `1d27f7b` committed/pushed and cleanly integrated/pushed to main; production `0.1.22-cost-optional` active, compact smoke PASS. Prior release preserved for rollback; disposable DB, credentials and sessions removed. Report-only closure publication follows without another deployment. No business milestone or full Gate advancement.
 
 # 2026-10-04 — Phase 2 end-to-end runtime closure
 

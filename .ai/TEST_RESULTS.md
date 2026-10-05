@@ -503,3 +503,6 @@ New Release-only precision classPASS 3 tests / 57 assertions:54 new Fraction cas
 ## 2026-10-05 — Product Card optional-cost focused hotfix
 
 Authorized isolated database `qa_rajh_20261005173119_24094`. A–F PASS through backend/browser/readback and real purchase/receiving/valuation snapshots; costless-role hidden field/create/edit PASS. PHPUnit 3 tests/24 assertions PASS; affected syntax/Blade PASS; PHPStan delta PASS, zero new and nine pre-existing findings. Real import blank/valid/invalid cost and pending-cost opening rejection PASS. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`. No full audit/Gate or production business QA write.
+
+
+Production closure: `0.1.22-cost-optional` / `1d27f7b`, compact smoke PASS once after recovery from a pre-smoke helper mode failure. Identity, optional runtime/compiled rule, existing-cost reads, six authenticated read-only routes, HTTP/services/jobs/schedules/backup and zero new critical/error log entries passed. No production business QA write. Disposable DB/credentials/sessions removed; receipts remain under the focused evidence path.

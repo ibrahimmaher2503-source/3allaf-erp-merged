@@ -20,6 +20,10 @@ Current named authorization includes the focused QA PHPUnit/Playwright/Semgrep/I
 
 ## Preserved previous state
 
+# 2026-10-05 — Product Card optional-cost operational closure
+
+Owner-authorized runtime correction deployed as `0.1.22-cost-optional`, application `1d27f7b33b1536c10ddc7083a5eac452ce1b9c06`, at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-cost-optional-1d27f7b`. Focused A–F and compact production smoke PASS. No schema/accounting rewrite or business milestone/UAT/Phase Gate advancement. Source main includes the runtime commit; report-only publication is distinct from this immutable application identity. Prior milestone records below remain historical.
+
 # Current Milestone
 
 ## 2026-10-03 — Final Full-System Audit Closure

@@ -26,4 +26,12 @@ Livewire independently required average_cost on final saves unless a previous sa
 
 No full Deep Audit, Fast Gate or Release Gate ran. No migration, dependency installation, frontend asset build, historical accounting rewrite, production business transaction or permission change.
 
-Production release/commit and compact smoke receipt are appended after activation. Private database, credentials and sessions are removed after final readback.
+## Production delivery
+
+Runtime `1d27f7b33b1536c10ddc7083a5eac452ce1b9c06` committed/pushed on `hotfix/product-cost-optional-permanent`, cleanly fast-forwarded to main and pushed. Active release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-cost-optional-1d27f7b`, version `0.1.22-cost-optional`. Exact rollback is the previous `0.1.22-qa-phase2` release at `3821af5`.
+
+Immutable artifact authenticated against 1,018 runtime source files and a 14,415-file manifest; existing vendor/assets reused. Fresh encrypted database-only backup verified. Final-root cache/link/autoload/version and compiled Livewire optional-cost rule passed. First activation automatically rolled back before any smoke row because the helper was unreadable by the runtime account; corrected mode to 0644 and reused the unchanged artifact/caches. No source repair, artifact rebuild, repeated backup or passing-check rerun.
+
+Completed compact production smoke PASS once: exact identity, maintenance OFF, health/login 200 and guest admin 302; six authenticated read-only allow/deny routes; optional runtime contract; five stored costs read; failed/queued jobs zero; FPM/cron and queue/scheduler/backup schedules healthy; backup monitor healthy; new critical/error count zero. No persisted production authentication session, password/role/grant change, fixture, Product Card/financial QA write or migration.
+
+Disposable database, credentials and browser sessions removed after final readback. Receipts: `artifact.json`, `activation.txt`, `smoke-*` and deployment/resume helpers. Report-only publication does not change or rebuild this application release.

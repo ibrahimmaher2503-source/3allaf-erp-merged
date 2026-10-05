@@ -1,0 +1,3 @@
+result=ROLLED_BACK
+reason=smoke-helper-not-readable-by-runtime-account
+rollback=/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5
