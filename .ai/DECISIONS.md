@@ -208,3 +208,12 @@ Administrators with `company_settings.edit` may override only keys collected fro
 ## DEC-090 — Phase 2 end-to-end closure and runtime release authorization (2026-10-04)
 
 Explicit owner continuation now authorizes a clean history-preserving main merge when the only CI blocker is external API access, and deployment of the three confirmed application fixes through the established immutable release/backup/rollback workflow. This supersedes the earlier CI-required merge hold and undeployed-only scope for this named closure. No production fixtures, destructive QA, password/role/grant changes or unrelated services are authorized. New precision review keeps all twelve gaps and fifteen message/coercion survivors counted; no new exclusions or whole-scope mutation run. Fast remains lightweight: the new three-method precision suite is Release-only. Production smoke uses read-only routes and existing identities; writable financial/product/approval effects retain their actual isolated MariaDB evidence rather than inventing production test transactions.
+
+
+## DEC-091 — Permanent optional Product Card cost (2026-10-05)
+
+**Status: Approved — explicit owner business-rule correction.** Cost must never be required to save, finalize, activate or maintain a Product Card. Valid authorized input persists; omitted/blank input preserves any locked saved cost; new products may retain genuine null. No hidden cost input is required and no existing cost is silently cleared or replaced by zero. Existing cost-view/edit permission boundaries remain unchanged.
+
+ProductPricingContract is the authoritative optional cost validator shared by form, final/draft save and Product Card workbook import. Purchasing/receiving explicit cost, original snapshots, valuation and opening-inventory cost safety remain their existing independent rules. Existing nullable master schema and historical snapshots are unchanged.
+
+Owner authorizes only focused A–F tests, affected static analysis, browser save/reload, task branch commit/push, clean main integration, established production deployment and one compact smoke. The owner's explicit follow-up authorizes the socket-only disposable native MariaDB workflow for this named hotfix because XAMPP is absent. Historical/general testing and database directives remain outside this scope. No broad audit/Gate, migration or production business fixture is authorized or performed. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`.

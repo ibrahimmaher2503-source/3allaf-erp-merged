@@ -1,3 +1,11 @@
+# Current Task — Permanent optional Product Card cost
+
+Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.
+
+Focused backend/browser A–F, direct DB readback, import, pending-cost opening safety, invalid/stale/forged input, 3 PHPUnit tests/24 assertions, syntax/Blade and affected static delta PASS. Nine pre-existing static findings remain, zero new. No full Audit/Fast/Release Gate. Commit/push/clean main integration and established production release are the remaining authorized delivery steps. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`. This operational correction advances no business milestone or UAT gate.
+
+## Preserved previous task
+
 # Current Task — Phase 2 runtime closure
 
 Owner-authorized end-to-end closure integrated main at `3821af553daca932e36c8a49ab78f911e1cf2379` and deployed three confirmed runtime fixes to`/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5`, version 0.1.22-qa-phase2. Compact read-only smoke PASS; initial helper PATH failure recovered to final5, then only unfinished smoke tail resumed. Exact rollback preserved. No migration, production business fixture/write, grant/password change, repeated broad audit/Gate or client UAT advancement.

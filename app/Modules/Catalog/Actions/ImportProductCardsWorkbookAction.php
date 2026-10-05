@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\ProductOptionValue;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,7 @@ final class ImportProductCardsWorkbookAction
                     $brand = $source['brand_code'] === '' ? null : Brand::query()->where('code', strtoupper($source['brand_code']))->where('status', 'active')->first(); if ($source['brand_code'] !== '' && ! $brand) $errors[] = __('Unknown or inactive brand code.');
                     $supplier = $source['supplier_code'] === '' ? null : Supplier::query()->where('code', strtoupper($source['supplier_code']))->where('status', 'active')->where(fn ($query) => $query->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id)))->first(); if ($mode === 'local' && ! $supplier) $errors[] = __('Unknown, inactive, or out-of-scope supplier code.');
                     $filterValues = $this->filterValues($source['filter_codes'], $errors);
-                    if (! preg_match('/^\d+(?:\.\d{1,4})?$/', $source['unit_cost']) || ! preg_match('/^\d+(?:\.\d{1,4})?$/', $source['base_consumer_price'])) $errors[] = __('Unit cost and base consumer price must be valid non-negative amounts.');
+                    try { app(ProductPricingContract::class)->forProductCard($source['unit_cost'], $source['base_consumer_price']); } catch (\InvalidArgumentException $exception) { $errors[] = $exception->getMessage(); }
                     if (! in_array($source['product_type'], ['standard', 'composite', 'service'], true)) $errors[] = __('Product type must be standard, composite, or service.');
                     if ($errors) { $rejections[] = [$number, ...array_values($source), implode(' | ', array_unique($errors))]; continue; }
                     $staged[] = compact('source', 'category', 'brand', 'supplier', 'filterValues', 'mode', 'barcode', 'model');

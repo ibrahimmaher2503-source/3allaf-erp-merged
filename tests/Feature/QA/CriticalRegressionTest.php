@@ -62,10 +62,26 @@ final class CriticalRegressionTest extends TestCase
         $this->expectException(\UnexpectedValueException::class);ProductQuantity::format('1.2');
     }
     public function test_boundary_product_prices_reject_invalid_cost(): void {
-        foreach (['',null,'-1','1.00001','bad'] as $input) {
+        foreach (['-1','1.00001','bad'] as $input) {
             try {(new ProductPricingContract)->forProductCard($input,'25');self::fail('invalid cost accepted');} catch(InvalidArgumentException $e) {self::assertNotEmpty($e->getMessage());}
         }
         self::assertSame('0.0000',(new ProductPricingContract)->explicitConsumerPrice('0'));
+    }
+    public function test_product_card_cost_is_optional_and_uses_one_validation_contract(): void {
+        $contract = new ProductPricingContract;
+        foreach ([null, '', '  '] as $cost) {
+            self::assertSame(['average_cost'=>null,'sale_price'=>'25.0000'], $contract->forProductCard($cost, '25'));
+            self::assertFalse(\Illuminate\Support\Facades\Validator::make(['cost'=>$cost], ['cost'=>$contract->costRules()])->fails());
+        }
+        foreach (['0', ' 12.34 ', '10.1234'] as $cost) {
+            self::assertSame(bcadd(trim($cost), '0', 4), $contract->optionalCost($cost));
+            self::assertFalse(\Illuminate\Support\Facades\Validator::make(['cost'=>$cost], ['cost'=>$contract->costRules()])->fails());
+        }
+        foreach (['-1', '1.00001', 'bad', '1e2'] as $cost) {
+            self::assertTrue(\Illuminate\Support\Facades\Validator::make(['cost'=>$cost], ['cost'=>$contract->costRules()])->fails());
+        }
+        $this->expectException(InvalidArgumentException::class);
+        $contract->forProductCard(null, null);
     }
     public function test_boundary_purchase_amount_discount_and_zero_tax(): void {
         $c=new PurchaseInvoiceCalculator;

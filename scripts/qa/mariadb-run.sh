@@ -35,6 +35,17 @@ if [[ ! -f "$work/schema-ready" ]]; then
   touch "$work/schema-ready"
 fi
 case "$mode" in
+ product-cost)
+   if [[ ${QA_COST_VERIFY_ONLY:-0} == 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/product-cost-regression.php" verify-browser; exit; fi
+   if [[ ${QA_COST_BROWSER_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/product-cost-regression.php"; fi
+   export SESSION_DRIVER=file
+   port=$("$QA_PHP" -r '$s=stream_socket_server("tcp://127.0.0.1:0");echo parse_url("tcp://".stream_socket_get_name($s,false),PHP_URL_PORT);')
+   export QA_BROWSER_URL="http://127.0.0.1:$port" APP_URL="http://127.0.0.1:$port"
+   "$QA_PHP" -S "127.0.0.1:$port" "$QA_ROOT/scripts/qa/browser-router.php" >"$work/http.log" 2>&1 &
+   http_pid=$!
+   for _ in $(seq 1 50); do curl -fsS "$QA_BROWSER_URL/up" >/dev/null 2>&1 && break; sleep 0.2; done
+   node "$QA_ROOT/scripts/qa/product-cost-browser.mjs"
+   ;;
  integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
  hardening) "$QA_PHP" "$QA_ROOT/scripts/qa/financial-domain.php" ;;
  reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;

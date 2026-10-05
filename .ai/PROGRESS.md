@@ -1,3 +1,7 @@
+# 2026-10-05 — Permanent optional Product Card cost
+
+Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Commit/push/clean main merge/deployment/compact smoke remain next. No business milestone or full Gate advancement.
+
 # 2026-10-04 — Phase 2 end-to-end runtime closure
 
 Main runtime merge`3821af553daca932e36c8a49ab78f911e1cf2379` pushed; three fixes deployed in0.1.22-qa-phase2. Compact enforced-read-only smoke PASS, no failed jobs/new critical errors; exact final5 rollback preserved. Failed-helper tail alone resumed after automatic recovery. Final MSI 79.34 / 94.14 raw/reviewed,113/27 raw / retained survivors, 86 unchanged exclusions; new precision testsPASS with no new kills. Thirteen races and3,884 matrices preserved;54 new rational cases PASS. Actual GitHub CI unverified solely for external access; latest owner instruction permits integration. No business milestone/UAT advancement. Closure evidence:`.ai/qa/phase2-evidence/final-closure.json`.

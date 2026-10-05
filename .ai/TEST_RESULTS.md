@@ -498,3 +498,8 @@ Native disposable DB `qa_rajh_20261004110243_20992`, socket-only; restore identi
 ## 2026-10-04 — Phase 2 final scoped precision and production smoke
 
 New Release-only precision classPASS 3 tests / 57 assertions:54 new Fraction cases plus17-line allocation scenario. Only six affected survivor replays performed,1.493 s,zero new kills; scores79.34% raw / 94.14% reviewed unchanged, no new exclusions. Prior13 races,3,884 matrices,Fast104 s,Release/static/security/browser/restore checks preserved, not rerun. Compact production enforced-read-only smokePASS; original passing rows preserved after automatic rollback for root helper PATH, only unfinished cron/backup-monitor/log checks resumed. HTTPSup/login 200,guest admin 302,existing admin form/inbox/inventory/POS read200,normal-user403,four persisted costs read,queue/failed jobs 0,services/cron/schedules present,backup healthy,newerror/critical logcount0. No product/approval production write claim; isolated MariaDB financial effects retained. Actual GitHub CI unverified due unavailable authenticated access. Evidence:`.ai/qa/phase2-evidence/final-production-smoke.json`.
+
+
+## 2026-10-05 — Product Card optional-cost focused hotfix
+
+Authorized isolated database `qa_rajh_20261005173119_24094`. A–F PASS through backend/browser/readback and real purchase/receiving/valuation snapshots; costless-role hidden field/create/edit PASS. PHPUnit 3 tests/24 assertions PASS; affected syntax/Blade PASS; PHPStan delta PASS, zero new and nine pre-existing findings. Real import blank/valid/invalid cost and pending-cost opening rejection PASS. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`. No full audit/Gate or production business QA write.

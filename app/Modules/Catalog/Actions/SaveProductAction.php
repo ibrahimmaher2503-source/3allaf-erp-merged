@@ -107,8 +107,8 @@ class SaveProductAction
                 // Blank or omitted cost on edit retains the locked saved value.
                 // A caller without cost access cannot supply a replacement cost.
                 $pricingData = $data;
-                if ($product !== null && (blank($data['average_cost'] ?? null) || ! $actor->hasPermission('products_categories_brands.cost_view'))) {
-                    $pricingData['average_cost'] = $product->average_cost;
+                if (! $actor->hasPermission('products_categories_brands.cost_view') || blank($data['average_cost'] ?? null)) {
+                    $pricingData['average_cost'] = $product?->average_cost;
                     unset($data['average_cost']);
                 }
                 $pricing = $saveAsDraft
@@ -351,14 +351,9 @@ class SaveProductAction
             return ['average_cost' => null, 'sale_price' => null];
         }
 
-        $validated = app(ProductPricingContract::class)->forProductCard(
-            $averageCost === null || $averageCost === '' ? 0 : $averageCost,
-            $salePrice === null || $salePrice === '' ? 0 : $salePrice,
-        );
-
         return [
-            'average_cost' => $averageCost === null || $averageCost === '' ? null : $validated['average_cost'],
-            'sale_price' => $salePrice === null || $salePrice === '' ? null : $validated['sale_price'],
+            'average_cost' => app(ProductPricingContract::class)->optionalCost($averageCost),
+            'sale_price' => blank($salePrice) ? null : app(ProductPricingContract::class)->explicitConsumerPrice($salePrice),
         ];
     }
 

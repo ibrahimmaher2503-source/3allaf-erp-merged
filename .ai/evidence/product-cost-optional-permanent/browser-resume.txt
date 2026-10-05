@@ -1,0 +1,56 @@
+Disposable database (before creation): qa_rajh_20261005173119_24094; socket /tmp/rajeh-qa-mariadb.Iq7RKP/mariadb.sock; networking disabled
+PASS /login renders
+PASS /catalog/products/1/edit renders
+PASS A cost has no required attribute
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/1/edit renders
+PASS A other-field save/reload
+PASS A exact saved cost/null reload
+PASS /catalog/products/7/edit renders
+PASS B cost has no required attribute
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/7/edit renders
+PASS B other-field save/reload
+PASS B exact saved cost/null reload
+PASS /catalog/products/3/edit renders
+PASS D cost has no required attribute
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/3/edit renders
+PASS D other-field save/reload
+PASS D exact saved cost/null reload
+PASS /catalog/products/1/edit renders
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/1/edit renders
+PASS A Arabic blank edit preserves stored cost
+PASS /catalog/products/create renders
+PASS Admin create cost visibility
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/8/edit renders
+PASS Admin new no-cost final save/reload
+PASS /login renders
+PASS /catalog/products/4/edit renders
+PASS E cost inaccessible
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/4/edit renders
+PASS E hidden-cost final save/reload
+PASS /catalog/products/create renders
+PASS Editor create cost visibility
+PASS Livewire save HTTP
+PASS no field validation errors:
+PASS no mandatory cost error
+PASS /catalog/products/9/edit renders
+PASS Editor new no-cost final save/reload
+PASS no browser exceptions or HTTP 500 errors
+Preserved QA runtime: /tmp/rajeh-qa-mariadb.Iq7RKP; DB qa_rajh_20261005173119_24094

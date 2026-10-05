@@ -6292,5 +6292,7 @@
     "Category path": "مسار التصنيف",
     "standard": "قياسي",
     "active": "نشط",
-    "inactive": "غير نشط"
+    "inactive": "غير نشط",
+    "Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.": "أكمل الباركود والموديل وهوية المنتج وسعر البيع والفئة ونوع المنتج والمورد المناسب قبل تفعيل بطاقة المنتج.",
+    "Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.": "سعر التكلفة اختياري في بطاقة المنتج. اتركه فارغًا للاحتفاظ بأي تكلفة محفوظة. تحتفظ المشتريات المعتمدة بسجلات تكلفتها الخاصة."
 }

@@ -1,0 +1,39 @@
+Disposable database (before creation): qa_rajh_20261005173119_24094; socket /tmp/rajeh-qa-mariadb.Iq7RKP/mariadb.sock; networking disabled
+PASS A omitted cost preserves stored value on final edit
+PASS A blank cost preserves stored value on final edit
+PASS A null cost preserves stored value on final edit
+PASS B no-cost product final edit
+PASS C new no-cost product finalized
+PASS D exact entered cost persists on reload
+PASS draft finalization does not require cost
+PASS explicit zero is preserved as an intentional input
+PASS invalid entered cost rejected
+PASS invalid cost leaves saved product unchanged
+PASS stale edit remains rejected
+PASS E editor has no cost permission
+PASS E hidden forged cost ignored and existing cost preserved
+PASS E editor can create without supplying cost
+PASS F previous null master cost remains null in purchase snapshot
+PASS F historical purchase unit cost = 12.1234
+PASS F purchase financial total = 24.2468
+PASS F Product Card blank edit preserves approved purchase cost
+PASS F Product Card edit leaves every historical purchase/receipt/valuation/approval record unchanged
+PASS F destination quantity = 2.000000
+PASS F exact destination WAC = 12.1234
+PASS F exact destination valuation = 24.2468
+PASS isolated backend A–F, draft, invalid, stale and forged-input cases
+PASS /login renders
+PASS /catalog/products/1/edit renders
+PASS A cost has no required attribute
+PASS Livewire save HTTP
+file:///tmp/rajeh-erp-product-cost-optional-permanent/scripts/qa/product-cost-browser.mjs:11
+function check(ok, label) { if (!ok) throw new Error(label); console.log('PASS ' + label); }
+                                           ^
+
+Error: no field validation errors
+    at check (file:///tmp/rajeh-erp-product-cost-optional-permanent/scripts/qa/product-cost-browser.mjs:11:44)
+    at save (file:///tmp/rajeh-erp-product-cost-optional-permanent/scripts/qa/product-cost-browser.mjs:24:5)
+    at async file:///tmp/rajeh-erp-product-cost-optional-permanent/scripts/qa/product-cost-browser.mjs:46:30
+
+Node.js v20.20.2
+Preserved QA runtime: /tmp/rajeh-qa-mariadb.Iq7RKP; DB qa_rajh_20261005173119_24094

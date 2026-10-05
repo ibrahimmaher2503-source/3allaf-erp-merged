@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Flux\Flux;
@@ -310,7 +311,6 @@ new #[Title('Product Card')] class extends Component {
     private function rules(bool $saveAsDraft): array
     {
         $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
-        $savedCost = $this->productId === null ? null : Product::query()->whereKey($this->productId)->value('average_cost');
         return [
             'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
@@ -341,7 +341,8 @@ new #[Title('Product Card')] class extends Component {
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
             'productForm.keywords_en' => ['nullable', 'string', 'max:2000'],
             'productForm.fractional_quantity' => ['required', 'boolean'],
-            'productForm.average_cost' => [$saveAsDraft || ($savedCost !== null && is_numeric($savedCost) && (float) $savedCost >= 0) ? 'nullable' : 'required', 'numeric', 'min:0'], 'productForm.sale_price' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
+            'productForm.average_cost' => [Rule::excludeIf(! auth()->user()?->hasPermission('products_categories_brands.cost_view')), ...app(ProductPricingContract::class)->costRules()],
+            'productForm.sale_price' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [! $saveAsDraft && blank($this->productForm['item_code']) ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
@@ -444,7 +445,7 @@ new #[Title('Product Card')] class extends Component {
         <flux:card id="product-identity" class="order-1 catalog-form-card space-y-5 p-4 sm:p-5" data-guide="product-form-identity">
             <div class="flex items-center justify-between gap-3 border-b border-border pb-3">
                 <flux:heading size="lg">{{ __('Basic identity') }}</flux:heading>
-                <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Complete barcode, model, identity, cost, consumer price, category, product type, and the applicable supplier before activating the Product Card.') }}</li><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
+                <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.') }}</li><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <flux:select wire:model.live="productForm.barcode_registration_type" :label="__('Barcode registration type')" required>
@@ -552,7 +553,7 @@ new #[Title('Product Card')] class extends Component {
                 <x-context-help :title="__('Product pricing help')" :label="__('Open product pricing help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('The base consumer selling price is the fallback price when no effective branch or store price-list value applies.') }}</li><li>{{ __('At sale time, the assigned active store price list is used first, then the branch default price list, then the base consumer selling price.') }}</li><li>{{ __('Approved purchasing updates cost; cost is never used as the selling price.') }}</li><li>{{ __('Open-price rules remain in the approved Pricing workflow.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                @if ($canViewCost || ! $isEditing)<div><flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" /><x-context-help :title="__('Cost price')" :label="__('Open contextual help')"><p>{{ __('Cost is updated by approved purchasing and is not the selling price.') }}</p></x-context-help></div>@endif
+                @if ($canViewCost)<div><flux:input id="product-field-average_cost" wire:model="productForm.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" /><x-context-help :title="__('Cost price')" :label="__('Open contextual help')"><p>{{ __('Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.') }}</p></x-context-help></div>@endif
                 <div id="base-consumer-price"><flux:input id="product-field-sale_price" wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" /><x-context-help :title="__('Base consumer selling price')" :label="__('Open contextual help')"><p>{{ __('Required for sellable products and must be greater than zero.') }}</p></x-context-help></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
