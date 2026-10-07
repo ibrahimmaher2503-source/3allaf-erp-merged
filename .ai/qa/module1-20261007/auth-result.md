@@ -1,10 +1,15 @@
 # Authentication QA result
 
-Date: 2026-10-07  
-Scope: BUG-221, BUG-226, M1-F01, M1-F13  
-Worktree: `C:\Users\N\.codex\worktrees\m1-auth\erp`  
-Branch: `hotfix/m1-auth-qa-20261007`  
-Source baseline: `a01af760a2102dae4993aaa47a47e7c6847a11f3` (task source: `e693ab8c2e86b6e4e8ef628aacef2aa3d8ae987e`)  
+Date: 2026-10-07
+
+Scope: BUG-221, BUG-226, M1-F01, M1-F13
+
+Worktree: `C:\Users\N\.codex\worktrees\m1-auth\erp`
+
+Branch: `hotfix/m1-auth-qa-20261007`
+
+Source baseline: `a01af760a2102dae4993aaa47a47e7c6847a11f3` (task source: `e693ab8c2e86b6e4e8ef628aacef2aa3d8ae987e`)
+
 Production: not inspected; local only.
 
 ## Findings
