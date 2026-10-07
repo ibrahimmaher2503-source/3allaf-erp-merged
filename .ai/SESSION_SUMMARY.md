@@ -1707,3 +1707,7 @@ Confirmed that the existing tax-rate attribute mapping already produces readable
 ## 2026-10-07 — BUG-11 trim company English name
 
 Trimmed leading and trailing whitespace from the company English name in the shared settings save action while preserving internal characters. Focused persistence coverage through the existing Livewire settings flow passed with the localization feature file: 10 tests, 52 assertions; Pint and `git diff --check` passed. Code and focused test changed; this commit records the work. No browser check or push. Parent lead review and approval are next.
+
+## 2026-10-07 — BUG-11 preserve nullable company name semantics
+
+Corrected the company-name trim to retain `null` for null or omitted `name_en`, while trimming supplied strings. Extended the existing focused persistence test to cover trimmed input, explicit null, and omission. The affected method passed: 1 test, 4 assertions; Pint and `git diff --check` passed. No browser check or push. This correction awaits parent lead review.
