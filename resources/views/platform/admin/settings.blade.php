@@ -712,6 +712,8 @@ new #[Title('System Settings')] class extends Component
 
     public function editPrintTemplate(int $id): void
     {
+        Gate::authorize('manage-settings');
+
         $this->templateForm = PrintTemplate::visibleTo(auth()->user())->findOrFail($id)->toArray();
         $this->templateForm['layout_settings'] = array_replace(['width_mm' => 50, 'height_mm' => 30, 'dpi' => 203, 'orientation' => 'portrait', 'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2, 'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto', 'show_name' => true, 'show_price' => true, 'show_item_code' => true, 'show_list_code' => true, 'show_outlet' => true], $this->templateForm['layout_settings'] ?? []);
         $this->resetValidation();
