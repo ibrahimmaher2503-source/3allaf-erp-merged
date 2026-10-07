@@ -84,14 +84,14 @@ new #[Title('Approval Inbox')] class extends Component
             session()->flash('approval-success', __('The source was approved and its audit trail was recorded.'));
             $this->closeApproval();
         } catch (AuthorizationException) {
-            $this->addError('approval', __('لا تملك صلاحية اعتماد هذا الطلب.'));
+            $this->addError('approval', __('Permission denied'));
         } catch (ValidationException $exception) {
             $message = collect($exception->errors())->flatten()->first()
-                ?? __('تعذر اعتماد الطلب. راجع البيانات وحاول مرة أخرى.');
+                ?? __('Unable to complete the request. Please review the data and try again.');
             $this->addError('approval', (string) $message);
         } catch (Throwable $exception) {
             report($exception);
-            $this->addError('approval', __('تعذر اعتماد الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
+            $this->addError('approval', __('Unable to complete the request. Please review the data and try again.'));
         }
     }
 
@@ -101,7 +101,7 @@ new #[Title('Approval Inbox')] class extends Component
             $approval = $this->selectedPendingApproval();
             Gate::authorize('decide', $approval);
             if (! app(DecideApprovalSource::class)->canReject($approval)) {
-                $this->addError('decisionReason', __('هذا الطلب لا يدعم الرفض.'));
+                $this->addError('decisionReason', __('This source does not expose a rejection transition.'));
 
                 return;
             }
@@ -110,15 +110,15 @@ new #[Title('Approval Inbox')] class extends Component
             session()->flash('approval-success', __('The source was rejected and its audit trail was recorded.'));
             $this->closeApproval();
         } catch (AuthorizationException) {
-            $this->addError('approval', __('لا تملك صلاحية رفض هذا الطلب.'));
+            $this->addError('approval', __('Permission denied'));
         } catch (ValidationException $exception) {
             $errors = $exception->errors();
             $message = collect($errors)->flatten()->first()
-                ?? __('تعذر رفض الطلب. راجع البيانات وحاول مرة أخرى.');
+                ?? __('Unable to complete the request. Please review the data and try again.');
             $this->addError(isset($errors['decisionReason']) ? 'decisionReason' : 'approval', (string) $message);
         } catch (Throwable $exception) {
             report($exception);
-            $this->addError('approval', __('تعذر رفض الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
+            $this->addError('approval', __('Unable to complete the request. Please review the data and try again.'));
         }
     }
 
