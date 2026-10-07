@@ -34,6 +34,35 @@ final class ProductCardMetadataFormTest extends TestCase
         ]);
     }
 
+    public function test_stale_product_edit_shows_a_clear_reason_and_preserves_the_winning_record(): void
+    {
+        $product = Product::factory()->create();
+        $version = (int) $product->lock_version;
+        $form = Livewire::actingAs($this->administrator)
+            ->test('catalog::product-form', ['product' => $product])
+            ->set('productId', $product->id)
+            ->set('productVersion', $version)
+            ->set('isEditing', true)
+            ->set('productForm.item_code', $product->item_code)
+            ->set('productForm.category_id', (string) $product->category_id)
+            ->set('productForm.name_ar', $product->name_ar)
+            ->set('productForm.name_en', 'Stale edit');
+
+        $product->forceFill(['name_en' => 'Concurrent winner', 'lock_version' => $version + 1])->save();
+
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $form->call('saveDraft')
+                ->assertHasErrors('productForm')
+                ->assertSet('productVersion', $version)
+                ->assertSet('productForm.name_en', 'Stale edit')
+                ->assertDispatched('toast-show', fn (string $event, array $parameters): bool => ($parameters['slots']['text'] ?? null) === __('This product changed in another session. Reload it before saving.'));
+
+            self::assertSame('Concurrent winner', $product->fresh()->name_en);
+            self::assertSame($version + 1, (int) $product->fresh()->lock_version);
+        }
+    }
+
     public function test_product_card_creates_and_edits_descriptive_fields_and_lookup_assignments_without_cost_access(): void
     {
         $parentCategory = Category::factory()->create([

@@ -4,6 +4,7 @@ use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\ManageProductMediaAction;
 use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
@@ -201,6 +202,9 @@ new #[Title('Product Card')] class extends Component
             $field = str((string) $exception->validator->errors()->keys()[0])->afterLast('.')->toString();
             $this->dispatch('product-validation-failed', field: $field);
             Flux::toast(variant: 'danger', text: __('Please correct the highlighted field.'));
+        } catch (StaleCatalogRecordException $exception) {
+            $this->addError('productForm', $exception->getMessage());
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
         } catch (Throwable $exception) {
             $this->addError('productForm', UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: UserSafeError::message($exception));

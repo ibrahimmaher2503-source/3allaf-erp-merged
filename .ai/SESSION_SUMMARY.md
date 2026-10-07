@@ -1755,3 +1755,6 @@ Product barcode modal and create-form submissions now surface the existing safe 
 
 ## 2026-10-07 — BUG-24 readable product validation
 On the single fix/module2-qa branch, added human-readable English attributes to the existing card and modal validators; Arabic mappings and all rules remain intact. One focused method passed in en/ar/ar-EG: 1 test/78 assertions on qa_rajh_m1_integrated_20261007. Changed PHP lint and Pint passed; unrelated SFC formatter changes were restored. No full suite, browser, production check or deployment. This fix is committed separately; single module branch publication follows.
+
+## 2026-10-07 — BUG-22 stale product feedback
+Added only a narrow catch for the existing StaleCatalogRecordException in the product card. Existing row lock/version rejection is unchanged; the safe localized reload reason is now visible. One focused method passed for en/ar/ar-EG: 1 test/24 assertions; the losing form data and winning persisted name/version remain intact. Changed PHP lint, Pint and diff hygiene passed; unrelated formatter changes restored. Single fix/module2-qa commit, no full suite/browser/production/deployment.
