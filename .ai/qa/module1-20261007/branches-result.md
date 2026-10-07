@@ -12,7 +12,7 @@
 - **BUG-224 — reproduced and fixed in this worktree.** Before repair, the focused action regression failed because the active-store/mapping guard threw `InvalidArgumentException` instead of a user-visible `ValidationException`; the branch component sent the exception through `UserSafeError::message()`, which hid the dependency reason. Branch-delete requests previously carried only `deleted=true`. The eventual logical-delete path already rechecked active stores and mappings and set the branch inactive without cascading.
 - The branch edit and toggle paths now lock the branch first, then use locking reads for active stores and active selling-store mappings. Those existing dependencies remain the only status/deletion blockers. The action raises the existing translated dependency message as a validation error, and branch error toasts display that message.
 - Branch-delete approval requests now record request-time integer counts for linked stores, active stores, active selling-store mappings, active cash drawers, and active scope assignments. Active scope assignments are active `user_branch_scopes` rows for the branch plus active `user_store_scopes` rows for its stores; this is a row/assignment count, not distinct users. Approval locks the branch and rechecks only active stores/mappings. A failed recheck leaves approval pending and branch/store/drawer/scope records intact; no cascade or new drawer/scope blocker was added.
-- **M1-F02 — ambiguous requirement remains.** “Blocked (Safe)” is the negative-stock safe default: negative stock is blocked. No label or policy change was made.
+- **M1-F02 — NOT REPRODUCED; existing safety behavior.** `docs/25-inventory-exception-policy.md` classifies “Negative stock blocked by default” as a PRD requirement and states that rule in §3. The store UI pairs “Blocked (Safe)” with “Allowed (Warning)” when the setting is enabled. The page-18 report asks what the label means but identifies no conflicting expected behavior; no product-policy ambiguity or label change remains.
 - **M1-F03 — ambiguous requirement remains.** The branch Warehouses count uses active stores with `type=warehouse`; sales outlets are excluded by the current relationship. Store/Warehouse taxonomy remains unresolved, so the count was not broadened.
 
 ## Request-time branch dependency context
@@ -33,4 +33,10 @@ The branch-delete approval request carries integer counts for all linked stores,
 - `resources/views/platform/admin/branches.blade.php`
 - `tests/Feature/BranchLifecycleDependencyTest.php`
 
-M1-F02 and M1-F03 remain unmodified ambiguity findings. No production deployment, push, merge, or milestone advancement occurred. The worktree commit is recorded in Git history; lead review and integration remain follow-up.
+M1-F03 remains an ambiguity finding; no product policy was changed. No production deployment, push, merge, or milestone advancement occurred. The worktree commit is recorded in Git history; lead review and integration remain follow-up.
+
+## Follow-up fixture and classification check
+
+- Made the regression permission fixture idempotent by using `Permission::firstOrCreate()` keyed by `code`, with defaults only for absent catalog rows. No existing permission row is deleted or updated.
+- Inserted the active `company_settings.approve` catalog row into the named disposable QA schema before the rerun. Guarded `BranchLifecycleDependencyTest.php` passed **5 tests, 25 assertions** with that pre-existing row; the row remained `company_settings.approve / company_settings / approve / active` afterward. Pint on the changed test file and `git diff --check` passed.
+- `docs/03-scope.md` and the unresolved-decision text in `.ai/DECISIONS.md` retain Store/Warehouse terminology as open, so M1-F03 remains ambiguous; the existing count is active stores of type `warehouse` and was not broadened.
