@@ -13,6 +13,7 @@ use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
+use App\Support\ProductQuantity;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -61,7 +62,7 @@ final class PosCartAction
 
     public function quantity(Request $request, User $user, int $productId, string $quantity): void
     {
-        $quantity = (string) \App\Support\ProductQuantity::normalize($quantity);
+        $quantity = (string) ProductQuantity::normalize($quantity);
         $this->assertQuantity($quantity);
         $context = $this->context($request, $user);
         $store = $this->store($context);

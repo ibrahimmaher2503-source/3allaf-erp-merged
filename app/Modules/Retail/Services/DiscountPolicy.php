@@ -6,6 +6,7 @@ namespace App\Modules\Retail\Services;
 
 use App\Models\User;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
@@ -66,7 +67,7 @@ final class DiscountPolicy
     public function requiresApproval(string $discountAmount, string $baseAmount): bool
     {
         if (bccomp($discountAmount, '0', 2) < 0 || bccomp($discountAmount, $baseAmount, 2) > 0) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['discount_amount' => __('A line discount cannot exceed the line value or be negative.')]);
+            throw ValidationException::withMessages(['discount_amount' => __('A line discount cannot exceed the line value or be negative.')]);
         }
         if (bccomp($discountAmount, '0', 2) <= 0) {
             return false;

@@ -31,6 +31,7 @@ use App\Modules\Retail\Services\DiscountPolicy;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
+use App\Support\ProductQuantity;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -410,7 +411,7 @@ final class RetailSaleAction
 
         $resolved = [];
         foreach ($requestedLines as $requested) {
-            $quantity = (string) \App\Support\ProductQuantity::normalize($requested['quantity'] ?? '');
+            $quantity = (string) ProductQuantity::normalize($requested['quantity'] ?? '');
 
             $product = isset($requested['product_id'])
                 ? Product::query()->sellable()->find((int) $requested['product_id'])
