@@ -8,6 +8,12 @@ V0/V1 presentation portions: named validation labels and titles, localized appro
 |---|---|---|---|---|
 | V0 | BUG-14: keep the cash-drawer table readable with a minimum width and prevent drawer names/status labels from breaking into narrow columns | `f96dd09722455783b4baf615ca59fde0112c9a73` | `resources/views/platform/admin/drawers.blade.php` | Lead approved, exact branch pushed and integrated locally; existing focused render 1 test / 10 assertions, Pint and diff checks passed; browser sizing unverified; undeployed |
 
+## 2026-10-07 — BUG-26 POS cashier logout (local, undeployed)
+
+| Class | Repair | Commit | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Add a visible CSRF-protected POST logout action to the dedicated POS header, reusing Fortify's existing logout/session invalidation | `3f1e1f5501982a7c6fffef51aa7fe946bf3ea87f` | `resources/views/layouts/pos.blade.php`, `tests/Feature/PosShiftOpenRouteTest.php` | Focused cashier POS render/logout check passed 1 test / 9 assertions; Pint, PHP lint, and diff hygiene passed; no browser or deployment |
+
 ## 2026-10-03 — Full-System Audit Final UI Batch
 
 Owner explicitly authorized closure, integration and deployment of the remaining audit fixes. Exactly two existing-user temporary sessions were authorized for authenticated browser coverage; no grant or business-record mutation is included.
