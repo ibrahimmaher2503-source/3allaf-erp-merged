@@ -1,0 +1,200 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Store;
+use App\Modules\Reporting\Queries\ReportSnapshot;
+use App\Modules\Retail\Actions\OpenShiftAction;
+use App\Modules\Retail\Actions\RecordCashMovementAction;
+use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
+use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
+use App\Modules\Retail\Enums\ShiftState;
+use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\TestCase;
+use Illuminate\Support\Str;
+use Illuminate\Translation\FileLoader;
+use Livewire\Livewire;
+
+final class Module9CashShiftsQaTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    public function createApplication(): Application
+    {
+        if (getenv('DB_CONNECTION') !== 'mysql' || getenv('DB_DATABASE') !== 'qa_rajh_m9_cash_shifts_20261007' || ! getenv('QA_STORAGE_PATH')) {
+            throw new \RuntimeException('Module 9 checks require the dedicated disposable MySQL schema and storage.');
+        }
+        $app = require __DIR__.'/../../bootstrap/app.php';
+        $app->useStoragePath(getenv('QA_STORAGE_PATH'));
+        $app->make(Kernel::class)->bootstrap();
+        $app->setLocale('en');
+        $app->forgetInstance('translation.loader');
+        $app->forgetInstance('translator');
+        $app->singleton('translation.loader', fn ($app) => new FileLoader(
+            $app['files'], [base_path('vendor/laravel/framework/src/Illuminate/Translation/lang'), $app['path.lang']],
+        ));
+
+        return $app;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        foreach (['pos_sales.view', 'shifts_cash_movements.view', 'shifts_cash_movements.create', 'shifts_cash_movements.submit', 'shifts_cash_movements.approve', 'shifts_cash_movements.recount', 'dashboard_reports.view', 'company_settings.view', 'company_settings.edit'] as $code) {
+            [$module, $action] = explode('.', $code);
+            Permission::query()->firstOrCreate(['code' => $code], ['module' => $module, 'action' => $action, 'status' => 'active', 'sensitivity' => 'normal']);
+        }
+    }
+
+    public function test_m9_05_approval_modal_displays_stored_counts(): void
+    {
+        $shift = $this->submittedShift();
+        $this->actingAs($this->reviewer());
+        $this->get(route('admin.approvals'))->assertOk();
+        request()->setLaravelSession(app('session')->driver());
+
+        Livewire::test('platform::system.approval-inbox')
+            ->call('showApproval', $shift->variance_approval_record_id)
+            ->assertSee('Expected')->assertSee('Actual')->assertSee('Variance')
+            ->assertSee('1,000.00')->assertSee('950.00')->assertSee('-50.00')
+            ->assertSee('Source')->assertSee('Requester')->assertSee('Requested action')
+            ->assertSee('Counted shortage');
+    }
+
+    public function test_m9_04_approved_variance_excludes_pending_and_recount_history(): void
+    {
+        $shift = $this->submittedShift();
+        $cashier = $shift->cashier;
+        $reviewer = $this->reviewer();
+        $this->actingAs($reviewer);
+        self::assertSame(0.0, $this->cashReport($reviewer)['kpis']['shift_variance']);
+        $shift = app(ReviewShiftVarianceAction::class)->requestRecount($reviewer, $shift, $shift->varianceApprovalRecord, 'Recount requested', $shift->lock_version);
+        $this->actingAs($cashier);
+        app(SubmitBlindShiftCloseAction::class)->execute($cashier, $shift, '980', [], (string) Str::uuid());
+        $shift->refresh();
+        $this->actingAs($reviewer);
+        app(ReviewShiftVarianceAction::class)->approveAndClose($reviewer, $shift, $shift->varianceApprovalRecord, $shift->lock_version);
+        self::assertSame(ShiftState::Closed, $shift->fresh()->status);
+        $report = $this->cashReport($reviewer);
+        self::assertSame(-20.0, $report['kpis']['shift_variance']);
+        self::assertSame([-20.0], collect($report['visuals'])->firstWhere('key', 'cash_variance')['series'][0]['data']);
+    }
+
+    public function test_m9_08_settings_exposes_the_existing_cash_rounding_control(): void
+    {
+        $shift = $this->openShift();
+        $url = route('pos.financial-readiness', ['company_id' => $shift->store->company_id]);
+        $this->get(route('admin.settings', ['tab' => 'payments']))
+            ->assertOk()->assertSee($url, false)->assertSee('Cash rounding denomination');
+        $this->get($url)->assertOk()->assertSee('Cash rounding denomination')
+            ->assertSee(route('admin.settings.pos-financial.save'), false);
+        $this->from($url)->post(route('admin.settings.pos-financial.save'), [
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '5', 'notes' => 'Existing approved denomination',
+        ])->assertRedirect($url)->assertSessionHasNoErrors();
+        self::assertSame('5.0000', PosFinancialSettingRegistry::value(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION));
+    }
+
+    public function test_m9_01_m9_02_header_and_open_link_explain_closing_states(): void
+    {
+        $shift = $this->openShift();
+        foreach ([ShiftState::Open->value => 'Open', ShiftState::ClosingSubmitted->value => 'Closing submitted', ShiftState::VarianceReview->value => 'In Review'] as $state => $label) {
+            $shift->update(['status' => $state]);
+            foreach (['pos', 'pos.shift'] as $route) {
+                $response = $this->get(route($route))->assertOk();
+                $dom = new \DOMDocument;
+                @$dom->loadHTML($response->getContent());
+                self::assertSame($label, (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
+            }
+            if ($state !== ShiftState::Open->value) {
+                $this->followingRedirects()->get(route('pos.shift.open'))->assertOk()
+                    ->assertSee('A new shift cannot be opened until it is closed.');
+            }
+        }
+        $shift->update(['status' => ShiftState::Closed]);
+        $html = view('layouts.pos', ['title' => 'Closed shift', 'store' => $shift->store, 'shift' => $shift, 'slot' => ''])->render();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($html);
+        self::assertSame('Closed', (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
+    }
+
+    public function test_m9_03_opening_reports_occupied_drawer_and_confirmation_errors(): void
+    {
+        $shift = $this->openShift();
+        $cashier = $this->reviewer();
+        $this->actingAs($cashier);
+        $data = ['cash_drawer_id' => $shift->cash_drawer_id, 'opening_float' => '1000', 'idempotency_key' => (string) Str::uuid(), 'confirm_outlet' => '1'];
+        $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
+            ->assertRedirect(route('pos.shift'))
+            ->assertSessionHasErrors(['cash_drawer_id' => 'This drawer already has an active shift.']);
+        self::assertSame(1, PosShift::query()->where('cash_drawer_id', $shift->cash_drawer_id)->count());
+        $this->withCookie(config('session.cookie'), session()->getId())
+            ->get(route('pos.shift'))->assertOk()->assertViewHas('shift', null)
+            ->assertSee('This drawer already has an active shift.');
+        unset($data['confirm_outlet']);
+        $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
+            ->assertSessionHasErrors(['confirm_outlet' => 'Confirm the sales outlet before opening a shift.']);
+        $this->get(route('pos.shift'))->assertOk()->assertSee('Confirm the sales outlet before opening a shift.');
+    }
+
+    public function test_m9_06_movement_screen_and_report_show_existing_actor_and_reference(): void
+    {
+        $shift = $this->openShift();
+        $actor = $shift->cashier;
+        app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_in', '125', 'Additional float', (string) Str::uuid(), 'M9-REF-125');
+        app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_out', '25', 'Petty expense', (string) Str::uuid());
+        $this->get(route('pos.shift'))->assertOk()->assertSee('Actor')->assertSee('Reference')
+            ->assertSee($actor->name)->assertSee('M9-REF-125')->assertSee('Additional float')->assertSee('125.00')->assertSee('—');
+        $movements = collect($this->cashReport($actor)['detail_sections'])->firstWhere('key', 'cash_movements');
+        self::assertArrayHasKey('actor', $movements['columns']);
+        self::assertArrayHasKey('reason', $movements['columns']);
+        $row = collect($movements['rows'])->firstWhere('reference', 'M9-REF-125');
+        self::assertSame($actor->name, $row['actor']);
+        self::assertSame('Additional float', $row['reason']);
+        self::assertSame('cash_in', $row['type']);
+        self::assertSame(125.0, $row['amount']);
+        self::assertNull(collect($movements['rows'])->firstWhere('reason', 'Petty expense')['reference']);
+    }
+
+    private function reviewer(): User
+    {
+        return User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
+    }
+
+    private function openShift(): PosShift
+    {
+        $cashier = $this->reviewer();
+        $company = Company::factory()->create();
+        $branch = Branch::factory()->create(['company_id' => $company->id]);
+        $store = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
+        $drawer = CashDrawer::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'store_id' => $store->id]);
+        $this->actingAs($cashier);
+
+        return app(OpenShiftAction::class)->execute($cashier, $drawer, '1000', (string) Str::uuid());
+    }
+
+    private function submittedShift(): PosShift
+    {
+        $shift = $this->openShift();
+        app(SubmitBlindShiftCloseAction::class)->execute($shift->cashier, $shift, '950', [], (string) Str::uuid(), 'Counted shortage');
+
+        return $shift->fresh();
+    }
+
+    /** @return array<string, mixed> */
+    private function cashReport(User $user): array
+    {
+        return app(ReportSnapshot::class)->execute($user, ['module' => 'cash', 'date_from' => now()->toDateString(), 'date_to' => now()->toDateString()]);
+    }
+}

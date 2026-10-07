@@ -42,6 +42,7 @@
                             <flux:text>{{ __('Select the exact authorized sales outlet before opening the shift.') }}</flux:text>
                         @endif
                         <flux:checkbox name="confirm_outlet" value="1" :label="__('I confirm this sales outlet and its stock source for the shift.')" required />
+                        @error('confirm_outlet')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
                         <flux:input type="number" step="0.01" min="0" name="opening_float" :label="__('Opening float')" value="0.00" required />
                         @error('cash_drawer_id')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
                         <flux:button type="submit" variant="primary" icon="lock-open">{{ __('Open shift') }}</flux:button>
@@ -121,12 +122,14 @@
                     @if ($shift->cashMovements->isNotEmpty())
                         <x-tables.table-shell :label="__('Cash movement')" class="mt-5">
                             <table class="data-table w-full text-sm">
-                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
+                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th>{{ __('Actor') }}</th><th>{{ __('Reference') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
                                 <tbody>
                                     @foreach ($shift->cashMovements as $movement)
                                         <tr>
                                             <td>{{ __(ucwords(str_replace('_', ' ', $movement->movement_type))) }}</td>
                                             <td>{{ $movement->reason }}</td>
+                                            <td>{{ $movement->creator?->name ?? '—' }}</td>
+                                            <td>{{ $movement->reference ?? '—' }}</td>
                                             <td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>
                                         </tr>
                                     @endforeach
@@ -158,7 +161,7 @@
                     </form>
                 </div>
             @else
-                <flux:callout class="mt-6" variant="secondary" icon="clock">{{ __('Your count has been submitted and is awaiting review. No further sales or cash movements can be recorded on this shift.') }}</flux:callout>
+                <flux:callout class="mt-6" variant="secondary" icon="clock">{{ __('Your current shift is awaiting closing approval. A new shift cannot be opened until it is closed.') }} {{ __('Your count has been submitted and is awaiting review. No further sales or cash movements can be recorded on this shift.') }}</flux:callout>
             @endif
         @endif
     </div>

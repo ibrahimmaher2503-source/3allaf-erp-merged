@@ -3940,8 +3940,8 @@
     "This barcode allocation request key belongs to another product.": "هذا barcode allocation request key belongs إلى another الصنف.",
     "This barcode is already assigned and cannot be silently reassigned.": "هذا barcode is already assigned و cannot be silently reassigned.",
     "This booking is scoped to a Party store. Retail/POS lines are rejected server-side.": "هذا حجز is scoped إلى a الحفلة المخزن. التجزئة/pos سطور are مرفوض server-side.",
-    "This cash drawer is not active.": "هذا cash درج النقدية is ليس مفعل.",
-    "This cashier already has an active shift.": "هذا كاشير already has an مفعل وردية.",
+    "This cash drawer is not active.": "درج النقدية هذا غير نشط.",
+    "This cashier already has an active shift.": "لدى أمين الصندوق هذا وردية نشطة بالفعل.",
     "This checkout token was already used with a different basket or financial payload.": "هذا checkout token was already used مع a different basket أو financial payload.",
     "This child-data purpose is not allowed by the configured policy.": "هذا child-data purpose is ليس allowed بواسطة the configured policy.",
     "This closed shift has no immutable closing submission.": "هذا مغلق وردية has لا immutable closing submission.",
@@ -6336,5 +6336,7 @@
     "Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.": "الدفع النقدي غير متاح لأن إعداد التقريب مفقود أو غير صالح. اضبط الفئة المعتمدة على 5 جنيهات في الضوابط المالية لنقطة البيع. يُقرّب الدفع النقدي والمختلط إلى أقرب فئة.",
     "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "التقريب النقدي المعتمد: إلى أقرب 5 جنيهات للدفع النقدي والمختلط.",
     "A line discount cannot exceed the line value or be negative.": "لا يمكن أن يتجاوز خصم الصنف قيمته أو أن يكون سالبًا.",
-    "This payment method requires evidence. Ask a cashier with payment evidence upload permission to complete it.": "تتطلب وسيلة الدفع هذه إثباتًا. اطلب من كاشير لديه صلاحية رفع إثبات الدفع إتمام العملية."
+    "This payment method requires evidence. Ask a cashier with payment evidence upload permission to complete it.": "تتطلب وسيلة الدفع هذه إثباتًا. اطلب من كاشير لديه صلاحية رفع إثبات الدفع إتمام العملية.",
+    "Your current shift is awaiting closing approval. A new shift cannot be opened until it is closed.": "ورديتك الحالية تنتظر اعتماد الإغلاق. لا يمكن فتح وردية جديدة حتى تُغلق الوردية الحالية.",
+    "Confirm the sales outlet before opening a shift.": "أكد منفذ البيع قبل فتح الوردية."
 }

@@ -324,7 +324,13 @@ final class ReportSnapshot
             $openShiftCount = (clone $shifts)->where('status', 'open')->count();
             $unclosedShiftCount = (clone $shifts)->whereNotIn('status', ['closed', 'cancelled'])->count();
             if (Gate::forUser($user)->allows('shifts_cash_movements.approve')) {
-                $shiftVariance = (float) ShiftClosingSubmission::query()->whereIn('shift_id', (clone $shifts)->select('id'))->sum('total_variance');
+                $shiftVariance = (float) ShiftClosingSubmission::query()
+                    ->whereIn('shift_id', (clone $shifts)->where('status', 'closed')->select('id'))
+                    ->where('attempt', fn ($query) => $query
+                        ->from('shift_closing_submissions as latest_submission')
+                        ->selectRaw('MAX(latest_submission.attempt)')
+                        ->whereColumn('latest_submission.shift_id', 'shift_closing_submissions.shift_id'))
+                    ->sum('total_variance');
             }
         }
 
@@ -829,8 +835,8 @@ final class ReportSnapshot
 
                 return $row;
             }));
-            $movements = CashMovement::query()->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
-            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $row->movement_type, 'amount' => (float) $row->amount, 'reference' => $row->reference]));
+            $movements = CashMovement::query()->with('creator')->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
+            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reason' => __('Reason'), 'actor' => __('Actor'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $row->movement_type, 'amount' => (float) $row->amount, 'reason' => $row->reason, 'actor' => $row->creator?->name ?? '—', 'reference' => $row->reference]));
         }
 
         if (in_array('customers', $modules, true)) {

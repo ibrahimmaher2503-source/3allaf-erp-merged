@@ -817,7 +817,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $shift = PosShift::query()->visibleTo($user)->active()
             ->where('cashier_id', $user->id)
-            ->with(['cashDrawer', 'cashMovements'])
+            ->with(['cashDrawer', 'cashMovements.creator'])
             ->latest('opened_at')
             ->first();
 
@@ -882,7 +882,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'opening_float' => ['required', 'numeric', 'gte:0'],
             'idempotency_key' => ['required', 'uuid'],
             'confirm_outlet' => ['accepted'],
-        ]);
+        ], ['confirm_outlet.accepted' => __('Confirm the sales outlet before opening a shift.')]);
 
         try {
             $drawer = CashDrawer::query()->find((int) $validated['cash_drawer_id']);
@@ -897,7 +897,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'SHIFT-OPEN:'.$validated['idempotency_key'],
             );
         } catch (InvalidArgumentException $e) {
-            return back()->withErrors(['cash_drawer_id' => \App\Support\UserSafeError::message($e)]);
+            return back()->withErrors(['cash_drawer_id' => $e->getMessage()]);
         }
 
         $request->session()->forget('pos.shift.open_token');

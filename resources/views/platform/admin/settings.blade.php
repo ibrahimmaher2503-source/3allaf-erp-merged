@@ -931,6 +931,9 @@ $sectionMeta = [
     <!-- TAB 2: Payment Methods -->
     <?php if ($activeTab === 'payments') { ?>
         <div id="panel-payments" role="tabpanel" aria-labelledby="tab-payments" class="space-y-6">
+            @can('company_settings.view')
+                <flux:button :href="route('pos.financial-readiness', ['company_id' => $companyId])" variant="subtle" icon="cog-6-tooth">{{ __('Cash rounding denomination') }}</flux:button>
+            @endcan
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Payment Methods') }}</flux:heading><x-context-help :title="__('Payment-method help')" :label="__('Open payment-method help')"><p>{{ __('Choose the business name customers and staff recognize. The method type remains its accounting classification.') }}</p></x-context-help></div>
                 <flux:button type="button" variant="primary" icon="plus" wire:click="openPaymentMethodModal">{{ __('Add Payment Method') }}</flux:button>

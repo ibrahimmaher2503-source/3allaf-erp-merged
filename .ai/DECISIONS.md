@@ -260,3 +260,11 @@ Status: Requires Owner Decision. M3-10 reports `ABC` accepted. Supplier UI/actio
 ## DEC-102 — Audit display timezone precedence (Module 3 v2)
 
 Status: Requires Owner Decision. M3-12 confirms audit views format timestamps without conversion. `docs/07-database-schema.md` specifies UTC storage and authorized branch/user display; company and branch timezone configuration exists, but user timezone storage and precedence for scoped versus global audit events are unspecified. Owner must define the display source/fallback precedence. Keep UTC storage and application timezone unchanged; do not hardcode Cairo or add an unsupported user setting.
+
+## DEC-099 — Module 9 fast QA authorization (2026-10-07)
+
+**Status: Approved — explicit owner request.** Named D3 scope M9-01/02/03/04/05/06/08 only, TSK-025/CSH-02/CSH-03. Four concurrent Luna investigators (state high, variance x-high, trace high, rounding high) investigate; lead applies related-group fixes to the single `fix/module9-cash-shifts-qa-fast` branch from current main `87db35e88d6d726b5e287e8e4dcec600ba71d941`. Focused native tests and isolated XAMPP MySQL permitted for this task; no SQLite, full audit, browser control, merge or deployment. One optimize:clear, changed syntax, one frontend build, task-branch-only commit/push. M9-07 is native-dialog tooling only. Existing nearest-5-EGP policy/control is reused unchanged.
+
+## DEC-100 — Mandatory reason when accepting non-zero shift variance (2026-10-07)
+
+**Status: Requires Owner Decision.** M9-05 display is fixed. docs/32 section 13 permits a review reason/comment; the existing approve/close action accepts an optional note, while recount requires a reason. No authoritative rule requires a note when accepting a non-zero variance. Only that policy requirement remains undecided; optional acceptance behavior and existing financial/approval guards are preserved. Affects TSK-025 shift variance approval, CSH-02/CSH-03; does not block the other Module 9 fixes.
