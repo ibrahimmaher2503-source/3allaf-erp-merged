@@ -72,7 +72,7 @@ window.posPaymentCalculator = ({ payable, cashReceived = '' }) => ({
     submitting: false,
     parts() {
         this.revision;
-        return [...this.$el.querySelectorAll('[data-payment-part]')].map((part) => ({
+        return [...this.$root.querySelectorAll('[data-payment-part]')].map((part) => ({
             methodId: part.querySelector('[data-payment-method]')?.value ?? '',
             isCash: part.hasAttribute('data-cash-payment'),
             amount: part.querySelector('[data-noncash-amount]')?.value ?? '',
