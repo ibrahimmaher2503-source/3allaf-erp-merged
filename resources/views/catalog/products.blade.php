@@ -187,7 +187,16 @@ new #[Title('Product Masters')] class extends Component
                 'productForm.tax_setting_id' => 'ضريبة المنتج',
                 'productForm.status' => 'الحالة',
             ]
-            : [];
+            : [
+                'productForm.item_code' => __('Item code'),
+                'productForm.name_ar' => __('Arabic name'),
+                'productForm.name_en' => __('English name'),
+                'productForm.product_type' => __('Product type'),
+                'productForm.category_id' => __('Category'),
+                'productForm.brand_id' => __('Brand'),
+                'productForm.tax_setting_id' => __('Product tax'),
+                'productForm.status' => __('Status'),
+            ];
     }
 
     public function saveProduct(SaveProductAction $action): void

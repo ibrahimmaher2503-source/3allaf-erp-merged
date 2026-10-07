@@ -1752,3 +1752,6 @@ On `fix/bug-26-cashier-logout` from `386bf312`, added a visible CSRF-protected P
 ## 2026-10-07 — BUG-17 barcode validation feedback
 
 Product barcode modal and create-form submissions now surface the existing safe duplicate, format, and GTIN check-digit reasons on their barcode fields; failed create attempts remain rolled back. Focused test passed 1 test / 28 assertions on qa_rajh_m1_localization_20261007; changed-file PHP syntax, Pint, and git diff --check passed. No browser check or push; branch fix/bug-17-barcode-validation awaits lead review.
+
+## 2026-10-07 — BUG-24 readable product validation
+On the single fix/module2-qa branch, added human-readable English attributes to the existing card and modal validators; Arabic mappings and all rules remain intact. One focused method passed in en/ar/ar-EG: 1 test/78 assertions on qa_rajh_m1_integrated_20261007. Changed PHP lint and Pint passed; unrelated SFC formatter changes were restored. No full suite, browser, production check or deployment. This fix is committed separately; single module branch publication follows.

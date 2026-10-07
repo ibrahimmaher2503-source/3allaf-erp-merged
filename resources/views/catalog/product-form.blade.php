@@ -414,7 +414,22 @@ new #[Title('Product Card')] class extends Component
     private function productValidationAttributes(): array
     {
         if (! str_starts_with(app()->getLocale(), 'ar')) {
-            return ['productForm.preferred_supplier_id' => __('Preferred supplier')];
+            return [
+                'productForm.item_code' => __('Item code'),
+                'productForm.name_ar' => __('Arabic name'),
+                'productForm.name_en' => __('English name'),
+                'productForm.model_number' => __('Model number'),
+                'productForm.product_type' => __('Product type'),
+                'productForm.status' => __('Status'),
+                'productForm.category_id' => __('Category'),
+                'productForm.brand_id' => __('Brand'),
+                'productForm.tax_setting_id' => __('Product tax'),
+                'productForm.average_cost' => __('Cost price'),
+                'productForm.sale_price' => __('Base consumer selling price'),
+                'productForm.fractional_quantity' => __('Fractional quantity'),
+                'productForm.preferred_supplier_id' => __('Preferred supplier'),
+                'supplierBarcode' => __('International barcode'),
+            ];
         }
 
         return [

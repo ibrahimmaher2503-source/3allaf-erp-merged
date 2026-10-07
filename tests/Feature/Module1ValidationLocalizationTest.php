@@ -35,6 +35,29 @@ final class Module1ValidationLocalizationTest extends TestCase
         ]);
     }
 
+    public function test_product_card_validation_uses_readable_field_names_in_all_locales(): void
+    {
+        $this->withoutVite();
+
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $form = Livewire::actingAs($this->administrator)
+                ->test('catalog::product-form')
+                ->call('save')
+                ->assertHasErrors(['productForm.model_number', 'productForm.name_ar', 'productForm.sale_price']);
+
+            foreach ($form->instance()->getErrorBag()->all() as $message) {
+                self::assertStringNotContainsString('productForm.', $message);
+                self::assertStringNotContainsString('product form', $message);
+                self::assertStringNotContainsString('sale price', $message);
+            }
+            self::assertStringContainsString(
+                $locale === 'en' ? 'Model number' : 'رقم الموديل',
+                $form->instance()->getErrorBag()->first('productForm.model_number'),
+            );
+        }
+    }
+
     /** @return array<string, array{string, string, string}> */
     public static function localizedPasswordLabels(): array
     {
