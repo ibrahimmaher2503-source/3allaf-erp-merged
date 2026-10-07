@@ -24,6 +24,8 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Operational Governance Files
 
+Current 2026-10-07 QA override: `.ai/CURRENT_TASK.md`, DEC-093/DEC-094 and the attached owner requests route Module 1 closure and confirmed Module 2 fixes. For Module 2, use only TSK-011 product cards, TSK-012 staged imports, the linked pricing/approval and role-permission requirements needed by BUG-105/106/231–235; do not reopen unrelated milestones or PASS observations.
+
 - `AGENTS.md` contains the post-Hotfix51 GitHub/main, account/remote, dedicated-worktree, and CodeGraph operating rules. `.ai/CURRENT_TASK.md` and `.ai/CURRENT_MILESTONE.md` distinguish main `4182c08` from the deployed Hotfix51 application commit and identify the active documentation worktree. Future tasks start from current `main`; the old hotfix50 worktree is historical.
 - `.ai/ERP_CHANGE_POLICY.md` is mandatory for task classification, separate source/production baselines, escalation, proportional verification, pending UI batching, immutable releases, source control, and reporting.
 - `.ai/PENDING_CHANGE_BATCH.md` is the authoritative open ledger for completed, undeployed V0/V1 changes. Read and update it for V0/V1 work, and read it before any batch-closure or release workflow.
