@@ -1,3 +1,13 @@
+# Current Task - Owner-authorized GitHub branch integration (2026-10-07)
+
+D3 source integration from main `87db35e88d6d726b5e287e8e4dcec600ba71d941`; RELEASE_NOW=NO. The owner explicitly requests merging every GitHub branch into main while preserving all branches. Production remains unverified and no deployment is authorized.
+
+All six fetched branch tips are included: fix/module1-qa `386bf31`, fix/module2-qa `af6c286`, fix/module3-purchasing-qa-fast `03a0244`, fix/module5-pos-qa-fast `c6b94a4`, fix/module7-returns-p1-fast `b364374`, and fix/module9-cash-shifts-qa-fast `15c2920`. Modules 1/2 already belong to the POS ancestry; genuine merges preserve the purchasing, shifts and returns histories. Conflicts preserve all historical task/decision/evidence entries, both Arabic translation groups, and one copy of each approval-inbox import.
+
+Focused integration verification PASS: 52 tests / 500 assertions on the existing named disposable XAMPP schemas; PHP syntax for 80 changed runtime files, both changed locale JSON files, runtime diff hygiene, conflict-marker checks, Pint and one frontend build. No full suite, new tests, browser checks, production data/schema changes, deployment, branch deletion or business milestone/UAT advancement. Existing unresolved module decisions and blockers remain unchanged. Publication of the verified integration to main is the final authorized action; Git/tool output records its actual result.
+
+## Preserved previous task
+
 # Current Task - Module 5 POS QA fast closure (2026-10-07)
 
 Owner-authorized scope: M5-01 through M5-11 only, on fix/module5-pos-qa-fast; five concurrent Luna investigators only, lead edits, tightly related fix commits and publication of this branch only. Classification D3; RELEASE_NOW=NO. SOURCE_BASELINE=af6c2863271c82b3a99d733e0432c52f1897727f. Production is UNVERIFIED in this task; its recorded release is separate from this source baseline.

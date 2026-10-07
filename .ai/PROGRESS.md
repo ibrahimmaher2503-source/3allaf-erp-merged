@@ -1,3 +1,9 @@
+# 2026-10-07 - Owner-authorized integration of all GitHub branches
+
+The owner now explicitly authorizes main integration of all six GitHub module branches and requires every branch to remain. All fetched tips are ancestors of the verified combined history. Integration merges: `cc0fb64` (Module 3), `d713e2e` (Module 9), `a2ec03a` (Module 7); the Module 5 tip already includes Modules 1/2. Focused PASS 52 tests / 500 assertions; 80 changed runtime PHP syntax checks, locale JSON, runtime diff hygiene, conflict-marker checks, Pint and one build passed. Only inherited Markdown hard-break/EOF whitespace was reported by the broad documentation diff check; historical reports were preserved. Existing policy/data/server blockers are retained. Main publication follows this verified closure; no production release or business gate advances.
+
+## Preserved previous state
+
 # 2026-10-07 — Fast Module 1 QA closure
 
 BUG-01–16: 10 fixes approved and pushed separately, 4 already fixed/not reproduced locally, 2 blocked by policy or server configuration. Original clean base `7c3cf6d` preserved; integration code `65c9c42` published on `fix/module1-qa-fast-integration`. Overlap checks: 21 tests/164 assertions pass. Single final suite: 276 tests/6,424 assertions, 243 pass/32 pre-existing failures/1 FriBidi error; all 12 new cases pass (A=0/B=32/C=0/D=1/E=0). Narrow post-suite BUG-04 completion: 1 test/16 assertions pass. One build, changed-PHP syntax, locale, Pint and scoped static-delta checks complete; static delta 0 added with 34 existing diagnostics in six affected source files. No second full suite or review team, browser check, main change, production access/deployment or business gate advancement. Evidence: `.ai/qa/module1-fast-20261007/results.json`.
