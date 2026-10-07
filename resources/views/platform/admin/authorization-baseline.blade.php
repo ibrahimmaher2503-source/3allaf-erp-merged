@@ -37,6 +37,7 @@ new #[Title('Authorization Baseline')] class extends Component
     {
         return [
             'userForm.password' => $this->editingUserId === null ? __('Password') : __('New password (optional)'),
+            'userForm.username' => __('Username'),
         ];
     }
 
