@@ -3821,7 +3821,7 @@
     "The product type is stored and audited. Component lines, assembly, and bundle pricing are deferred because the approved Phase 1 data contract does not define them.": "يتم حفظ نوع المنتج وتدقيقه. تؤجل مكونات التركيب والتجميع وتسعير الحزم لأن عقد البيانات المعتمد للمرحلة الأولى لا يحددها.",
     "The proposal source is not supported.": "The proposal source is ليس supported.",
     "The proposed price must be greater than zero.": "The proposed السعر must be greater than zero.",
-    "The proposer cannot approve the same price version.": "The proposer cannot approve the same السعر version.",
+    "The proposer cannot approve the same price version.": "مقدم المقترح لا يمكنه اعتماد إصدار السعر نفسه.",
     "The protected file could not be quarantined for redaction.": "The protected file could ليس be quarantined لـ redaction.",
     "The purchase-invoice import could not be staged.": "The purchase-فاتورة استيراد could ليس be staged.",
     "The reason catalog table is ready but intentionally empty. An administrator must add the owner-provided reporting reasons before a draft can be created.": "The السبب catalog table is ready لكن intentionally فارغ. an المدير must إضافة the owner-provided reporting reasons before a مسودة can be created.",
