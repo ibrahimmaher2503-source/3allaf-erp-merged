@@ -6295,5 +6295,22 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.": "أكمل الباركود والموديل وهوية المنتج وسعر البيع والفئة ونوع المنتج والمورد المناسب قبل تفعيل بطاقة المنتج.",
-    "Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.": "سعر التكلفة اختياري في بطاقة المنتج. اتركه فارغًا للاحتفاظ بأي تكلفة محفوظة. تحتفظ المشتريات المعتمدة بسجلات تكلفتها الخاصة."
+    "Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.": "سعر التكلفة اختياري في بطاقة المنتج. اتركه فارغًا للاحتفاظ بأي تكلفة محفوظة. تحتفظ المشتريات المعتمدة بسجلات تكلفتها الخاصة.",
+    "Document sequence created": "تم إنشاء تسلسل المستند",
+    "Document sequence updated": "تم تحديث تسلسل المستند",
+    "Branch document sequence initialized": "تم تهيئة تسلسل مستندات الفرع",
+    "Document number allocated": "تم تخصيص رقم المستند",
+    "Document sequence counter overridden": "تم تعديل عداد تسلسل المستند استثنائيًا",
+    "Inventory adjustment draft created": "تم إنشاء مسودة تسوية المخزون",
+    "Inventory adjustment draft updated": "تم تحديث مسودة تسوية المخزون",
+    "Numbering": "الترقيم",
+    "Audit log exported": "تم تصدير سجل التدقيق",
+    "Device fingerprint": "بصمة الجهاز",
+    "Session fingerprint": "بصمة الجلسة",
+    "Request-time dependency context": "سياق التبعيات وقت تقديم الطلب",
+    "Linked stores": "المخازن المرتبطة",
+    "Active stores": "المخازن النشطة",
+    "Active selling-store mappings": "روابط منافذ البيع النشطة",
+    "Active cash drawers": "الأدراج النقدية النشطة",
+    "Active user scope assignments": "تعيينات نطاق المستخدمين النشطة"
 }

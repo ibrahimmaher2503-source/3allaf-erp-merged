@@ -3128,5 +3128,22 @@
     "Category path": "Category path",
     "standard": "standard",
     "active": "active",
-    "inactive": "inactive"
+    "inactive": "inactive",
+    "Document sequence created": "Document sequence created",
+    "Document sequence updated": "Document sequence updated",
+    "Branch document sequence initialized": "Branch document sequence initialized",
+    "Document number allocated": "Document number allocated",
+    "Document sequence counter overridden": "Document sequence counter overridden",
+    "Inventory adjustment draft created": "Inventory adjustment draft created",
+    "Inventory adjustment draft updated": "Inventory adjustment draft updated",
+    "Numbering": "Numbering",
+    "Audit log exported": "Audit log exported",
+    "Device fingerprint": "Device fingerprint",
+    "Session fingerprint": "Session fingerprint",
+    "Request-time dependency context": "Request-time dependency context",
+    "Linked stores": "Linked stores",
+    "Active stores": "Active stores",
+    "Active selling-store mappings": "Active selling-store mappings",
+    "Active cash drawers": "Active cash drawers",
+    "Active user scope assignments": "Active user scope assignments"
 }
