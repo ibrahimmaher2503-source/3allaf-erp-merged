@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Support;
 
 use App\Models\User;
-use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\GiftReceipt;
 use App\Modules\Retail\Models\RetailReturnLine;
@@ -20,7 +19,7 @@ final class RetailRefundCalculator
     private const RESERVED_STATUSES = ['draft', 'inspection', 'submitted', 'approved', 'completed'];
 
     /**
-     * @param array<int, array<string, mixed>> $requested
+     * @param  array<int, array<string, mixed>>  $requested
      * @return array{lines: array<int, array<string, mixed>>, totals: array<string, string>}
      */
     public function prepare(User $actor, Sale $sale, array $requested, ?GiftReceipt $receipt = null, ?int $excludingReturnId = null): array
@@ -57,13 +56,16 @@ final class RetailRefundCalculator
                 throw ValidationException::withMessages(['lines.'.$index.'.quantity' => __('The refund quantity exceeds the remaining refundable quantity.')]);
             }
 
-            $condition = (string) ($input['condition'] ?? 'sellable');
+            $condition = (string) ($input['condition'] ?? '');
             $disposition = (string) ($input['disposition'] ?? ($condition === 'sellable' ? 'restock' : 'quarantine'));
             if (! in_array($condition, ['sellable', 'non_sellable', 'damaged', 'manager_review'], true)
                 || ! in_array($disposition, ['restock', 'quarantine'], true)) {
-                throw ValidationException::withMessages(['lines.'.$index => __('The item condition or inventory disposition is invalid.')]);
+                throw ValidationException::withMessages(['lines.'.$index.'.condition' => __('The item condition or inventory disposition is invalid.')]);
             }
-            $requiresDamaged = $disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged'], true);
+            if ($condition !== 'sellable' && $disposition !== 'quarantine') {
+                throw ValidationException::withMessages(['lines.'.$index.'.disposition' => __('Only inspected sellable items may be restocked. Other conditions require quarantine.')]);
+            }
+            $requiresDamaged = $disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged', 'manager_review'], true);
             $storeId = isset($input['return_store_id']) && (int) $input['return_store_id'] > 0
                 ? (int) $input['return_store_id']
                 : ($requiresDamaged
@@ -202,7 +204,7 @@ final class RetailRefundCalculator
         if ($store === null) {
             throw ValidationException::withMessages(['lines.'.$index.'.return_store_id' => __('The selected inventory return location is not authorized for this sale.')]);
         }
-        if (($disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged'], true)) && $store->type !== 'damaged') {
+        if (($disposition === 'quarantine' || in_array($condition, ['non_sellable', 'damaged', 'manager_review'], true)) && $store->type !== 'damaged') {
             throw ValidationException::withMessages(['lines.'.$index.'.return_store_id' => __('Damaged or non-saleable items must use an active damaged inventory location.')]);
         }
 
