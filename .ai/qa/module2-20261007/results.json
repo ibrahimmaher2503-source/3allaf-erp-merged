@@ -156,5 +156,37 @@
   "pint": "Root copied launcher failed255; same installed regression-worktree launcher passed and formatted only five files",
   "build": "Integrated Vite build PASS; Blade compilation PASS; optimize:clear PASS",
   "production": "Not inspected or deployed; no main merge or force push",
-  "integration_push": "Succeeded to origin/fix/module2-qa-integration at closure commit3e13a57; this publication receipt is a documentation-only follow-up on the same branch."
+  "integration_push": "Succeeded to origin/fix/module2-qa-integration at closure commit3e13a57; this publication receipt is a documentation-only follow-up on the same branch.",
+  "focused_closure_review": {
+    "date": "2026-10-07",
+    "change_class": "D3 - verification only",
+    "source_baseline": "aa0bf8bdee075b46bec19b605e1a495779d8bc27",
+    "branch": "fix/module2-qa-integration",
+    "cash_drawer_classification": "B: obsolete source-string/implementation-detail tests; no behavioral regression found in the named contracts",
+    "cash_drawer_tests": [
+      "test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards",
+      "test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation"
+    ],
+    "behavioral_coverage": "Real cashier HTTP/database opening, store-only and branch-only scopes, authorization denial, cross-scope exclusion, company/branch/store mismatch rejection, inactive/warehouse exclusion, exact shift/assignment/audit attribution, idempotent replay, changed-payload denial, cashier/drawer duplicate denial and full rollback after an inserted audit triggers a controlled failure",
+    "source_false_root_cause": "The affected M54 method read resources/views/purchasing/destination-labels.blade.php, deleted by f3d3ba2 when its route moved to the canonical pricing labels renderer. Updated only this method to the existing renderer, destination redirect and current page-guide context.",
+    "verification": {
+      "database": "qa_rajh_m1_integrated_20261007",
+      "drawer_tests": { "tests": 2, "assertions": 61, "failures": 0, "errors": 0 },
+      "m54_affected_method": { "tests": 1, "assertions": 10, "failures": 0, "errors": 0 },
+      "status": "PASS - 3 affected tests / 71 assertions",
+      "logs": [
+        "focused-closure-before.xml",
+        "focused-closure-candidate.xml",
+        "focused-closure-final-drawers.xml"
+      ],
+      "log_directory": "C:/Users/N/.codex/visualizations/2026/10/07/01a113e8-6314-7112-af75-d23599cce2d1/qa-source/reports",
+      "review": "One read-only review found no weakening of the changed authorization/scope/duplicate/transaction contracts; unrelated historical M54 assertions remain outside the focused gate",
+      "pint": "Existing root copied launcher failed; same installed worktree launcher passed. Unrelated formatter hunks restored to preserve other test methods.",
+      "full_suite": "NOT RERUN; prior counts and failing names above are preserved historical evidence, not current extrapolated results"
+    },
+    "fribidi": "BLOCKED: /usr/bin/fribidi is not executable locally; renderer and its environment-dependent test unchanged, not rerun",
+    "application_changes": "None; only the three affected test methods, their necessary native Laravel fixture/base support, and closure records changed",
+    "release_batch": "No new application/UI release batch entry; no main merge or deployment",
+    "publication": "Focused gate green; owner-authorized commit and push target only origin/fix/module2-qa-integration; remote tip is checked after publication"
+  }
 }

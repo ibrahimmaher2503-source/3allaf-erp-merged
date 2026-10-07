@@ -82,14 +82,16 @@ final class M54PurchaseReceivingDistributionTest extends TestCase
         $view = $this->source('resources/views/purchasing/invoices.blade.php');
         $routes = $this->source('routes/purchasing.php');
         $layout = $this->source('resources/views/layouts/app/sidebar.blade.php');
-        $labels = $this->source('resources/views/purchasing/destination-labels.blade.php');
+        $labels = $this->source('resources/views/pricing/label-print.blade.php');
 
         foreach (['Purchase invoices', 'Stage 1 — Purchase invoice', 'Unknown barcode — create Product Card', 'Stage 2 — Mandatory distribution', 'Invoice transition completed.'] as $contract) {
             self::assertStringContainsString($contract, $view);
         }
         self::assertStringContainsString("name('purchasing.invoices.destination-labels')", $routes);
-        self::assertStringContainsString('Destination barcode labels', $labels);
-        self::assertStringContainsString('<x-setup.route-context />', $layout);
+        self::assertStringContainsString("redirect()->route('pricing.labels', ['invoice' => \$invoice->id, 'store' => \$destination->id])", $routes);
+        self::assertStringContainsString('data-canonical-label-renderer', $labels);
+        self::assertStringContainsString("@include('components.platform.dashboard-tools'", $layout);
+        self::assertStringContainsString('PageGuideContext::fromRequest($actor)', $layout);
     }
 
     public function test_release_cache_and_runtime_user_guard_is_documented(): void

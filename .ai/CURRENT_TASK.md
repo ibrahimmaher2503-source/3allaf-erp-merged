@@ -1,3 +1,11 @@
+# Current Task - Focused QA closure review (2026-10-07)
+
+Explicit owner scope: only the two named `V0122Hotfix13CashDrawerIntegrityTest` failures and the deterministic `M54PurchaseReceivingDistributionTest::test_six_stabilization_render_targets_and_setup_context_are_wired` `source(): false` error. Continue `fix/module2-qa-integration` from `aa0bf8bdee075b46bec19b605e1a495779d8bc27`; D3 verification-only change. Focused test edits and green integration-branch commit/push are authorized. No full QA/suite, unrelated historical tests, ten-agent pass, main change or deployment.
+
+**Focused gate: PASS.** Both Hotfix13 failures were obsolete source-string tests, replaced with real cashier HTTP/database behavior covering branch/store scope, permissions, all drawer/company/branch/store consistency checks, duplicate cashier/drawer and replay protections, audit attribution and transactional rollback. The M54 error read a template removed by `f3d3ba2`; its one affected method now checks the existing canonical labels route/renderer and current page-guide wiring. Only these three methods ran: 2 drawer tests/61 assertions plus 1 M54 test/10 assertions. FriBidi `/usr/bin/fribidi` is not executable here: its test remains BLOCKED and was not rerun. Application code, dependencies and business gates are unchanged; previous full-suite results remain historical, not recomputed. See `focused_closure_review` in `.ai/qa/module2-20261007/results.json`. Green closure commit and exact-branch publication follow this record.
+
+## Preserved Module 1/2 closure checkpoint
+
 # Current Task - Module 1 closure and Module 2 rapid QA fixes (2026-10-07)
 
 **Closure checkpoint:** implementation and final local checks complete on `fix/module2-qa-integration`; exact integration branch published at3e13a57; documentation-only publication receipt follows. Six Module 2 bugs fixed; BUG-106 NOT REPRODUCED locally. Full suite remains failed (228 pass/34 fail/2 errors); all new repair tests pass. See `.ai/qa/module2-20261007/results.json` and Module 1 FINAL_REPORT. No main merge, production access/deployment, UAT or business gate advancement.
