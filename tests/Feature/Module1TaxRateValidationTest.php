@@ -213,6 +213,62 @@ final class Module1TaxRateValidationTest extends TestCase
         self::assertSame('0.00', TaxSetting::query()->forCompany($company->id)->where('code', 'QA-ZERO-RATED-APPROVAL')->value('rate'));
     }
 
+    public function test_nonzero_zero_rated_rate_is_rejected_before_request_without_losing_standard_rates(): void
+    {
+        $company = Company::factory()->create();
+        $requester = $this->createSystemAdministrator();
+        $before = $this->taxSideEffectCounts($company);
+
+        Livewire::actingAs($requester)
+            ->test('platform::admin.settings')
+            ->set('activeTab', 'tax')
+            ->set('taxSettingForm.code', 'QA-ZERO-RATED-14')
+            ->set('taxSettingForm.name_ar', 'ضريبة صفرية')
+            ->set('taxSettingForm.name_en', 'Zero rated tax')
+            ->set('taxSettingForm.rate', '14')
+            ->set('taxSettingForm.treatment', 'zero_rated')
+            ->set('taxSettingForm.is_default', false)
+            ->set('taxSettingForm.is_tax_inclusive', false)
+            ->set('taxSettingForm.status', 'active')
+            ->call('saveTaxSetting')
+            ->assertHasErrors(['taxSettingForm.rate']);
+
+        self::assertSame($before, $this->taxSideEffectCounts($company));
+
+        try {
+            app(SaveLocalSettingsAction::class)->saveTaxSetting([
+                'company_id' => $company->id,
+                'code' => 'QA-DIRECT-ZERO-RATED-14',
+                'name_ar' => 'ضريبة صفرية',
+                'name_en' => 'Zero rated tax',
+                'rate' => '14',
+                'treatment' => 'zero_rated',
+                'is_default' => false,
+                'is_tax_inclusive' => false,
+                'status' => 'active',
+            ]);
+            self::fail('A nonzero zero-rated tax rule was persisted.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('taxSettingForm.rate', $exception->errors());
+        }
+
+        self::assertSame($before, $this->taxSideEffectCounts($company));
+
+        $standard = app(SaveLocalSettingsAction::class)->saveTaxSetting([
+            'company_id' => $company->id,
+            'code' => 'QA-STANDARD-14',
+            'name_ar' => 'ضريبة عادية',
+            'name_en' => 'Standard tax',
+            'rate' => '14',
+            'treatment' => 'standard',
+            'is_default' => false,
+            'is_tax_inclusive' => false,
+            'status' => 'active',
+        ]);
+
+        self::assertSame('14.00', $standard->fresh()->rate);
+    }
+
     public function test_company_settings_save_for_an_authorized_user_and_refuses_a_user_without_edit_permission(): void
     {
         $company = Company::factory()->create();
