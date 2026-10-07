@@ -1,4 +1,6 @@
 {
+    "Purchase cost editing is unavailable for your role.": "دورك لا يسمح بتعديل تكلفة الشراء.",
+    "Ask a System Administrator to grant purchase cost editing in role permissions.": "اطلب من مدير النظام منح صلاحية تعديل تكلفة الشراء من شاشة صلاحيات الأدوار.",
     "No active lookup values are available.": "مفيش قيم بحث نشطة متاحة.",
     "Optional catalog content stays on this product card.": "تبقى بيانات الكتالوج الاختيارية في بطاقة المنتج هذه.",
     "Product web & SEO": "خيارات متقدمة",

@@ -37,6 +37,7 @@ final class PermissionPresentation
         'pricing_lists' => self::section('قوائم الأسعار', 'قوائم الأسعار', 'إدارة قوائم الأسعار وإصداراتها وتعيينها للمواقع.', 'Price lists', 'price lists', 'Manage price lists, their versions, and location assignments.'),
         'product_wallet' => self::section('محفظة المنتجات', 'حركات محفظة المنتجات', 'مراجعة رصيد نشاط التجزئة وتسوياته المنفصلة.', 'Product wallet', 'product-wallet transactions', 'Review and settle the separate retail-activity balance.'),
         'products_categories_brands' => self::section('المنتجات والتصنيفات والعلامات التجارية', 'بطاقات المنتجات والتصنيفات والعلامات التجارية', 'إدارة بيانات المنتجات وتصنيفها وهويتها.', 'Products, categories, and brands', 'product, category, and brand records', 'Manage product data, classification, and identity.'),
+        'purchase_invoices' => self::section('صلاحيات فواتير الشراء', 'فواتير الشراء', 'إدارة مسودات فواتير الشراء وتكاليفها واعتمادها.', 'Purchase invoice permissions', 'purchase invoices', 'Manage purchase invoice drafts, costs, and approvals.'),
         'purchase_invoices_supplier_returns' => self::section('فواتير الشراء ومرتجعات الموردين', 'فواتير الشراء ومرتجعات الموردين', 'إدارة الاستلام المالي والمخزني ومرتجعات الموردين.', 'Purchase invoices and supplier returns', 'purchase invoices and supplier returns', 'Manage financial and stock receiving and supplier returns.'),
         'purchase_orders' => self::section('أوامر الشراء', 'أوامر الشراء', 'إدارة طلبات الشراء قبل الاستلام والفوترة.', 'Purchase orders', 'purchase orders', 'Manage purchase requests before receiving and invoicing.'),
         'purchase_returns' => self::section('مرتجعات الشراء', 'مرتجعات الشراء', 'إنشاء مرتجعات الشراء واعتمادها ضمن الحدود المصرح بها.', 'Purchase returns', 'purchase returns', 'Create and approve purchase returns within authorized limits.'),
@@ -57,6 +58,12 @@ final class PermissionPresentation
     private static function actions(): array
     {
         return self::$actionDefinitions ??= [
+        'draft' => self::action('حفظ مسودة :object', 'إنشاء مسودة :object وتعديلها دون اعتمادها.', 'Save :object drafts', 'Create and edit :object drafts without approval.'),
+        'distribute' => self::action('توزيع استلام :object', 'تحديد وجهات استلام :object.', 'Distribute :object receiving', 'Select receiving destinations for :object.'),
+        'view_cost' => self::action('عرض تكلفة الشراء', 'عرض تكلفة الوحدة في فواتير الشراء.', 'View purchase cost', 'View unit costs in purchase invoices.'),
+        'change_cost' => self::action('تعديل تكلفة وحدة الشراء', 'إدخال تكلفة الوحدة وتعديلها في مسودة فاتورة الشراء.', 'Edit purchase unit cost', 'Enter and edit unit costs in a purchase invoice draft.'),
+        'change_list0_price' => self::action('تعديل سعر قائمة المستهلك الأساسية 0', 'تعديل سعر البيع المستقل عن تكلفة الشراء في مسودة الفاتورة.', 'Edit Base Consumer Price List 0', 'Edit the sales price separately from purchase cost in the invoice draft.'),
+        'print_labels' => self::action('طباعة ملصقات :object', 'طباعة ملصقات المنتجات المرتبطة بـ :object.', 'Print :object labels', 'Print product labels associated with :object.'),
         'adjust' => self::action('تعديل رصيد :object', 'إجراء تسوية مصرح بها على :object.', 'Adjust :object', 'Make an authorized adjustment to :object.'),
         'apply_discount' => self::action('تطبيق خصم على المبيعات', 'تطبيق خصم على عملية بيع ضمن السياسة المحددة.', 'Apply sales discounts', 'Apply a discount to a sale within the configured policy.'),
         'apply_tax' => self::action('تطبيق الضريبة على المبيعات', 'تطبيق الضريبة على عملية بيع وفق الإعدادات المعتمدة.', 'Apply sales tax', 'Apply tax to a sale using the approved settings.'),

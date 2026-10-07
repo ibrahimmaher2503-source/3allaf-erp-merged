@@ -971,6 +971,9 @@ new #[Title('Purchase Invoices')] class extends Component
                         </div>
                     </div>
 
+                    @cannot('purchase_invoices.change_cost')
+                        <p class="text-sm text-amber-700 dark:text-amber-300">{{ __('Purchase cost editing is unavailable for your role.') }} {{ __('Ask a System Administrator to grant purchase cost editing in role permissions.') }}</p>
+                    @endcannot
                     <div class="max-h-[32rem] overflow-auto rounded-lg border border-border" data-invoice-lines-scroll>
                         <div class="sticky top-0 z-20 hidden grid-cols-[minmax(14rem,1fr)_4.5rem_7.5rem_6.5rem_6.5rem_5rem_4.5rem_6rem_2.5rem] gap-1.5 border-b border-border bg-zinc-100 px-2 py-1.5 text-[10px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">
                             <span>{{ __('Product') }}</span><span>{{ __('Quantity') }}</span><span>{{ __('Purchase unit cost') }}</span><span>{{ __('Base Consumer Price List 0') }}</span><span>{{ __('Discount type') }}</span><span>{{ __('Discount') }}</span><span>{{ __('Tax %') }}</span><span>{{ __('Line total') }}</span><span></span>

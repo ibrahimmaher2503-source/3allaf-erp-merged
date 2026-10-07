@@ -1,3 +1,7 @@
+# 2026-10-07 — BUG-121 local purchase cost fix
+
+D3 implementation complete on isolated `hotfix/bug-121`: upgrade missing granular purchase-invoice permissions without reseeding roles or overwriting disabled entries, expose explicit cost-grant labels, and explain the disabled field. Focused MySQL success/denial/replay checks passed; draft 2 × 37.50 = 75.00 preserves sale price/WAC and creates no stock movement. Syntax/JSON/Vite passed. Local commit requested; production validation, migration application, and deployment remain outside scope. Main and the ongoing Module 7 checkout were not edited; no milestone advancement.
+
 # 2026-10-05 — Permanent optional Product Card cost
 
 Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Runtime `1d27f7b` committed/pushed and cleanly integrated/pushed to main; production `0.1.22-cost-optional` active, compact smoke PASS. Prior release preserved for rollback; disposable DB, credentials and sessions removed. Report-only closure publication follows without another deployment. No business milestone or full Gate advancement.

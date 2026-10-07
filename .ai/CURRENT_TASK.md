@@ -1,3 +1,11 @@
+# Current Task — BUG-121 purchase invoice cost permission upgrade
+
+2026-10-07: Owner requested the BUG-121 fix and Git commit, then explicitly authorized focused BUG-121 tests on a separate local MySQL database. D3 task on `hotfix/bug-121`, source `87db35e88d6d726b5e287e8e4dcec600ba71d941`, isolated Windows worktree. Reproduced the disabled cost when the granular purchase permission catalog is missing; existing seeded local catalog already authorizes System Administrator. Added an idempotent catalog migration that preserves existing disabled entries/grants, bilingual permission labels, and an explicit denial/grant instruction. Existing server guards, calculations, supplier-history defaults, and approval/stock behavior remain in place.
+
+Focused success, denial, and upgrade-preservation tests passed on `qa_rajh_bug121_20261007`; changed PHP/JSON checks and one Vite build passed. No full suite, browser control, production database change, deployment, main modification, or parent Module 7 change. Commit is requested; push/merge/deployment are outside this request. Production catalog and reported runtime remain unverified; deploying this fix requires applying its migration. No milestone or Phase Gate advancement.
+
+## Preserved previous task
+
 # Current Task — Permanent optional Product Card cost
 
 Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.

@@ -1,3 +1,11 @@
+# 2026-10-07 — BUG-121 focused local verification
+
+Owner explicitly authorized only BUG-121 automated verification on a separate local MySQL database. Used XAMPP `127.0.0.1:3306`, disposable `qa_rajh_bug121_20261007`, schema-only copy of the current local schema (no business data). Initial empty-schema Artisan bootstrap hit the existing missing `translation_overrides` table dependency; schema-only initialization avoided changing that unrelated behavior.
+
+`Bug121PurchaseCostPermissionTest`: baseline reproduction failed at cost authorization before the fix. Three distinct cases subsequently passed: upgrade/System Administrator/Livewire draft save, preserving inactive permissions and existing role grants on migration replay, and restricted-role UI/server denial with no invoice write. After the initial focused run, only the failing success case was rerun while correcting fixture completeness and existing decimal-cast expectations. Its final result was 1 test / 12 assertions; the other two cases were already passing (9 assertions). Saved draft total `75.0000`, unit cost `37.5000`, independent sale price `50.00`, unchanged WAC `10.00`, and zero stock movements.
+
+Changed PHP syntax (4 files), Arabic JSON parsing (2 files), rendered Livewire/Blade views, and one Vite build passed. No full suite or browser control. No production verification or writes, and no migration was applied to the normal local database.
+
 # 2026-10-04 — QA Hardening Phase 2 actual focused evidence
 
 `phase2-evidence/` and `phase2-mutation-summary.json` record eleven populated domain/concurrency scenarios, thirteen two-connection races, five new invariant counts (all zero), exact static before/after comparison and eight-file security zero findings. Seed 20261004: 2,097 POS, 1,327 purchase, 400 signed rounding and 60 cash cases (3,884 unique generated cases); additional exact financial/denial/boundary tests passed. Final five-file Infection plus affected-only newly covered default-rule replay: covered 547, killed 434, raw survivors 113, raw corrected MSI 79.34%, reviewed equivalents/unreachable 86, retained 27, adjusted MSI 94.14%, errors/syntax errors/timeouts/ignored zero. No broad old audit, full browser/Semgrep scan or restore repeated. Fast PASS 104s and Release PASS WITH WARNINGS (0s preserved report assembly); actual CI/publication pending this entry.
