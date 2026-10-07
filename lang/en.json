@@ -3146,5 +3146,6 @@
     "Active selling-store mappings": "Active selling-store mappings",
     "Active cash drawers": "Active cash drawers",
     "Active user scope assignments": "Active user scope assignments",
-    "Only the current company-specific XLSX template is supported.": "Only the current company-specific XLSX template is supported."
+    "Only the current company-specific XLSX template is supported.": "Only the current company-specific XLSX template is supported.",
+    "Create Only (create permission required)": "Create Only (create permission required)"
 }

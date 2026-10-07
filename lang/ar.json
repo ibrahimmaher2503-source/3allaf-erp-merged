@@ -6315,5 +6315,6 @@
     "Active selling-store mappings": "روابط منافذ البيع النشطة",
     "Active cash drawers": "الأدراج النقدية النشطة",
     "Active user scope assignments": "تعيينات نطاق المستخدمين النشطة",
-    "Only the current company-specific XLSX template is supported.": "القالب الحالي بصيغة XLSX والمخصص للشركة هو المدعوم فقط."
+    "Only the current company-specific XLSX template is supported.": "القالب الحالي بصيغة XLSX والمخصص للشركة هو المدعوم فقط.",
+    "Create Only (create permission required)": "إنشاء فقط (يتطلب صلاحية إنشاء المنتجات)"
 }

@@ -26,7 +26,10 @@ new #[Title('Product Import')] class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('products_categories_brands.create');
+        abort_unless(Gate::allows('products_categories_brands.create') || Gate::allows('products_categories_brands.edit'), 403);
+        if (! Gate::allows('products_categories_brands.create')) {
+            $this->mode = 'update_existing';
+        }
     }
 
     public function stage(StageProductImportAction $action): void
@@ -94,8 +97,8 @@ new #[Title('Product Import')] class extends Component {
 
     public function cancelBatch(StageProductImportAction $action): void
     {
-        Gate::authorize('products_categories_brands.create');
         $batch = ProductImportBatch::query()->where('created_by', auth()->id())->findOrFail($this->selectedBatchId);
+        Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
         try {
             $action->cancel($batch);
@@ -247,7 +250,11 @@ new #[Title('Product Import')] class extends Component {
             <div class="space-y-2" data-guide="import-mode-select">
                 <flux:label>{{ __('Import mode') }}</flux:label>
                 <flux:select wire:model="mode">
-                    <flux:select.option value="create_only">{{ __('Create Only') }}</flux:select.option>
+                    @can('products_categories_brands.create')
+                        <flux:select.option value="create_only">{{ __('Create Only') }}</flux:select.option>
+                    @else
+                        <flux:select.option value="create_only" disabled>{{ __('Create Only (create permission required)') }}</flux:select.option>
+                    @endcan
                     @can('products_categories_brands.edit')
                         <flux:select.option value="update_existing">{{ __('Update Existing') }}</flux:select.option>
                     @else
