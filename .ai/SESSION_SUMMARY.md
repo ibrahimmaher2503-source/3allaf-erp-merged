@@ -1761,3 +1761,6 @@ Added only a narrow catch for the existing StaleCatalogRecordException in the pr
 
 ## 2026-10-07 — BUG-25 literal product searches
 Escaped SQL LIKE percent, underscore and backslash in the existing bound product-search pattern and the same local descriptive filters. Pagination, exact-match ordering and scope remain unchanged. One focused method passed 1 test/3 assertions on qa_rajh_m1_integrated_20261007, checking literal matches while excluding an ordinary product for each special character. PHP lint, Pint and diff hygiene passed; no full suite/browser/static/deployment. Separate commit on fix/module2-qa.
+
+## 2026-10-07 — BUG-23 audit event completeness
+Mapped existing product-card/type/status and barcode events to their correct readable names; shared automatic identity barcode creation now records its event within the caller's transaction. Existing approved-price superseding now emits an explicit scoped before/after event within the unchanged approval transaction. One focused method passed 1 test/21 assertions after correcting the missing presentation mapping; existing creation/submission/approval events and one-active-line state verified. PHP syntax, Pint, locale parsing and diff checks passed. No audit framework redesign, full suite/browser/static/production/deployment. Separate commit on fix/module2-qa.

@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\GlobalProductCodeSequence;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -87,13 +88,22 @@ class ReserveProductIdentityAction
 
     public function createPrimaryBarcode(Product $product, string $code, string $source): Barcode
     {
-        return Barcode::query()->create([
+        $barcode = Barcode::query()->create([
             'product_id' => $product->id,
             'barcode' => $code,
             'source' => $source,
             'status' => 'active',
             'is_primary' => true,
         ]);
+
+        app(RecordAuditEvent::class)->execute(
+            category: 'master_data',
+            event: 'create_product_barcode',
+            source: $barcode,
+            after: $barcode->only(['product_id', 'barcode', 'source', 'status', 'is_primary']),
+        );
+
+        return $barcode;
     }
 
     private function assertCodeFormatAndAvailability(string $code): void
