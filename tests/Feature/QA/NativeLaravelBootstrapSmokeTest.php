@@ -7,11 +7,17 @@ namespace Tests\Feature\QA;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase;
+use Illuminate\Support\Facades\DB;
+use Tests\Support\DisposableMariaDbRuntime;
 
 final class NativeLaravelBootstrapSmokeTest extends TestCase
 {
     public function createApplication(): Application
     {
+        if (getenv('QA_DISPOSABLE_RUNTIME') !== false) {
+            DisposableMariaDbRuntime::assertSafeEnvironment();
+        }
+
         $application = require dirname(__DIR__, 3).'/bootstrap/app.php';
         $application->make(Kernel::class)->bootstrap();
 
@@ -33,9 +39,18 @@ final class NativeLaravelBootstrapSmokeTest extends TestCase
         self::assertSame('mysql', config('database.default'));
         self::assertSame('mysql', $connection['driver'] ?? null);
         self::assertSame('127.0.0.1', $connection['host'] ?? null);
-        self::assertSame('3306', (string) ($connection['port'] ?? ''));
+        $usesDisposableRuntime = getenv('QA_DISPOSABLE_RUNTIME') !== false;
+        self::assertSame($usesDisposableRuntime ? '1' : '3306', (string) ($connection['port'] ?? ''));
         self::assertSame(getenv('DB_DATABASE'), $connection['database'] ?? null);
         self::assertEmpty($connection['url'] ?? null);
-        self::assertEmpty($connection['unix_socket'] ?? null);
+        if ($usesDisposableRuntime) {
+            self::assertSame(getenv('DB_SOCKET'), $connection['unix_socket'] ?? null);
+            $server = DB::selectOne('SELECT @@socket AS socket, @@skip_networking AS skip_networking, DATABASE() AS db');
+            self::assertSame(getenv('DB_SOCKET'), $server->socket);
+            self::assertSame(1, (int) $server->skip_networking);
+            self::assertSame(getenv('DB_DATABASE'), $server->db);
+        } else {
+            self::assertEmpty($connection['unix_socket'] ?? null);
+        }
     }
 }

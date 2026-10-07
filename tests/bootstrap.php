@@ -2,8 +2,16 @@
 
 declare(strict_types=1);
 use App\Models\User;
+use Tests\Support\DisposableMariaDbRuntime;
 
 $root = dirname(__DIR__);
+require_once $root.'/vendor/autoload.php';
+
+$usesDisposableRuntime = getenv('QA_DISPOSABLE_RUNTIME') !== false;
+if ($usesDisposableRuntime) {
+    DisposableMariaDbRuntime::assertSafeEnvironment();
+}
+
 $requiredEnvironment = [
     'APP_ENV' => 'testing',
     'APP_KEY' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
@@ -12,9 +20,9 @@ $requiredEnvironment = [
     'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'mysql',
     'DB_HOST' => '127.0.0.1',
-    'DB_PORT' => '3306',
+    'DB_PORT' => $usesDisposableRuntime ? '1' : '3306',
     'DB_URL' => '',
-    'DB_SOCKET' => '',
+    'DB_SOCKET' => $usesDisposableRuntime ? (string) getenv('DB_SOCKET') : '',
     'DB_USERNAME' => 'root',
     'DB_PASSWORD' => '',
     'FILESYSTEM_DISK' => 'local',
@@ -32,7 +40,7 @@ foreach ($requiredEnvironment as $name => $expectedValue) {
 
 $database = getenv('DB_DATABASE');
 
-if (! is_string($database) || preg_match('/\Aqa_rajh_m1_[a-z0-9_]+_20261007\z/', $database) !== 1) {
+if (! $usesDisposableRuntime && (! is_string($database) || preg_match('/\Aqa_rajh_m1_[a-z0-9_]+_20261007\z/', $database) !== 1)) {
     throw new RuntimeException('Unsafe PHPUnit database: DB_DATABASE must match qa_rajh_m1_<domain>_20261007.');
 }
 
@@ -111,8 +119,6 @@ foreach ([
 ] as $environmentVariable => $filename) {
     $setEnvironment($environmentVariable, $cachePath.DIRECTORY_SEPARATOR.$filename);
 }
-
-require_once $root.'/vendor/autoload.php';
 
 $userClassPath = realpath((new ReflectionClass(User::class))->getFileName());
 $worktreeAppPath = realpath($root.'/app');

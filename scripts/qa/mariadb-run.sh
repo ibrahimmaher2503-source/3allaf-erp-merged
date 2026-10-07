@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 mode=${1:?mode is required}
+shift
 source "$(dirname "$0")/environment.sh"
 mkdir -p "$QA_ROOT/.qa-runtime"
 if [[ ${QA_REUSE_RUNTIME:-0} == 1 ]]; then
@@ -28,6 +29,7 @@ printf 'Disposable database (before creation): %s; socket %s; networking disable
 ' "$DB_DATABASE" "$socket"
 [[ ${#DB_DATABASE} -lt 60 ]]
 if [[ ${QA_REUSE_RUNTIME:-0} != 1 ]]; then mariadb --no-defaults --protocol=socket --socket="$socket" -uroot -e "CREATE DATABASE \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"; fi
+printf '%s\n' "$DB_DATABASE" > "$work/database-name"
 export QA_STORAGE="$work/storage"
 mkdir -p "$QA_STORAGE/framework/"{cache/data,sessions,views} "$QA_STORAGE/logs" "$QA_STORAGE/app/private"
 if [[ ! -f "$work/schema-ready" ]]; then
@@ -35,6 +37,12 @@ if [[ ! -f "$work/schema-ready" ]]; then
   touch "$work/schema-ready"
 fi
 case "$mode" in
+ focused)
+   mkdir -p "$QA_STORAGE/$DB_DATABASE"
+   APP_ENV=testing APP_LOCALE=en BCRYPT_ROUNDS=4 FILESYSTEM_DISK=local \
+     QA_DISPOSABLE_RUNTIME="$work" QA_STORAGE_PATH="$QA_STORAGE/$DB_DATABASE" \
+     "$QA_PHP" "$QA_ROOT/vendor/bin/phpunit" -c "$QA_ROOT/phpunit.qa.xml" --testdox "$@"
+   ;;
  product-cost)
    if [[ ${QA_COST_VERIFY_ONLY:-0} == 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/product-cost-regression.php" verify-browser; exit; fi
    if [[ ${QA_COST_BROWSER_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/product-cost-regression.php"; fi

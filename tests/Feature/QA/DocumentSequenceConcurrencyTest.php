@@ -82,7 +82,8 @@ final class DocumentSequenceConcurrencyTest extends TestCase
                     break;
                 }
 
-                usleep(10000);
+                // MariaDB refreshes lock metadata only after 100 ms without reads.
+                usleep(200000);
             }
 
             $workerDiagnostics = array_map(static function (array $paths): array {

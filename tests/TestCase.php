@@ -10,11 +10,17 @@ use Illuminate\Foundation\Testing\CachedState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
+use Tests\Support\DisposableMariaDbRuntime;
 
 abstract class TestCase extends BaseTestCase
 {
     public function createApplication(): Application
     {
+        $usesDisposableRuntime = getenv('QA_DISPOSABLE_RUNTIME') !== false;
+        if ($usesDisposableRuntime) {
+            DisposableMariaDbRuntime::assertSafeEnvironment();
+        }
+
         $application = require dirname(__DIR__).'/bootstrap/app.php';
         $cachePathPrefix = DIRECTORY_SEPARATOR === '\\'
             ? substr((string) getenv('QA_STORAGE_PATH'), 0, 3)
@@ -43,10 +49,12 @@ abstract class TestCase extends BaseTestCase
             || $application['config']->get('database.default') !== 'mysql'
             || ($connection['driver'] ?? null) !== 'mysql'
             || ($connection['host'] ?? null) !== '127.0.0.1'
-            || (string) ($connection['port'] ?? '') !== '3306'
+            || (string) ($connection['port'] ?? '') !== ($usesDisposableRuntime ? '1' : '3306')
             || ($connection['database'] ?? null) !== getenv('DB_DATABASE')
             || ! empty($connection['url'] ?? null)
-            || ! empty($connection['unix_socket'] ?? null)
+            || ($usesDisposableRuntime
+                ? ($connection['unix_socket'] ?? null) !== getenv('DB_SOCKET')
+                : ! empty($connection['unix_socket'] ?? null))
         ) {
             throw new \RuntimeException('Unsafe test database configuration; refusing to run this Laravel test.');
         }

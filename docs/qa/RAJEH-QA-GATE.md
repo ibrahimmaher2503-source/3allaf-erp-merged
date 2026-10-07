@@ -9,7 +9,19 @@ Fast is routine development verification. Release is operator-triggered for majo
 
 ## Fast
 
-Fast checks runtime/tool availability, the current developer CodeGraph root/index presence without initialization or synchronization, changed PHP syntax, Larastan/PHPStan level 7 on five critical arithmetic files plus the touched product-card transaction, the focused calculator suite, real catalog create/edit/cost/filter/identity/denial/failure actions, schema/database invariants, scheduler/runtime configuration and a compact public browser smoke. It uses one temporary MariaDB schema across its database/browser sections; it runs no historical full suite, Semgrep, Infection, backup or broad browser matrix.
+Fast checks runtime/tool availability, the current developer CodeGraph root/index presence without initialization or synchronization, changed PHP syntax, Larastan/PHPStan level 7 on five critical arithmetic files plus the touched product-card transaction, the focused pure-calculator and Laravel/database regression suite, real catalog create/edit/cost/filter/identity/denial/failure actions, schema/database invariants, scheduler/runtime configuration and a compact public browser smoke. It uses one temporary MariaDB schema across its database/browser sections; it runs no historical full suite, Semgrep, Infection, backup or broad browser matrix.
+
+The focused suite runs through `scripts/qa/mariadb-run.sh focused`, which prepares the existing socket-only disposable database before PHPUnit. PHPUnit uses `APP_ENV=testing` and the shared `tests/bootstrap.php`; script-driven integrity/runtime/browser checks retain `APP_ENV=qa`. The explicit disposable test profile requires the runtime's recorded `qa_rajh_*` database, private canonical `/tmp/rajeh-qa-mariadb.*` directory, exact live socket, disconnected TCP port `1`, no database URL, and database-specific temporary storage/bootstrap caches. The original local TCP test profile keeps its existing guards. The native bootstrap smoke confirms the actual database/socket and disabled server networking; negative tests reject unsafe overrides before application boot. Fast reuses the same disposable database for the following integrity/browser sections and removes it on completion. Existing pure calculator tests and Fast's heavy financial-matrix exclusions are preserved.
+
+The numbering race keeps its requirement to observe both workers blocked before releasing the branch lock. Its metadata poll waits 200 ms between reads: [MariaDB 10.11 lock-metadata caching](https://github.com/MariaDB/server/blob/10.11/storage/innobase/trx/trx0i_s.cc#L898-L914) requires more than 100 ms of idle time to refresh; the previous 10 ms polling could indefinitely preserve a one-worker snapshot.
+
+Focused validation only:
+
+```bash
+./scripts/qa/mariadb-run.sh focused
+# Optional affected-only selection:
+./scripts/qa/mariadb-run.sh focused --filter 'DisposableMariaDbSafetyTest|LaravelHarnessSmokeTest|NativeLaravelBootstrapSmokeTest'
+```
 
 The arithmetic baseline records twelve existing exact message/file/count numeric-string inference findings. Phase 2 adds three exact pre-existing product-action findings after an identical before/after comparison. It does not baseline the full application: the preserved earlier broad attempt found 1,404 diagnostics, which remain debt. New diagnostics in the scoped files fail. Baseline entries must be reviewed, never regenerated automatically to pass a gate.
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/Feature/QA/bootstrap.php" colors="false" cacheDirectory=".qa-runtime/phpunit" failOnWarning="true" failOnRisky="true">
+<phpunit bootstrap="tests/bootstrap.php" colors="false" cacheDirectory=".qa-runtime/phpunit" failOnWarning="true" failOnRisky="true">
     <testsuites><testsuite name="Rajeh critical QA"><directory>tests/Feature/QA</directory><exclude>tests/Feature/QA/FinancialMatrixTest.php</exclude><exclude>tests/Feature/QA/FinancialBoundaryTest.php</exclude><exclude>tests/Feature/QA/FinancialPrecisionClosureTest.php</exclude></testsuite></testsuites>
     <source><include>
         <file>app/Modules/Retail/Services/PosCalculationService.php</file>

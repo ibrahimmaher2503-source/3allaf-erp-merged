@@ -55,7 +55,8 @@ run_check 'tool self-check' "$root/scripts/qa/tools-self-check.sh" "$mode"
 run_check 'CodeGraph current-root/index' bash -c 'set -eo pipefail; if [[ ${CI:-} == true ]]; then echo "CI excludes developer-only semantic indexing";exit 0;fi; test -f "$QA_ROOT/.codegraph/codegraph.db"; codegraph status "$QA_ROOT" | tee "$QA_RUN_DIR/codegraph-status.txt"; grep -Fq "Project: $QA_ROOT" "$QA_RUN_DIR/codegraph-status.txt"'
 run_check 'PHP syntax changed/relevant files' "$root/scripts/qa/php-syntax.sh"
 run_check 'Larastan/PHPStan controlled baseline' "$QA_PHP" "$root/vendor/bin/phpstan" analyse -c "$root/phpstan.qa.neon" --no-progress --memory-limit=1G
-run_check 'focused critical regression suite' "$QA_PHP" "$root/vendor/bin/phpunit" -c "$root/phpunit.qa.xml" --testdox
+run_check 'focused critical regression suite' env QA_REUSE_RUNTIME=0 "$root/scripts/qa/mariadb-run.sh" focused
+if [[ -f "$root/.qa-runtime/last-db" ]]; then export QA_REUSE_RUNTIME=1;fi
 run_check 'isolated MariaDB integrity scanner' "$root/scripts/qa/mariadb-run.sh" integrity
 if [[ -f "$root/.qa-runtime/last-db" ]]; then export QA_REUSE_RUNTIME=1;fi
 run_check 'queue/scheduler/runtime configuration'  "$root/scripts/qa/runtime-check.sh"
