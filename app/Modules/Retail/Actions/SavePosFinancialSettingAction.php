@@ -35,8 +35,8 @@ final class SavePosFinancialSettingAction
                 throw ValidationException::withMessages(['value' => __('The configured value must be greater than zero.')]);
             }
             if ($key === PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION
-                && bccomp($value, DecimalMoney::round($value, 2), 4) !== 0) {
-                throw ValidationException::withMessages(['value' => __('The cash rounding denomination cannot use more than two decimal places.')]);
+                && bccomp($value, '5', 4) !== 0) {
+                throw ValidationException::withMessages(['value' => __('Approved cash rounding: nearest 5 EGP for cash and mixed payments.')]);
             }
         } else {
             $value = null;

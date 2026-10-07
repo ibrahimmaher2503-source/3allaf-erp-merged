@@ -295,8 +295,7 @@ final class PosCalculationService
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage(), previous: $exception);
         }
 
-        if ($denomination === null || bccomp($denomination, '0', self::RATE_SCALE) <= 0
-            || bccomp($denomination, DecimalMoney::round($denomination, 2), self::RATE_SCALE) !== 0) {
+        if ($denomination === null || bccomp($denomination, '5', self::RATE_SCALE) !== 0) {
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 

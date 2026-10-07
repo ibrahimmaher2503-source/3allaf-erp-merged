@@ -22,10 +22,12 @@ use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
+use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
@@ -35,6 +37,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -145,6 +148,21 @@ final class Module5PosQaTest extends TestCase
         $this->get(route('pos'))->assertOk()->assertSee('5 EGP')->assertSee(route('pos.financial-readiness'), false);
         PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '1.2345', 'version' => 1, 'created_by' => $this->cashier->id]);
         $this->get(route('pos'))->assertOk()->assertSee('5 EGP');
+        $versions = PosFinancialSettingVersion::query()->count();
+        try {
+            app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', '2');
+            self::fail('An unapproved cash rounding denomination was saved.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('value', $exception->errors());
+        }
+        self::assertSame($versions, PosFinancialSettingVersion::query()->count());
+        PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '2', 'version' => 2, 'created_by' => $this->cashier->id]);
+        try {
+            app(PosCalculationService::class)->cashRoundingDenomination();
+            self::fail('Cash settlement accepted a stored unapproved denomination.');
+        } catch (PosFinancialConfigurationException $exception) {
+            self::assertStringContainsString('5 EGP', $exception->getMessage());
+        }
         $this->post(route('admin.settings.pos-financial.save'), ['key' => 'pos.cash_rounding_denomination', 'value' => '5'])->assertSessionHasNoErrors();
         $this->get(route('pos.financial-readiness', ['company_id' => $this->store->company_id]))->assertOk()->assertSee(__('Approved cash rounding: nearest 5 EGP for cash and mixed payments.'));
         foreach (['cash', 'split'] as $mode) {
