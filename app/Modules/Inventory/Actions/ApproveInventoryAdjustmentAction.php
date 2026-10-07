@@ -24,7 +24,7 @@ final class ApproveInventoryAdjustmentAction
         Gate::authorize('inventory_stock_card.approve');
 
         return DB::transaction(function () use ($id): InventoryAdjustment {
-            $adjustment = InventoryAdjustment::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $adjustment = InventoryAdjustment::query()->with(['lines', 'store'])->lockForUpdate()->findOrFail($id);
             $this->scope->execute($adjustment->store_id);
             if ($adjustment->status === 'approved') {
                 return $adjustment->fresh(['store', 'lines.product']);
@@ -55,7 +55,7 @@ final class ApproveInventoryAdjustmentAction
             $before = $adjustment->only(['status', 'lock_version']);
             $adjustment->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now(), 'lock_version' => $adjustment->lock_version + 1]);
             app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Inventory adjustment and stock movements approved.'));
-            app(RecordAuditEvent::class)->execute('inventory', 'approve_inventory_adjustment', $adjustment, $before, $adjustment->only(['status', 'approved_by', 'approved_at', 'lock_version']), storeId: $adjustment->store_id, reasonCode: $adjustment->reason_code, reasonText: $adjustment->reason_notes, metadata: ['approval_record_id' => $approval->id]);
+            app(RecordAuditEvent::class)->execute('inventory', 'approve_inventory_adjustment', $adjustment, $before, $adjustment->only(['status', 'approved_by', 'approved_at', 'lock_version']), branchId: $adjustment->store->branch_id, storeId: $adjustment->store_id, reasonCode: $adjustment->reason_code, reasonText: $adjustment->reason_notes, metadata: ['approval_record_id' => $approval->id]);
 
             return $adjustment->fresh(['store', 'lines.product']);
         });
