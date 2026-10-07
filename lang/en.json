@@ -1051,6 +1051,7 @@
     "Linked Store (Optional)": "Linked Store (Optional)",
     "None / Branch Level": "None / Branch Level",
     "Default Assigned Cashier (Optional)": "Default Assigned Cashier (Optional)",
+    "The selected cashier must be active and assigned to this branch or sales outlet.": "The selected cashier must be active and assigned to this branch or sales outlet.",
     "Unassigned / Any Cashier": "Unassigned / Any Cashier",
     "Policy / Operational Notes (BLK-006 / Local TBD)": "Policy / Operational Notes (BLK-006 / Local TBD)",
     "Cash drawer created successfully.": "Cash drawer created successfully.",

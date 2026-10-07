@@ -1324,6 +1324,7 @@
     "Default": "افتراضي",
     "Default Application Locale": "اللغة الافتراضية للتطبيق",
     "Default Assigned Cashier (Optional)": "الكاشير الافتراضي (اختياري)",
+    "The selected cashier must be active and assigned to this branch or sales outlet.": "يجب أن يكون الكاشير المحدد نشطًا ومصرحًا له بالوصول إلى هذا الفرع أو منفذ البيع.",
     "Default Printer for Device Profile": "الطابعة الافتراضية لملف الجهاز",
     "Deferred separate instruments": "الأدوات المنفصلة المؤجلة",
     "Deferred to TSK-028. The ledgers must remain separately named, scoped, append-only, and non-transferable.": "مؤجلة إلى TSK-028. يجب أن تبقى دفاتر الأستاذ منفصلة بالاسم والنطاق، وإضافية فقط، وغير قابلة للتحويل.",

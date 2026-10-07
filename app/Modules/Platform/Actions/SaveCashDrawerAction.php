@@ -2,6 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
+use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
@@ -63,6 +64,31 @@ class SaveCashDrawerAction
                     // historical branch-wide primary mapping is never a fallback.
                 }
 
+                $assignedUserId = $data['assigned_user_id'] ?? null;
+                if ($assignedUserId !== null && $assignedUserId !== '') {
+                    if ((! is_int($assignedUserId) && (! is_string($assignedUserId) || ctype_digit($assignedUserId) !== true))
+                        || (int) $assignedUserId < 1) {
+                        throw ValidationException::withMessages([
+                            'assigned_user_id' => __('The selected cashier must be active and assigned to this branch or sales outlet.'),
+                        ]);
+                    }
+
+                    $assignedCashier = User::query()
+                        ->assignableToCashDrawer((int) $branch->id, $store?->id)
+                        ->sharedLock()
+                        ->find((int) $assignedUserId);
+
+                    if ($assignedCashier === null) {
+                        throw ValidationException::withMessages([
+                            'assigned_user_id' => __('The selected cashier must be active and assigned to this branch or sales outlet.'),
+                        ]);
+                    }
+
+                    $assignedUserId = (int) $assignedCashier->id;
+                } else {
+                    $assignedUserId = null;
+                }
+
                 $attributes = [
                     // Prefer the selected store as the authoritative owner. The
                     // model repeats this derivation so Eloquent seed/update paths
@@ -70,7 +96,7 @@ class SaveCashDrawerAction
                     'company_id' => $store?->company_id ?? $branch->company_id,
                     'branch_id' => $branch->id,
                     'store_id' => $store?->id,
-                    'assigned_user_id' => ! empty($data['assigned_user_id']) ? (int) $data['assigned_user_id'] : null,
+                    'assigned_user_id' => $assignedUserId,
                     'code' => strtoupper(trim($data['code'])),
                     'name_ar' => trim($data['name_ar']),
                     'name_en' => trim($data['name_en']),
