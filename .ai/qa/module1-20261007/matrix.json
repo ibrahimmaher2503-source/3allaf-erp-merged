@@ -19,7 +19,13 @@
       ],
       "evidence_reference": "PDF page 6 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "config/fortify.php",
+        "app/Providers/FortifyServiceProvider.php",
+        "bootstrap/app.php",
+        "app/Http/Middleware",
+        "resources/views/pages/auth"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "auth",
       "root_cause": null,
@@ -40,7 +46,12 @@
       ],
       "evidence_reference": "PDF page 8 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/system/approval-inbox.blade.php",
+        "app/Modules/Platform/Support/ApprovalPresentation.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
+        "app/Modules/Platform/Models/ApprovalRecord.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "approvals",
       "root_cause": null,
@@ -61,7 +72,11 @@
       ],
       "evidence_reference": "PDF page 9 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "tax",
       "root_cause": null,
@@ -82,7 +97,12 @@
       ],
       "evidence_reference": "PDF page 10 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Actions/SaveBranchAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
+        "resources/views/platform/admin/branches.blade.php",
+        "app/Modules/Platform/Models/Branch.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "branches",
       "root_cause": null,
@@ -103,7 +123,12 @@
       ],
       "evidence_reference": "PDF page 12 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "resources/views/platform/admin/authorization-baseline.blade.php",
+        "lang/ar.json",
+        "lang/ar-EG.json"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "localization",
       "root_cause": null,
@@ -124,7 +149,13 @@
       ],
       "evidence_reference": "PDF page 14 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "config/fortify.php",
+        "app/Providers/FortifyServiceProvider.php",
+        "bootstrap/app.php",
+        "app/Http/Middleware",
+        "resources/views/pages/auth"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "auth",
       "root_cause": null,
@@ -145,7 +176,12 @@
       ],
       "evidence_reference": "PDF page 15 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "routes/retail.php",
+        "app/Modules/Retail/Actions/OpenShiftAction.php",
+        "database/seeders/ProductionSeeder.php",
+        "app/Modules/Retail/Models/PosShift.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "pos",
       "root_cause": null,
@@ -166,7 +202,12 @@
       ],
       "evidence_reference": "PDF page 17 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Actions/SaveCashDrawerAction.php",
+        "app/Modules/Platform/Models/CashDrawer.php",
+        "resources/views/platform/admin/drawers.blade.php",
+        "database/migrations"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "concurrency",
       "root_cause": null,
@@ -187,7 +228,12 @@
       ],
       "evidence_reference": "PDF page 18 and adjacent screenshot where present",
       "source_status": "FAIL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Support/AuditLogPresentation.php",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
+        "resources/views/platform/system/audit-log.blade.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "audit",
       "root_cause": null,
@@ -208,7 +254,13 @@
       ],
       "evidence_reference": "PDF page 18",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "config/fortify.php",
+        "app/Providers/FortifyServiceProvider.php",
+        "bootstrap/app.php",
+        "app/Http/Middleware",
+        "resources/views/pages/auth"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "auth",
       "root_cause": null,
@@ -229,7 +281,12 @@
       ],
       "evidence_reference": "PDF page 18",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Actions/SaveBranchAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
+        "resources/views/platform/admin/branches.blade.php",
+        "app/Modules/Platform/Models/Branch.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "branches",
       "root_cause": null,
@@ -250,7 +307,12 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Actions/SaveBranchAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
+        "resources/views/platform/admin/branches.blade.php",
+        "app/Modules/Platform/Models/Branch.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "branches",
       "root_cause": null,
@@ -271,7 +333,13 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Models/User.php",
+        "app/Providers/AppServiceProvider.php",
+        "app/Modules/Platform/Actions/SaveUserAuthorizationAction.php",
+        "app/Modules/Platform/Actions/SaveRoleAction.php",
+        "routes/platform.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "authorization",
       "root_cause": null,
@@ -292,7 +360,12 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/system/approval-inbox.blade.php",
+        "app/Modules/Platform/Support/ApprovalPresentation.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
+        "app/Modules/Platform/Models/ApprovalRecord.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "approvals",
       "root_cause": null,
@@ -313,7 +386,13 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Models/User.php",
+        "app/Providers/AppServiceProvider.php",
+        "app/Modules/Platform/Actions/SaveUserAuthorizationAction.php",
+        "app/Modules/Platform/Actions/SaveRoleAction.php",
+        "routes/platform.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "authorization",
       "root_cause": null,
@@ -334,7 +413,12 @@
       ],
       "evidence_reference": "PDF page 2",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Support/AuditLogPresentation.php",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
+        "resources/views/platform/system/audit-log.blade.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "audit",
       "root_cause": null,
@@ -355,7 +439,11 @@
       ],
       "evidence_reference": "PDF page 3",
       "source_status": "AMBIGUOUS REQUIREMENT",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "tax",
       "root_cause": null,
@@ -376,7 +464,13 @@
       ],
       "evidence_reference": "PDF page 5",
       "source_status": "PARTIAL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "tests",
+        "phpunit.xml.dist",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Platform/Actions/DeliverAttachment.php",
+        "resources/js"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "regression",
       "root_cause": null,
@@ -397,7 +491,13 @@
       ],
       "evidence_reference": "PDF page 4",
       "source_status": "PARTIAL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Models/User.php",
+        "app/Providers/AppServiceProvider.php",
+        "app/Modules/Platform/Actions/SaveUserAuthorizationAction.php",
+        "app/Modules/Platform/Actions/SaveRoleAction.php",
+        "routes/platform.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "authorization",
       "root_cause": null,
@@ -418,7 +518,13 @@
       ],
       "evidence_reference": "PDF page 2",
       "source_status": "NOT TESTABLE",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "tests",
+        "phpunit.xml.dist",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Platform/Actions/DeliverAttachment.php",
+        "resources/js"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "regression",
       "root_cause": null,
@@ -439,7 +545,13 @@
       ],
       "evidence_reference": "PDF page 4",
       "source_status": "NOT TESTABLE",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "tests",
+        "phpunit.xml.dist",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Platform/Actions/DeliverAttachment.php",
+        "resources/js"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "regression",
       "root_cause": null,
@@ -460,7 +572,13 @@
       ],
       "evidence_reference": "PDF page 3",
       "source_status": "NOT TESTABLE",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "config/fortify.php",
+        "app/Providers/FortifyServiceProvider.php",
+        "bootstrap/app.php",
+        "app/Http/Middleware",
+        "resources/views/pages/auth"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "auth",
       "root_cause": null,
@@ -481,7 +599,13 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "BLOCKED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Models/User.php",
+        "app/Providers/AppServiceProvider.php",
+        "app/Modules/Platform/Actions/SaveUserAuthorizationAction.php",
+        "app/Modules/Platform/Actions/SaveRoleAction.php",
+        "routes/platform.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "authorization",
       "root_cause": null,
@@ -502,7 +626,11 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "tax",
       "root_cause": null,
@@ -523,7 +651,11 @@
       ],
       "evidence_reference": "PDF page 3",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "tax",
       "root_cause": null,
@@ -544,7 +676,11 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
+        "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "tax",
       "root_cause": null,
@@ -565,7 +701,12 @@
       ],
       "evidence_reference": "PDF page 4",
       "source_status": "PARTIAL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "resources/views/platform/admin/authorization-baseline.blade.php",
+        "lang/ar.json",
+        "lang/ar-EG.json"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "localization",
       "root_cause": null,
@@ -586,7 +727,12 @@
       ],
       "evidence_reference": "PDF page 3",
       "source_status": "PARTIAL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "resources/views/platform/admin/settings.blade.php",
+        "resources/views/platform/admin/authorization-baseline.blade.php",
+        "lang/ar.json",
+        "lang/ar-EG.json"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "localization",
       "root_cause": null,
@@ -607,7 +753,13 @@
       ],
       "evidence_reference": "PDF page 19",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "tests",
+        "phpunit.xml.dist",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Platform/Actions/DeliverAttachment.php",
+        "resources/js"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "regression",
       "root_cause": null,
@@ -628,7 +780,12 @@
       ],
       "evidence_reference": "PDF page 4",
       "source_status": "PARTIAL",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "app/Modules/Platform/Support/AuditLogPresentation.php",
+        "app/Modules/Platform/Actions/AllocateDocumentNumber.php",
+        "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
+        "resources/views/platform/system/audit-log.blade.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "audit",
       "root_cause": null,
@@ -649,7 +806,12 @@
       ],
       "evidence_reference": "PDF page 20",
       "source_status": "NOT TESTED",
-      "likely_code_areas": [],
+      "likely_code_areas": [
+        "routes/retail.php",
+        "app/Modules/Retail/Actions/OpenShiftAction.php",
+        "database/seeders/ProductionSeeder.php",
+        "app/Modules/Retail/Models/PosShift.php"
+      ],
       "reproduction_status": "PENDING",
       "assigned_agent": "pos",
       "root_cause": null,
@@ -692,5 +854,7 @@
     "qa_m1u active view-role without branch/store scope and open shift",
     "Pending QA-TAX-M1 with empty rate; earlier QA tax rejection",
     "qa-inv-role restored; QA drawer name restored"
-  ]
+  ],
+  "change_class": "I4",
+  "isolation": "Ten Luna xhigh agents, separate worktrees/schemas; lead alone integrates"
 }

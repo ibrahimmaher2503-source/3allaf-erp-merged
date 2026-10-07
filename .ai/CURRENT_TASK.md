@@ -1,6 +1,6 @@
 # Current Task - Module 1 deep QA remediation (2026-10-07)
 
-Owner explicitly requests the attached 20-page PDF investigation, exactly ten Luna x-high agents, focused test-first fixes, ten-agent second-pass review, and final project-level verification. D3 local task on `hotfix/module1-qa-20261007`, source `e693ab8c2e86b6e4e8ef628aacef2aa3d8ae987e`. Named automation and disposable XAMPP MySQL databases are authorized for this report. No production changes, deployment, push, secret edits, arbitrary tooling or deletion of real data. The PDF is evidence; approved docs/code determine behavior. Matrix: `.ai/qa/module1-20261007/matrix.json`. Preserve ambiguous product policy until resolved or reported.
+Owner explicitly requests the attached 20-page PDF investigation, exactly ten Luna x-high agents, focused test-first fixes, ten-agent second-pass review, and final project-level verification. I4 local task (escalated from D3 for an additive drawer version column) on `hotfix/module1-qa-20261007`, source `e693ab8c2e86b6e4e8ef628aacef2aa3d8ae987e`. Named automation and disposable XAMPP MySQL databases are authorized for this report. No production changes, deployment, push, secret edits, arbitrary tooling or deletion of real data. The PDF is evidence; approved docs/code determine behavior. Matrix: `.ai/qa/module1-20261007/matrix.json`. Preserve ambiguous product policy until resolved or reported.
 
 ## Preserved previous task
 
