@@ -18,7 +18,8 @@ Repository-wide mandatory policy: every Codex account and every user working thr
 - GitHub repository: `IS-Intelligent-Solutions/rajeh-erp`.
 - Git/server account: `rajeh_ahmed`. This identifies the operating account, not a change to the configured Git commit author.
 - Git remote: `git@github-rajeh:IS-Intelligent-Solutions/rajeh-erp.git`.
-- `main` is the protected development baseline. Never develop directly on `main`; use a dedicated branch and worktree for each task.
+- `main` is protected and read-only unless the owner explicitly authorizes a merge. QA batches use one working branch per module (`fix/module1-qa`, `fix/module2-qa`, etc.), with one clear commit per bug. Do not create or push per-bug, publication, result, review or red-team branches.
+- During QA batches, subagents investigate/review and return BUG, ROOT CAUSE, FILES, RECOMMENDED CHANGE, TEST TO RUN and RISK; the lead applies changes to the module branch. An experimental worktree/branch is temporary and local only; preserve and incorporate its needed work, then remove it. Push only the module branch. Preserve all needed history/dirty work before deleting obsolete refs; never delete or modify main/master.
 - The recorded GitHub/main baseline is `4182c08e108da7cb3ed1a119470edb65a3681392` (`4182c08`), and the main worktree is `/home/rajeh/worktrees/rajeh-erp-main`. Start future work from current `main` in a new dedicated branch/worktree; this recorded commit is the post-Hotfix51 reference, not a permanent pin for future tasks.
 - Use `feature/*` for features, `hotfix/*` for fixes, and `release/*` only when needed. The owner-requested operational documentation task uses `docs/post-hotfix51-operational-baseline`.
 - Commit completed work, push only the task branch, and merge to `main` only when the work is ready and the merge is authorized. Never mass-push historical branches or use `--all`/`--mirror` to publish them.
