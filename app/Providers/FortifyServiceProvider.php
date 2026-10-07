@@ -12,13 +12,12 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Support\Timebox;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    private const DUMMY_PASSWORD_HASH = '$2y$12$1SBq0D8wU2PzYtreyvAWt.JePXS7IQi/HyDx82uRYHNvEKjEbbL2q';
-
     /**
      * Register any application services.
      */
@@ -53,18 +52,18 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $username = (string) $request->input(Fortify::username());
-            $user = User::query()->where('username', $username)->first();
-            $passwordMatches = Hash::check(
-                (string) $request->input('password'),
-                $user?->password ?? self::DUMMY_PASSWORD_HASH,
-            );
+            return app(Timebox::class)->call(function (Timebox $timebox) use ($request): ?User {
+                $username = (string) $request->input(Fortify::username());
+                $user = User::query()->where('username', $username)->first();
 
-            if ($user === null || $user->status !== 'active' || ! $passwordMatches) {
-                return null;
-            }
+                if ($user === null || $user->status !== 'active' || ! Hash::check((string) $request->input('password'), $user->password)) {
+                    return null;
+                }
 
-            return $user;
+                $timebox->returnEarly();
+
+                return $user;
+            }, (int) config('auth.timebox_duration', 200000));
         });
     }
 

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Timebox;
 use Livewire\Drawer\Utils;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -146,7 +147,7 @@ final class AuthenticationRedTeamReviewTest extends TestCase
         $this->assertGuest('web');
     }
 
-    public function test_missing_inactive_and_wrong_password_responses_use_equal_hash_work(): void
+    public function test_missing_inactive_and_wrong_password_use_timebox_with_generic_errors(): void
     {
         $inactive = User::factory()->create([
             'username' => 'redteam_inactive_login_'.Str::lower(Str::random(8)),
@@ -157,6 +158,8 @@ final class AuthenticationRedTeamReviewTest extends TestCase
             'status' => 'active',
         ]);
 
+        $timebox = new RecordingAuthenticationTimebox;
+        $this->app->instance(Timebox::class, $timebox);
         Hash::spy();
 
         $missingResponse = $this->from('/login')->post('/login', [
@@ -179,17 +182,27 @@ final class AuthenticationRedTeamReviewTest extends TestCase
 
         self::assertSame($missingMessage, $inactiveMessage);
         self::assertSame($inactiveMessage, $activeMessage);
-        Hash::shouldHaveReceived('check')->times(3);
+        Hash::shouldHaveReceived('check')->once();
+        self::assertSame(array_fill(0, 3, (int) config('auth.timebox_duration', 200000)), $timebox->durations);
     }
 
-    public function test_missing_username_with_dummy_digest_returns_generic_login_failure(): void
+    public function test_valid_active_login_returns_early_from_timebox(): void
     {
-        $this->from('/login')->post('/login', [
-            'username' => 'redteam_missing_'.Str::lower(Str::random(8)),
-            'password' => 'wrong-password',
-        ])
-            ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('username');
+        $user = User::factory()->create([
+            'username' => 'redteam_timebox_success_'.Str::lower(Str::random(8)),
+            'status' => 'active',
+        ]);
+        $timebox = new RecordingAuthenticationTimebox;
+        $this->app->instance(Timebox::class, $timebox);
+
+        $this->post('/login', [
+            'username' => $user->username,
+            'password' => 'password',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user, 'web');
+        self::assertSame(array_fill(0, 2, (int) config('auth.timebox_duration', 200000)), $timebox->durations);
+        self::assertTrue($timebox->earlyReturn);
     }
 
     private function logIn(User $user): void
@@ -199,4 +212,19 @@ final class AuthenticationRedTeamReviewTest extends TestCase
             'password' => 'password',
         ])->assertRedirect();
     }
+}
+
+final class RecordingAuthenticationTimebox extends Timebox
+{
+    /** @var list<int> */
+    public array $durations = [];
+
+    public function call(callable $callback, int $microseconds): mixed
+    {
+        $this->durations[] = $microseconds;
+
+        return parent::call($callback, $microseconds);
+    }
+
+    protected function usleep(int $microseconds): void {}
 }
