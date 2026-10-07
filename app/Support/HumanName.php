@@ -6,10 +6,10 @@ namespace App\Support;
 
 final class HumanName
 {
-    public static function name(object|null $record, ?string $locale = null): string
+    public static function name(?object $record, ?string $locale = null, ?string $fallback = null): string
     {
         if ($record === null) {
-            return __('Incomplete data');
+            return $fallback ?? __('Incomplete data');
         }
         $locale ??= app()->getLocale();
         $nameLocale = str_starts_with($locale, 'ar') ? 'ar' : 'en';
@@ -22,7 +22,7 @@ final class HumanName
             return $alternate;
         }
 
-        return __('Incomplete data');
+        return $fallback ?? __('Incomplete data');
     }
 
     public static function code(object|null $record): string

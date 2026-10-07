@@ -945,6 +945,9 @@ new #[Title('Supplier Masters')] class extends Component
                         >
                             {{ __('Contacts') }} ({{ $viewingSupplier->contacts->count() }})
                         </flux:button>
+                        @can('purchase_invoices_supplier_returns.view')
+                            <flux:button size="sm" variant="subtle" href="{{ route('purchasing.history.suppliers', ['supplier_id' => $viewingSupplier->id]) }}">{{ str_starts_with(app()->getLocale(), 'ar') ? 'سجل المشتريات' : __('Purchase history') }}</flux:button>
+                        @endcan
                         @if ($canDelete)
                             <flux:button
                                 size="sm"
@@ -1037,7 +1040,7 @@ new #[Title('Supplier Masters')] class extends Component
                                     @forelse ($viewingSupplier->productSuppliers as $ps)
                                         <tr>
                                             <td class="px-3 py-2 text-xs font-mono"><span class="catalog-code-chip">{{ $ps->product?->item_code }}</span></td>
-                                            <td class="px-3 py-2 text-xs font-medium">{{ str_starts_with(app()->getLocale(), 'ar') ? $ps->product?->name_ar : $ps->product?->name_en }}</td>
+                                            <td class="px-3 py-2 text-xs font-medium">{{ \App\Support\HumanName::name($ps->product, fallback: $ps->product?->item_code ?: '—') }}</td>
                                             <td class="px-3 py-2 text-xs text-text-muted font-mono">{{ $ps->supplier_item_code ?: '—' }}</td>
                                             <td class="px-3 py-2 text-xs text-center">
                                                 @if ($ps->is_preferred)

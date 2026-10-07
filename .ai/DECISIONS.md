@@ -252,3 +252,11 @@ Composer audit reports eight pre-existing advisories across `laravel/framework`,
 ## DEC-098 - M5-10 audit export row cap (2026-10-07)
 
 **Status: Requires Owner Decision.** audit.export.max_rows intentionally has no positive default and AUDIT_EXPORT_MAX_ROWS has no approved operational value. The owner must choose a positive row cap before export can proceed. Existing permission enforcement and fail-closed configuration behavior are preserved; focused missing-limit check passes. Affects M5-10 only and does not block the other POS repairs.
+
+## DEC-101 — Supplier tax-registration format (Module 3 v2)
+
+Status: Requires Owner Decision. M3-10 reports `ABC` accepted. Supplier UI/action/import currently treat `tax_number` as optional text (maximum 50 in the UI/schema); no approved numeric-only or Egyptian length/format rule was found in the routed requirements. Owner must define allowed characters, normalization and length/format before server validation is changed. This finding grants no permission to invent a tax rule or alter existing supplier data.
+
+## DEC-102 — Audit display timezone precedence (Module 3 v2)
+
+Status: Requires Owner Decision. M3-12 confirms audit views format timestamps without conversion. `docs/07-database-schema.md` specifies UTC storage and authorized branch/user display; company and branch timezone configuration exists, but user timezone storage and precedence for scoped versus global audit events are unspecified. Owner must define the display source/fallback precedence. Keep UTC storage and application timezone unchanged; do not hardcode Cairo or add an unsupported user setting.
