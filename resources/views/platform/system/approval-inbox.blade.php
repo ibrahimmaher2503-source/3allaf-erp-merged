@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApprovalPresentation;
 use App\Modules\Platform\Support\UiLabel;
+use App\Modules\Retail\Models\PosShift;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -155,9 +156,18 @@ new #[Title('Approval Inbox')] class extends Component
             Gate::authorize('view', $selectedApproval);
         }
 
+        $selectedShift = $selectedApproval?->source_type === 'pos_shifts' && Gate::allows('shifts_cash_movements.approve')
+            ? PosShift::query()->visibleTo($user)
+                ->where('variance_approval_record_id', $selectedApproval->id)
+                ->find($selectedApproval->source_id)
+            : null;
+        $shiftSubmission = $selectedShift?->closingSubmissions()->orderByDesc('attempt')->first();
+
         return view('platform.system.approval-inbox', [
             'approvals' => $approvals,
             'selectedApproval' => $selectedApproval,
+            'selectedShift' => $selectedShift,
+            'shiftSubmission' => $shiftSubmission,
             'sourceTypes' => (clone $base)->distinct()->orderBy('source_type')->pluck('source_type'),
             'branches' => Branch::query()->visibleTo($user)->orderBy('code')->get(),
             'stores' => Store::query()->visibleTo($user)->orderBy('code')->get(),
@@ -244,6 +254,31 @@ new #[Title('Approval Inbox')] class extends Component
                 @error('approval')<x-state.error :title="$message" />@enderror
                 <dl class="grid gap-3 text-sm sm:grid-cols-2"><div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ ApprovalPresentation::source($selectedApproval->source_type, $selectedApproval->source_id) }}</dd></div><div><dt class="text-text-muted">{{ __('State') }}</dt><dd><x-status.badge :status="$selectedApproval->approval_state->value" /></dd></div><div><dt class="text-text-muted">{{ __('Requester') }}</dt><dd>{{ $selectedApproval->requester?->name }}</dd></div><div><dt class="text-text-muted">{{ __('Requested action') }}</dt><dd>{{ ApprovalPresentation::action($selectedApproval->requested_action) }}</dd></div>@if($selectedApproval->reason_text)<div class="sm:col-span-2"><dt class="text-text-muted">{{ __('Reason') }}</dt><dd>{{ $selectedApproval->reason_text }}</dd></div>@endif</dl>
                 <flux:button :href="$sourceUrl" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open source') }}</flux:button>
+
+                @if($shiftSubmission)
+                    <x-tables.table-shell :label="__('Shift Variance Review')">
+                        <table class="data-table w-full text-sm">
+                            <thead><tr><th class="text-start">{{ __('Method') }}</th><th class="text-end">{{ __('Expected') }}</th><th class="text-end">{{ __('Actual') }}</th><th class="text-end">{{ __('Variance') }}</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ __('Cash') }}</td>
+                                    <td class="text-end"><x-money :amount="$shiftSubmission->expected_cash" :currency="$selectedShift->currency_code" /></td>
+                                    <td class="text-end"><x-money :amount="$shiftSubmission->actual_cash" :currency="$selectedShift->currency_code" /></td>
+                                    <td class="text-end"><x-money :amount="$shiftSubmission->cash_variance" :currency="$selectedShift->currency_code" /></td>
+                                </tr>
+                                @foreach(($shiftSubmission->method_variance ?? []) as $code => $delta)
+                                    <tr>
+                                        <td>{{ $code }}</td>
+                                        <td class="text-end"><x-money :amount="(($shiftSubmission->expected_by_method ?? [])[$code] ?? 0)" :currency="$selectedShift->currency_code" /></td>
+                                        <td class="text-end"><x-money :amount="(($shiftSubmission->actual_by_method ?? [])[$code] ?? 0)" :currency="$selectedShift->currency_code" /></td>
+                                        <td class="text-end"><x-money :amount="$delta" :currency="$selectedShift->currency_code" /></td>
+                                    </tr>
+                                @endforeach
+                                <tr><td colspan="3" class="font-semibold">{{ __('Total variance') }}</td><td class="text-end"><x-money :amount="$shiftSubmission->total_variance" :currency="$selectedShift->currency_code" /></td></tr>
+                            </tbody>
+                        </table>
+                    </x-tables.table-shell>
+                @endif
 
                 @if($selectedApproval->approval_state === ApprovalState::Pending && $canDecide)
                     <div class="space-y-3 border-t border-border-subtle pt-4"><div><flux:textarea wire:model="decisionReason" :label="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" /><x-context-help :title="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" :label="__('Open contextual help')"><p>{{ $selectedApproval->source_type === 'pos_shifts' ? __('Returning a shift for recount rejects this exact approval request and preserves its history.') : __('Required only when rejecting. The source keeps this reason in its immutable history.') }}</p></x-context-help></div>@error('decisionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror<div class="flex flex-wrap justify-end gap-2"><flux:button variant="subtle" wire:click="closeApproval">{{ __('Close') }}</flux:button>@if($canReject)<flux:button variant="danger" wire:click="reject" wire:confirm="{{ $selectedApproval->source_type === 'pos_shifts' ? __('Return this shift for recount?') : __('Reject this source record?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Request recount') : __('Reject') }}</flux:button>@endif<flux:button variant="primary" wire:click="approve" wire:confirm="{{ __('Approve this source record and execute its domain effects?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Approve and close') : __('Approve') }}</flux:button></div></div>

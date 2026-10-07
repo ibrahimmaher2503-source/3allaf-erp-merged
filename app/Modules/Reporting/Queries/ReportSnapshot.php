@@ -324,7 +324,13 @@ final class ReportSnapshot
             $openShiftCount = (clone $shifts)->where('status', 'open')->count();
             $unclosedShiftCount = (clone $shifts)->whereNotIn('status', ['closed', 'cancelled'])->count();
             if (Gate::forUser($user)->allows('shifts_cash_movements.approve')) {
-                $shiftVariance = (float) ShiftClosingSubmission::query()->whereIn('shift_id', (clone $shifts)->select('id'))->sum('total_variance');
+                $shiftVariance = (float) ShiftClosingSubmission::query()
+                    ->whereIn('shift_id', (clone $shifts)->where('status', 'closed')->select('id'))
+                    ->where('attempt', fn ($query) => $query
+                        ->from('shift_closing_submissions as latest_submission')
+                        ->selectRaw('MAX(latest_submission.attempt)')
+                        ->whereColumn('latest_submission.shift_id', 'shift_closing_submissions.shift_id'))
+                    ->sum('total_variance');
             }
         }
 
