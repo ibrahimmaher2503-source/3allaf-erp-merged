@@ -206,7 +206,10 @@ final class InitialSetupStatus
 
     private function printTemplatesReady(): bool
     {
-        return PrinterConfiguration::query()->where('status', 'active')->whereNotNull('template_name')->where('template_name', '!=', '')->exists();
+        $activePrinters = PrinterConfiguration::query()->where('status', 'active');
+
+        return $activePrinters->exists()
+            && ! (clone $activePrinters)->whereDoesntHave('printTemplate', fn (Builder $query): Builder => $query->where('status', 'active'))->exists();
     }
 
     /** @return list<array<string, mixed>> */
