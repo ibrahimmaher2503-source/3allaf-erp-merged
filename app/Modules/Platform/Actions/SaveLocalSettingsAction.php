@@ -44,7 +44,7 @@ class SaveLocalSettingsAction
             $companyData = [
                 'code' => $data['company']['code'] ?? 'TBD',
                 'name_ar' => $data['company']['name_ar'] ?? null,
-                'name_en' => $data['company']['name_en'] ?? null,
+                'name_en' => trim((string) ($data['company']['name_en'] ?? '')),
                 'legal_name' => $data['company']['legal_name'] ?? null,
                 'tax_number' => $data['company']['tax_number'] ?? null,
                 'commercial_registration' => $data['company']['commercial_registration'] ?? null,

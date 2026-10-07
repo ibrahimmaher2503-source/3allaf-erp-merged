@@ -197,4 +197,17 @@ final class Module1ValidationLocalizationTest extends TestCase
             self::assertStringNotContainsString('drawerForm.store_id', $message);
         }
     }
+
+    public function test_company_english_name_is_trimmed_before_storage(): void
+    {
+        app()->setLocale('en');
+        $this->withSession(['locale' => 'en'])->actingAs($this->administrator);
+
+        Livewire::test('platform::admin.settings')
+            ->set('companyForm.name_en', '  QA  Company Name  ')
+            ->call('saveCompany')
+            ->assertHasNoErrors();
+
+        self::assertSame('QA  Company Name', Company::query()->firstOrFail()->name_en);
+    }
 }

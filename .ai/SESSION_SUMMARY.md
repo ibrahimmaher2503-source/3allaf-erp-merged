@@ -1703,3 +1703,7 @@ Lead review requested a positive-path assertion in the existing BUG-08 test. The
 ## 2026-10-07 — BUG-10 readable validation attributes
 
 Confirmed that the existing tax-rate attribute mapping already produces readable English, Arabic, and Egyptian Arabic messages. Added localized labels for company address, username, and drawer store validation, with focused coverage in the existing localization feature test. `Module1ValidationLocalizationTest.php` passed: 12 tests, 95 assertions; Pint and `git diff --check` passed. Code and focused test changed; this commit records the work. No browser check or push. Parent lead review and approval are next.
+
+## 2026-10-07 — BUG-11 trim company English name
+
+Trimmed leading and trailing whitespace from the company English name in the shared settings save action while preserving internal characters. Focused persistence coverage through the existing Livewire settings flow passed with the localization feature file: 10 tests, 52 assertions; Pint and `git diff --check` passed. Code and focused test changed; this commit records the work. No browser check or push. Parent lead review and approval are next.
