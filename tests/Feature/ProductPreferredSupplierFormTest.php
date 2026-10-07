@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Company;
@@ -68,6 +69,58 @@ final class ProductPreferredSupplierFormTest extends TestCase
         }
 
         app()->setLocale('en');
+
+        self::assertSame($beforeProductCount, Product::query()->count());
+    }
+
+    public function test_international_barcode_validation_reports_duplicate_format_and_check_digit_reasons(): void
+    {
+        Company::factory()->create();
+        $category = Category::factory()->create();
+        $actor = $this->createCatalogEditor();
+        $existingProduct = Product::factory()->for($category)->create();
+        Barcode::query()->create([
+            'product_id' => $existingProduct->id,
+            'barcode' => '6291234500013',
+            'source' => 'international',
+            'status' => 'active',
+            'is_primary' => true,
+        ]);
+        $beforeProductCount = Product::query()->count();
+        $this->actingAs($actor);
+        app()->setLocale('en');
+
+        foreach ([
+            ['6291234500013', 'This barcode is already assigned and cannot be silently reassigned.'],
+            ['ABC123', 'International barcodes must be a valid GTIN-8, UPC-12, EAN-13, or GTIN-14 number.'],
+            ['6291234500012', 'The international barcode check digit is invalid.'],
+        ] as [$barcode, $message]) {
+            $component = Livewire::actingAs($actor)
+                ->test('catalog::products')
+                ->call('openBarcodeModal', $existingProduct->id)
+                ->set('barcodeForm.source', 'supplier')
+                ->set('barcodeForm.barcode', $barcode)
+                ->call('addBarcode')
+                ->assertHasErrors('barcodeForm.barcode')
+                ->assertSee($message);
+            self::assertSame([$message], $component->instance()->getErrorBag()->get('barcodeForm.barcode'));
+
+            self::assertSame($beforeProductCount, Product::query()->count());
+            self::assertSame(1, Barcode::query()->where('barcode', '6291234500013')->count());
+        }
+
+        Livewire::actingAs($actor)
+            ->test('catalog::product-form')
+            ->set('productForm.item_code', 'QA-BARCODE-'.Str::upper(Str::random(8)))
+            ->set('productForm.name_ar', 'اختبار الباركود')
+            ->set('productForm.name_en', 'Barcode validation test')
+            ->set('productForm.model_number', 'QA-BARCODE-'.Str::upper(Str::random(8)))
+            ->set('productForm.category_id', (string) $category->id)
+            ->set('productForm.sale_price', '25.00')
+            ->set('supplierBarcode', '6291234500014')
+            ->call('save')
+            ->assertHasErrors('supplierBarcode')
+            ->assertSee('The international barcode check digit is invalid.');
 
         self::assertSame($beforeProductCount, Product::query()->count());
     }

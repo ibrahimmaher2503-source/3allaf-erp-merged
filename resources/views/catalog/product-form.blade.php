@@ -169,7 +169,11 @@ new #[Title('Product Card')] class extends Component
                     $supplier = Supplier::query()->findOrFail((int) $validated['preferred_supplier_id']);
                     $barcodeAction->allocateLocalBarcode($product->id, $supplier->code, 'product-card:'.$product->id);
                 } elseif (! $saveAsDraft && $validated['barcode_registration_type'] === 'international' && filled($this->supplierBarcode)) {
-                    $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
+                    try {
+                        $barcodeAction->addSupplierBarcode($product->id, $this->supplierBarcode);
+                    } catch (\InvalidArgumentException $exception) {
+                        throw ValidationException::withMessages(['supplierBarcode' => $exception->getMessage()]);
+                    }
                 }
 
                 return $product;

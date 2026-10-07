@@ -324,6 +324,10 @@ new #[Title('Product Masters')] class extends Component
             Flux::toast(variant: 'success', text: $message);
             $this->barcodeForm['barcode'] = '';
             $this->refreshBarcodeRecords();
+        } catch (\InvalidArgumentException $exception) {
+            $field = $this->barcodeForm['source'] === 'supplier' ? 'barcodeForm.barcode' : 'barcodeForm.supplier_code';
+            $this->addError($field, $exception->getMessage());
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
         } catch (Throwable $exception) {
             $this->addError('barcodeForm', \App\Support\UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
