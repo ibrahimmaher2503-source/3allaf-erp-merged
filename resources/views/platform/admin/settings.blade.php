@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\User;
+use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
+use App\Modules\Platform\Actions\SaveListDisplayPreference;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Actions\SavePrintTemplateAction;
-use App\Modules\Platform\Actions\SaveListDisplayPreference;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
@@ -11,25 +13,31 @@ use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
 use App\Modules\Platform\Models\PrintTemplate;
-use App\Modules\Customer\Support\PhoneNormalizer;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
-use App\Modules\Platform\Support\DocumentTypeCatalog;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Modules\Platform\Support\DocumentTypeCatalog;
 use Flux\Flux;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('System Settings')] class extends Component
 {
+    use WithPagination;
+
     // Active Tab
     #[Url(as: 'tab', except: 'company')]
     public string $activeTab = 'company';
+
+    public string $masterListSearch = '';
+
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
 
@@ -45,9 +53,13 @@ new #[Title('System Settings')] class extends Component
     public bool $showSearchFiltersByDefault = false;
 
     public bool $paymentModalOpen = false;
+
     public bool $taxModalOpen = false;
+
     public bool $sequenceModalOpen = false;
+
     public bool $printerModalOpen = false;
+
     public bool $templateModalOpen = false;
 
     // Company Form Data
@@ -143,8 +155,15 @@ new #[Title('System Settings')] class extends Component
     public array $templateForm = [
         'id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '',
         'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual',
-        'header_text' => '', 'footer_text' => '', 'layout_settings' => ['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'horizontal_gap_mm'=>2,'vertical_gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true], 'status' => 'active',
+        'header_text' => '', 'footer_text' => '', 'layout_settings' => ['width_mm' => 50, 'height_mm' => 30, 'dpi' => 203, 'orientation' => 'portrait', 'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2, 'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto', 'show_name' => true, 'show_price' => true, 'show_item_code' => true, 'show_list_code' => true, 'show_outlet' => true], 'status' => 'active',
     ];
+
+    protected function validationAttributes(): array
+    {
+        return [
+            'taxSettingForm.rate' => __('Tax Rate (%)'),
+        ];
+    }
 
     /**
      * Mount the component.
@@ -169,6 +188,9 @@ new #[Title('System Settings')] class extends Component
 
     public function updatedActiveTab(string $tab): void
     {
+        $this->masterListSearch = '';
+        $this->resetPage();
+
         if (! in_array($tab, ['company', 'payments', 'tax', 'sequences', 'printers', 'audit'], true)) {
             $this->activeTab = 'company';
 
@@ -178,6 +200,11 @@ new #[Title('System Settings')] class extends Component
         if ($tab === 'audit') {
             Gate::authorize('audit_logs.view');
         }
+    }
+
+    public function updatingMasterListSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function rendering(): void
@@ -224,7 +251,7 @@ new #[Title('System Settings')] class extends Component
     {
         Gate::authorize('manage-settings');
         $user = auth()->user();
-        abort_unless($user instanceof \App\Models\User, 403);
+        abort_unless($user instanceof User, 403);
         $action->execute($user, $this->showSearchFiltersByDefault);
         $user->unsetRelation('uiPreference');
         Flux::toast(variant: 'success', text: __('List display preference saved.'));
@@ -472,7 +499,7 @@ new #[Title('System Settings')] class extends Component
                 'integer',
                 Rule::requiredIf(fn (): bool => ($this->documentSequenceForm['scope_type'] ?? 'company') === 'branch'),
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('status', 'active')),
-                function (string $attribute, mixed $value, \Closure $fail): void {
+                function (string $attribute, mixed $value, Closure $fail): void {
                     if (($this->documentSequenceForm['scope_type'] ?? 'company') === 'branch'
                         && ! Branch::visibleTo(auth()->user())->whereKey($value)->where('status', 'active')->exists()) {
                         $fail(__('The selected branch is not active or does not exist.'));
@@ -667,17 +694,17 @@ new #[Title('System Settings')] class extends Component
             'templateForm.language' => ['required', Rule::in(SavePrintTemplateAction::LANGUAGES)],
             'templateForm.header_text' => ['nullable', 'string', 'max:2000'],
             'templateForm.footer_text' => ['nullable', 'string', 'max:2000'],
-            'templateForm.layout_settings.width_mm' => ['required_if:templateForm.document_type,barcode_label','numeric','min:20','max:210'],
-            'templateForm.layout_settings.height_mm' => ['required_if:templateForm.document_type,barcode_label','numeric','min:15','max:297'],
-            'templateForm.layout_settings.dpi' => ['required_if:templateForm.document_type,barcode_label','integer','in:203,300'],
-            'templateForm.layout_settings.orientation' => ['required_if:templateForm.document_type,barcode_label','in:portrait,landscape'],
-            'templateForm.layout_settings.margin_mm' => ['nullable','numeric','min:0','max:20'],
-            'templateForm.layout_settings.gap_mm' => ['nullable','numeric','min:0','max:20'],
-            'templateForm.layout_settings.horizontal_gap_mm' => ['nullable','numeric','min:0','max:20'],
-            'templateForm.layout_settings.vertical_gap_mm' => ['nullable','numeric','min:0','max:20'],
-            'templateForm.layout_settings.a4_rows' => ['nullable','integer','min:1','max:20'],
-            'templateForm.layout_settings.a4_columns' => ['nullable','integer','min:1','max:10'],
-            'templateForm.layout_settings.symbology' => ['required_if:templateForm.document_type,barcode_label','in:auto,ean13,code128'],
+            'templateForm.layout_settings.width_mm' => ['required_if:templateForm.document_type,barcode_label', 'numeric', 'min:20', 'max:210'],
+            'templateForm.layout_settings.height_mm' => ['required_if:templateForm.document_type,barcode_label', 'numeric', 'min:15', 'max:297'],
+            'templateForm.layout_settings.dpi' => ['required_if:templateForm.document_type,barcode_label', 'integer', 'in:203,300'],
+            'templateForm.layout_settings.orientation' => ['required_if:templateForm.document_type,barcode_label', 'in:portrait,landscape'],
+            'templateForm.layout_settings.margin_mm' => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'templateForm.layout_settings.gap_mm' => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'templateForm.layout_settings.horizontal_gap_mm' => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'templateForm.layout_settings.vertical_gap_mm' => ['nullable', 'numeric', 'min:0', 'max:20'],
+            'templateForm.layout_settings.a4_rows' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'templateForm.layout_settings.a4_columns' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'templateForm.layout_settings.symbology' => ['required_if:templateForm.document_type,barcode_label', 'in:auto,ean13,code128'],
             'templateForm.layout_settings.show_name' => ['boolean'], 'templateForm.layout_settings.show_price' => ['boolean'], 'templateForm.layout_settings.show_item_code' => ['boolean'], 'templateForm.layout_settings.show_list_code' => ['boolean'], 'templateForm.layout_settings.show_outlet' => ['boolean'],
             'templateForm.status' => ['required', 'in:active,inactive'],
         ]);
@@ -690,7 +717,7 @@ new #[Title('System Settings')] class extends Component
     public function editPrintTemplate(int $id): void
     {
         $this->templateForm = PrintTemplate::visibleTo(auth()->user())->findOrFail($id)->toArray();
-        $this->templateForm['layout_settings'] = array_replace(['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'horizontal_gap_mm'=>2,'vertical_gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true],$this->templateForm['layout_settings']??[]);
+        $this->templateForm['layout_settings'] = array_replace(['width_mm' => 50, 'height_mm' => 30, 'dpi' => 203, 'orientation' => 'portrait', 'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2, 'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto', 'show_name' => true, 'show_price' => true, 'show_item_code' => true, 'show_list_code' => true, 'show_outlet' => true], $this->templateForm['layout_settings'] ?? []);
         $this->resetValidation();
         $this->templateModalOpen = true;
     }
@@ -705,7 +732,7 @@ new #[Title('System Settings')] class extends Component
 
     public function resetPrintTemplateForm(): void
     {
-        $this->templateForm = ['id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '', 'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual', 'header_text' => '', 'footer_text' => '', 'layout_settings'=>['width_mm'=>50,'height_mm'=>30,'dpi'=>203,'orientation'=>'portrait','margin_mm'=>1,'gap_mm'=>2,'horizontal_gap_mm'=>2,'vertical_gap_mm'=>2,'a4_rows'=>8,'a4_columns'=>3,'symbology'=>'auto','show_name'=>true,'show_price'=>true,'show_item_code'=>true,'show_list_code'=>true,'show_outlet'=>true], 'status' => 'active'];
+        $this->templateForm = ['id' => null, 'code' => '', 'name_ar' => '', 'name_en' => '', 'document_type' => 'sales_invoice', 'paper_size' => '80mm', 'language' => 'bilingual', 'header_text' => '', 'footer_text' => '', 'layout_settings' => ['width_mm' => 50, 'height_mm' => 30, 'dpi' => 203, 'orientation' => 'portrait', 'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2, 'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto', 'show_name' => true, 'show_price' => true, 'show_item_code' => true, 'show_list_code' => true, 'show_outlet' => true], 'status' => 'active'];
     }
 
     public function resetPrinterForm(): void
@@ -755,28 +782,28 @@ new #[Title('System Settings')] class extends Component
 
     <div class="settings-screen__content space-y-6" x-data="{ dirty: $wire.entangle('companyDirty') }">
 
-    <?php if ($errors->any()): ?>
+    <?php if ($errors->any()) { ?>
         <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
             <p class="text-sm font-medium">{{ __('Please review and correct the following validation errors:') }}</p>
             <ul class="mt-2 list-disc list-inside space-y-1 text-sm">
-                <?php foreach ($errors->all() as $error): ?>
+                <?php foreach ($errors->all() as $error) { ?>
                     <li>{{ $error }}</li>
-                <?php endforeach; ?>
+                <?php } ?>
             </ul>
         </flux:callout>
-    <?php endif; ?>
+    <?php } ?>
 
     <?php
         $activeTab = in_array($activeTab, ['company', 'payments', 'tax', 'sequences', 'printers', 'audit'], true) ? $activeTab : 'company';
-        $sectionMeta = [
-            'company' => [__('Company Identity'), __('Company identity and contact details.')],
-            'payments' => [__('Payment Methods'), __('Payment names, evidence, and offline eligibility.')],
-            'tax' => [__('Tax rules'), __('Tax treatment and price display defaults.')],
-            'sequences' => [__('Document numbering'), __('Prefixes, counters, and reset timing.')],
-            'printers' => [__('Printers & Print Profiles'), __('Printer destinations and assigned layouts.')],
-            'audit' => [__('Configuration Change History'), __('Read-only history of setting changes.')],
-        ][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
-    ?>
+$sectionMeta = [
+    'company' => [__('Company Identity'), __('Company identity and contact details.')],
+    'payments' => [__('Payment Methods'), __('Payment names, evidence, and offline eligibility.')],
+    'tax' => [__('Tax rules'), __('Tax treatment and price display defaults.')],
+    'sequences' => [__('Document numbering'), __('Prefixes, counters, and reset timing.')],
+    'printers' => [__('Printers & Print Profiles'), __('Printer destinations and assigned layouts.')],
+    'audit' => [__('Configuration Change History'), __('Read-only history of setting changes.')],
+][$activeTab] ?? [__('Company Identity'), __('Company identity and contact details.')];
+?>
 
     <flux:card class="settings-screen__summary space-y-1 border-s-4 border-primary bg-surface shadow-card" data-settings-section-summary="{{ $activeTab }}">
         <flux:heading size="lg">{{ $sectionMeta[0] }}</flux:heading>
@@ -784,13 +811,13 @@ new #[Title('System Settings')] class extends Component
     </flux:card>
 
     <!-- TAB 1: Company Identity -->
-    <?php if ($activeTab === 'company'): ?>
+    <?php if ($activeTab === 'company') { ?>
         <div id="panel-company" role="tabpanel" aria-labelledby="tab-company" class="space-y-6">
-            <?php if ($companyEditingBlocked): ?>
+            <?php if ($companyEditingBlocked) { ?>
                 <flux:callout variant="danger" icon="exclamation-triangle" title="{{ __('Validation Errors') }}">
                     {{ __('company.duplicate_load') }}
                 </flux:callout>
-            <?php else: ?>
+            <?php } else { ?>
             <form
                 wire:submit="saveCompany"
                 x-on:input="dirty = true"
@@ -896,12 +923,12 @@ new #[Title('System Settings')] class extends Component
                 <div class="flex justify-end"><flux:button type="button" variant="primary" wire:click="saveListDisplayPreference" wire:loading.attr="disabled" wire:target="saveListDisplayPreference">{{ __('Save list display') }}</flux:button></div>
             </flux:card>
 
-            <?php endif; ?>
+            <?php } ?>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- TAB 2: Payment Methods -->
-    <?php if ($activeTab === 'payments'): ?>
+    <?php if ($activeTab === 'payments') { ?>
         <div id="panel-payments" role="tabpanel" aria-labelledby="tab-payments" class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Payment Methods') }}</flux:heading><x-context-help :title="__('Payment-method help')" :label="__('Open payment-method help')"><p>{{ __('Choose the business name customers and staff recognize. The method type remains its accounting classification.') }}</p></x-context-help></div>
@@ -962,11 +989,11 @@ new #[Title('System Settings')] class extends Component
                     </div>
 
                     <div class="flex flex-wrap items-center justify-end gap-3">
-                        <?php if ($paymentMethodForm['id']): ?>
+                        <?php if ($paymentMethodForm['id']) { ?>
                             <flux:button type="button" wire:click="resetPaymentMethodForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
-                        <?php endif; ?>
+                        <?php } ?>
 
                         <flux:button type="button" variant="subtle" wire:click="$set('paymentModalOpen', false)">{{ __('Cancel') }}</flux:button>
                         <x-actions.loading-button type="submit" action="savePaymentMethod" :label="__('Save')" />
@@ -978,9 +1005,26 @@ new #[Title('System Settings')] class extends Component
             <flux:card class="space-y-4">
                 <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Configured Payment Methods') }}</flux:heading><x-context-help :title="__('Configured Payment Methods')" :label="__('Open contextual help')"><p>{{ __('Review saved methods below. Add a new method using the form above.') }}</p></x-context-help></div>
 
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search by code or name...')" clearable />
+                </x-tables.filter-bar>
+
                 <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
                     <flux:table class="min-w-[880px]" aria-label="{{ __('Configured Payment Methods') }}">
-                        <?php $paymentMethods = PaymentMethod::query()->orderBy('code')->limit(100)->get(); ?>
+                        <?php
+                        $searchTerm = trim($masterListSearch);
+        $paymentMethods = PaymentMethod::query()
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('code', 'like', $pattern)
+                        ->orWhere('name_ar', 'like', $pattern)
+                        ->orWhere('name_en', 'like', $pattern);
+                });
+            })
+            ->orderBy('code')
+            ->paginate(25);
+        ?>
 
                         <flux:table.columns>
                             <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
@@ -993,8 +1037,8 @@ new #[Title('System Settings')] class extends Component
                         </flux:table.columns>
 
                         <flux:table.rows>
-                        <?php if ($paymentMethods->isNotEmpty()): ?>
-                            <?php foreach ($paymentMethods as $method): ?>
+                        <?php if ($paymentMethods->isNotEmpty()) { ?>
+                            <?php foreach ($paymentMethods as $method) { ?>
                             <flux:table.row key="method-{{ $method->id }}">
                                 <flux:table.cell class="font-mono font-bold">{{ $method->code }}</flux:table.cell>
                                 <flux:table.cell>
@@ -1003,38 +1047,38 @@ new #[Title('System Settings')] class extends Component
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <?php
-                                        $typeLabel = [
-                                            'cash' => __('Cash'),
-                                            'card' => __('Card or POS terminal'),
-                                            'transfer' => __('Bank Transfer'),
-                                            'manual' => __('Other / manual record'),
-                                            'manual_electronic' => __('Electronic wallet / manual transfer'),
-                                            'cheque' => __('Cheque'),
-                                            'gift_card' => __('Gift card'),
-                                        ][$method->type] ?? __('Other / manual record');
-                                    ?>
+                        $typeLabel = [
+                            'cash' => __('Cash'),
+                            'card' => __('Card or POS terminal'),
+                            'transfer' => __('Bank Transfer'),
+                            'manual' => __('Other / manual record'),
+                            'manual_electronic' => __('Electronic wallet / manual transfer'),
+                            'cheque' => __('Cheque'),
+                            'gift_card' => __('Gift card'),
+                        ][$method->type] ?? __('Other / manual record');
+                                ?>
                                     <flux:badge size="sm" color="zinc">{{ $typeLabel }}</flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($method->requires_evidence): ?>
+                                    <?php if ($method->requires_evidence) { ?>
                                         <flux:badge size="sm" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Required') }}</span></flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Not required') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($method->offline_eligible): ?>
+                                    <?php if ($method->offline_eligible) { ?>
                                         <flux:badge size="sm" color="green">{{ __('Allowed by policy') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Not allowed') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($method->status === 'active'): ?>
+                                    <?php if ($method->status === 'active') { ?>
                                         <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:button size="xs" variant="subtle" wire:click="editPaymentMethod({{ $method->id }})">
@@ -1042,27 +1086,28 @@ new #[Title('System Settings')] class extends Component
                                     </flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                            <?php } ?>
+                        <?php } else { ?>
                             <flux:table.row>
                                 <flux:table.cell colspan="7" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Payment Methods Configured')"
-                                        :description="__('No payment methods are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Payment Methods Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No payment methods are configured yet. Add one using the form above.') : ''"
                                         icon="credit-card"
                                     />
                                 </flux:table.cell>
                             </flux:table.row>
-                        <?php endif; ?>
+                        <?php } ?>
                         </flux:table.rows>
                     </flux:table>
                 </div>
+                <x-tables.pagination :paginator="$paymentMethods" :page-sizes="[25]" />
             </flux:card>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- TAB 3: Tax Settings -->
-    <?php if ($activeTab === 'tax'): ?>
+    <?php if ($activeTab === 'tax') { ?>
         <div id="panel-tax" role="tabpanel" aria-labelledby="tab-tax" class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Taxes') }}</flux:heading><x-context-help :title="__('Tax configuration help')" :label="__('Open tax configuration help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Company default tax applies when a product has no specific tax assignment.') }}</li><li>{{ __('A product-specific tax can be selected on the product card and overrides only that product default assignment.') }}</li><li>{{ __('Tax-inclusive pricing contains tax in the displayed price; tax-exclusive pricing adds tax to the displayed price.') }}</li><li>{{ __('Historical document tax snapshots do not change when a tax rule changes.') }}</li></ul></x-context-help></div>
@@ -1137,11 +1182,11 @@ new #[Title('System Settings')] class extends Component
                     <x-context-help :title="__('Default Prices Are Tax Inclusive')" :label="__('Open contextual help')"><p>{{ __('Tax inclusive means the displayed price already includes the tax amount.') }}</p></x-context-help>
 
                     <div class="flex flex-wrap items-center justify-end gap-3">
-                        <?php if ($taxSettingForm['id']): ?>
+                        <?php if ($taxSettingForm['id']) { ?>
                             <flux:button type="button" wire:click="resetTaxSettingForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
-                        <?php endif; ?>
+                        <?php } ?>
 
                         <flux:button type="button" variant="subtle" wire:click="$set('taxModalOpen', false)">{{ __('Cancel') }}</flux:button>
                         <x-actions.loading-button type="submit" action="saveTaxSetting" :label="__('Save')" />
@@ -1152,6 +1197,26 @@ new #[Title('System Settings')] class extends Component
 
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Configured Tax Settings') }}</flux:heading>
+
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search by code or name...')" clearable />
+                </x-tables.filter-bar>
+
+                <?php
+                    $searchTerm = trim($masterListSearch);
+        $taxRows = TaxSetting::query()
+            ->forCompany((int) $companyId)
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('code', 'like', $pattern)
+                        ->orWhere('name_ar', 'like', $pattern)
+                        ->orWhere('name_en', 'like', $pattern);
+                });
+            })
+            ->orderBy('code')
+            ->paginate(25);
+        ?>
 
                 <flux:table aria-label="{{ __('Configured Tax Settings') }}">
 
@@ -1167,7 +1232,8 @@ new #[Title('System Settings')] class extends Component
                     </flux:table.columns>
 
                     <flux:table.rows>
-                        <?php $taxRows = TaxSetting::query()->forCompany((int) $companyId)->orderBy('code')->limit(100)->get(); if ($taxRows->isNotEmpty()): foreach ($taxRows as $tax): ?>
+                        <?php if ($taxRows->isNotEmpty()) {
+                            foreach ($taxRows as $tax) { ?>
                             <flux:table.row key="tax-{{ $tax->id }}">
                                 <flux:table.cell class="font-mono font-bold">{{ $tax->code }}</flux:table.cell>
                                 <flux:table.cell>
@@ -1178,32 +1244,32 @@ new #[Title('System Settings')] class extends Component
                                     <flux:badge size="sm" color="zinc">{{ $tax->treatmentLabel() }}</flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($tax->rate !== null): ?>
+                                    <?php if ($tax->rate !== null) { ?>
                                         <span class="font-mono font-semibold">{{ number_format((float)$tax->rate, 2) }}%</span>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="amber"><span style="color: light-dark(#78350f, #fde68a)">{{ __('Not configured') }}</span></flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($tax->is_tax_inclusive): ?>
+                                    <?php if ($tax->is_tax_inclusive) { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Inclusive') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Exclusive') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($tax->is_default): ?>
+                                    <?php if ($tax->is_default) { ?>
                                         <flux:badge size="sm" color="green">{{ __('Default') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('No') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($tax->status === 'active'): ?>
+                                    <?php if ($tax->status === 'active') { ?>
                                         <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:button size="xs" variant="subtle" wire:click="editTaxSetting({{ $tax->id }})">
@@ -1211,25 +1277,27 @@ new #[Title('System Settings')] class extends Component
                                     </flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
-                        <?php endforeach; else: ?>
+                        <?php }
+                            } else { ?>
                             <flux:table.row>
                                 <flux:table.cell colspan="8" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Tax Rules Configured')"
-                        :description="__('No tax rules are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Tax Rules Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No tax rules are configured yet. Add one using the form above.') : ''"
                                         icon="receipt-percent"
                                     />
                                 </flux:table.cell>
                             </flux:table.row>
-                        <?php endif; ?>
+                        <?php } ?>
                     </flux:table.rows>
                 </flux:table>
+                <x-tables.pagination :paginator="$taxRows" :page-sizes="[25]" />
             </flux:card>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- TAB 4: Document Sequences -->
-    <?php if ($activeTab === 'sequences'): ?>
+    <?php if ($activeTab === 'sequences') { ?>
         <div id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Document Numbering') }}</flux:heading><x-context-help :title="__('Document Numbering')" :label="__('Open contextual help')"><p>{{ __('Each branch and document type keeps its own continuous counter.') }}</p></x-context-help></div><flux:button type="button" variant="primary" icon="plus" wire:click="openDocumentSequenceModal">{{ __('Add Numbering Rule') }}</flux:button></div>
             <flux:modal wire:model="sequenceModalOpen" class="max-w-3xl">
@@ -1254,15 +1322,15 @@ new #[Title('System Settings')] class extends Component
                             @endforeach
                         </flux:select>
 
-                        <?php if (($documentSequenceForm['scope_type'] ?? 'branch') === 'branch'): ?>
+                        <?php if (($documentSequenceForm['scope_type'] ?? 'branch') === 'branch') { ?>
                             <?php $activeBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(); ?>
                             <flux:select wire:model="documentSequenceForm.scope_id" :label="__('Branch')" required>
                                 <option value="">{{ __('Select an active branch...') }}</option>
-                                <?php foreach ($activeBranches as $branch): ?>
+                                <?php foreach ($activeBranches as $branch) { ?>
                                     <option value="{{ $branch->id }}">{{ $branch->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? $branch->name_ar : $branch->name_en }}</option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </flux:select>
-                        <?php else: ?><flux:input :label="__('Branch')" :value="__('Legacy company-wide rule')" readonly /><?php endif; ?>
+                        <?php } else { ?><flux:input :label="__('Branch')" :value="__('Legacy company-wide rule')" readonly /><?php } ?>
                         </div>
                     </section>
 
@@ -1294,14 +1362,14 @@ new #[Title('System Settings')] class extends Component
                     </section>
 
                     <?php
-                        $previewValue = (int) ($documentSequenceForm['next_value'] ?? 1);
-                        $previewPrefix = ($documentSequenceForm['scope_type'] ?? 'branch') === 'branch'
-                            ? (($previewBranch = $activeBranches->firstWhere('id', (int) ($documentSequenceForm['scope_id'] ?? 0)))
-                                ? DocumentTypeCatalog::prefix($previewBranch->code, (string) $documentSequenceForm['document_type'])
-                                : __('BRANCH-TYPE-'))
-                            : (string) ($documentSequenceForm['prefix'] ?? '');
-                        $previewNumber = $previewPrefix.str_pad((string) $previewValue, 6, '0', STR_PAD_LEFT);
-                    ?>
+                            $previewValue = (int) ($documentSequenceForm['next_value'] ?? 1);
+        $previewPrefix = ($documentSequenceForm['scope_type'] ?? 'branch') === 'branch'
+            ? (($previewBranch = $activeBranches->firstWhere('id', (int) ($documentSequenceForm['scope_id'] ?? 0)))
+                ? DocumentTypeCatalog::prefix($previewBranch->code, (string) $documentSequenceForm['document_type'])
+                : __('BRANCH-TYPE-'))
+            : (string) ($documentSequenceForm['prefix'] ?? '');
+        $previewNumber = $previewPrefix.str_pad((string) $previewValue, 6, '0', STR_PAD_LEFT);
+        ?>
                     <div class="rounded-xl border border-primary/25 bg-primary/5 px-5 py-4" data-sequence-preview>
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
@@ -1313,19 +1381,19 @@ new #[Title('System Settings')] class extends Component
                     </div>
 
                     <div class="flex flex-wrap items-center justify-end gap-3">
-                        <?php if ($documentSequenceForm['id']): ?>
+                        <?php if ($documentSequenceForm['id']) { ?>
                             <flux:button type="button" wire:click="resetDocumentSequenceForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
-                        <?php endif; ?>
+                        <?php } ?>
 
                         <flux:button type="button" variant="subtle" wire:click="$set('sequenceModalOpen', false)">{{ __('Cancel') }}</flux:button>
                         <x-actions.loading-button type="submit" action="saveDocumentSequence" :label="__('Save')" />
                     </div>
                 </form>
 
-                <?php if ($documentSequenceForm['id']): ?>
-                    <?php if (Gate::allows('drawers_payments_tax_numbering_printers.override')): ?>
+                <?php if ($documentSequenceForm['id']) { ?>
+                    <?php if (Gate::allows('drawers_payments_tax_numbering_printers.override')) { ?>
                         <form wire:submit="overrideSequenceCounter" class="space-y-4 border-t border-border-subtle pt-5" aria-labelledby="sequence-override-heading">
                             <div class="flex items-center gap-2">
                                 <flux:heading id="sequence-override-heading" size="md">{{ __('Authorized counter correction') }}</flux:heading>
@@ -1337,17 +1405,42 @@ new #[Title('System Settings')] class extends Component
                             </div>
                             <div class="flex justify-end"><flux:button type="submit" variant="danger" wire:confirm="{{ __('Change this document counter? The action is permanent and audited.') }}" wire:loading.attr="disabled" wire:target="overrideSequenceCounter"><span wire:loading.remove wire:target="overrideSequenceCounter">{{ __('Submit counter correction') }}</span><span wire:loading wire:target="overrideSequenceCounter">{{ __('Saving...') }}</span></flux:button></div>
                         </form>
-                    <?php endif; ?>
-                <?php endif; ?>
+                    <?php } ?>
+                <?php } ?>
             </flux:card>
             </flux:modal>
 
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Document-numbering rules') }}</flux:heading>
 
-                <flux:table aria-label="{{ __('Document-numbering rules') }}">
-                    <?php $documentSequences = DocumentSequence::visibleTo(auth()->user())->with('scopeBranch')->orderBy('document_type')->orderBy('scope_key')->limit(100)->get(); ?>
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search')" clearable />
+                </x-tables.filter-bar>
 
+                <?php
+        $searchTerm = trim($masterListSearch);
+        $documentSequences = DocumentSequence::visibleTo(auth()->user())
+            ->with('scopeBranch')
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('document_type', 'like', $pattern)
+                        ->orWhere('scope_key', 'like', $pattern)
+                        ->orWhere('prefix', 'like', $pattern)
+                        ->orWhere('suffix', 'like', $pattern)
+                        ->orWhereHas('scopeBranch', function ($branchQuery) use ($pattern): void {
+                            $branchQuery->where('code', 'like', $pattern)
+                                ->orWhere('name_ar', 'like', $pattern)
+                                ->orWhere('name_en', 'like', $pattern);
+                        });
+                });
+            })
+            ->orderBy('document_type')
+            ->orderBy('scope_key')
+            ->paginate(25);
+        ?>
+
+                <flux:table aria-label="{{ __('Document-numbering rules') }}">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Document type') }}</flux:table.column>
                         <flux:table.column>{{ __('Numbering scope') }}</flux:table.column>
@@ -1359,29 +1452,29 @@ new #[Title('System Settings')] class extends Component
                     </flux:table.columns>
 
                     <flux:table.rows>
-                        <?php if ($documentSequences->isNotEmpty()): ?>
-                            <?php foreach ($documentSequences as $seq): ?>
+                        <?php if ($documentSequences->isNotEmpty()) { ?>
+                            <?php foreach ($documentSequences as $seq) { ?>
                             <flux:table.row key="seq-{{ $seq->id }}">
                                 <flux:table.cell class="font-bold">{{ DocumentTypeCatalog::numberingLabel($seq->document_type) }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($seq->scope_type === 'branch'): ?>
+                                    <?php if ($seq->scope_type === 'branch') { ?>
                                         <flux:badge size="sm" color="blue">
                                             {{ __('Branch') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? ($seq->scopeBranch?->name_ar ?? __('Unknown branch')) : ($seq->scopeBranch?->name_en ?? __('Unknown branch')) }}
                                             <span class="text-xs opacity-70">({{ $seq->scopeBranch?->code ?? $seq->scope_id }})</span>
                                         </flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="zinc">{{ __('Company-wide') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell class="font-mono text-xs text-primary">{{ $seq->formatValue((int) $seq->next_value) }}</flux:table.cell>
                                 <flux:table.cell class="font-mono font-semibold">{{ $seq->next_value }}</flux:table.cell>
                                 <flux:table.cell><flux:badge size="sm" color="zinc">{{ __(Str::headline($seq->reset_rule)) }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
-                                    <?php if ($seq->status === 'active'): ?>
+                                    <?php if ($seq->status === 'active') { ?>
                                         <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:button size="xs" variant="subtle" wire:click="editDocumentSequence({{ $seq->id }})">
@@ -1389,26 +1482,27 @@ new #[Title('System Settings')] class extends Component
                                     </flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                            <?php } ?>
+                        <?php } else { ?>
                             <flux:table.row>
                                 <flux:table.cell colspan="7" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Document Sequences Configured')"
-                        :description="__('No document sequences are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Document Sequences Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No document sequences are configured yet. Add one using the form above.') : ''"
                                         icon="numbered-list"
                                     />
                                 </flux:table.cell>
                             </flux:table.row>
-                        <?php endif; ?>
+                        <?php } ?>
                     </flux:table.rows>
                 </flux:table>
+                <x-tables.pagination :paginator="$documentSequences" :page-sizes="[25]" />
             </flux:card>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- TAB 5: Printer Configurations -->
-    <?php if ($activeTab === 'printers'): ?>
+    <?php if ($activeTab === 'printers') { ?>
         <div id="panel-printers" role="tabpanel" aria-labelledby="tab-printers" data-settings-active-section="{{ $printerSection }}" class="space-y-6">
             <div class="flex items-center gap-2 rounded-xl border border-border-subtle bg-surface-muted/40 p-5">
                 <flux:heading size="lg">{{ __('Printers and print settings') }}</flux:heading>
@@ -1420,7 +1514,7 @@ new #[Title('System Settings')] class extends Component
                 <div class="flex flex-wrap gap-2"><flux:button type="button" size="sm" variant="primary" icon="plus" wire:click="openPrinterModal">{{ __('Add printer') }}</flux:button><flux:button type="button" size="sm" variant="primary" icon="plus" wire:click="openPrintTemplateModal">{{ __('Add print template') }}</flux:button></div>
             </div>
 
-            <?php if (true): ?>
+            <?php if (true) { ?>
             <flux:card id="printer-profiles" class="scroll-mt-24 space-y-6">
                 <flux:modal wire:model="printerModalOpen" class="max-w-3xl">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1428,7 +1522,7 @@ new #[Title('System Settings')] class extends Component
                         <flux:heading size="lg">{{ $printerForm['id'] ? __('Edit printer') : __('Add printer') }}</flux:heading>
                         <x-context-help :title="$printerForm['id'] ? __('Edit printer') : __('Add printer')" :label="__('Open contextual help')"><p>{{ __('Enter the printer details used by the team. Advanced connection settings are optional.') }}</p></x-context-help>
                     </div>
-        <?php if ($printerForm['id']): ?>
+        <?php if ($printerForm['id']) { ?>
             <flux:button
                 href="{{ route('admin.settings.printer-preview', ['printer' => $printerForm['id']]) }}"
                 target="_blank"
@@ -1437,18 +1531,18 @@ new #[Title('System Settings')] class extends Component
             >
                 {{ __('Test print') }}
             </flux:button>
-        <?php else: ?>
+        <?php } else { ?>
             <flux:button type="button" variant="subtle" icon="printer" disabled>
                 {{ __('Test print') }}
             </flux:button>
-        <?php endif; ?>
+        <?php } ?>
                 </div>
 
                 <form id="printer-profile-form" wire:submit="savePrinter" class="space-y-4">
                     <?php
-                        $printerBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
-                        $printerStores = \App\Modules\Platform\Models\Store::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
-                    ?>
+                $printerBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
+                $printerStores = Store::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
+                ?>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <flux:input autofocus
                             wire:model="printerForm.name"
@@ -1485,16 +1579,16 @@ new #[Title('System Settings')] class extends Component
                         </flux:select>
 
                         <flux:select wire:model.live="printerForm.paper_size" :label="__('Paper Size')">
-                            <?php if (($printerForm['printer_type'] ?? 'thermal') === 'thermal'): ?>
+                            <?php if (($printerForm['printer_type'] ?? 'thermal') === 'thermal') { ?>
                                 <option value="80mm">{{ __('80mm Thermal') }}</option>
                                 <option value="58mm">{{ __('58mm Thermal') }}</option>
-                            <?php elseif (($printerForm['printer_type'] ?? '') === 'label'): ?>
+                            <?php } elseif (($printerForm['printer_type'] ?? '') === 'label') { ?>
                                 <option value="label_50x30mm">{{ __('50 × 30 mm label') }}</option>
                                 <option value="label_40x25mm">{{ __('40 × 25 mm label') }}</option>
-                            <?php else: ?>
+                            <?php } else { ?>
                                 <option value="a4">{{ __('A4 Sheet') }}</option>
                                 <option value="a5">{{ __('A5 Sheet') }}</option>
-                            <?php endif; ?>
+                            <?php } ?>
                         </flux:select>
 
                         @php($compatibleTemplates = PrintTemplate::visibleTo(auth()->user())->where('status', 'active')->where('paper_size', $printerForm['paper_size'])->orderBy(str_starts_with(app()->getLocale(), 'ar') ? 'name_ar' : 'name_en')->get())
@@ -1521,23 +1615,60 @@ new #[Title('System Settings')] class extends Component
                     <x-context-help :title="__('Make this the default printer for this location')" :label="__('Open contextual help')"><p>{{ __('Use one default printer per location and printer type.') }}</p></x-context-help>
 
                     <div class="flex items-center justify-end gap-3">
-                        <?php if ($printerForm['id']): ?>
+                        <?php if ($printerForm['id']) { ?>
                             <flux:button type="button" wire:click="resetPrinterForm" variant="subtle">
                                 {{ __('Cancel Edit') }}
                             </flux:button>
-                        <?php endif; ?>
+                        <?php } ?>
 
                         <x-actions.loading-button type="submit" action="savePrinter" :label="__('Save')" />
                     </div>
                 </form>
                 </flux:modal>
 
-                <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store', 'printTemplate'])->orderBy('name')->limit(100)->get(); ?>
                 <div class="border-t border-border-subtle pt-5">
                     <div class="mb-4 flex items-center gap-2">
                         <flux:heading size="md">{{ __('Configured printers') }}</flux:heading>
                         <x-context-help :title="__('Configured printers')" :label="__('Open contextual help')"><p>{{ __('Review availability and update the printer that is used at each location.') }}</p></x-context-help>
                     </div>
+
+                    <x-tables.filter-bar class="mb-4">
+                        <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search')" clearable />
+                    </x-tables.filter-bar>
+
+                    <?php
+                    $searchTerm = trim($masterListSearch);
+                $printers = PrinterConfiguration::visibleTo(auth()->user())
+                    ->with(['branch', 'store', 'printTemplate'])
+                    ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                        $query->where(function ($query) use ($searchTerm): void {
+                            $pattern = '%'.$searchTerm.'%';
+                            $query->where('name', 'like', $pattern)
+                                ->orWhere('printer_type', 'like', $pattern)
+                                ->orWhere('paper_size', 'like', $pattern)
+                                ->orWhere('template_name', 'like', $pattern)
+                                ->orWhereHas('branch', function ($branchQuery) use ($pattern): void {
+                                    $branchQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                })
+                                ->orWhereHas('store', function ($storeQuery) use ($pattern): void {
+                                    $storeQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                })
+                                ->orWhereHas('printTemplate', function ($templateQuery) use ($pattern): void {
+                                    $templateQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                });
+                        });
+                    })
+                    ->orderBy('name')
+                    ->orderBy('id')
+                    ->paginate(25);
+                ?>
+
                     <flux:table aria-label="{{ __('Configured printers') }}">
                         <flux:table.columns>
                             <flux:table.column>{{ __('Printer name') }}</flux:table.column>
@@ -1548,7 +1679,7 @@ new #[Title('System Settings')] class extends Component
                             <flux:table.column>{{ __('Actions') }}</flux:table.column>
                         </flux:table.columns>
                         <flux:table.rows>
-                            <?php foreach ($printers as $printer): ?>
+                            <?php foreach ($printers as $printer) { ?>
                                 <flux:table.row key="physical-printer-{{ $printer->id }}">
                                     <flux:table.cell class="font-medium">{{ $printer->name }}</flux:table.cell>
                                     <flux:table.cell>{{ $printer->printTemplate ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->printTemplate->name_ar : $printer->printTemplate->name_en) : __('No template assigned') }}<div class="text-xs text-text-muted">{{ $printer->paper_size }}</div></flux:table.cell>
@@ -1570,21 +1701,22 @@ new #[Title('System Settings')] class extends Component
                                         </div>
                                     </flux:table.cell>
                                 </flux:table.row>
-                            <?php endforeach; ?>
-                            <?php if ($printers->isEmpty()): ?>
+                            <?php } ?>
+                            <?php if ($printers->isEmpty()) { ?>
                                 <flux:table.row>
                                     <flux:table.cell colspan="6" class="py-8 text-center">
-                                        <x-state.empty :title="__('No printers added yet')" :description="__('Add your first printer to start setting up invoices, receipts, and reports.')" icon="printer" />
+                                <x-state.empty :title="$searchTerm === '' ? __('No printers added yet') : __('No results')" :description="$searchTerm === '' ? __('Add your first printer to start setting up invoices, receipts, and reports.') : ''" icon="printer" />
                                     </flux:table.cell>
                                 </flux:table.row>
-                            <?php endif; ?>
+                            <?php } ?>
                         </flux:table.rows>
                     </flux:table>
+                    <x-tables.pagination :paginator="$printers" :page-sizes="[25]" />
                 </div>
             </flux:card>
-            <?php endif; ?>
+            <?php } ?>
 
-            <?php if (true): ?>
+            <?php if (true) { ?>
             <flux:card id="print-templates" class="scroll-mt-24 space-y-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Printing Template Library') }}</flux:heading><x-context-help :title="__('Printing Template Library')" :label="__('Open contextual help')"><p>{{ __('Create reusable document layouts by document type, paper size, and language, then assign compatible templates to printers.') }}</p></x-context-help></div>
@@ -1641,18 +1773,18 @@ new #[Title('System Settings')] class extends Component
                 {{ $templates->links() }}
                 @if(false)
                 <?php
-                    $printers = PrinterConfiguration::visibleTo(auth()->user())
-                        ->with(['branch', 'store'])
-                        ->orderBy('name')
-                        ->limit(100)
-                        ->get();
-                    $printMappings = [
-                        'default_thermal' => ['document' => 'Sales invoice', 'template' => 'Thermal sales invoice'],
-                        'gift_receipt' => ['document' => 'Gift receipt', 'template' => 'Thermal gift receipt'],
-                        'return_receipt' => ['document' => 'Sales return', 'template' => 'Thermal return receipt'],
-                        'shift_closing' => ['document' => 'Shift closing', 'template' => 'Thermal shift closing receipt'],
-                        'barcode_label' => ['document' => 'Barcode labels', 'template' => 'Barcode label'],
-                    ];
+                $printers = PrinterConfiguration::visibleTo(auth()->user())
+                    ->with(['branch', 'store'])
+                    ->orderBy('name')
+                    ->limit(100)
+                    ->get();
+                $printMappings = [
+                    'default_thermal' => ['document' => 'Sales invoice', 'template' => 'Thermal sales invoice'],
+                    'gift_receipt' => ['document' => 'Gift receipt', 'template' => 'Thermal gift receipt'],
+                    'return_receipt' => ['document' => 'Sales return', 'template' => 'Thermal return receipt'],
+                    'shift_closing' => ['document' => 'Shift closing', 'template' => 'Thermal shift closing receipt'],
+                    'barcode_label' => ['document' => 'Barcode labels', 'template' => 'Barcode label'],
+                ];
                 ?>
 
                 <div class="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
@@ -1702,24 +1834,24 @@ new #[Title('System Settings')] class extends Component
                         </flux:table.columns>
 
                         <flux:table.rows>
-                            <?php if ($printers->isNotEmpty()): ?>
-                                <?php foreach ($printers as $printer): ?>
+                            <?php if ($printers->isNotEmpty()) { ?>
+                                <?php foreach ($printers as $printer) { ?>
                                     <?php
                                         $mapping = $printMappings[(string) $printer->template_name] ?? ['document' => 'Operational document', 'template' => 'Approved template'];
-                                        $paperSize = match (strtolower(trim((string) $printer->paper_size))) {
-                                            '58mm', '58 mm' => __('58 mm'),
-                                            '80mm', '80 mm' => __('80 mm'),
-                                            'a4' => 'A4',
-                                            default => (string) $printer->paper_size ?: __('Printer setting'),
-                                        };
-                                        $printerName = preg_match('/^default[-_]/i', (string) $printer->name)
-                                            ? __('Default printer')
-                                            : $printer->name;
-                                        $location = $printer->store
-                                            ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->store->name_ar : $printer->store->name_en)
-                                            : ($printer->branch
-                                                ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->branch->name_ar : $printer->branch->name_en)
-                                                : __('Entire company'));
+                                    $paperSize = match (strtolower(trim((string) $printer->paper_size))) {
+                                        '58mm', '58 mm' => __('58 mm'),
+                                        '80mm', '80 mm' => __('80 mm'),
+                                        'a4' => 'A4',
+                                        default => (string) $printer->paper_size ?: __('Printer setting'),
+                                    };
+                                    $printerName = preg_match('/^default[-_]/i', (string) $printer->name)
+                                        ? __('Default printer')
+                                        : $printer->name;
+                                    $location = $printer->store
+                                        ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->store->name_ar : $printer->store->name_en)
+                                        : ($printer->branch
+                                            ? (str_starts_with(app()->getLocale(), 'ar') ? $printer->branch->name_ar : $printer->branch->name_en)
+                                            : __('Entire company'));
                                     ?>
                                     <flux:table.row key="printer-{{ $printer->id }}">
                                         <flux:table.cell class="font-medium">{{ __($mapping['document']) }}</flux:table.cell>
@@ -1737,14 +1869,14 @@ new #[Title('System Settings')] class extends Component
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             <div class="flex flex-wrap gap-1.5">
-                                                <?php if ($printer->status === 'active'): ?>
+                                                <?php if ($printer->status === 'active') { ?>
                                                     <flux:badge size="sm" color="green">{{ __('Active') }}</flux:badge>
-                                                <?php else: ?>
+                                                <?php } else { ?>
                                                     <flux:badge size="sm" color="red">{{ __('Inactive') }}</flux:badge>
-                                                <?php endif; ?>
-                                                <?php if ($printer->is_default): ?>
+                                                <?php } ?>
+                                                <?php if ($printer->is_default) { ?>
                                                     <flux:badge size="sm" color="zinc">{{ __('Default') }}</flux:badge>
-                                                <?php endif; ?>
+                                                <?php } ?>
                                             </div>
                                         </flux:table.cell>
                                         <flux:table.cell>
@@ -1753,8 +1885,8 @@ new #[Title('System Settings')] class extends Component
                                             </flux:button>
                                         </flux:table.cell>
                                     </flux:table.row>
-                                <?php endforeach; ?>
-                            <?php else: ?>
+                                <?php } ?>
+                            <?php } else { ?>
                                 <flux:table.row>
                                     <flux:table.cell colspan="5" class="py-8 text-center">
                                         <x-state.empty
@@ -1764,18 +1896,18 @@ new #[Title('System Settings')] class extends Component
                                         />
                                     </flux:table.cell>
                                 </flux:table.row>
-                            <?php endif; ?>
+                            <?php } ?>
                         </flux:table.rows>
                     </flux:table>
                 </div>
                 @endif
             </flux:card>
-            <?php endif; ?>
+            <?php } ?>
         </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- TAB 6: Settings Audit Trail -->
-    <?php if ($activeTab === 'audit'): ?>
+    <?php if ($activeTab === 'audit') { ?>
         <div id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" class="space-y-6">
             <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('activeTab', 'printers')">{{ str_starts_with(app()->getLocale(), 'ar') ? 'السابق →' : '← Previous' }}</flux:button><flux:button :href="route('initial-setup')" variant="primary" icon="check-circle" wire:navigate>{{ __('Finish setup review') }}</flux:button></div>
             <flux:card class="space-y-4">
@@ -1806,20 +1938,20 @@ new #[Title('System Settings')] class extends Component
                     <flux:table.rows>
                         <?php
                             $settingSourceTypes = [Company::class, PaymentMethod::class, TaxSetting::class, DocumentSequence::class, PrinterConfiguration::class];
-                            $settingAuditLogs = AuditLog::visibleTo(auth()->user())
-                                ->where('category', 'master_data')
-                                ->where(function ($query) use ($settingSourceTypes): void {
-                                    $query->whereIn('source_type', $settingSourceTypes)
-                                        ->orWhere('source_type', 'like', 'legacy_settings:%');
-                                })
-                                ->latest('id')
-                                ->take(20)
-                                ->get();
-                        ?>
-                        <?php if ($settingAuditLogs->isNotEmpty()): ?>
-                            <?php foreach ($settingAuditLogs as $log): ?>
+        $settingAuditLogs = AuditLog::visibleTo(auth()->user())
+            ->where('category', 'master_data')
+            ->where(function ($query) use ($settingSourceTypes): void {
+                $query->whereIn('source_type', $settingSourceTypes)
+                    ->orWhere('source_type', 'like', 'legacy_settings:%');
+            })
+            ->latest('id')
+            ->take(20)
+            ->get();
+        ?>
+                        <?php if ($settingAuditLogs->isNotEmpty()) { ?>
+                            <?php foreach ($settingAuditLogs as $log) { ?>
                             <?php
-                                $before = is_array($log->before_values) ? $log->before_values : [];
+                $before = is_array($log->before_values) ? $log->before_values : [];
                                 $after = is_array($log->after_values) ? $log->after_values : [];
                                 $fields = is_array($log->changed_fields) && $log->changed_fields !== []
                                     ? $log->changed_fields
@@ -1837,7 +1969,7 @@ new #[Title('System Settings')] class extends Component
                                 $reason = trim((string) ($log->reason_text ?: $log->reason_code));
                                 $beforeText = json_encode($before, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                                 $afterText = json_encode($after, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                            ?>
+                                ?>
                             <flux:table.row key="log-{{ $log->id }}" class="align-top">
                                 <flux:table.cell class="align-top whitespace-nowrap font-mono text-xs" dir="ltr">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
                                 <flux:table.cell class="align-top min-w-56 whitespace-normal break-all font-mono text-xs leading-relaxed" dir="ltr" title="{{ $log->request_id }}">{{ $log->request_id ?: __('Not recorded') }}</flux:table.cell>
@@ -1849,8 +1981,8 @@ new #[Title('System Settings')] class extends Component
                                 <flux:table.cell class="align-top min-w-52 whitespace-normal break-words text-xs leading-relaxed" title="{{ $reason }}">{{ $reason ?: __('No reason recorded') }}</flux:table.cell>
                                 <flux:table.cell class="align-top min-w-40 whitespace-normal break-words text-xs leading-relaxed">{{ $scope }}</flux:table.cell>
                             </flux:table.row>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                            <?php } ?>
+                        <?php } else { ?>
                             <flux:table.row>
                                 <flux:table.cell colspan="9" class="text-center py-4">
                                     <x-state.empty
@@ -1860,12 +1992,12 @@ new #[Title('System Settings')] class extends Component
                                     />
                                 </flux:table.cell>
                             </flux:table.row>
-                        <?php endif; ?>
+                        <?php } ?>
                     </flux:table.rows>
                 </flux:table>
                 </div>
             </flux:card>
         </div>
-    <?php endif; ?>
+    <?php } ?>
     </div>
 </x-app.page>
