@@ -7,9 +7,8 @@ namespace Tests\Feature\QA;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
-use PHPUnit\Framework\TestCase;
 
-final class FinancialMatrixTest extends TestCase
+final class FinancialMatrixTest extends PureCalculatorTestCase
 {
     private function fixture(): array
     {

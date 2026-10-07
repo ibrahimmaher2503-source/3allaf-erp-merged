@@ -6,9 +6,8 @@ namespace Tests\Feature\QA;
 
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
 use App\Modules\Retail\Services\PosCalculationService;
-use PHPUnit\Framework\TestCase;
 
-final class FinancialPrecisionClosureTest extends TestCase
+final class FinancialPrecisionClosureTest extends PureCalculatorTestCase
 {
     public function test_inclusive_tax_nearest_half_cent_residues_preserve_exact_money(): void
     {
