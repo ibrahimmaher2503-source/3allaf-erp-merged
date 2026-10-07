@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -44,6 +45,7 @@ new #[Title('System Settings')] class extends Component
     #[Url(as: 'section', except: 'printer-profiles')]
     public string $printerSection = 'printer-profiles';
 
+    #[Locked]
     public ?int $companyId = null;
 
     public bool $companyDirty = false;
