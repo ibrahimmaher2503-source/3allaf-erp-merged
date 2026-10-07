@@ -122,6 +122,10 @@ class User extends Authenticatable implements PasskeyUser
         return $this->belongsToMany(Role::class, 'role_user');
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
     public function scopeAssignableToCashDrawer(Builder $query, int $branchId, ?int $storeId): Builder
     {
         if ($branchId < 1) {

@@ -74,7 +74,7 @@ class SaveCashDrawerAction
                     }
 
                     $assignedCashier = User::query()
-                        ->assignableToCashDrawer((int) $branch->id, $store?->id)
+                        ->assignableToCashDrawer((int) $data['branch_id'], $store?->id)
                         ->sharedLock()
                         ->find((int) $assignedUserId);
 
