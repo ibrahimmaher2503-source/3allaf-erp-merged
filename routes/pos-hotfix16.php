@@ -220,7 +220,7 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
         'payments.*.amount' => ['nullable', 'regex:/^\d+(?:\.\d{1,2})?$/'],
         'payments.*.tendered' => ['nullable', 'regex:/^\d+(?:\.\d{1,2})?$/'],
         'payments.*.evidence_reference' => ['nullable', 'string', 'max:190'],
-        'payments.*.evidence' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+        'payments.*.evidence' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:'.((int) config('attachments.limits.payment_evidence') / 1024)],
         'payments.*.gift_card_identifier' => ['nullable', 'string', 'max:100'],
     ]);
 
