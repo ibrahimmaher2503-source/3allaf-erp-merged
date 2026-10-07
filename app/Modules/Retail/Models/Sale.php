@@ -6,11 +6,11 @@ namespace App\Modules\Retail\Models;
 
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
-use App\Modules\Platform\Models\Store;
-use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
+use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -82,7 +82,7 @@ final class Sale extends Model implements ImmutableSourceContract
     /** @return HasMany<RetailReturn, $this> */
     public function retailReturns(): HasMany
     {
-        return $this->hasMany(RetailReturn::class, "source_sale_id");
+        return $this->hasMany(RetailReturn::class, 'source_sale_id');
     }
 
     /**
@@ -92,6 +92,17 @@ final class Sale extends Model implements ImmutableSourceContract
     public function scopeApproved(Builder $query): Builder
     {
         return $query->where('status', 'approved');
+    }
+
+    /** @param Builder<self> $query @return Builder<self> */
+    public function scopeSearchSource(Builder $query, string $term): Builder
+    {
+        return $query->when($term !== '', fn (Builder $query) => $query->where(function (Builder $query) use ($term): void {
+            $query->where('document_number', 'like', '%'.$term.'%')
+                ->orWhereHas('customer', function (Builder $customer) use ($term): void {
+                    $customer->whereAny(['name_ar', 'name_en', 'phone_display', 'phone_normalized', 'secondary_phone', 'secondary_phone_normalized'], 'like', '%'.$term.'%');
+                });
+        }));
     }
 
     /**
