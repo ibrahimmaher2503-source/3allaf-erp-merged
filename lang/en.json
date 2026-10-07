@@ -1055,6 +1055,7 @@
     "Policy / Operational Notes (BLK-006 / Local TBD)": "Policy / Operational Notes (BLK-006 / Local TBD)",
     "Cash drawer created successfully.": "Cash drawer created successfully.",
     "Cash drawer updated successfully.": "Cash drawer updated successfully.",
+    "This cash drawer changed in another session. Reload it before saving.": "This cash drawer changed in another session. Reload it before saving.",
     "Cash drawer status updated successfully.": "Cash drawer status updated successfully.",
     "Cash drawer deleted successfully.": "Cash drawer deleted successfully.",
     "Manage approved roles and branch or store scopes.": "Manage approved roles and branch or store scopes.",

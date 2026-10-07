@@ -956,6 +956,7 @@
     "Cash drawer deletion submitted for independent approval.": "Cash درج النقدية deletion submitted لـ independent اعتماد.",
     "Cash drawer status updated successfully.": "تم تحديث حالة درج النقدية بنجاح.",
     "Cash drawer updated successfully.": "تم تحديث درج النقدية بنجاح.",
+    "This cash drawer changed in another session. Reload it before saving.": "تم تعديل درج الخزينة في جلسة أخرى. أعد تحميله قبل الحفظ.",
     "Cash drawers are registered per branch and optional store/cashier link. Opening balances, shift sessions, cash movements, and blind close reconciliation are explicitly deferred to DM 3.3 (TSK-025). Shift dependency guards remain set to TBD.": "تُسجل أدراج النقدية لكل فرع مع ربط اختياري بمتجر أو كاشير. الأرصدة الافتتاحية وجلسات الورديات وحركات النقد وتسوية الإغلاق الأعمى مؤجلة صراحة إلى DM 3.3 (TSK-025). تبقى حواجز اعتماد الورديات قيد التحديد.",
     "Cash in/out, petty disbursement, safe deposit, and correction events require types, reasons, actor, source, and approval rules.": "تتطلب حركات الإدخال والإخراج والمصروفات والإيداع والتصحيح أنواعًا وأسبابًا وفاعلًا ومصدرًا وقواعد اعتماد.",
     "Cash is applied to the exact residual; any excess becomes change.": "تُطبق النقدية على المتبقي بدقة، ويُعاد أي فائض كباقٍ.",

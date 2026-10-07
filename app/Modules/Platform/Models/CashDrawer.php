@@ -15,6 +15,17 @@ class CashDrawer extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'lock_version' => 1,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'lock_version' => 'integer',
+        ];
+    }
+
     protected static function booted(): void
     {
         static::saving(function (CashDrawer $drawer): void {

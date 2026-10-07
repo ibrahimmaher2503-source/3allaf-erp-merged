@@ -21,8 +21,21 @@ use Illuminate\Validation\ValidationException;
 final class PlatformSettingsApprovalAction
 {
     /** @param array<string, mixed> $proposed @param array<string, mixed>|null $before */
-    public function request(string $resource, ?int $id, array $proposed, ?array $before = null, ?int $branchId = null, ?int $storeId = null, ?string $reason = null): ApprovalRecord
+    public function request(string $resource, ?int $id, array $proposed, ?array $before = null, ?int $branchId = null, ?int $storeId = null, ?string $reason = null, mixed $expectedLockVersion = null): ApprovalRecord
     {
+        if ($resource === 'cash_drawer_delete' && DB::transactionLevel() === 0) {
+            return DB::transaction(fn (): ApprovalRecord => $this->request(
+                $resource,
+                $id,
+                $proposed,
+                $before,
+                $branchId,
+                $storeId,
+                $reason,
+                $expectedLockVersion,
+            ));
+        }
+
         $requestPermission = $this->requestPermission($resource);
         Gate::authorize($requestPermission);
         /** @var User $requester */
@@ -60,7 +73,7 @@ final class PlatformSettingsApprovalAction
         }
 
         if (in_array($resource, ['branch_delete', 'store_delete', 'store_archive', 'cash_drawer_delete'], true)) {
-            [$branchId, $storeId, $before] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId);
+            [$branchId, $storeId, $before] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId, $expectedLockVersion);
         }
 
         if (in_array($resource, ['store_delete', 'store_archive'], true)) {
@@ -163,7 +176,7 @@ final class PlatformSettingsApprovalAction
     }
 
     /** @return array{0: int, 1: int|null, 2: array<string, mixed>} */
-    private function masterDeleteScope(string $resource, ?int $id, User $requester, ?int $branchId, ?int $storeId): array
+    private function masterDeleteScope(string $resource, ?int $id, User $requester, ?int $branchId, ?int $storeId, mixed $expectedLockVersion = null): array
     {
         if ($id === null) {
             throw ValidationException::withMessages(['source' => __('An existing platform master is required for deletion approval.')]);
@@ -172,7 +185,16 @@ final class PlatformSettingsApprovalAction
         $target = match ($resource) {
             'branch_delete' => Branch::visibleTo($requester)->findOrFail($id),
             'store_delete', 'store_archive' => Store::visibleTo($requester)->findOrFail($id),
-            'cash_drawer_delete' => CashDrawer::visibleTo($requester)->findOrFail($id),
+            'cash_drawer_delete' => (function () use ($requester, $id, $expectedLockVersion): CashDrawer {
+                $drawer = CashDrawer::visibleTo($requester)->lockForUpdate()->findOrFail($id);
+                $version = $this->requirePositiveCashDrawerLockVersion($expectedLockVersion);
+
+                if ($version !== (int) $drawer->lock_version) {
+                    throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                }
+
+                return $drawer;
+            })(),
         };
         $expectedBranchId = $resource === 'branch_delete' ? $target->id : $target->branch_id;
         $expectedStoreId = $resource === 'store_delete' || $resource === 'store_archive' ? $target->id : $target->store_id;
@@ -189,6 +211,21 @@ final class PlatformSettingsApprovalAction
         unset($before['created_at'], $before['updated_at']);
 
         return [$expectedBranchId, $expectedStoreId, $before];
+    }
+
+    private function requirePositiveCashDrawerLockVersion(mixed $value): int
+    {
+        if (! is_int($value) && (! is_string($value) || preg_match('/\A[0-9]+\z/', $value) !== 1)) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        $version = (int) $value;
+
+        if ($version < 1) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        return $version;
     }
 
     private function applyApprovedMasterDelete(string $resource, ?int $id, ApprovalRecord $approval): void
@@ -242,7 +279,9 @@ final class PlatformSettingsApprovalAction
         }
 
         $before = $drawer->getAttributes();
-        $drawer->update(['status' => 'inactive']);
+        $drawer->status = 'inactive';
+        $drawer->lock_version = (int) $drawer->lock_version + 1;
+        $drawer->save();
         app(RecordAuditEvent::class)->execute(
             category: 'master_data', event: 'delete_cash_drawer', source: $drawer, before: $before,
             after: ['deleted' => true, 'status' => 'inactive'], branchId: $drawer->branch_id, storeId: $drawer->store_id,
