@@ -19,6 +19,7 @@ use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\UserBranchScope;
+use App\Modules\Platform\Support\WorkContext;
 use App\Support\DataExchange\MasterDataDocument;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -170,6 +171,145 @@ final class ProductImportWorkflowTest extends TestCase
         self::assertSame('QI-'.$this->suffix.'-31', $batch->rows()->firstOrFail()->mapped_data['item_code']);
     }
 
+    public function test_mapping_must_keep_the_company_selected_when_the_workbook_was_staged(): void
+    {
+        [$company, $category] = $this->catalogScope();
+        [$otherCompany, $otherCategory] = $this->catalogScope();
+        $writer = $this->userWithPermissions('multi-company-editor', $company, ['products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit']);
+        $otherBranchId = (int) Store::query()->where('company_id', $otherCompany->id)->value('branch_id');
+        UserBranchScope::query()->create(['user_id' => $writer->id, 'branch_id' => $otherBranchId, 'status' => 'active']);
+        $companyStore = Store::query()->where('company_id', $company->id)->firstOrFail();
+        $otherStore = Store::query()->where('company_id', $otherCompany->id)->firstOrFail();
+        $itemCode = 'QI-'.$this->suffix.'-32';
+        $otherCompanyProduct = Product::factory()->create([
+            'item_code' => $itemCode,
+            'category_id' => $otherCategory->id,
+            'name_ar' => 'منتج الشركة الأخرى',
+            'name_en' => 'Other company product',
+        ]);
+        ProductStoreAssignment::query()->create([
+            'company_id' => $otherCompany->id,
+            'branch_id' => $otherStore->branch_id,
+            'store_id' => $otherStore->id,
+            'product_id' => $otherCompanyProduct->id,
+            'status' => 'active',
+            'created_by' => $writer->id,
+            'updated_by' => $writer->id,
+        ]);
+        $upload = $this->productWorkbook($company->code, [[
+            'item_code' => $itemCode,
+            'name_ar' => 'تغيير غير مصرح به',
+            'name_en' => 'Unauthorized company switch',
+            'category_code' => $category->code,
+            'product_type' => 'standard',
+            'status' => 'active',
+        ]]);
+
+        app(WorkContext::class)->select($writer, (int) $companyStore->id);
+        Livewire::actingAs($writer)
+            ->test('catalog::product-import')
+            ->set('mode', 'update_existing')
+            ->set('importFile', $upload)
+            ->call('stage')
+            ->assertHasNoErrors();
+
+        $batch = ProductImportBatch::query()->where('created_by', $writer->id)->latest('id')->firstOrFail();
+        self::assertSame($company->id, $batch->rows()->firstOrFail()->raw_data['__staged_company_id']);
+        app(WorkContext::class)->select($writer, (int) $otherStore->id);
+        Livewire::actingAs($writer)
+            ->test('catalog::product-import')
+            ->call('selectBatch', $batch->id)
+            ->call('mapColumns')
+            ->assertHasErrors(['columnMapping'])
+            ->assertSee('Select the same company that was selected when this workbook was staged.');
+
+        self::assertSame('mapping_required', $batch->fresh()->status);
+        self::assertSame('staged', $batch->rows()->firstOrFail()->status);
+        $otherCompanyProduct->refresh();
+        self::assertSame('Other company product', $otherCompanyProduct->name_en);
+    }
+
+    public function test_mapping_rejects_missing_or_mixed_staged_company_bindings_and_empty_batches(): void
+    {
+        [$company, $category] = $this->catalogScope();
+        [$otherCompany] = $this->catalogScope();
+        $writer = $this->userWithPermissions('editor', $company, ['products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit']);
+        $batch = $this->stageOnly($writer, $company->code, [
+            ['item_code' => 'QI-'.$this->suffix.'-33', 'name_ar' => 'الأول', 'name_en' => 'First', 'category_code' => $category->code],
+            ['item_code' => 'QI-'.$this->suffix.'-34', 'name_ar' => 'الثاني', 'name_en' => 'Second', 'category_code' => $category->code],
+        ], 'update_existing');
+        $rows = $batch->rows()->orderBy('row_number')->get();
+        $mapping = array_combine($batch->headers, $batch->headers);
+
+        $firstRawData = $rows[0]->raw_data;
+        unset($firstRawData['__staged_company_id']);
+        $rows[0]->update(['raw_data' => $firstRawData]);
+        $this->actingAs($writer);
+        try {
+            app(StageProductImportAction::class)->applyMapping($batch, $mapping);
+            self::fail('Mapping must reject a missing staged company binding.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('missing or inconsistent', $exception->getMessage());
+        }
+
+        $firstRawData['__staged_company_id'] = $company->id;
+        $rows[0]->update(['raw_data' => $firstRawData]);
+        $secondRawData = $rows[1]->raw_data;
+        $secondRawData['__staged_company_id'] = $otherCompany->id;
+        $rows[1]->update(['raw_data' => $secondRawData]);
+        try {
+            app(StageProductImportAction::class)->applyMapping($batch, $mapping);
+            self::fail('Mapping must reject rows staged under different company scopes.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('missing or inconsistent', $exception->getMessage());
+        }
+
+        self::assertSame('mapping_required', $batch->fresh()->status);
+        $emptyBatch = $this->stageOnly($writer, $company->code, [], 'create_only');
+        try {
+            app(StageProductImportAction::class)->applyMapping($emptyBatch, $mapping);
+            self::fail('An empty workbook must not become a reviewable batch.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('no product rows', $exception->getMessage());
+        }
+
+        self::assertSame('mapping_required', $emptyBatch->fresh()->status);
+        self::assertSame(0, $emptyBatch->rows()->count());
+    }
+
+    public function test_approval_rejects_a_tampered_staged_company_binding(): void
+    {
+        [$company, $category] = $this->catalogScope();
+        [$otherCompany] = $this->catalogScope();
+        $writer = $this->userWithPermissions('writer', $company, ['products_categories_brands.view', 'products_categories_brands.create']);
+        $reviewer = $this->userWithPermissions('reviewer', $company, ['products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.approve']);
+        $itemCode = 'QI-'.$this->suffix.'-35';
+        $batch = $this->stageAndMap($writer, $company->code, [[
+            'item_code' => $itemCode,
+            'name_ar' => 'سجل صالح',
+            'name_en' => 'Valid row',
+            'category_code' => $category->code,
+            'product_type' => 'standard',
+            'status' => 'active',
+        ]]);
+        $row = $batch->rows()->firstOrFail();
+        $rawData = $row->raw_data;
+        $rawData['__staged_company_id'] = $otherCompany->id;
+        $row->update(['raw_data' => $rawData]);
+
+        $this->actingAs($reviewer);
+        try {
+            app(StageProductImportAction::class)->approve($batch, app(SaveProductAction::class));
+            self::fail('Approval must reject a staged company value that differs from its mapped binding.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('company scope is missing', $exception->getMessage());
+        }
+
+        self::assertDatabaseMissing('products', ['item_code' => $itemCode]);
+        self::assertSame('ready_for_review', $batch->fresh()->status);
+        self::assertSame(1, $batch->rows()->where('status', 'valid')->count());
+    }
+
     public function test_formula_cells_are_rejected_and_error_export_neutralizes_formula_text(): void
     {
         [$company, $category] = $this->catalogScope();
@@ -212,6 +352,48 @@ final class ProductImportWorkflowTest extends TestCase
             ->assertForbidden();
 
         self::assertDatabaseMissing('product_import_batches', ['created_by' => $creator->id]);
+    }
+
+    public function test_edit_only_user_can_use_the_update_import_page_and_cancel_own_batch(): void
+    {
+        [$company, $category] = $this->catalogScope();
+        $editor = $this->userWithPermissions('edit-only', $company, ['products_categories_brands.view', 'products_categories_brands.edit']);
+
+        $this->actingAs($editor)
+            ->withoutVite()
+            ->get(route('catalog.products.import'))
+            ->assertOk()
+            ->assertSee('Update Existing')
+            ->assertSee('Create Only (create permission required)');
+        $this->actingAs($editor)
+            ->withoutVite()
+            ->get(route('catalog.products.import.staged-template.xlsx'))
+            ->assertOk();
+
+        Livewire::actingAs($editor)
+            ->test('catalog::product-import')
+            ->assertSet('mode', 'update_existing')
+            ->set('mode', 'create_only')
+            ->call('stage')
+            ->assertForbidden();
+
+        Livewire::actingAs($editor)
+            ->test('catalog::product-import')
+            ->set('mode', 'update_existing')
+            ->set('importFile', $this->productWorkbook($company->code, [[
+                'item_code' => 'QI-'.$this->suffix.'-61',
+                'name_ar' => 'صنف قابل للتحديث',
+                'name_en' => 'Update-only batch',
+                'category_code' => $category->code,
+                'product_type' => 'standard',
+                'status' => 'active',
+            ]]))
+            ->call('stage')
+            ->assertHasNoErrors()
+            ->call('cancelBatch')
+            ->assertHasNoErrors();
+
+        self::assertDatabaseHas('product_import_batches', ['created_by' => $editor->id, 'mode' => 'update_existing', 'status' => 'cancelled']);
     }
 
     public function test_external_workbook_gets_actionable_template_guidance_instead_of_a_generic_error(): void
@@ -379,6 +561,20 @@ final class ProductImportWorkflowTest extends TestCase
     /** @param list<array<string, mixed>> $records */
     private function stageAndMap(User $writer, string $companyCode, array $records, string $mode = 'create_only'): ProductImportBatch
     {
+        $batch = $this->stageOnly($writer, $companyCode, $records, $mode);
+
+        Livewire::actingAs($writer)
+            ->test('catalog::product-import')
+            ->call('selectBatch', $batch->id)
+            ->call('mapColumns')
+            ->assertHasNoErrors();
+
+        return $batch->fresh();
+    }
+
+    /** @param list<array<string, mixed>> $records */
+    private function stageOnly(User $writer, string $companyCode, array $records, string $mode = 'create_only'): ProductImportBatch
+    {
         Livewire::actingAs($writer)
             ->test('catalog::product-import')
             ->set('mode', $mode)
@@ -387,12 +583,6 @@ final class ProductImportWorkflowTest extends TestCase
             ->assertHasNoErrors();
 
         $batch = ProductImportBatch::query()->where('created_by', $writer->id)->latest('id')->firstOrFail();
-
-        Livewire::actingAs($writer)
-            ->test('catalog::product-import')
-            ->call('selectBatch', $batch->id)
-            ->call('mapColumns')
-            ->assertHasNoErrors();
 
         return $batch->fresh();
     }
