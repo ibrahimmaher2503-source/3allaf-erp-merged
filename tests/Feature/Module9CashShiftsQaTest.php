@@ -37,7 +37,7 @@ final class Module9CashShiftsQaTest extends TestCase
         $app = require __DIR__.'/../../bootstrap/app.php';
         $app->useStoragePath(getenv('QA_STORAGE_PATH'));
         $app->make(Kernel::class)->bootstrap();
-        $app->setLocale('zz');
+        $app->setLocale('en');
         $app->forgetInstance('translation.loader');
         $app->forgetInstance('translator');
         $app->singleton('translation.loader', fn ($app) => new FileLoader(
@@ -103,6 +103,48 @@ final class Module9CashShiftsQaTest extends TestCase
             'value' => '5', 'notes' => 'Existing approved denomination',
         ])->assertRedirect($url)->assertSessionHasNoErrors();
         self::assertSame('5.0000', PosFinancialSettingRegistry::value(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION));
+    }
+
+    public function test_m9_01_m9_02_header_and_open_link_explain_closing_states(): void
+    {
+        $shift = $this->openShift();
+        foreach ([ShiftState::Open->value => 'Open', ShiftState::ClosingSubmitted->value => 'Closing submitted', ShiftState::VarianceReview->value => 'In Review'] as $state => $label) {
+            $shift->update(['status' => $state]);
+            foreach (['pos', 'pos.shift'] as $route) {
+                $response = $this->get(route($route))->assertOk();
+                $dom = new \DOMDocument;
+                @$dom->loadHTML($response->getContent());
+                self::assertSame($label, (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
+            }
+            if ($state !== ShiftState::Open->value) {
+                $this->followingRedirects()->get(route('pos.shift.open'))->assertOk()
+                    ->assertSee('A new shift cannot be opened until it is closed.');
+            }
+        }
+        $shift->update(['status' => ShiftState::Closed]);
+        $html = view('layouts.pos', ['title' => 'Closed shift', 'store' => $shift->store, 'shift' => $shift, 'slot' => ''])->render();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($html);
+        self::assertSame('Closed', (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
+    }
+
+    public function test_m9_03_opening_reports_occupied_drawer_and_confirmation_errors(): void
+    {
+        $shift = $this->openShift();
+        $cashier = $this->reviewer();
+        $this->actingAs($cashier);
+        $data = ['cash_drawer_id' => $shift->cash_drawer_id, 'opening_float' => '1000', 'idempotency_key' => (string) Str::uuid(), 'confirm_outlet' => '1'];
+        $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
+            ->assertRedirect(route('pos.shift'))
+            ->assertSessionHasErrors(['cash_drawer_id' => 'This drawer already has an active shift.']);
+        self::assertSame(1, PosShift::query()->where('cash_drawer_id', $shift->cash_drawer_id)->count());
+        $this->withCookie(config('session.cookie'), session()->getId())
+            ->get(route('pos.shift'))->assertOk()->assertViewHas('shift', null)
+            ->assertSee('This drawer already has an active shift.');
+        unset($data['confirm_outlet']);
+        $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
+            ->assertSessionHasErrors(['confirm_outlet' => 'Confirm the sales outlet before opening a shift.']);
+        $this->get(route('pos.shift'))->assertOk()->assertSee('Confirm the sales outlet before opening a shift.');
     }
 
     private function reviewer(): User

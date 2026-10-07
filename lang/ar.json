@@ -3936,8 +3936,8 @@
     "This barcode allocation request key belongs to another product.": "هذا barcode allocation request key belongs إلى another الصنف.",
     "This barcode is already assigned and cannot be silently reassigned.": "هذا barcode is already assigned و cannot be silently reassigned.",
     "This booking is scoped to a Party store. Retail/POS lines are rejected server-side.": "هذا حجز is scoped إلى a الحفلة المخزن. التجزئة/pos سطور are مرفوض server-side.",
-    "This cash drawer is not active.": "هذا cash درج النقدية is ليس مفعل.",
-    "This cashier already has an active shift.": "هذا كاشير already has an مفعل وردية.",
+    "This cash drawer is not active.": "درج النقدية هذا غير نشط.",
+    "This cashier already has an active shift.": "لدى أمين الصندوق هذا وردية نشطة بالفعل.",
     "This checkout token was already used with a different basket or financial payload.": "هذا checkout token was already used مع a different basket أو financial payload.",
     "This child-data purpose is not allowed by the configured policy.": "هذا child-data purpose is ليس allowed بواسطة the configured policy.",
     "This closed shift has no immutable closing submission.": "هذا مغلق وردية has لا immutable closing submission.",
@@ -6294,5 +6294,7 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.": "أكمل الباركود والموديل وهوية المنتج وسعر البيع والفئة ونوع المنتج والمورد المناسب قبل تفعيل بطاقة المنتج.",
-    "Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.": "سعر التكلفة اختياري في بطاقة المنتج. اتركه فارغًا للاحتفاظ بأي تكلفة محفوظة. تحتفظ المشتريات المعتمدة بسجلات تكلفتها الخاصة."
+    "Cost is optional on the Product Card. Leave it blank to preserve any saved cost. Approved purchasing maintains its own cost records.": "سعر التكلفة اختياري في بطاقة المنتج. اتركه فارغًا للاحتفاظ بأي تكلفة محفوظة. تحتفظ المشتريات المعتمدة بسجلات تكلفتها الخاصة.",
+    "Your current shift is awaiting closing approval. A new shift cannot be opened until it is closed.": "ورديتك الحالية تنتظر اعتماد الإغلاق. لا يمكن فتح وردية جديدة حتى تُغلق الوردية الحالية.",
+    "Confirm the sales outlet before opening a shift.": "أكد منفذ البيع قبل فتح الوردية."
 }

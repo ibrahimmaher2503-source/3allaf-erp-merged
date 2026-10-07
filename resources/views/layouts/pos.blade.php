@@ -11,7 +11,7 @@
         @php($posStore = $store ?? null)
         @php($posShift = $shift ?? null)
         @php($posBranch = $posStore?->branch)
-        @php($posReady = $posStore !== null && $posShift !== null)
+        @php($posReady = $posStore !== null && $posShift?->status->acceptsActivity() === true)
         <!-- Dedicated POS Application Top Bar -->
         <header class="border-b border-zinc-200 bg-white px-4 py-2.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sticky top-0 z-30">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -40,7 +40,7 @@
                     </div>
                     <div class="flex shrink-0 flex-col rounded-md border {{ $posReady ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300' }} px-2 py-1">
                         <span class="text-[10px] font-medium uppercase tracking-wide">{{ __('Shift') }}</span>
-                        <span class="font-semibold">{{ $posShift ? __('Open') : __('Not ready') }}</span>
+                        @if($posShift)<x-status.badge :status="$posShift->status->value" />@else<span class="font-semibold">{{ __('Not ready') }}</span>@endif
                     </div>
                 </div>
 
