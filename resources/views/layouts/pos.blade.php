@@ -68,6 +68,13 @@
                     <flux:button href="{{ route('dashboard') }}" wire:navigate size="sm" variant="subtle" icon="arrow-left">
                         {{ __('Dashboard') }}
                     </flux:button>
+
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <flux:button type="submit" size="sm" variant="subtle" icon="arrow-right-start-on-rectangle">
+                            {{ __('Log out') }}
+                        </flux:button>
+                    </form>
                 </div>
             </div>
         </header>

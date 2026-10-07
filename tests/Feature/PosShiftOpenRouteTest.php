@@ -66,6 +66,29 @@ final class PosShiftOpenRouteTest extends TestCase
         ]);
     }
 
+    public function test_cashier_can_log_out_safely_from_the_pos_page(): void
+    {
+        $this->seedCanonicalCashierRole();
+        $cashier = $this->createCashier();
+
+        $this->withoutVite()
+            ->actingAs($cashier)
+            ->get(route('pos'))
+            ->assertOk()
+            ->assertSeeHtml('<form method="POST" action="'.route('logout').'">')
+            ->assertSee(__('Log out'))
+            ->assertSee('_token');
+
+        $sessionId = session()->getId();
+        $csrfToken = session()->token();
+
+        $this->post(route('logout'), ['_token' => $csrfToken])->assertRedirect('/');
+
+        $this->assertGuest();
+        $this->assertNotSame($sessionId, session()->getId());
+        $this->assertNotSame($csrfToken, session()->token());
+    }
+
     public function test_cashier_cannot_open_shift_for_a_drawer_outside_store_scope(): void
     {
         $this->seedCanonicalCashierRole();
