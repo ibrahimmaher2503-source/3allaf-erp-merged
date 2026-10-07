@@ -57,7 +57,7 @@ if (! is_string($resolvedStoragePath) || $resolvedStoragePath === $tempPath || !
     throw new RuntimeException('Unsafe PHPUnit storage: QA_STORAGE_PATH must be a child of the system temporary directory.');
 }
 
-foreach (['app/private', 'app/public', 'framework/cache/data', 'framework/sessions', 'framework/testing', 'framework/views', 'logs'] as $directory) {
+foreach (['app/private', 'app/public', 'bootstrap/cache', 'framework/cache/data', 'framework/sessions', 'framework/testing', 'framework/views', 'logs'] as $directory) {
     $path = $resolvedStoragePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $directory);
 
     if (! is_dir($path) && ! mkdir($path, 0777, true) && ! is_dir($path)) {
@@ -73,6 +73,18 @@ $setEnvironment = static function (string $name, string $value): void {
 
 $setEnvironment('QA_STORAGE_PATH', $resolvedStoragePath);
 $setEnvironment('LARAVEL_STORAGE_PATH', $resolvedStoragePath);
+
+$cachePath = $resolvedStoragePath.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache';
+
+foreach ([
+    'APP_CONFIG_CACHE' => 'config.php',
+    'APP_ROUTES_CACHE' => 'routes-v7.php',
+    'APP_EVENTS_CACHE' => 'events.php',
+    'APP_SERVICES_CACHE' => 'services.php',
+    'APP_PACKAGES_CACHE' => 'packages.php',
+] as $environmentVariable => $filename) {
+    $setEnvironment($environmentVariable, $cachePath.DIRECTORY_SEPARATOR.$filename);
+}
 
 require_once $root.'/vendor/autoload.php';
 
