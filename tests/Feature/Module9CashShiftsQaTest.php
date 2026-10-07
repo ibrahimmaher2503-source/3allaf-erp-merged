@@ -16,6 +16,7 @@ use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -87,6 +88,21 @@ final class Module9CashShiftsQaTest extends TestCase
         $report = $this->cashReport($reviewer);
         self::assertSame(-20.0, $report['kpis']['shift_variance']);
         self::assertSame([-20.0], collect($report['visuals'])->firstWhere('key', 'cash_variance')['series'][0]['data']);
+    }
+
+    public function test_m9_08_settings_exposes_the_existing_cash_rounding_control(): void
+    {
+        $shift = $this->openShift();
+        $url = route('pos.financial-readiness', ['company_id' => $shift->store->company_id]);
+        $this->get(route('admin.settings', ['tab' => 'payments']))
+            ->assertOk()->assertSee($url, false)->assertSee('Cash rounding denomination');
+        $this->get($url)->assertOk()->assertSee('Cash rounding denomination')
+            ->assertSee(route('admin.settings.pos-financial.save'), false);
+        $this->from($url)->post(route('admin.settings.pos-financial.save'), [
+            'key' => PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION,
+            'value' => '5', 'notes' => 'Existing approved denomination',
+        ])->assertRedirect($url)->assertSessionHasNoErrors();
+        self::assertSame('5.0000', PosFinancialSettingRegistry::value(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION));
     }
 
     private function reviewer(): User
