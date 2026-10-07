@@ -35,6 +35,16 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $dateFrom = trim((string) $request->string('date_from'));
         $dateTo = trim((string) $request->string('date_to'));
 
+        $purchaseOrders = $mode === 'supplier' && $user->can('purchase_orders.view')
+            ? PurchaseOrder::query()->with(['supplier', 'store'])
+                ->whereIn('status', ['approved', 'partially_received', 'received', 'closed'])->whereIn('store_id', $visibleStoreIds)
+                ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+                ->when($productId, fn ($query) => $query->whereHas('lines', fn ($lines) => $lines->where('product_id', $productId)))
+                ->when($dateFrom !== '', fn ($query) => $query->whereDate('order_date', '>=', $dateFrom))
+                ->when($dateTo !== '', fn ($query) => $query->whereDate('order_date', '<=', $dateTo))
+                ->latest('order_date')->latest('id')->limit(20)->get()
+            : collect();
+
         $approvedInvoices = PurchaseInvoice::query()
             ->where('status', 'approved')->whereIn('store_id', $visibleStoreIds)
             ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
@@ -42,7 +52,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             ->when($dateFrom !== '', fn ($query) => $query->whereDate('invoice_date', '>=', $dateFrom))
             ->when($dateTo !== '', fn ($query) => $query->whereDate('invoice_date', '<=', $dateTo));
 
-        $suppliers = Supplier::query()->whereIn('id', (clone $approvedInvoices)->select('supplier_id'))->orderBy('name_en')->get();
+        $suppliers = Supplier::query()->where(fn ($query) => $query
+            ->whereIn('id', (clone $approvedInvoices)->select('supplier_id'))
+            ->orWhereIn('id', $purchaseOrders->pluck('supplier_id'))
+            ->when($supplierId && $user->can('suppliers.view'), fn ($scope) => $scope->orWhere('id', $supplierId)))
+            ->orderBy('name_en')->get();
         $products = Product::query()->whereIn('id', PurchaseInvoiceLine::query()
             ->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->whereIn('store_id', $visibleStoreIds))
             ->select('product_id'))->orderBy('item_code')->get(['id', 'item_code', 'name_ar', 'name_en']);
@@ -72,7 +86,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
                 ->whereNotNull('last_purchase_price')->latest('last_purchase_date')->limit(50)->get()
             : collect();
 
-        return view('purchasing.history', compact('mode', 'invoices', 'costLines', 'supplierReturns', 'lastPrices', 'suppliers', 'products', 'supplierId', 'productId', 'dateFrom', 'dateTo'));
+        return view('purchasing.history', compact('mode', 'purchaseOrders', 'invoices', 'costLines', 'supplierReturns', 'lastPrices', 'suppliers', 'products', 'supplierId', 'productId', 'dateFrom', 'dateTo'));
     };
 
     $router->livewire('purchasing/orders', 'purchasing::orders')

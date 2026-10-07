@@ -30,6 +30,17 @@
             <x-slot:footer>{{ $mode === 'supplier' ? $invoices->links() : $costLines->links() }}</x-slot:footer>
         </x-tables.data-panel>
         @if($mode === 'supplier')
+            @can('purchase_orders.view')
+                <x-tables.data-panel :title="str_starts_with(app()->getLocale(), 'ar') ? 'أوامر الشراء المعتمدة' : __('Approved purchase orders')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'أحدث 20 أمر شراء داخل المخازن المسموح لك بها.' : __('Latest 20 purchase orders in your authorized store scope.')">
+                    <div class="overflow-x-auto"><table class="data-table min-w-[560px] w-full"><thead><tr><th>{{ __('Purchase order') }}</th><th>{{ __('Supplier') }}</th><th>{{ __('Store') }}</th><th>{{ __('Date') }}</th><th>{{ __('Status') }}</th><th class="text-end">{{ __('Total') }}</th></tr></thead><tbody>
+                        @forelse($purchaseOrders as $order)
+                            <tr><td class="font-mono">{{ $order->po_number }}</td><td>{{ $order->supplier?->code }}</td><td>{{ $order->store?->code }}</td><td>{{ $order->order_date?->format('Y-m-d') }}</td><td>{{ __($order->status) }}</td><td class="text-end tabular-nums">{{ number_format((float) $order->total_amount, 2) }}</td></tr>
+                        @empty
+                            <tr><td colspan="6"><x-state.empty :title="str_starts_with(app()->getLocale(), 'ar') ? 'لا توجد أوامر شراء معتمدة' : __('No approved purchase orders found.')" /></td></tr>
+                        @endforelse
+                    </tbody></table></div>
+                </x-tables.data-panel>
+            @endcan
             <div class="grid gap-5 xl:grid-cols-2">
                 <x-tables.data-panel :title="str_starts_with(app()->getLocale(), 'ar') ? 'مرتجعات الموردين المعتمدة' : __('Approved supplier returns')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'أحدث المرتجعات المرتبطة بالفواتير في النطاق المحدد.' : __('Latest referenced returns in the selected scope.')">
                     <div class="overflow-x-auto"><table class="data-table min-w-[560px] w-full"><thead><tr><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'المرتجع' : __('Return') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'المورد' : __('Supplier') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'فاتورة المصدر' : __('Source invoice') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'التاريخ' : __('Date') }}</th><th class="text-end">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الإجمالي' : __('Total') }}</th></tr></thead><tbody>@forelse($supplierReturns as $return)<tr><td class="font-mono">{{ $return->return_number }}</td><td>{{ $return->supplier?->code }}</td><td class="font-mono">{{ $return->purchaseInvoice?->invoice_number }}</td><td>{{ $return->return_date?->format('Y-m-d') }}</td><td class="text-end tabular-nums">{{ number_format((float) $return->total_amount, 2) }}</td></tr>@empty<tr><td colspan="5"><x-state.empty :title="str_starts_with(app()->getLocale(), 'ar') ? 'لا توجد مرتجعات موردين معتمدة' : __('No approved supplier returns found.')" /></td></tr>@endforelse</tbody></table></div>

@@ -17,6 +17,7 @@ use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseReturn;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -138,6 +139,42 @@ final class Module3PurchasingQaTest extends TestCase
             ->assertSee('180.00')->assertSee('20.00')->assertSee('25.20')->assertSee('205.20');
         $component->set('lineItems.0.tax_inclusive', true)->assertSee('157.89')->assertSee('22.11')->assertSee('180.00');
         $component->set('lineItems.0.quantity', '')->assertSee('0.00');
+    }
+
+    public function test_m3_03_supplier_details_link_to_scoped_purchase_history_with_empty_states(): void
+    {
+        Livewire::test('catalog::suppliers')->call('openSupplierDetailModal', $this->supplier->id)
+            ->assertSee(route('purchasing.history.suppliers', ['supplier_id' => $this->supplier->id]), false);
+        $url = route('purchasing.history.suppliers', ['supplier_id' => $this->supplier->id]);
+        $this->get($url)->assertOk()->assertSee('No approved purchase orders found.')
+            ->assertSee('No approved supplier invoices found.')->assertSee('No approved supplier returns found.')
+            ->assertSee('Select a supplier with recorded last prices.');
+        $this->order();
+        $outsideCompany = Company::factory()->create();
+        $outsideBranch = Branch::factory()->create(['company_id' => $outsideCompany->id]);
+        $outside = Store::factory()->create(['company_id' => $outsideCompany->id, 'branch_id' => $outsideBranch->id, 'type' => 'warehouse']);
+        PurchaseOrder::query()->create(['po_number' => 'M3-HIDDEN-PO', 'supplier_id' => $this->supplier->id, 'store_id' => $outside->id, 'branch_id' => $outside->branch_id, 'status' => 'approved', 'order_date' => now()->toDateString()]);
+        $invoice = PurchaseInvoice::query()->create([...$this->data(), 'invoice_number' => 'M3-HISTORY-INV', 'status' => 'approved', 'idempotency_key' => Str::uuid()->toString(), 'total_amount' => '200']);
+        $reasonId = DB::table('supplier_return_reasons')->insertGetId(['code' => 'M3-REASON', 'label_en' => 'Damaged', 'label_ar' => 'تالف']);
+        PurchaseReturn::query()->create(['return_number' => 'M3-HISTORY-RET', 'supplier_id' => $this->supplier->id, 'purchase_invoice_id' => $invoice->id, 'store_id' => $this->store->id, 'reason_id' => $reasonId, 'return_date' => now()->toDateString(), 'status' => 'approved', 'idempotency_key' => Str::uuid()->toString()]);
+        ProductSupplier::query()->firstOrFail()->update(['last_purchase_price' => '100', 'last_purchase_date' => now()->toDateString()]);
+        $this->get($url)->assertOk()->assertSee('M3-PO')->assertDontSee('M3-HIDDEN-PO')
+            ->assertSee('M3-HISTORY-INV')->assertSee('M3-HISTORY-RET')->assertSee('100.0000');
+        $this->actingAs($this->user(['purchase_invoices_supplier_returns.view']));
+        $this->get($url)->assertOk()->assertDontSee('M3-PO')->assertSee('M3-HISTORY-INV');
+        $this->actingAs($this->user(['suppliers.view']));
+        Livewire::test('catalog::suppliers')->call('openSupplierDetailModal', $this->supplier->id)->assertDontSee($url, false);
+        $this->get($url)->assertForbidden();
+    }
+
+    public function test_m3_07_linked_product_names_fall_back_to_alternate_language_then_code(): void
+    {
+        $this->product->update(['name_en' => '']);
+        Livewire::test('catalog::suppliers')->call('openSupplierDetailModal', $this->supplier->id)
+            ->set('detailTab', 'products')->assertSee('منتج اختبار');
+        $this->product->update(['name_ar' => '']);
+        Livewire::test('catalog::suppliers')->call('openSupplierDetailModal', $this->supplier->id)
+            ->set('detailTab', 'products')->assertSeeHtml('font-medium">'.$this->product->item_code.'</td>');
     }
 
     private function user(array $codes): User

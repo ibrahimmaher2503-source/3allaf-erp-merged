@@ -1,3 +1,13 @@
+# Current Task — Module 3 focused purchasing QA closure (2026-10-07)
+
+Owner-authorized D3 scope: M3-01..M3-07 only on `fix/module3-purchasing-qa-fast`, source `87db35e88d6d726b5e287e8e4dcec600ba71d941`. Named focused automated checks use disposable XAMPP MySQL `qa_rajh_m3_purchasing_20261007` and isolated temporary storage. Production identity was not reverified; last recorded release remains `0.1.22-cost-optional` / `1d27f7b`. Main is read-only; no merge or deployment is authorized.
+
+Fixed M3-02's create/receive versus save permission mismatch and decimal PO-quantity editor failure; preserved the save action's authorization. Fixed M3-06's PO-store selector lock, M3-05's live subtotal/discount/tax/final preview using the existing calculator, M3-03's supplier-history access and bounded scoped PO section, and M3-07's alternate-language/code name fallback. M3-01 and the reported users' M3-02 denial remain BLOCKED pending their production permission state; authorized ordinary/admin draft entry, audit, and no stock/WAC/supplier-price mutation passed. M3-04 remains BLOCKED pending the reported products' production eligibility data; eligible name/code/barcode/model search and inactive exclusion passed. M3-08 is informational only. No business decision is missing.
+
+Focused result: 7 tests / 72 assertions PASS; syntax on seven changed PHP/Blade files PASS; Pint executed with unrelated formatter changes removed; frontend build PASS once (existing optional fontaine warning); optimize:clear executed once. No full suite, PHPStan, browser check, production data/grant change, schema migration, QA report, or extra QA infrastructure. Publication is restricted to the single task branch; no business milestone or UAT gate advances.
+
+## Preserved previous task
+
 # Current Task — Permanent optional Product Card cost
 
 Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.
