@@ -26,12 +26,17 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('System Settings')] class extends Component
 {
+    use WithPagination;
+
     // Active Tab
     #[Url(as: 'tab', except: 'company')]
     public string $activeTab = 'company';
+
+    public string $masterListSearch = '';
 
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
@@ -153,6 +158,13 @@ new #[Title('System Settings')] class extends Component
         'header_text' => '', 'footer_text' => '', 'layout_settings' => ['width_mm' => 50, 'height_mm' => 30, 'dpi' => 203, 'orientation' => 'portrait', 'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2, 'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto', 'show_name' => true, 'show_price' => true, 'show_item_code' => true, 'show_list_code' => true, 'show_outlet' => true], 'status' => 'active',
     ];
 
+    protected function validationAttributes(): array
+    {
+        return [
+            'taxSettingForm.rate' => __('Tax Rate (%)'),
+        ];
+    }
+
     /**
      * Mount the component.
      */
@@ -176,6 +188,9 @@ new #[Title('System Settings')] class extends Component
 
     public function updatedActiveTab(string $tab): void
     {
+        $this->masterListSearch = '';
+        $this->resetPage();
+
         if (! in_array($tab, ['company', 'payments', 'tax', 'sequences', 'printers', 'audit'], true)) {
             $this->activeTab = 'company';
 
@@ -185,6 +200,11 @@ new #[Title('System Settings')] class extends Component
         if ($tab === 'audit') {
             Gate::authorize('audit_logs.view');
         }
+    }
+
+    public function updatingMasterListSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function rendering(): void
@@ -981,9 +1001,26 @@ $sectionMeta = [
             <flux:card class="space-y-4">
                 <div class="flex items-center gap-2"><flux:heading size="lg">{{ __('Configured Payment Methods') }}</flux:heading><x-context-help :title="__('Configured Payment Methods')" :label="__('Open contextual help')"><p>{{ __('Review saved methods below. Add a new method using the form above.') }}</p></x-context-help></div>
 
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search by code or name...')" clearable />
+                </x-tables.filter-bar>
+
                 <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
                     <flux:table class="min-w-[880px]" aria-label="{{ __('Configured Payment Methods') }}">
-                        <?php $paymentMethods = PaymentMethod::query()->orderBy('code')->limit(100)->get(); ?>
+                        <?php
+                        $searchTerm = trim($masterListSearch);
+        $paymentMethods = PaymentMethod::query()
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('code', 'like', $pattern)
+                        ->orWhere('name_ar', 'like', $pattern)
+                        ->orWhere('name_en', 'like', $pattern);
+                });
+            })
+            ->orderBy('code')
+            ->paginate(25);
+        ?>
 
                         <flux:table.columns>
                             <flux:table.column class="min-w-24 whitespace-nowrap">{{ __('Code') }}</flux:table.column>
@@ -1006,15 +1043,15 @@ $sectionMeta = [
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <?php
-                                    $typeLabel = [
-                                        'cash' => __('Cash'),
-                                        'card' => __('Card or POS terminal'),
-                                        'transfer' => __('Bank Transfer'),
-                                        'manual' => __('Other / manual record'),
-                                        'manual_electronic' => __('Electronic wallet / manual transfer'),
-                                        'cheque' => __('Cheque'),
-                                        'gift_card' => __('Gift card'),
-                                    ][$method->type] ?? __('Other / manual record');
+                        $typeLabel = [
+                            'cash' => __('Cash'),
+                            'card' => __('Card or POS terminal'),
+                            'transfer' => __('Bank Transfer'),
+                            'manual' => __('Other / manual record'),
+                            'manual_electronic' => __('Electronic wallet / manual transfer'),
+                            'cheque' => __('Cheque'),
+                            'gift_card' => __('Gift card'),
+                        ][$method->type] ?? __('Other / manual record');
                                 ?>
                                     <flux:badge size="sm" color="zinc">{{ $typeLabel }}</flux:badge>
                                 </flux:table.cell>
@@ -1050,8 +1087,8 @@ $sectionMeta = [
                             <flux:table.row>
                                 <flux:table.cell colspan="7" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Payment Methods Configured')"
-                                        :description="__('No payment methods are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Payment Methods Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No payment methods are configured yet. Add one using the form above.') : ''"
                                         icon="credit-card"
                                     />
                                 </flux:table.cell>
@@ -1060,6 +1097,7 @@ $sectionMeta = [
                         </flux:table.rows>
                     </flux:table>
                 </div>
+                <x-tables.pagination :paginator="$paymentMethods" :page-sizes="[25]" />
             </flux:card>
         </div>
     <?php } ?>
@@ -1156,6 +1194,26 @@ $sectionMeta = [
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Configured Tax Settings') }}</flux:heading>
 
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search by code or name...')" clearable />
+                </x-tables.filter-bar>
+
+                <?php
+                    $searchTerm = trim($masterListSearch);
+        $taxRows = TaxSetting::query()
+            ->forCompany((int) $companyId)
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('code', 'like', $pattern)
+                        ->orWhere('name_ar', 'like', $pattern)
+                        ->orWhere('name_en', 'like', $pattern);
+                });
+            })
+            ->orderBy('code')
+            ->paginate(25);
+        ?>
+
                 <flux:table aria-label="{{ __('Configured Tax Settings') }}">
 
                     <flux:table.columns>
@@ -1170,9 +1228,8 @@ $sectionMeta = [
                     </flux:table.columns>
 
                     <flux:table.rows>
-                        <?php $taxRows = TaxSetting::query()->forCompany((int) $companyId)->orderBy('code')->limit(100)->get();
-        if ($taxRows->isNotEmpty()) {
-            foreach ($taxRows as $tax) { ?>
+                        <?php if ($taxRows->isNotEmpty()) {
+                            foreach ($taxRows as $tax) { ?>
                             <flux:table.row key="tax-{{ $tax->id }}">
                                 <flux:table.cell class="font-mono font-bold">{{ $tax->code }}</flux:table.cell>
                                 <flux:table.cell>
@@ -1217,12 +1274,12 @@ $sectionMeta = [
                                 </flux:table.cell>
                             </flux:table.row>
                         <?php }
-            } else { ?>
+                            } else { ?>
                             <flux:table.row>
                                 <flux:table.cell colspan="8" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Tax Rules Configured')"
-                        :description="__('No tax rules are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Tax Rules Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No tax rules are configured yet. Add one using the form above.') : ''"
                                         icon="receipt-percent"
                                     />
                                 </flux:table.cell>
@@ -1230,6 +1287,7 @@ $sectionMeta = [
                         <?php } ?>
                     </flux:table.rows>
                 </flux:table>
+                <x-tables.pagination :paginator="$taxRows" :page-sizes="[25]" />
             </flux:card>
         </div>
     <?php } ?>
@@ -1300,7 +1358,7 @@ $sectionMeta = [
                     </section>
 
                     <?php
-            $previewValue = (int) ($documentSequenceForm['next_value'] ?? 1);
+                            $previewValue = (int) ($documentSequenceForm['next_value'] ?? 1);
         $previewPrefix = ($documentSequenceForm['scope_type'] ?? 'branch') === 'branch'
             ? (($previewBranch = $activeBranches->firstWhere('id', (int) ($documentSequenceForm['scope_id'] ?? 0)))
                 ? DocumentTypeCatalog::prefix($previewBranch->code, (string) $documentSequenceForm['document_type'])
@@ -1351,9 +1409,34 @@ $sectionMeta = [
             <flux:card class="space-y-4">
                 <flux:heading size="lg">{{ __('Document-numbering rules') }}</flux:heading>
 
-                <flux:table aria-label="{{ __('Document-numbering rules') }}">
-                    <?php $documentSequences = DocumentSequence::visibleTo(auth()->user())->with('scopeBranch')->orderBy('document_type')->orderBy('scope_key')->limit(100)->get(); ?>
+                <x-tables.filter-bar>
+                    <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search')" clearable />
+                </x-tables.filter-bar>
 
+                <?php
+        $searchTerm = trim($masterListSearch);
+        $documentSequences = DocumentSequence::visibleTo(auth()->user())
+            ->with('scopeBranch')
+            ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                $query->where(function ($query) use ($searchTerm): void {
+                    $pattern = '%'.$searchTerm.'%';
+                    $query->where('document_type', 'like', $pattern)
+                        ->orWhere('scope_key', 'like', $pattern)
+                        ->orWhere('prefix', 'like', $pattern)
+                        ->orWhere('suffix', 'like', $pattern)
+                        ->orWhereHas('scopeBranch', function ($branchQuery) use ($pattern): void {
+                            $branchQuery->where('code', 'like', $pattern)
+                                ->orWhere('name_ar', 'like', $pattern)
+                                ->orWhere('name_en', 'like', $pattern);
+                        });
+                });
+            })
+            ->orderBy('document_type')
+            ->orderBy('scope_key')
+            ->paginate(25);
+        ?>
+
+                <flux:table aria-label="{{ __('Document-numbering rules') }}">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Document type') }}</flux:table.column>
                         <flux:table.column>{{ __('Numbering scope') }}</flux:table.column>
@@ -1400,8 +1483,8 @@ $sectionMeta = [
                             <flux:table.row>
                                 <flux:table.cell colspan="7" class="text-center py-4">
                                     <x-state.empty
-                                        :title="__('No Document Sequences Configured')"
-                        :description="__('No document sequences are configured yet. Add one using the form above.')"
+                                        :title="$searchTerm === '' ? __('No Document Sequences Configured') : __('No results')"
+                                        :description="$searchTerm === '' ? __('No document sequences are configured yet. Add one using the form above.') : ''"
                                         icon="numbered-list"
                                     />
                                 </flux:table.cell>
@@ -1409,6 +1492,7 @@ $sectionMeta = [
                         <?php } ?>
                     </flux:table.rows>
                 </flux:table>
+                <x-tables.pagination :paginator="$documentSequences" :page-sizes="[25]" />
             </flux:card>
         </div>
     <?php } ?>
@@ -1452,7 +1536,7 @@ $sectionMeta = [
 
                 <form id="printer-profile-form" wire:submit="savePrinter" class="space-y-4">
                     <?php
-            $printerBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
+                $printerBranches = Branch::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']);
                 $printerStores = Store::visibleTo(auth()->user())->where('status', 'active')->orderBy('code')->get(['id', 'branch_id', 'code', 'name_ar', 'name_en']);
                 ?>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1538,12 +1622,49 @@ $sectionMeta = [
                 </form>
                 </flux:modal>
 
-                <?php $printers = PrinterConfiguration::visibleTo(auth()->user())->with(['branch', 'store', 'printTemplate'])->orderBy('name')->limit(100)->get(); ?>
                 <div class="border-t border-border-subtle pt-5">
                     <div class="mb-4 flex items-center gap-2">
                         <flux:heading size="md">{{ __('Configured printers') }}</flux:heading>
                         <x-context-help :title="__('Configured printers')" :label="__('Open contextual help')"><p>{{ __('Review availability and update the printer that is used at each location.') }}</p></x-context-help>
                     </div>
+
+                    <x-tables.filter-bar class="mb-4">
+                        <flux:input wire:model.live.debounce.300ms="masterListSearch" icon="magnifying-glass" :label="__('Search')" :placeholder="__('Search')" clearable />
+                    </x-tables.filter-bar>
+
+                    <?php
+                    $searchTerm = trim($masterListSearch);
+                $printers = PrinterConfiguration::visibleTo(auth()->user())
+                    ->with(['branch', 'store', 'printTemplate'])
+                    ->when($searchTerm !== '', function ($query) use ($searchTerm): void {
+                        $query->where(function ($query) use ($searchTerm): void {
+                            $pattern = '%'.$searchTerm.'%';
+                            $query->where('name', 'like', $pattern)
+                                ->orWhere('printer_type', 'like', $pattern)
+                                ->orWhere('paper_size', 'like', $pattern)
+                                ->orWhere('template_name', 'like', $pattern)
+                                ->orWhereHas('branch', function ($branchQuery) use ($pattern): void {
+                                    $branchQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                })
+                                ->orWhereHas('store', function ($storeQuery) use ($pattern): void {
+                                    $storeQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                })
+                                ->orWhereHas('printTemplate', function ($templateQuery) use ($pattern): void {
+                                    $templateQuery->where('code', 'like', $pattern)
+                                        ->orWhere('name_ar', 'like', $pattern)
+                                        ->orWhere('name_en', 'like', $pattern);
+                                });
+                        });
+                    })
+                    ->orderBy('name')
+                    ->orderBy('id')
+                    ->paginate(25);
+                ?>
+
                     <flux:table aria-label="{{ __('Configured printers') }}">
                         <flux:table.columns>
                             <flux:table.column>{{ __('Printer name') }}</flux:table.column>
@@ -1580,12 +1701,13 @@ $sectionMeta = [
                             <?php if ($printers->isEmpty()) { ?>
                                 <flux:table.row>
                                     <flux:table.cell colspan="6" class="py-8 text-center">
-                                        <x-state.empty :title="__('No printers added yet')" :description="__('Add your first printer to start setting up invoices, receipts, and reports.')" icon="printer" />
+                                <x-state.empty :title="$searchTerm === '' ? __('No printers added yet') : __('No results')" :description="$searchTerm === '' ? __('Add your first printer to start setting up invoices, receipts, and reports.') : ''" icon="printer" />
                                     </flux:table.cell>
                                 </flux:table.row>
                             <?php } ?>
                         </flux:table.rows>
                     </flux:table>
+                    <x-tables.pagination :paginator="$printers" :page-sizes="[25]" />
                 </div>
             </flux:card>
             <?php } ?>

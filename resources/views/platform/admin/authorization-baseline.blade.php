@@ -33,6 +33,13 @@ new #[Title('Authorization Baseline')] class extends Component
 
     public array $storeIds = [];
 
+    protected function validationAttributes(): array
+    {
+        return [
+            'userForm.password' => $this->editingUserId === null ? __('Password') : __('New password (optional)'),
+        ];
+    }
+
     public function mount(): void
     {
         Gate::authorize('users_roles_permissions.view');
