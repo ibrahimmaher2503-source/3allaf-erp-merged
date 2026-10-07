@@ -26,13 +26,13 @@
         "app/Http/Middleware",
         "resources/views/pages/auth"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "auth",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Existing server limiter rejects the sixth invalid login; PDF screenshot has an empty password and does not establish seven HTTP login attempts.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "AuthenticationRegressionTest: 3/35; six actual non-empty browser attempts on isolated local server, sixth 429.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No limiter change; remote result remains unverified."
     },
     {
       "id": "BUG-222",
@@ -52,13 +52,13 @@
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
         "app/Modules/Platform/Models/ApprovalRecord.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "approvals",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Inbox omitted canonical submitted before/proposed context. Added source-aware tax allowlist and branch dependency counts, preserving redaction and scope.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "ApprovalInboxPresentationTest: 5/37, including self-decision/scope denial and unchanged source hash.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Allowlist must be updated deliberately for new setting fields; counts are request-time context."
     },
     {
       "id": "BUG-223",
@@ -77,13 +77,13 @@
         "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "tax",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Blank/non-numeric tax rate reached request/persistence paths. Shared required numeric 0–100 validation runs before side effects; explicit zero remains valid.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "Module1TaxRateValidationTest: 9/108; rejected approval effects roll back.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Historical tax snapshots unchanged; full historical receipt reprint was source-reviewed, not dynamically tested."
     },
     {
       "id": "BUG-224",
@@ -103,13 +103,13 @@
         "resources/views/platform/admin/branches.blade.php",
         "app/Modules/Platform/Models/Branch.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "branches",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Generic lifecycle error and missing review context. Parent-first branch locks, typed dependency validation, request-time counts and approval-time locked child recheck.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "BranchLifecycleDependencyTest: 5/25; two-worker branch/store and approval/hash checks: 4/25.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Active user scopes are context, not newly invented blockers; logical deletion never cascades."
     },
     {
       "id": "BUG-225",
@@ -129,13 +129,13 @@
         "lang/ar.json",
         "lang/ar-EG.json"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "localization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Nested Livewire field names lacked validation attribute mappings. Added native human-readable names using existing locale validation templates.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "Module1ValidationLocalizationTest verifies complete en/ar/ar-EG error sentences; merged tax/localization/branch checks 26/368.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Does not claim every validation message throughout the ERP is localized."
     },
     {
       "id": "BUG-226",
@@ -156,13 +156,13 @@
         "app/Http/Middleware",
         "resources/views/pages/auth"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "auth",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Inactive accounts were rejected at login/gates but established sessions survived. Web middleware now logs out, invalidates session and rotates CSRF on the next request.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "AuthenticationRegressionTest: 3/35; second-pass HTTP and actual Livewire revocation checks.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Financial shift, drawer assignment and active-shift records are preserved; owner must decide emergency recovery."
     },
     {
       "id": "BUG-227",
@@ -182,13 +182,13 @@
         "database/seeders/ProductionSeeder.php",
         "app/Modules/Retail/Models/PosShift.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "pos",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Current canonical cashier has approved grants and can GET/open a real shift. Remote Cashir alias is not the local canonical profile.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "PosShiftOpenRouteTest: 5/48 with seeded canonical role, real POST and scope/exclusivity denials.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No role/grant/alias change; production role data was not inspected."
     },
     {
       "id": "BUG-228",
@@ -208,13 +208,13 @@
         "resources/views/platform/admin/drawers.blade.php",
         "database/migrations"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "concurrency",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Row locks serialized writes without identifying stale forms; timestamps have second precision. Added monotonic lock_version, locked UI baseline, atomic comparison/increment for save/status/delete.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "CashDrawerConcurrencyTest: 8/57, including same-second stale edit, actual two-worker winner, forged baseline, retained dirty modal and approval delete.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Additive migration applied locally; every future deployment needs the migration through the established release workflow."
     },
     {
       "id": "BUG-229",
@@ -234,13 +234,13 @@
         "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
         "resources/views/platform/system/audit-log.blade.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "audit",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Numbering and inventory draft writers omitted known branch scope; presentation maps were incomplete. Fixed writer attribution and reviewed labels; expose only safe truncated fingerprints.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "Module1AuditPresentationTest: 4/31; branch/store visibility, cross-branch exclusion, raw metadata absence and fail-closed export.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Existing historical unscoped events are preserved; no data backfill or export permission expansion."
     },
     {
       "id": "M1-F01",
@@ -261,13 +261,13 @@
         "app/Http/Middleware",
         "resources/views/pages/auth"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "auth",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Public self-registration policy is not established by the routed approved requirements.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Existing Fortify registration remains unchanged.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Owner must decide whether public registration is allowed."
     },
     {
       "id": "M1-F02",
@@ -287,13 +287,13 @@
         "resources/views/platform/admin/branches.blade.php",
         "app/Modules/Platform/Models/Branch.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "branches",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Approved inventory exception policy explicitly requires negative stock blocked by default; Blocked (Safe) reflects that behavior.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "docs/25-inventory-exception-policy.md sections 1/3 and existing UI mapping reviewed.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No policy change needed."
     },
     {
       "id": "M1-F03",
@@ -313,13 +313,13 @@
         "resources/views/platform/admin/branches.blade.php",
         "app/Modules/Platform/Models/Branch.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "branches",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Warehouse count deliberately selects warehouse-type stores, excluding selling outlets; terminology decision remains open.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Current query and DEC-021 reviewed.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Owner decides taxonomy/labels, not an inferred count defect."
     },
     {
       "id": "M1-F04",
@@ -340,13 +340,13 @@
         "app/Modules/Platform/Actions/SaveRoleAction.php",
         "routes/platform.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "authorization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Canonical role baseline and remote aliases cannot be reconciled by inventing grants.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Module1AuthorizationBoundaryTest: 9/42, including canonical guard and forged flag denial.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Remote aliases/counts unverified; no existing grants changed."
     },
     {
       "id": "M1-F05",
@@ -366,13 +366,13 @@
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php",
         "app/Modules/Platform/Models/ApprovalRecord.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "approvals",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Existing maker-checker behavior is enforced; business assignment of independent reviewers remains unspecified.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Approval presentation plus same-source approval concurrency and hash rollback checks.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Preserved explicitly approved immutable SuperAdmin bypass; no new role grants."
     },
     {
       "id": "M1-F06",
@@ -393,13 +393,13 @@
         "app/Modules/Platform/Actions/SaveRoleAction.php",
         "routes/platform.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "BLOCKED",
       "assigned_agent": "authorization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Remote Super Admin account claim requires authorized remote data access; local system-admin role and immutable SuperAdmin flag are distinct.",
+      "fix_status": "BLOCKED",
+      "regression_test": "Local creation of a second role-based administrator succeeds; role/flag protections verified.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No remote access or singleton rule invented."
     },
     {
       "id": "M1-F07",
@@ -419,13 +419,13 @@
         "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
         "resources/views/platform/system/audit-log.blade.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "audit",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Positive audit export row cap needs owner configuration; fail-closed behavior is intentional.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Export rejects null/unconfigured cap and does not write success audit.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Owner chooses a positive cap before enabling export."
     },
     {
       "id": "M1-F08",
@@ -444,13 +444,13 @@
         "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "AMBIGUOUS REQUIREMENT",
       "assigned_agent": "tax",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Current approved printer contract permits nullable template; report does not establish mandatory assignment.",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "regression_test": "Printer save contract reviewed; field remains nullable.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Physical print acceptance is separate."
     },
     {
       "id": "M1-F09",
@@ -471,13 +471,13 @@
         "app/Modules/Platform/Actions/DeliverAttachment.php",
         "resources/js"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "regression",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "No numbering corruption found in actual overlapping allocations.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "DocumentSequenceConcurrencyTest: real two-process lock contention, unique consecutive numbers and counter=3 after two allocations.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Specific schedules are verified, not exhaustive load stress."
     },
     {
       "id": "M1-F10",
@@ -498,13 +498,13 @@
         "app/Modules/Platform/Actions/SaveRoleAction.php",
         "routes/platform.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT FIXED",
       "assigned_agent": "authorization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Bounded security matrix was expanded but complete role-by-action-by-record matrix was not executed.",
+      "fix_status": "NOT FIXED",
+      "regression_test": "Real route/action/scope/export/last-admin/mass-assignment checks; no blanket Gate override claimed as security evidence.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Global-only audit route versus separately scoped export policy still needs role policy clarification."
     },
     {
       "id": "M1-F11",
@@ -525,13 +525,13 @@
         "app/Modules/Platform/Actions/DeliverAttachment.php",
         "resources/js"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "OUT OF SCOPE",
       "assigned_agent": "regression",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "No upload surface exists in the Module 1 scope.",
+      "fix_status": "OUT OF SCOPE",
+      "regression_test": "Other modules have upload workflows; Module 1 does not.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Does not claim all application uploads absent or verified."
     },
     {
       "id": "M1-F12",
@@ -552,13 +552,13 @@
         "app/Modules/Platform/Actions/DeliverAttachment.php",
         "resources/js"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "BLOCKED",
       "assigned_agent": "regression",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Physical device/offline PWA acceptance needs devices and approved connectivity scenarios.",
+      "fix_status": "BLOCKED",
+      "regression_test": "Static network/offline safety reviewed only.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Offline, printer, scanner and reconnect UAT remain unexecuted."
     },
     {
       "id": "M1-F13",
@@ -579,13 +579,13 @@
         "app/Http/Middleware",
         "resources/views/pages/auth"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "BLOCKED",
       "assigned_agent": "auth",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "App reset dispatch/token/reset were verified with fake notifications; actual SMTP delivery requires external mail configuration.",
+      "fix_status": "BLOCKED",
+      "regression_test": "AuthenticationRegressionTest proves token flow and changed password.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No claim of delivered mail."
     },
     {
       "id": "M1-F14",
@@ -606,13 +606,13 @@
         "app/Modules/Platform/Actions/SaveRoleAction.php",
         "routes/platform.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "authorization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Local last-administrator removal/deactivation protection holds.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "Module1AuthorizationBoundaryTest includes successful second admin and rejection of final-role removal/deactivation.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Concurrent final-admin mutations were not exercised."
     },
     {
       "id": "M1-F15",
@@ -631,13 +631,13 @@
         "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "tax",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Company information is editable through the approved authorized editor; read-only observation did not reproduce.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "Company success/readback plus denial/invalid-input checks in tax/settings focused class.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Remote role policy remains unverified."
     },
     {
       "id": "M1-F16",
@@ -656,13 +656,13 @@
         "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "tax",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Payment method lifecycle works for the bounded scenarios.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "Authorized valid save/display and denied/offline-card invalid zero-effects checks.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Does not prove external payment services."
     },
     {
       "id": "M1-F17",
@@ -681,13 +681,13 @@
         "app/Modules/Platform/Actions/SaveLocalSettingsAction.php",
         "app/Modules/Platform/Actions/PlatformSettingsApprovalAction.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "BLOCKED",
       "assigned_agent": "tax",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Physical test-print/transaction-output acceptance needs actual hardware.",
+      "fix_status": "BLOCKED",
+      "regression_test": "No physical print check performed.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Printer and required paper-format UAT remain open."
     },
     {
       "id": "M1-F18",
@@ -707,13 +707,13 @@
         "lang/ar.json",
         "lang/ar-EG.json"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "localization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Four Settings master lists capped at 100 were unreachable above that limit. Added native scoped 25-row pagination/search, active-tab queries and page reset.",
+      "fix_status": "FIXED BUT NOT FULLY VERIFIED",
+      "regression_test": "101-row reachability, search/scope/reset and inactive-list exclusion checks; actual Arabic desktop/mobile payment search.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Large-volume stress and every reference selector remain unmeasured."
     },
     {
       "id": "M1-F19",
@@ -733,13 +733,13 @@
         "lang/ar.json",
         "lang/ar-EG.json"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "localization",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Added missing Arabic Branch Management/Role Permissions keys and named field errors.",
+      "fix_status": "FIXED BUT NOT FULLY VERIFIED",
+      "regression_test": "11 pages × 3 locales bounded HTTP render proof; actual Arabic RTL desktop/mobile settings with no page overflow.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "All text/states not covered; System Settings breadcrumb remained English in the observed Arabic page."
     },
     {
       "id": "M1-F20",
@@ -760,13 +760,13 @@
         "app/Modules/Platform/Actions/DeliverAttachment.php",
         "resources/js"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "NOT REPRODUCED",
       "assigned_agent": "regression",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Editing numbering metadata preserves an allocated counter and direct counter rewind is rejected.",
+      "fix_status": "NOT REPRODUCED",
+      "regression_test": "DocumentSequenceConcurrencyTest metadata scenario; canonical permission fixture preserved when pre-seeded.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Approved/stale override rollback not dynamically covered in this pass."
     },
     {
       "id": "M1-F21",
@@ -786,13 +786,13 @@
         "app/Modules/Inventory/Actions/SaveInventoryAdjustmentAction.php",
         "resources/views/platform/system/audit-log.blade.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "LOCALLY REPRODUCED",
       "assigned_agent": "audit",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Stored hashed device/session context existed but was not visible. UI now displays only 12 hex chars of valid SHA256 hashes.",
+      "fix_status": "FIXED + VERIFIED",
+      "regression_test": "Actual request audit plus Livewire render checks exclude raw IDs, complete hashes and user agent.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "No arbitrary metadata rendered."
     },
     {
       "id": "M1-F22",
@@ -812,13 +812,13 @@
         "database/seeders/ProductionSeeder.php",
         "app/Modules/Retail/Models/PosShift.php"
       ],
-      "reproduction_status": "PENDING",
+      "reproduction_status": "OUT OF SCOPE",
       "assigned_agent": "pos",
-      "root_cause": null,
-      "fix_status": "PENDING",
-      "regression_test": null,
-      "verification_status": "PENDING",
-      "risk": null
+      "root_cause": "Remote QA records, pending approvals and orphaned shift were intentionally preserved.",
+      "fix_status": "OUT OF SCOPE",
+      "regression_test": "No production/remote cleanup or financial auto-close performed.",
+      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "risk": "Cleanup requires a separate owner-authorized operational task."
     }
   ],
   "source_pass_coverage": [
@@ -856,5 +856,83 @@
     "qa-inv-role restored; QA drawer name restored"
   ],
   "change_class": "I4",
-  "isolation": "Ten Luna xhigh agents, separate worktrees/schemas; lead alone integrates"
+  "isolation": "Ten Luna xhigh agents, separate worktrees/schemas; lead alone integrates",
+  "disposition_counts": {
+    "NOT REPRODUCED": 8,
+    "FIXED + VERIFIED": 8,
+    "AMBIGUOUS REQUIREMENT": 6,
+    "BLOCKED": 4,
+    "NOT FIXED": 1,
+    "OUT OF SCOPE": 2,
+    "FIXED BUT NOT FULLY VERIFIED": 2
+  },
+  "review_checkpoint": "All ten second-pass reports received; accepted fixes reviewed and integrated through b4d2e54. Final combined checks pending.",
+  "derived_findings": [
+    {
+      "id": "M1-EX01",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "root_cause": "Default assigned cashier versus exclusive drawer ownership; no new ownership policy.",
+      "regression_test": "No policy change"
+    },
+    {
+      "id": "M1-EX02",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "OpenShiftAction rechecks locked active selling store before creating financial state.",
+      "regression_test": "PosShiftOpenRouteTest 5/48"
+    },
+    {
+      "id": "M1-EX03",
+      "fix_status": "FIXED BUT NOT FULLY VERIFIED",
+      "root_cause": "Native scoped Settings pagination/search; F18 contains remaining scale limits.",
+      "regression_test": "101-row reachability; actual Arabic desktop/mobile filter"
+    },
+    {
+      "id": "M1-EX04",
+      "fix_status": "AMBIGUOUS REQUIREMENT",
+      "root_cause": "Changing selling-store type during an existing open shift needs owner policy.",
+      "regression_test": "No policy change"
+    },
+    {
+      "id": "M1-EX05",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Drawer reactivation rechecks active selling-store invariant under parent locks.",
+      "regression_test": "CashDrawerStatusInvariantTest 9/63"
+    },
+    {
+      "id": "M1-EX06",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Inventory approval audit records the known store branch; visibility is preserved.",
+      "regression_test": "ApproveInventoryAdjustmentActionTest 1/4; mixed review 34/213"
+    },
+    {
+      "id": "M1-EX07",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Custom Fortify callback uses native configured minimum Timebox for failed credentials.",
+      "regression_test": "AuthenticationRedTeamReviewTest 6/65; no timing benchmark; overflow can exceed minimum"
+    },
+    {
+      "id": "M1-EX08",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Approval decision failures use translated English source keys in en/ar.",
+      "regression_test": "Module1RedTeamLocalizationTest 2/25"
+    },
+    {
+      "id": "M1-EX09",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Print-template editor reauthorizes after permission revocation.",
+      "regression_test": "Actual stale Livewire snapshot denied; mixed 18/114"
+    },
+    {
+      "id": "M1-EX10",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Native Locked company context blocks client-forged cross-company tax lists.",
+      "regression_test": "Settings/approval authorization red-team 9/46"
+    },
+    {
+      "id": "M1-EX11",
+      "fix_status": "FIXED + VERIFIED",
+      "root_cause": "Shift opening locks current user and rereads current scope after locks, preventing revoked-scope race.",
+      "regression_test": "Real two-worker RED then GREEN 1/5; POS 5/48"
+    }
+  ]
 }
