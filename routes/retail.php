@@ -801,7 +801,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $shift = PosShift::query()->visibleTo($user)->active()
             ->where('cashier_id', $user->id)
-            ->with(['cashDrawer', 'cashMovements'])
+            ->with(['cashDrawer', 'cashMovements.creator'])
             ->latest('opened_at')
             ->first();
 

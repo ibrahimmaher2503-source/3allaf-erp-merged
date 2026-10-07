@@ -122,12 +122,14 @@
                     @if ($shift->cashMovements->isNotEmpty())
                         <x-tables.table-shell :label="__('Cash movement')" class="mt-5">
                             <table class="data-table w-full text-sm">
-                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
+                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th>{{ __('Actor') }}</th><th>{{ __('Reference') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
                                 <tbody>
                                     @foreach ($shift->cashMovements as $movement)
                                         <tr>
                                             <td>{{ __(ucwords(str_replace('_', ' ', $movement->movement_type))) }}</td>
                                             <td>{{ $movement->reason }}</td>
+                                            <td>{{ $movement->creator?->name ?? '—' }}</td>
+                                            <td>{{ $movement->reference ?? '—' }}</td>
                                             <td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>
                                         </tr>
                                     @endforeach

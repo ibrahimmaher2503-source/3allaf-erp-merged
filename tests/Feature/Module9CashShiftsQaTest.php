@@ -12,6 +12,7 @@ use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Reporting\Queries\ReportSnapshot;
 use App\Modules\Retail\Actions\OpenShiftAction;
+use App\Modules\Retail\Actions\RecordCashMovementAction;
 use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Enums\ShiftState;
@@ -31,7 +32,7 @@ final class Module9CashShiftsQaTest extends TestCase
 
     public function createApplication(): Application
     {
-        if (getenv('DB_DATABASE') !== 'qa_rajh_m9_cash_shifts_20261007' || ! getenv('QA_STORAGE_PATH')) {
+        if (getenv('DB_CONNECTION') !== 'mysql' || getenv('DB_DATABASE') !== 'qa_rajh_m9_cash_shifts_20261007' || ! getenv('QA_STORAGE_PATH')) {
             throw new \RuntimeException('Module 9 checks require the dedicated disposable MySQL schema and storage.');
         }
         $app = require __DIR__.'/../../bootstrap/app.php';
@@ -145,6 +146,25 @@ final class Module9CashShiftsQaTest extends TestCase
         $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
             ->assertSessionHasErrors(['confirm_outlet' => 'Confirm the sales outlet before opening a shift.']);
         $this->get(route('pos.shift'))->assertOk()->assertSee('Confirm the sales outlet before opening a shift.');
+    }
+
+    public function test_m9_06_movement_screen_and_report_show_existing_actor_and_reference(): void
+    {
+        $shift = $this->openShift();
+        $actor = $shift->cashier;
+        app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_in', '125', 'Additional float', (string) Str::uuid(), 'M9-REF-125');
+        app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_out', '25', 'Petty expense', (string) Str::uuid());
+        $this->get(route('pos.shift'))->assertOk()->assertSee('Actor')->assertSee('Reference')
+            ->assertSee($actor->name)->assertSee('M9-REF-125')->assertSee('Additional float')->assertSee('125.00')->assertSee('—');
+        $movements = collect($this->cashReport($actor)['detail_sections'])->firstWhere('key', 'cash_movements');
+        self::assertArrayHasKey('actor', $movements['columns']);
+        self::assertArrayHasKey('reason', $movements['columns']);
+        $row = collect($movements['rows'])->firstWhere('reference', 'M9-REF-125');
+        self::assertSame($actor->name, $row['actor']);
+        self::assertSame('Additional float', $row['reason']);
+        self::assertSame('cash_in', $row['type']);
+        self::assertSame(125.0, $row['amount']);
+        self::assertNull(collect($movements['rows'])->firstWhere('reason', 'Petty expense')['reference']);
     }
 
     private function reviewer(): User

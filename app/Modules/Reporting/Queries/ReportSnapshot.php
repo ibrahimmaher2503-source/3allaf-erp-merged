@@ -835,8 +835,8 @@ final class ReportSnapshot
 
                 return $row;
             }));
-            $movements = CashMovement::query()->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
-            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $row->movement_type, 'amount' => (float) $row->amount, 'reference' => $row->reference]));
+            $movements = CashMovement::query()->with('creator')->whereIn('store_id', $storeIds)->whereBetween('created_at', [$from, $to])->latest('id')->limit(50)->get();
+            $section('cash_movements', __('Drawer movements'), ['created' => __('Created'), 'type' => __('Movement'), 'amount' => __('Amount'), 'reason' => __('Reason'), 'actor' => __('Actor'), 'reference' => __('Reference')], $movements->map(fn (CashMovement $row): array => ['created' => $row->created_at?->toIso8601String(), 'type' => $row->movement_type, 'amount' => (float) $row->amount, 'reason' => $row->reason, 'actor' => $row->creator?->name ?? '—', 'reference' => $row->reference]));
         }
 
         if (in_array('customers', $modules, true)) {
