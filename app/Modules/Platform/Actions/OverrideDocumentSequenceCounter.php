@@ -97,6 +97,7 @@ final class OverrideDocumentSequenceCounter
                 $before,
                 $sequence->only(['document_type', 'next_value', 'lock_version']),
                 reasonText: trim($reason),
+                branchId: $sequence->scope_type === 'branch' ? (int) $sequence->scope_id : null,
                 metadata: ['override' => true, ...$metadata],
             );
 

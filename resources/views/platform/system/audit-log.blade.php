@@ -123,6 +123,8 @@ new #[Title('Audit Logs')] class extends Component {
             'selectedAudit' => $selectedAudit,
             'selectedBeforeValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->before_values, $user),
             'selectedAfterValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->after_values, $user),
+            'selectedDeviceFingerprint' => $selectedAudit === null ? null : $presentation->fingerprint($selectedAudit->metadata['device_hash'] ?? null),
+            'selectedSessionFingerprint' => $selectedAudit === null ? null : $presentation->fingerprint($selectedAudit->metadata['session_hash'] ?? null),
             'canExport' => Gate::allows('export', AuditLog::class),
             'exportConfigured' => filter_var(config('audit.export_max_rows'), FILTER_VALIDATE_INT) !== false && (int) config('audit.export_max_rows') > 0,
             'presentation' => $presentation,
@@ -245,7 +247,17 @@ new #[Title('Audit Logs')] class extends Component {
                             <flux:table.cell><flux:badge size="sm" color="zinc">{{ $presentation->event($log->event) }}</flux:badge></flux:table.cell>
                             <flux:table.cell>{{ $log->actor_name ?? __('System') }}</flux:table.cell>
                             <flux:table.cell><span>{{ $presentation->source($log->source_type) }}</span>@if($log->source_id)<span class="ms-1 font-mono text-xs text-text-muted" dir="ltr">#{{ $log->source_id }}</span>@endif</flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</flux:table.cell>
+                            <flux:table.cell class="font-mono text-xs">
+                                @if ($log->branch_id)
+                                    <span>{{ __('Branch').' #'.$log->branch_id }}</span>
+                                @endif
+                                @if ($log->store_id)
+                                    <span class="ms-2">{{ __('Store').' #'.$log->store_id }}</span>
+                                @endif
+                                @if (! $log->branch_id && ! $log->store_id)
+                                    {{ __('Global') }}
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
                             <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
                         </flux:table.row>
@@ -264,7 +276,17 @@ new #[Title('Audit Logs')] class extends Component {
                     <dl class="grid gap-2 text-sm">
                         <div><dt class="text-text-muted">{{ __('Actor') }}</dt><dd>{{ $log->actor_name ?? __('System') }}</dd></div>
                         <div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ $presentation->source($log->source_type) }}@if($log->source_id)<span class="ms-1 font-mono text-xs" dir="ltr">#{{ $log->source_id }}</span>@endif</dd></div>
-                        <div><dt class="text-text-muted">{{ __('Scope') }}</dt><dd>{{ $log->branch_id ? __('Branch').' #'.$log->branch_id : ($log->store_id ? __('Store').' #'.$log->store_id : __('Global')) }}</dd></div>
+                        <div><dt class="text-text-muted">{{ __('Scope') }}</dt><dd>
+                            @if ($log->branch_id)
+                                <span>{{ __('Branch').' #'.$log->branch_id }}</span>
+                            @endif
+                            @if ($log->store_id)
+                                <span class="ms-2">{{ __('Store').' #'.$log->store_id }}</span>
+                            @endif
+                            @if (! $log->branch_id && ! $log->store_id)
+                                {{ __('Global') }}
+                            @endif
+                        </dd></div>
                     </dl>
                     <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</x-actions.button>
                 </x-cards.section-card>
@@ -305,6 +327,12 @@ new #[Title('Audit Logs')] class extends Component {
                         <div><span class="text-text-muted">{{ __('Category') }}</span><p>{{ $presentation->category($selectedAudit->category) }}</p></div>
                         <div><span class="text-text-muted">{{ __('Source') }}</span><p>{{ $presentation->source($selectedAudit->source_type) }}</p></div>
                         <div><span class="text-text-muted">{{ __('Source record ID') }}</span><p class="font-mono text-xs" dir="ltr">{{ $selectedAudit->source_id ?: '—' }}</p></div>
+                        @if ($selectedDeviceFingerprint)
+                            <div><span class="text-text-muted">{{ __('Device fingerprint') }}</span><p class="font-mono text-xs" dir="ltr">{{ $selectedDeviceFingerprint }}</p></div>
+                        @endif
+                        @if ($selectedSessionFingerprint)
+                            <div><span class="text-text-muted">{{ __('Session fingerprint') }}</span><p class="font-mono text-xs" dir="ltr">{{ $selectedSessionFingerprint }}</p></div>
+                        @endif
                         @if ($selectedAudit->reason_code || $selectedAudit->reason_text)
                             <div class="sm:col-span-2"><span class="text-text-muted">{{ __('Reason') }}</span><p>{{ trim(($selectedAudit->reason_code ? $selectedAudit->reason_code.': ' : '').$selectedAudit->reason_text) }}</p></div>
                         @endif
