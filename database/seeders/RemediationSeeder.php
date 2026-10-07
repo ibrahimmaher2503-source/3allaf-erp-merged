@@ -260,7 +260,7 @@ final class RemediationSeeder extends Seeder
     {
         foreach ([['REM-DRAWER-01', 'rem-cashier', 'remediation-shift-cashier-001'], ['REM-DRAWER-02', 'rem-close-cashier', 'remediation-shift-close-cashier-001']] as [$code, $username, $idempotencyKey]) {
             $existingDrawer = CashDrawer::query()->where('code', $code)->first();
-            $drawer = app(SaveCashDrawerAction::class)->execute([
+            $drawerData = [
                 'branch_id' => $sales->branch_id,
                 'store_id' => $sales->id,
                 'assigned_user_id' => $users[$username]->id,
@@ -268,7 +268,12 @@ final class RemediationSeeder extends Seeder
                 'name_ar' => 'درج معالجة',
                 'name_en' => $code,
                 'status' => 'active',
-            ], $existingDrawer?->id);
+            ];
+            if ($existingDrawer !== null) {
+                $drawerData['lock_version'] = (int) $existingDrawer->lock_version;
+            }
+
+            $drawer = app(SaveCashDrawerAction::class)->execute($drawerData, $existingDrawer?->id);
 
             if (! PosShift::query()->where('idempotency_key', $idempotencyKey)->exists()) {
                 $cashier = $users[$username];

@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveCashDrawerAction
@@ -89,6 +90,11 @@ class SaveCashDrawerAction
                     }
                     $drawer = $drawerQuery->findOrFail($id);
 
+                    $expectedLockVersion = $this->requirePositiveLockVersion($data['lock_version'] ?? null);
+                    if ($expectedLockVersion !== (int) $drawer->lock_version) {
+                        throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                    }
+
                     $assignmentChanged = (int) $drawer->branch_id !== (int) $attributes['branch_id']
                         || (int) $drawer->store_id !== (int) $attributes['store_id'];
                     $statusChangedToNonActive = $drawer->status !== $attributes['status']
@@ -107,7 +113,9 @@ class SaveCashDrawerAction
                     }
 
                     $oldData = $drawer->toArray();
-                    $drawer->update($attributes);
+                    $drawer->fill($attributes);
+                    $drawer->lock_version = $expectedLockVersion + 1;
+                    $drawer->save();
                     $actionName = 'update_cash_drawer';
                     $changes = [
                         'before' => $oldData,
@@ -145,7 +153,7 @@ class SaveCashDrawerAction
     /**
      * Toggle or update cash drawer status with explicit TBD shift dependency guards and audit logging.
      */
-    public function toggleStatus(int $id, string $newStatus = 'inactive'): CashDrawer
+    public function toggleStatus(int $id, string $newStatus = 'inactive', mixed $expectedLockVersion = null): CashDrawer
     {
         Gate::authorize('drawers_payments_tax_numbering_printers.edit');
         if (! in_array($newStatus, self::ALLOWED_STATUSES, true)) {
@@ -155,12 +163,16 @@ class SaveCashDrawerAction
         $blockedMutation = null;
 
         try {
-            return DB::transaction(function () use ($id, $newStatus, &$blockedMutation) {
+            return DB::transaction(function () use ($id, $newStatus, $expectedLockVersion, &$blockedMutation) {
                 $drawerQuery = CashDrawer::query()->lockForUpdate();
                 if (auth()->check()) {
                     $drawerQuery->visibleTo(auth()->user());
                 }
                 $drawer = $drawerQuery->findOrFail($id);
+                $version = $this->requirePositiveLockVersion($expectedLockVersion);
+                if ($version !== (int) $drawer->lock_version) {
+                    throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                }
                 $oldStatus = $drawer->status;
 
                 if ($newStatus !== 'active') {
@@ -172,7 +184,9 @@ class SaveCashDrawerAction
                     $this->assertNoActiveShift($drawer);
                 }
 
-                $drawer->update(['status' => $newStatus]);
+                $drawer->status = $newStatus;
+                $drawer->lock_version = $version + 1;
+                $drawer->save();
 
                 app(RecordAuditEvent::class)->execute(
                     category: 'master_data',
@@ -207,6 +221,21 @@ class SaveCashDrawerAction
         if ($hasActiveShift) {
             throw new InvalidArgumentException(__('Cannot deactivate or reassign a cash drawer while it has an active POS shift. Close the shift before trying again.'));
         }
+    }
+
+    private function requirePositiveLockVersion(mixed $value): int
+    {
+        if (! is_int($value) && (! is_string($value) || preg_match('/\A[0-9]+\z/', $value) !== 1)) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        $version = (int) $value;
+
+        if ($version < 1) {
+            throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+        }
+
+        return $version;
     }
 
     /**
