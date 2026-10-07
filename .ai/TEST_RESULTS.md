@@ -513,3 +513,9 @@ Production closure: `0.1.22-cost-optional` / `1d27f7b`, compact smoke PASS once 
 - PASS after repair: isolated XAMPP MariaDB schema `qa_rajh_m1_tax_20261007`; `tests/Feature/Module1TaxRateValidationTest.php` passed 9 tests / 108 assertions. Covered blank Livewire input; missing, null, blank, non-numeric, -5, and 150 at request and persistence boundaries with no approval/tax/audit/default side effects; explicit zero for standard, exempt, and zero-rated approval; corrupt pending approval rollback; authorized company edit, missing permission denial, blank currency validation, payment-method save and display, missing permission denial, and invalid offline-card policy rejection.
 - PASS: PHP syntax for changed PHP files, Pint, CodeGraph incremental sync for the exact worktree root, and `git diff --check`.
 - NOT RUN: full suite, browser session, production writes, and physical printing.
+
+## 2026-10-07 — Direct-action tax validation label follow-up
+
+- RED then PASS: `tests/Feature/Module1ValidationLocalizationTest.php --filter test_direct_tax_rate_validation_uses_the_same_localized_field_label`, 2 tests / 2 assertions, disposable XAMPP MariaDB schema `qa_rajh_m1_tax_20261007`. Before the fix, English and Arabic direct-action validation messages exposed `taxSettingForm.rate`; after the fix they use the translated Tax Rate (%) label.
+- PASS: PHP syntax for both changed PHP files, explicit-file Pint, and `git diff --check`.
+- Scope: localized direct-action validation label only. No tax rate rules, rounding, persistence, approval, or audit behavior changed. No full suite, browser, production access/write, push, merge, or deployment.

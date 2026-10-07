@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Models\Company;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -114,5 +116,27 @@ final class Module1ValidationLocalizationTest extends TestCase
         self::assertStringNotContainsString('taxSettingForm.rate', $message);
         self::assertSame($expectedMessage, $message);
         $component->assertSee($message);
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function directTaxRateRequiredMessages(): array
+    {
+        return [
+            'English' => ['en', 'The Tax Rate (%) field is required.'],
+            'Arabic' => ['ar', 'حقل نسبة الضريبة (%) ده مطلوب ومهم.'],
+        ];
+    }
+
+    #[DataProvider('directTaxRateRequiredMessages')]
+    public function test_direct_tax_rate_validation_uses_the_same_localized_field_label(string $locale, string $expectedMessage): void
+    {
+        app()->setLocale($locale);
+
+        try {
+            app(SaveLocalSettingsAction::class)->validatedTaxRate(['rate' => '']);
+            self::fail('An empty tax rate was accepted by the direct action validator.');
+        } catch (ValidationException $exception) {
+            self::assertSame([$expectedMessage], $exception->errors()['taxSettingForm.rate'] ?? []);
+        }
     }
 }
