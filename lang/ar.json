@@ -6334,5 +6334,6 @@
     "Select a selling outlet": "اختر منفذ بيع",
     "Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.": "تُقرّب الأسعار المحسوبة تلقائيًا لأعلى إلى أقرب مضاعف 5 جنيهات. يبقى سعر بطاقة المنتج والسعر اليدوي دون تغيير.",
     "Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.": "الدفع النقدي غير متاح لأن إعداد التقريب مفقود أو غير صالح. اضبط الفئة المعتمدة على 5 جنيهات في الضوابط المالية لنقطة البيع. يُقرّب الدفع النقدي والمختلط إلى أقرب فئة.",
-    "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "التقريب النقدي المعتمد: إلى أقرب 5 جنيهات للدفع النقدي والمختلط."
+    "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "التقريب النقدي المعتمد: إلى أقرب 5 جنيهات للدفع النقدي والمختلط.",
+    "A line discount cannot exceed the line value or be negative.": "لا يمكن أن يتجاوز خصم الصنف قيمته أو أن يكون سالبًا."
 }

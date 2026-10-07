@@ -3162,5 +3162,6 @@
     "Select a selling outlet": "Select a selling outlet",
     "Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.": "Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.",
     "Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.": "Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.",
-    "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "Approved cash rounding: nearest 5 EGP for cash and mixed payments."
+    "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "Approved cash rounding: nearest 5 EGP for cash and mixed payments.",
+    "A line discount cannot exceed the line value or be negative.": "A line discount cannot exceed the line value or be negative."
 }
