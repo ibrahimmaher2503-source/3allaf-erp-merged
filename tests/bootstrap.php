@@ -76,6 +76,18 @@ $setEnvironment('LARAVEL_STORAGE_PATH', $resolvedStoragePath);
 
 $cachePath = $resolvedStoragePath.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache';
 
+if (DIRECTORY_SEPARATOR === '\\') {
+    $worktreeRoot = realpath($root);
+    $worktreeDrive = is_string($worktreeRoot) ? substr($worktreeRoot, 0, 3) : '';
+    $storageDrive = substr($resolvedStoragePath, 0, 3);
+
+    if ($worktreeDrive === '' || strcasecmp($worktreeDrive, $storageDrive) !== 0) {
+        throw new RuntimeException('Unsafe PHPUnit cache paths: the worktree and QA storage must be on the same drive.');
+    }
+
+    $cachePath = DIRECTORY_SEPARATOR.substr($cachePath, 3);
+}
+
 foreach ([
     'APP_CONFIG_CACHE' => 'config.php',
     'APP_ROUTES_CACHE' => 'routes-v7.php',

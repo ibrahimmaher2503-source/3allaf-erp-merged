@@ -11,9 +11,8 @@ use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
 use App\Support\ProductQuantity;
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
 
-final class FinancialContractTest extends TestCase
+final class FinancialContractTest extends PureCalculatorTestCase
 {
     public function test_exact_purchase_snapshot_and_document_preserve_cost_discount_tax(): void
     {
@@ -132,7 +131,7 @@ final class FinancialContractTest extends TestCase
             $pos->calculate([['quantity' => '1', 'unit_price' => '10']], '0', ['applicable' => true, 'rate' => '   ']);
             self::fail('Blank tax accepted');
         } catch (InvalidArgumentException $e) {
-            self::assertStringContainsString('rate',$e->getMessage());
+            self::assertStringContainsString('rate', $e->getMessage());
         }
         $this->expectException(InvalidArgumentException::class);
         $p->calculateLine(['quantity' => '1', 'unit_cost' => '10', 'tax_rate' => '100.0001']);
