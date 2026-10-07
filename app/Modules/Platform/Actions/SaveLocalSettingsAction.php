@@ -180,7 +180,15 @@ class SaveLocalSettingsAction
             ['taxSettingForm.rate' => __('Tax Rate (%)')],
         )->validate();
 
-        return (string) $validated['taxSettingForm']['rate'];
+        $rate = (string) $validated['taxSettingForm']['rate'];
+
+        if (($data['treatment'] ?? TaxTreatment::Standard->value) === TaxTreatment::ZeroRated->value && (float) $rate !== 0.0) {
+            throw ValidationException::withMessages([
+                'taxSettingForm.rate' => __('Zero Rated, Exempt, and Out of Scope treatments must use a zero rate.'),
+            ]);
+        }
+
+        return $rate;
     }
 
     /** @param array<string, mixed> $data @param array<string, mixed> $metadata */
