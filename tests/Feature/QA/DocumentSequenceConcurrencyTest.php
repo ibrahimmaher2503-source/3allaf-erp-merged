@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\SaveLocalSettingsAction;
 use App\Modules\Platform\Models\Branch;
-use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
@@ -304,17 +303,20 @@ PHP;
         $sequenceIds = DocumentSequence::query()
             ->where('document_type', 'inventory_adjustment')
             ->where('scope_key', 'branch:'.$branchId)
-            ->pluck('id');
+            ->pluck('id')
+            ->map(static fn ($id): string => (string) $id)
+            ->all();
 
-        if ($sequenceIds->isNotEmpty()) {
+        if ($sequenceIds !== []) {
             DB::table('audit_logs')
                 ->where('source_type', DocumentSequence::class)
-                ->whereIn('source_id', $sequenceIds->map(static fn (int $id): string => (string) $id))
+                ->whereIn('source_id', $sequenceIds)
                 ->delete();
-            DocumentSequence::query()->whereIn('id', $sequenceIds)->delete();
+            DB::table('document_sequences')->whereIn('id', $sequenceIds)->delete();
         }
 
-        Branch::query()->whereKey($branchId)->delete();
-        Company::query()->whereKey($companyId)->delete();
+        DB::table('audit_logs')->where('branch_id', $branchId)->delete();
+        DB::table('branches')->where('id', $branchId)->delete();
+        DB::table('companies')->where('id', $companyId)->delete();
     }
 }

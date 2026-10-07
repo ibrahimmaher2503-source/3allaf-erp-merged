@@ -6,7 +6,10 @@ use App\Models\User;
 $root = dirname(__DIR__);
 $requiredEnvironment = [
     'APP_ENV' => 'testing',
+    'APP_KEY' => 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     'APP_LOCALE' => 'en',
+    'BCRYPT_ROUNDS' => '4',
+    'CACHE_STORE' => 'array',
     'DB_CONNECTION' => 'mysql',
     'DB_HOST' => '127.0.0.1',
     'DB_PORT' => '3306',
@@ -14,6 +17,11 @@ $requiredEnvironment = [
     'DB_SOCKET' => '',
     'DB_USERNAME' => 'root',
     'DB_PASSWORD' => '',
+    'FILESYSTEM_DISK' => 'local',
+    'LOG_CHANNEL' => 'stderr',
+    'MAIL_MAILER' => 'array',
+    'QUEUE_CONNECTION' => 'sync',
+    'SESSION_DRIVER' => 'array',
 ];
 
 foreach ($requiredEnvironment as $name => $expectedValue) {
@@ -27,6 +35,18 @@ $database = getenv('DB_DATABASE');
 if (! is_string($database) || preg_match('/\Aqa_rajh_m1_[a-z0-9_]+_20261007\z/', $database) !== 1) {
     throw new RuntimeException('Unsafe PHPUnit database: DB_DATABASE must match qa_rajh_m1_<domain>_20261007.');
 }
+
+$setEnvironment = static function (string $name, string $value): void {
+    putenv("{$name}={$value}");
+    $_ENV[$name] = $value;
+    $_SERVER[$name] = $value;
+};
+
+foreach ($requiredEnvironment as $name => $value) {
+    $setEnvironment($name, $value);
+}
+
+$setEnvironment('DB_DATABASE', $database);
 
 $tempPath = realpath(sys_get_temp_dir());
 $storagePath = getenv('QA_STORAGE_PATH');
@@ -64,12 +84,6 @@ foreach (['app/private', 'app/public', 'bootstrap/cache', 'framework/cache/data'
         throw new RuntimeException('Unable to create an isolated PHPUnit storage directory.');
     }
 }
-
-$setEnvironment = static function (string $name, string $value): void {
-    putenv("{$name}={$value}");
-    $_ENV[$name] = $value;
-    $_SERVER[$name] = $value;
-};
 
 $setEnvironment('QA_STORAGE_PATH', $resolvedStoragePath);
 $setEnvironment('LARAVEL_STORAGE_PATH', $resolvedStoragePath);
