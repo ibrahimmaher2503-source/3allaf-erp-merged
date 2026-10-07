@@ -248,12 +248,14 @@ class BranchLifecycleDependencyTest extends TestCase
         $permissionIds = [];
 
         foreach ($permissionCodes as $permissionCode) {
-            $permissionIds[] = Permission::query()->create([
-                'code' => $permissionCode,
-                'module' => 'branches_stores',
-                'action' => Str::afterLast($permissionCode, '.'),
-                'status' => 'active',
-            ])->id;
+            $permissionIds[] = Permission::query()->firstOrCreate(
+                ['code' => $permissionCode],
+                [
+                    'module' => 'branches_stores',
+                    'action' => Str::afterLast($permissionCode, '.'),
+                    'status' => 'active',
+                ],
+            )->id;
         }
 
         $role->permissions()->sync($permissionIds);
