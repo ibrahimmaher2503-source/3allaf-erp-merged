@@ -18,6 +18,8 @@ return [
         ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
+        ['route' => 'returns.index', 'active_routes' => ['returns.*'], 'permission' => ['returns.view', 'returns_exchanges_gift_instruments.view'], 'icon' => 'arrow-uturn-left', 'label' => ['ar' => 'مرتجعات واستبدال العملاء', 'en' => 'Customer returns & exchanges']],
+        ['route' => 'gift.receipts.index', 'active_routes' => ['gift.receipts.*'], 'permission' => ['gift_receipts.view', 'returns_exchanges_gift_instruments.view'], 'icon' => 'gift', 'label' => ['ar' => 'إيصالات الهدايا', 'en' => 'Gift Receipts']],
         ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'users', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
         ['route' => 'customers.groups.index', 'permission' => 'customers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات العملاء', 'en' => 'Customer groups']],
         ['route' => 'pos.shift', 'permission' => 'shifts_cash_movements.view', 'icon' => 'banknotes', 'label' => ['ar' => 'الورديات والتحصيل', 'en' => 'Shifts & collections']],

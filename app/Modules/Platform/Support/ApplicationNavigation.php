@@ -41,6 +41,7 @@ final class ApplicationNavigation
         'admin.audit' => ['admin.audit*'],
         'admin.approvals' => ['admin.approvals*'],
     ];
+
     /** @return array<int, array<string, mixed>> */
     public function for(User $user, string $locale): array
     {
@@ -70,10 +71,10 @@ final class ApplicationNavigation
 
                         return is_string($route)
                             && $route !== ''
-                            && is_string($permission)
-                            && $permission !== ''
+                            && (is_string($permission) || is_array($permission))
+                            && ! empty($permission)
                             && Route::has($route)
-                            && $user->can($permission);
+                            && $user->canAny((array) $permission);
                     })
                     ->map(function (array $item) use ($locale, $user): array {
                         $type = $this->entryType($item, 'item');
