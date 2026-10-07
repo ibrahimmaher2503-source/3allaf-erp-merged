@@ -18,5 +18,11 @@ final class LaravelHarnessSmokeTest extends TestCase
         self::assertSame('mysql', config('database.default'));
         self::assertSame($database, config('database.connections.mysql.database'));
         self::assertSame(realpath($storagePath), realpath(app()->storagePath()));
+        self::assertSame(realpath($storagePath.'/bootstrap/cache'), realpath(dirname(app()->getCachedConfigPath())));
+        self::assertSame(app()->getCachedConfigPath(), getenv('APP_CONFIG_CACHE'));
+        self::assertSame(app()->getCachedRoutesPath(), getenv('APP_ROUTES_CACHE'));
+        self::assertSame(app()->getCachedEventsPath(), getenv('APP_EVENTS_CACHE'));
+        self::assertSame(app()->getCachedServicesPath(), getenv('APP_SERVICES_CACHE'));
+        self::assertSame(app()->getCachedPackagesPath(), getenv('APP_PACKAGES_CACHE'));
     }
 }
