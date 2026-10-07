@@ -468,8 +468,24 @@ new #[Title('Product Card')] class extends Component {
                         @endif
                     </div>
                 @endif
+                @php($activeBarcodes = $isEditing ? ($product?->barcodes ?? collect())->where('status', 'active')->sortByDesc('is_primary')->values() : collect())
+                @if ($activeBarcodes->isNotEmpty())
+                    <div class="space-y-2 rounded-lg border border-border bg-surface-muted/30 p-3" role="group" aria-label="{{ __('Barcode summary') }}" data-saved-active-barcodes>
+                        <span class="block text-xs text-text-muted">{{ __('Barcode summary') }}</span>
+                        @foreach ($activeBarcodes as $barcode)
+                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+                                <bdi dir="ltr" class="catalog-code-chip">{{ $barcode->barcode }}</bdi>
+                                @if ($barcode->is_primary)
+                                    <flux:badge size="sm">{{ __('Primary') }}</flux:badge>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
                 @if ($productForm['barcode_registration_type'] === 'international')
-                    <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
+                    @if ($activeBarcodes->isEmpty())
+                        <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
+                    @endif
                 @else
                     <x-context-help :title="__('Local product code help')" :label="__('Open contextual help')"><p>{{ __('The local product code uses the four-digit identity from a canonical SUP-#### supplier code, or the first four digits of a numeric supplier code, followed by a hyphen and the shared six-digit prefix sequence. Leading zeros are preserved, and the international barcode remains a separate identity.') }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
                 @endif
