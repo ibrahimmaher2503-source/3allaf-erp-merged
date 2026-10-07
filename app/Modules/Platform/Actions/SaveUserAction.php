@@ -5,9 +5,9 @@ namespace App\Modules\Platform\Actions;
 use App\Models\User;
 use App\Modules\Platform\Support\UserManagementScope;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -36,8 +36,10 @@ final class SaveUserAction
                     'name' => trim((string) $data['name']),
                     'username' => $username,
                     'email' => strtolower(trim((string) $data['email'])),
-                    'status' => $status,
                 ];
+                if ($creating) {
+                    $attributes['status'] = $status;
+                }
                 if (filled($data['password'] ?? null)) {
                     $attributes['password'] = Hash::make((string) $data['password']);
                 }

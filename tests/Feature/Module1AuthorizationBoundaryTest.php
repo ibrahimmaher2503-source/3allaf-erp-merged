@@ -86,6 +86,52 @@ final class Module1AuthorizationBoundaryTest extends TestCase
         ]);
     }
 
+    public function test_user_authorization_audit_captures_status_before_and_after_without_losing_assignments(): void
+    {
+        $company = Company::factory()->create();
+        $branch = Branch::factory()->create(['company_id' => $company->id]);
+        $store = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
+        $administrator = $this->userWithRole('system-administrator', ['users_roles_permissions.edit']);
+        $targetRole = $this->role('user-authorization-target');
+        $target = $this->userWithRoleModel($targetRole);
+        UserBranchScope::query()->create([
+            'user_id' => $target->id,
+            'branch_id' => $branch->id,
+            'status' => 'active',
+        ]);
+        UserStoreScope::query()->create([
+            'user_id' => $target->id,
+            'store_id' => $store->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($administrator);
+        $saved = app(SaveUserAction::class)->execute([
+            'name' => $target->name,
+            'username' => $target->username,
+            'email' => $target->email,
+            'status' => 'inactive',
+        ], [$targetRole->id], [$branch->id], [$store->id], $target);
+
+        $authorizationAudit = AuditLog::query()
+            ->where('event', 'update_user_authorization')
+            ->where('source_type', User::class)
+            ->where('source_id', (string) $target->id)
+            ->firstOrFail();
+
+        self::assertSame('active', $authorizationAudit->before_values['status']);
+        self::assertSame('inactive', $authorizationAudit->after_values['status']);
+
+        $persisted = $saved->fresh();
+        self::assertSame('inactive', $persisted->status);
+        self::assertSame($target->name, $persisted->name);
+        self::assertSame($target->username, $persisted->username);
+        self::assertSame($target->email, $persisted->email);
+        self::assertSame([(int) $targetRole->id], $persisted->roles()->pluck('roles.id')->map(fn (mixed $id): int => (int) $id)->all());
+        self::assertSame([(int) $branch->id], $persisted->branchScopes()->pluck('branch_id')->map(fn (mixed $id): int => (int) $id)->all());
+        self::assertSame([(int) $store->id], $persisted->storeScopes()->pluck('store_id')->map(fn (mixed $id): int => (int) $id)->all());
+    }
+
     public function test_store_only_scope_denies_other_stores_and_known_record_mutation(): void
     {
         $company = Company::factory()->create();
