@@ -10,6 +10,9 @@
     "Remaining returnable quantity": "الكمية المتبقية للمرتجع",
     "Select inspection result": "اختار نتيجة الفحص",
     "Only inspected sellable items may be restocked. Other conditions require quarantine.": "لا يُعاد إلى مخزون البيع إلا صنف تم فحصه وثبتت صلاحيته للبيع. الحالات الأخرى تتطلب العزل في مخزن التالف.",
+
+    "Purchase cost editing is unavailable for your role.": "دورك لا يسمح بتعديل تكلفة الشراء.",
+    "Ask a System Administrator to grant purchase cost editing in role permissions.": "اطلب من مدير النظام منح صلاحية تعديل تكلفة الشراء من شاشة صلاحيات الأدوار.",
     "No active lookup values are available.": "مفيش قيم بحث نشطة متاحة.",
     "Optional catalog content stays on this product card.": "تبقى بيانات الكتالوج الاختيارية في بطاقة المنتج هذه.",
     "Product web & SEO": "خيارات متقدمة",

@@ -78,6 +78,12 @@ Explicit owner authorization: D3, five investigating/test agents, focused automa
 
 Retained dedicated QA database `qa_rajh_m7_returns_20261007`: completed sales 135/136, active Gift Receipt 72, cashier 310 and reviewer 311. Fixtures use real shift, pricing, sale, inventory and Gift Receipt actions. All financial return scenarios remain transaction-isolated. Runtime commits pushed to the single module branch; closure fixture/status commit follows on that branch. M7-06 requires an owner decision (DEC-103); no other in-scope blocker. This task advances no business milestone or production release gate.
 
+# Current Task — BUG-121 purchase invoice cost permission upgrade
+
+2026-10-07: Owner requested the BUG-121 fix and Git commit, then explicitly authorized focused BUG-121 tests on a separate local MySQL database. D3 task on `hotfix/bug-121`, source `87db35e88d6d726b5e287e8e4dcec600ba71d941`, isolated Windows worktree. Reproduced the disabled cost when the granular purchase permission catalog is missing; existing seeded local catalog already authorizes System Administrator. Added an idempotent catalog migration that preserves existing disabled entries/grants, bilingual permission labels, and an explicit denial/grant instruction. Existing server guards, calculations, supplier-history defaults, and approval/stock behavior remain in place.
+
+Focused success, denial, and upgrade-preservation tests passed on `qa_rajh_bug121_20261007`; changed PHP/JSON checks and one Vite build passed. No full suite, browser control, production database change, deployment, main modification, or parent Module 7 change. Commit is requested; push/merge/deployment are outside this request. Production catalog and reported runtime remain unverified; deploying this fix requires applying its migration. No milestone or Phase Gate advancement.
+
 ## Preserved previous task
 
 # Current Task — Permanent optional Product Card cost
