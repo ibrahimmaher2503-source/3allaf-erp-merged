@@ -1,3 +1,9 @@
+# Current Task - Merge all branches including BUG-121 (2026-10-07)
+
+Owner explicitly authorizes merging all branches into main without deleting any. D3, source main 782998a7810d19934791efccb1b98cbebcbab9ba, RELEASE_NOW=NO; production unverified. Remaining hotfix/bug-121 tip be0f646 is integrated by merge 13c649b, preserving existing fixes, translation entries and task histories. All local branch tips and seven remote topic branch tips are included. Focused merged-source verification PASS 11 tests / 107 assertions, changed runtime syntax/locale/diff/conflict checks, Pint and one frontend build. No deployment, branch deletion or business gate advancement. Main promotion/push is the final authorized action, verified through Git output.
+
+## Preserved previous task
+
 # Current Task - Owner-authorized GitHub branch integration (2026-10-07)
 
 D3 source integration from main `87db35e88d6d726b5e287e8e4dcec600ba71d941`; RELEASE_NOW=NO. The owner explicitly requests merging every GitHub branch into main while preserving all branches. Production remains unverified and no deployment is authorized.
