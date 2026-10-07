@@ -36,6 +36,15 @@ Repository-wide mandatory policy: every Codex account and every user working thr
 - Never index secrets, `.env` or environment overrides, credentials, keys, sensitive configuration, `storage`, uploads, backups, database dumps, logs, `vendor`, `node_modules`, or build/cache paths. Exclusions apply to every worktree, including linked paths.
 - This documentation-only task records the policy; it does not initialize an index, synchronize code, or change tool configuration.
 
+### Windows Local CodeGraph Workflow
+
+- The local checkout is `C:\projects\erp`. Its native CodeGraph 1.6.0 index lives in the ignored `.codegraph/` directory; `codegraph.json` supplies exclusions for initialization, synchronization, and watching.
+- This machine's project-local `.codex/config.toml` starts native CodeGraph with this exact root. It overrides the older global server connection for this project. Keep machine-specific connection settings out of Git.
+- Before trusting any result, confirm its paths belong to the current checkout. A connected server returning another project is unsuitable; use the project-scoped CLI until Codex reloads the local connection.
+- In the native MCP connection, use `codegraph_explore` with `projectPath` set to the verified root to gather source and dependencies before an edit. The CLI remains available without an app restart.
+- For a bug, begin with `codegraph query "<symbol>" --path "C:\projects\erp"`, then `codegraph callers "<symbol>" --path "C:\projects\erp"` and `codegraph impact "<symbol>" --path "C:\projects\erp"`. Read the actual affected code before editing, and follow the existing verification directive.
+- Check index health with `codegraph status "C:\projects\erp"`. The native MCP watcher and connect-time reconciliation keep it current; use `codegraph sync "C:\projects\erp"` only when the watcher was unavailable or status indicates stale files. Each future checkout/worktree needs its own initialization and root-specific connection.
+
 ## Database Direction
 
 - Use only the XAMPP MySQL/MariaDB server through phpMyAdmin for local, development, staging, and test database operations.
