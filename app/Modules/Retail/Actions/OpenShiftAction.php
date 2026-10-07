@@ -6,9 +6,9 @@ namespace App\Modules\Retail\Actions;
 
 use App\Models\User;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
-use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
@@ -59,10 +59,30 @@ final class OpenShiftAction
                 return $this->assertReplaySafe($existing, $cashier, $drawer, $openingFloat);
             }
 
-            // Lock the drawer row first: it is the shared resource both the
-            // drawer-collision and cashier-collision checks depend on.
-            $drawer = CashDrawer::query()->lockForUpdate()->find((int) $drawer->getKey());
-            if ($drawer === null) {
+            $requestedDrawerId = (int) $drawer->getKey();
+            $requestedDrawer = CashDrawer::query()->find($requestedDrawerId);
+            if ($requestedDrawer === null) {
+                throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
+            }
+            abort_unless($requestedDrawer->visibleTo($cashier)->whereKey($requestedDrawerId)->exists(), 403);
+
+            $requestedBranchId = (int) $requestedDrawer->getAttribute('branch_id');
+            $requestedStoreId = (int) $requestedDrawer->getAttribute('store_id');
+            $branch = $requestedBranchId > 0
+                ? Branch::query()->sharedLock()->find($requestedBranchId)
+                : null;
+            $store = $requestedStoreId > 0
+                ? Store::query()->lockForUpdate()->find($requestedStoreId)
+                : null;
+
+            // Match master-data ordering before the drawer so a store change
+            // cannot deadlock with the shift insert's branch foreign key.
+            // Revalidate after all locks so concurrent reassignment cannot
+            // open against a different, unlocked outlet.
+            $drawer = CashDrawer::query()->lockForUpdate()->find($requestedDrawerId);
+            if ($drawer === null || $branch === null || $store === null
+                || (int) $drawer->getAttribute('branch_id') !== $requestedBranchId
+                || (int) $drawer->getAttribute('store_id') !== $requestedStoreId) {
                 throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
 
@@ -81,14 +101,14 @@ final class OpenShiftAction
             $branchId = (int) $drawer->getAttribute('branch_id');
             $storeId = (int) $drawer->getAttribute('store_id');
             $company = $companyId > 0 ? Company::query()->find($companyId) : null;
-            $branch = $branchId > 0 ? Branch::query()->find($branchId) : null;
-            $store = $storeId > 0 ? Store::query()->find($storeId) : null;
             if ($company === null
-                || $branch === null
-                || $store === null
+                || (int) $branch->getAttribute('id') !== $branchId
+                || (int) $store->getAttribute('id') !== $storeId
                 || (int) $branch->company_id !== $companyId
                 || (int) $store->company_id !== $companyId
-                || (int) $store->branch_id !== $branchId) {
+                || (int) $store->branch_id !== $branchId
+                || $store->getAttribute('status') !== 'active'
+                || $store->getAttribute('type') !== 'selling') {
                 throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
             $currency = strtoupper(trim((string) $company->getAttribute('currency_code')));
