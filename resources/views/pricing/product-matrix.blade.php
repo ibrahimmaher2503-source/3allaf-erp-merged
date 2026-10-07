@@ -28,6 +28,7 @@ new class extends Component {
             <p class="py-3" data-effective-outlet-price>{{ $outlet->branch?->code }} · {{ $outlet->code }}: <strong dir="ltr">{{ $outletPrice?->amount ?? __('No selling price') }} {{ $outletPrice ? __('EGP') : '' }}</strong></p>
         @endif
         <table class="data-table">
+            <caption class="py-2 text-start text-sm text-text-muted">{{ __('Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.') }}</caption>
             <thead><tr><th>{{ __('Price list') }}</th><th>{{ __('Percentage') }}</th><th>{{ __('Base price') }}</th><th>{{ __('Pre-round price') }}</th><th>{{ __('Effective price') }}</th><th>{{ __('Source') }}</th><th>{{ __('Actions') }}</th></tr></thead>
             <tbody>
             @foreach ($rows as $row)

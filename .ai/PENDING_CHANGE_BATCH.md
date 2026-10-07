@@ -114,3 +114,5 @@ Production access, deployment, backup execution, migration execution, active-sym
 - BUG-24 / V0 / undeployed: readable product validation attributes, resources/views/catalog/{product-form,products}.blade.php; focused locale proof 1/78 PASS; separate commit on fix/module2-qa.
 
 - BUG-18 / V1 / undeployed: visible required outlet and default branch context in barcode label form/render; focused proof 1/10 PASS. Stock-linked queue remains blocked; single fix/module2-qa commit.
+
+- BUG-20 / V0 / undeployed: visible next-5-EGP rounding explanation in pricing matrix, en/ar/ar-EG; existing calculator focused proof 1/7 PASS. Separate commit on fix/module2-qa.
