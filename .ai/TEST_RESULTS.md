@@ -506,3 +506,10 @@ Authorized isolated database `qa_rajh_20261005173119_24094`. A–F PASS through 
 
 
 Production closure: `0.1.22-cost-optional` / `1d27f7b`, compact smoke PASS once after recovery from a pre-smoke helper mode failure. Identity, optional runtime/compiled rule, existing-cost reads, six authenticated read-only routes, HTTP/services/jobs/schedules/backup and zero new critical/error log entries passed. No production business QA write. Disposable DB/credentials/sessions removed; receipts remain under the focused evidence path.
+
+## 2026-10-07 — Module 1 tax-rate validation
+
+- RED before repair: focused behavioral test confirmed a malformed/missing tax rate was accepted by `PlatformSettingsApprovalAction::request()`.
+- PASS after repair: isolated XAMPP MariaDB schema `qa_rajh_m1_tax_20261007`; `tests/Feature/Module1TaxRateValidationTest.php` passed 9 tests / 108 assertions. Covered blank Livewire input; missing, null, blank, non-numeric, -5, and 150 at request and persistence boundaries with no approval/tax/audit/default side effects; explicit zero for standard, exempt, and zero-rated approval; corrupt pending approval rollback; authorized company edit, missing permission denial, blank currency validation, payment-method save and display, missing permission denial, and invalid offline-card policy rejection.
+- PASS: PHP syntax for changed PHP files, Pint, CodeGraph incremental sync for the exact worktree root, and `git diff --check`.
+- NOT RUN: full suite, browser session, production writes, and physical printing.

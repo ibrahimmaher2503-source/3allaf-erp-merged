@@ -348,10 +348,6 @@ new #[Title('System Settings')] class extends Component
     {
         Gate::authorize('manage-settings');
 
-        $this->taxSettingForm['rate'] = $this->taxSettingForm['rate'] === ''
-            ? null
-            : $this->taxSettingForm['rate'];
-
         $companyId = (int) $this->companyId;
         $validated = $this->validate([
             'taxSettingForm.code' => [
@@ -362,7 +358,7 @@ new #[Title('System Settings')] class extends Component
             ],
             'taxSettingForm.name_ar' => ['required', 'string', 'max:255'],
             'taxSettingForm.name_en' => ['required', 'string', 'max:255'],
-            'taxSettingForm.rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'taxSettingForm.rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'taxSettingForm.treatment' => ['required', 'string', 'in:standard,zero_rated,exempt,out_of_scope'],
             'taxSettingForm.is_default' => ['boolean'],
             'taxSettingForm.is_tax_inclusive' => ['boolean'],
