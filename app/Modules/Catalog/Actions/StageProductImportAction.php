@@ -36,6 +36,8 @@ class StageProductImportAction
 
     private const MAX_SOURCE_COLUMNS = 100;
 
+    private const STAGED_COMPANY_SCOPE_KEY = '__staged_company_id';
+
     private const ALLOWED_FIELDS = [
         'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
         'product_type', 'unit_of_measure', 'category_code', 'brand_code', 'status', 'colour', 'size',
@@ -122,7 +124,7 @@ class StageProductImportAction
                 $errors = $this->formulaErrors($row->getCells());
                 $rows[] = new ProductImportRow([
                     'row_number' => $rowNumber,
-                    'raw_data' => $raw,
+                    'raw_data' => $raw + [self::STAGED_COMPANY_SCOPE_KEY => (int) $company->id],
                     'errors' => $errors,
                     'status' => $errors === [] ? 'staged' : 'invalid',
                 ]);
@@ -185,9 +187,8 @@ class StageProductImportAction
         abort_unless($batch->created_by === auth()->id(), 404);
         $actor = auth()->user();
         abort_unless($actor instanceof User, 403);
-        $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
 
-        return DB::transaction(function () use ($batch, $mapping, $company, $actor): ProductImportBatch {
+        return DB::transaction(function () use ($batch, $mapping, $actor): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
             abort_unless($batch->created_by === auth()->id(), 404);
 
@@ -199,6 +200,24 @@ class StageProductImportAction
             $seenCodes = [];
             $validRows = 0;
             $invalidRows = 0;
+            $rows = $batch->rows()->orderBy('row_number')->lockForUpdate()->get();
+            $stagedCompanyId = null;
+            foreach ($rows as $row) {
+                $rowCompanyId = filter_var($row->raw_data[self::STAGED_COMPANY_SCOPE_KEY] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($rowCompanyId === false || ($stagedCompanyId !== null && $stagedCompanyId !== $rowCompanyId)) {
+                    throw new InvalidArgumentException(__('The staged company scope is missing or inconsistent. Cancel this batch and upload it again.'));
+                }
+                $stagedCompanyId = $rowCompanyId;
+            }
+            if ($stagedCompanyId === null) {
+                throw new InvalidArgumentException(__('This workbook has no product rows to map.'));
+            }
+
+            $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
+            if ((int) $company->id !== $stagedCompanyId) {
+                throw new InvalidArgumentException(__('Select the same company that was selected when this workbook was staged.'));
+            }
+
             $categoryCodes = Category::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $brandCodes = Brand::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
             $supplierCodes = Supplier::query()->where('status', 'active')->where(fn ($query) => $query->whereNull('supplier_group_id')->orWhereHas('supplierGroup', fn ($groups) => $groups->where('company_id', $company->id)))->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all();
@@ -210,7 +229,7 @@ class StageProductImportAction
             ];
             $canImportCost = $actor->hasPermission('products_categories_brands.cost_view');
 
-            foreach ($batch->rows()->orderBy('row_number')->lockForUpdate()->get() as $row) {
+            foreach ($rows as $row) {
                 $raw = [];
                 foreach ($mapping as $sourceHeader => $targetField) {
                     $raw[$targetField] = data_get($row->raw_data, $sourceHeader);
@@ -223,7 +242,7 @@ class StageProductImportAction
                     $brandCodes, $supplierCodes, $lookupCodes,
                     $seenCodes,
                     $this->formulaErrorsFromRow($row),
-                    (int) $company->id,
+                    $stagedCompanyId,
                 );
                 if (! $canImportCost) {
                     $mapped['data']['average_cost'] = null;
@@ -279,22 +298,23 @@ class StageProductImportAction
 
             $actor = auth()->user();
             abort_unless($actor instanceof User, 403);
+            $currentCompany = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
 
             foreach ($batch->rows()->where('status', 'valid')->lockForUpdate()->get() as $row) {
                 $data = $row->mapped_data ?? [];
-                $companyId = filter_var($data['_import_company_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-                if ($companyId === false) {
+                $stagedCompanyId = filter_var($row->raw_data[self::STAGED_COMPANY_SCOPE_KEY] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $mappedCompanyId = filter_var($data['_import_company_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($stagedCompanyId === false || $mappedCompanyId === false || $mappedCompanyId !== $stagedCompanyId) {
                     throw new InvalidArgumentException(__('The import company scope is missing. Map the batch again before approval.'));
                 }
 
-                $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
-                if ((int) $company->id !== (int) $companyId) {
+                if ((int) $currentCompany->id !== $stagedCompanyId) {
                     throw new InvalidArgumentException(__('Select the same company used when this batch was validated.'));
                 }
 
                 $productQuery = Product::query()->where('item_code', $data['item_code']);
                 if ($batch->mode === 'update_existing') {
-                    $productQuery->availableToCompany((int) $companyId);
+                    $productQuery->availableToCompany($stagedCompanyId);
                 }
                 $product = $productQuery->lockForUpdate()->first();
 
@@ -337,7 +357,7 @@ class StageProductImportAction
 
     public function cancel(ProductImportBatch $batch): ProductImportBatch
     {
-        Gate::authorize('products_categories_brands.create');
+        Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
         abort_unless($batch->created_by === auth()->id(), 404);
 
         if (! in_array($batch->status, ['staging', 'mapping_required', 'ready_for_review'], true)) {

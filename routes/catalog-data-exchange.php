@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\AuthorizeProductImport;
 use App\Modules\Catalog\Actions\StageCatalogReferenceImportAction;
 use App\Modules\Catalog\Actions\ImportProductCardsWorkbookAction;
 use App\Modules\Catalog\Models\Brand;
@@ -35,7 +36,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })->middleware('can:products_categories_brands.create')->name('catalog.products.import-card');
     $router->get('catalog/products/import-card-rejections.xlsx', function (MasterDataDocument $documents) { $rows = session('product_card_import_rejections', []); abort_if($rows === [], 404); return $documents->xlsx('product-card-import-rejections.xlsx', [__('Original row'), ...ImportProductCardsWorkbookAction::HEADERS, __('Rejection reason')], $rows); })->middleware('can:products_categories_brands.export')->name('catalog.products.import-card.rejections');
     $router->get('catalog/products/import/template.xlsx', fn (ImportTemplateFactory $templates) => $templates->productCards(auth()->user(), false, request('company_id')))->middleware('can:products_categories_brands.create')->name('catalog.products.import.template.xlsx');
-    $router->get('catalog/products/import/staged-template.xlsx', fn (ImportTemplateFactory $templates) => $templates->productCards(auth()->user(), true, request('company_id')))->middleware('can:products_categories_brands.create')->name('catalog.products.import.staged-template.xlsx');
+    $router->get('catalog/products/import/staged-template.xlsx', fn (ImportTemplateFactory $templates) => $templates->productCards(auth()->user(), true, request('company_id')))->middleware(AuthorizeProductImport::class)->name('catalog.products.import.staged-template.xlsx');
 
     $router->get('catalog/{type}/import-template.xlsx', function (string $type, ImportTemplateFactory $templates) {
         abort_unless(in_array($type, ['categories', 'brands'], true), 404);
