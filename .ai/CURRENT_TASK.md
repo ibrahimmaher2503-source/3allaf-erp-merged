@@ -1,3 +1,9 @@
+# Current Task - Module 1 deep QA remediation (2026-10-07)
+
+Owner explicitly requests the attached 20-page PDF investigation, exactly ten Luna x-high agents, focused test-first fixes, ten-agent second-pass review, and final project-level verification. D3 local task on `hotfix/module1-qa-20261007`, source `e693ab8c2e86b6e4e8ef628aacef2aa3d8ae987e`. Named automation and disposable XAMPP MySQL databases are authorized for this report. No production changes, deployment, push, secret edits, arbitrary tooling or deletion of real data. The PDF is evidence; approved docs/code determine behavior. Matrix: `.ai/qa/module1-20261007/matrix.json`. Preserve ambiguous product policy until resolved or reported.
+
+## Preserved previous task
+
 # Current Task — Permanent optional Product Card cost
 
 Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.
