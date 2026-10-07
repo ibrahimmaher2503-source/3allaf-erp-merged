@@ -1,11 +1,16 @@
 <?php
 use App\Modules\Catalog\Models\Product; use App\Modules\Platform\Models\Company; use App\Modules\Platform\Models\Store; use App\Modules\Pricing\Actions\SaveProductPriceOverrideAction; use App\Modules\Pricing\Models\PriceList; use App\Modules\Pricing\Services\PriceListResolver; use Flux\Flux; use Illuminate\Support\Facades\Gate; use Livewire\Component;
 new class extends Component {
- public int $productId; public ?int $editingListId=null; public string $overrideAmount=''; public string $overrideReason=''; public string $overrideFrom=''; public string $overrideTo='';
+ public int $productId; public ?int $editingListId=null; public string $overrideAmount=''; public string $overrideReason=''; public string $overrideFrom=''; public string $overrideTo=''; public string $storeId='';
  public function mount(Product $product):void{Gate::authorize('pricing_lists.view');$this->productId=$product->id;}
  public function editOverride(int $id):void{Gate::authorize('pricing_lists.overrides');$o=Product::findOrFail($this->productId)->priceOverrides()->where('price_list_id',$id)->first();$this->editingListId=$id;$this->overrideAmount=(string)($o?->amount??'');$this->overrideReason=$o?->reason??'';$this->overrideFrom=$o?->effective_from?->toDateString()??'';$this->overrideTo=$o?->effective_to?->toDateString()??'';}
  public function saveOverride(SaveProductPriceOverrideAction $action):void{$d=$this->validate(['overrideAmount'=>['nullable','decimal:0,3','gt:0'],'overrideReason'=>['required','string','max:2000'],'overrideFrom'=>['nullable','date'],'overrideTo'=>['nullable','date','after_or_equal:overrideFrom']]);$action->execute(Product::findOrFail($this->productId),PriceList::findOrFail($this->editingListId),$d['overrideAmount'],$d['overrideReason'],$d['overrideFrom'],$d['overrideTo']);$this->editingListId=null;Flux::toast(variant:'success',text:__('Product price override saved.'));}
- public function with():array{$product=Product::findOrFail($this->productId);$companyId=(int)Company::where('status','active')->value('id');$resolver=app(PriceListResolver::class);$rows=PriceList::where('company_id',$companyId)->where('status','active')->orderBy('list_number')->get()->map(function($list)use($resolver,$product){try{return['list'=>$list,'resolved'=>$resolver->resolve($product,$list),'error'=>null];}catch(\Throwable $e){return['list'=>$list,'resolved'=>null,'error'=>\App\Support\UserSafeError::message($e)];}});return compact('product','rows');}
+ public function with():array{$product=Product::findOrFail($this->productId);$companyId=(int)Company::where('status','active')->value('id');$resolver=app(PriceListResolver::class);$rows=PriceList::where('company_id',$companyId)->where('status','active')->orderBy('list_number')->get()->map(function($list)use($resolver,$product){try{return['list'=>$list,'resolved'=>$resolver->resolve($product,$list),'error'=>null];}catch(\Throwable $e){return['list'=>$list,'resolved'=>null,'error'=>\App\Support\UserSafeError::message($e)];}});
+     Gate::authorize('pricing_lists.view');
+     $outlets = Store::visibleTo(auth()->user())->where('status', 'active')->where('type', 'selling')->with('branch')->orderBy('code')->limit(100)->get();
+     $outlet = $this->storeId === '' ? null : Store::visibleTo(auth()->user())->where('status', 'active')->where('type', 'selling')->with('branch')->findOrFail((int) $this->storeId);
+     $outletPrice = $outlet ? app(\App\Modules\Pricing\Services\EffectivePriceResolver::class)->resolve($product->id, $outlet->id) : null;
+     return compact('product','rows','outlets','outlet','outletPrice');}
 }; ?>
 <section class="form-section space-y-4" aria-labelledby="product-pricing-title">
     <div class="flex items-center gap-2">
@@ -13,6 +18,15 @@ new class extends Component {
         <x-context-help :title="__('Pricing matrix')" :label="__('Open contextual help')"><p>{{ __('List 0 comes directly from the Product Card. Overrides win without automatic rounding; removing one restores the percentage calculation.') }}</p></x-context-help>
     </div>
     <div class="table-panel-surface">
+        <flux:select wire:model.live="storeId" :label="__('Selling outlet')">
+            <flux:select.option value="">{{ __('Select a selling outlet') }}</flux:select.option>
+            @foreach ($outlets as $availableOutlet)
+                <flux:select.option :value="$availableOutlet->id">{{ $availableOutlet->branch?->code }} · {{ $availableOutlet->code }}</flux:select.option>
+            @endforeach
+        </flux:select>
+        @if ($outlet)
+            <p class="py-3" data-effective-outlet-price>{{ $outlet->branch?->code }} · {{ $outlet->code }}: <strong dir="ltr">{{ $outletPrice?->amount ?? __('No selling price') }} {{ $outletPrice ? __('EGP') : '' }}</strong></p>
+        @endif
         <table class="data-table">
             <thead><tr><th>{{ __('Price list') }}</th><th>{{ __('Percentage') }}</th><th>{{ __('Base price') }}</th><th>{{ __('Pre-round price') }}</th><th>{{ __('Effective price') }}</th><th>{{ __('Source') }}</th><th>{{ __('Actions') }}</th></tr></thead>
             <tbody>
