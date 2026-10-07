@@ -1,3 +1,9 @@
+# Current Milestone — Module 1 + Module 2 local QA closure (2026-10-07)
+
+Operational QA override only. Ten Module 1 second-pass reviews integrated; six Module 2 fixes and one local non-reproduction completed on `fix/module2-qa-integration`. Full combined suite 228/264 passing, 34 failures/2 errors; static 1,403 existing findings and zero added. Local focused repairs are verified; no business milestone, Phase Gate, client UAT or production release is advanced. Production current state remains unverified. Exact-branch publication is authorized; main merge/deployment is excluded.
+
+## Preserved previous state
+
 # Current Milestone — Phase 2 runtime closure
 
 Owner-authorized end-to-end closure integrated main at `3821af553daca932e36c8a49ab78f911e1cf2379` and deployed three confirmed runtime fixes to`/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.22-qa-phase2-3821af5`, version 0.1.22-qa-phase2. Compact read-only smoke PASS; initial helper PATH failure recovered to final5, then only unfinished smoke tail resumed. Exact rollback preserved. No migration, production business fixture/write, grant/password change, repeated broad audit/Gate or client UAT advancement.

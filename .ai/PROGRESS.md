@@ -1,3 +1,9 @@
+# 2026-10-07 — Module 1 + Module 2 local QA closure
+
+All ten Module 1 review lanes closed and accepted fixes integrated. Original 31 findings remain individually dispositioned in `.ai/qa/module1-20261007/FINAL_REPORT.md`; hardware/mail/remote and genuine policy limits remain explicit. Module 2: BUG-105/231/232/233/234/235 fixed with focused checks; BUG-106 persisted all 42 active permissions in the real isolated browser and did not reproduce locally. All seven task branches pushed/remote-SHA verified. Combined suite 264 tests/6,257 assertions: 228 pass, 34 fail, 2 errors; all new repair tests passed. Two changed legacy source-string assertions remain failing, not silently rewritten. Static delta zero added, final1,403; build/Blade/syntax/locale checks pass. Integration closure commit/push follows; no main merge or production deployment. Business gates unchanged.
+
+## Preserved previous state
+
 # 2026-10-05 — Permanent optional Product Card cost
 
 Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Runtime `1d27f7b` committed/pushed and cleanly integrated/pushed to main; production `0.1.22-cost-optional` active, compact smoke PASS. Prior release preserved for rollback; disposable DB, credentials and sessions removed. Report-only closure publication follows without another deployment. No business milestone or full Gate advancement.

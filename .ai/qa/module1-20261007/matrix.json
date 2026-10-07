@@ -31,7 +31,7 @@
       "root_cause": "Existing server limiter rejects the sixth invalid login; PDF screenshot has an empty password and does not establish seven HTTP login attempts.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "AuthenticationRegressionTest: 3/35; six actual non-empty browser attempts on isolated local server, sixth 429.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No limiter change; remote result remains unverified."
     },
     {
@@ -57,7 +57,7 @@
       "root_cause": "Inbox omitted canonical submitted before/proposed context. Added source-aware tax allowlist and branch dependency counts, preserving redaction and scope.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "ApprovalInboxPresentationTest: 5/37, including self-decision/scope denial and unchanged source hash.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Allowlist must be updated deliberately for new setting fields; counts are request-time context."
     },
     {
@@ -82,7 +82,7 @@
       "root_cause": "Blank/non-numeric tax rate reached request/persistence paths. Shared required numeric 0–100 validation runs before side effects; explicit zero remains valid.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "Module1TaxRateValidationTest: 9/108; rejected approval effects roll back.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Historical tax snapshots unchanged; full historical receipt reprint was source-reviewed, not dynamically tested."
     },
     {
@@ -108,7 +108,7 @@
       "root_cause": "Generic lifecycle error and missing review context. Parent-first branch locks, typed dependency validation, request-time counts and approval-time locked child recheck.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "BranchLifecycleDependencyTest: 5/25; two-worker branch/store and approval/hash checks: 4/25.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Active user scopes are context, not newly invented blockers; logical deletion never cascades."
     },
     {
@@ -134,7 +134,7 @@
       "root_cause": "Nested Livewire field names lacked validation attribute mappings. Added native human-readable names using existing locale validation templates.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "Module1ValidationLocalizationTest verifies complete en/ar/ar-EG error sentences; merged tax/localization/branch checks 26/368.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Does not claim every validation message throughout the ERP is localized."
     },
     {
@@ -161,7 +161,7 @@
       "root_cause": "Inactive accounts were rejected at login/gates but established sessions survived. Web middleware now logs out, invalidates session and rotates CSRF on the next request.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "AuthenticationRegressionTest: 3/35; second-pass HTTP and actual Livewire revocation checks.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Financial shift, drawer assignment and active-shift records are preserved; owner must decide emergency recovery."
     },
     {
@@ -187,7 +187,7 @@
       "root_cause": "Current canonical cashier has approved grants and can GET/open a real shift. Remote Cashir alias is not the local canonical profile.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "PosShiftOpenRouteTest: 5/48 with seeded canonical role, real POST and scope/exclusivity denials.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No role/grant/alias change; production role data was not inspected."
     },
     {
@@ -213,7 +213,7 @@
       "root_cause": "Row locks serialized writes without identifying stale forms; timestamps have second precision. Added monotonic lock_version, locked UI baseline, atomic comparison/increment for save/status/delete.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "CashDrawerConcurrencyTest: 8/57, including same-second stale edit, actual two-worker winner, forged baseline, retained dirty modal and approval delete.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Additive migration applied locally; every future deployment needs the migration through the established release workflow."
     },
     {
@@ -239,7 +239,7 @@
       "root_cause": "Numbering and inventory draft writers omitted known branch scope; presentation maps were incomplete. Fixed writer attribution and reviewed labels; expose only safe truncated fingerprints.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "Module1AuditPresentationTest: 4/31; branch/store visibility, cross-branch exclusion, raw metadata absence and fail-closed export.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Existing historical unscoped events are preserved; no data backfill or export permission expansion."
     },
     {
@@ -266,7 +266,7 @@
       "root_cause": "Public self-registration policy is not established by the routed approved requirements.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Existing Fortify registration remains unchanged.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Owner must decide whether public registration is allowed."
     },
     {
@@ -292,7 +292,7 @@
       "root_cause": "Approved inventory exception policy explicitly requires negative stock blocked by default; Blocked (Safe) reflects that behavior.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "docs/25-inventory-exception-policy.md sections 1/3 and existing UI mapping reviewed.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No policy change needed."
     },
     {
@@ -318,7 +318,7 @@
       "root_cause": "Warehouse count deliberately selects warehouse-type stores, excluding selling outlets; terminology decision remains open.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Current query and DEC-021 reviewed.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Owner decides taxonomy/labels, not an inferred count defect."
     },
     {
@@ -345,7 +345,7 @@
       "root_cause": "Canonical role baseline and remote aliases cannot be reconciled by inventing grants.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Module1AuthorizationBoundaryTest: 9/42, including canonical guard and forged flag denial.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Remote aliases/counts unverified; no existing grants changed."
     },
     {
@@ -371,7 +371,7 @@
       "root_cause": "Existing maker-checker behavior is enforced; business assignment of independent reviewers remains unspecified.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Approval presentation plus same-source approval concurrency and hash rollback checks.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Preserved explicitly approved immutable SuperAdmin bypass; no new role grants."
     },
     {
@@ -398,7 +398,7 @@
       "root_cause": "Remote Super Admin account claim requires authorized remote data access; local system-admin role and immutable SuperAdmin flag are distinct.",
       "fix_status": "BLOCKED",
       "regression_test": "Local creation of a second role-based administrator succeeds; role/flag protections verified.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No remote access or singleton rule invented."
     },
     {
@@ -424,7 +424,7 @@
       "root_cause": "Positive audit export row cap needs owner configuration; fail-closed behavior is intentional.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Export rejects null/unconfigured cap and does not write success audit.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Owner chooses a positive cap before enabling export."
     },
     {
@@ -449,7 +449,7 @@
       "root_cause": "Current approved printer contract permits nullable template; report does not establish mandatory assignment.",
       "fix_status": "AMBIGUOUS REQUIREMENT",
       "regression_test": "Printer save contract reviewed; field remains nullable.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Physical print acceptance is separate."
     },
     {
@@ -476,7 +476,7 @@
       "root_cause": "No numbering corruption found in actual overlapping allocations.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "DocumentSequenceConcurrencyTest: real two-process lock contention, unique consecutive numbers and counter=3 after two allocations.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Specific schedules are verified, not exhaustive load stress."
     },
     {
@@ -503,7 +503,7 @@
       "root_cause": "Bounded security matrix was expanded but complete role-by-action-by-record matrix was not executed.",
       "fix_status": "NOT FIXED",
       "regression_test": "Real route/action/scope/export/last-admin/mass-assignment checks; no blanket Gate override claimed as security evidence.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Global-only audit route versus separately scoped export policy still needs role policy clarification."
     },
     {
@@ -530,7 +530,7 @@
       "root_cause": "No upload surface exists in the Module 1 scope.",
       "fix_status": "OUT OF SCOPE",
       "regression_test": "Other modules have upload workflows; Module 1 does not.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Does not claim all application uploads absent or verified."
     },
     {
@@ -557,7 +557,7 @@
       "root_cause": "Physical device/offline PWA acceptance needs devices and approved connectivity scenarios.",
       "fix_status": "BLOCKED",
       "regression_test": "Static network/offline safety reviewed only.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Offline, printer, scanner and reconnect UAT remain unexecuted."
     },
     {
@@ -584,7 +584,7 @@
       "root_cause": "App reset dispatch/token/reset were verified with fake notifications; actual SMTP delivery requires external mail configuration.",
       "fix_status": "BLOCKED",
       "regression_test": "AuthenticationRegressionTest proves token flow and changed password.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No claim of delivered mail."
     },
     {
@@ -611,7 +611,7 @@
       "root_cause": "Local last-administrator removal/deactivation protection holds.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "Module1AuthorizationBoundaryTest includes successful second admin and rejection of final-role removal/deactivation.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Concurrent final-admin mutations were not exercised."
     },
     {
@@ -636,7 +636,7 @@
       "root_cause": "Company information is editable through the approved authorized editor; read-only observation did not reproduce.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "Company success/readback plus denial/invalid-input checks in tax/settings focused class.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Remote role policy remains unverified."
     },
     {
@@ -661,7 +661,7 @@
       "root_cause": "Payment method lifecycle works for the bounded scenarios.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "Authorized valid save/display and denied/offline-card invalid zero-effects checks.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Does not prove external payment services."
     },
     {
@@ -686,7 +686,7 @@
       "root_cause": "Physical test-print/transaction-output acceptance needs actual hardware.",
       "fix_status": "BLOCKED",
       "regression_test": "No physical print check performed.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Printer and required paper-format UAT remain open."
     },
     {
@@ -712,7 +712,7 @@
       "root_cause": "Four Settings master lists capped at 100 were unreachable above that limit. Added native scoped 25-row pagination/search, active-tab queries and page reset.",
       "fix_status": "FIXED BUT NOT FULLY VERIFIED",
       "regression_test": "101-row reachability, search/scope/reset and inactive-list exclusion checks; actual Arabic desktop/mobile payment search.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Large-volume stress and every reference selector remain unmeasured."
     },
     {
@@ -738,7 +738,7 @@
       "root_cause": "Added missing Arabic Branch Management/Role Permissions keys and named field errors.",
       "fix_status": "FIXED BUT NOT FULLY VERIFIED",
       "regression_test": "11 pages × 3 locales bounded HTTP render proof; actual Arabic RTL desktop/mobile settings with no page overflow.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "All text/states not covered; System Settings breadcrumb remained English in the observed Arabic page."
     },
     {
@@ -765,7 +765,7 @@
       "root_cause": "Editing numbering metadata preserves an allocated counter and direct counter rewind is rejected.",
       "fix_status": "NOT REPRODUCED",
       "regression_test": "DocumentSequenceConcurrencyTest metadata scenario; canonical permission fixture preserved when pre-seeded.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Approved/stale override rollback not dynamically covered in this pass."
     },
     {
@@ -791,7 +791,7 @@
       "root_cause": "Stored hashed device/session context existed but was not visible. UI now displays only 12 hex chars of valid SHA256 hashes.",
       "fix_status": "FIXED + VERIFIED",
       "regression_test": "Actual request audit plus Livewire render checks exclude raw IDs, complete hashes and user agent.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "No arbitrary metadata rendered."
     },
     {
@@ -817,7 +817,7 @@
       "root_cause": "Remote QA records, pending approvals and orphaned shift were intentionally preserved.",
       "fix_status": "OUT OF SCOPE",
       "regression_test": "No production/remote cleanup or financial auto-close performed.",
-      "verification_status": "Bounded local evidence only; final combined integration checks pending",
+      "verification_status": "Disposition limited to recorded local evidence; combined suite failed as documented; production/UAT unverified.",
       "risk": "Cleanup requires a separate owner-authorized operational task."
     }
   ],
@@ -866,7 +866,7 @@
     "OUT OF SCOPE": 2,
     "FIXED BUT NOT FULLY VERIFIED": 2
   },
-  "review_checkpoint": "All ten second-pass reports received; accepted fixes reviewed and integrated through b4d2e54. Final combined checks pending.",
+  "review_checkpoint": "All ten second-pass reviews integrated. Final combined checks completed with visible suite/static debt; no release/UAT claim.",
   "derived_findings": [
     {
       "id": "M1-EX01",
@@ -896,7 +896,7 @@
       "id": "M1-EX05",
       "fix_status": "FIXED + VERIFIED",
       "root_cause": "Drawer reactivation rechecks active selling-store invariant under parent locks.",
-      "regression_test": "CashDrawerStatusInvariantTest 9/63"
+      "regression_test": "CashDrawerConcurrencyTest 9/63"
     },
     {
       "id": "M1-EX06",
@@ -934,5 +934,72 @@
       "root_cause": "Shift opening locks current user and rereads current scope after locks, preventing revoked-scope race.",
       "regression_test": "Real two-worker RED then GREEN 1/5; POS 5/48"
     }
-  ]
+  ],
+  "combined_verification": {
+    "suite": {
+      "tests": 264,
+      "passed": 228,
+      "failures": 34,
+      "errors": 2,
+      "skipped": 0,
+      "assertions": 6257,
+      "failed_tests": [
+        "Tests\\Unit\\CompanyOwnerRbacApprovalNavigationTest::test_administration_activity_and_approval_navigation_have_exact_guards_and_placement",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_inventory_template_has_exact_three_column_order",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_validation_rejects_service_missing_cost_existing_movement_and_fraction_policy",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_reversal_and_zero_decision_are_audited_and_setup_readiness_is_authoritative",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_full_distribution_is_mandatory_and_rejects_invalid_allocations",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_full_page_two_stage_ui_scanning_and_destination_labels_are_present",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_m54_flux_references_are_supported",
+        "Tests\\Unit\\V0122Hotfix16PosCheckoutWorkflowTest::test_customer_and_payment_ux_is_bounded_responsive_and_safe",
+        "Tests\\Unit\\V0122Hotfix16PosCheckoutWorkflowTest::test_success_receipt_routes_and_locale_parity_are_complete",
+        "Tests\\Unit\\V0122Hotfix2CorrectiveTest::test_product_card_normalizes_unchecked_quantity_and_persists_canonical_price",
+        "Tests\\Unit\\V0122Hotfix4InventoryLabelsSidebarPricingTest::test_product_quantity_is_central_strict_and_integer_only",
+        "Tests\\Unit\\V0122Hotfix6AdminNavigationLocalizationTest::test_sidebar_derives_nested_authorized_links_from_the_lightweight_registry",
+        "Tests\\Unit\\V0122Hotfix6AdminNavigationLocalizationTest::test_warehouse_terminology_and_store_action_are_localized",
+        "Tests\\Unit\\V0122Hotfix7InventoryCountingUxTest::test_human_names_navigation_and_bounded_search_are_present",
+        "Tests\\Unit\\V0122Hotfix9NavigationCleanupTest::test_navigation_hides_only_the_requested_duplicate_and_deferred_entries",
+        "Tests\\Unit\\V016SetupAdminFoundationTest::test_authoritative_group_map_contains_exactly_twenty_one_unique_steps",
+        "Tests\\Unit\\V021FinalAcceptanceTest::test_scanner_and_bounded_search_contract",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_every_purchase_invoice_literal_has_an_arabic_translation",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_list_and_entry_layout_contracts_are_responsive_and_locale_safe",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_status_and_currency_presenters_never_leak_raw_values",
+        "Tests\\Unit\\V021ReadinessPricingHotfixTest::test_readiness_ui_localization_prerequisite_and_list_zero_counts_are_explicit",
+        "Tests\\Unit\\V021ReadinessPricingHotfixTest::test_all_post_deployment_corrections_remain_in_source",
+        "Tests\\Unit\\V022CumulativeStabilizationTest::test_template_preview_is_bilingual_responsive_and_uses_no_business_data",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_quantity_contract_is_integer_and_diagnostic_is_read_only",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_setup_filters_labels_localization_and_version_contracts",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_pricing_remediation_and_print_layout_are_explicit",
+        "Tests\\Unit\\V022RequirementFamiliesTest::test_setup_order_actions_and_persistent_sequence_family",
+        "Tests\\Unit\\V022RequirementFamiliesTest::test_purchasing_distribution_transfer_label_and_transit_family",
+        "Tests\\Feature\\V0122Hotfix12PosShiftOpenRouteTest::test_shift_open_flow_uses_separate_safe_routes_and_preserves_authorization",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_purchasing_lookup_filters_incrementally_and_uses_only_latest_approved_supplier_price",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_supplier_return_lookup_is_source_invoice_and_store_scope_constrained",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_authorized_create_route_renders_full_page_and_shared_action_saves_a_draft"
+      ],
+      "error_summaries": [
+        {
+          "test": "Tests\\Unit\\M51CustomerSupplierDataTest::test_arabic_pdf_text_is_shaped_in_visual_order_without_changing_stable_codes",
+          "message": "RuntimeException: The trusted local FriBidi renderer is required for Arabic PDF output."
+        },
+        {
+          "test": "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_six_stabilization_render_targets_and_setup_context_are_wired",
+          "message": "TypeError: Tests\\Unit\\M54PurchaseReceivingDistributionTest::source(): Return value must be of type string, false returned"
+        }
+      ],
+      "new_failed_test_names": [
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation"
+      ]
+    },
+    "static": {
+      "baseline": 1404,
+      "final": 1403,
+      "added": 0,
+      "removed": 1,
+      "new_findings": []
+    }
+  }
 }

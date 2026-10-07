@@ -1,6 +1,6 @@
 # Module 1 final QA report — 2026-10-07
 
-**Checkpoint: all ten second-pass reviews and their accepted fixes are integrated. Final combined Module 1 + Module 2 checks are pending.**
+**Local QA closure: all ten second-pass reviews and accepted fixes are integrated. Combined validation completed; the full suite and static check remain failed with the documented debt below.**
 
 ## A. Executive result
 
@@ -129,7 +129,7 @@ Derived findings are separate from the original 31; all ten review reports are p
 | M1-EX02 | FIXED + VERIFIED | OpenShiftAction rechecks locked active selling store before creating financial state. | PosShiftOpenRouteTest 5/48 |
 | M1-EX03 | FIXED BUT NOT FULLY VERIFIED | Native scoped Settings pagination/search; F18 contains remaining scale limits. | 101-row reachability; actual Arabic desktop/mobile filter |
 | M1-EX04 | AMBIGUOUS REQUIREMENT | Changing selling-store type during an existing open shift needs owner policy. | No policy change |
-| M1-EX05 | FIXED + VERIFIED | Drawer reactivation rechecks active selling-store invariant under parent locks. | CashDrawerStatusInvariantTest 9/63 |
+| M1-EX05 | FIXED + VERIFIED | Drawer reactivation rechecks active selling-store invariant under parent locks. | CashDrawerConcurrencyTest 9/63 |
 | M1-EX06 | FIXED + VERIFIED | Inventory approval audit records the known store branch; visibility is preserved. | ApproveInventoryAdjustmentActionTest 1/4; mixed review 34/213 |
 | M1-EX07 | FIXED + VERIFIED | Custom Fortify callback uses native configured minimum Timebox for failed credentials. | AuthenticationRedTeamReviewTest 6/65; no timing benchmark; overflow can exceed minimum |
 | M1-EX08 | FIXED + VERIFIED | Approval decision failures use translated English source keys in en/ar. | Module1RedTeamLocalizationTest 2/25 |
@@ -145,13 +145,59 @@ Derived findings are separate from the original 31; all ten review reports are p
 - Vite build passed once (3.66 s). Composer validate passed with the existing exact OpenSpout version warning. Initial modified PHP syntax and JSON checks passed.
 - Required Pint attempted in the root; copied PHAR embeds a different vendor path. The same already installed working regression-worktree launcher formatted affected files; no dependencies/vendor edits.
 - Actual authenticated local Arabic desktop/mobile payment search: CASH filters to one row, CARD excluded, RTL/lang correct, 390px viewport had no document overflow. No persisted browser business write. Boost browser logs unavailable because the file was absent.
-- Final optimize:clear, full combined suite, current static delta and final integrity checks: PENDING integration completion.
+- Final combined run on `fix/module2-qa-integration`: **264 tests, 228 passed, 34 failures, 2 errors, 6,257 assertions**, exit 2. Every new reported-fix test passed. No second full-suite run.
+- Of the final failing test names, two newly fail legacy source-string contracts in `V0122Hotfix13CashDrawerIntegrityTest`: they require the old drawer lock expression and ordinary post-lock visibleTo query. The accepted current-lock/scope repair replaces those expressions; actual supported-route and two-worker scope-revocation behavior passed. These tests were preserved, not weakened. Four baseline errors now reach failing historical assertions after the harness correction; the other failing names were already failing/erroring in the original baseline.
+- Final static capture: **1,403 findings versus 1,404 baseline; zero added diagnostics, one removed**, comparing file/message/identifier rather than line offsets. Initial final capture was truncated; the cached verbose capture completed the comparison. No suppression or dependency change.
+- Final optimize:clear, integrated Vite build and separate temporary Blade compilation passed. Syntax passed for 69 changed PHP files; three locales parse with zero new duplicate keys after removing one accidentally repeated ar-EG audit key. Pint fallback passed; its five-file formatting delta was inspected and committed separately.
+- Final remote read verified all seven Module 2 branch tips. Integration publication follows the closure record, exact branch only. No main merge or deployment.
 
 Only recorded disposable schemas `qa_rajh_m1_<domain>_20261007` and `qa_rajh_m1_integrated_20261007` on XAMPP MariaDB were used for tests. The additive drawer migration was also applied to the normal local database after confirming its identity; no data reset, production migration or real-record deletion occurred.
 
+### Full-suite failed cases
+
+- `Tests\Unit\CompanyOwnerRbacApprovalNavigationTest::test_administration_activity_and_approval_navigation_have_exact_guards_and_placement`
+- `Tests\Unit\M52ProductCardsOpeningInventoryTest::test_opening_inventory_template_has_exact_three_column_order`
+- `Tests\Unit\M52ProductCardsOpeningInventoryTest::test_opening_validation_rejects_service_missing_cost_existing_movement_and_fraction_policy`
+- `Tests\Unit\M52ProductCardsOpeningInventoryTest::test_opening_reversal_and_zero_decision_are_audited_and_setup_readiness_is_authoritative`
+- `Tests\Unit\M54PurchaseReceivingDistributionTest::test_full_distribution_is_mandatory_and_rejects_invalid_allocations`
+- `Tests\Unit\M54PurchaseReceivingDistributionTest::test_full_page_two_stage_ui_scanning_and_destination_labels_are_present`
+- `Tests\Unit\M54PurchaseReceivingDistributionTest::test_m54_flux_references_are_supported`
+- `Tests\Unit\V0122Hotfix16PosCheckoutWorkflowTest::test_customer_and_payment_ux_is_bounded_responsive_and_safe`
+- `Tests\Unit\V0122Hotfix16PosCheckoutWorkflowTest::test_success_receipt_routes_and_locale_parity_are_complete`
+- `Tests\Unit\V0122Hotfix2CorrectiveTest::test_product_card_normalizes_unchecked_quantity_and_persists_canonical_price`
+- `Tests\Unit\V0122Hotfix4InventoryLabelsSidebarPricingTest::test_product_quantity_is_central_strict_and_integer_only`
+- `Tests\Unit\V0122Hotfix6AdminNavigationLocalizationTest::test_sidebar_derives_nested_authorized_links_from_the_lightweight_registry`
+- `Tests\Unit\V0122Hotfix6AdminNavigationLocalizationTest::test_warehouse_terminology_and_store_action_are_localized`
+- `Tests\Unit\V0122Hotfix7InventoryCountingUxTest::test_human_names_navigation_and_bounded_search_are_present`
+- `Tests\Unit\V0122Hotfix9NavigationCleanupTest::test_navigation_hides_only_the_requested_duplicate_and_deferred_entries`
+- `Tests\Unit\V016SetupAdminFoundationTest::test_authoritative_group_map_contains_exactly_twenty_one_unique_steps`
+- `Tests\Unit\V021FinalAcceptanceTest::test_scanner_and_bounded_search_contract`
+- `Tests\Unit\V021PurchasingLocalizationLayoutHotfixTest::test_every_purchase_invoice_literal_has_an_arabic_translation`
+- `Tests\Unit\V021PurchasingLocalizationLayoutHotfixTest::test_list_and_entry_layout_contracts_are_responsive_and_locale_safe`
+- `Tests\Unit\V021PurchasingLocalizationLayoutHotfixTest::test_status_and_currency_presenters_never_leak_raw_values`
+- `Tests\Unit\V021ReadinessPricingHotfixTest::test_readiness_ui_localization_prerequisite_and_list_zero_counts_are_explicit`
+- `Tests\Unit\V021ReadinessPricingHotfixTest::test_all_post_deployment_corrections_remain_in_source`
+- `Tests\Unit\V022CumulativeStabilizationTest::test_template_preview_is_bilingual_responsive_and_uses_no_business_data`
+- `Tests\Unit\V022Hotfix1PostDeploymentTest::test_quantity_contract_is_integer_and_diagnostic_is_read_only`
+- `Tests\Unit\V022Hotfix1PostDeploymentTest::test_setup_filters_labels_localization_and_version_contracts`
+- `Tests\Unit\V022Hotfix1PostDeploymentTest::test_pricing_remediation_and_print_layout_are_explicit`
+- `Tests\Unit\V022RequirementFamiliesTest::test_setup_order_actions_and_persistent_sequence_family`
+- `Tests\Unit\V022RequirementFamiliesTest::test_purchasing_distribution_transfer_label_and_transit_family`
+- `Tests\Feature\V0122Hotfix12PosShiftOpenRouteTest::test_shift_open_flow_uses_separate_safe_routes_and_preserves_authorization`
+- `Tests\Feature\V0122Hotfix13CashDrawerIntegrityTest::test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards`
+- `Tests\Feature\V0122Hotfix13CashDrawerIntegrityTest::test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation`
+- `Tests\Feature\V0122Hotfix27PurchaseOrderLookupTest::test_purchasing_lookup_filters_incrementally_and_uses_only_latest_approved_supplier_price`
+- `Tests\Feature\V0122Hotfix27PurchaseOrderLookupTest::test_supplier_return_lookup_is_source_invoice_and_store_scope_constrained`
+- `Tests\Feature\V0122Hotfix27PurchaseOrderLookupTest::test_authorized_create_route_renders_full_page_and_shared_action_saves_a_draft`
+
+### Full-suite environment/file errors
+
+- `Tests\Unit\M51CustomerSupplierDataTest::test_arabic_pdf_text_is_shaped_in_visual_order_without_changing_stable_codes` — RuntimeException: The trusted local FriBidi renderer is required for Arabic PDF output.
+- `Tests\Unit\M54PurchaseReceivingDistributionTest::test_six_stabilization_render_targets_and_setup_context_are_wired` — TypeError: Tests\Unit\M54PurchaseReceivingDistributionTest::source(): Return value must be of type string, false returned
+
 ## E. Changed files and purpose
 
-Module 1 inventory through `b4d2e54`, relative to the recorded source; final report/matrix and copied ten review reports are additional evidence-only files.
+Module 1 implementation inventory through `b4d2e54`, relative to the recorded source; final combined check metadata, the CashDrawer test formatter delta and duplicate locale-key cleanup are recorded above; final report/matrix and copied ten review reports are additional evidence-only files.
 
 | File | Purpose |
 |---|---|
@@ -253,3 +299,5 @@ Use a disposable local company and authorized roles; retain an independent revie
 - F09/14/20: overlap allocations, preserve counters on metadata edit, deny final-admin removal; extend concurrent final-admin and approved override rollback acceptance separately.
 - F12/13/17: actual SMTP receive/reset, scanner/printer formats, offline/resync/device UAT and customer acceptance require their configured environments.
 - F22: obtain separate cleanup authorization and approved open-shift recovery policy before touching remote QA records.
+
+The follow-on Module 2 batch is recorded separately in `../module2-20261007/results.json`: six confirmed bugs fixed, BUG-106 not reproduced locally with actual checkbox/save/reload evidence. Arbitrary CSV import remains outside the canonical company XLSX contract. Independent pricing reviewer grants remain owner configuration; no default grants were invented. Both module batches are on the pushed integration branch only after publication, with no main merge or production deployment.

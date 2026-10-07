@@ -1,0 +1,160 @@
+{
+  "source_pdf": "C:/nassej/Module2-Deep-QA-Report-9855c5f5.pdf",
+  "original_base": "07a514c94d106efe3516d81780ee9081ecfd86bc",
+  "integration_branch": "fix/module2-qa-integration",
+  "change_class": "D3; includes separately authorized Module1 additive I4 migration",
+  "excluded": "BUG-230 explicitly withdrawn in PDF",
+  "agents": "Exactly the same ten Luna x-high agents; no second Module2 ten-agent pass",
+  "bugs": [
+    {
+      "id": "BUG-105",
+      "severity": "HIGH",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-105-product-import-workflow",
+      "code_commit": "2e211d0d7e8441df7305899718f0858a5afa8388",
+      "remote_tip": "213eccb6cdbe0ada41d2c6fa36b53bcd3d5d7541",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "15 tests / 144 assertions; independent scope/version/context review 3/19",
+      "limit": "Canonical company XLSX mapping, valid-only approval, stage-bound company and expected target version; no CSV support claim."
+    },
+    {
+      "id": "BUG-106",
+      "severity": "HIGH",
+      "status": "NOT REPRODUCED",
+      "branch": "fix/bug-106-role-permission-persistence",
+      "code_commit": "e3fc20f8f008ca42d60b10ccd2250d3bfc9d47c6",
+      "remote_tip": "3c225563e9ed1d0c405a07a04d1228b08d1046b1",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "2/11; real isolated browser saved/reloaded 42 IDs; independent action/persistence review",
+      "limit": "Regression-only branch; no runtime or grant change. Reported remote version/catalog remains unverified."
+    },
+    {
+      "id": "BUG-231",
+      "severity": "MEDIUM",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-231-product-supplier-validation",
+      "code_commit": "1bbd23d204320c37781f366599932bd750b085bf",
+      "remote_tip": "1bbd23d204320c37781f366599932bd750b085bf",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "2/23 across en/ar/ar-EG",
+      "limit": "Generated identities visibly require supplier; coded edits retain optional supplier; allocator unchanged."
+    },
+    {
+      "id": "BUG-232",
+      "severity": "HIGH",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-232-pricing-approval-feedback",
+      "code_commit": "d02f1f715aa2eb21a769d59dea4bcb559e8df4e7",
+      "remote_tip": "d02f1f715aa2eb21a769d59dea4bcb559e8df4e7",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "4/49; independent exact-diff approval integrity review",
+      "limit": "Safe visible decision feedback; both own decision controls follow existing backend policy/bypass. Prior active-version supersession not dynamically exercised."
+    },
+    {
+      "id": "BUG-233",
+      "severity": "LOW",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-233-product-image-limit-feedback",
+      "code_commit": "997574f9c80ea5c3d26f8e6396769d88b9ab09e8",
+      "remote_tip": "c3866ec1b590cf46d0fd1731d3cbb62e159e80d4",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "1/5",
+      "limit": "Specific additional-image limit feedback; existing cap and upload guards unchanged."
+    },
+    {
+      "id": "BUG-234",
+      "severity": "LOW",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-234-product-barcode-edit-display",
+      "code_commit": "71bd9d7d41c86f6db36821ea1e7aeddb8ffc5568",
+      "remote_tip": "71bd9d7d41c86f6db36821ea1e7aeddb8ffc5568",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "2/11; render-only gate override is not authorization evidence",
+      "limit": "Show all saved active codes; create/no-active-code entry retained; management route reused."
+    },
+    {
+      "id": "BUG-235",
+      "severity": "MEDIUM",
+      "status": "FIXED + VERIFIED",
+      "branch": "fix/bug-235-product-card-fields",
+      "code_commit": "0221aec98604eeb879222a7e1d478e65683436c1",
+      "remote_tip": "0221aec98604eeb879222a7e1d478e65683436c1",
+      "push": "Verified exact remote branch SHA",
+      "focused_verification": "1/48; independent cost-boundary diff/test review",
+      "limit": "Create/edit metadata and existing lookup relationships; existing child-category selector and optional protected cost preserved. No schema change."
+    }
+  ],
+  "combined_verification": {
+    "suite": {
+      "tests": 264,
+      "passed": 228,
+      "failures": 34,
+      "errors": 2,
+      "skipped": 0,
+      "assertions": 6257,
+      "failed_tests": [
+        "Tests\\Unit\\CompanyOwnerRbacApprovalNavigationTest::test_administration_activity_and_approval_navigation_have_exact_guards_and_placement",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_inventory_template_has_exact_three_column_order",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_validation_rejects_service_missing_cost_existing_movement_and_fraction_policy",
+        "Tests\\Unit\\M52ProductCardsOpeningInventoryTest::test_opening_reversal_and_zero_decision_are_audited_and_setup_readiness_is_authoritative",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_full_distribution_is_mandatory_and_rejects_invalid_allocations",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_full_page_two_stage_ui_scanning_and_destination_labels_are_present",
+        "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_m54_flux_references_are_supported",
+        "Tests\\Unit\\V0122Hotfix16PosCheckoutWorkflowTest::test_customer_and_payment_ux_is_bounded_responsive_and_safe",
+        "Tests\\Unit\\V0122Hotfix16PosCheckoutWorkflowTest::test_success_receipt_routes_and_locale_parity_are_complete",
+        "Tests\\Unit\\V0122Hotfix2CorrectiveTest::test_product_card_normalizes_unchecked_quantity_and_persists_canonical_price",
+        "Tests\\Unit\\V0122Hotfix4InventoryLabelsSidebarPricingTest::test_product_quantity_is_central_strict_and_integer_only",
+        "Tests\\Unit\\V0122Hotfix6AdminNavigationLocalizationTest::test_sidebar_derives_nested_authorized_links_from_the_lightweight_registry",
+        "Tests\\Unit\\V0122Hotfix6AdminNavigationLocalizationTest::test_warehouse_terminology_and_store_action_are_localized",
+        "Tests\\Unit\\V0122Hotfix7InventoryCountingUxTest::test_human_names_navigation_and_bounded_search_are_present",
+        "Tests\\Unit\\V0122Hotfix9NavigationCleanupTest::test_navigation_hides_only_the_requested_duplicate_and_deferred_entries",
+        "Tests\\Unit\\V016SetupAdminFoundationTest::test_authoritative_group_map_contains_exactly_twenty_one_unique_steps",
+        "Tests\\Unit\\V021FinalAcceptanceTest::test_scanner_and_bounded_search_contract",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_every_purchase_invoice_literal_has_an_arabic_translation",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_list_and_entry_layout_contracts_are_responsive_and_locale_safe",
+        "Tests\\Unit\\V021PurchasingLocalizationLayoutHotfixTest::test_status_and_currency_presenters_never_leak_raw_values",
+        "Tests\\Unit\\V021ReadinessPricingHotfixTest::test_readiness_ui_localization_prerequisite_and_list_zero_counts_are_explicit",
+        "Tests\\Unit\\V021ReadinessPricingHotfixTest::test_all_post_deployment_corrections_remain_in_source",
+        "Tests\\Unit\\V022CumulativeStabilizationTest::test_template_preview_is_bilingual_responsive_and_uses_no_business_data",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_quantity_contract_is_integer_and_diagnostic_is_read_only",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_setup_filters_labels_localization_and_version_contracts",
+        "Tests\\Unit\\V022Hotfix1PostDeploymentTest::test_pricing_remediation_and_print_layout_are_explicit",
+        "Tests\\Unit\\V022RequirementFamiliesTest::test_setup_order_actions_and_persistent_sequence_family",
+        "Tests\\Unit\\V022RequirementFamiliesTest::test_purchasing_distribution_transfer_label_and_transit_family",
+        "Tests\\Feature\\V0122Hotfix12PosShiftOpenRouteTest::test_shift_open_flow_uses_separate_safe_routes_and_preserves_authorization",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_purchasing_lookup_filters_incrementally_and_uses_only_latest_approved_supplier_price",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_supplier_return_lookup_is_source_invoice_and_store_scope_constrained",
+        "Tests\\Feature\\V0122Hotfix27PurchaseOrderLookupTest::test_authorized_create_route_renders_full_page_and_shared_action_saves_a_draft"
+      ],
+      "error_summaries": [
+        {
+          "test": "Tests\\Unit\\M51CustomerSupplierDataTest::test_arabic_pdf_text_is_shaped_in_visual_order_without_changing_stable_codes",
+          "message": "RuntimeException: The trusted local FriBidi renderer is required for Arabic PDF output."
+        },
+        {
+          "test": "Tests\\Unit\\M54PurchaseReceivingDistributionTest::test_six_stabilization_render_targets_and_setup_context_are_wired",
+          "message": "TypeError: Tests\\Unit\\M54PurchaseReceivingDistributionTest::source(): Return value must be of type string, false returned"
+        }
+      ],
+      "new_failed_test_names": [
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_valid_drawer_opening_keeps_transaction_scope_and_duplicate_guards",
+        "Tests\\Feature\\V0122Hotfix13CashDrawerIntegrityTest::test_invalid_or_cross_scope_drawers_are_not_selectable_and_return_safe_validation"
+      ]
+    },
+    "static": {
+      "baseline": 1404,
+      "final": 1403,
+      "added": 0,
+      "removed": 1,
+      "new_findings": []
+    }
+  },
+  "syntax": "69 changed PHP files passed",
+  "locales": "All three JSON files parse; zero new duplicate keys after reusing existing Inventory adjustment key",
+  "pint": "Root copied launcher failed255; same installed regression-worktree launcher passed and formatted only five files",
+  "build": "Integrated Vite build PASS; Blade compilation PASS; optimize:clear PASS",
+  "production": "Not inspected or deployed; no main merge or force push",
+  "integration_push": "Pending final closure commit and exact-branch publication"
+}
