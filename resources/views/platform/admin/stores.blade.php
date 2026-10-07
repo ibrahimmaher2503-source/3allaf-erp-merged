@@ -12,6 +12,7 @@ use App\Modules\Pricing\Models\PriceList;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -194,6 +195,8 @@ new #[Title('Store & Inventory Mapping Masters')] class extends Component
         try {
             $action->toggleStatus($id);
             Flux::toast(variant: 'success', text: __('Store status updated successfully.'));
+        } catch (ValidationException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->validator->errors()->first() ?: \App\Support\UserSafeError::message($exception));
         } catch (Exception $e) {
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
         }

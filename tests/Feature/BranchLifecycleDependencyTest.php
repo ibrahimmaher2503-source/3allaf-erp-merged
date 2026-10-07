@@ -103,6 +103,35 @@ class BranchLifecycleDependencyTest extends TestCase
         $this->assertSame('active', $branch->fresh()->status);
     }
 
+    public function test_deactivating_a_mapped_selling_store_shows_the_dependency_reason(): void
+    {
+        $company = Company::factory()->create();
+        $branch = Branch::factory()->create(['company_id' => $company->id]);
+        $store = Store::factory()->create([
+            'branch_id' => $branch->id,
+            'company_id' => $company->id,
+            'type' => 'selling',
+            'status' => 'active',
+        ]);
+        $mapping = BranchSellingStore::query()->create([
+            'branch_id' => $branch->id,
+            'store_id' => $store->id,
+            'effective_from' => now(),
+            'status' => 'active',
+        ]);
+        $user = User::factory()->create();
+        $this->grantPermissions($user, ['branches_stores.edit', 'branches_stores.view']);
+        UserBranchScope::query()->create(['user_id' => $user->id, 'branch_id' => $branch->id, 'status' => 'active']);
+        $this->actingAs($user);
+
+        Livewire::test('platform::admin.stores')
+            ->call('toggleStoreStatus', $store->id)
+            ->assertDispatched('toast-show', fn (string $event, array $parameters): bool => ($parameters['slots']['text'] ?? null) === __('Cannot deactivate this location while it is actively mapped to a POS branch. Unmap POS first.'));
+
+        $this->assertSame('active', $store->fresh()->status);
+        $this->assertSame('active', $mapping->fresh()->status);
+    }
+
     public function test_active_store_and_selling_mapping_block_status_edits_as_well_as_toggles(): void
     {
         $company = Company::factory()->create();
