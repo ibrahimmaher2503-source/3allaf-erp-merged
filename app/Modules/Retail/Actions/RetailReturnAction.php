@@ -16,6 +16,7 @@ use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Models\Exchange;
 use App\Modules\Retail\Models\ExchangeLine;
 use App\Modules\Retail\Models\GiftReceipt;
+use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\RetailReturnLine;
 use App\Modules\Retail\Models\RetailReturnSettlement;
@@ -177,7 +178,7 @@ final class RetailReturnAction
     }
 
     /**
-     * @param array<int, array<string, mixed>> $allocations
+     * @param  array<int, array<string, mixed>>  $allocations
      */
     public function complete(User $actor, RetailReturn $return, string $idempotencyKey, ?int $paymentMethodId = null, ?int $originalPaymentId = null, array $allocations = []): RetailReturn
     {
@@ -321,7 +322,7 @@ final class RetailReturnAction
                             if (! $context->isReady() || (int) $context->branch?->id !== (int) $locked->branch_id || (int) $context->store?->id !== (int) $locked->store_id) {
                                 throw ValidationException::withMessages(['cash_refund' => __('Cash refunds require your active authorized shift and drawer at the original selling outlet.')]);
                             }
-                            $shift = \App\Modules\Retail\Models\PosShift::query()->whereKey($context->shift?->id)->lockForUpdate()->first();
+                            $shift = PosShift::query()->whereKey($context->shift?->id)->lockForUpdate()->first();
                             $assigned = $shift !== null && DB::table('active_pos_shift_assignments')->where('shift_id', $shift->id)->where('cashier_id', $actor->id)->where('cash_drawer_id', $context->drawer?->id)->lockForUpdate()->exists();
                             if (! $assigned || ! $shift?->status->acceptsActivity()) {
                                 throw ValidationException::withMessages(['cash_refund' => __('Cash refunds are blocked because the cashier shift or drawer is no longer open.')]);
@@ -354,7 +355,7 @@ final class RetailReturnAction
                         if (! $context->isReady() || (int) $context->branch?->id !== (int) $locked->branch_id || (int) $context->store?->id !== (int) $locked->store_id) {
                             throw ValidationException::withMessages(['cash_refund' => __('Cash refunds require your active authorized shift and drawer at the original selling outlet.')]);
                         }
-                        $shift = \App\Modules\Retail\Models\PosShift::query()->whereKey($context->shift?->id)->lockForUpdate()->first();
+                        $shift = PosShift::query()->whereKey($context->shift?->id)->lockForUpdate()->first();
                         $assigned = $shift !== null && DB::table('active_pos_shift_assignments')->where('shift_id', $shift->id)->where('cashier_id', $actor->id)->where('cash_drawer_id', $context->drawer?->id)->lockForUpdate()->exists();
                         if (! $assigned || ! $shift?->status->acceptsActivity()) {
                             throw ValidationException::withMessages(['cash_refund' => __('Cash refunds are blocked because the cashier shift or drawer is no longer open.')]);
@@ -425,7 +426,7 @@ final class RetailReturnAction
     }
 
     /**
-     * @param array<int, array<string, mixed>> $allocations
+     * @param  array<int, array<string, mixed>>  $allocations
      * @return array<int, array{method: PaymentMethod, original_payment_id: ?int, amount: string, safe_reference: ?string}>
      */
     private function resolveRefundAllocations(User $actor, RetailReturn $return, Sale $sale, string $total, ?int $paymentMethodId, ?int $originalPaymentId, array $allocations): array
@@ -540,7 +541,7 @@ final class RetailReturnAction
 
     private function requiresDamagedStore(RetailReturnLine $line): bool
     {
-        return $line->disposition === 'quarantine' || in_array($line->condition, ['non_sellable', 'damaged'], true);
+        return $line->disposition === 'quarantine' || in_array($line->condition, ['non_sellable', 'damaged', 'manager_review'], true);
     }
 
     private function authorize(User $actor, string $permission): void

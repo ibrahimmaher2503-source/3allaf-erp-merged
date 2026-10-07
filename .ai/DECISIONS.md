@@ -268,3 +268,7 @@ Status: Requires Owner Decision. M3-12 confirms audit views format timestamps wi
 ## DEC-100 — Mandatory reason when accepting non-zero shift variance (2026-10-07)
 
 **Status: Requires Owner Decision.** M9-05 display is fixed. docs/32 section 13 permits a review reason/comment; the existing approve/close action accepts an optional note, while recount requires a reason. No authoritative rule requires a note when accepting a non-zero variance. Only that policy requirement remains undecided; optional acceptance behavior and existing financial/approval guards are preserved. Affects TSK-025 shift variance approval, CSH-02/CSH-03; does not block the other Module 9 fixes.
+
+## DEC-103 — Module 7 inspection rejection and attachments (2026-10-07)
+
+**Status: Requires Owner Decision.** M7-06 asks whether a distinct Rejected inspection result and inspection photo/file attachments are required. PRD RET-03 and docs/26-discount-return-policy.md require inspection, approval and separate handling of non-saleable/damaged goods, but do not clearly require these additions; the precise condition list is configurable. Existing document approval rejection remains available. No new condition, attachment policy or workflow is invented. All other Module 7 Part 1 fixes and local P0 scenarios continue independently and are complete.

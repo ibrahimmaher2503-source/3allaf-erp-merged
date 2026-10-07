@@ -33,6 +33,8 @@
             </flux:card>
         </div>
 
+        <flux:card class="mt-6"><flux:heading>{{ __('Reason') }}</flux:heading><p class="mt-2 whitespace-pre-line">{{ $return->reason }}</p><p class="mt-3 text-sm text-zinc-500">{{ __('Customer') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? ($return->customer?->name_ar ?: $return->customer?->name_en) : ($return->customer?->name_en ?: $return->customer?->name_ar) }} · {{ __('Branch / outlet') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? $return->branch?->name_ar : $return->branch?->name_en }} / {{ str_starts_with(app()->getLocale(), 'ar') ? $return->store?->name_ar : $return->store?->name_en }}</p></flux:card>
+
         <flux:card class="mt-6 overflow-hidden p-0">
             <div class="overflow-x-auto">
                 <table class="data-table min-w-[900px] w-full text-sm">
@@ -40,7 +42,7 @@
                     <tbody>
                         @foreach ($return->lines as $line)
                             <tr class="border-t border-zinc-100 dark:border-zinc-800">
-                                <td><div>{{ str_starts_with(app()->getLocale(), 'ar') ? $line->product?->name_ar : $line->product?->name_en }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
+                                <td><div>{{ str_starts_with(app()->getLocale(), 'ar') ? ($line->saleLine?->name_ar ?: $line->saleLine?->name_en) : ($line->saleLine?->name_en ?: $line->saleLine?->name_ar) }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
                                 <td><x-product-quantity :value="$line->quantity" /></td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->disposition)) }}</td>

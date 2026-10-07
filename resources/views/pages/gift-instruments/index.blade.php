@@ -8,17 +8,25 @@
             <flux:card class="mt-6">
                 <flux:heading size="lg">{{ __('Issue from completed sale') }}</flux:heading>
                 <form method="GET" action="{{ route('gift.receipts.index') }}" class="mt-4 flex flex-wrap items-end gap-3">
+                    <flux:input name="sale_search" :label="__('Search invoice, customer or phone')" :value="request('sale_search')" maxlength="100" />
+                    <flux:input name="sale_date" type="date" :label="__('Sale date')" :value="request('sale_date')" />
+                    <flux:button type="submit" variant="subtle">{{ __('Search') }}</flux:button>
+                </form>
+                <form method="GET" action="{{ route('gift.receipts.index') }}" class="mt-4 flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="sale_search" value="{{ request('sale_search') }}">
+                    <input type="hidden" name="sale_date" value="{{ request('sale_date') }}">
                     <div class="min-w-[18rem] flex-1">
                         <label for="gift-receipt-sale" class="block text-sm font-medium">{{ __('Completed sale') }}</label>
                         <select id="gift-receipt-sale" name="sale_id" class="mt-1 block w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required>
                             <option value="">{{ __('Choose a sale') }}</option>
                             @foreach($sales as $sale)
-                                <option value="{{ $sale->id }}" @selected($selectedSaleId === $sale->id)>{{ $sale->document_number ?: '#'.$sale->id }} &middot; {{ $sale->created_at?->format('Y-m-d H:i') }}</option>
+                                <option value="{{ $sale->id }}" @selected($selectedSaleId === $sale->id)>{{ $sale->document_number ?: '#'.$sale->id }} &middot; {{ $sale->customer?->name_ar ?: $sale->customer?->name_en ?: __('Walk-in customer') }} &middot; {{ $sale->approved_at?->format('Y-m-d H:i') }} &middot; {{ $sale->branch?->name_ar ?: $sale->branch?->name_en }} / {{ $sale->store?->name_ar ?: $sale->store?->name_en }} &middot; {{ number_format((float) $sale->payable_total, 2) }} {{ $sale->currency_code }}</option>
                             @endforeach
                         </select>
                     </div>
                     <flux:button type="submit" variant="subtle">{{ __('Load eligible lines') }}</flux:button>
                 </form>
+                <div class="mt-3">{{ $sales->links() }}</div>
 
                 @if ($selectedSale)
                     <form method="POST" action="{{ route('gift.receipts.store') }}" class="mt-5 grid gap-4">

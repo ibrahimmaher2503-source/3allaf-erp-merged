@@ -23,29 +23,43 @@ use Livewire\Component;
 final class RefundWizard extends Component
 {
     public bool $open = false;
+
     public int $step = 1;
+
     public string $lookupTerm = '';
+
     public ?int $saleId = null;
+
     public ?int $giftReceiptId = null;
 
     /** @var array<int, string> */
     public array $quantities = [];
+
     /** @var array<int, string> */
     public array $conditions = [];
+
     /** @var array<int, string> */
     public array $dispositions = [];
+
     /** @var array<int, string> */
     public array $returnStoreIds = [];
+
     /** @var array<int, array<string, string|int|null>> */
     public array $allocations = [];
+
     /** @var array<string, string> */
     public array $totals = [];
 
     public string $refundMethod = 'original_tender';
+
     public string $reason = '';
+
     public string $idempotencyKey = '';
+
     public bool $submitting = false;
+
     public ?int $resultReturnId = null;
+
     public string $resultStatus = '';
 
     public function mount(): void
@@ -125,7 +139,7 @@ final class RefundWizard extends Component
         foreach ($sale->lines as $line) {
             $remaining = $calculator->remainingQuantity($line);
             $this->quantities[$line->id] = '0';
-            $this->conditions[$line->id] = 'sellable';
+            $this->conditions[$line->id] = '';
             $this->dispositions[$line->id] = 'restock';
             $this->returnStoreIds[$line->id] = (string) $sale->store_id;
             if (bccomp($remaining, '0', 6) < 0) {
@@ -161,7 +175,7 @@ final class RefundWizard extends Component
         }
         if ($this->step === 2) {
             $this->step = 3;
-        
+
             return;
         }
         if ($this->step === 3 || $this->step === 4) {
@@ -172,7 +186,7 @@ final class RefundWizard extends Component
             if ($this->step === 5) {
                 $this->prepareAllocations($calculator);
             }
-        
+
             return;
         }
         if ($this->step === 5) {
@@ -329,7 +343,7 @@ final class RefundWizard extends Component
             $context = app(PosContextResolver::class)->resolve($actor);
             if ($sale === null || ! $context->isReady() || (int) $context->store?->id !== (int) $sale->store_id || (int) $context->branch?->id !== (int) $sale->branch_id) {
                 $this->addError('refundMethod', __('Cash refund is unavailable without an open authorized shift and drawer at the original outlet. Choose an eligible non-cash refund method.'));
-        
+
                 return false;
             }
         }
@@ -353,7 +367,7 @@ final class RefundWizard extends Component
             if (! is_numeric($quantity) || bccomp((string) $quantity, '0', 6) <= 0) {
                 continue;
             }
-            $condition = (string) ($this->conditions[$lineId] ?? 'sellable');
+            $condition = (string) ($this->conditions[$lineId] ?? '');
             $lines[] = [
                 'sale_line_id' => (int) $lineId,
                 'quantity' => (string) $quantity,
