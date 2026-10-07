@@ -156,5 +156,5 @@
   "pint": "Root copied launcher failed255; same installed regression-worktree launcher passed and formatted only five files",
   "build": "Integrated Vite build PASS; Blade compilation PASS; optimize:clear PASS",
   "production": "Not inspected or deployed; no main merge or force push",
-  "integration_push": "Pending final closure commit and exact-branch publication"
+  "integration_push": "Succeeded to origin/fix/module2-qa-integration at closure commit3e13a57; this publication receipt is a documentation-only follow-up on the same branch."
 }
