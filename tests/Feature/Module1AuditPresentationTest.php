@@ -83,9 +83,15 @@ final class Module1AuditPresentationTest extends TestCase
     public function test_audit_detail_update_returns_only_its_livewire_island(): void
     {
         $this->grantPermissions('audit_logs.view');
-        $this->actingAs($this->superAdmin());
+        $actor = $this->superAdmin();
+        $this->actingAs($actor);
 
-        $event = app(RecordAuditEvent::class)->execute('qa', 'qa_audit_island_response');
+        $event = app(RecordAuditEvent::class)->execute('qa', 'document_number_allocated');
+
+        foreach (range(1, 20) as $index) {
+            app(RecordAuditEvent::class)->execute('qa', 'qa_audit_pagination_item_'.$index);
+        }
+
         $screen = Livewire::test('platform::system.audit-log');
         $initialHtmlBytes = strlen($screen->html());
         $screen->assertSeeHtml('wire:island="audit-details"');
@@ -103,6 +109,31 @@ final class Module1AuditPresentationTest extends TestCase
         self::assertStringContainsString('Audit event details', $fragment);
         self::assertStringNotContainsString('data-guide="audit-header"', $fragment);
         self::assertLessThan($initialHtmlBytes, strlen($fragment));
+
+        $screen->update(calls: [[
+            'method' => 'nextPage',
+            'params' => [],
+            'path' => '',
+            'metadata' => ['island' => ['name' => 'audit-table', 'mode' => 'morph']],
+        ]])->assertSet('paginators.page', 2);
+
+        $fragments = $screen->effects['islandFragments'] ?? [];
+        self::assertNotEmpty($fragments);
+        $fragment = implode('', $fragments);
+        self::assertStringContainsString('Document number allocated', $fragment);
+        self::assertStringContainsString('Page 2', $fragment);
+        self::assertStringNotContainsString('data-guide="audit-header"', $fragment);
+        self::assertLessThan($initialHtmlBytes, strlen($fragment));
+
+        $actor->forceFill(['status' => 'inactive'])->save();
+        $this->withoutVite();
+
+        $screen->update(calls: [[
+            'method' => 'nextPage',
+            'params' => [],
+            'path' => '',
+            'metadata' => ['island' => ['name' => 'audit-table', 'mode' => 'morph']],
+        ]])->assertStatus(403);
     }
 
     public function test_branch_inventory_and_numbering_events_are_scoped_and_render_with_specific_labels(): void

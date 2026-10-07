@@ -541,4 +541,4 @@ PASS: `InitialSetupStatusTest::test_print_template_assignments_are_incomplete_wi
 
 ## 2026-10-07 — BUG-15 Livewire response isolation
 
-`Module1AuditPresentationTest::test_audit_detail_update_returns_only_its_livewire_island` passed: 1 test, 6 assertions, using the existing disposable `qa_rajh_m1_regression_20261007` MySQL schema. It confirms the modal action updates `audit-details`, omits the page header from the returned island fragment, and returns fewer HTML bytes than the initial component render. No browser check, full suite, build, migration, or production check was run.
+`Module1AuditPresentationTest::test_audit_detail_update_returns_only_its_livewire_island` passed: 1 test, 13 assertions, using the existing disposable `qa_rajh_m1_regression_20261007` MySQL schema. It confirms the modal action updates `audit-details`; native pagination updates `audit-table` to page 2 with the intended record; each island response omits the outer page header and is smaller than the full initial HTML; and a table-island update returns 403 after the actor is made inactive. No browser check, full suite, build, migration, or production check was run.
