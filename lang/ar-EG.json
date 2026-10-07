@@ -6423,5 +6423,7 @@
     "No characters configured.": "لا توجد شخصيات مُعدة.",
     "Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment.": "يمكن إدخال الأوصاف وبيانات المنتج دلوقتي. وتفضل الصور وفلاتر المنتج والأبعاد والظهور عبر الإنترنت وبيانات البطارية بيانات إضافية اختيارية.",
     "Select a selling outlet": "اختار منفذ بيع",
-    "Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.": "الأسعار المحسوبة تلقائيًا بتتقرب لفوق لأقرب مضاعف 5 جنيه. سعر بطاقة المنتج والأسعار اليدوية بيفضلوا زي ما هم."
+    "Automatically calculated prices round upward to the next 5 EGP. Product Card base prices and manual overrides stay unchanged.": "الأسعار المحسوبة تلقائيًا بتتقرب لفوق لأقرب مضاعف 5 جنيه. سعر بطاقة المنتج والأسعار اليدوية بيفضلوا زي ما هم.",
+    "Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.": "الدفع النقدي غير متاح لأن إعداد التقريب مفقود أو غير صالح. اضبط الفئة المعتمدة على 5 جنيهات في الضوابط المالية لنقطة البيع. يُقرّب الدفع النقدي والمختلط إلى أقرب فئة.",
+    "Approved cash rounding: nearest 5 EGP for cash and mixed payments.": "التقريب النقدي المعتمد: إلى أقرب 5 جنيهات للدفع النقدي والمختلط."
 }

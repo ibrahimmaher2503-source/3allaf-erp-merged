@@ -295,7 +295,8 @@ final class PosCalculationService
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage(), previous: $exception);
         }
 
-        if ($denomination === null || bccomp($denomination, '0', self::RATE_SCALE) <= 0) {
+        if ($denomination === null || bccomp($denomination, '0', self::RATE_SCALE) <= 0
+            || bccomp($denomination, DecimalMoney::round($denomination, 2), self::RATE_SCALE) !== 0) {
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 
@@ -304,7 +305,7 @@ final class PosCalculationService
 
     private function cashRoundingConfigurationMessage(): string
     {
-        return __('Cash payment is unavailable because POS cash rounding is missing or invalid. Ask an administrator to set the cash rounding denomination to 5.');
+        return __('Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.');
     }
 
     /**

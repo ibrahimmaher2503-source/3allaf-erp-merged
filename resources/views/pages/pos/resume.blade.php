@@ -49,6 +49,9 @@
 
                 @if ($cashDenomination === null)
                     <flux:callout class="mt-3" variant="warning" icon="exclamation-triangle">{{ $cashRoundingConfigurationError }}</flux:callout>
+                    @can('company_settings.view')
+                        <flux:button class="mt-2" href="{{ route('pos.financial-readiness') }}" size="sm">{{ __('POS Financial Controls') }}</flux:button>
+                    @endcan
                 @endif
 
                 <form method="POST" action="{{ route('pos.suspended.finalize', $sale) }}" enctype="multipart/form-data" class="mt-4 grid gap-4">
