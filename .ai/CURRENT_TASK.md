@@ -1,4 +1,8 @@
-# Current Task — Permanent optional Product Card cost
+# Current Task — Module 9 cash/shifts QA fast batch (2026-10-07)
+
+Owner-authorized D3, TSK-025/CSH-02/CSH-03 scoped to M9-01/02/03/04/05/06/08 on `fix/module9-cash-shifts-qa-fast`, from current main `87db35e88d6d726b5e287e8e4dcec600ba71d941`. Fixes complete: authoritative header state/closing explanation, precise opening errors, closed/latest-attempt variance, stored approval counts, existing movement actor/reference and existing cash-rounding settings discovery. Six focused tests/69 assertions PASS in disposable XAMPP MySQL `qa_rajh_m9_cash_shifts_20261007`; syntax/Pint/Arabic JSON/build PASS; optimize:clear once. No browser/full suite, merge or deployment. DEC-100 leaves only mandatory non-zero-variance acceptance reason Requires Owner Decision. M9-07 is a native-dialog tooling limitation. Production baseline not live verified. Task-branch push follows this closure commit; no milestone/UAT advancement.
+
+# Previous Task — Permanent optional Product Card cost
 
 Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.
 

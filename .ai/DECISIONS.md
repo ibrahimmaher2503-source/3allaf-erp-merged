@@ -217,3 +217,11 @@ Explicit owner continuation now authorizes a clean history-preserving main merge
 ProductPricingContract is the authoritative optional cost validator shared by form, final/draft save and Product Card workbook import. Purchasing/receiving explicit cost, original snapshots, valuation and opening-inventory cost safety remain their existing independent rules. Existing nullable master schema and historical snapshots are unchanged.
 
 Owner authorizes only focused A–F tests, affected static analysis, browser save/reload, task branch commit/push, clean main integration, established production deployment and one compact smoke. The owner's explicit follow-up authorizes the socket-only disposable native MariaDB workflow for this named hotfix because XAMPP is absent. Historical/general testing and database directives remain outside this scope. No broad audit/Gate, migration or production business fixture is authorized or performed. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`.
+
+## DEC-099 — Module 9 fast QA authorization (2026-10-07)
+
+**Status: Approved — explicit owner request.** Named D3 scope M9-01/02/03/04/05/06/08 only, TSK-025/CSH-02/CSH-03. Four concurrent Luna investigators (state high, variance x-high, trace high, rounding high) investigate; lead applies related-group fixes to the single `fix/module9-cash-shifts-qa-fast` branch from current main `87db35e88d6d726b5e287e8e4dcec600ba71d941`. Focused native tests and isolated XAMPP MySQL permitted for this task; no SQLite, full audit, browser control, merge or deployment. One optimize:clear, changed syntax, one frontend build, task-branch-only commit/push. M9-07 is native-dialog tooling only. Existing nearest-5-EGP policy/control is reused unchanged.
+
+## DEC-100 — Mandatory reason when accepting non-zero shift variance (2026-10-07)
+
+**Status: Requires Owner Decision.** M9-05 display is fixed. docs/32 section 13 permits a review reason/comment; the existing approve/close action accepts an optional note, while recount requires a reason. No authoritative rule requires a note when accepting a non-zero variance. Only that policy requirement remains undecided; optional acceptance behavior and existing financial/approval guards are preserved. Affects TSK-025 shift variance approval, CSH-02/CSH-03; does not block the other Module 9 fixes.
