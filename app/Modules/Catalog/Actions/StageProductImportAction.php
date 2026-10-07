@@ -3,23 +3,24 @@
 namespace App\Modules\Catalog\Actions;
 
 use App\Models\User;
-use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\AgeLabel;
-use App\Modules\Catalog\Models\Character;
+use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
+use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
 use App\Modules\Catalog\Models\ProductImportRow;
-use App\Modules\Catalog\Models\Gender;
 use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Platform\Support\AuthorizedCompanyContext;
-use App\Support\DataExchange\ImportWorkbook;
 use App\Modules\Platform\Actions\LinkAttachmentToSource;
 use App\Modules\Platform\Actions\NotifyImportReviewers;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Models\Attachment;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Support\DataExchange\ImportWorkbook;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,8 @@ use Throwable;
 class StageProductImportAction
 {
     private const REQUIRED_FIELDS = ['name_ar', 'name_en', 'category_code'];
+
+    private const MAX_SOURCE_COLUMNS = 100;
 
     private const ALLOWED_FIELDS = [
         'item_code', 'name_ar', 'name_en', 'description_ar', 'description_en', 'model_number',
@@ -74,7 +77,8 @@ class StageProductImportAction
             throw new InvalidArgumentException(__('This import file was already staged by this user.'));
         }
 
-        $actor = auth()->user(); abort_unless($actor instanceof User && $actor->id === $userId, 403);
+        $actor = auth()->user();
+        abort_unless($actor instanceof User && $actor->id === $userId, 403);
         $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
         $reader = ReaderFactory::createFromFile($absolutePath);
         $reader->open($absolutePath);
@@ -86,44 +90,47 @@ class StageProductImportAction
             $rowNumber = 0;
             $sheet = ImportWorkbook::dataSheet($reader);
             foreach ($sheet->getRowIterator() as $row) {
-                    $rowNumber++;
-                    $values = array_map(static fn ($cell): mixed => $cell->getValue(), $row->getCells());
+                $rowNumber++;
+                $values = array_map(static fn ($cell): mixed => $cell->getValue(), $row->getCells());
 
-                    if ($rowNumber === 1) {
-                        $headers = array_map(fn (mixed $value): string => $this->normalizeHeader($value), $values);
-                        ImportWorkbook::assertHeaders($headers, self::ALLOWED_FIELDS, __('The spreadsheet headers do not match the current Product import template.'));
-                        $this->assertUniqueSourceHeaders($headers);
+                if ($rowNumber === 1) {
+                    $headers = array_map(fn (mixed $value): string => $this->normalizeHeader($value), $values);
+                    $this->assertSourceHeaders($headers);
 
-                        continue;
+                    continue;
+                }
+
+                if ($rowNumber > 5001) {
+                    throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
+                }
+
+                if ($this->isBlankRow($values)) {
+                    continue;
+                }
+
+                if (collect(array_slice($values, count($headers ?? [])))->contains(fn (mixed $value): bool => trim((string) $value) !== '')) {
+                    throw new InvalidArgumentException(__('The workbook contains data outside its mapped header columns.'));
+                }
+
+                $raw = [];
+                foreach ($headers as $index => $header) {
+                    if ($header !== '') {
+                        $raw[$header] = $values[$index] ?? null;
                     }
+                }
 
-                    if ($rowNumber > 5001) {
-                        throw new InvalidArgumentException(__('The import is limited to 5,000 data rows.'));
-                    }
+                $errors = $this->formulaErrors($row->getCells());
+                $rows[] = new ProductImportRow([
+                    'row_number' => $rowNumber,
+                    'raw_data' => $raw,
+                    'errors' => $errors,
+                    'status' => $errors === [] ? 'staged' : 'invalid',
+                ]);
 
-                    if ($this->isBlankRow($values)) {
-                        continue;
-                    }
-
-                    $raw = [];
-                    foreach ($headers as $index => $header) {
-                        if ($header !== '') {
-                            $raw[$header] = $values[$index] ?? null;
-                        }
-                    }
-
-                    $errors = $this->formulaErrors($row->getCells());
-                    $rows[] = new ProductImportRow([
-                        'row_number' => $rowNumber,
-                        'raw_data' => $raw,
-                        'errors' => $errors,
-                        'status' => $errors === [] ? 'staged' : 'invalid',
-                    ]);
-
-                    if (count($rows) >= 250) {
-                        $this->persistRows($rows, $userId, $originalFilename, $storagePath, $hash, $mode, $headers);
-                        $rows = [];
-                    }
+                if (count($rows) >= 250) {
+                    $this->persistRows($rows, $userId, $originalFilename, $storagePath, $hash, $mode, $headers);
+                    $rows = [];
+                }
             }
 
             $batch = $this->persistRows($rows, $userId, $originalFilename, $storagePath, $hash, $mode, $headers ?? []);
@@ -176,10 +183,11 @@ class StageProductImportAction
     {
         Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
         abort_unless($batch->created_by === auth()->id(), 404);
-        $actor = auth()->user(); abort_unless($actor instanceof User, 403);
+        $actor = auth()->user();
+        abort_unless($actor instanceof User, 403);
         $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
 
-        return DB::transaction(function () use ($batch, $mapping, $company): ProductImportBatch {
+        return DB::transaction(function () use ($batch, $mapping, $company, $actor): ProductImportBatch {
             $batch = ProductImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
             abort_unless($batch->created_by === auth()->id(), 404);
 
@@ -200,6 +208,7 @@ class StageProductImportAction
                 'colour' => Colour::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
                 'gender' => Gender::query()->where('status', 'active')->pluck('id', 'code')->mapWithKeys(fn ($id, $code) => [strtoupper($code) => $id])->all(),
             ];
+            $canImportCost = $actor->hasPermission('products_categories_brands.cost_view');
 
             foreach ($batch->rows()->orderBy('row_number')->lockForUpdate()->get() as $row) {
                 $raw = [];
@@ -214,7 +223,11 @@ class StageProductImportAction
                     $brandCodes, $supplierCodes, $lookupCodes,
                     $seenCodes,
                     $this->formulaErrorsFromRow($row),
+                    (int) $company->id,
                 );
+                if (! $canImportCost) {
+                    $mapped['data']['average_cost'] = null;
+                }
                 $status = $mapped['errors'] === [] ? 'valid' : 'invalid';
                 $row->update([
                     'mapped_data' => $mapped['data'],
@@ -260,13 +273,52 @@ class StageProductImportAction
                     'approval' => __('The requester cannot approve their own import batch.'),
                 ]);
             }
-            if ($batch->status !== 'ready_for_review' || $batch->invalid_rows > 0) {
-                throw new InvalidArgumentException(__('Only a ready import with no rejected rows can be approved.'));
+            if ($batch->status !== 'ready_for_review' || ! $batch->rows()->where('status', 'valid')->exists()) {
+                throw new InvalidArgumentException(__('Only a reviewed import with at least one valid row can be approved.'));
             }
+
+            $actor = auth()->user();
+            abort_unless($actor instanceof User, 403);
 
             foreach ($batch->rows()->where('status', 'valid')->lockForUpdate()->get() as $row) {
                 $data = $row->mapped_data ?? [];
-                $product = Product::query()->where('item_code', $data['item_code'])->first();
+                $companyId = filter_var($data['_import_company_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($companyId === false) {
+                    throw new InvalidArgumentException(__('The import company scope is missing. Map the batch again before approval.'));
+                }
+
+                $company = app(AuthorizedCompanyContext::class)->resolve($actor, request()->input('company_id'));
+                if ((int) $company->id !== (int) $companyId) {
+                    throw new InvalidArgumentException(__('Select the same company used when this batch was validated.'));
+                }
+
+                $productQuery = Product::query()->where('item_code', $data['item_code']);
+                if ($batch->mode === 'update_existing') {
+                    $productQuery->availableToCompany((int) $companyId);
+                }
+                $product = $productQuery->lockForUpdate()->first();
+
+                if ($product?->isFamily() || $product?->isVariant()) {
+                    throw new InvalidArgumentException(__('Product imports support simple products only. Variation families and child SKUs must be managed in the variation matrix.'));
+                }
+
+                if ($batch->mode === 'create_only' && $product !== null) {
+                    throw new InvalidArgumentException(__('Create Only cannot update a product that was added after validation. Revalidate the batch before approval.'));
+                }
+
+                if ($batch->mode === 'update_existing' && $product === null) {
+                    throw new InvalidArgumentException(__('Update Existing cannot create a product that was removed after validation. Revalidate the batch before approval.'));
+                }
+
+                if ($batch->mode === 'update_existing') {
+                    $mappedVersion = filter_var($data['_import_lock_version'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+                    if ($mappedVersion === false || $mappedVersion !== $product->lock_version) {
+                        throw new StaleCatalogRecordException(__('This product changed after the import was validated. Cancel the batch and stage it again.'));
+                    }
+                }
+
+                unset($data['_import_company_id'], $data['_import_lock_version']);
+
                 $saved = $saveProduct->execute($data, $product?->id, $product?->lock_version);
                 $row->update(['status' => $product ? 'updated' : 'created', 'product_id' => $saved->id]);
             }
@@ -316,14 +368,16 @@ class StageProductImportAction
     }
 
     /** @param array<string, mixed> $raw @param array<string, int> $categoryCodes @param array<string, int> $brandCodes @param array<string, int> $supplierCodes @param array<string, array<string, int>> $lookupCodes @param array<string, bool> $seenCodes @param array<int, string> $initialErrors */
-    private function mapRow(array $raw, string $mode, array $categoryCodes, array $brandCodes, array $supplierCodes, array $lookupCodes, array &$seenCodes, array $initialErrors): array
+    private function mapRow(array $raw, string $mode, array $categoryCodes, array $brandCodes, array $supplierCodes, array $lookupCodes, array &$seenCodes, array $initialErrors, int $companyId): array
     {
         $errors = $initialErrors;
         $itemCode = strtoupper(trim((string) ($raw['item_code'] ?? '')));
         $categoryCode = strtoupper(trim((string) ($raw['category_code'] ?? '')));
         $brandCode = strtoupper(trim((string) ($raw['brand_code'] ?? '')));
-        $type = strtolower(trim((string) ($raw['product_type'] ?? 'standard')));
-        $status = strtolower(trim((string) ($raw['status'] ?? 'active')));
+        $type = strtolower(trim((string) ($raw['product_type'] ?? '')));
+        $status = strtolower(trim((string) ($raw['status'] ?? '')));
+        $type = $type === '' ? 'standard' : $type;
+        $status = $status === '' ? 'active' : $status;
 
         if ($itemCode !== '' && isset($seenCodes[$itemCode])) {
             $errors[] = __('The item code is duplicated in this batch.');
@@ -344,7 +398,9 @@ class StageProductImportAction
             $errors[] = __('The brand code is missing or inactive.');
         }
         $supplierCode = strtoupper(trim((string) ($raw['preferred_supplier_code'] ?? '')));
-        if ($supplierCode !== '' && ! isset($supplierCodes[$supplierCode])) $errors[] = __('The preferred supplier code is missing or inactive.');
+        if ($supplierCode !== '' && ! isset($supplierCodes[$supplierCode])) {
+            $errors[] = __('The preferred supplier code is missing or inactive.');
+        }
         if ($mode === 'create_only' && $itemCode === '' && ! isset($supplierCodes[$supplierCode])) {
             $errors[] = __('An active preferred supplier is required when item_code is omitted.');
         }
@@ -357,14 +413,21 @@ class StageProductImportAction
         if (! in_array($status, ['active', 'inactive'], true)) {
             $errors[] = __('The product status is not supported.');
         }
-        $existingProduct = $itemCode === '' ? null : Product::query()->where('item_code', $itemCode)->first();
+        $availableProduct = $itemCode === '' || $mode !== 'update_existing'
+            ? null
+            : Product::query()->availableToCompany($companyId)->where('item_code', $itemCode)->first();
+        $existingProduct = $itemCode === ''
+            ? null
+            : ($mode === 'update_existing'
+                ? $availableProduct
+                : Product::query()->where('item_code', $itemCode)->first());
         if ($existingProduct?->isFamily() || $existingProduct?->isVariant()) {
             $errors[] = __('Product imports support simple products only. Variation families and child SKUs must be managed in the variation matrix.');
         }
         if ($mode === 'create_only' && $existingProduct !== null) {
             $errors[] = __('The item code already exists; Create Only does not update existing products.');
         }
-        if ($mode === 'update_existing' && $itemCode !== '' && $existingProduct === null) {
+        if ($mode === 'update_existing' && $itemCode !== '' && $availableProduct === null) {
             $errors[] = __('The item code does not exist; Update Existing does not create new products.');
         }
 
@@ -402,18 +465,36 @@ class StageProductImportAction
 
         foreach (['age' => 'age_label_ids', 'character' => 'character_ids', 'colour' => 'colour_ids', 'gender' => 'gender_ids'] as $kind => $field) {
             $value = $raw[$kind.'_codes'] ?? $raw[$kind.'_code'] ?? null;
-            if ($value === null || trim((string) $value) === '') continue;
+            if ($value === null || trim((string) $value) === '') {
+                continue;
+            }
             $ids = [];
             foreach (preg_split('/[,;|]/', (string) $value) ?: [] as $code) {
                 $code = strtoupper(trim($code));
-                if ($code !== '' && isset($lookupCodes[$kind][$code])) $ids[] = $lookupCodes[$kind][$code];
-                elseif ($code !== '') $errors[] = __('The :kind code is missing or inactive.', ['kind' => $kind]);
+                if ($code !== '' && isset($lookupCodes[$kind][$code])) {
+                    $ids[] = $lookupCodes[$kind][$code];
+                } elseif ($code !== '') {
+                    $errors[] = __('The :kind code is missing or inactive.', ['kind' => $kind]);
+                }
             }
             $data[$field] = array_values(array_unique($ids));
-            if ($kind === 'age') $data['age_label_id'] = $ids[0] ?? null;
-            if ($kind === 'character') $data['character_id'] = $ids[0] ?? null;
-            if ($kind === 'colour') $data['colour_id'] = $ids[0] ?? null;
-            if ($kind === 'gender') $data['gender_id'] = $ids[0] ?? null;
+            if ($kind === 'age') {
+                $data['age_label_id'] = $ids[0] ?? null;
+            }
+            if ($kind === 'character') {
+                $data['character_id'] = $ids[0] ?? null;
+            }
+            if ($kind === 'colour') {
+                $data['colour_id'] = $ids[0] ?? null;
+            }
+            if ($kind === 'gender') {
+                $data['gender_id'] = $ids[0] ?? null;
+            }
+        }
+
+        $data['_import_company_id'] = $companyId;
+        if ($mode === 'update_existing' && $availableProduct !== null) {
+            $data['_import_lock_version'] = $availableProduct->lock_version;
         }
 
         return ['data' => $data, 'errors' => array_values(array_unique($errors))];
@@ -428,11 +509,19 @@ class StageProductImportAction
     }
 
     /** @param array<int, string> $headers */
-    private function assertUniqueSourceHeaders(array $headers): void
+    private function assertSourceHeaders(array $headers): void
     {
         $nonBlankHeaders = array_values(array_filter($headers));
+        if ($nonBlankHeaders === [] || count($headers) > self::MAX_SOURCE_COLUMNS) {
+            throw new InvalidArgumentException(__('The workbook must contain a header row with no more than 100 source columns.'));
+        }
         if (count($nonBlankHeaders) !== count(array_unique($nonBlankHeaders))) {
             throw new InvalidArgumentException(__('Duplicate source column headers cannot be mapped safely.'));
+        }
+        foreach ($nonBlankHeaders as $header) {
+            if (mb_strlen($header) > 120) {
+                throw new InvalidArgumentException(__('A source column header is too long to map safely.'));
+            }
         }
     }
 
@@ -492,8 +581,15 @@ class StageProductImportAction
 
     private function numericValue(mixed $value, array &$errors, string $label): float|int|null
     {
-        if ($value === null || trim((string) $value) === '') return null;
-        if (! is_numeric($value) || (float) $value < 0) { $errors[] = __('The :field must be zero or greater.', ['field' => $label]); return null; }
+        if ($value === null || trim((string) $value) === '') {
+            return null;
+        }
+        if (! is_numeric($value) || (float) $value < 0) {
+            $errors[] = __('The :field must be zero or greater.', ['field' => $label]);
+
+            return null;
+        }
+
         return (float) $value;
     }
 
