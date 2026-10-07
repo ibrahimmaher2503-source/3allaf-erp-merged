@@ -17,6 +17,8 @@ use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
+    private const DUMMY_PASSWORD_HASH = '$2y$12$1SBq0D8wU2PzYtreyvAWt.JePXS7IQi/HyDx82uRYHNvEKjEbbL2q';
+
     /**
      * Register any application services.
      */
@@ -53,8 +55,12 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request): ?User {
             $username = (string) $request->input(Fortify::username());
             $user = User::query()->where('username', $username)->first();
+            $passwordMatches = Hash::check(
+                (string) $request->input('password'),
+                $user?->password ?? self::DUMMY_PASSWORD_HASH,
+            );
 
-            if ($user === null || $user->status !== 'active' || ! Hash::check((string) $request->input('password'), $user->password)) {
+            if ($user === null || $user->status !== 'active' || ! $passwordMatches) {
                 return null;
             }
 
