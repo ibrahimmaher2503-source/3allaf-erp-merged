@@ -61,6 +61,7 @@ final class PosCartAction
 
     public function quantity(Request $request, User $user, int $productId, string $quantity): void
     {
+        $quantity = (string) \App\Support\ProductQuantity::normalize($quantity);
         $this->assertQuantity($quantity);
         $context = $this->context($request, $user);
         $store = $this->store($context);

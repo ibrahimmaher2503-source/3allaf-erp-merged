@@ -410,10 +410,7 @@ final class RetailSaleAction
 
         $resolved = [];
         foreach ($requestedLines as $requested) {
-            $quantity = trim((string) ($requested['quantity'] ?? ''));
-            if (! preg_match('/^\d+$/', $quantity) || bccomp($quantity, '0', 0) <= 0) {
-                throw new InvalidArgumentException(__('Product quantities must be whole numbers.'));
-            }
+            $quantity = (string) \App\Support\ProductQuantity::normalize($requested['quantity'] ?? '');
 
             $product = isset($requested['product_id'])
                 ? Product::query()->sellable()->find((int) $requested['product_id'])
@@ -558,9 +555,14 @@ final class RetailSaleAction
     private function assertPricesRemainCurrent(Store $store, array $lines): void
     {
         foreach ($lines as $line) {
-            PriceLine::query()->lockForUpdate()->findOrFail($line['price_line_id']);
+            if ($line['price_line_id'] === null) {
+                Product::query()->lockForUpdate()->findOrFail($line['product']->id);
+            } else {
+                PriceLine::query()->lockForUpdate()->findOrFail($line['price_line_id']);
+            }
             $current = $this->prices->resolve($line['product']->id, $store->id);
-            if ($current === null || (int) $current->id !== (int) $line['price_line_id']) {
+            if ($current === null || (int) $current->id !== (int) $line['price_line_id']
+                || ($line['price_line_id'] === null && bccomp((string) $current->amount, (string) $line['product']->sale_price, 4) !== 0)) {
                 throw new InvalidArgumentException(__('A basket price changed before checkout. Review the basket and try again.'));
             }
         }
