@@ -10,6 +10,7 @@ use App\Modules\Pricing\Models\PriceList;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveStoreAction
@@ -296,7 +297,7 @@ class SaveStoreAction
      * Reversible deactivation only stops directly unsafe active operations.
      * Historical/ordinary dependency rows remain valid on an inactive store.
      *
-     * @throws InvalidArgumentException
+     * @throws ValidationException
      */
     public function assertDeactivationSafe(int|Store $store, bool $lock = true): void
     {
@@ -309,14 +310,18 @@ class SaveStoreAction
             ->where('store_id', $storeId)
             ->where('status', 'active')
             ->exists()) {
-            throw new InvalidArgumentException(__('Cannot deactivate this location while it is actively mapped to a POS branch. Unmap POS first.'));
+            throw ValidationException::withMessages([
+                'store' => __('Cannot deactivate this location while it is actively mapped to a POS branch. Unmap POS first.'),
+            ]);
         }
 
         if (Schema::hasTable('pos_shifts') && DB::table('pos_shifts')
             ->where('store_id', $storeId)
             ->whereIn('status', ['open', 'closing_submitted', 'variance_review'])
             ->exists()) {
-            throw new InvalidArgumentException(__('Cannot deactivate this location while a POS shift is still active. Close the shift first.'));
+            throw ValidationException::withMessages([
+                'store' => __('Cannot deactivate this location while a POS shift is still active. Close the shift first.'),
+            ]);
         }
     }
 }
