@@ -54,20 +54,24 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         try {
             $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
         } catch (InvalidArgumentException $exception) {
-            $customerPolicyError = UserSafeError::message($exception);
+            $customerPolicyError = $exception->getMessage();
         }
         if ($customerQuery !== '') {
             $escaped = addcslashes($customerQuery, '%_\\');
             $prefix = $escaped.'%';
             $digits = preg_replace('/[^0-9]+/', '', $customerQuery) ?: '';
+            $customerId = preg_match('/^CUS-(\d{7,})$/i', $customerQuery, $matches) === 1 ? ltrim($matches[1], '0') : null;
             $customerSearchResults = Customer::query()
                 ->visibleFrom($user, (int) $store->branch_id, (int) $store->id)
                 ->where('status', 'active')
-                ->where(function ($query) use ($prefix, $digits): void {
+                ->where(function ($query) use ($prefix, $digits, $customerId): void {
                     $query->where('name_ar', 'like', $prefix)
                         ->orWhere('name_en', 'like', $prefix)
                         ->orWhere('public_id', 'like', $prefix)
                         ->orWhere('email', 'like', $prefix);
+                    if ($customerId !== null && $customerId !== '') {
+                        $query->orWhere('id', $customerId);
+                    }
                     if ($digits !== '') {
                         $query->orWhere('phone_normalized', 'like', $digits.'%')
                             ->orWhere('secondary_phone_normalized', 'like', $digits.'%');
