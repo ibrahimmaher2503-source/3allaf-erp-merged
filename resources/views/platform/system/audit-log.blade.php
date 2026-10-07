@@ -9,6 +9,7 @@ use App\Modules\Platform\Support\AuditLogPresentation;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -104,7 +105,11 @@ new #[Title('Audit Logs')] class extends Component
     {
         Gate::authorize('access-activity-log');
         $user = auth()->user();
-        $companyTimezone = app(AuthorizedCompanyContext::class)->resolve($user)->timezone ?: config('app.timezone', 'UTC');
+        try {
+            $companyTimezone = app(AuthorizedCompanyContext::class)->resolve($user)->timezone ?: config('app.timezone', 'UTC');
+        } catch (ValidationException) {
+            $companyTimezone = config('app.timezone', 'UTC');
+        }
         $baseQuery = AuditLog::query()->visibleTo($user);
         $logs = $this->applyFilters(clone $baseQuery)
             ->with('actor:id,name')
