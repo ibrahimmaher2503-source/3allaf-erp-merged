@@ -59,6 +59,14 @@ final class AuditLogPresentation
         'price_proposal_submitted' => 'Price proposal submitted',
         'price_version_approved' => 'Price version approved',
         'price_version_rejected' => 'Price version rejected',
+        'create_document_sequence' => 'Document sequence created',
+        'update_document_sequence' => 'Document sequence updated',
+        'branch_document_sequence_initialized' => 'Branch document sequence initialized',
+        'document_number_allocated' => 'Document number allocated',
+        'document_sequence_counter_overridden' => 'Document sequence counter overridden',
+        'create_inventory_adjustment' => 'Inventory adjustment draft created',
+        'update_inventory_adjustment' => 'Inventory adjustment draft updated',
+        'audit_log_exported' => 'Audit log exported',
     ];
 
     /** @var array<string,string> */
@@ -79,6 +87,7 @@ final class AuditLogPresentation
         'ApprovalRecord' => 'Approval record',
         'PrinterConfiguration' => 'Printer profile',
         'DocumentSequence' => 'Document sequence',
+        'InventoryAdjustment' => 'Inventory adjustment',
         'TaxSetting' => 'Tax setting',
     ];
 
@@ -102,6 +111,7 @@ final class AuditLogPresentation
             'security' => 'Security',
             'authorization' => 'Authorization',
             'inventory' => 'Inventory',
+            'numbering' => 'Numbering',
             'purchasing' => 'Purchasing',
             'pricing' => 'Pricing',
             'retail' => 'Retail',
@@ -109,5 +119,14 @@ final class AuditLogPresentation
             'party' => 'Parties',
             default => 'Other audit category',
         });
+    }
+
+    public function fingerprint(mixed $value): ?string
+    {
+        if (! is_string($value) || preg_match('/\A[a-f0-9]{64}\z/i', $value) !== 1) {
+            return null;
+        }
+
+        return substr($value, 0, 12);
     }
 }

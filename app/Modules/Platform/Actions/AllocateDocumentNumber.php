@@ -89,6 +89,7 @@ final class AllocateDocumentNumber
                 source: $sequence,
                 before: $before,
                 after: $sequence->only(['next_value', 'lock_version', 'last_reset_period']),
+                branchId: $branch->id,
                 metadata: [
                     'document_type' => $documentType,
                     'scope_type' => $scopeType,

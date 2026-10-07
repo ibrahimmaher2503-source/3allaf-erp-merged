@@ -108,7 +108,7 @@ final class SaveInventoryAdjustmentAction
             foreach ($normalizedLines as $line) {
                 $adjustment->lines()->create($line);
             }
-            app(RecordAuditEvent::class)->execute('inventory', $event, $adjustment, $before, $adjustment->fresh(['lines'])->only(['adjustment_number', 'store_id', 'adjustment_type', 'reason_code', 'allow_negative', 'status', 'lock_version']), storeId: $store->id, reasonCode: $reason, reasonText: $adjustment->reason_notes, metadata: ['line_count' => count($normalizedLines)]);
+            app(RecordAuditEvent::class)->execute('inventory', $event, $adjustment, $before, $adjustment->fresh(['lines'])->only(['adjustment_number', 'store_id', 'adjustment_type', 'reason_code', 'allow_negative', 'status', 'lock_version']), branchId: $store->branch_id, storeId: $store->id, reasonCode: $reason, reasonText: $adjustment->reason_notes, metadata: ['line_count' => count($normalizedLines)]);
 
             return $adjustment->fresh(['store', 'lines.product']);
         });
@@ -121,6 +121,7 @@ final class SaveInventoryAdjustmentAction
         if (! preg_match('/^-?\d+(?:\.\d{1,6})?$/', $value)) {
             throw new InvalidArgumentException(__('Quantity must be a valid decimal with up to 6 places.'));
         }
+
         return bcadd($value, '0', 6);
     }
 
@@ -130,6 +131,7 @@ final class SaveInventoryAdjustmentAction
         if (! preg_match('/^\d+(?:\.\d{1,4})?$/', $value)) {
             throw new InvalidArgumentException(__('Unit cost must be a valid decimal with up to 4 places.'));
         }
+
         return bcadd($value, '0', 4);
     }
 }
