@@ -66,6 +66,12 @@ final class OpenShiftAction
             }
             abort_unless($requestedDrawer->visibleTo($cashier)->whereKey($requestedDrawerId)->exists(), 403);
 
+            // Authorization edits lock the user before replacing branch/store scopes.
+            // Hold a compatible current user lock before taking the master-data locks below.
+            $lockedCashier = User::query()->sharedLock()->find($cashier->id);
+            abort_unless($lockedCashier !== null && $lockedCashier->status === 'active', 403);
+            $cashier = $lockedCashier;
+
             $requestedBranchId = (int) $requestedDrawer->getAttribute('branch_id');
             $requestedStoreId = (int) $requestedDrawer->getAttribute('store_id');
             $branch = $requestedBranchId > 0
@@ -86,7 +92,7 @@ final class OpenShiftAction
                 throw new InvalidArgumentException(__(self::INVALID_DRAWER_CONFIGURATION));
             }
 
-            abort_unless($drawer->visibleTo($cashier)->whereKey($drawer->getKey())->exists(), 403);
+            $this->assertVisibleToCurrentScope($cashier, $requestedBranchId, $requestedStoreId);
 
             if ($drawer->getAttribute('status') !== 'active') {
                 throw new InvalidArgumentException(__('This cash drawer is not active.'));
@@ -172,6 +178,35 @@ final class OpenShiftAction
 
             return $shift;
         });
+    }
+
+    /**
+     * Recheck branch/store access with current locking reads after master-data locks.
+     * The shared user-row lock is acquired before the branch/store/drawer locks to
+     * serialize with SaveUserAuthorizationAction without reversing drawer/user FK order.
+     */
+    private function assertVisibleToCurrentScope(User $cashier, int $branchId, int $storeId): void
+    {
+        if ($cashier->hasGlobalApplicationAccess()) {
+            return;
+        }
+
+        $branchScope = $cashier->branchScopes()
+            ->where('branch_id', $branchId)
+            ->where('status', 'active')
+            ->sharedLock()
+            ->first();
+        if ($branchScope !== null) {
+            return;
+        }
+
+        $storeScope = $cashier->storeScopes()
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->sharedLock()
+            ->first();
+
+        abort_unless($storeScope !== null, 403);
     }
 
     /** @return list<string> */
