@@ -101,5 +101,5 @@ Production access, deployment, backup execution, migration execution, active-sym
 ## 2026-10-07 — BUG-15 audit response isolation (undeployed)
 
 - **Class:** V1. **Repair:** Isolated audit filters/table/pagination and audit detail modal into native Livewire islands; preserved the existing access and per-record authorization checks.
-- **Commit:** [COMMIT_SHA] (`fix/bug-15-audit-log-islands`). **Files:** `resources/views/platform/system/audit-log.blade.php`, `tests/Feature/Module1AuditPresentationTest.php`, `.ai/TEST_RESULTS.md`, `.ai/SESSION_SUMMARY.md`, `.ai/PENDING_CHANGE_BATCH.md`.
+- **Commit:** a667949c7201a63982ed63ca1e17b3c91e53600b (`fix/bug-15-audit-log-islands`). **Files:** `resources/views/platform/system/audit-log.blade.php`, `tests/Feature/Module1AuditPresentationTest.php`, `.ai/TEST_RESULTS.md`, `.ai/SESSION_SUMMARY.md`, `.ai/PENDING_CHANGE_BATCH.md`.
 - **Status:** Focused local regression passed; awaiting lead approval before branch push. No release or deployment.
