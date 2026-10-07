@@ -6,6 +6,7 @@ use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\AuditLogPresentation;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
@@ -103,6 +104,7 @@ new #[Title('Audit Logs')] class extends Component
     {
         Gate::authorize('access-activity-log');
         $user = auth()->user();
+        $companyTimezone = app(AuthorizedCompanyContext::class)->resolve($user)->timezone ?: config('app.timezone', 'UTC');
         $baseQuery = AuditLog::query()->visibleTo($user);
         $logs = $this->applyFilters(clone $baseQuery)
             ->with('actor:id,name')
@@ -122,6 +124,7 @@ new #[Title('Audit Logs')] class extends Component
 
         return view('platform.system.audit-log', [
             'logs' => $logs,
+            'companyTimezone' => $companyTimezone,
             'categories' => (clone $baseQuery)->distinct()->orderBy('category')->pluck('category'),
             'events' => (clone $baseQuery)->distinct()->orderBy('event')->pluck('event'),
             'actors' => User::query()
@@ -242,7 +245,7 @@ new #[Title('Audit Logs')] class extends Component
         <div class="hidden max-w-full overflow-x-auto sm:block">
             <flux:table class="min-w-[64rem]" aria-label="{{ __('Audit events') }}">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Time') }}</flux:table.column>
+                    <flux:table.column>{{ __('Time') }} ({{ $companyTimezone }})</flux:table.column>
                     <flux:table.column>{{ __('Event') }}</flux:table.column>
                     <flux:table.column>{{ __('Actor') }}</flux:table.column>
                     <flux:table.column>{{ __('Source') }}</flux:table.column>
@@ -253,7 +256,7 @@ new #[Title('Audit Logs')] class extends Component
                 <flux:table.rows>
                     @foreach ($logs as $log)
                         <flux:table.row key="audit-{{ $log->id }}" class="data-table-row">
-                            <flux:table.cell class="whitespace-nowrap font-mono text-xs">{{ $log->created_at->format('Y-m-d H:i:s') }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-nowrap font-mono text-xs">{{ $log->created_at->copy()->timezone($companyTimezone)->format('Y-m-d H:i:s') }}</flux:table.cell>
                             <flux:table.cell><flux:badge size="sm" color="zinc">{{ $presentation->event($log->event) }}</flux:badge></flux:table.cell>
                             <flux:table.cell>{{ $log->actor_name ?? __('System') }}</flux:table.cell>
                             <flux:table.cell><span>{{ $presentation->source($log->source_type) }}</span>@if($log->source_id)<span class="ms-1 font-mono text-xs text-text-muted" dir="ltr">#{{ $log->source_id }}</span>@endif</flux:table.cell>
@@ -281,7 +284,7 @@ new #[Title('Audit Logs')] class extends Component
                 <x-cards.section-card class="space-y-3" :title="$presentation->event($log->event)">
                     <div class="flex items-center justify-between gap-3">
                         <flux:badge size="sm" color="zinc">{{ $presentation->event($log->event) }}</flux:badge>
-                        <span class="whitespace-nowrap font-mono text-xs text-text-muted">{{ $log->created_at->format('Y-m-d H:i') }}</span>
+                        <span class="whitespace-nowrap font-mono text-xs text-text-muted">{{ $log->created_at->copy()->timezone($companyTimezone)->format('Y-m-d H:i') }} {{ $companyTimezone }}</span>
                     </div>
                     <dl class="grid gap-2 text-sm">
                         <div><dt class="text-text-muted">{{ __('Actor') }}</dt><dd>{{ $log->actor_name ?? __('System') }}</dd></div>
@@ -331,7 +334,7 @@ new #[Title('Audit Logs')] class extends Component
                     <div><flux:heading size="lg">{{ __('Audit event details') }}</flux:heading><flux:text class="mt-1 text-text-muted">{{ $selectedAudit->event_id }}</flux:text></div>
                     <flux:button type="button" icon="x-mark" variant="subtle" size="sm" wire:click="closeAudit" aria-label="{{ __('Close') }}" />
                 </div>
-                <x-audit-panel :created-by-name="$selectedAudit->actor_name" :created-at="$selectedAudit->created_at->format('Y-m-d H:i:s')" :request-id="$selectedAudit->request_id">
+                <x-audit-panel :created-by-name="$selectedAudit->actor_name" :created-at="$selectedAudit->created_at->copy()->timezone($companyTimezone)->format('Y-m-d H:i:s').' '.$companyTimezone" :request-id="$selectedAudit->request_id">
                     <div class="grid gap-3 text-sm sm:grid-cols-2">
                         <div><span class="text-text-muted">{{ __('Event') }}</span><p>{{ $presentation->event($selectedAudit->event) }}</p></div>
                         <div><span class="text-text-muted">{{ __('Category') }}</span><p>{{ $presentation->category($selectedAudit->category) }}</p></div>
