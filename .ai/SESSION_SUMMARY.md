@@ -1699,3 +1699,7 @@ The named focused regression failed before the fix (1 test, 8 assertions; reques
 ## 2026-10-07 — BUG-08 active-template readiness regression extension
 
 Lead review requested a positive-path assertion in the existing BUG-08 test. The same method now confirms readiness is false for an active printer with no linked template, true after linking an active `PrintTemplate`, then false after that linked template is inactivated. The focused method passed on `qa_rajh_m1_pos_20261007` with **1 test / 3 assertions** through the private worktree-safe PHPUnit bootstrap. Explicit-file Pint and `git diff --check` passed. No other tests, browser checks, broad readiness review, push, or production access occurred; the test-only follow-up commit is on `fix/bug-08-setup-readiness-accuracy`.
+
+## 2026-10-07 — BUG-10 readable validation attributes
+
+Confirmed that the existing tax-rate attribute mapping already produces readable English, Arabic, and Egyptian Arabic messages. Added localized labels for company address, username, and drawer store validation, with focused coverage in the existing localization feature test. `Module1ValidationLocalizationTest.php` passed: 12 tests, 95 assertions; Pint and `git diff --check` passed. Code and focused test changed; this commit records the work. No browser check or push. Parent lead review and approval are next.

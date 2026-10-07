@@ -163,6 +163,7 @@ new #[Title('System Settings')] class extends Component
     protected function validationAttributes(): array
     {
         return [
+            'companyForm.address' => __('Address'),
             'taxSettingForm.rate' => __('Tax Rate (%)'),
         ];
     }

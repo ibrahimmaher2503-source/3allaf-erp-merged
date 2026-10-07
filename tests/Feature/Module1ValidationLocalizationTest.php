@@ -139,4 +139,62 @@ final class Module1ValidationLocalizationTest extends TestCase
             self::assertSame([$expectedMessage], $exception->errors()['taxSettingForm.rate'] ?? []);
         }
     }
+
+    public function test_company_address_validation_uses_a_localized_field_label(): void
+    {
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $this->withSession(['locale' => $locale])->actingAs($this->administrator);
+
+            $component = Livewire::test('platform::admin.settings')
+                ->set('companyForm.address', str_repeat('a', 600))
+                ->call('saveCompany')
+                ->assertHasErrors(['companyForm.address' => 'max']);
+
+            $message = (string) $component->errors()->first('companyForm.address');
+
+            self::assertStringContainsString(__('Address'), $message);
+            self::assertStringNotContainsString('companyForm.address', $message);
+        }
+    }
+
+    public function test_username_validation_uses_a_localized_field_label(): void
+    {
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $this->withSession(['locale' => $locale])->actingAs($this->administrator);
+
+            $component = Livewire::test('platform::admin.authorization-baseline')
+                ->set('userForm.name', 'QA Duplicate User')
+                ->set('userForm.username', $this->administrator->username)
+                ->set('userForm.email', 'qa-duplicate-user@example.test')
+                ->set('userForm.password', 'long-enough-password')
+                ->call('saveAuthorization')
+                ->assertHasErrors(['userForm.username' => 'unique']);
+
+            $message = (string) $component->errors()->first('userForm.username');
+
+            self::assertStringContainsString(__('Username'), $message);
+            self::assertStringNotContainsString('userForm.username', $message);
+        }
+    }
+
+    public function test_drawer_store_validation_uses_a_localized_field_label(): void
+    {
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            app()->setLocale($locale);
+            $this->withSession(['locale' => $locale])->actingAs($this->administrator);
+
+            $component = Livewire::test('platform::admin.drawers')
+                ->set('drawerForm.status', 'active')
+                ->set('drawerForm.store_id', '')
+                ->call('saveDrawer')
+                ->assertHasErrors(['drawerForm.store_id' => 'required']);
+
+            $message = (string) $component->errors()->first('drawerForm.store_id');
+
+            self::assertStringContainsString(__('Store'), $message);
+            self::assertStringNotContainsString('drawerForm.store_id', $message);
+        }
+    }
 }

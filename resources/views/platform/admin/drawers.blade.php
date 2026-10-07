@@ -55,6 +55,13 @@ new #[Title('Cash Drawer Masters')] class extends Component
         Gate::authorize('drawers_payments_tax_numbering_printers.view');
     }
 
+    protected function validationAttributes(): array
+    {
+        return [
+            'drawerForm.store_id' => __('Store'),
+        ];
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();
