@@ -97,3 +97,9 @@ Production access, deployment, backup execution, migration execution, active-sym
 ## 2026-09-13 — Hotfix36 Egyptian Arabic quality-repair batch
 
 - **V0 / release candidate / undeployed:** Integrated the direct-child localization repair onto exact Hotfix35, retaining all 6,115 JSON keys, 244 PHP leaves, unchanged `ar`/`en`, and unchanged functional boundaries. Offline package and fail-closed exact-Hotfix35 operator workflow prepared; no production or operator action executed.
+
+## 2026-10-07 — BUG-15 audit response isolation (undeployed)
+
+- **Class:** V1. **Repair:** Isolated audit filters/table/pagination and audit detail modal into native Livewire islands; preserved the existing access and per-record authorization checks.
+- **Commit:** [COMMIT_SHA] (`fix/bug-15-audit-log-islands`). **Files:** `resources/views/platform/system/audit-log.blade.php`, `tests/Feature/Module1AuditPresentationTest.php`, `.ai/TEST_RESULTS.md`, `.ai/SESSION_SUMMARY.md`, `.ai/PENDING_CHANGE_BATCH.md`.
+- **Status:** Focused local regression passed; awaiting lead approval before branch push. No release or deployment.

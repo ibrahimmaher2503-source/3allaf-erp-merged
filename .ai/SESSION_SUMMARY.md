@@ -1720,3 +1720,9 @@ Lead review correction: the first committed version resolved the company timezon
 ## 2026-10-07 — BUG-14 cash-drawer table layout
 
 On `fix/bug-14-drawer-table-layout`, set a minimum width on the desktop cash-drawer table and keep names and status labels on one line inside its existing horizontal scroll container. The existing drawer render test passed: 1 test, 10 assertions; Pint and `git diff --check` passed. Code commit: `f96dd09722455783b4baf615ca59fde0112c9a73`. Added the local undeployed V0 entry to `.ai/PENDING_CHANGE_BATCH.md` in this documentation commit. No browser check, push, or release. Parent lead review is next.
+
+## 2026-10-07 — BUG-15 Livewire oversized response repair
+
+- Split the audit page into native Livewire islands for filter/table/pagination and selected audit details. Moved the page data into a computed value required by island templates and rechecked `access-activity-log` during hydration; the existing per-record `view` gate remains in `showAudit` and detail loading.
+- **Verification:** `Module1AuditPresentationTest::test_audit_detail_update_returns_only_its_livewire_island` passed (1 test/6 assertions) against the existing disposable `qa_rajh_m1_regression_20261007` schema. `git diff --check` passed. Pint passed for the test file. Pint reformats the SFC trait use into an import that Livewire's island compiler rejects, so the SFC retains a fully-qualified trait use verified by the focused test.
+- **Boundary:** No browser check, full suite, build, migration, production check, or push. Source is branch `fix/bug-15-audit-log-islands` from `7c3cf6d`; push waits for lead approval. BUG-16 is blocked pending a server owner confirming the remote Apache module/override configuration.

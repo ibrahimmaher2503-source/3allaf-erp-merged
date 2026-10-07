@@ -538,3 +538,7 @@ FriBidi remains **BLOCKED**: the application-required `/usr/bin/fribidi` is not 
 ## 2026-10-07 — BUG-08 active-template readiness regression extension
 
 PASS: `InitialSetupStatusTest::test_print_template_assignments_are_incomplete_without_a_linked_template`, run alone on disposable XAMPP schema `qa_rajh_m1_pos_20261007` through the private worktree-safe bootstrap: 1 test / 3 assertions. The method checks unlinked active printer = incomplete, linked active template = complete, and the same linked template after inactivation = incomplete. Explicit-file Pint and `git diff --check` passed. No other tests or broader readiness checks ran.
+
+## 2026-10-07 — BUG-15 Livewire response isolation
+
+`Module1AuditPresentationTest::test_audit_detail_update_returns_only_its_livewire_island` passed: 1 test, 6 assertions, using the existing disposable `qa_rajh_m1_regression_20261007` MySQL schema. It confirms the modal action updates `audit-details`, omits the page header from the returned island fragment, and returns fewer HTML bytes than the initial component render. No browser check, full suite, build, migration, or production check was run.

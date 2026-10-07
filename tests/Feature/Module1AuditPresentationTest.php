@@ -80,6 +80,31 @@ final class Module1AuditPresentationTest extends TestCase
         }
     }
 
+    public function test_audit_detail_update_returns_only_its_livewire_island(): void
+    {
+        $this->grantPermissions('audit_logs.view');
+        $this->actingAs($this->superAdmin());
+
+        $event = app(RecordAuditEvent::class)->execute('qa', 'qa_audit_island_response');
+        $screen = Livewire::test('platform::system.audit-log');
+        $initialHtmlBytes = strlen($screen->html());
+        $screen->assertSeeHtml('wire:island="audit-details"');
+
+        $screen->update(calls: [[
+            'method' => 'showAudit',
+            'params' => [$event->id],
+            'path' => '',
+            'metadata' => ['island' => ['name' => 'audit-details', 'mode' => 'morph']],
+        ]])->assertSet('selectedAuditId', $event->id);
+
+        $fragments = $screen->effects['islandFragments'] ?? [];
+        self::assertNotEmpty($fragments);
+        $fragment = implode('', $fragments);
+        self::assertStringContainsString('Audit event details', $fragment);
+        self::assertStringNotContainsString('data-guide="audit-header"', $fragment);
+        self::assertLessThan($initialHtmlBytes, strlen($fragment));
+    }
+
     public function test_branch_inventory_and_numbering_events_are_scoped_and_render_with_specific_labels(): void
     {
         app()->setLocale('en');
