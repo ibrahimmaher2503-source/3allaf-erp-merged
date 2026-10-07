@@ -59,6 +59,11 @@ final class PlatformSettingsApprovalAction
             $before = $this->snapshot($sequence);
         }
 
+        if ($resource === 'branch_delete' && $id !== null) {
+            $branch = Branch::visibleTo($requester)->findOrFail($id);
+            $proposed = array_merge($proposed, $this->branchDependencyContext($branch));
+        }
+
         if (in_array($resource, ['branch_delete', 'store_delete', 'store_archive', 'cash_drawer_delete'], true)) {
             [$branchId, $storeId, $before] = $this->masterDeleteScope($resource, $id, $requester, $branchId, $storeId);
         }
@@ -191,6 +196,35 @@ final class PlatformSettingsApprovalAction
         return [$expectedBranchId, $expectedStoreId, $before];
     }
 
+    /** @return array{store_count: int, active_store_count: int, active_selling_mapping_count: int, active_cash_drawer_count: int, active_user_scope_count: int} */
+    private function branchDependencyContext(Branch $branch): array
+    {
+        return DB::transaction(function () use ($branch): array {
+            $lockedBranch = Branch::query()->lockForUpdate()->findOrFail($branch->id);
+
+            return [
+                'store_count' => Store::query()->where('branch_id', $lockedBranch->id)->count(),
+                'active_store_count' => Store::query()->where('branch_id', $lockedBranch->id)->where('status', 'active')->count(),
+                'active_selling_mapping_count' => DB::table('branch_selling_stores')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count(),
+                'active_cash_drawer_count' => DB::table('cash_drawers')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count(),
+                'active_user_scope_count' => DB::table('user_branch_scopes')
+                    ->where('branch_id', $lockedBranch->id)
+                    ->where('status', 'active')
+                    ->count() + DB::table('user_store_scopes')
+                    ->join('stores', 'stores.id', '=', 'user_store_scopes.store_id')
+                    ->where('stores.branch_id', $lockedBranch->id)
+                    ->where('user_store_scopes.status', 'active')
+                    ->count(),
+            ];
+        });
+    }
+
     private function applyApprovedMasterDelete(string $resource, ?int $id, ApprovalRecord $approval): void
     {
         if ($id === null) {
@@ -207,8 +241,19 @@ final class PlatformSettingsApprovalAction
     private function logicalDeleteBranch(int $id, ApprovalRecord $approval): void
     {
         $branch = Branch::query()->lockForUpdate()->findOrFail($id);
-        if ($branch->stores()->where('status', 'active')->exists() || $branch->activeSellingStoreMapping()->exists()) {
-            throw new \InvalidArgumentException(__('Cannot delete branch while it has active stores or an active selling store mapping.'));
+        $hasActiveStore = $branch->stores()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['stores.id']) !== null;
+        $hasActiveSellingStoreMapping = $branch->sellingStoreMappings()
+            ->where('status', 'active')
+            ->lockForUpdate()
+            ->first(['branch_selling_stores.id']) !== null;
+
+        if ($hasActiveStore || $hasActiveSellingStoreMapping) {
+            throw ValidationException::withMessages([
+                'approval' => __('Cannot deactivate branch while it has active stores or an active selling store mapping.'),
+            ]);
         }
 
         $before = $branch->getAttributes();
