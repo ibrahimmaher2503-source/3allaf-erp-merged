@@ -217,3 +217,11 @@ Explicit owner continuation now authorizes a clean history-preserving main merge
 ProductPricingContract is the authoritative optional cost validator shared by form, final/draft save and Product Card workbook import. Purchasing/receiving explicit cost, original snapshots, valuation and opening-inventory cost safety remain their existing independent rules. Existing nullable master schema and historical snapshots are unchanged.
 
 Owner authorizes only focused A–F tests, affected static analysis, browser save/reload, task branch commit/push, clean main integration, established production deployment and one compact smoke. The owner's explicit follow-up authorizes the socket-only disposable native MariaDB workflow for this named hotfix because XAMPP is absent. Historical/general testing and database directives remain outside this scope. No broad audit/Gate, migration or production business fixture is authorized or performed. Evidence: `.ai/evidence/product-cost-optional-permanent/RESULTS.md`.
+
+## DEC-101 — Supplier tax-registration format (Module 3 v2)
+
+Status: Requires Owner Decision. M3-10 reports `ABC` accepted. Supplier UI/action/import currently treat `tax_number` as optional text (maximum 50 in the UI/schema); no approved numeric-only or Egyptian length/format rule was found in the routed requirements. Owner must define allowed characters, normalization and length/format before server validation is changed. This finding grants no permission to invent a tax rule or alter existing supplier data.
+
+## DEC-102 — Audit display timezone precedence (Module 3 v2)
+
+Status: Requires Owner Decision. M3-12 confirms audit views format timestamps without conversion. `docs/07-database-schema.md` specifies UTC storage and authorized branch/user display; company and branch timezone configuration exists, but user timezone storage and precedence for scoped versus global audit events are unspecified. Owner must define the display source/fallback precedence. Keep UTC storage and application timezone unchanged; do not hardcode Cairo or add an unsupported user setting.

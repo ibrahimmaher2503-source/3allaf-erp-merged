@@ -131,6 +131,30 @@ final class Module3PurchasingQaTest extends TestCase
         $this->getJson(route('transaction-products.search', ['q' => 'Spider', 'context' => 'purchasing', 'supplier_id' => $this->supplier->id, 'company_id' => $this->store->company_id]))->assertJsonCount(0, 'data');
     }
 
+    public function test_m3_06_po_create_waits_for_branch_before_showing_scoped_stores(): void
+    {
+        $user = $this->user(['purchase_orders.view', 'purchase_orders.create']);
+        $branch = Branch::factory()->create(['company_id' => $this->store->company_id]);
+        $otherStore = Store::factory()->create(['company_id' => $this->store->company_id, 'branch_id' => $branch->id, 'type' => 'warehouse']);
+        DB::table('user_store_scopes')->insert(['user_id' => $user->id, 'store_id' => $otherStore->id, 'status' => 'active']);
+        $this->actingAs($user);
+        $component = Livewire::test('purchasing::orders')->set('createPage', true)
+            ->assertSet('orderForm.branch_id', '');
+        $selectOptions = static function (string $html): string {
+            self::assertSame(1, preg_match('/<select\b[^>]*wire:model="orderForm.store_id"[^>]*>(.*?)<\/select>/s', $html, $matches));
+
+            return $matches[1];
+        };
+        self::assertStringNotContainsString($this->store->code, $selectOptions($component->html()));
+        self::assertStringNotContainsString($otherStore->code, $selectOptions($component->html()));
+        $component->set('orderForm.branch_id', (string) $this->store->branch_id);
+        self::assertStringContainsString($this->store->code, $selectOptions($component->html()));
+        self::assertStringNotContainsString($otherStore->code, $selectOptions($component->html()));
+        $component->set('orderForm.branch_id', (string) $branch->id);
+        self::assertStringContainsString($otherStore->code, $selectOptions($component->html()));
+        self::assertStringNotContainsString($this->store->code, $selectOptions($component->html()));
+    }
+
     public function test_m3_05_preview_shows_existing_subtotal_discount_tax_and_final(): void
     {
         $component = Livewire::test('purchasing::invoices')->call('openCreateModal')

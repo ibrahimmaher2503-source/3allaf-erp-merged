@@ -1,3 +1,13 @@
+# Current Task — Module 3 v2 verify-and-finish closure (2026-10-07)
+
+Owner-authorized L2 follow-up from `d541168c3d7e68f2e029ded52dd2e54e91f9e668` on the existing `fix/module3-purchasing-qa-fast` branch. Scope only M3-01/02/03/04/05/06/09/10/11/12. Four Luna investigators remained read-only. No main/merge/deployment authorization; production release remains unverified (last recorded `0.1.22-cost-optional` / `1d27f7b`). The production report is dated October 6, before the October 7 branch fixes.
+
+Existing tests rerun once: PASS 7/72, confirming authorized direct invoice cost, draft authorization/save and audit, scoped supplier history, eligible search, totals, PO-store guard and name fallback. M3-01/02 require deployed-revision/effective-grant confirmation; M3-03/04/05/06 require production retest of this branch and actual eligibility data where relevant. Only newly reproduced gap fixed: M3-06 PO-create store options are now empty before branch selection and filter by the chosen branch afterward. New focused test PASS 1/14; two changed PHP/Blade syntax checks, Pint and one frontend build PASS (existing optional fontaine warning). Existing passing tests were not repeated after that isolated change.
+
+M3-09: UX/tooling limitation; native confirmations execute correctly according to the report, and no reusable internal confirmation component exists. M3-10: DEC-101 Requires Owner Decision on supplier tax-number format; current contract is optional text, with no approved numeric/length format. M3-11: DATA CLEANUP REQUIRED after confirming the exact production branch row; labels use stored names and no source typo exists. M3-12: DEC-102 Requires Owner Decision on audit display timezone precedence; UTC storage remains intact. No new validation format, modal framework, business-data cleanup or timezone policy was invented. No full suite, PHPStan, browser, extra QA infrastructure, production write, merge or deployment occurred; only the named task branch may be pushed.
+
+## Preserved previous Module 3 checkpoint
+
 # Current Task — Module 3 focused purchasing QA closure (2026-10-07)
 
 Owner-authorized D3 scope: M3-01..M3-07 only on `fix/module3-purchasing-qa-fast`, source `87db35e88d6d726b5e287e8e4dcec600ba71d941`. Named focused automated checks use disposable XAMPP MySQL `qa_rajh_m3_purchasing_20261007` and isolated temporary storage. Production identity was not reverified; last recorded release remains `0.1.22-cost-optional` / `1d27f7b`. Main is read-only; no merge or deployment is authorized.

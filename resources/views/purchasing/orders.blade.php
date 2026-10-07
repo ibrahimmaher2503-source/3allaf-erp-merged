@@ -515,9 +515,10 @@ new #[Title('Purchase Orders')] class extends Component
         $branches = Branch::query()->where('status', 'active')
             ->when($user && ! $user->hasGlobalApplicationAccess(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($user)->whereNotNull('branch_id')->select('branch_id')))
             ->withCount('purchaseOrders')->orderBy('code')->get();
-        $stores = Store::visibleTo($user)->where('status', 'active')
-            ->when(filled($this->orderForm['branch_id']), fn ($query) => $query->where('branch_id', (int) $this->orderForm['branch_id']))
-            ->orderBy('name_ar')->get();
+        $stores = filled($this->orderForm['branch_id'])
+            ? Store::visibleTo($user)->where('status', 'active')
+                ->where('branch_id', (int) $this->orderForm['branch_id'])->orderBy('name_ar')->get()
+            : collect();
         $products = Product::query()->sellable()->with(['productSuppliers' => fn($query) => $query->when(filled($this->orderForm['supplier_id']), fn($scope) => $scope->where('supplier_id',(int)$this->orderForm['supplier_id']))])->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))->get();
         $orderPreview = $this->orderPreview();
 
