@@ -150,6 +150,16 @@ final class Module1ValidationLocalizationTest extends TestCase
             ->call('saveCompany')
             ->assertHasNoErrors();
 
-        self::assertSame('QA  Company Name', Company::query()->firstOrFail()->name_en);
+        $company = Company::query()->firstOrFail();
+        self::assertSame('QA  Company Name', $company->name_en);
+
+        $companyData = $company->getAttributes();
+        $companyData['name_en'] = null;
+        app(SaveLocalSettingsAction::class)->execute(['company' => $companyData], $company->id);
+        self::assertNull($company->fresh()->name_en);
+
+        unset($companyData['name_en']);
+        app(SaveLocalSettingsAction::class)->execute(['company' => $companyData], $company->id);
+        self::assertNull($company->fresh()->name_en);
     }
 }
