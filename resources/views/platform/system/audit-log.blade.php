@@ -13,19 +13,29 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Audit Logs')] class extends Component {
+new #[Title('Audit Logs')] class extends Component
+{
     use WithPagination;
 
     public string $search = '';
+
     public string $category = '';
+
     public string $event = '';
+
     public string $actorId = '';
+
     public string $branchId = '';
+
     public string $storeId = '';
+
     public string $dateFrom = '';
+
     public string $dateTo = '';
+
     #[Url]
     public string $mode = 'all';
+
     public ?int $selectedAuditId = null;
 
     public function mount(): void

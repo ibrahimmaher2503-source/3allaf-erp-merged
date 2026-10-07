@@ -1,16 +1,17 @@
 <?php
 
 use App\Models\User;
-use App\Modules\Platform\Actions\SaveCashDrawerAction;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
+use App\Modules\Platform\Actions\SaveCashDrawerAction;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Store;
+use App\Support\UserSafeError;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -26,6 +27,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     public string $branchFilter = 'all';
 
     public string $statusFilter = 'all';
+
     #[Url(as: 'setup', except: false)]
     public bool $setupMode = false;
 
@@ -149,10 +151,10 @@ new #[Title('Cash Drawer Masters')] class extends Component
             $this->showDrawerModal = false;
         } catch (ValidationException $e) {
             if (! $this->handleDrawerVersionConflict($e, true)) {
-                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
             }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
         }
     }
 
@@ -165,10 +167,10 @@ new #[Title('Cash Drawer Masters')] class extends Component
             Flux::toast(variant: 'success', text: __('Cash drawer status updated successfully.'));
         } catch (ValidationException $e) {
             if (! $this->handleDrawerVersionConflict($e)) {
-                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+                Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
             }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', heading: __('Cash drawer change blocked'), text: UserSafeError::message($e));
         }
     }
 
@@ -190,10 +192,10 @@ new #[Title('Cash Drawer Masters')] class extends Component
             Flux::toast(variant: 'success', text: auth()->user()?->canBypassApproval() ? __('Super Admin action completed without separate approval.') : __('Cash drawer deletion submitted for independent approval.'));
         } catch (ValidationException $e) {
             if (! $this->handleDrawerVersionConflict($e)) {
-                Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+                Flux::toast(variant: 'danger', text: UserSafeError::message($e));
             }
         } catch (Exception $e) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($e));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($e));
         }
     }
 

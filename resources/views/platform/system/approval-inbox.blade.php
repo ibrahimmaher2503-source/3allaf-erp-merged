@@ -8,8 +8,8 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApprovalPresentation;
 use App\Modules\Platform\Support\UiLabel;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -89,7 +89,7 @@ new #[Title('Approval Inbox')] class extends Component
             $message = collect($exception->errors())->flatten()->first()
                 ?? __('تعذر اعتماد الطلب. راجع البيانات وحاول مرة أخرى.');
             $this->addError('approval', (string) $message);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             report($exception);
             $this->addError('approval', __('تعذر اعتماد الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
         }
@@ -116,7 +116,7 @@ new #[Title('Approval Inbox')] class extends Component
             $message = collect($errors)->flatten()->first()
                 ?? __('تعذر رفض الطلب. راجع البيانات وحاول مرة أخرى.');
             $this->addError(isset($errors['decisionReason']) ? 'decisionReason' : 'approval', (string) $message);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             report($exception);
             $this->addError('approval', __('تعذر رفض الطلب الآن. أعد تحميل الصفحة وحاول مرة أخرى.'));
         }
