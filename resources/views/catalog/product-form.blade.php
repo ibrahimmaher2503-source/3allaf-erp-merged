@@ -234,7 +234,7 @@ new #[Title('Product Card')] class extends Component
             $limitMessage = __('A product can have at most four additional images.');
             $message = in_array($limitMessage, $exception->errors()['media'] ?? [], true)
                 ? $limitMessage
-                : \App\Support\UserSafeError::message($exception);
+                : UserSafeError::message($exception);
 
             $this->addError('mediaUpload', $message);
             Flux::toast(variant: 'danger', text: $message);

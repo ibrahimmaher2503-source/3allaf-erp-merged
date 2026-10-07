@@ -1,12 +1,14 @@
 <?php
 
-use App\Modules\Catalog\Actions\StageProductImportAction;
-use App\Modules\Catalog\Models\ProductImportBatch;
-use App\Modules\Catalog\Models\Category;
-use App\Modules\Platform\Actions\StoreAttachment;
-use App\Modules\Platform\Actions\RevokeAttachment;
-use App\Modules\Platform\Models\Attachment;
 use App\Models\User;
+use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Actions\StageProductImportAction;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\ProductImportBatch;
+use App\Modules\Platform\Actions\RevokeAttachment;
+use App\Modules\Platform\Actions\StoreAttachment;
+use App\Modules\Platform\Models\Attachment;
+use App\Support\UserSafeError;
 use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
@@ -14,13 +16,17 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new #[Title('Product Import')] class extends Component {
+new #[Title('Product Import')] class extends Component
+{
     use WithFileUploads;
 
     public mixed $importFile = null;
+
     public string $mode = 'create_only';
+
     /** @var array<string, string> */
     public array $columnMapping = [];
+
     #[Url(as: 'batch')]
     public ?int $selectedBatchId = null;
 
@@ -59,7 +65,7 @@ new #[Title('Product Import')] class extends Component {
             $this->importFile = null;
             Flux::toast(variant: 'success', text: __('File staged. Review all rows before approval.'));
         } catch (Throwable $exception) {
-            \App\Support\UserSafeError::message($exception);
+            UserSafeError::message($exception);
             $message = __('The workbook could not be staged. Download the current company-specific XLSX template, keep its Instructions and Data Entry sheets unchanged, and retry.');
             $this->addError('importFile', $message);
             Flux::toast(variant: 'danger', text: $message);
@@ -78,7 +84,7 @@ new #[Title('Product Import')] class extends Component {
         } catch (InvalidArgumentException $exception) {
             $this->addError('columnMapping', $exception->getMessage());
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -88,10 +94,10 @@ new #[Title('Product Import')] class extends Component {
         $batch = ProductImportBatch::query()->findOrFail($this->selectedBatchId);
 
         try {
-            $action->approve($batch, app(\App\Modules\Catalog\Actions\SaveProductAction::class));
+            $action->approve($batch, app(SaveProductAction::class));
             Flux::toast(variant: 'success', text: __('Import approved and valid rows were written.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -104,7 +110,7 @@ new #[Title('Product Import')] class extends Component {
             $action->cancel($batch);
             Flux::toast(variant: 'success', text: __('Import cancelled. You can upload the same file again.'));
         } catch (Throwable $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 

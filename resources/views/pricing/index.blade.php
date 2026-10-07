@@ -3,6 +3,8 @@
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\UiLabel;
+use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\ImportPriceProposalsAction;
@@ -12,7 +14,6 @@ use App\Modules\Pricing\Enums\PriceVersionState;
 use App\Modules\Pricing\Models\PriceLine;
 use App\Modules\Pricing\Models\PriceVersion;
 use App\Modules\Pricing\Queries\PricingDashboard;
-use App\Modules\Platform\Support\UiLabel;
 use App\Support\UserSafeError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -81,7 +82,7 @@ new #[Title('Pricing Workspace')] class extends Component
         Gate::authorize('pricing_labels.view');
         $this->mode = $mode ?? 'workspace';
         abort_unless(in_array($this->mode, self::MODES, true), 404);
-        $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id($this->actor());
+        $contextStoreId = app(WorkContext::class)->id($this->actor());
         $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
     }
 
@@ -97,9 +98,21 @@ new #[Title('Pricing Workspace')] class extends Component
         $this->resetPage();
     }
 
-    public function updatedStoreFilter(): void { $this->resetPage(); $this->resetPage('unpriced_page'); }
-    public function updatedEffectiveFrom(): void { $this->resetPage(); }
-    public function updatedEffectiveTo(): void { $this->resetPage(); }
+    public function updatedStoreFilter(): void
+    {
+        $this->resetPage();
+        $this->resetPage('unpriced_page');
+    }
+
+    public function updatedEffectiveFrom(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEffectiveTo(): void
+    {
+        $this->resetPage();
+    }
 
     public function sortBy(string $column): void
     {

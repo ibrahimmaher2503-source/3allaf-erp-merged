@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Modules\Platform\Actions\PlatformSettingsApprovalAction;
 use App\Modules\Platform\Actions\SaveCashDrawerAction;
+use App\Modules\Platform\Actions\SaveStoreAction;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
@@ -147,7 +148,7 @@ final class CashDrawerConcurrencyTest extends TestCase
         try {
             $action = app(SaveCashDrawerAction::class);
             $action->toggleStatus($drawer->id, 'inactive', (int) $drawer->lock_version);
-            app(\App\Modules\Platform\Actions\SaveStoreAction::class)->toggleStatus($store->id);
+            app(SaveStoreAction::class)->toggleStatus($store->id);
 
             self::assertSame('inactive', $store->fresh()->status);
 
@@ -166,7 +167,7 @@ final class CashDrawerConcurrencyTest extends TestCase
             self::assertSame('inactive', $updated->status, 'A drawer cannot be reactivated while its store is inactive.');
             self::assertSame($expectedVersion, (int) $updated->lock_version);
 
-            app(\App\Modules\Platform\Actions\SaveStoreAction::class)->toggleStatus($store->id);
+            app(SaveStoreAction::class)->toggleStatus($store->id);
             $action->toggleStatus($drawer->id, 'active', $expectedVersion);
 
             self::assertSame('active', $drawer->fresh()->status);
