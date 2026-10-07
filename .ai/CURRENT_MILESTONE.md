@@ -1,3 +1,9 @@
+# Current Milestone — Fast Module 1 local QA closure (2026-10-07)
+
+All 16 reported findings are dispositioned: 10 fixes approved/pushed and integrated, 4 already fixed or not reproduced locally, and 2 policy/server blockers. Integration code `65c9c42` is published on `fix/module1-qa-fast-integration`; the fixed subset is ready for PR. The single final full suite remains failed: 243 pass, 32 pre-existing failures, 1 FriBidi environment error; all 12 new cases pass and no new failing name was found. This is an operational QA closure only: no business milestone, Phase Gate, UAT or production release advances; main is unchanged.
+
+## Preserved previous state
+
 # Current Milestone — Module 1 + Module 2 local QA closure (2026-10-07)
 
 Operational QA override only. Ten Module 1 second-pass reviews integrated; six Module 2 fixes and one local non-reproduction completed on `fix/module2-qa-integration`. Full combined suite 228/264 passing, 34 failures/2 errors; static 1,403 existing findings and zero added. Local focused repairs are verified; no business milestone, Phase Gate, client UAT or production release is advanced. Production current state remains unverified. Exact-branch publication is authorized; main merge/deployment is excluded.

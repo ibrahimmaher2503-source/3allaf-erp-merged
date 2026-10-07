@@ -6,7 +6,7 @@ V0/V1 presentation portions: named validation labels and titles, localized appro
 
 | Class | Repair | Commit | Affected files | Verification/status |
 |---|---|---|---|---|
-| V0 | BUG-14: keep the cash-drawer table readable with a minimum width and prevent drawer names/status labels from breaking into narrow columns | `f96dd09722455783b4baf615ca59fde0112c9a73` | `resources/views/platform/admin/drawers.blade.php` | Existing focused drawer render: 1 test / 10 assertions passed; Pint and `git diff --check` passed; local and undeployed, awaiting lead review |
+| V0 | BUG-14: keep the cash-drawer table readable with a minimum width and prevent drawer names/status labels from breaking into narrow columns | `f96dd09722455783b4baf615ca59fde0112c9a73` | `resources/views/platform/admin/drawers.blade.php` | Lead approved, exact branch pushed and integrated locally; existing focused render 1 test / 10 assertions, Pint and diff checks passed; browser sizing unverified; undeployed |
 
 ## 2026-10-03 — Full-System Audit Final UI Batch
 
@@ -102,4 +102,4 @@ Production access, deployment, backup execution, migration execution, active-sym
 
 - **Class:** V1. **Repair:** Isolated audit filters/table/pagination and audit detail modal into native Livewire islands; preserved the existing access and per-record authorization checks.
 - **Commit:** a667949c7201a63982ed63ca1e17b3c91e53600b (`fix/bug-15-audit-log-islands`). **Files:** `resources/views/platform/system/audit-log.blade.php`, `tests/Feature/Module1AuditPresentationTest.php`, `.ai/TEST_RESULTS.md`, `.ai/SESSION_SUMMARY.md`, `.ai/PENDING_CHANGE_BATCH.md`.
-- **Status:** Focused local regression passed (1 test/13 assertions, including modal, page-2 table island, and denied update after access removal); awaiting lead approval before branch push. No release or deployment.
+- **Status:** Lead approved, exact branch pushed and integrated locally. Focused regression passed (1 test/13 assertions, including modal, page-2 table island, and denied update after access removal); integration overlap 21 tests/164 assertions and the single build passed. Browser/network timing remains unverified. No release or deployment.

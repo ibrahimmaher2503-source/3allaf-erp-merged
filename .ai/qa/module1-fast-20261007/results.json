@@ -1,0 +1,529 @@
+{
+  "task": "Fast Module 1 QA batch",
+  "date": "2026-10-07",
+  "source_baseline": "7c3cf6daaf1cff0c9d7a82b06c080a2a25113c1f",
+  "report": "Module1-QA-Report-e79c59e0.pdf",
+  "pages_read_once": 39,
+  "agents": {
+    "launched": 10,
+    "model": "gpt-6-luna",
+    "default_reasoning": "high",
+    "sensitive_reasoning": "xhigh",
+    "note": "Initial tenth launch hit the tool limit; succeeded after two read-only lanes completed. No second team."
+  },
+  "findings": [
+    {
+      "bug": "BUG-01",
+      "severity": "HIGH",
+      "expected": "Registration closed for an internal ERP or limited to an approved admission flow.",
+      "actual": "Fortify public registration is enabled. CreateNewUser creates an active, unverified, roleless user without a registration audit; the Fortify guest registration flow authenticates the new account.",
+      "area": "Fortify public registration",
+      "repro": "Confirmed by source trace at the supplied base; prior scoped auth finding M1-F01 records the same behavior.",
+      "root_cause": "No approved requirement or owner decision establishes whether self-registration is allowed. The PDF expectation does not resolve that policy.",
+      "branch": null,
+      "tests": "Not run; no policy-backed change was authorized.",
+      "blocker": "Owner must choose closed registration or an approved admission/registration policy.",
+      "status": "DECISION_REQUIRED",
+      "commit": null
+    },
+    {
+      "bug": "BUG-02",
+      "severity": "HIGH",
+      "expected": "Deactivating a logged-in user must block authenticated pages and end the established session; subsequent login remains denied.",
+      "actual": "At the assigned base, every web request checks the current user status; non-active users are logged out, their session is invalidated and CSRF token rotated, then redirected to login. Profile, notifications, and account-delete actions use the web middleware stack. No bypass found.",
+      "area": "Authentication / web sessions",
+      "repro": "Existing focused proof only; not rerun. AuthenticationRegressionTest 3/35, plus recorded second-pass HTTP session rotation and Livewire update revocation checks.",
+      "root_cause": "Previously fixed: login/gates rejected inactive accounts but established sessions survived. Shared RevokeInactiveUserSession middleware closes the gap on the next web request.",
+      "branch": null,
+      "tests": "Not rerun; existing accepted evidence in .ai/qa/module1-20261007/FINAL_REPORT.md and .ai/SESSION_SUMMARY.md.",
+      "blocker": null,
+      "status": "NOT_REPRODUCED_LOCALLY",
+      "commit": "No new commit. Existing fix commit cd15df6; assigned base 7c3cf6d."
+    },
+    {
+      "bug": "BUG-03",
+      "severity": "HIGH",
+      "expected": "before.status=active; after.status=inactive",
+      "actual": "Pre-fix reproduction: before.status=inactive and after.status=inactive. Fixed regression: before.status=active and after.status=inactive.",
+      "area": "Platform user authorization audit",
+      "repro": "Edit an active user and save status=inactive through SaveUserAction.",
+      "root_cause": "SaveUserAction persisted status before invoking SaveUserAuthorizationAction, whose before snapshot then read the new status.",
+      "branch": "fix/bug-03-user-audit-before-state",
+      "tests": [
+        "RED: 1 focused PHPUnit test failed as expected (1 assertion) on qa_rajh_m1_audit_20261007.",
+        "GREEN: 1 focused PHPUnit test passed (9 assertions) on qa_rajh_m1_audit_20261007.",
+        "PHP lint passed for both changed PHP files.",
+        "Pint passed for both changed PHP files.",
+        "git diff --check passed."
+      ],
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "4d7d1e0cd7cd29b1da31dff3b4b6127d9349dfb1",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-04",
+      "severity": "MEDIUM",
+      "expected": "Only active canonical cashiers with global application access or active target branch/store scope can be assigned; ineligible selections are rejected before a drawer write or success audit.",
+      "actual": "The picker listed all users and the save action accepted any existing user ID.",
+      "area": [
+        "Cash Drawer admin selector",
+        "Livewire validation",
+        "SaveCashDrawerAction"
+      ],
+      "repro": "Open Cashier Tills, choose a branch/store, then attempt assigning an inactive, roleless, or other-store-only user.",
+      "root_cause": "The selector queried every user; both component validation and the shared save action lacked role/status/scope eligibility checks.",
+      "branch": "fix/bug-04-drawer-cashier-eligibility",
+      "tests": "qa_rajh_m1_concurrency_20261007: CashDrawerCashierEligibilityTest.php, 1 test / 16 assertions PASS; parent reports Pint PASS and scoped analyzer 34 existing / 0 added.",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "936bae2915a37eba12c5ce5abeaa0a341ce186a6",
+      "remote_tip_verified": true,
+      "limits": "Default-assignee exclusivity remains the documented M1-EX01 owner decision; nullable Any Cashier behavior is unchanged."
+    },
+    {
+      "bug": "BUG-05",
+      "severity": "MEDIUM",
+      "expected": "A blocked branch/store deactivation shows a clear dependency reason; protected store and mapping remain intact.",
+      "actual": "Mapped selling-store deactivation previously returned the generic Unable to complete request toast and left records unchanged.",
+      "area": "Platform Stores / SaveStoreAction::assertDeactivationSafe / UI-ADM-004",
+      "repro": "Create an active branch, active selling store, and active branch_selling_stores mapping; call stores.toggleStoreStatus for that store.",
+      "root_cause": "The action threw InvalidArgumentException for an expected dependency blocker, while the stores Livewire component routed it through UserSafeError, which masks it as a generic message.",
+      "branch": "fix/bug-05-branch-store-deactivation-feedback",
+      "tests": [
+        "RED: focused Livewire regression observed generic toast.",
+        "GREEN: 1 test / 3 assertions passed on qa_rajh_m1_branches_20261007; store and mapping remained active."
+      ],
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "d44dc1b8e6fb1371f98e8bd2ea9239cca26b8f85",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-06",
+      "severity": "MEDIUM",
+      "expected": "zero_rated tax treatment accepts only a zero rate",
+      "actual": "approval request validation checked numeric range but not treatment-rate consistency",
+      "area": "Platform tax settings request, direct save, approved apply",
+      "repro": "Focused PHPUnit red: 1 test, 8 assertions; request left an approval and audit",
+      "root_cause": "shared validatedTaxRate omitted the zero-rated invariant before request creation",
+      "branch": "fix/bug-06-zero-rated-tax-validation",
+      "tests": "RED 1/8; GREEN 1 test / 11 assertions on qa_rajh_m1_tax_20261007; PHP lint, Pint, diff check, CodeGraph sync/status passed",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "4603f9e05984c9170672555858d926f5f52e23ff",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-07",
+      "severity": "MEDIUM",
+      "expected": "authorized reviewer sees allowlisted tax code, rate, treatment, and before/after values",
+      "actual": "approval inbox renders those values through existing ApprovalPresentation",
+      "area": "Platform approval review inbox",
+      "repro": "Existing focused approval presentation proof: 5 tests / 37 assertions passed",
+      "root_cause": "prior fix already integrated at source baseline; no new issue reproduced",
+      "branch": null,
+      "tests": "Reused .ai/qa/module1-20261007/approvals-result.md; not rerun",
+      "blocker": null,
+      "status": "NOT_REPRODUCED_LOCALLY",
+      "commit": "included at source baseline"
+    },
+    {
+      "bug": "BUG-08",
+      "severity": "MEDIUM",
+      "expected": "Readiness reports print-template assignments complete only when every active printer profile links to an active template. Dashboard progress uses required steps; active roleless or unscoped non-admin users continue to block readiness under DEC-086.",
+      "actual": "A nonempty legacy template_name such as default_thermal marked assignments complete with no print_template_id. The 15/17 dashboard count versus 20 enabled checklist rows and roleless-user readiness behavior match the approved contract.",
+      "area": "InitialSetupStatus::printTemplatesReady",
+      "repro": "Focused regression was red before the fix. Final focused method passed on qa_rajh_m1_pos_20261007: missing link=false, linked active template=true, then inactive linked template=false (1 test / 3 assertions).",
+      "root_cause": "Readiness trusted the legacy string field instead of the normalized active PrintTemplate relationship.",
+      "branch": "fix/bug-08-setup-readiness-accuracy",
+      "tests": [
+        "InitialSetupStatusTest::test_print_template_assignments_are_incomplete_without_a_linked_template — PASS, 1 test / 3 assertions through private worktree-safe bootstrap.",
+        "PHP Pint and git diff --check — PASS."
+      ],
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "c4f273ccd38778b81ab0bf8eed9942fe96173713",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-09",
+      "severity": "MEDIUM",
+      "expected": "The canonical seeded cashier can access the native shift screen and open a shift within assigned scope.",
+      "actual": "Accepted local evidence already passes for canonical cashier shift GET/POST and scope denials; ProductionSeeder grants the canonical cashier 18 permissions. The reported remote Cashir profile is a distinct alias/grant question not resolved locally.",
+      "area": "Canonical cashier authorization and POS shift routes",
+      "repro": "Cited existing .ai/qa/module1-20261007/FINAL_REPORT.md BUG-227 evidence and tests/Feature/PosShiftOpenRouteTest.php result: 5 tests / 48 assertions. Not rerun.",
+      "root_cause": "No confirmed local bug; the remote alias-to-canonical grant mapping is unresolved.",
+      "branch": null,
+      "tests": [
+        "Existing accepted PosShiftOpenRouteTest evidence: 5 tests / 48 assertions; not rerun."
+      ],
+      "blocker": null,
+      "status": "NOT_REPRODUCED_LOCALLY",
+      "commit": null,
+      "limits": "Remote alias/grant decision remains outside assigned local scope; no role grants or aliases changed."
+    },
+    {
+      "bug": "BUG-10",
+      "severity": "LOW",
+      "expected": "Readable localized validation attributes in en/ar/ar-EG for company address, username, tax rate, and drawer store.",
+      "actual": "Company address, username, and drawer store errors exposed nested field keys; the tax-rate label was already mapped and existing proof passed.",
+      "area": "Platform settings, authorization baseline, cash drawers validation feedback.",
+      "repro": "Using qa_rajh_m1_localization_20261007, submit a 600-character address, duplicate username, rate 150, or active drawer with no store.",
+      "root_cause": "Three Livewire components lacked validationAttributes mappings; tax rate already had one.",
+      "branch": "fix/bug-10-readable-validation-labels",
+      "tests": "Module1ValidationLocalizationTest.php: 12 passed, 95 assertions; Pint and git diff --check passed.",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "7503cb39dd772fedb6e7518f09078c40a314dd16",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-11",
+      "severity": "LOW",
+      "expected": "Trim leading/trailing whitespace from supplied company English names while preserving inner characters and null/omitted semantics.",
+      "actual": "Leading/trailing whitespace was persisted.",
+      "area": "Company identity save action.",
+      "repro": "Save company name `  QA  Company Name  ` through settings; null/omitted values were also checked after the correction.",
+      "root_cause": "SaveLocalSettingsAction persisted the submitted name without trimming.",
+      "branch": "fix/bug-11-company-name-trim",
+      "tests": "Affected persistence method: 1 passed, 4 assertions; Pint and git diff --check passed.",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "c486116584626efdfb3a4dff85e9edbc085ecd48",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-12",
+      "severity": "LOW",
+      "expected": "Audit timestamps display in the authorized company timezone with a visible timezone label.",
+      "actual": "Audit list and detail displayed raw application-timezone timestamps without timezone context.",
+      "area": "Audit list and detail presentation",
+      "repro": "Focused Livewire render with created_at 2026-10-07 21:51:00 UTC and company timezone Africa/Cairo",
+      "root_cause": "Audit view formatted created_at directly and never resolved company timezone.",
+      "branch": "fix/bug-12-audit-company-timezone",
+      "tests": "PASS: original focused Module1AuditPresentationTest.php, 5 tests / 34 assertions; correction test test_audit_render_falls_back_to_app_timezone_without_a_resolved_company_context, 1 test / 2 assertions; Pint; git diff --check",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "44f2f581b8b6db9dcbeb7bf9c0b18eae5a79dfef",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-13",
+      "severity": "LOW",
+      "expected": "Confirmation or a documented approved auto-verification policy.",
+      "actual": "The gated admin creation action verifies inside its transaction, sends no verification notification, and records distinct create_user and verify_user_email audit events.",
+      "area": "Gated admin user creation and email verification",
+      "repro": "Source matches the owner-approved DEC-046 policy at the supplied base.",
+      "root_cause": "No mismatch found: DEC-046 expressly approves immediate admin verification without email notification and requires distinct creator/verifier audit.",
+      "branch": null,
+      "tests": "Not run; no code change, and existing source plus approved decision satisfy the reported alternative expectation.",
+      "blocker": null,
+      "status": "NOT_REPRODUCED_LOCALLY",
+      "commit": null
+    },
+    {
+      "bug": "BUG-14",
+      "severity": "COSMETIC",
+      "expected": "Drawer names and status remain readable in the existing horizontally scrollable desktop table at narrow desktop widths.",
+      "actual": "The compressed table clipped status and broke names into very narrow lines.",
+      "area": "Cash drawer desktop table presentation.",
+      "repro": "Render the drawers page near 1280px with long drawer/location names and inspect the table.",
+      "root_cause": "The table had no minimum width and allowed name/status columns to compress.",
+      "branch": "fix/bug-14-drawer-table-layout",
+      "tests": "Existing bounded drawer render check: 1 passed, 10 assertions; Pint and git diff --check passed. Browser sizing is unverified.",
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "e4a5af615f9e7c49ec7fb715f7911b9eaf90e106",
+      "remote_tip_verified": true,
+      "limits": "Visual browser sizing not verified."
+    },
+    {
+      "bug": "BUG-15",
+      "severity": "MEDIUM",
+      "expected": "Modal and pagination interactions return only their updated Livewire region.",
+      "actual": "QA report measured full-page Livewire responses around 140 KB and initial HTML around 262 KB; the audit page renders duplicated desktop and mobile rows.",
+      "area": "Audit log Livewire full-page component",
+      "repro": "On an audit log with records, open a detail modal or change page/filter and inspect the Livewire response size; QA report observed about one second per interaction.",
+      "root_cause": "All interactions rendered the full-page SFC and its table/modal markup.",
+      "branch": "fix/bug-15-audit-log-islands",
+      "tests": [
+        "test_audit_detail_update_returns_only_its_livewire_island: PASS, 1 test/13 assertions on qa_rajh_m1_regression_20261007; verifies modal audit-details island, named audit-table page-2 update with intended record, no outer header in either fragment, both fragments smaller than initial HTML, and 403 after actor becomes inactive.",
+        "git diff --check: PASS. Pint passed for test file; SFC Pint was run and its Livewire-incompatible imported trait formatting was restored to the verified fully-qualified trait. No browser/full suite/build/production check."
+      ],
+      "blocker": null,
+      "status": "FIXED_PUSHED",
+      "commit": "b4dbf284982481b52d37fa1f208f72bfbfaa328e",
+      "remote_tip_verified": true
+    },
+    {
+      "bug": "BUG-16",
+      "severity": "MEDIUM",
+      "expected": "HTML responses use gzip or Brotli compression.",
+      "actual": "QA report measured 188-416 KB with encodedBodySize equal to transfer size and no Content-Encoding.",
+      "area": "Remote Apache HTTP response configuration",
+      "repro": "Existing QA browser evidence only; no live/production access used.",
+      "root_cause": "Committed public/.htaccess has rewrite rules only; remote mod_deflate, AllowOverride, proxy/CDN settings cannot be confirmed locally.",
+      "branch": null,
+      "tests": [],
+      "blocker": "Server owner must confirm the active Apache module, AllowOverride/proxy configuration and authorize a matching remote verification/action.",
+      "status": "BLOCKED",
+      "commit": null
+    }
+  ],
+  "integration": {
+    "branch": "fix/module1-qa-fast-integration",
+    "full_suite_code_commit": "fd94a77",
+    "post_suite_bug04_completion_commit": "65c9c4212247d63e7461b7cc76ed76c508b58632",
+    "push": "PUSHED; exact code remote tip verified. Final documentation commit receipt is supplied in the user handoff.",
+    "published_code_commit": "65c9c4212247d63e7461b7cc76ed76c508b58632"
+  },
+  "verification": {
+    "full_suite_runs": 1,
+    "optimize_clear_runs": 1,
+    "full_suite": {
+      "tests": 276,
+      "assertions": 6424,
+      "passed": 243,
+      "failures": 32,
+      "errors": 1,
+      "classification": {
+        "A": 0,
+        "B": 32,
+        "C": 0,
+        "D": 1,
+        "E": 0
+      }
+    },
+    "new_test_cases": {
+      "passed": 12,
+      "total": 12
+    },
+    "overlap_tests": {
+      "passed": 21,
+      "assertions": 164
+    },
+    "post_suite_eligibility_check": {
+      "passed": 1,
+      "assertions": 16
+    },
+    "build": "PASS; one Vite build",
+    "php_lint": "18 changed PHP files PASS",
+    "pint": "PASS; restored required fully qualified WithPagination trait after formatter because import form breaks native SFC compilation.",
+    "static": {
+      "scope": "six changed application PHP files only",
+      "existing_scoped_findings": 34,
+      "added": 0,
+      "historical_full_baseline": 1403
+    },
+    "locales": "ar/en/ar-EG JSON parsing, cashier message parity and no added duplicate keys PASS; ar-EG copy completed after full suite.",
+    "browser": "Not run in this fast batch; BUG14 sizing and remote payload compression remain unverified.",
+    "failure_classification_rule": "All 32 non-environment failing names were already failed in the previous full run (B, including known legacy contracts). FriBidi is D. No A or E; no unrelated legacy repair.",
+    "failures": [
+      {
+        "class": "Tests.Unit.CompanyOwnerRbacApprovalNavigationTest",
+        "test": "test_administration_activity_and_approval_navigation_have_exact_guards_and_placement",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M51CustomerSupplierDataTest",
+        "test": "test_arabic_pdf_text_is_shaped_in_visual_order_without_changing_stable_codes",
+        "category": "D",
+        "type": "error"
+      },
+      {
+        "class": "Tests.Unit.M52ProductCardsOpeningInventoryTest",
+        "test": "test_opening_inventory_template_has_exact_three_column_order",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M52ProductCardsOpeningInventoryTest",
+        "test": "test_opening_validation_rejects_service_missing_cost_existing_movement_and_fraction_policy",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M52ProductCardsOpeningInventoryTest",
+        "test": "test_opening_reversal_and_zero_decision_are_audited_and_setup_readiness_is_authoritative",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M54PurchaseReceivingDistributionTest",
+        "test": "test_full_distribution_is_mandatory_and_rejects_invalid_allocations",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M54PurchaseReceivingDistributionTest",
+        "test": "test_full_page_two_stage_ui_scanning_and_destination_labels_are_present",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.M54PurchaseReceivingDistributionTest",
+        "test": "test_m54_flux_references_are_supported",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix16PosCheckoutWorkflowTest",
+        "test": "test_customer_and_payment_ux_is_bounded_responsive_and_safe",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix16PosCheckoutWorkflowTest",
+        "test": "test_success_receipt_routes_and_locale_parity_are_complete",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix2CorrectiveTest",
+        "test": "test_product_card_normalizes_unchecked_quantity_and_persists_canonical_price",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix4InventoryLabelsSidebarPricingTest",
+        "test": "test_product_quantity_is_central_strict_and_integer_only",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix6AdminNavigationLocalizationTest",
+        "test": "test_sidebar_derives_nested_authorized_links_from_the_lightweight_registry",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix6AdminNavigationLocalizationTest",
+        "test": "test_warehouse_terminology_and_store_action_are_localized",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix7InventoryCountingUxTest",
+        "test": "test_human_names_navigation_and_bounded_search_are_present",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V0122Hotfix9NavigationCleanupTest",
+        "test": "test_navigation_hides_only_the_requested_duplicate_and_deferred_entries",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V016SetupAdminFoundationTest",
+        "test": "test_authoritative_group_map_contains_exactly_twenty_one_unique_steps",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021FinalAcceptanceTest",
+        "test": "test_scanner_and_bounded_search_contract",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021PurchasingLocalizationLayoutHotfixTest",
+        "test": "test_every_purchase_invoice_literal_has_an_arabic_translation",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021PurchasingLocalizationLayoutHotfixTest",
+        "test": "test_list_and_entry_layout_contracts_are_responsive_and_locale_safe",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021PurchasingLocalizationLayoutHotfixTest",
+        "test": "test_status_and_currency_presenters_never_leak_raw_values",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021ReadinessPricingHotfixTest",
+        "test": "test_readiness_ui_localization_prerequisite_and_list_zero_counts_are_explicit",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V021ReadinessPricingHotfixTest",
+        "test": "test_all_post_deployment_corrections_remain_in_source",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022CumulativeStabilizationTest",
+        "test": "test_template_preview_is_bilingual_responsive_and_uses_no_business_data",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022Hotfix1PostDeploymentTest",
+        "test": "test_quantity_contract_is_integer_and_diagnostic_is_read_only",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022Hotfix1PostDeploymentTest",
+        "test": "test_setup_filters_labels_localization_and_version_contracts",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022Hotfix1PostDeploymentTest",
+        "test": "test_pricing_remediation_and_print_layout_are_explicit",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022RequirementFamiliesTest",
+        "test": "test_setup_order_actions_and_persistent_sequence_family",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Unit.V022RequirementFamiliesTest",
+        "test": "test_purchasing_distribution_transfer_label_and_transit_family",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Feature.V0122Hotfix12PosShiftOpenRouteTest",
+        "test": "test_shift_open_flow_uses_separate_safe_routes_and_preserves_authorization",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Feature.V0122Hotfix27PurchaseOrderLookupTest",
+        "test": "test_purchasing_lookup_filters_incrementally_and_uses_only_latest_approved_supplier_price",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Feature.V0122Hotfix27PurchaseOrderLookupTest",
+        "test": "test_supplier_return_lookup_is_source_invoice_and_store_scope_constrained",
+        "category": "B",
+        "type": "failure"
+      },
+      {
+        "class": "Tests.Feature.V0122Hotfix27PurchaseOrderLookupTest",
+        "test": "test_authorized_create_route_renders_full_page_and_shared_action_saves_a_draft",
+        "category": "B",
+        "type": "failure"
+      }
+    ]
+  },
+  "new_regressions": [],
+  "ready_for_pr": true,
+  "main_modified": false,
+  "main_baseline": "87db35e88d6d726b5e287e8e4dcec600ba71d941",
+  "production_accessed": false,
+  "deployed": false
+}

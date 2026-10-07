@@ -542,3 +542,12 @@ PASS: `InitialSetupStatusTest::test_print_template_assignments_are_incomplete_wi
 ## 2026-10-07 — BUG-15 Livewire response isolation
 
 `Module1AuditPresentationTest::test_audit_detail_update_returns_only_its_livewire_island` passed: 1 test, 13 assertions, using the existing disposable `qa_rajh_m1_regression_20261007` MySQL schema. It confirms the modal action updates `audit-details`; native pagination updates `audit-table` to page 2 with the intended record; each island response omits the outer page header and is smaller than the full initial HTML; and a table-island update returns 403 after the actor is made inactive. No browser check, full suite, build, migration, or production check was run.
+
+
+## 2026-10-07 — Fast Module 1 integration final verification
+
+ONE final optimize-clear and ONE full suite ran on disposable XAMPP MySQL schema `qa_rajh_m1_integrated_20261007`: 276 tests / 6,424 assertions, 243 passed, 32 failures, 1 error. Classification A=0 / B=32 / C=0 / D=1 / E=0: all 32 non-environment failing names were already failing in the previous recorded full run; the error requires unavailable FriBidi. All 12 new test cases passed. No unrelated historical test or renderer was repaired. Integration overlap passed 21 tests / 164 assertions. Full suite is FAILED, not green; no new failing name or batch regression was identified.
+
+ONE Vite build passed; all 18 changed PHP files passed syntax checks. Pint passed; the SFC's fully qualified WithPagination trait spelling was restored because the formatter's import rewrite breaks native Livewire compilation. ar/en/ar-EG parsing, new cashier-message parity and no added duplicate keys passed. Scoped PHPStan across six changed application PHP files has 34 existing diagnostics and zero added against the preserved 1,403-finding historical report. Git diff hygiene passed before publication.
+
+After the full run, the narrow BUG-04 generic-type/validated-branch-ID and ar-EG message completion passed only the affected eligibility method: 1 test / 16 assertions, plus syntax, Pint, locale and scoped static-delta checks. No second full suite or build ran. No browser, production or business UAT check ran; BUG-14 browser sizing and BUG-16 remote compression remain unverified. Business data and main were untouched.

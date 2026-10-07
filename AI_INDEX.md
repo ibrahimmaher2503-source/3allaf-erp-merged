@@ -24,6 +24,8 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Operational Governance Files
 
+Latest named fast QA override: `.ai/CURRENT_TASK.md` and DEC-095 route only BUG-01 through BUG-16 in the new Module 1 report. Read only their applicable TSK-005 through TSK-009 requirements, approved policy decisions and affected implementation. Focused tests and exact task-branch pushes are authorized; one final full suite, no second agent pass, main merge or production access. Compact evidence: `.ai/qa/module1-fast-20261007/results.json`.
+
 Current 2026-10-07 QA override: `.ai/CURRENT_TASK.md`, DEC-093/DEC-094 and the attached owner requests route Module 1 closure and confirmed Module 2 fixes. For Module 2, use only TSK-011 product cards, TSK-012 staged imports, the linked pricing/approval and role-permission requirements needed by BUG-105/106/231–235; do not reopen unrelated milestones or PASS observations.
 
 Closure evidence: `.ai/qa/module1-20261007/FINAL_REPORT.md` and `.ai/qa/module2-20261007/results.json`. Final checks completed with explicitly failed historical suite/static debt; no main merge, production deployment or business gate advancement.

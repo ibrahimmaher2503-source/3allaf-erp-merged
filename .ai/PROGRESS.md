@@ -1,3 +1,9 @@
+# 2026-10-07 — Fast Module 1 QA closure
+
+BUG-01–16: 10 fixes approved and pushed separately, 4 already fixed/not reproduced locally, 2 blocked by policy or server configuration. Original clean base `7c3cf6d` preserved; integration code `65c9c42` published on `fix/module1-qa-fast-integration`. Overlap checks: 21 tests/164 assertions pass. Single final suite: 276 tests/6,424 assertions, 243 pass/32 pre-existing failures/1 FriBidi error; all 12 new cases pass (A=0/B=32/C=0/D=1/E=0). Narrow post-suite BUG-04 completion: 1 test/16 assertions pass. One build, changed-PHP syntax, locale, Pint and scoped static-delta checks complete; static delta 0 added with 34 existing diagnostics in six affected source files. No second full suite or review team, browser check, main change, production access/deployment or business gate advancement. Evidence: `.ai/qa/module1-fast-20261007/results.json`.
+
+## Preserved previous state
+
 # 2026-10-07 — Module 1 + Module 2 local QA closure
 
 All ten Module 1 review lanes closed and accepted fixes integrated. Original 31 findings remain individually dispositioned in `.ai/qa/module1-20261007/FINAL_REPORT.md`; hardware/mail/remote and genuine policy limits remain explicit. Module 2: BUG-105/231/232/233/234/235 fixed with focused checks; BUG-106 persisted all 42 active permissions in the real isolated browser and did not reproduce locally. All seven task branches pushed/remote-SHA verified. Combined suite 264 tests/6,257 assertions: 228 pass, 34 fail, 2 errors; all new repair tests passed. Two changed legacy source-string assertions remain failing, not silently rewritten. Static delta zero added, final1,403; build/Blade/syntax/locale checks pass. Integration closure commit3e13a57 is pushed; no main merge or production deployment. Business gates unchanged.
