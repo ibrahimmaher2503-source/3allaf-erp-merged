@@ -155,5 +155,25 @@ final class ProductCardMetadataFormTest extends TestCase
         self::assertSame('17.50', $product->fresh()->average_cost);
         self::assertSame([(int) $ageLabel->id], $product->fresh()->ages()->pluck('age_labels.id')->all());
         self::assertSame([(int) $character->id], $product->fresh()->characters()->pluck('characters.id')->all());
+
+        $staleVersion = (int) $product->fresh()->lock_version;
+        $staleName = 'Stale edit';
+        $winnerName = 'Concurrent winner';
+        $editForm->set('productForm.name_en', $staleName);
+        $product->forceFill([
+            'name_en' => $winnerName,
+            'lock_version' => $staleVersion + 1,
+        ])->save();
+
+        foreach (['en', 'ar', 'ar-EG'] as $locale) {
+            $this->app->setLocale($locale);
+            $editForm->call('saveDraft')
+                ->assertSet('productVersion', $staleVersion)
+                ->assertSet('productForm.name_en', $staleName)
+                ->assertDispatched('toast-show', fn (string $event, array $parameters): bool => ($parameters['slots']['text'] ?? null) === __('This product changed in another session. Reload it before saving.'));
+
+            self::assertSame($winnerName, $product->fresh()->name_en);
+            self::assertSame($staleVersion + 1, (int) $product->fresh()->lock_version);
+        }
     }
 }
