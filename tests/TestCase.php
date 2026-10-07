@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests;
+
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Testing\CachedState;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Testing\WithCachedConfig;
+use Illuminate\Foundation\Testing\WithCachedRoutes;
+
+abstract class TestCase extends BaseTestCase
+{
+    public function createApplication(): Application
+    {
+        $application = require dirname(__DIR__).'/bootstrap/app.php';
+        $application->loadEnvironmentFrom('.env.module1-qa-unused');
+        $application->useStoragePath((string) getenv('QA_STORAGE_PATH'));
+
+        $this->traitsUsedByTest = class_uses_recursive(static::class);
+
+        if (isset(CachedState::$cachedConfig, $this->traitsUsedByTest[WithCachedConfig::class])) {
+            $this->markConfigCached($application);
+        }
+
+        if (isset(CachedState::$cachedRoutes, $this->traitsUsedByTest[WithCachedRoutes::class])) {
+            $application->booting(fn () => $this->markRoutesCached($application));
+        }
+
+        $application->make(Kernel::class)->bootstrap();
+
+        $connection = $application['config']->get('database.connections.mysql');
+
+        if (
+            $application['config']->get('database.default') !== 'mysql'
+            || ($connection['driver'] ?? null) !== 'mysql'
+            || ($connection['host'] ?? null) !== '127.0.0.1'
+            || (string) ($connection['port'] ?? '') !== '3306'
+            || ($connection['database'] ?? null) !== getenv('DB_DATABASE')
+            || ! empty($connection['url'] ?? null)
+            || ! empty($connection['unix_socket'] ?? null)
+        ) {
+            throw new \RuntimeException('Unsafe test database configuration; refusing to run this Laravel test.');
+        }
+
+        return $application;
+    }
+}
