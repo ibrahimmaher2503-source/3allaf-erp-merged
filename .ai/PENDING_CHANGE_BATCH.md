@@ -4,6 +4,10 @@
 
 V0/V1 presentation portions: named validation labels and titles, localized approval errors, Settings pagination/search, saved barcode display, image-limit feedback and product metadata fields. Included in the separately authorized sensitive D3/I4 QA integration; exact per-bug commits are in `.ai/qa/module2-20261007/results.json`. One initial Module 1 asset build and one final combined build passed; final Blade compilation passed. No version bump, release artifact or deployment; production and all historical batch records are preserved. Full-suite/static debt remains documented. This entry records local completion, not closure of a production release batch.
 
+| Class | Repair | Commit | Affected files | Verification/status |
+|---|---|---|---|---|
+| V0 | BUG-14: keep the cash-drawer table readable with a minimum width and prevent drawer names/status labels from breaking into narrow columns | `f96dd09722455783b4baf615ca59fde0112c9a73` | `resources/views/platform/admin/drawers.blade.php` | Existing focused drawer render: 1 test / 10 assertions passed; Pint and `git diff --check` passed; local and undeployed, awaiting lead review |
+
 ## 2026-10-03 — Full-System Audit Final UI Batch
 
 Owner explicitly authorized closure, integration and deployment of the remaining audit fixes. Exactly two existing-user temporary sessions were authorized for authenticated browser coverage; no grant or business-record mutation is included.
