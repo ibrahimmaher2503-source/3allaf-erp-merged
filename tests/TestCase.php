@@ -16,6 +16,10 @@ abstract class TestCase extends BaseTestCase
     public function createApplication(): Application
     {
         $application = require dirname(__DIR__).'/bootstrap/app.php';
+        $cachePathPrefix = DIRECTORY_SEPARATOR === '\\'
+            ? substr((string) getenv('QA_STORAGE_PATH'), 0, 3)
+            : DIRECTORY_SEPARATOR;
+        $application->addAbsoluteCachePathPrefix($cachePathPrefix);
         $application->loadEnvironmentFrom('.env.module1-qa-unused');
         $application->useStoragePath((string) getenv('QA_STORAGE_PATH'));
 
@@ -43,6 +47,13 @@ abstract class TestCase extends BaseTestCase
             || ! empty($connection['unix_socket'] ?? null)
         ) {
             throw new \RuntimeException('Unsafe test database configuration; refusing to run this Laravel test.');
+        }
+
+        $expectedCachePath = realpath(rtrim((string) getenv('QA_STORAGE_PATH'), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache');
+        foreach ([$application->getCachedConfigPath(), $application->getCachedRoutesPath(), $application->getCachedEventsPath(), $application->getCachedServicesPath(), $application->getCachedPackagesPath()] as $cachedPath) {
+            if (strtolower((string) realpath(dirname($cachedPath))) !== strtolower((string) $expectedCachePath)) {
+                throw new \RuntimeException('Unsafe Laravel bootstrap cache path; refusing to run this test.');
+            }
         }
 
         return $application;
