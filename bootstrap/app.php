@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RevokeInactiveUserSession;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetRequestId;
 use App\Models\User;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
         $middleware->web(append: [
             SetLocale::class,
+            RevokeInactiveUserSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
