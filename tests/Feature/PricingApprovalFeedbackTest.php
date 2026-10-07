@@ -41,7 +41,10 @@ final class PricingApprovalFeedbackTest extends TestCase
 
         Livewire::test('pricing::index', ['mode' => 'versions'])
             ->assertDontSeeHtml('wire:click="approveProposal('.$version->id.')"')
+            ->assertDontSeeHtml('wire:click="rejectProposal('.$version->id.')"')
+            ->assertDontSeeHtml('wire:model="rejectionReason"')
             ->assertSee(__('The proposer cannot approve the same price version.'))
+            ->assertSee(__('A requester cannot reject their own request.'))
             ->call('approveProposal', $version->id)
             ->assertHasErrors('approval')
             ->assertSee(__('The proposer cannot approve the same price version.'));
@@ -67,6 +70,8 @@ final class PricingApprovalFeedbackTest extends TestCase
         $this->actingAs($reviewer);
 
         Livewire::test('pricing::index', ['mode' => 'versions'])
+            ->assertSeeHtml('wire:click="rejectProposal('.$version->id.')"')
+            ->assertSeeHtml('wire:model="rejectionReason"')
             ->call('approveProposal', $version->id)
             ->assertHasErrors('approval')
             ->assertSee(__('The approval request is stale. Reload the source record and try again.'));

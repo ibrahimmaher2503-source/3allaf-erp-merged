@@ -417,13 +417,13 @@ new #[Title('Pricing Workspace')] class extends Component
                                 @can('pricing_labels.submit') @if ($version->state === PriceVersionState::Draft)<flux:button size="sm" wire:click="submitProposal({{ $version->id }})">{{ __('Submit') }}</flux:button>@endif @endcan
                                 @can('pricing_labels.approve') @if ($version->state === PriceVersionState::Submitted)
                                     @if ($version->approvalRecord?->requester_id === $user->id && ! $user->canBypassApproval())
-                                        <flux:callout variant="warning" class="text-xs">{{ __('The proposer cannot approve the same price version.') }}</flux:callout>
+                                        <flux:callout variant="warning" class="text-xs">{{ __('The proposer cannot approve the same price version.') }} {{ __('A requester cannot reject their own request.') }}</flux:callout>
                                     @else
                                         <x-actions.button semantic="approve" :label="__('Approve')" wire:click="approveProposal({{ $version->id }})">{{ __('Approve') }}</x-actions.button>
+                                        <flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" />
+                                        @error('rejectionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                                        <x-actions.button semantic="reject" :label="__('Reject')" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</x-actions.button>
                                     @endif
-                                    <flux:input size="sm" wire:model="rejectionReason" placeholder="{{ __('Rejection reason if rejecting') }}" />
-                                    @error('rejectionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
-                                    <x-actions.button semantic="reject" :label="__('Reject')" wire:click="rejectProposal({{ $version->id }})">{{ __('Reject') }}</x-actions.button>
                                 @endif @endcan
                             </td>
                         </tr>
