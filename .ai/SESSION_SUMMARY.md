@@ -1673,3 +1673,7 @@ FriBidi is unavailable at the required executable path; its environment-dependen
 - **BUG-09 disposition:** Not reproduced locally. The accepted PosShiftOpenRouteTest evidence covers canonical cashier shift GET/POST and scope denials; no grants or aliases changed.
 - **Verification actually run:** The new focused test failed before the fix (print-templates.complete was true with no linked template) and passed after it (1 test / 1 assertion) on qa_rajh_m1_pos_20261007. Pint ran on the changed PHP files; unrelated formatting hunks were reverted. git diff --check passed. No browser, full-suite, or production checks ran.
 - **Repository / delivery:** Changed InitialSetupStatus.php, its focused feature test, and this summary. Branch commit includes these changes; no push occurred, pending lead approval.
+
+## 2026-10-07 — BUG-08 active-template readiness regression extension
+
+Lead review requested a positive-path assertion in the existing BUG-08 test. The same method now confirms readiness is false for an active printer with no linked template, true after linking an active `PrintTemplate`, then false after that linked template is inactivated. The focused method passed on `qa_rajh_m1_pos_20261007` with **1 test / 3 assertions** through the private worktree-safe PHPUnit bootstrap. Explicit-file Pint and `git diff --check` passed. No other tests, browser checks, broad readiness review, push, or production access occurred; the test-only follow-up commit is on `fix/bug-08-setup-readiness-accuracy`.
