@@ -2,35 +2,48 @@
 
 use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\ManageProductMediaAction;
-use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
+use App\Modules\Catalog\Actions\SaveProductAction;
+use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Modules\Platform\Support\ProductPricingReadiness;
+use App\Modules\Reporting\Models\Alert;
+use App\Support\UserSafeError;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new #[Title('Product Card')] class extends Component {
+new #[Title('Product Card')] class extends Component
+{
     use WithFileUploads;
 
     public ?int $productId = null;
+
     public ?int $productVersion = null;
+
     public bool $isEditing = false;
+
     public mixed $mediaUpload = null;
+
     public string $mediaRole = 'additional';
+
     public string $supplierBarcode = '';
+
     public string $stage = 'basic';
+
     public array $productForm = [
         'item_code' => '',
         'barcode_registration_type' => 'international',
@@ -56,6 +69,7 @@ new #[Title('Product Card')] class extends Component {
         'dimension_height' => '',
         'dimension_unit' => '',
         'weight' => '',
+        'colour' => '',
         'key_points_ar' => '',
         'key_points_en' => '',
         'keywords_ar' => '',
@@ -64,6 +78,8 @@ new #[Title('Product Card')] class extends Component {
         'average_cost' => '', 'sale_price' => '', 'battery_required' => false, 'battery_details' => '',
         'preferred_supplier_id' => '',
         'supplier_item_code' => '',
+        'age_label_ids' => [],
+        'character_ids' => [],
         'filter_value_ids' => [],
     ];
 
@@ -102,10 +118,10 @@ new #[Title('Product Card')] class extends Component {
             app(ReserveProductIdentityAction::class)->preview((int) $this->productForm['preferred_supplier_id']);
 
             return null;
-        } catch (\InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException $exception) {
             return $exception->getMessage();
         } catch (Throwable $exception) {
-            return \App\Support\UserSafeError::message($exception);
+            return UserSafeError::message($exception);
         }
     }
 
@@ -137,7 +153,7 @@ new #[Title('Product Card')] class extends Component {
             if (! $saveAsDraft && $validated['barcode_registration_type'] === 'local' && blank($validated['item_code'])) {
                 try {
                     app(ReserveProductIdentityAction::class)->preview((int) $validated['preferred_supplier_id']);
-                } catch (\InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException $exception) {
                     throw ValidationException::withMessages(['productForm.preferred_supplier_id' => $exception->getMessage()]);
                 }
             }
@@ -170,20 +186,20 @@ new #[Title('Product Card')] class extends Component {
             $persisted = Product::query()->findOrFail($product->id);
             $this->loadProduct($persisted);
             if ($persisted->sale_price !== null && bccomp((string) $persisted->sale_price, '0', 4) > 0) {
-                \App\Modules\Reporting\Models\Alert::query()
+                Alert::query()
                     ->where('alert_type', 'unpriced_product')->where('source_id', (string) $persisted->id)
                     ->where('status', '!=', 'resolved')->update(['status' => 'resolved', 'resolved_at' => now()]);
             }
-            app(\App\Modules\Platform\Support\ProductPricingReadiness::class)->snapshot();
+            app(ProductPricingReadiness::class)->snapshot();
             Flux::toast(variant: 'success', text: $saveAsDraft ? __('Product draft saved successfully.') : __('Product card saved successfully.'));
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
             $field = str((string) $exception->validator->errors()->keys()[0])->afterLast('.')->toString();
             $this->dispatch('product-validation-failed', field: $field);
             Flux::toast(variant: 'danger', text: __('Please correct the highlighted field.'));
-        } catch (\Throwable $exception) {
-            $this->addError('productForm', \App\Support\UserSafeError::message($exception));
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        } catch (Throwable $exception) {
+            $this->addError('productForm', UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -214,9 +230,9 @@ new #[Title('Product Card')] class extends Component {
             $this->mediaUpload = null;
             $this->dispatch('product-image-saved');
             Flux::toast(variant: 'success', text: __('Protected product image added successfully.'));
-        } catch (\Throwable $exception) {
-            $this->addError('mediaUpload', \App\Support\UserSafeError::message($exception));
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        } catch (Throwable $exception) {
+            $this->addError('mediaUpload', UserSafeError::message($exception));
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -227,8 +243,8 @@ new #[Title('Product Card')] class extends Component {
         try {
             $action->setMain(Product::query()->findOrFail($this->productId), $imageId);
             Flux::toast(variant: 'success', text: __('Main image updated successfully.'));
-        } catch (\Throwable $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -239,8 +255,8 @@ new #[Title('Product Card')] class extends Component {
         try {
             $action->revoke(Product::query()->findOrFail($this->productId), $imageId);
             Flux::toast(variant: 'success', text: __('Product image removed while preserving attachment history.'));
-        } catch (\Throwable $exception) {
-            Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: UserSafeError::message($exception));
         }
     }
 
@@ -267,7 +283,7 @@ new #[Title('Product Card')] class extends Component {
 
     private function loadProduct(Product $product): void
     {
-        $product = $product->load(['category', 'brand', 'images.attachment', 'preferredProductSupplier', 'filterValues']);
+        $product = $product->load(['category', 'brand', 'images.attachment', 'preferredProductSupplier', 'ages', 'characters', 'filterValues']);
         $this->productForm = [
             'item_code' => $product->item_code,
             'barcode_registration_type' => $product->barcode_registration_type ?? 'international',
@@ -293,6 +309,7 @@ new #[Title('Product Card')] class extends Component {
             'dimension_height' => $product->dimension_height ?? '',
             'dimension_unit' => $product->dimension_unit ?? '',
             'weight' => $product->weight ?? '',
+            'colour' => $product->colour ?? '',
             'key_points_ar' => $product->key_points_ar ?? '',
             'key_points_en' => $product->key_points_en ?? '',
             'keywords_ar' => $product->keywords_ar ?? '',
@@ -302,6 +319,8 @@ new #[Title('Product Card')] class extends Component {
             'battery_required' => (bool) $product->battery_required, 'battery_details' => $product->battery_details ?? '',
             'preferred_supplier_id' => (string) ($product->preferredProductSupplier?->supplier_id ?? ''),
             'supplier_item_code' => (string) ($product->preferredProductSupplier?->supplier_item_code ?? ''),
+            'age_label_ids' => $product->ages->pluck('id')->map(fn ($id): string => (string) $id)->all(),
+            'character_ids' => $product->characters->pluck('id')->map(fn ($id): string => (string) $id)->all(),
         ];
         $this->productForm['filter_value_ids'] = $product->filterValues->pluck('id')->map(fn ($id): string => (string) $id)->all();
         $this->productVersion = $product->lock_version;
@@ -311,6 +330,12 @@ new #[Title('Product Card')] class extends Component {
     private function rules(bool $saveAsDraft): array
     {
         $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
+        $savedLookups = $this->productId === null
+            ? null
+            : Product::query()->with(['ages:id', 'characters:id'])->findOrFail($this->productId);
+        $savedAgeIds = $savedLookups?->ages->pluck('id')->all() ?? [];
+        $savedCharacterIds = $savedLookups?->characters->pluck('id')->all() ?? [];
+
         return [
             'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
@@ -336,6 +361,7 @@ new #[Title('Product Card')] class extends Component {
             'productForm.dimension_height' => ['nullable', 'numeric', 'min:0'],
             'productForm.dimension_unit' => ['nullable', 'string', 'max:20'],
             'productForm.weight' => ['nullable', 'numeric', 'min:0'],
+            'productForm.colour' => ['nullable', 'string', 'max:100'],
             'productForm.key_points_ar' => ['nullable', 'string', 'max:4000'],
             'productForm.key_points_en' => ['nullable', 'string', 'max:4000'],
             'productForm.keywords_ar' => ['nullable', 'string', 'max:2000'],
@@ -346,6 +372,10 @@ new #[Title('Product Card')] class extends Component {
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
             'productForm.preferred_supplier_id' => [! $saveAsDraft && blank($this->productForm['item_code']) ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
+            'productForm.age_label_ids' => ['array'],
+            'productForm.age_label_ids.*' => ['integer', 'distinct', Rule::exists('age_labels', 'id')->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', $savedAgeIds))],
+            'productForm.character_ids' => ['array'],
+            'productForm.character_ids.*' => ['integer', 'distinct', Rule::exists('characters', 'id')->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', $savedCharacterIds))],
             'productForm.filter_value_ids' => ['array'],
             'productForm.filter_value_ids.*' => ['integer', 'distinct', 'exists:product_option_values,id'],
         ];
@@ -368,7 +398,10 @@ new #[Title('Product Card')] class extends Component {
 
     private function productValidationAttributes(): array
     {
-        if (! str_starts_with(app()->getLocale(), 'ar')) return [];
+        if (! str_starts_with(app()->getLocale(), 'ar')) {
+            return [];
+        }
+
         return [
             'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
@@ -376,6 +409,8 @@ new #[Title('Product Card')] class extends Component {
             'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية', 'productForm.tax_setting_id' => 'ضريبة المنتج',
             'productForm.average_cost' => 'سعر التكلفة', 'productForm.sale_price' => 'سعر البيع الأساسي للمستهلك',
             'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
+            'productForm.colour' => 'اللون', 'productForm.age_label_ids' => 'الفئات العمرية', 'productForm.age_label_ids.*' => 'الفئات العمرية',
+            'productForm.character_ids' => 'الشخصيات', 'productForm.character_ids.*' => 'الشخصيات',
             'supplierBarcode' => 'الباركود الدولي',
         ];
     }
@@ -384,10 +419,12 @@ new #[Title('Product Card')] class extends Component {
     {
         $companyId = (int) app(AuthorizedCompanyContext::class)->resolve(auth()->user(), request()->input('company_id'))->id;
         $product = $this->productId === null ? null : Product::query()
-            ->with(['category', 'brand', 'barcodes', 'images.attachment', 'filterValues'])
+            ->with(['category', 'brand', 'barcodes', 'images.attachment', 'ages', 'characters', 'filterValues'])
             ->findOrFail($this->productId);
 
         $savedFilterIds = $product?->filterValues->pluck('id')->all() ?? [];
+        $savedAgeIds = $product?->ages->pluck('id')->all() ?? [];
+        $savedCharacterIds = $product?->characters->pluck('id')->all() ?? [];
 
         return view('catalog.product-form', [
             'product' => $product,
@@ -399,6 +436,8 @@ new #[Title('Product Card')] class extends Component {
                 ->where(fn ($query) => $query->where('status', 'active')->orWhereHas('values', fn ($values) => $values->whereIn('id', $savedFilterIds)))
                 ->with(['values' => fn ($query) => $query->where(fn ($values) => $values->where('status', 'active')->orWhereIn('id', $savedFilterIds))])
                 ->orderBy('sort_order')->orderBy('id')->get(),
+            'ageLabels' => AgeLabel::query()->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', $savedAgeIds))->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
+            'characters' => Character::query()->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', $savedCharacterIds))->orderBy('sort_order')->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'status']),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
         ]);
     }
@@ -567,6 +606,7 @@ new #[Title('Product Card')] class extends Component {
 
         @if($isEditing)
         <div class="order-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"><div><div class="flex items-center gap-2"><h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage B — Optional additional data') }}</h2><x-context-help :title="__('Optional product data help')" :label="__('Open contextual help')"><p>{{ __('The required Product Card is saved. Images, Product Filters, dimensions, online visibility, descriptions, and battery data are optional enrichment.') }}</p></x-context-help></div></div><flux:button href="{{ route('catalog.product-options') }}" variant="subtle" icon="swatch" wire:navigate>{{ __('Product Filters') }}</flux:button></div>
+        @endif
         <details id="product-attributes" class="order-4 catalog-form-card catalog-product-disclosure" data-guide="product-form-attributes">
             <summary>
                 <flux:heading size="lg">{{ __('Physical and merchandising attributes') }}</flux:heading>
@@ -576,6 +616,39 @@ new #[Title('Product Card')] class extends Component {
                 <div class="mb-4 grid gap-4 md:grid-cols-2">
                     <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="3" dir="rtl" />
                     <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="3" dir="ltr" />
+                </div>
+                <div class="mb-4 grid gap-4 md:grid-cols-2">
+                    <flux:textarea wire:model="productForm.key_points_ar" :label="__('Key points Arabic')" rows="3" dir="rtl" />
+                    <flux:textarea wire:model="productForm.key_points_en" :label="__('Key points English')" rows="3" dir="ltr" />
+                    <flux:textarea wire:model="productForm.keywords_ar" :label="__('Search keywords Arabic')" rows="2" dir="rtl" />
+                    <flux:textarea wire:model="productForm.keywords_en" :label="__('Search keywords English')" rows="2" dir="ltr" />
+                </div>
+                <div class="mb-4 grid gap-4 md:grid-cols-2">
+                    <flux:input wire:model="productForm.colour" :label="__('Colour')" maxlength="100" />
+                    <div class="space-y-3">
+                        <flux:heading size="sm">{{ __('Age labels') }}</flux:heading>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            @forelse ($ageLabels as $ageLabel)
+                                <flux:checkbox wire:key="product-age-label-{{ $ageLabel->id }}" wire:model="productForm.age_label_ids" :value="$ageLabel->id" :label="str_starts_with(app()->getLocale(), 'ar') ? $ageLabel->name_ar : $ageLabel->name_en" :disabled="$ageLabel->status !== 'active' && ! in_array((string) $ageLabel->id, $productForm['age_label_ids'], true)" />
+                            @empty
+                                <flux:text>{{ __('No age labels configured.') }}</flux:text>
+                            @endforelse
+                        </div>
+                        <flux:error name="productForm.age_label_ids" />
+                        <flux:error name="productForm.age_label_ids.*" />
+                    </div>
+                    <div class="space-y-3">
+                        <flux:heading size="sm">{{ __('Characters') }}</flux:heading>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            @forelse ($characters as $character)
+                                <flux:checkbox wire:key="product-character-{{ $character->id }}" wire:model="productForm.character_ids" :value="$character->id" :label="str_starts_with(app()->getLocale(), 'ar') ? $character->name_ar : $character->name_en" :disabled="$character->status !== 'active' && ! in_array((string) $character->id, $productForm['character_ids'], true)" />
+                            @empty
+                                <flux:text>{{ __('No characters configured.') }}</flux:text>
+                            @endforelse
+                        </div>
+                        <flux:error name="productForm.character_ids" />
+                        <flux:error name="productForm.character_ids.*" />
+                    </div>
                 </div>
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />
@@ -618,6 +691,7 @@ new #[Title('Product Card')] class extends Component {
             </div>
         </details>
 
+        @if($isEditing)
         <details class="order-5 catalog-form-card catalog-product-disclosure" data-guide="product-form-web-seo">
             <summary>
                 <flux:heading size="lg">{{ __('Product web & SEO') }}</flux:heading>
@@ -693,11 +767,7 @@ new #[Title('Product Card')] class extends Component {
         @else
             <div class="order-4 rounded-xl border border-border bg-surface-muted/40 p-4">
                 <h2 class="text-base font-semibold text-text-primary sm:text-lg">{{ __('Stage B — Optional additional data') }}</h2>
-                <x-context-help :title="__('Optional product content help')" :label="__('Open contextual help')"><p>{{ __('Descriptions are optional and may be entered now. Images, Product Filters, dimensions, online visibility, and battery data become available after the required Product Card is saved.') }}</p></x-context-help>
-                <div class="mt-3 grid gap-4 md:grid-cols-2">
-                    <flux:textarea wire:model="productForm.description_ar" :label="__('Arabic description')" rows="3" dir="rtl" />
-                    <flux:textarea wire:model="productForm.description_en" :label="__('English description')" rows="3" dir="ltr" />
-                </div>
+                <x-context-help :title="__('Optional product content help')" :label="__('Open contextual help')"><p>{{ __('Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment.') }}</p></x-context-help>
             </div>
         @endif
         <div class="order-7 sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
