@@ -506,3 +506,9 @@ Authorized isolated database `qa_rajh_20261005173119_24094`. A–F PASS through 
 
 
 Production closure: `0.1.22-cost-optional` / `1d27f7b`, compact smoke PASS once after recovery from a pre-smoke helper mode failure. Identity, optional runtime/compiled rule, existing-cost reads, six authenticated read-only routes, HTTP/services/jobs/schedules/backup and zero new critical/error log entries passed. No production business QA write. Disposable DB/credentials/sessions removed; receipts remain under the focused evidence path.
+
+## 2026-10-07 — Named Module 7 Part 1 local Returns QA
+
+Owner-authorized focused scope, XAMPP MySQL 127.0.0.1:3306 / qa_rajh_m7_returns_20261007, APP_ENV=testing, isolated temporary QA storage. Final PASS: Module7SaleFixtureTest 2/32, Module7ReturnInventoryTest 7/42, Module7ReturnFormTest 5/38, Module7SourceLookupTest 10/73, Module7ReturnHistoryApprovalTest 4/38 (28 tests / 223 assertions). P0-01..P0-10 passed through real application actions/HTTP/Livewire. Inventory: sellable +2 to selling stock; damaged/non-sellable +2 only to damaged stock; manager-review quarantined, approval required; 1+2+2 reaches sold 5, overflow/repeat denied; 2+2 leaves 1, overflow denied; completion replay leaves stock/movements/settlements unchanged. Maker-checker approve/reject, audit, reason/condition/notes, snapshot names, Gift Receipt single-use/privacy and exchange refund 66.67 with correct stock deltas verified.
+
+Changed-PHP syntax (18 files), locale JSON, Pint and diff check passed; optimize:clear once and Vite build once passed. Build retained the existing optional-fontaine warning. No browser-control check, full suite, PHPStan, production QA, merge or deployment. Fixture retention mode M7_KEEP_FIXTURES=1 used only for the final fixture class: sales 135/136, active receipt 72, cashier 310/reviewer 311 remain in the dedicated QA schema; test returns rolled back. M7-06 decision remains open (DEC-103).

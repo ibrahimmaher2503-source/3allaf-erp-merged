@@ -1,3 +1,7 @@
+# 2026-10-07 — Module 7 Part 1 local Returns QA
+
+Local D3 fixes and previously blocked P0-01..P0-10 completed on `fix/module7-returns-p1-fast`; 28 focused tests / 223 assertions PASS. Sellable versus damaged/quarantine posting, cumulative quantities, completion replay, maker-checker, Gift Receipt use/privacy, exchange settlement, search, locale and historical identity verified against dedicated XAMPP MySQL. Minimum fixture dataset retained locally. Runtime branch pushed; final closure commit follows. M7-06 inspection rejection/attachments remains Requires Owner Decision (DEC-103). Main unchanged; no production access, merge, deployment or milestone advancement.
+
 # 2026-10-05 — Permanent optional Product Card cost
 
 Source fix and focused A–F verification complete; shared optional rule replaces final-save, action and import requirements. Saved costs and independent accounting snapshots preserved; costless editor save/create and browser DB readback PASS. Three focused tests/24 assertions PASS; static delta zero new (9 existing findings). DEC-091/evidence record the named native MariaDB authorization. Runtime `1d27f7b` committed/pushed and cleanly integrated/pushed to main; production `0.1.22-cost-optional` active, compact smoke PASS. Prior release preserved for rollback; disposable DB, credentials and sessions removed. Report-only closure publication follows without another deployment. No business milestone or full Gate advancement.

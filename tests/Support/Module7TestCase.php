@@ -16,6 +16,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\RequestPermissionLookup;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
@@ -280,6 +281,8 @@ abstract class Module7TestCase extends TestCase
         $role->permissions()->syncWithoutDetaching($permissionIds);
         $user->roles()->syncWithoutDetaching([$role->id]);
         $user->unsetRelation('roles');
+        app()->forgetInstance(RequestPermissionLookup::class);
+        request()->attributes->remove('permission_lookup.'.$user->id);
     }
 
     /** @param array<string, mixed> $overrides */
@@ -355,8 +358,7 @@ abstract class Module7TestCase extends TestCase
             'loyalty.rounding_policy' => ['earn' => 'floor', 'redeem' => 'floor'],
             'loyalty.ledger_integrity' => ['enabled' => true],
         ] as $key => $value) {
-            CustomerPolicySettingVersion::query()->create([
-                'key' => $key,
+            CustomerPolicySettingVersion::query()->firstOrCreate(['key' => $key, 'version' => 1], [
                 'value' => json_encode($value, JSON_THROW_ON_ERROR),
                 'value_type' => 'json',
                 'version' => 1,

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Retail\Models\Sale;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\Module7TestCase;
 
 final class Module7SaleFixtureTest extends Module7TestCase
@@ -69,5 +70,8 @@ final class Module7SaleFixtureTest extends Module7TestCase
         self::assertSame((string) $this->damagedStore->id, (string) $data['lines'][0]['return_store_id']);
         self::assertSame('damaged', $data['lines'][0]['condition']);
         self::assertSame('quarantine', $data['lines'][0]['disposition']);
+        if (getenv('M7_KEEP_FIXTURES') === '1') {
+            DB::commit();
+        }
     }
 }

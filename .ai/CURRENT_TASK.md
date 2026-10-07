@@ -1,3 +1,11 @@
+# Current Task — Module 7 Part 1 local Returns QA closure (2026-10-07)
+
+Explicit owner authorization: D3, five investigating/test agents, focused automated checks and legitimate fixtures in local XAMPP MySQL only. Branch `fix/module7-returns-p1-fast`, source `87db35e88d6d726b5e287e8e4dcec600ba71d941`. M7-01/02/03/04/05/07/08 fixed; historical product names use immutable sale-line snapshots. Previously blocked P0-01 through P0-10 executed and passed. Focused checks: 28 tests / 223 assertions, changed-PHP syntax, Pint, one optimize:clear and one frontend build passed. No full suite, PHPStan, production access, merge or deployment.
+
+Retained dedicated QA database `qa_rajh_m7_returns_20261007`: completed sales 135/136, active Gift Receipt 72, cashier 310 and reviewer 311. Fixtures use real shift, pricing, sale, inventory and Gift Receipt actions. All financial return scenarios remain transaction-isolated. Runtime commits pushed to the single module branch; closure fixture/status commit follows on that branch. M7-06 requires an owner decision (DEC-103); no other in-scope blocker. This task advances no business milestone or production release gate.
+
+## Preserved previous task
+
 # Current Task — Permanent optional Product Card cost
 
 Owner-authorized I4 hotfix on `hotfix/product-cost-optional-permanent` in `/tmp/rajeh-erp-product-cost-optional-permanent`, source `13a2c5efaae3038706e98197463805d8d24cba61`. Correct permanent business rule: cost optional for create/edit/draft/final/import; blank edits preserve locked saved cost and unauthorized cost is hidden/excluded/ignored. No accounting snapshot or schema change. DEC-091 records current authorization, including the owner's named disposable native MariaDB exception.
