@@ -10,9 +10,8 @@ use App\Modules\Retail\Support\DecimalMoney;
 use App\Support\ProductQuantity;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
 
-final class FinancialBoundaryTest extends TestCase
+final class FinancialBoundaryTest extends PureCalculatorTestCase
 {
     public function test_only_new_precision_and_large_value_matrix_rows(): void
     {
