@@ -176,6 +176,8 @@ class SaveLocalSettingsAction
         $validated = Validator::make(
             ['taxSettingForm' => ['rate' => $data['rate'] ?? null]],
             ['taxSettingForm.rate' => ['required', 'numeric', 'min:0', 'max:100']],
+            [],
+            ['taxSettingForm.rate' => __('Tax Rate (%)')],
         )->validate();
 
         return (string) $validated['taxSettingForm']['rate'];
