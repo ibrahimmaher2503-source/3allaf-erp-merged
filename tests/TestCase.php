@@ -13,12 +13,6 @@ use Illuminate\Foundation\Testing\WithCachedRoutes;
 
 abstract class TestCase extends BaseTestCase
 {
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        qa_reset_pure_calculator_container();
-    }
-
     public function createApplication(): Application
     {
         $application = require dirname(__DIR__).'/bootstrap/app.php';
