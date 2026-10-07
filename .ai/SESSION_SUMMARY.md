@@ -1711,3 +1711,6 @@ Trimmed leading and trailing whitespace from the company English name in the sha
 ## 2026-10-07 — BUG-11 preserve nullable company name semantics
 
 Corrected the company-name trim to retain `null` for null or omitted `name_en`, while trimming supplied strings. Extended the existing focused persistence test to cover trimmed input, explicit null, and omission. The affected method passed: 1 test, 4 assertions; Pint and `git diff --check` passed. No browser check or push. This correction awaits parent lead review.
+
+## 2026-10-07 — BUG-12 audit company timezone display
+On ix/bug-12-audit-company-timezone from 7c3cf6d, confirmed the audit table (desktop/mobile) and detail showed raw UTC timestamps. Used the existing AuthorizedCompanyContext to resolve the viewer's approved company timezone; formatted copied timestamps in the list and detail and displayed the timezone label. Storage and audit records were not changed. Regression first failed against the original view, then the focused render test passed; the complete Module1AuditPresentationTest.php passed 5 tests / 34 assertions, Pint passed, and diff hygiene passed. No browser, full suite, production, or push. Next action: lead review; push awaits approval.

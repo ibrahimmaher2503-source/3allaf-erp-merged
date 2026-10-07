@@ -19,6 +19,7 @@ use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -26,6 +27,27 @@ use Tests\TestCase;
 final class Module1AuditPresentationTest extends TestCase
 {
     use DatabaseTransactions;
+
+    public function test_audit_timestamps_render_in_the_authorized_company_timezone_in_list_and_detail(): void
+    {
+        app()->setLocale('en');
+        $this->grantPermissions('audit_logs.view');
+        $this->actingAs($this->superAdmin());
+        Company::factory()->create(['timezone' => 'Africa/Cairo']);
+        Carbon::setTestNow('2026-10-07 21:51:00');
+
+        try {
+            $event = app(RecordAuditEvent::class)->execute('platform', 'update_local_settings');
+
+            Livewire::test('platform::system.audit-log')
+                ->assertSee('Time (Africa/Cairo)')
+                ->assertSee('2026-10-08 00:51:00')
+                ->call('showAudit', $event->id)
+                ->assertSee('2026-10-08 00:51:00 Africa/Cairo');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 
     public function test_branch_inventory_and_numbering_events_are_scoped_and_render_with_specific_labels(): void
     {
