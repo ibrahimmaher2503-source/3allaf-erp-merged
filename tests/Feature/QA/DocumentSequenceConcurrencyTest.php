@@ -151,6 +151,8 @@ final class DocumentSequenceConcurrencyTest extends TestCase
         $companyId = (int) $branch->company_id;
         $sequence = null;
         $user = null;
+        $permission = null;
+        $permissionCreatedByTest = false;
 
         try {
             $allocatedNumber = app(AllocateDocumentNumber::class)->executeForBranch('inventory_adjustment', $branchId);
@@ -166,12 +168,15 @@ final class DocumentSequenceConcurrencyTest extends TestCase
                 'name_en' => 'QA sequence editor',
                 'status' => 'active',
             ]);
-            $permission = Permission::query()->create([
-                'code' => 'company_settings.edit',
-                'module' => 'company_settings',
-                'action' => 'edit',
-                'status' => 'active',
-            ]);
+            $permission = Permission::query()->firstOrCreate(
+                ['code' => 'company_settings.edit'],
+                [
+                    'module' => 'company_settings',
+                    'action' => 'edit',
+                    'status' => 'active',
+                ],
+            );
+            $permissionCreatedByTest = $permission->wasRecentlyCreated;
             $role->permissions()->attach($permission);
             $user->roles()->attach($role);
             $this->actingAs($user);
@@ -210,7 +215,7 @@ final class DocumentSequenceConcurrencyTest extends TestCase
             if (isset($role)) {
                 $role->delete();
             }
-            if (isset($permission)) {
+            if ($permissionCreatedByTest) {
                 $permission->delete();
             }
         }
