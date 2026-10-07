@@ -19,6 +19,8 @@ new #[Title('Product Import')] class extends Component {
 
     public mixed $importFile = null;
     public string $mode = 'create_only';
+    /** @var array<string, string> */
+    public array $columnMapping = [];
     #[Url(as: 'batch')]
     public ?int $selectedBatchId = null;
 
@@ -31,8 +33,10 @@ new #[Title('Product Import')] class extends Component {
     {
         Gate::authorize($this->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
         $this->validate([
-            'importFile' => ['required', 'file', 'mimes:xlsx,csv,ods', 'max:10240'],
+            'importFile' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
             'mode' => ['required', 'in:create_only,update_existing'],
+        ], [
+            'importFile.mimes' => __('Only the current company-specific XLSX template is supported.'),
         ]);
 
         try {
@@ -48,10 +52,29 @@ new #[Title('Product Import')] class extends Component {
                 throw $exception;
             }
             $this->selectedBatchId = $batch->id;
+            $this->columnMapping = $this->defaultColumnMapping($batch->headers ?? []);
             $this->importFile = null;
             Flux::toast(variant: 'success', text: __('File staged. Review all rows before approval.'));
         } catch (Throwable $exception) {
-            $this->addError('importFile', \App\Support\UserSafeError::message($exception));
+            \App\Support\UserSafeError::message($exception);
+            $message = __('The workbook could not be staged. Download the current company-specific XLSX template, keep its Instructions and Data Entry sheets unchanged, and retry.');
+            $this->addError('importFile', $message);
+            Flux::toast(variant: 'danger', text: $message);
+        }
+    }
+
+    public function mapColumns(StageProductImportAction $action): void
+    {
+        abort_unless($this->selectedBatchId !== null, 404);
+        $batch = ProductImportBatch::query()->where('created_by', auth()->id())->findOrFail($this->selectedBatchId);
+        Gate::authorize($batch->mode === 'update_existing' ? 'products_categories_brands.edit' : 'products_categories_brands.create');
+
+        try {
+            $action->applyMapping($batch, $this->columnMapping);
+            Flux::toast(variant: 'success', text: __('Columns mapped and rows validated. Review rejected rows before approving valid rows.'));
+        } catch (InvalidArgumentException $exception) {
+            $this->addError('columnMapping', $exception->getMessage());
+        } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
     }
@@ -85,7 +108,17 @@ new #[Title('Product Import')] class extends Component {
     public function selectBatch(int $batchId): void
     {
         Gate::authorize('products_categories_brands.view');
-        $this->selectedBatchId = $batchId;
+        $canReview = Gate::allows('products_categories_brands.approve');
+        $batch = ProductImportBatch::query()->where(function ($query) use ($canReview): void {
+            $query->where('created_by', auth()->id());
+            if ($canReview) {
+                $query->orWhere('status', 'ready_for_review');
+            }
+        })->findOrFail($batchId);
+        $this->selectedBatchId = $batch->id;
+        $this->columnMapping = $batch->created_by === auth()->id() && $batch->status === 'mapping_required'
+            ? $this->defaultColumnMapping($batch->headers ?? [])
+            : [];
     }
 
     public function render()
@@ -118,7 +151,24 @@ new #[Title('Product Import')] class extends Component {
             ->where('purpose', 'import_source')
             ->first();
 
-        return view('catalog.product-import', compact('batches', 'selectedBatch', 'sourceAttachment'));
+        return view('catalog.product-import', [
+            'batches' => $batches,
+            'selectedBatch' => $selectedBatch,
+            'sourceAttachment' => $sourceAttachment,
+            'supportedFields' => StageProductImportAction::supportedFields(),
+        ]);
+    }
+
+    /** @param array<int, string> $headers @return array<string, string> */
+    private function defaultColumnMapping(array $headers): array
+    {
+        $fields = StageProductImportAction::supportedFields();
+        $mapping = [];
+        foreach ($headers as $header) {
+            $mapping[$header] = in_array($header, $fields, true) ? $header : '';
+        }
+
+        return $mapping;
     }
 };
 ?>
@@ -167,7 +217,7 @@ new #[Title('Product Import')] class extends Component {
                 <span class="rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-200">{{ str_starts_with(app()->getLocale(), 'ar') ? 'الخطوة ١' : 'Step 1' }}</span>
             </div>
             @if (str_starts_with(app()->getLocale(), 'ar'))
-                <flux:text>ارفع ملف Excel أو CSV لتجهيز المنتجات ومراجعتها قبل اعتمادها وحفظها.</flux:text>
+                <flux:text>ارفع قالب Excel الحالي الخاص بالشركة لتجهيز المنتجات ومراجعتها قبل اعتمادها وحفظها.</flux:text>
                 <div class="grid gap-3 pt-2 md:grid-cols-2">
                     <div class="rounded-xl border border-cyan-200/15 bg-slate-950/20 p-4">
                         <p class="text-sm font-semibold text-white">الأعمدة المطلوبة</p>
@@ -190,8 +240,8 @@ new #[Title('Product Import')] class extends Component {
 
         <form wire:submit="stage" class="grid gap-4 md:grid-cols-3">
             <div class="md:col-span-2 space-y-2">
-                <flux:label>{{ __('Excel or CSV file') }}</flux:label>
-                <flux:input type="file" wire:model="importFile" accept=".xlsx,.csv,.ods" required />
+                <flux:label>{{ __('Company-specific Excel template (.xlsx)') }}</flux:label>
+                <flux:input type="file" wire:model="importFile" accept=".xlsx" required />
                 @error('importFile') <flux:text class="text-red-600">{{ $message }}</flux:text> @enderror
             </div>
             <div class="space-y-2" data-guide="import-mode-select">
@@ -268,11 +318,11 @@ new #[Title('Product Import')] class extends Component {
                             <flux:button href="{{ route('catalog.products.import.errors', $selectedBatch) }}" variant="subtle" icon="arrow-down-tray">{{ __('Download errors') }}</flux:button>
                         @endif
                     @endcan
-                    @if (in_array($selectedBatch->status, ['staging', 'ready_for_review'], true))
+                    @if (in_array($selectedBatch->status, ['staging', 'mapping_required', 'ready_for_review'], true))
                         <x-actions.button semantic="cancel" :label="__('Cancel batch')" variant="danger" wire:click="cancelBatch" wire:loading.attr="disabled" wire:target="cancelBatch">{{ __('Cancel batch') }}</x-actions.button>
                     @endif
                     @can('products_categories_brands.approve')
-                        <flux:button variant="primary" wire:click="approve" wire:loading.attr="disabled" wire:target="approve" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->invalid_rows > 0" data-guide="import-approve-button"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>
+                        <flux:button variant="primary" wire:click="approve" wire:loading.attr="disabled" wire:target="approve" :disabled="$selectedBatch->status !== 'ready_for_review' || $selectedBatch->valid_rows < 1" data-guide="import-approve-button"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>
                     @endcan
                 </div>
             </div>
@@ -282,6 +332,34 @@ new #[Title('Product Import')] class extends Component {
                     <flux:callout variant="info" icon="lock-closed">{{ __('This batch is ready for review, but approval requires an authorized catalog approver.') }}</flux:callout>
                 @endif
             @endcannot
+
+            @if ($selectedBatch->status === 'mapping_required' && $selectedBatch->created_by === auth()->id())
+                <div class="space-y-4 rounded-xl border border-cyan-200/20 p-4" data-guide="import-column-mapping">
+                    <div>
+                        <flux:heading size="md">{{ __('4. Map columns and validate rows') }}</flux:heading>
+                        <flux:text>{{ __('Confirm which product field each source column represents. Unmapped source columns are ignored; required fields must be mapped once.') }}</flux:text>
+                    </div>
+                    <form wire:submit="mapColumns" class="space-y-4">
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            @foreach ($selectedBatch->headers ?? [] as $sourceHeader)
+                                @if ($sourceHeader !== '')
+                                    <div class="space-y-2 rounded-lg border border-white/10 p-3" wire:key="mapping-{{ $sourceHeader }}">
+                                        <flux:label>{{ __('Source column') }}: <code dir="ltr">{{ $sourceHeader }}</code></flux:label>
+                                        <flux:select wire:model="columnMapping.{{ $sourceHeader }}">
+                                            <flux:select.option value="">{{ __('Do not import this column') }}</flux:select.option>
+                                            @foreach ($supportedFields as $field)
+                                                <flux:select.option value="{{ $field }}">{{ $field }}</flux:select.option>
+                                            @endforeach
+                                        </flux:select>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                        @error('columnMapping') <flux:text class="text-red-600">{{ $message }}</flux:text> @enderror
+                        <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="mapColumns">{{ __('Map columns and validate rows') }}</flux:button>
+                    </form>
+                </div>
+            @endif
 
             <div class="overflow-x-auto">
                 <flux:table aria-label="{{ __('Import row review') }}">
@@ -308,7 +386,7 @@ new #[Title('Product Import')] class extends Component {
                 </flux:table>
             </div>
             @if ($selectedBatch->invalid_rows > 0)
-                <flux:callout variant="warning">{{ __('Approval is blocked while rejected rows remain. Invalid rows never write to products.') }}</flux:callout>
+                <flux:callout variant="warning">{{ __('Rejected rows remain unchanged and are available in the error download. You can approve the valid rows independently.') }}</flux:callout>
             @endif
         </flux:card>
     @endif
