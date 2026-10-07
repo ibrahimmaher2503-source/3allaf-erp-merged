@@ -353,7 +353,7 @@ new #[Title('Product Card')] class extends Component {
 
     private function productValidationMessages(): array
     {
-        return str_starts_with(app()->getLocale(), 'ar') ? [
+        $messages = str_starts_with(app()->getLocale(), 'ar') ? [
             'required' => 'حقل :attribute مطلوب.',
             'numeric' => 'يجب أن يحتوي حقل :attribute على رقم صحيح.',
             'integer' => 'يجب أن يحتوي حقل :attribute على عدد صحيح.',
@@ -364,11 +364,17 @@ new #[Title('Product Card')] class extends Component {
             'regex' => 'صيغة :attribute غير صحيحة.',
             'in' => 'القيمة المختارة في حقل :attribute غير صحيحة.',
         ] : [];
+        $messages['productForm.preferred_supplier_id.required'] = __('Select an active supplier to generate the product code.');
+
+        return $messages;
     }
 
     private function productValidationAttributes(): array
     {
-        if (! str_starts_with(app()->getLocale(), 'ar')) return [];
+        if (! str_starts_with(app()->getLocale(), 'ar')) {
+            return ['productForm.preferred_supplier_id' => __('Preferred supplier')];
+        }
+
         return [
             'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
@@ -452,21 +458,23 @@ new #[Title('Product Card')] class extends Component {
                     <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
                     <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
                 </flux:select>
-                @if ($productForm['barcode_registration_type'] === 'local' && blank($productForm['item_code']))
-                    <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Supplier')" required>
-                        <flux:select.option value="">{{ __('Select supplier first') }}</flux:select.option>
+                @if (blank($productForm['item_code']))
+                    <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Preferred supplier')" required>
+                        <flux:select.option value="">{{ __('Select supplier to generate a product code') }}</flux:select.option>
                         @foreach ($suppliers as $supplier)
                             <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
                         @endforeach
                     </flux:select>
-                    <div class="rounded-lg border border-border bg-surface-muted/30 p-3 text-sm">
-                        <span class="block text-xs text-text-muted">{{ __('Generated product-code preview') }}</span>
-                        @php($previewError = $this->localProductCodePreviewError())
-                        <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? ($previewError ? '—' : __('Select supplier first')) }}</strong>
-                        @if ($previewError)
-                            <span class="mt-1 block text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</span>
-                        @endif
-                    </div>
+                    @if ($productForm['barcode_registration_type'] === 'local')
+                        <div class="rounded-lg border border-border bg-surface-muted/30 p-3 text-sm">
+                            <span class="block text-xs text-text-muted">{{ __('Generated product-code preview') }}</span>
+                            @php($previewError = $this->localProductCodePreviewError())
+                            <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? ($previewError ? '—' : __('Select supplier first')) }}</strong>
+                            @if ($previewError)
+                                <span class="mt-1 block text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</span>
+                            @endif
+                        </div>
+                    @endif
                 @endif
                 @if ($productForm['barcode_registration_type'] === 'international')
                     <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
@@ -518,7 +526,7 @@ new #[Title('Product Card')] class extends Component {
                         <flux:select.option :value="$taxSetting->id">{{ $taxSetting->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $taxSetting->name_ar : $taxSetting->name_en }} @if($taxSetting->rate !== null)({{ number_format((float) $taxSetting->rate, 2) }}%)@endif</flux:select.option>
                     @endforeach
                 </flux:select>
-                @if(filled($productForm['item_code']) || $productForm['barcode_registration_type'] !== 'local')
+                @if(filled($productForm['item_code']))
                     <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
                         <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
                         @foreach ($suppliers as $supplier)
