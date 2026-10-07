@@ -30,7 +30,7 @@
         <div class="meta technical" data-human-barcode>{{ $label['barcode']->barcode }}</div>
         @if($settings['show_item_code'])<div class="meta"><span>{{ __('Item code') }}:</span> <span class="technical">{{ $label['product']->item_code }}</span></div>@endif
         @if($settings['show_list_code']&&$label['list'])<div class="meta"><span>{{ __('Price list') }}:</span> <span class="technical">{{ $label['list']->code }}</span></div>@endif
-        @if($settings['show_outlet']&&$label['store'])<div class="meta">{{ str_starts_with(app()->getLocale(), 'ar')?$label['store']->name_ar:$label['store']->name_en }}</div>@endif
+        @if($settings['show_outlet']&&$label['store'])<div class="meta">{{ $label['store']->branch?->code }} · {{ str_starts_with(app()->getLocale(), 'ar')?$label['store']->name_ar:$label['store']->name_en }}</div>@endif
         @if($settings['show_price']&&$label['price']!==null)<div class="price">{{ number_format((float)$label['price'],2) }} {{ str_starts_with(app()->getLocale(), 'ar')?'ج.م':'EGP' }}</div>@endif
     </article>
 @endforeach

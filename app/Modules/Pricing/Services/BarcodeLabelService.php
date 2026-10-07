@@ -38,7 +38,7 @@ final class BarcodeLabelService
             'margin_mm' => 1, 'gap_mm' => 2, 'horizontal_gap_mm' => 2, 'vertical_gap_mm' => 2,
             'a4_rows' => 8, 'a4_columns' => 3, 'symbology' => 'auto',
             'show_name' => true, 'show_price' => true, 'show_item_code' => true,
-            'show_list_code' => false, 'show_outlet' => false,
+            'show_list_code' => false, 'show_outlet' => true,
         ], $template?->layout_settings ?? []);
         if ($paper === 'label_50x30mm') [$settings['width_mm'], $settings['height_mm']] = [50, 30];
         if ($paper === 'label_40x25mm') [$settings['width_mm'], $settings['height_mm']] = [40, 25];
@@ -51,6 +51,9 @@ final class BarcodeLabelService
     /** @param array<int,array<string,mixed>> $rows @return array<string,mixed> */
     public function compose(User $actor, array $rows, array $profile, ?int $storeId = null): array
     {
+        if (! $storeId) {
+            throw ValidationException::withMessages(['store_id' => __('Select a selling outlet')]);
+        }
         $store = $storeId ? Store::visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail($storeId) : null;
         $list = $store ? app(PriceListResolver::class)->listForOutlet($store) : null;
         $prices = $store ? app(EffectivePriceResolver::class)->resolveForStore(array_column($rows, 'product_id'), $store->id) : collect();

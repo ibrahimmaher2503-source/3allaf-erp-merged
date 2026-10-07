@@ -112,3 +112,5 @@ Production access, deployment, backup execution, migration execution, active-sym
 - **Status:** Lead approved, exact branch pushed and integrated locally. Focused regression passed (1 test/13 assertions, including modal, page-2 table island, and denied update after access removal); integration overlap 21 tests/164 assertions and the single build passed. Browser/network timing remains unverified. No release or deployment.
 
 - BUG-24 / V0 / undeployed: readable product validation attributes, resources/views/catalog/{product-form,products}.blade.php; focused locale proof 1/78 PASS; separate commit on fix/module2-qa.
+
+- BUG-18 / V1 / undeployed: visible required outlet and default branch context in barcode label form/render; focused proof 1/10 PASS. Stock-linked queue remains blocked; single fix/module2-qa commit.

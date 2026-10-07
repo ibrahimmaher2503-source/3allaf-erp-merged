@@ -48,7 +48,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
             'title' => __('Barcode labels'),
             'slot' => new HtmlString(view('pricing.labels', [
                 'products' => $products,
-                'stores' => Store::query()->visibleTo($actor)->where('status','active')->where('type','selling')->orderBy('code')->get(),
+                'stores' => Store::query()->visibleTo($actor)->where('status','active')->where('type','selling')->with('branch')->orderBy('code')->get(),
                 'templates' => PrintTemplate::visibleTo($actor)->where('status','active')->where('document_type','barcode_label')->orderBy('code')->get(),
                 'printers' => PrinterConfiguration::visibleTo($actor)->where('status','active')->with('printTemplate')->orderBy('name')->get(),
                 'search' => $search, 'prefill' => $prefill, 'restored' => $restored, 'defaultProfile' => $profile,
@@ -85,7 +85,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $invoiceContext = session('barcode_label_invoice_context');
         $normalAccess = \Illuminate\Support\Facades\Gate::allows('pricing_labels.create');
         abort_unless($normalAccess || is_array($invoiceContext), 403);
-        $data = request()->validate(['products' => ['required','array','max:100'], 'products.*.selected' => ['nullable','boolean'], 'products.*.product_id' => ['required','integer'], 'products.*.barcode_id' => ['nullable','integer'], 'products.*.copies' => ['required','integer','min:1','max:500'], 'store_id' => ['nullable','integer'], 'template_id' => ['nullable','integer'], 'printer_id' => ['nullable','integer']]);
+        $data = request()->validate(['products' => ['required','array','max:100'], 'products.*.selected' => ['nullable','boolean'], 'products.*.product_id' => ['required','integer'], 'products.*.barcode_id' => ['nullable','integer'], 'products.*.copies' => ['required','integer','min:1','max:500'], 'store_id' => [$normalAccess ? 'required' : 'nullable','integer'], 'template_id' => ['nullable','integer'], 'printer_id' => ['nullable','integer']]);
         $data['rows'] = collect($data['products'])->filter(fn ($row) => (bool) ($row['selected'] ?? false))->values()->all();
         if ($data['rows'] === []) throw \Illuminate\Validation\ValidationException::withMessages(['products' => __('Select at least one product with an active barcode.')]);
         if (! $normalAccess) {

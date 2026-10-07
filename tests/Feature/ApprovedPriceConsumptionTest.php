@@ -13,11 +13,14 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
+use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\BarcodeLabelService;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use Database\Seeders\ProductionSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
@@ -140,5 +143,50 @@ final class ApprovedPriceConsumptionTest extends TestCase
         } catch (LogicException) {
         }
         $this->assertSame('140.000', $approvedLine->fresh()->amount);
+    }
+
+    public function test_manual_labels_require_a_visible_outlet_and_a_positive_effective_price(): void
+    {
+        $actor = User::factory()->create(['status' => 'active']);
+        $branch = Branch::factory()->create();
+        $store = Store::factory()->create(['branch_id' => $branch->id, 'company_id' => $branch->company_id]);
+        PriceList::query()->create([
+            'company_id' => $branch->company_id, 'code' => 'PL-0000', 'list_number' => 0,
+            'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price', 'status' => 'active', 'percentage_increase' => '0',
+        ]);
+        $actor->storeScopes()->create(['store_id' => $store->id, 'status' => 'active']);
+        $product = Product::factory()->create(['sale_price' => '25.000', 'model_number' => 'QA-LABEL-18']);
+        $barcode = $product->barcodes()->create(['barcode' => 'QA-LABEL-18', 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
+        $this->actingAs($actor);
+        $service = app(BarcodeLabelService::class);
+        $profile = $service->profile($actor);
+        $rows = [['product_id' => $product->id, 'barcode_id' => $barcode->id, 'copies' => 1]];
+        Gate::before(static fn (): bool => true);
+        $this->get(route('pricing.labels'))->assertOk()->assertSeeHtml('name="store_id"')->assertSee(__('Select a selling outlet'));
+        $this->from(route('pricing.labels'))
+            ->post(route('pricing.labels.preview'), ['products' => [[...$rows[0], 'selected' => true]]])
+            ->assertSessionHasErrors('store_id');
+
+        try {
+            $service->compose($actor, $rows, $profile);
+            self::fail('Label pricing requires an explicit outlet.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('store_id', $exception->errors());
+        }
+
+        $document = $service->compose($actor, $rows, $profile, $store->id);
+        self::assertSame('25.000', $document['labels'][0]['price']);
+        self::assertTrue($document['settings']['show_outlet']);
+        self::assertStringContainsString($store->branch->code, view('pricing.label-print', $document)->render());
+
+        $product->update(['sale_price' => null]);
+        try {
+            $service->compose($actor, $rows, $profile, $store->id);
+            self::fail('Unpriced products must not generate priced labels.');
+        } catch (ValidationException $exception) {
+            self::assertSame([__('No selling price')], $exception->errors()['products']);
+        } catch (ModelNotFoundException $exception) {
+            self::assertSame(Product::class, $exception->getModel());
+        }
     }
 }

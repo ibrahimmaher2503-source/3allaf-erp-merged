@@ -14,6 +14,16 @@
             <input type="hidden" name="barcode_action" value="manual">
             <input type="hidden" name="return_search" x-model="query">
 
+            <flux:select name="store_id" :label="__('Selling outlet')" required>
+                <flux:select.option value="">{{ __('Select a selling outlet') }}</flux:select.option>
+                @foreach ($stores as $store)
+                    <flux:select.option :value="$store->id" :selected="(int) old('store_id', request('store')) === $store->id">
+                        {{ $store->branch?->code }} · {{ $store->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
+            @error('store_id')<p class="text-sm text-rose-600" role="alert">{{ $message }}</p>@enderror
+
             <div class="grid gap-3 lg:grid-cols-2">
                 <template x-for="product in selected" :key="product.id">
                     @include('pricing.labels.selected-product')

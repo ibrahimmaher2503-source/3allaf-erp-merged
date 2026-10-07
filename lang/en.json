@@ -3158,5 +3158,6 @@
     "Active user scope assignments": "Active user scope assignments",
     "Only the current company-specific XLSX template is supported.": "Only the current company-specific XLSX template is supported.",
     "Create Only (create permission required)": "Create Only (create permission required)",
-    "Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment.": "Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment."
+    "Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment.": "Descriptions and product metadata may be entered now. Images, Product Filters, dimensions, online visibility, and battery data remain optional enrichment.",
+    "Select a selling outlet": "Select a selling outlet"
 }
