@@ -2,8 +2,7 @@
 
 namespace App\Modules\Platform\Actions;
 
-use App\Modules\Platform\Models\PrintTemplate;
-
+use App\Models\User;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Enums\TaxTreatment;
@@ -14,15 +13,16 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\PrinterConfiguration;
+use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
-use App\Models\User;
 use App\Modules\Pricing\Actions\EnsureBasePriceList;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -170,10 +170,23 @@ class SaveLocalSettingsAction
         });
     }
 
+    /** @param array<string, mixed> $data */
+    public function validatedTaxRate(array $data): string
+    {
+        $validated = Validator::make(
+            ['taxSettingForm' => ['rate' => $data['rate'] ?? null]],
+            ['taxSettingForm.rate' => ['required', 'numeric', 'min:0', 'max:100']],
+        )->validate();
+
+        return (string) $validated['taxSettingForm']['rate'];
+    }
+
     /** @param array<string, mixed> $data @param array<string, mixed> $metadata */
     private function persistTaxSetting(array $data, ?int $id = null, array $metadata = []): TaxSetting
     {
-        return DB::transaction(function () use ($data, $id, $metadata) {
+        $rate = $this->validatedTaxRate($data);
+
+        return DB::transaction(function () use ($data, $id, $metadata, $rate) {
             $companyId = (int) ($data['company_id'] ?? 0);
             if ($companyId < 1) {
                 throw ValidationException::withMessages(['company_id' => __('An authorized company is required for the tax rule.')]);
@@ -185,12 +198,8 @@ class SaveLocalSettingsAction
             if (! in_array($treatment, TaxTreatment::values(), true)) {
                 throw ValidationException::withMessages(['taxSettingForm.treatment' => __('The selected tax treatment is not supported.')]);
             }
-            $rate = $data['rate'] !== null && $data['rate'] !== '' ? (string) $data['rate'] : null;
-            if ($treatment !== TaxTreatment::Standard->value && ($rate === null || (float) $rate !== 0.0)) {
+            if ($treatment !== TaxTreatment::Standard->value && (float) $rate !== 0.0) {
                 throw ValidationException::withMessages(['taxSettingForm.rate' => __('Zero Rated, Exempt, and Out of Scope treatments must use a zero rate.')]);
-            }
-            if (($data['status'] ?? 'active') === 'active' && (bool) ($data['is_default'] ?? false) && $rate === null) {
-                throw ValidationException::withMessages(['taxSettingForm.rate' => __('The active company default requires an explicit rate.')]);
             }
 
             $attributes = [

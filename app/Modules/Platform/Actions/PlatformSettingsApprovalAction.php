@@ -42,6 +42,7 @@ final class PlatformSettingsApprovalAction
         $requester = auth()->user() ?? throw new \LogicException('An authenticated requester is required.');
 
         if ($resource === 'tax_setting') {
+            $proposed['rate'] = app(SaveLocalSettingsAction::class)->validatedTaxRate($proposed);
             $company = app(AuthorizedCompanyContext::class)->resolve($requester, $proposed['company_id'] ?? null);
             $proposed['company_id'] = (int) $company->id;
             $before = $id === null ? null : $this->snapshot(TaxSetting::query()->forCompany((int) $company->id)->findOrFail($id));
