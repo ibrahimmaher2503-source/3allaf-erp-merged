@@ -57,12 +57,7 @@ class SaveCashDrawerAction
                 }
 
                 if ($status === 'active') {
-                    if ($store === null) {
-                        throw new InvalidArgumentException(__('An active cash drawer requires a POS selling location / stock source. Assign the branch\'s active POS location before saving.'));
-                    }
-                    if ($store->status !== 'active' || $store->type !== 'selling') {
-                        throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
-                    }
+                    $this->assertActiveSellingStore($store);
 
                     // The drawer's explicit selling outlet is authoritative. A
                     // historical branch-wide primary mapping is never a fallback.
@@ -164,15 +159,58 @@ class SaveCashDrawerAction
 
         try {
             return DB::transaction(function () use ($id, $newStatus, $expectedLockVersion, &$blockedMutation) {
+                $user = auth()->user();
+                $drawerSnapshot = null;
+                $branch = null;
+                $store = null;
+
+                if ($newStatus === 'active') {
+                    $snapshotQuery = CashDrawer::query();
+                    if ($user !== null) {
+                        $snapshotQuery->visibleTo($user);
+                    }
+                    $drawerSnapshot = $snapshotQuery->findOrFail($id);
+
+                    $branch = Branch::query()->lockForUpdate()->find($drawerSnapshot->branch_id);
+                    $storeQuery = Store::query();
+                    if ($user !== null) {
+                        $storeQuery->visibleTo($user);
+                    }
+                    $store = $drawerSnapshot->store_id === null
+                        ? null
+                        : $storeQuery->lockForUpdate()->find((int) $drawerSnapshot->store_id);
+                }
+
                 $drawerQuery = CashDrawer::query()->lockForUpdate();
-                if (auth()->check()) {
-                    $drawerQuery->visibleTo(auth()->user());
+                if ($user !== null) {
+                    $drawerQuery->visibleTo($user);
                 }
                 $drawer = $drawerQuery->findOrFail($id);
                 $version = $this->requirePositiveLockVersion($expectedLockVersion);
                 if ($version !== (int) $drawer->lock_version) {
                     throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
                 }
+
+                if ($newStatus === 'active') {
+                    if ((int) $drawer->branch_id !== (int) $drawerSnapshot->branch_id
+                        || (int) $drawer->store_id !== (int) $drawerSnapshot->store_id) {
+                        throw ValidationException::withMessages(['lock_version' => __('This cash drawer changed in another session. Reload it before saving.')]);
+                    }
+                    if ($branch === null || $branch->status !== 'active') {
+                        throw new InvalidArgumentException(__('The selected branch is an inactive branch, does not exist, or is outside your authorized scope.'));
+                    }
+                    if ($drawer->store_id !== null && $store === null) {
+                        throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+                    }
+                    if ($store !== null
+                        && ((int) $store->branch_id !== (int) $drawer->branch_id
+                            || (int) $store->company_id !== (int) $branch->company_id)) {
+                        throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+                    }
+
+                    $this->assertActiveSellingStore($store);
+                }
+
                 $oldStatus = $drawer->status;
 
                 if ($newStatus !== 'active') {
@@ -236,6 +274,17 @@ class SaveCashDrawerAction
         }
 
         return $version;
+    }
+
+    private function assertActiveSellingStore(?Store $store): void
+    {
+        if ($store === null) {
+            throw new InvalidArgumentException(__('An active cash drawer requires a POS selling location / stock source. Assign the branch\'s active POS location before saving.'));
+        }
+
+        if ($store->status !== 'active' || $store->type !== 'selling') {
+            throw new InvalidArgumentException(__('The POS selling location / stock source must be an active selling location.'));
+        }
     }
 
     /**

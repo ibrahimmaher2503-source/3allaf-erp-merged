@@ -138,6 +138,48 @@ final class CashDrawerConcurrencyTest extends TestCase
         }
     }
 
+    public function test_status_reactivation_rejects_a_drawer_whose_store_is_inactive(): void
+    {
+        $this->enableDrawerPermissions();
+        [$actor, $company, $branch, $store, $drawer] = $this->createDrawerFixture();
+        $this->actingAs($actor);
+
+        try {
+            $action = app(SaveCashDrawerAction::class);
+            $action->toggleStatus($drawer->id, 'inactive', (int) $drawer->lock_version);
+            app(\App\Modules\Platform\Actions\SaveStoreAction::class)->toggleStatus($store->id);
+
+            self::assertSame('inactive', $store->fresh()->status);
+
+            $expectedVersion = (int) $drawer->fresh()->lock_version;
+
+            try {
+                $action->toggleStatus($drawer->id, 'active', $expectedVersion);
+            } catch (\InvalidArgumentException $exception) {
+                self::assertSame(
+                    __('The POS selling location / stock source must be an active selling location.'),
+                    $exception->getMessage(),
+                );
+            }
+
+            $updated = $drawer->fresh();
+            self::assertSame('inactive', $updated->status, 'A drawer cannot be reactivated while its store is inactive.');
+            self::assertSame($expectedVersion, (int) $updated->lock_version);
+
+            app(\App\Modules\Platform\Actions\SaveStoreAction::class)->toggleStatus($store->id);
+            $action->toggleStatus($drawer->id, 'active', $expectedVersion);
+
+            self::assertSame('active', $drawer->fresh()->status);
+            self::assertSame($expectedVersion + 1, (int) $drawer->fresh()->lock_version);
+        } finally {
+            AuditLog::query()
+                ->where('source_type', Store::class)
+                ->where('source_id', (string) $store->id)
+                ->delete();
+            $this->deleteDrawerFixture($actor, $company, $branch, $store, $drawer);
+        }
+    }
+
     public function test_livewire_edit_uses_the_locked_version_captured_when_the_form_opens(): void
     {
         $this->enableDrawerPermissions();
@@ -540,9 +582,15 @@ PHP;
 
     private function deleteDrawerFixture(User $actor, Company $company, Branch $branch, Store $store, CashDrawer $drawer): void
     {
-        ApprovalRecord::query()
+        $approvalIds = ApprovalRecord::query()
             ->where('source_id', 'cash_drawer_delete:'.$drawer->id)
+            ->pluck('id')
+            ->map(static fn (int $id): string => (string) $id);
+        AuditLog::query()
+            ->where('source_type', ApprovalRecord::class)
+            ->whereIn('source_id', $approvalIds)
             ->delete();
+        ApprovalRecord::query()->whereIn('id', $approvalIds)->delete();
         AuditLog::query()
             ->where('source_type', CashDrawer::class)
             ->where('source_id', (string) $drawer->id)
@@ -557,6 +605,7 @@ PHP;
     private function enableDrawerPermissions(): void
     {
         foreach ([
+            'branches_stores.edit',
             'drawers_payments_tax_numbering_printers.view',
             'drawers_payments_tax_numbering_printers.create',
             'drawers_payments_tax_numbering_printers.edit',
