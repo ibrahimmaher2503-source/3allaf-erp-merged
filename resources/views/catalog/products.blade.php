@@ -406,7 +406,7 @@ new #[Title('Product Masters')] class extends Component
         ]);
 
         if ($term !== '') {
-            $like = '%'.$term.'%';
+            $like = '%'.addcslashes($term, '\\%_').'%';
             $query->where(function ($scope) use ($term, $like): void {
                 $scope->where('item_code', 'like', $like)
                     ->orWhereHas('barcodes', fn ($barcode) => $barcode->where('barcode', 'like', $like))
@@ -441,7 +441,7 @@ new #[Title('Product Masters')] class extends Component
 
         foreach ([['colour', $this->colourFilter], ['target_age', $this->ageFilter], ['character', $this->characterFilter]] as [$field, $value]) {
             if (trim((string) $value) !== '') {
-                $query->whereRaw('LOWER('.$field.') LIKE ?', ['%'.mb_strtolower(trim((string) $value)).'%']);
+                $query->whereRaw('LOWER('.$field.') LIKE ?', ['%'.addcslashes(mb_strtolower(trim((string) $value)), '\\%_').'%']);
             }
         }
 

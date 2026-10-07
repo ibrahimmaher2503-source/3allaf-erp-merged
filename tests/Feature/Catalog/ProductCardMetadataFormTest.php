@@ -63,6 +63,25 @@ final class ProductCardMetadataFormTest extends TestCase
         }
     }
 
+    public function test_product_search_treats_percent_underscore_and_backslash_as_literal_characters(): void
+    {
+        $plain = Product::factory()->create(['item_code' => 'QA-WILD-PLAIN', 'model_number' => 'PLAIN', 'name_en' => 'Plain item', 'name_ar' => 'منتج عادي']);
+
+        foreach (['%' => 'PERCENT', '_' => 'UNDERSCORE', '\\' => 'BACKSLASH'] as $character => $code) {
+            $matching = Product::factory()->create([
+                'item_code' => 'QA-WILD-'.$code,
+                'model_number' => $code,
+                'name_en' => 'Literal '.$character.' item',
+                'name_ar' => 'منتج خاص',
+            ]);
+
+            Livewire::actingAs($this->administrator)
+                ->test('catalog::products')
+                ->set('search', $character)
+                ->assertViewHas('products', fn ($products): bool => $products->contains('id', $matching->id) && ! $products->contains('id', $plain->id));
+        }
+    }
+
     public function test_product_card_creates_and_edits_descriptive_fields_and_lookup_assignments_without_cost_access(): void
     {
         $parentCategory = Category::factory()->create([

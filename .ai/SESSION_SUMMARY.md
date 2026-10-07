@@ -1758,3 +1758,6 @@ On the single fix/module2-qa branch, added human-readable English attributes to 
 
 ## 2026-10-07 — BUG-22 stale product feedback
 Added only a narrow catch for the existing StaleCatalogRecordException in the product card. Existing row lock/version rejection is unchanged; the safe localized reload reason is now visible. One focused method passed for en/ar/ar-EG: 1 test/24 assertions; the losing form data and winning persisted name/version remain intact. Changed PHP lint, Pint and diff hygiene passed; unrelated formatter changes restored. Single fix/module2-qa commit, no full suite/browser/production/deployment.
+
+## 2026-10-07 — BUG-25 literal product searches
+Escaped SQL LIKE percent, underscore and backslash in the existing bound product-search pattern and the same local descriptive filters. Pagination, exact-match ordering and scope remain unchanged. One focused method passed 1 test/3 assertions on qa_rajh_m1_integrated_20261007, checking literal matches while excluding an ordinary product for each special character. PHP lint, Pint and diff hygiene passed; no full suite/browser/static/deployment. Separate commit on fix/module2-qa.
