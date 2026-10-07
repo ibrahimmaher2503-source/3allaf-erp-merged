@@ -164,6 +164,7 @@ new #[Title('Approval Inbox')] class extends Component
             'canDecide' => $selectedApproval !== null && Gate::allows('decide', $selectedApproval),
             'canReject' => $selectedApproval !== null && app(DecideApprovalSource::class)->canReject($selectedApproval),
             'sourceUrl' => $selectedApproval === null ? null : app(DecideApprovalSource::class)->sourceRoute($selectedApproval),
+            'reviewDetails' => $selectedApproval === null ? null : ApprovalPresentation::reviewDetails($selectedApproval, $user),
         ]);
     }
 
@@ -243,6 +244,34 @@ new #[Title('Approval Inbox')] class extends Component
                 <div><flux:heading size="lg">{{ __('Approval request') }}</flux:heading><flux:text class="mt-1 font-mono text-xs">{{ $selectedApproval->uuid }}</flux:text></div>
                 @error('approval')<x-state.error :title="$message" />@enderror
                 <dl class="grid gap-3 text-sm sm:grid-cols-2"><div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ ApprovalPresentation::source($selectedApproval->source_type, $selectedApproval->source_id) }}</dd></div><div><dt class="text-text-muted">{{ __('State') }}</dt><dd><x-status.badge :status="$selectedApproval->approval_state->value" /></dd></div><div><dt class="text-text-muted">{{ __('Requester') }}</dt><dd>{{ $selectedApproval->requester?->name }}</dd></div><div><dt class="text-text-muted">{{ __('Requested action') }}</dt><dd>{{ ApprovalPresentation::action($selectedApproval->requested_action) }}</dd></div>@if($selectedApproval->reason_text)<div class="sm:col-span-2"><dt class="text-text-muted">{{ __('Reason') }}</dt><dd>{{ $selectedApproval->reason_text }}</dd></div>@endif</dl>
+
+                @if($reviewDetails && $reviewDetails['type'] === 'tax_setting')
+                    <x-cards.section-card :title="__('Tax settings')">
+                        <div class="overflow-x-auto">
+                            <flux:table class="min-w-[620px]" aria-label="{{ __('Tax settings') }}">
+                                <flux:table.columns><flux:table.column>{{ __('Field') }}</flux:table.column><flux:table.column>{{ __('Before') }}</flux:table.column><flux:table.column>{{ __('After') }}</flux:table.column></flux:table.columns>
+                                <flux:table.rows>
+                                    @foreach($reviewDetails['rows'] as $change)
+                                        <flux:table.row key="tax-setting-change-{{ $loop->index }}">
+                                            <flux:table.cell class="font-medium">{{ $change['label'] }}</flux:table.cell>
+                                            <flux:table.cell>{{ $change['before'] }}</flux:table.cell>
+                                            <flux:table.cell>{{ $change['after'] }}</flux:table.cell>
+                                        </flux:table.row>
+                                    @endforeach
+                                </flux:table.rows>
+                            </flux:table>
+                        </div>
+                    </x-cards.section-card>
+                @elseif($reviewDetails && $reviewDetails['type'] === 'branch_delete')
+                    <x-cards.section-card :title="__('Request-time dependency context')">
+                        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                            @foreach($reviewDetails['counts'] as $count)
+                                <div><dt class="text-text-muted">{{ $count['label'] }}</dt><dd class="mt-1 font-semibold tabular-nums">{{ $count['value'] }}</dd></div>
+                            @endforeach
+                        </dl>
+                    </x-cards.section-card>
+                @endif
+
                 <flux:button :href="$sourceUrl" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open source') }}</flux:button>
 
                 @if($selectedApproval->approval_state === ApprovalState::Pending && $canDecide)
