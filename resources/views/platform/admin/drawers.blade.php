@@ -330,7 +330,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 @endforeach
             </div>
             <div class="hidden overflow-x-auto md:block">
-                <table class="data-table w-full text-start text-sm">
+                <table class="data-table w-full min-w-[84rem] text-start text-sm">
                     <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                         <tr>
                             <th class="px-4 py-3 text-start">{{ __('Code') }}</th>
@@ -347,7 +347,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                 <td class="px-4 py-3 font-mono text-xs font-bold text-primary">
                                     {{ $drawer->code }}
                                 </td>
-                                <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                                <td class="px-4 py-3 font-medium whitespace-nowrap text-zinc-900 dark:text-zinc-100">
                                     {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_ar : $drawer->name_en }}
                                     <div class="text-xs font-normal text-zinc-600 dark:text-zinc-300">
                                         {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_en : $drawer->name_ar }}
@@ -355,7 +355,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                 </td>
                                 <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                                     @if($drawer->branch)
-                                        <div class="flex min-w-[15rem] items-start gap-1.5">
+                                        <div class="flex min-w-[15rem] items-start gap-1.5 whitespace-nowrap">
                                             <flux:icon name="building-office-2" class="mt-0.5 size-3.5 shrink-0 text-zinc-400" />
                                             <div class="min-w-0">
                                                 <div class="font-medium">{{ $drawer->branch->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->branch->name_ar : $drawer->branch->name_en }}</div>
@@ -376,7 +376,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                                         <span class="text-xs font-italic text-zinc-600 dark:text-zinc-300">{{ __('Unassigned') }}</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     @if($drawer->status === 'active')
                                         <x-status.badge status="active" :label="__('Active')" />
                                     @elseif($drawer->status === 'maintenance')
