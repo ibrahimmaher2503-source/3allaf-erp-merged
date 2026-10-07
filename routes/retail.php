@@ -81,16 +81,25 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             && $product->images()->where('attachment_id', $attachment->id)->exists();
         abort_unless($authorized, 403);
 
-        $disk = Storage::disk($attachment->storage_disk);
-        abort_unless($disk->exists($attachment->storage_path), 404);
-        $source = $disk->path($attachment->storage_path);
-        $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
-        $cachePath = $cacheDirectory.DIRECTORY_SEPARATOR.$attachment->sha256.'-320.webp';
+        $placeholder = static fn () => response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" rx="8" fill="#f4f4f5"/><path d="m40 20 20 10v20L40 60 20 50V30Zm0 0v40M20 30l20 10 20-10" fill="none" stroke="#a1a1aa" stroke-width="3" stroke-linejoin="round"/></svg>', 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'private, max-age=120', 'X-Content-Type-Options' => 'nosniff']);
+        try {
+            $disk = Storage::disk($attachment->storage_disk);
+            if (! $disk->exists($attachment->storage_path)) {
+                return $placeholder();
+            }
+            $bytes = $disk->get($attachment->storage_path);
+            $imageInfo = is_string($bytes) ? @getimagesizefromstring($bytes) : false;
+            if ($imageInfo === false || ! in_array($imageInfo['mime'], ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                return $placeholder();
+            }
+            $cacheDirectory = storage_path('framework/cache/private-product-thumbnails');
+            $cachePath = $cacheDirectory.DIRECTORY_SEPARATOR.$attachment->sha256.'-320.webp';
 
-        if (! is_file($cachePath) && function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
-            $bytes = file_get_contents($source);
-            $image = is_string($bytes) ? @imagecreatefromstring($bytes) : false;
-            if ($image !== false) {
+            if (! is_file($cachePath) && function_exists('imagecreatefromstring') && function_exists('imagewebp')) {
+                $image = @imagecreatefromstring($bytes);
+                if ($image === false) {
+                    return $placeholder();
+                }
                 $width = imagesx($image);
                 $height = imagesy($image);
                 $scale = min(320 / max(1, $width), 320 / max(1, $height), 1);
@@ -109,13 +118,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 imagedestroy($thumb);
                 imagedestroy($image);
             }
+
+            $cached = is_file($cachePath);
+            $content = $cached ? @file_get_contents($cachePath) : $bytes;
+            if (! is_string($content) || $content === '') {
+                return $placeholder();
+            }
+            $response = response($content, 200, ['Content-Type' => $cached ? 'image/webp' : $imageInfo['mime']]);
+
+            return $response->header('Cache-Control', 'private, max-age=86400, immutable')->header('X-Content-Type-Options', 'nosniff');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $placeholder();
         }
-
-        $response = is_file($cachePath)
-            ? response()->file($cachePath, ['Content-Type' => 'image/webp'])
-            : response()->file($source, ['Content-Type' => $attachment->detected_mime_type ?: $attachment->mime_type]);
-
-        return $response->header('Cache-Control', 'private, max-age=86400, immutable')->header('X-Content-Type-Options', 'nosniff');
     })->whereNumber('product')->middleware('can:pos_sales.view')->name('pos.products.thumbnail');
 
     Route::get('pos/returns-readiness', function (Request $request) {
@@ -1817,13 +1833,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         return redirect()->route('sales.show', $sale)->with('success', __('Sale completed successfully.'));
     })->middleware('can:pos_sales.create')->name('pos.checkout.legacy');
 
-    Route::get('pos/suspended', function (Request $request) {
+    Route::get('pos/suspended', function (Request $request, PosContextResolver $contexts) {
         /** @var User $user */
         $user = $request->user();
         abort_unless($user->can('suspended_sales.view'), 403);
+        $context = $contexts->resolve($user);
+        $store = $context->store;
+        $shift = $context->shift;
         $sales = Sale::query()->visibleTo($user)->with(['lines', 'suspendedSale', 'store'])->where('status', 'suspended')->latest()->paginate(20);
 
-        return view('pages.pos.suspended', compact('sales'));
+        return view('pages.pos.suspended', compact('sales', 'context', 'store', 'shift'));
     })->middleware('can:suspended_sales.view')->name('pos.suspended');
 
     Route::get('pos/suspended/{sale}/resume', function (Request $request, Sale $sale, RetailSaleAction $action) {
