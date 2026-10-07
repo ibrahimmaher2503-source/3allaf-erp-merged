@@ -16,6 +16,7 @@ function qa_reset_pure_calculator_container(): void
     Container::setInstance($app);
     $app->instance('translator', new Translator(new FileLoader(new Filesystem, dirname(__DIR__, 3).'/lang'), 'en'));
 
+    Facade::clearResolvedInstances();
     Facade::setFacadeApplication($app);
     $app->instance('validator', new Factory($app->make('translator'), $app));
 }
