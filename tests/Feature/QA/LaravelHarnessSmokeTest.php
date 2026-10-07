@@ -15,6 +15,8 @@ final class LaravelHarnessSmokeTest extends TestCase
         $storagePath = getenv('QA_STORAGE_PATH');
 
         self::assertSame(realpath($root), realpath(app()->basePath()));
+        self::assertSame('testing', app()->environment());
+        self::assertTrue(app()->runningUnitTests());
         self::assertSame('mysql', config('database.default'));
         self::assertSame($database, config('database.connections.mysql.database'));
         self::assertSame(realpath($storagePath), realpath(app()->storagePath()));

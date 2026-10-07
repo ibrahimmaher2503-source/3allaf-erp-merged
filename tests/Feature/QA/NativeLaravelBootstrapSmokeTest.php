@@ -25,6 +25,8 @@ final class NativeLaravelBootstrapSmokeTest extends TestCase
         $expectedCachePath = realpath((string) getenv('QA_STORAGE_PATH').DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache');
         $connection = config('database.connections.mysql');
 
+        self::assertSame('testing', $application->environment());
+        self::assertTrue($application->runningUnitTests());
         self::assertSame($expectedStoragePath, realpath($application->storagePath()));
         self::assertSame($expectedCachePath, realpath(dirname($application->getCachedConfigPath())));
         self::assertSame($expectedCachePath, realpath(dirname($application->getCachedRoutesPath())));

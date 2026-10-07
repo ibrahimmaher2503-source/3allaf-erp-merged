@@ -38,7 +38,9 @@ abstract class TestCase extends BaseTestCase
         $connection = $application['config']->get('database.connections.mysql');
 
         if (
-            $application['config']->get('database.default') !== 'mysql'
+            $application->environment() !== 'testing'
+            || ! $application->runningUnitTests()
+            || $application['config']->get('database.default') !== 'mysql'
             || ($connection['driver'] ?? null) !== 'mysql'
             || ($connection['host'] ?? null) !== '127.0.0.1'
             || (string) ($connection['port'] ?? '') !== '3306'
