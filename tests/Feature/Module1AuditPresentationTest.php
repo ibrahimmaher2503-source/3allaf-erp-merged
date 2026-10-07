@@ -18,6 +18,7 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\DocumentSequence;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,36 @@ final class Module1AuditPresentationTest extends TestCase
                 ->assertSee('2026-10-08 00:51:00')
                 ->call('showAudit', $event->id)
                 ->assertSee('2026-10-08 00:51:00 Africa/Cairo');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_audit_render_falls_back_to_app_timezone_without_a_resolved_company_context(): void
+    {
+        app()->setLocale('en');
+        config(['app.timezone' => 'UTC']);
+        $this->grantPermissions('audit_logs.view');
+        $this->actingAs($this->superAdmin());
+        Carbon::setTestNow('2026-10-07 21:51:00');
+
+        $companyContext = new class
+        {
+            public string $reason = 'No active company is available.';
+
+            public function resolve(User $actor): Company
+            {
+                throw ValidationException::withMessages(['company_id' => $this->reason]);
+            }
+        };
+        app()->instance(AuthorizedCompanyContext::class, $companyContext);
+
+        try {
+            app(RecordAuditEvent::class)->execute('platform', 'update_local_settings');
+            Livewire::test('platform::system.audit-log')->assertSee('2026-10-07 21:51:00');
+
+            $companyContext->reason = 'Select one authorized company before continuing.';
+            Livewire::test('platform::system.audit-log')->assertSee('2026-10-07 21:51:00');
         } finally {
             Carbon::setTestNow();
         }
