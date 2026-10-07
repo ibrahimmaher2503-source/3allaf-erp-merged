@@ -13,6 +13,7 @@ use App\Modules\Platform\Support\RequestPermissionLookup;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -119,6 +120,34 @@ class User extends Authenticatable implements PasskeyUser
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    public function scopeAssignableToCashDrawer(Builder $query, int $branchId, ?int $storeId): Builder
+    {
+        if ($branchId < 1) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('users.status', 'active')
+            ->whereHas('roles', fn (Builder $roles): Builder => $roles
+                ->where('roles.code', 'cashier')
+                ->where('roles.status', 'active'))
+            ->where(function (Builder $scope) use ($branchId, $storeId): void {
+                $scope->where('users.is_super_admin', true)
+                    ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                        ->where('roles.code', 'system-administrator')
+                        ->where('roles.status', 'active'))
+                    ->orWhereHas('branchScopes', fn (Builder $branchScopes): Builder => $branchScopes
+                        ->where('branch_id', $branchId)
+                        ->where('status', 'active'));
+
+                if ($storeId !== null && $storeId > 0) {
+                    $scope->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
+                        ->where('store_id', $storeId)
+                        ->where('status', 'active'));
+                }
+            });
     }
 
     public function hasPermission(string $code): bool

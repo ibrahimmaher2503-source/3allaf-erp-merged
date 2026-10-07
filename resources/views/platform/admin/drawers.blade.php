@@ -126,7 +126,22 @@ new #[Title('Cash Drawer Masters')] class extends Component
         $validated = $this->validate([
             'drawerForm.branch_id' => ['required', 'exists:branches,id'],
             'drawerForm.store_id' => [Rule::requiredIf(($this->drawerForm['status'] ?? 'active') === 'active'), 'nullable', 'exists:stores,id'],
-            'drawerForm.assigned_user_id' => ['nullable', 'exists:users,id'],
+            'drawerForm.assigned_user_id' => [
+                'bail',
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $branchId = (int) ($this->drawerForm['branch_id'] ?? 0);
+                    $storeId = (int) ($this->drawerForm['store_id'] ?? 0);
+
+                    if (! User::query()
+                        ->assignableToCashDrawer($branchId, $storeId > 0 ? $storeId : null)
+                        ->whereKey($value)
+                        ->exists()) {
+                        $fail(__('The selected cashier must be active and assigned to this branch or sales outlet.'));
+                    }
+                },
+            ],
             'drawerForm.code' => [
                 'required',
                 'string',
@@ -301,7 +316,11 @@ new #[Title('Cash Drawer Masters')] class extends Component
         $sellingStores = $selectedSellingStoreId
             ? Store::visibleTo(auth()->user())->whereKey($selectedSellingStoreId)->where('branch_id', $selectedBranch->id)->where('type', 'selling')->where('status', 'active')->orderBy('name_en')->get()
             : collect();
-        $users = User::orderBy('name')->get();
+        $selectedStoreId = (int) ($drawerForm['store_id'] ?? 0);
+        $users = User::query()
+            ->assignableToCashDrawer($selectedBranchId, $selectedStoreId > 0 ? $selectedStoreId : null)
+            ->orderBy('name')
+            ->get();
     @endphp
 
     <!-- Cash Drawers Data Table -->
