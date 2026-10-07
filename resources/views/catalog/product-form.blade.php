@@ -214,6 +214,14 @@ new #[Title('Product Card')] class extends Component {
             $this->mediaUpload = null;
             $this->dispatch('product-image-saved');
             Flux::toast(variant: 'success', text: __('Protected product image added successfully.'));
+        } catch (ValidationException $exception) {
+            $limitMessage = __('A product can have at most four additional images.');
+            $message = in_array($limitMessage, $exception->errors()['media'] ?? [], true)
+                ? $limitMessage
+                : \App\Support\UserSafeError::message($exception);
+
+            $this->addError('mediaUpload', $message);
+            Flux::toast(variant: 'danger', text: $message);
         } catch (\Throwable $exception) {
             $this->addError('mediaUpload', \App\Support\UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
