@@ -44,17 +44,14 @@ final class Module1ValidationLocalizationTest extends TestCase
             $form = Livewire::actingAs($this->administrator)
                 ->test('catalog::product-form')
                 ->call('save')
-                ->assertHasErrors(['productForm.model_number', 'productForm.name_ar', 'productForm.sale_price']);
+                ->assertHasErrors(['productForm.name_ar', 'productForm.sale_price']);
 
             foreach ($form->instance()->getErrorBag()->all() as $message) {
                 self::assertStringNotContainsString('productForm.', $message);
                 self::assertStringNotContainsString('product form', $message);
                 self::assertStringNotContainsString('sale price', $message);
             }
-            self::assertStringContainsString(
-                $locale === 'en' ? 'Model number' : 'رقم الموديل',
-                $form->instance()->getErrorBag()->first('productForm.model_number'),
-            );
+            $form->assertHasNoErrors(['productForm.model_number']);
         }
     }
 

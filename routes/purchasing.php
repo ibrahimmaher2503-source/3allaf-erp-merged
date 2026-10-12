@@ -3,25 +3,29 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Actions\AuthorizeAttachmentAccess;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
-use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\ProductSupplier;
-use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Models\PurchaseOrderDocument;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 $router = app('router');
 
@@ -104,6 +108,44 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/invoices', 'purchasing::invoices')
         ->middleware('can:purchase_invoices_supplier_returns.view')
         ->name('purchasing.invoices');
+
+    $router->get('purchasing/quantity-differences', function (Request $request) {
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $filters = $request->validate(['search' => 'nullable|string|max:100', 'from' => 'nullable|date', 'to' => 'nullable|date|after_or_equal:from', 'export' => 'nullable|in:csv']);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $like = '%'.addcslashes($search, '%_\\').'%';
+        $query = PurchaseInvoiceLine::query()->withShortage()
+            ->whereHas('invoice', function ($invoices) use ($actor, $filters): void {
+                $invoices->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
+                    ->when($filters['from'] ?? null, fn ($q, $date) => $q->whereDate('invoice_date', '>=', $date))
+                    ->when($filters['to'] ?? null, fn ($q, $date) => $q->whereDate('invoice_date', '<=', $date));
+            })
+            ->when($search !== '', fn ($lines) => $lines->where(fn ($q) => $q
+                ->whereHas('product', fn ($products) => $products->where('item_code', 'like', $like)->orWhere('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)->orWhereHas('barcodes', fn ($codes) => $codes->where('barcode', $search)))
+                ->orWhereHas('invoice', fn ($invoices) => $invoices->where('invoice_number', 'like', $like)->orWhere('supplier_reference', 'like', $like)->orWhereHas('supplier', fn ($suppliers) => $suppliers->where('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)->orWhere('code', 'like', $like)))))
+            ->with(['product', 'invoice.supplier', 'invoice.store.branch', 'invoice.approver'])->latest('id');
+        if (($filters['export'] ?? null) === 'csv') {
+            Gate::authorize('purchase_invoices_supplier_returns.export');
+            $lines = $query->limit(5000)->get();
+
+            return response()->streamDownload(function () use ($lines): void {
+                $handle = fopen('php://output', 'wb');
+                if ($handle === false) {
+                    abort(500);
+                }
+                fputcsv($handle, ['invoice_number', 'date', 'supplier', 'branch', 'receiving_store', 'product_code', 'original_quantity', 'accepted_quantity', 'quantity_difference', 'approved_by', 'approved_at']);
+                foreach ($lines as $line) {
+                    $invoice = $line->invoice;
+                    $row = [$invoice->invoice_number, $invoice->invoice_date?->format('Y-m-d'), $invoice->supplier?->code, $invoice->store?->branch?->code, $invoice->store?->code, $line->product?->item_code, $line->original_quantity, $line->quantity_received, $line->shortageQuantity(), $invoice->approver?->name, $invoice->approved_at?->toIso8601String()];
+                    fputcsv($handle, array_map(static fn ($value): string => preg_match('/^[=+\-@]/', ltrim((string) $value)) ? "'".$value : (string) $value, $row));
+                }
+                fclose($handle);
+            }, 'purchase-quantity-differences.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        return view('purchasing.quantity-differences', ['lines' => $query->paginate(25)->withQueryString(), 'filters' => $filters]);
+    })->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.quantity-differences');
 
     $router->get('purchasing/supplier-history', fn (Request $request) => $purchaseHistory($request, 'supplier'))
         ->middleware('can:purchase_invoices_supplier_returns.view')->name('purchasing.history.suppliers');
@@ -190,10 +232,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
 
     $router->get('purchasing/invoices/{invoice}/destinations/{store}/labels', function (string $invoice, string $store) {
         Gate::authorize('purchase_invoices.print_labels');
-        $actor = Auth::user(); abort_unless($actor instanceof User, 403);
-        $destination = Store::query()->visibleTo($actor)->where('type','selling')->whereKey((int) $store)->firstOrFail();
-        $invoice = PurchaseInvoice::query()->where('status','approved')->with(['distributions'=>fn($q)=>$q->where('destination_store_id',$destination->id)])->findOrFail((int)$invoice);
-        abort_if($invoice->distributions->isEmpty(),404);
+        $actor = Auth::user();
+        abort_unless($actor instanceof User, 403);
+        $destination = Store::query()->visibleTo($actor)->where('type', 'selling')->whereKey((int) $store)->firstOrFail();
+        $invoice = PurchaseInvoice::query()->where('status', 'approved')->with(['distributions' => fn ($q) => $q->where('destination_store_id', $destination->id)])->findOrFail((int) $invoice);
+        abort_if($invoice->distributions->isEmpty(), 404);
+
         return redirect()->route('pricing.labels', ['invoice' => $invoice->id, 'store' => $destination->id]);
     })->whereNumber('invoice')->whereNumber('store')->name('purchasing.invoices.destination-labels');
 
@@ -273,18 +317,22 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.print');
 
     $router->post('purchasing/orders/{order}/pdf', function (PurchaseOrder $order) {
-        app(\App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction::class)->execute($order, app()->getLocale());
+        app(GeneratePurchaseOrderPdfAction::class)->execute($order, app()->getLocale());
+
         return back()->with('success', __('Purchase-order PDF generated and stored privately.'));
     })->whereNumber('order')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.generate');
 
-    $deliverOrderPdf = function (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document, bool $download = false) {
+    $deliverOrderPdf = function (PurchaseOrder $order, PurchaseOrderDocument $document, bool $download = false) {
         abort_unless((int) $document->purchase_order_id === (int) $order->id, 404);
         $attachment = $document->attachment()->firstOrFail();
         $authorizer = fn (User $user, Attachment $candidate): bool => $user->can('purchase_orders.print') && $candidate->source_type === PurchaseOrder::class && $candidate->source_id === (string) $order->id;
-        if (!$download) return app(DeliverAttachment::class)->execute($attachment, $authorizer);
-        app(\App\Modules\Platform\Actions\AuthorizeAttachmentAccess::class)->execute($attachment, $authorizer);
-        return \Illuminate\Support\Facades\Storage::disk($attachment->storage_disk)->download($attachment->storage_path, $order->po_number.'-v'.$document->version.'-'.$document->locale.'.pdf');
+        if (! $download) {
+            return app(DeliverAttachment::class)->execute($attachment, $authorizer);
+        }
+        app(AuthorizeAttachmentAccess::class)->execute($attachment, $authorizer);
+
+        return Storage::disk($attachment->storage_disk)->download($attachment->storage_path, $order->po_number.'-v'.$document->version.'-'.$document->locale.'.pdf');
     };
-    $router->get('purchasing/orders/{order}/pdf/{document}/view', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.view');
-    $router->get('purchasing/orders/{order}/pdf/{document}/download', fn (PurchaseOrder $order, \App\Modules\Purchasing\Models\PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document, true))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.download');
+    $router->get('purchasing/orders/{order}/pdf/{document}/view', fn (PurchaseOrder $order, PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.view');
+    $router->get('purchasing/orders/{order}/pdf/{document}/download', fn (PurchaseOrder $order, PurchaseOrderDocument $document) => $deliverOrderPdf($order, $document, true))->whereNumber('order')->whereNumber('document')->middleware('can:purchase_orders.print')->name('purchasing.orders.pdf.download');
 });

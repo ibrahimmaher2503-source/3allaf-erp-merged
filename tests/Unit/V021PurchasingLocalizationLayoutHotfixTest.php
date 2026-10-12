@@ -32,7 +32,7 @@ final class V021PurchasingLocalizationLayoutHotfixTest extends TestCase
         self::assertStringNotContainsString('responsive-resource-table', $view);
         self::assertStringContainsString('@continue(empty($line[\'product_id\']))', $view);
         self::assertStringNotContainsString("__('Product pending')", $view);
-        self::assertStringContainsString("formatQuantity(", $view);
+        self::assertStringContainsString('formatQuantity(', $view);
         self::assertStringContainsString('sm:grid-cols-[minmax(0,1fr)_auto_auto]', $view);
         self::assertStringContainsString('dir="ltr"', $view);
     }
@@ -41,7 +41,7 @@ final class V021PurchasingLocalizationLayoutHotfixTest extends TestCase
     {
         $badge = $this->source('resources/views/components/status/badge.blade.php');
         $money = $this->source('resources/views/components/money.blade.php');
-        self::assertStringContainsString("'awaiting_distribution' => __('Awaiting Distribution')", $badge);
+        self::assertStringContainsString("'awaiting_distribution' => __('Awaiting approval')", $badge);
         self::assertStringContainsString("'reversed' => __('Reversed')", $badge);
         self::assertStringContainsString("app()->getLocale() === 'ar' ? 'ج.م' : 'EGP'", $money);
     }

@@ -364,7 +364,7 @@ new #[Title('Product Card')] class extends Component
             'productForm.description_en' => ['nullable', 'string', 'max:5000'],
             'productForm.short_description_ar' => ['nullable', 'string', 'max:1000'], 'productForm.short_description_en' => ['nullable', 'string', 'max:1000'], 'productForm.full_description_ar' => ['nullable', 'string', 'max:10000'], 'productForm.full_description_en' => ['nullable', 'string', 'max:10000'],
             'productForm.seo_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'], 'productForm.publish_visibility' => ['nullable', Rule::in(['catalog', 'hidden'])], 'productForm.sort_order' => ['nullable', 'integer', 'min:0'],
-            'productForm.model_number' => [$saveAsDraft ? 'nullable' : 'required', 'string', 'max:100'],
+            'productForm.model_number' => ['nullable', 'string', 'max:100'],
             'productForm.product_type' => ['required', Rule::in($this->isEditing && $this->productForm['product_type'] === 'digital' ? ['standard', 'composite', 'service', 'digital'] : ['standard', 'composite', 'service'])],
             'productForm.status' => ['required', Rule::in(['active', 'inactive'])],
             'productForm.unit_of_measure' => ['nullable', 'string', 'max:50'],
@@ -564,7 +564,7 @@ new #[Title('Product Card')] class extends Component
                 @else
                     <x-context-help :title="__('Local product code help')" :label="__('Open contextual help')"><p>{{ __('The local product code uses the four-digit identity from a canonical SUP-#### supplier code, or the first four digits of a numeric supplier code, followed by a hyphen and the shared six-digit prefix sequence. Leading zeros are preserved, and the international barcode remains a separate identity.') }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
                 @endif
-                <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" required />
+                <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" />
                 @if ($isEditing)
                     <flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled dir="ltr" />
                 @endif

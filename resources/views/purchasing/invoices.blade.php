@@ -38,6 +38,10 @@ new #[Title('Purchase Invoices')] class extends Component
 {
     use WithPagination;
 
+    public bool $showReceiving = false;
+
+    public array $receivedQuantities = [];
+
     public string $search = '';
 
     public string $statusFilter = 'all';
@@ -482,7 +486,7 @@ new #[Title('Purchase Invoices')] class extends Component
             $validated = $this->validate([
                 'quickProduct.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
                 'quickProduct.barcode' => [Rule::requiredIf(fn (): bool => $this->quickProduct['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('products', 'item_code'), Rule::unique('barcodes', 'barcode')],
-                'quickProduct.model_number' => ['required', 'string', 'max:100'],
+                'quickProduct.model_number' => ['nullable', 'string', 'max:100'],
                 'quickProduct.name_ar' => ['required', 'string', 'max:255'],
                 'quickProduct.name_en' => ['nullable', 'string', 'max:255'],
                 'quickProduct.category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('status', 'active')],
@@ -605,7 +609,7 @@ new #[Title('Purchase Invoices')] class extends Component
         try {
             $invoice = PurchaseInvoice::query()->findOrFail($id);
             $action->execute($invoice->id, $invoice->lock_version);
-            $this->openDistribution($invoice->id);
+            $this->showFormModal = false;
             Flux::toast(__('Purchase invoice submitted for approval.'), variant: 'success');
         } catch (Throwable $exception) {
             Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
@@ -615,27 +619,59 @@ new #[Title('Purchase Invoices')] class extends Component
     public function openDistribution(int $id): void
     {
         Gate::authorize('purchase_invoices.distribute');
-        $invoice=PurchaseInvoice::query()->with(['lines.product','distributions'])->findOrFail($id);
+        $invoice=PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo(Auth::user())->select('id'))->with(['lines.product','distributions'])->findOrFail($id);
         $this->editingInvoiceId=$invoice->id; $this->invoiceForm['lock_version']=$invoice->lock_version;
         $this->selectedDestinationIds=$invoice->distributions->pluck('destination_store_id')->unique()->map(fn($id)=>(string)$id)->values()->all();
         $this->distributionMatrix=[];
         foreach($invoice->distributions as $allocation) $this->distributionMatrix[$allocation->purchase_invoice_line_id][$allocation->destination_store_id]=(string)$allocation->quantity;
-        $this->showDistribution=true;
+        $this->showReceiving=false; $this->showDistribution=true;
     }
 
     public function saveDistribution(SavePurchaseDistributionAction $action): void
     {
-        try { $invoice=$action->execute((int)$this->editingInvoiceId,$this->distributionMatrix,(int)$this->invoiceForm['lock_version']); $this->invoiceForm['lock_version']=$invoice->lock_version; Flux::toast(__('Distribution saved. Every line must balance before approval.'),variant:'success'); }
+        $this->resetValidation();
+        try { $invoice=$action->execute((int)$this->editingInvoiceId,array_map(fn ($destinations) => array_intersect_key($destinations, array_flip($this->selectedDestinationIds)), $this->distributionMatrix),(int)$this->invoiceForm['lock_version']); $this->invoiceForm['lock_version']=$invoice->lock_version; Flux::toast(__('Optional distribution saved. Remaining stock stays in the receiving store.'),variant:'success'); }
+        catch(\Illuminate\Validation\ValidationException $e){ throw $e; }
+        catch(\InvalidArgumentException $e){ $this->addError('distribution', $e->getMessage()); }
         catch(Throwable $e){ Flux::toast(\App\Support\UserSafeError::message($e),variant:'danger'); }
+    }
+
+    public function openReceivingReview(int $id): void
+    {
+        Gate::authorize('purchase_invoices.approve');
+        $invoice = PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo(Auth::user())->select('id'))->with('lines')->findOrFail($id);
+        abort_unless(in_array($invoice->status, ['submitted', 'awaiting_distribution'], true), 422);
+        $this->resetValidation();
+        $this->editingInvoiceId = $invoice->id;
+        $this->invoiceForm['lock_version'] = $invoice->lock_version;
+        $this->receivedQuantities = $invoice->lines->mapWithKeys(fn ($line) => [$line->id => \App\Support\ProductQuantity::format($line->quantity)])->all();
+        $this->showDistribution = false;
+        $this->showReceiving = true;
     }
 
     public function approveInvoice(int $id, ApprovePurchaseInvoiceAction $action): void
     {
         Gate::authorize('purchase_invoices.approve');
         try {
-            $invoice = PurchaseInvoice::query()->findOrFail($id);
-            $action->execute($invoice->id, $invoice->lock_version);
-            Flux::toast(__('Purchase invoice approved and stock/WAC posted.'), variant: 'success');
+            \Illuminate\Support\Facades\DB::transaction(function () use ($id, $action): void {
+                $invoice = PurchaseInvoice::query()->findOrFail($id);
+                $version = $invoice->lock_version;
+                if (($this->showReceiving || $this->showDistribution) && (int) $this->editingInvoiceId === $id) {
+                    $version = (int) $this->invoiceForm['lock_version'];
+                }
+                if ($this->showReceiving && (int) $this->editingInvoiceId === $id && $invoice->status !== 'approved') {
+                    $invoice = app(\App\Modules\Purchasing\Actions\SavePurchaseReceivingAction::class)->execute($id, $this->receivedQuantities, $version);
+                    $version = $invoice->lock_version;
+                }
+                $action->execute($id, $version);
+            });
+            $this->showReceiving = false;
+            $this->showDistribution = false;
+            Flux::toast(__('Purchase invoice approved.'), variant: 'success');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception;
+        } catch (\InvalidArgumentException $exception) {
+            $this->addError('approval', $exception->getMessage());
         } catch (Throwable $exception) {
             Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
         }
@@ -703,7 +739,8 @@ new #[Title('Purchase Invoices')] class extends Component
             'lineProducts' => Product::query()->whereIn('id', collect($this->lineItems)->pluck('product_id')->filter()->map(fn($id)=>(int)$id))->get()->keyBy('id'),
             'categories' => Category::query()->where('status','active')->orderBy('name_en')->get(),
             'brands' => Brand::query()->where('status','active')->orderBy('name_en')->get(),
-            'distributionInvoice' => $this->showDistribution && $this->editingInvoiceId ? PurchaseInvoice::query()->with(['lines.product','distributions.destination'])->find($this->editingInvoiceId) : null,
+            'receivingInvoice' => $this->showReceiving && $this->editingInvoiceId ? PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo(Auth::user())->select('id'))->with(['lines.product','store'])->find($this->editingInvoiceId) : null,
+            'distributionInvoice' => $this->showDistribution && $this->editingInvoiceId ? PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo(Auth::user())->select('id'))->with(['lines.product','distributions.destination'])->find($this->editingInvoiceId) : null,
             'invoicePreview' => $this->invoicePreview(),
         ]);
     }
@@ -799,7 +836,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
 <x-app.page
     :title="str_starts_with(app()->getLocale(), 'ar') ? 'فواتير المشتريات' : __('Purchase invoices')"
-    :description="str_starts_with(app()->getLocale(), 'ar') ? 'راجع فواتير الموردين والاستلام والاعتماد والترحيل ضمن نطاقك.' : __('Review supplier invoices, receiving, approvals, and posting within your scope.')"
+    :description="str_starts_with(app()->getLocale(), 'ar') ? 'راجع فواتير الموردين والاستلام والاعتمادات ضمن نطاقك.' : __('Review supplier invoices, receiving and approvals within your scope.')"
     :breadcrumbs="str_starts_with(app()->getLocale(), 'ar') ? 'المشتريات والموردون' : 'Purchasing & suppliers'"
     max-width="7xl"
     class="space-y-6"
@@ -822,10 +859,10 @@ new #[Title('Purchase Invoices')] class extends Component
     </x-slot:actions>
 
     <flux:callout variant="warning" icon="exclamation-triangle">
-        {{ __('Drafts calculate totals and create audit records only. No stock, WAC, receipt, or sale-price mutation occurs until a separate approved posting action is completed.') }}
+        {{ __('Drafts do not change stock or current prices. Approving the invoice records accepted stock and updates current product prices.') }}
     </flux:callout>
 
-    @unless($showFormModal || $showDistribution)
+    @unless($showFormModal || $showDistribution || $showReceiving)
     <flux:card id="purchase-invoices-filters" class="scroll-mt-24">
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <div class="min-w-64 flex-1">
@@ -838,7 +875,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     <flux:select.option value="all">{{ __('All') }}</flux:select.option>
                     <flux:select.option value="draft">{{ __('Draft') }}</flux:select.option>
                     <flux:select.option value="submitted">{{ __('Submitted') }}</flux:select.option>
-                    <flux:select.option value="awaiting_distribution">{{ __('Awaiting Distribution') }}</flux:select.option>
+                    <flux:select.option value="awaiting_distribution">{{ __('Awaiting approval') }}</flux:select.option>
                     <flux:select.option value="approved">{{ __('Approved') }}</flux:select.option>
                     <flux:select.option value="reversed">{{ __('Reversed') }}</flux:select.option>
                     <flux:select.option value="cancelled">{{ __('Cancelled') }}</flux:select.option>
@@ -855,10 +892,9 @@ new #[Title('Purchase Invoices')] class extends Component
     <div class="space-y-4" aria-label="{{ __('Purchase invoices') }}">
         @forelse ($invoices as $invoice)
             @php($remaining=$invoice->lines->reduce(fn($total,$line)=>bcadd($total,bcsub((string)$line->quantity,$line->distributions->reduce(fn($allocated,$distribution)=>bcadd($allocated,(string)$distribution->quantity,6),'0'),6),6),'0'))
-            @php($fullyDistributed=$invoice->lines->isNotEmpty()&&bccomp($remaining,'0',6)===0)
-            @php($stageOneComplete=$invoice->lines->isNotEmpty())
-            @php($stage=$invoice->status==='draft' ? __('Stage 1') : __('Stage 2'))
-            @php($nextAction=match($invoice->status){'draft'=>$stageOneComplete?__('Review and distribute quantities'):__('Complete invoice'),'submitted','awaiting_distribution'=>$fullyDistributed?__('Approve and post invoice'):__('Review and distribute quantities'),default=>__('No further action')})
+                        @php($stageOneComplete=$invoice->lines->isNotEmpty())
+            @php($stage=\App\Modules\Platform\Support\UiLabel::status($invoice->status))
+            @php($nextAction=match($invoice->status){'draft'=>$stageOneComplete?__('Submit for approval'):__('Complete invoice'),'submitted','awaiting_distribution'=>__('Approve invoice'),default=>__('No further action')})
             <flux:card class="overflow-hidden" wire:key="invoice-card-{{ $invoice->id }}">
                 <div class="grid min-w-0 gap-5 lg:grid-cols-[minmax(11rem,1.25fr)_minmax(10rem,1fr)_minmax(9rem,.8fr)_minmax(13rem,1.35fr)] lg:items-start">
                     <div class="min-w-0 space-y-2">
@@ -876,7 +912,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     </dl>
                     <dl class="grid grid-cols-2 gap-3 text-sm lg:grid-cols-1">
                         <div><dt class="text-xs text-text-muted">{{ __('Current stage') }}</dt><dd class="font-medium">{{ $stage }}</dd></div>
-                        <div><dt class="text-xs text-text-muted">{{ __('Remaining quantity') }}</dt><dd class="tabular-nums" dir="ltr">{{ __(':quantity units', ['quantity'=>$this->formatQuantity($remaining)]) }}</dd></div>
+                        <div><dt class="text-xs text-text-muted">{{ __('Quantity retained in receiving store') }}</dt><dd class="tabular-nums" dir="ltr">{{ __(':quantity units', ['quantity'=>$this->formatQuantity($remaining)]) }}</dd></div>
                     </dl>
                     <div class="min-w-0 space-y-3 lg:border-s lg:ps-5">
                         <div><div class="text-xs text-text-muted">{{ __('Next required action') }}</div><div class="font-medium">{{ $nextAction }}</div></div>
@@ -888,9 +924,9 @@ new #[Title('Purchase Invoices')] class extends Component
                                 <div class="flex flex-wrap gap-2">
                                     @if($stageOneComplete)
                                         @can('purchase_invoices_supplier_returns.edit')
-                                            <flux:button size="sm" variant="primary" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Review and distribute quantities') }}</flux:button>
+                                            <flux:button size="sm" variant="primary" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Submit for approval') }}</flux:button>
                                         @else
-                                            <flux:button size="sm" disabled title="{{__('You do not have permission to complete Stage 1.')}}">{{ __('Review and distribute quantities') }}</flux:button>
+                                            <flux:button size="sm" disabled title="{{__('You do not have permission to complete Stage 1.')}}">{{ __('Submit for approval') }}</flux:button>
                                         @endcan
                                         <flux:button size="sm" variant="subtle" wire:click="openEditModal({{ $invoice->id }})">{{ __('Edit') }}</flux:button>
                                     @else
@@ -902,11 +938,12 @@ new #[Title('Purchase Invoices')] class extends Component
                                 </div>
                             @elseif (in_array($invoice->status, ['submitted','awaiting_distribution'], true))
                                 <div class="flex flex-wrap gap-2">
-                                    @if($fullyDistributed)
-                                        @can('purchase_invoices.approve')<flux:button size="sm" variant="primary" wire:click="approveInvoice({{ $invoice->id }})">{{ __('Approve and post invoice') }}</flux:button>@else<flux:button size="sm" disabled title="{{__('You do not have permission to approve and post this invoice.')}}">{{ __('Approve and post invoice') }}</flux:button>@endcan
+                                    @can('purchase_invoices.approve')
+                                        <flux:button size="sm" variant="primary" wire:click="openReceivingReview({{ $invoice->id }})">{{ __('Approve invoice') }}</flux:button>
                                     @else
-                                        @can('purchase_invoices.distribute')<flux:button size="sm" variant="primary" wire:click="openDistribution({{ $invoice->id }})">{{ __('Review and distribute quantities') }}</flux:button>@else<flux:button size="sm" disabled title="{{__('You do not have permission to distribute this invoice.')}}">{{ __('Review and distribute quantities') }}</flux:button>@endcan
-                                    @endif
+                                        <flux:button size="sm" disabled>{{ __('Approve invoice') }}</flux:button>
+                                    @endcan
+                                    @can('purchase_invoices.distribute')<flux:button size="sm" variant="subtle" wire:click="openDistribution({{ $invoice->id }})">{{ __('Optional distribution') }}</flux:button>@endcan
                                     @can('purchase_invoices.approve')
                                         <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal('reject', {{ $invoice->id }})">{{ __('Reject') }}</x-actions.button>
                                     @endcan
@@ -1032,14 +1069,34 @@ new #[Title('Purchase Invoices')] class extends Component
         </div>
     </flux:modal>
 
+    <flux:error name="approval" />
+    @if($showReceiving && $receivingInvoice)
+        <flux:card class="space-y-4" aria-label="{{ __('Review received quantities') }}">
+            <flux:heading size="xl">{{ __('Approve invoice') }}</flux:heading>
+            <p>{{ __('Receiving store') }}: {{ \App\Support\HumanName::name($receivingInvoice->store) }}</p>
+            <p class="text-sm text-text-muted">{{ __('Verify accepted quantities before approval. Undistributed stock stays in this receiving store.') }}</p>
+            <form wire:submit="approveInvoice({{ $receivingInvoice->id }})" class="space-y-4">
+                <div class="overflow-x-auto"><table class="data-table w-full"><thead><tr><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ __('Accepted quantity') }}</th></tr></thead><tbody>
+                    @foreach($receivingInvoice->lines as $line)
+                        <tr wire:key="receiving-line-{{ $line->id }}"><td>{{ \App\Support\HumanName::name($line->product) }}<small class="block" dir="ltr">{{ $line->product?->item_code }}</small></td><td><x-product-quantity :value="$line->original_quantity ?? $line->quantity" /></td><td><flux:input wire:model="receivedQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted quantity')" required /><flux:error name="receivedQuantities.{{ $line->id }}" /></td></tr>
+                    @endforeach
+                </tbody></table></div>
+                <flux:error name="receivedQuantities" />
+                <div class="flex justify-end gap-2"><flux:button type="button" wire:click="$set('showReceiving', false)" wire:confirm="{{ __('Discard unsaved receiving changes?') }}">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="approveInvoice" wire:confirm="{{ __('Approve this invoice with the accepted quantities?') }}">{{ __('Approve invoice') }}</flux:button></div>
+            </form>
+        </flux:card>
+    @endif
+
     @if($showDistribution && $distributionInvoice)
-        <flux:card class="space-y-5" aria-label="{{ __('Stage 2 — Mandatory distribution') }}">
-            <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Stage 2 — Mandatory distribution') }}</flux:heading><x-context-help :title="__('Stage 2 — Mandatory distribution')" :label="__('Open contextual help')"><p>{{ __('Select destinations and allocate every purchased unit. The receiving warehouse is temporary and must finish at zero.') }}</p></x-context-help></div>
+        <flux:card class="space-y-5" aria-label="{{ __('Optional distribution') }}">
+            <div class="flex items-center gap-2"><flux:heading size="xl">{{ __('Optional distribution') }}</flux:heading><x-context-help :title="__('Optional distribution')" :label="__('Open contextual help')"><p>{{ __('Leave distribution empty to receive all accepted stock in the invoice receiving store. Allocate quantities only when a transfer to another store is intended.') }}</p></x-context-help></div>
             <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($stores->where('id','!=',$distributionInvoice->store_id) as $store)
                     <flux:checkbox wire:model.live="selectedDestinationIds" value="{{ $store->id }}" :label="str_starts_with(app()->getLocale(), 'ar') ? ($store->name_ar ?: '—') : ($store->name_en ?: '—')" />
                 @endforeach
             </div>
+            <flux:error name="distribution" />
+            @foreach($errors->all() as $message)<p role="alert" class="text-sm text-red-600">{{ $message }}</p>@endforeach
             <form wire:submit="saveDistribution" class="space-y-4 overflow-x-auto">
                 <table class="min-w-full text-sm"><thead><tr><th class="p-2 text-start">{{__('Product')}}</th><th class="p-2">{{__('Purchased')}}</th>@foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<th class="p-2">{{ str_starts_with(app()->getLocale(), 'ar')?$store->name_ar:($store->name_en?:$store->name_ar) }}@if($store->type==='selling')<div class="text-xs text-text-muted">{{__('Effective destination price')}}</div>@endif</th>@endforeach<th class="p-2">{{__('Distributed')}}</th><th class="p-2">{{__('Remaining')}}</th></tr></thead>
                 <tbody>@foreach($distributionInvoice->lines as $line) @php($distributed=collect($distributionMatrix[$line->id]??[])->reduce(fn($t,$q)=>bcadd($t,is_numeric($q)?(string)$q:'0',6),'0'))
@@ -1047,7 +1104,7 @@ new #[Title('Purchase Invoices')] class extends Component
                     @foreach($stores->whereIn('id',array_map('intval',$selectedDestinationIds)) as $store)<td class="p-2"><flux:input wire:model.live="distributionMatrix.{{ $line->id }}.{{ $store->id }}" type="number" min="0" step="1" aria-label="{{__('Distribution quantity')}}" />@php($saved=$distributionInvoice->distributions->first(fn($d)=>$d->purchase_invoice_line_id===$line->id&&$d->destination_store_id===$store->id))@if($saved?->effective_selling_price)<div class="mt-1 text-center"><x-money :amount="$saved->effective_selling_price" :currency="$distributionInvoice->currency_code" /></div>@endif</td>@endforeach
                     <td class="p-2 text-center" dir="ltr">{{ $this->formatQuantity($distributed) }}</td><td class="p-2 text-center {{ bccomp(bcsub((string)$line->quantity,$distributed,6),'0',6)!==0?'text-red-600':'text-green-700' }}" dir="ltr">{{ $this->formatQuantity(bcsub((string)$line->quantity,$distributed,6)) }}</td></tr>
                 @endforeach</tbody></table>
-                <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showDistribution', false)">{{__('Back to invoices')}}</flux:button><flux:button type="submit" variant="primary">{{__('Save distribution')}}</flux:button>@can('purchase_invoices.approve')<flux:button type="button" wire:click="approveInvoice({{$distributionInvoice->id}})" variant="primary">{{__('Approve & post')}}</flux:button>@endcan</div>
+                <div class="flex flex-wrap justify-end gap-2"><flux:button type="button" variant="subtle" wire:click="$set('showDistribution', false)">{{__('Back to invoices')}}</flux:button><flux:button type="submit" variant="primary">{{__('Save distribution')}}</flux:button>@can('purchase_invoices.approve')<flux:button type="button" wire:click="openReceivingReview({{$distributionInvoice->id}})" variant="primary">{{__('Approve invoice')}}</flux:button>@endcan</div>
             </form>
         </flux:card>
     @endif
@@ -1081,7 +1138,7 @@ new #[Title('Purchase Invoices')] class extends Component
                         @else
                             <flux:input wire:model="quickProduct.barcode" :label="__('International barcode')" dir="ltr" required />
                         @endif
-                        <flux:input wire:model="quickProduct.model_number" :label="__('Model number')" required />
+                        <flux:input wire:model="quickProduct.model_number" :label="__('Model number')" />
                         <flux:input wire:model="quickProduct.name_ar" :label="__('Arabic product name')" dir="rtl" required />
                         <flux:input wire:model="quickProduct.name_en" :label="__('English product name')" dir="ltr" />
                     </div>
