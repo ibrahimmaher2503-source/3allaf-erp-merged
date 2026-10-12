@@ -23,7 +23,7 @@ class ApprovalRecordPolicy
 
     public function decide(User $user, ApprovalRecord $record): bool
     {
-        $canBypass = $record->source_type === 'purchase_invoices'
+        $canBypass = $record->source_type === 'purchase_invoices' && $record->requested_action === 'approve'
             ? $user->canBypassPurchaseInvoiceApproval()
             : $user->canBypassApproval();
 

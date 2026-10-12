@@ -10,6 +10,7 @@ use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
@@ -31,6 +32,7 @@ use App\Support\ProductQuantity;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use OpenSpout\Common\Entity\Row;
@@ -119,6 +121,29 @@ final class PurchaseApprovalReceivingTest extends TestCase
         app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
         self::assertSame(1, StockMovement::query()->count());
         self::assertSame($auditCount, AuditLog::query()->count());
+    }
+
+    public function test_shared_approval_record_bypass_requires_invoice_approve_context(): void
+    {
+        $administrator = User::factory()->create(['status' => 'active']);
+        $administrator->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
+        $this->actingAs($administrator);
+        $invoice = $this->submit($this->draft('10'));
+        $approval = ApprovalRecord::query()->where('source_type', 'purchase_invoices')->where('source_id', (string) $invoice->id)->firstOrFail();
+
+        self::assertTrue(Gate::forUser($administrator)->allows('decide', $approval));
+        foreach ([['purchase_invoices', 'cancel'], ['purchase_orders', 'approve'], ['purchase_returns', 'approve'], ['platform_settings', 'approve']] as [$sourceType, $requestedAction]) {
+            DB::table('approval_records')->where('id', $approval->id)->update(['source_type' => $sourceType, 'requested_action' => $requestedAction]);
+            $record = $approval->fresh();
+            self::assertFalse(Gate::forUser($administrator)->allows('decide', $record));
+            try {
+                app(ApproveRequest::class)->execute($record, (string) $invoice->lock_version);
+                self::fail('System Administrator self-approved a non-invoice-approval record.');
+            } catch (ValidationException $exception) {
+                self::assertArrayHasKey('approver', $exception->errors());
+            }
+        }
+        self::assertSame(0, StockMovement::query()->count());
     }
 
     public function test_ordinary_creator_is_blocked_but_another_authorized_approver_can_approve(): void

@@ -1,3 +1,9 @@
+# 2026-10-12 — Final purchase-invoice hotfix scope verification
+
+Read-only CodeGraph/ast-grep caller review found one shared approval-record edge: source type alone allowed a hypothetical non-approve purchase-invoice record to inherit the role exception. The corrected shared policy/action/audit condition requires both invoice source and requested action `approve`; PO, returns, generic workflows and their creator guards remain unchanged. Focused isolated MariaDB PASS 3/38, scoped Larastan and syntax PASS. No Fast Gate rerun, merge or deployment. Corrected branch commit/push follow.
+
+## Preserved previous state
+
 # 2026-10-12 — Purchase-invoice approval locale and administrator hotfix
 
 D3 hotfix completed on `hotfix/purchase-approval-locale-admin` from source `7960c7a`. The invoice approval and receiving screen now has complete `ar-EG`/`ar` translation coverage; English remains LTR. The canonical active System Administrator role can approve its own purchase invoice via the existing permission, scope, transaction, and audit paths. Ordinary creator separation, optional distribution, stock and price posting, shortages, retry idempotency, and other purchasing workflows remain intact. Focused isolated MariaDB PASS 14/121; Arabic/English browser smoke PASS; single Fast QA PASS 8/8 (71/448). No migration, production access, main merge, deployment, or business gate advancement. Commit and branch push follow this status update.

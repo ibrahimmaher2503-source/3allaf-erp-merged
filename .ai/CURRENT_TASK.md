@@ -4,6 +4,8 @@ Owner-authorized D3 hotfix on `hotfix/purchase-approval-locale-admin` from fetch
 
 Focused disposable MariaDB PASS 14 tests / 121 assertions; scoped purchase approval/action Larastan PASS 0 findings; changed PHP/JS syntax and Pint PASS; authenticated `ar-EG` RTL and English LTR browser smoke PASS; one Fast QA PASS 8/8, 71 tests / 448 assertions. QA evidence: `.ai/qa/runs/20261012T130306Z-8884-fast` and `.ai/TEST_RESULTS.md`. Commit and branch push follow this factual update; business milestone/UAT gates do not advance.
 
+Final pre-merge scope verification found and closed one shared-record edge: the role exception now requires both `source_type = purchase_invoices` and `requested_action = approve`; the audit bypass marker uses the same context. Fresh isolated MariaDB targeted checks PASS 3 tests / 38 assertions for role-only invoice approval, ordinary denial, and non-invoice/non-approve record denial. No full Fast QA rerun; the earlier 8/8 result remains the prior-commit evidence. The correction is pending commit and task-branch push.
+
 ## Preserved previous task
 
 # Current Task — Purchase approval, receiving and Product Card quantity batch (2026-10-12)

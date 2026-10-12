@@ -33,7 +33,7 @@ class ApproveRequest
 
     private function assertSeparation(ApprovalRecord $record, User $approver): void
     {
-        $canBypass = $record->source_type === 'purchase_invoices'
+        $canBypass = $record->source_type === 'purchase_invoices' && $record->requested_action === 'approve'
             ? $approver->canBypassPurchaseInvoiceApproval()
             : $approver->canBypassApproval();
         if ($record->requester_id === $approver->id && ! $canBypass) {
