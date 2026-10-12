@@ -6475,5 +6475,8 @@
     "The linked destination transfer is not in the expected state.": "التحويل المرتبط بوجهة التوزيع ليس في الحالة المتوقعة.",
     "The receiving review contains a line outside this invoice.": "تحتوي مراجعة الاستلام على بند لا ينتمي لهذه الفاتورة.",
     "This invoice was modified in another session. Please reload.": "عُدلت هذه الفاتورة في جلسة أخرى. أعد تحميل الصفحة.",
-    "Verify accepted quantities before approval. Undistributed stock stays in this receiving store.": "راجع الكميات المستلمة قبل اعتماد الفاتورة. تبقى الكميات غير الموزعة في مخزن الاستلام المحدد."
+    "Verify accepted quantities before approval. Undistributed stock stays in this receiving store.": "راجع الكميات المستلمة قبل اعتماد الفاتورة. تبقى الكميات غير الموزعة في مخزن الاستلام المحدد.",
+    "Current product cost": "سعر التكلفة الحالي للمنتج",
+    "No current product cost": "لا يوجد سعر تكلفة حالي للمنتج",
+    "Optional initial cost; approved invoices update the current cost.": "سعر التكلفة الأولي اختياري؛ تحدّث الفواتير المعتمدة سعر التكلفة الحالي."
 }

@@ -1,3 +1,9 @@
+# 2026-10-12 — Product Card cost and purchasing defaults
+
+D3 batch on `feature/product-initial-cost-purchasing-defaults`, source `031815e`: canonical nullable Product Card cost now supplies the shared PO/invoice default; blank costs stay null/blank, drafts leave current cost untouched, and approved invoices retain the sole purchasing current-cost update. Blank supplier/local code preserves existing data, including staged import. Arabic/English cost guidance, quick-product optional cost, and action-level purchasing lookup guards are included. Focused isolated MariaDB PASS 21/179 plus import 1/11; bilingual browser/readback PASS; syntax, JSON, Pint and controlled core Larastan PASS. Staged import retains pre-existing Larastan diagnostics outside changed lines. First Fast Gate could not migrate a second disposable MariaDB due `/tmp` capacity; stale cache cleanup enabled retry PASS 8/8. No migration, main merge, production access/deployment or UAT advancement. Commit and task-branch push follow.
+
+## Preserved previous state
+
 # 2026-10-12 — Final purchase-invoice hotfix scope verification
 
 Read-only CodeGraph/ast-grep caller review found one shared approval-record edge: source type alone allowed a hypothetical non-approve purchase-invoice record to inherit the role exception. The corrected shared policy/action/audit condition requires both invoice source and requested action `approve`; PO, returns, generic workflows and their creator guards remain unchanged. Focused isolated MariaDB PASS 3/38, scoped Larastan and syntax PASS. No Fast Gate rerun, merge or deployment. Corrected branch commit/push follow.
