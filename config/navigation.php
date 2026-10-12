@@ -10,6 +10,7 @@ return [
         ['route' => 'purchasing.orders', 'active_routes' => ['purchasing.orders'], 'permission' => 'purchase_orders.view', 'icon' => 'chart-bar', 'label' => ['ar' => 'نظرة عامة على أوامر الشراء', 'en' => 'Purchase Order Overview']],
         ['route' => 'purchasing.orders.create', 'active_routes' => ['purchasing.orders.create'], 'permission' => 'purchase_orders.create', 'icon' => 'plus-circle', 'label' => ['ar' => 'إضافة أمر شراء', 'en' => 'Add Purchase Order']],
         ['route' => 'purchasing.invoices', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'receipt-percent', 'label' => ['ar' => 'فواتير المشتريات والاستلام', 'en' => 'Invoices & receiving']],
+        ['route' => 'purchasing.quantity-differences', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'فروق الكميات', 'en' => 'Quantity differences']],
         ['route' => 'purchasing.returns', 'permission' => 'purchase_returns.view', 'icon' => 'arrow-path', 'label' => ['ar' => 'مرتجعات الموردين', 'en' => 'Supplier returns']],
         ['route' => 'catalog.suppliers', 'parameters' => ['section' => 'supplier-groups'], 'permission' => 'suppliers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات الموردين', 'en' => 'Supplier groups']],
         ['route' => 'catalog.suppliers', 'parameters' => ['section' => 'supplier-masters'], 'permission' => 'suppliers.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'الموردون', 'en' => 'Suppliers']],

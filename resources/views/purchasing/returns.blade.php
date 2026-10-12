@@ -474,7 +474,7 @@ new #[Title('Supplier Returns')] class extends Component
                                 @endcan
                             @elseif ($return->status === 'submitted')
                                 @can('purchase_returns.approve')
-                                    <x-actions.button semantic="approve" :label="__('Approve & post')" wire:click="approveReturn({{ $return->id }})">{{ __('Approve & post') }}</x-actions.button>
+                                    <x-actions.button semantic="approve" :label="__('Approve')" wire:click="approveReturn({{ $return->id }})">{{ __('Approve') }}</x-actions.button>
                                 @endcan
                                 @can('purchase_returns.reject')
                                     <x-actions.button semantic="reject" :label="__('Reject')" wire:click="openTransitionModal({{ $return->id }}, 'reject')">{{ __('Reject') }}</x-actions.button>

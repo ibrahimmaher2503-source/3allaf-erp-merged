@@ -8,17 +8,17 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Actions\RecordAuditEvent;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
+use App\Support\ProductQuantity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use App\Support\ProductQuantity;
 
 final class SavePurchaseInvoiceAction
 {
@@ -29,10 +29,18 @@ final class SavePurchaseInvoiceAction
     public function execute(array $data, array $lines, ?int $id = null, ?int $expectedVersion = null): PurchaseInvoice
     {
         Gate::authorize('purchase_invoices.draft');
-        if (collect($lines)->pluck('product_id')->filter()->duplicates()->isNotEmpty()) throw new InvalidArgumentException(__('A product may appear only once; scan it again to increase quantity.'));
-        if (! Gate::allows('purchase_invoices.change_cost')) throw new InvalidArgumentException(__('You are not allowed to change purchase cost.'));
-        if (! Gate::allows('purchase_invoices.change_list0_price')) throw new InvalidArgumentException(__('You are not allowed to change Base Consumer Price List 0.'));
-        foreach ($lines as $index => $line) ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
+        if (collect($lines)->pluck('product_id')->filter()->duplicates()->isNotEmpty()) {
+            throw new InvalidArgumentException(__('A product may appear only once; scan it again to increase quantity.'));
+        }
+        if (! Gate::allows('purchase_invoices.change_cost')) {
+            throw new InvalidArgumentException(__('You are not allowed to change purchase cost.'));
+        }
+        if (! Gate::allows('purchase_invoices.change_list0_price')) {
+            throw new InvalidArgumentException(__('You are not allowed to change Base Consumer Price List 0.'));
+        }
+        foreach ($lines as $index => $line) {
+            ProductQuantity::normalize($line['quantity'] ?? null, 'lines.'.$index.'.quantity');
+        }
         $actor = Auth::user();
         abort_unless($actor instanceof User, 403);
 
@@ -44,6 +52,8 @@ final class SavePurchaseInvoiceAction
                     ->whereIn('store_id', Store::query()->visibleTo($actor)->select('id'))
                     ->lockForUpdate()
                     ->findOrFail($id);
+
+            $originalQuantities = $invoice?->lines()->get()->mapWithKeys(fn ($line): array => [$line->product_id => $line->original_quantity ?? $line->quantity])->all() ?? [];
 
             if ($invoice !== null) {
                 if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
@@ -200,6 +210,7 @@ final class SavePurchaseInvoiceAction
                     'product_id' => $normalizedLines[$index]['product_id'],
                     'purchase_order_line_id' => $normalizedLines[$index]['purchase_order_line_id'],
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
+                    'original_quantity' => $originalQuantities[$normalizedLines[$index]['product_id']] ?? $line['quantity'],
                     'quantity_received' => 0,
                 ]);
             }

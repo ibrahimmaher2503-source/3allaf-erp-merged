@@ -4,9 +4,9 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Exceptions\ImmutableItemCodeChangeException;
 use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
+use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Models\AgeLabel;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
@@ -20,6 +20,7 @@ use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class SaveProductAction
@@ -142,7 +143,7 @@ class SaveProductAction
                     'full_description_ar' => $this->nullableString($data['full_description_ar'] ?? null), 'full_description_en' => $this->nullableString($data['full_description_en'] ?? null),
                     'meta_title_ar' => $this->nullableString($data['meta_title_ar'] ?? null), 'meta_title_en' => $this->nullableString($data['meta_title_en'] ?? null), 'meta_description_ar' => $this->nullableString($data['meta_description_ar'] ?? null), 'meta_description_en' => $this->nullableString($data['meta_description_en'] ?? null),
                     'seo_slug' => $this->nullableSlug($data['seo_slug'] ?? null, $id), 'publish_visibility' => $this->nullableString($data['publish_visibility'] ?? null), 'sort_order' => ($data['sort_order'] ?? null) === null || ($data['sort_order'] ?? '') === '' ? null : max(0, (int) $data['sort_order']),
-                    'model_number' => $this->nullableString($data['model_number'] ?? null),
+                    'model_number' => array_key_exists('model_number', $data) ? $this->nullableString($data['model_number']) : $product?->model_number,
                     'product_type' => $productType,
                     'unit_of_measure' => $this->nullableString($data['unit_of_measure'] ?? null),
                     'category_id' => (int) $data['category_id'],
@@ -191,7 +192,7 @@ class SaveProductAction
 
                 if ($product !== null) {
                     foreach ([
-                        'description_ar', 'description_en', 'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order','model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details', 'tax_setting_id',
+                        'description_ar', 'description_en', 'short_description_ar', 'short_description_en', 'full_description_ar', 'full_description_en', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'seo_slug', 'publish_visibility', 'sort_order', 'model_number', 'unit_of_measure', 'average_cost', 'sale_price', 'battery_required', 'battery_details', 'tax_setting_id',
                         'reorder_threshold', 'dimension_length', 'dimension_width', 'dimension_height',
                         'dimension_unit', 'weight', 'weight_unit', 'open_price', 'sell_online', 'target_age', 'age_label_id', 'suitable_gender', 'gender_id', 'colour', 'colour_id', 'size', 'character', 'character_id',
                         'key_points_ar', 'key_points_en', 'keywords_ar', 'keywords_en', 'fractional_quantity',
@@ -324,7 +325,20 @@ class SaveProductAction
         return $value === '' ? null : $value;
     }
 
-    private function nullableSlug(mixed $value, ?int $id): ?string { $slug = trim((string) ($value ?? '')); if ($slug === '') return null; $query = Product::query()->where('seo_slug', $slug); if ($id !== null) $query->where('id', '<>', $id); if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || $query->exists()) throw new InvalidArgumentException(__('The SEO slug must be lowercase, URL-safe, and unique.')); return $slug; }
+    private function nullableSlug(mixed $value, ?int $id): ?string
+    {
+        $slug = trim((string) ($value ?? ''));
+        if ($slug === '') {
+            return null;
+        } $query = Product::query()->where('seo_slug', $slug);
+        if ($id !== null) {
+            $query->where('id', '<>', $id);
+        } if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || $query->exists()) {
+            throw new InvalidArgumentException(__('The SEO slug must be lowercase, URL-safe, and unique.'));
+        }
+
+        return $slug;
+    }
 
     private function nullableNumeric(mixed $value): float|int|null
     {
@@ -340,7 +354,7 @@ class SaveProductAction
     }
 
     /** @param array<string, mixed> $data
-     *  @return array{average_cost: string|null, sale_price: string|null}
+     * @return array{average_cost: string|null, sale_price: string|null}
      */
     private function draftPricing(array $data): array
     {
@@ -359,9 +373,14 @@ class SaveProductAction
 
     private function nullableLookupId(mixed $value, string $model): ?int
     {
-        if ($value === null || $value === '') return null;
+        if ($value === null || $value === '') {
+            return null;
+        }
         $lookup = $model::query()->whereKey((int) $value)->where('status', 'active')->first();
-        if ($lookup === null) throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
+        if ($lookup === null) {
+            throw new InvalidArgumentException(__('The selected catalog lookup value must exist and be active.'));
+        }
+
         return (int) $lookup->id;
     }
 
@@ -375,10 +394,9 @@ class SaveProductAction
         $ids = array_map('intval', $validated['filter_value_ids']);
         $savedIds = $product->filterValues()->pluck('product_option_values.id')->map(fn ($id): int => (int) $id)->all();
         $values = ProductOptionValue::query()->with('group')->whereIn('id', $ids)->get();
-        if ($values->count() !== count($ids) || $values->contains(fn ($value): bool =>
-            ($value->status !== 'active' || $value->group->status !== 'active') && ! in_array($value->id, $savedIds, true)
+        if ($values->count() !== count($ids) || $values->contains(fn ($value): bool => ($value->status !== 'active' || $value->group->status !== 'active') && ! in_array($value->id, $savedIds, true)
         )) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'productForm.filter_value_ids' => __('Select active Product Filter values or retain the existing saved selections.'),
             ]);
         }

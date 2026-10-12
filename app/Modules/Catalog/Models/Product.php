@@ -3,6 +3,9 @@
 namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Services\ProductDependencyService;
+use App\Modules\Inventory\Models\ProductStoreAssignment;
+use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Pricing\Models\ProductPriceOverride;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -59,7 +62,7 @@ class Product extends Model
         'name_en',
         'description_ar',
         'description_en',
-        'short_description_ar','short_description_en','full_description_ar','full_description_en','meta_title_ar','meta_title_en','meta_description_ar','meta_description_en','seo_slug','publish_visibility','sort_order',
+        'short_description_ar', 'short_description_en', 'full_description_ar', 'full_description_en', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'seo_slug', 'publish_visibility', 'sort_order',
         'model_number',
         'product_type',
         'has_variations',
@@ -129,7 +132,6 @@ class Product extends Model
     {
         return blank($this->item_code)
             || blank($this->name_ar)
-            || blank($this->model_number)
             || $this->category_id === null
             || $this->sale_price === null
             || bccomp((string) $this->sale_price, '0', 2) <= 0
@@ -138,14 +140,45 @@ class Product extends Model
                 : $this->barcodes()->where('status', 'active')->exists()));
     }
 
-    public function ageLabel(): BelongsTo { return $this->belongsTo(AgeLabel::class); }
-    public function gender(): BelongsTo { return $this->belongsTo(Gender::class); }
-    public function colourLookup(): BelongsTo { return $this->belongsTo(Colour::class, 'colour_id'); }
-    public function characterLookup(): BelongsTo { return $this->belongsTo(Character::class, 'character_id'); }
-    public function ages(): BelongsToMany { return $this->belongsToMany(AgeLabel::class, 'product_ages'); }
-    public function characters(): BelongsToMany { return $this->belongsToMany(Character::class, 'product_characters'); }
-    public function colours(): BelongsToMany { return $this->belongsToMany(Colour::class, 'product_colours'); }
-    public function genders(): BelongsToMany { return $this->belongsToMany(Gender::class, 'product_genders'); }
+    public function ageLabel(): BelongsTo
+    {
+        return $this->belongsTo(AgeLabel::class);
+    }
+
+    public function gender(): BelongsTo
+    {
+        return $this->belongsTo(Gender::class);
+    }
+
+    public function colourLookup(): BelongsTo
+    {
+        return $this->belongsTo(Colour::class, 'colour_id');
+    }
+
+    public function characterLookup(): BelongsTo
+    {
+        return $this->belongsTo(Character::class, 'character_id');
+    }
+
+    public function ages(): BelongsToMany
+    {
+        return $this->belongsToMany(AgeLabel::class, 'product_ages');
+    }
+
+    public function characters(): BelongsToMany
+    {
+        return $this->belongsToMany(Character::class, 'product_characters');
+    }
+
+    public function colours(): BelongsToMany
+    {
+        return $this->belongsToMany(Colour::class, 'product_colours');
+    }
+
+    public function genders(): BelongsToMany
+    {
+        return $this->belongsToMany(Gender::class, 'product_genders');
+    }
 
     public function brand(): BelongsTo
     {
@@ -154,7 +187,7 @@ class Product extends Model
 
     public function taxSetting(): BelongsTo
     {
-        return $this->belongsTo(\App\Modules\Platform\Models\TaxSetting::class);
+        return $this->belongsTo(TaxSetting::class);
     }
 
     public function originatingSupplier(): BelongsTo
@@ -167,9 +200,15 @@ class Product extends Model
         return $this->hasMany(Barcode::class);
     }
 
-    public function priceOverrides(): HasMany { return $this->hasMany(\App\Modules\Pricing\Models\ProductPriceOverride::class); }
+    public function priceOverrides(): HasMany
+    {
+        return $this->hasMany(ProductPriceOverride::class);
+    }
 
-    public function storeAssignments(): HasMany { return $this->hasMany(\App\Modules\Inventory\Models\ProductStoreAssignment::class); }
+    public function storeAssignments(): HasMany
+    {
+        return $this->hasMany(ProductStoreAssignment::class);
+    }
 
     public function images(): HasMany
     {
@@ -301,7 +340,7 @@ class Product extends Model
     public function scopeCompleteCard(Builder $query): Builder
     {
         return $query->whereNotNull('products.item_code')->where('products.item_code', '<>', '')
-            ->whereNotNull('products.category_id')->whereNotNull('products.model_number')->where('products.model_number', '<>', '')
+            ->whereNotNull('products.category_id')
             ->whereNotNull('products.name_ar')->where('products.name_ar', '<>', '')->where('products.sale_price', '>', 0)
             ->where(fn (Builder $scope) => $scope->where('products.product_type', 'service')->orWhereHas('barcodes', fn (Builder $codes) => $codes->where('status', 'active')));
     }
@@ -309,7 +348,7 @@ class Product extends Model
     public function scopeIncompleteCard(Builder $query): Builder
     {
         return $query->where(fn (Builder $scope) => $scope->whereNull('products.item_code')->orWhere('products.item_code', '')
-            ->orWhereNull('products.category_id')->orWhereNull('products.model_number')->orWhere('products.model_number', '')
+            ->orWhereNull('products.category_id')
             ->orWhereNull('products.name_ar')->orWhere('products.name_ar', '')->orWhereNull('products.sale_price')->orWhere('products.sale_price', '<=', 0)
             ->orWhere(fn (Builder $stock) => $stock->where('products.product_type', '<>', 'service')->whereDoesntHave('barcodes', fn (Builder $codes) => $codes->where('status', 'active'))));
     }

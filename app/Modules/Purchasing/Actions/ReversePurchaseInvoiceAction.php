@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\ExecuteCorrection;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Data\CorrectionReferenceData;
 use App\Modules\Platform\Enums\CorrectionType;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Models\StockBalance;
@@ -52,7 +55,10 @@ final class ReversePurchaseInvoiceAction
             if ($invoice->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved invoices can be reversed.'));
             }
-            $movements = StockMovement::query()->where('source_type', PurchaseInvoice::class)->where('source_id', $invoice->id)->where('movement_type', 'purchase_distribution_in')->lockForUpdate()->get();
+            if (StockTransfer::query()->where('purchase_invoice_id', $invoice->id)->whereNotIn('status', ['cancelled', 'reversed'])->exists()) {
+                throw new InvalidArgumentException(__('Correct linked distribution transfers before reversing this invoice.'));
+            }
+            $movements = StockMovement::query()->where('source_type', PurchaseInvoice::class)->where('source_id', $invoice->id)->whereIn('movement_type', ['purchase_receipt', 'purchase_distribution_in'])->lockForUpdate()->get();
             if ($movements->isEmpty()) {
                 throw new InvalidArgumentException(__('No receipt movement exists to reverse.'));
             }
@@ -67,9 +73,11 @@ final class ReversePurchaseInvoiceAction
                     $poLine = $purchaseOrderLines[$line->id];
                     $poLine->mutateApprovedParentLine(['quantity_received' => $this->subtract($poLine->quantity_received, $line->quantity, 6)]);
                 }
-                $line->mutateApprovedParentLine(['quantity_received' => 0]);
-                $product = \App\Modules\Catalog\Models\Product::query()->lockForUpdate()->findOrFail($line->product_id);
-                $product->update(['average_cost' => $line->previous_product_cost, 'sale_price' => $line->previous_base_consumer_price, 'lock_version' => $product->lock_version + 1]);
+                $product = Product::query()->lockForUpdate()->findOrFail($line->product_id);
+                $hasLaterApproval = PurchaseInvoiceLine::query()->where('product_id', $line->product_id)->whereHas('invoice', fn ($query) => $query->where('status', 'approved')->where('id', '<>', $invoice->id)->where('approved_at', '>=', $invoice->approved_at))->exists();
+                if (! $hasLaterApproval) {
+                    $product->update(['average_cost' => $line->previous_product_cost, 'sale_price' => $line->previous_base_consumer_price, 'lock_version' => $product->lock_version + 1]);
+                }
             }
 
             $before = $invoice->only(['status', 'lock_version']);
@@ -124,7 +132,9 @@ final class ReversePurchaseInvoiceAction
             if (StockMovement::query()->where('idempotency_key', $key)->exists()) {
                 continue;
             }
-            if (! Store::query()->whereKey($movement->store_id)->exists()) throw new InvalidArgumentException(__('The distribution destination no longer exists.'));
+            if (! Store::query()->whereKey($movement->store_id)->exists()) {
+                throw new InvalidArgumentException(__('The distribution destination no longer exists.'));
+            }
 
             $balance = StockBalance::query()->where('product_id', $movement->product_id)->where('store_id', $movement->store_id)->lockForUpdate()->firstOrFail();
             if ($this->compare($balance->on_hand, $movement->quantity) < 0) {

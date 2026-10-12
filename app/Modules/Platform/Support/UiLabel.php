@@ -12,6 +12,7 @@ final class UiLabel
     private const STATUS_LABELS = [
         'active' => 'Active',
         'approved' => 'Approved',
+        'awaiting_distribution' => 'Awaiting approval',
         'archived' => 'Archived',
         'assigned' => 'Assigned',
         'cancelled' => 'Cancelled',
