@@ -1,3 +1,9 @@
+# 2026-10-12 — Product Card cost and purchasing default batch
+
+Disposable socket-only MariaDB `qa_rajh_20261012141713_17086` (`/tmp/rajeh-qa-mariadb.iWXHsw`): Product Card/purchase approval/lookup PASS 21 tests, 179 assertions; staged import update-existing PASS 1 test, 11 assertions. Product-cost backend A–F passed in the interrupted run; isolated browser-only rerun passed Admin/Editor saves, Arabic blank edit, cost permission visibility and no-cost finalization; database readback/optional workbook import passed. Purchase-approval browser smoke passed Arabic RTL and English LTR, with no browser errors. Changed PHP/Blade syntax, locale JSON and Pint passed. Controlled Larastan passes for `SaveProductAction` and `SupplierProductPrice` (0 findings); `StageProductImportAction` reports 20 pre-existing findings, none on changed lines. First Fast Gate report `.ai/qa/runs/20261012T142932Z-20524-fast`: FAIL because `/tmp` ran out of space during fresh MariaDB migration; following stages could not use the database. Stale `/tmp` PHPStan caches were removed. Retried Fast Gate `.ai/qa/runs/20261012T143204Z-27598-fast`: PASS 8/8, zero warnings/skips/failures in 220 seconds. The earlier product-cost command ended after `/login` during interruption; its exact browser exception was not retained, and the isolated browser rerun passed. No production DB, deployment, deep audit, or main merge.
+
+## Preserved previous results
+
 # 2026-10-07 — Fast QA harness repair
 
 I4, source `fb683347ccfc3bccc382b684f287d7af0afa075d`, branch `hotfix/fast-qa-harness`. Existing `mariadb-run.sh` provisioned fresh private socket-only MariaDB databases with networking disabled; PHPUnit ran in `testing` with guarded temporary storage/caches and the script checks retained `qa`.

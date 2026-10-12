@@ -6,15 +6,18 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Barcode;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SyncSupplierProductAssociation;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -33,7 +36,7 @@ final class V0122Hotfix27PurchaseOrderLookupTest extends TestCase
         return $app;
     }
 
-    public function test_purchasing_lookup_filters_incrementally_and_uses_only_latest_approved_supplier_price(): void
+    public function test_purchasing_lookup_filters_incrementally_and_uses_current_product_cost(): void
     {
         [$actor, $supplier, $store, $linked, $other] = $this->fixtures();
         $this->approvedInvoice($supplier, $store, $linked, '11.2500', '2026-08-01', 'EGP', 'approved');
@@ -45,9 +48,9 @@ final class V0122Hotfix27PurchaseOrderLookupTest extends TestCase
             'q' => '001', 'context' => 'purchasing', 'supplier_id' => $supplier->id, 'supplier_only' => 1, 'currency_code' => 'EGP',
         ]))->assertOk()->json('data');
         self::assertSame([$linked->id], array_column($filtered, 'id'));
-        self::assertSame('17.7500', $filtered[0]['unit_cost']);
-        self::assertSame('last_supplier_price', $filtered[0]['price_source']);
-        self::assertSame('2026-09-02', $filtered[0]['price_date']);
+        self::assertSame('9.50', $filtered[0]['unit_cost']);
+        self::assertSame('fallback_cost', $filtered[0]['price_source']);
+        self::assertNull($filtered[0]['price_date']);
         self::assertSame('piece', $filtered[0]['unit_of_measure']);
         self::assertSame('SUP-001-7', $filtered[0]['supplier_item_code']);
 
@@ -118,7 +121,7 @@ final class V0122Hotfix27PurchaseOrderLookupTest extends TestCase
             ->assertSee('data-product-line-editor', false);
 
         $order = app(SavePurchaseOrderAction::class)->execute(
-            ['supplier_id' => $supplier->id, 'store_id' => $store->id, 'order_date' => '2026-09-10', 'notes' => 'Hotfix27 full-page draft'],
+            ['supplier_id' => $supplier->id, 'branch_id' => $store->branch_id, 'store_id' => $store->id, 'order_date' => '2026-09-10', 'notes' => 'Hotfix27 full-page draft'],
             [['product_id' => $linked->id, 'quantity_ordered' => 2, 'unit_cost' => '17.7500']],
         );
 
@@ -131,15 +134,19 @@ final class V0122Hotfix27PurchaseOrderLookupTest extends TestCase
     /** @return array{User, Supplier, Store, Product, Product} */
     private function fixtures(): array
     {
+        app(ProductionSeeder::class)->seedAuthorizationOnly();
         $actor = User::factory()->create(['status' => 'active']);
-        $actor->forceFill(['is_super_admin' => true, 'email_verified_at' => now()])->save();
+        $actor->forceFill(['email_verified_at' => now()])->save();
+        $actor->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
         $company = Company::factory()->create();
         $branch = Branch::factory()->create(['company_id' => $company->id]);
         $store = Store::factory()->warehouse()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
         $supplier = Supplier::query()->create(['code' => 'SUP-H27-'.str()->random(6), 'name_ar' => 'مورد المنتجات', 'name_en' => 'Product Supplier', 'status' => 'active']);
-        $linked = Product::factory()->create(['item_code' => 'H27-001-A-'.str()->random(4), 'model_number' => 'MODEL-A1', 'name_ar' => 'منتج ألفا 001', 'name_en' => 'Product Alpha 001', 'unit_of_measure' => 'piece', 'average_cost' => '9.50']);
-        $other = Product::factory()->create(['item_code' => 'H27-B-'.str()->random(4), 'model_number' => 'MODEL-0012-B', 'name_ar' => 'منتج بيتا', 'name_en' => 'Product Beta', 'unit_of_measure' => 'piece', 'average_cost' => '8.50']);
+        $category = Category::factory()->create();
+        $linked = Product::factory()->create(['item_code' => 'H27-001-A-'.str()->random(4), 'model_number' => 'MODEL-A1', 'name_ar' => 'منتج ألفا 001', 'name_en' => 'Product Alpha 001', 'category_id' => $category->id, 'sale_price' => 25, 'unit_of_measure' => 'piece', 'average_cost' => '9.50']);
+        $other = Product::factory()->create(['item_code' => 'H27-B-'.str()->random(4), 'model_number' => 'MODEL-0012-B', 'name_ar' => 'منتج بيتا', 'name_en' => 'Product Beta', 'category_id' => $category->id, 'sale_price' => 25, 'unit_of_measure' => 'piece', 'average_cost' => '8.50']);
         Barcode::query()->create(['product_id' => $linked->id, 'barcode' => '6221234567890', 'source' => 'supplier', 'status' => 'active', 'is_primary' => true]);
+        Barcode::query()->create(['product_id' => $other->id, 'barcode' => '6221234567891', 'source' => 'supplier', 'status' => 'active', 'is_primary' => true]);
         ProductSupplier::query()->create(['product_id' => $linked->id, 'supplier_id' => $supplier->id, 'supplier_item_code' => 'SUP-001-7', 'is_preferred' => false, 'created_by' => $actor->id, 'updated_by' => $actor->id]);
 
         return [$actor, $supplier, $store, $linked, $other];

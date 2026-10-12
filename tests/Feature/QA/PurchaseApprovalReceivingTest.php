@@ -22,12 +22,14 @@ use App\Modules\Platform\Support\ProductPricingReadiness;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseDistributionAction;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
+use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SavePurchaseReceivingAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
+use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use App\Support\ProductQuantity;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -327,6 +329,48 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertNotNull($final->item_code);
         Livewire::test('catalog::product-form', ['product' => $final])->call('save')->assertHasNoErrors();
         self::assertNull($final->fresh()->model_number);
+    }
+
+    public function test_initial_product_cost_and_supplier_code_remain_optional_and_preserved_on_edit(): void
+    {
+        $data = ['name_ar' => 'منتج التكلفة', 'name_en' => 'Initial cost product',
+            'category_id' => $this->fixture['category']->id, 'preferred_supplier_id' => $this->supplier->id,
+            'barcode_registration_type' => 'local', 'product_type' => 'service', 'sale_price' => '25', 'status' => 'active'];
+        $save = app(SaveProductAction::class);
+        $withCost = $save->execute([...$data, 'average_cost' => '10', 'supplier_item_code' => 'LOCAL-10']);
+        self::assertSame('10.00', $withCost->average_cost);
+        self::assertSame('LOCAL-10', $withCost->preferredProductSupplier?->supplier_item_code);
+
+        $withCost = $save->execute([...$data, 'name_en' => 'Edited', 'average_cost' => '', 'supplier_item_code' => ''], $withCost->id, $withCost->lock_version);
+        self::assertSame('10.00', $withCost->fresh()->average_cost);
+        self::assertSame('LOCAL-10', $withCost->fresh()->preferredProductSupplier?->supplier_item_code);
+
+        $withoutCost = $save->execute([...$data, 'name_en' => 'No cost', 'average_cost' => '', 'supplier_item_code' => '']);
+        self::assertNull($withoutCost->average_cost);
+        self::assertNull($withoutCost->preferredProductSupplier?->supplier_item_code);
+        self::assertFalse($withoutCost->hasIncompleteCard());
+    }
+
+    public function test_current_product_cost_defaults_po_and_invoice_without_mutating_drafts_or_history(): void
+    {
+        $prices = app(SupplierProductPrice::class);
+        self::assertSame('10.00', $prices->resolve($this->product, $this->supplier->id, $this->fixture['company']->id)['unit_cost']);
+        $earlierOrder = app(SavePurchaseOrderAction::class)->execute(
+            ['supplier_id' => $this->supplier->id, 'branch_id' => $this->fixture['branch']->id, 'store_id' => $this->fixture['receiving']->id, 'order_date' => '2026-10-11'],
+            [['product_id' => $this->product->id, 'quantity_ordered' => 1, 'unit_cost' => '10']],
+        );
+        $order = app(SavePurchaseOrderAction::class)->execute(
+            ['supplier_id' => $this->supplier->id, 'branch_id' => $this->fixture['branch']->id, 'store_id' => $this->fixture['receiving']->id, 'order_date' => '2026-10-12'],
+            [['product_id' => $this->product->id, 'quantity_ordered' => 1, 'unit_cost' => '20']],
+        );
+        $invoice = $this->draft('1', '20');
+        self::assertSame('10.00', $this->product->fresh()->average_cost);
+        $approved = app(ApprovePurchaseInvoiceAction::class)->execute($this->submit($invoice)->id);
+        self::assertSame('20.00', $this->product->fresh()->average_cost);
+        self::assertSame('20.00', $prices->resolve($this->product->fresh(), $this->supplier->id, $this->fixture['company']->id)['unit_cost']);
+        self::assertSame('10.0000', $earlierOrder->lines->firstOrFail()->fresh()->unit_cost);
+        self::assertSame('20.0000', $order->lines->firstOrFail()->fresh()->unit_cost);
+        self::assertSame('20.0000', $approved->lines->firstOrFail()->unit_cost);
     }
 
     public function test_workbook_import_allows_multiple_blank_models_without_fabricating_identity(): void

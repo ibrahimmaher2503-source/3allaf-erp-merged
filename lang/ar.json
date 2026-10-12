@@ -6390,5 +6390,8 @@
     "The distribution contains a line outside this invoice.": "يحتوي التوزيع على بند لا ينتمي لهذه الفاتورة.",
     "The invoice line product does not match the selected purchase-order line.": "منتج بند الفاتورة لا يطابق بند أمر الشراء المحدد.",
     "The linked destination transfer is not in the expected state.": "التحويل المرتبط بوجهة التوزيع ليس في الحالة المتوقعة.",
-    "This invoice was modified in another session. Please reload.": "عُدلت هذه الفاتورة في جلسة أخرى. أعد تحميل الصفحة."
+    "This invoice was modified in another session. Please reload.": "عُدلت هذه الفاتورة في جلسة أخرى. أعد تحميل الصفحة.",
+    "Current product cost": "سعر التكلفة الحالي للمنتج",
+    "No current product cost": "لا يوجد سعر تكلفة حالي للمنتج",
+    "Optional initial cost; approved invoices update the current cost.": "سعر التكلفة الأولي اختياري؛ تحدّث الفواتير المعتمدة سعر التكلفة الحالي."
 }

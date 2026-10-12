@@ -11,6 +11,8 @@ use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductImportBatch;
+use App\Modules\Catalog\Models\ProductSupplier;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Models\ProductStoreAssignment;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\Branch;
@@ -636,12 +638,16 @@ final class ProductImportWorkflowTest extends TestCase
             'average_cost' => '77.25',
             'sale_price' => '25.00',
         ]);
+        $supplier = Supplier::query()->create(['code' => 'SUP-'.$this->suffix, 'name_ar' => 'مورد الاختبار', 'name_en' => 'Import supplier', 'status' => 'active']);
+        ProductSupplier::query()->create(['product_id' => $existing->id, 'supplier_id' => $supplier->id, 'supplier_item_code' => 'LOCAL-21', 'is_preferred' => true, 'created_by' => $writer->id, 'updated_by' => $writer->id]);
         $batch = $this->stageAndMap($writer, $company->code, [[
             'item_code' => $itemCode,
             'name_ar' => 'اسم محدث',
             'name_en' => 'Updated name',
             'category_code' => $category->code,
             'product_type' => 'standard',
+            'preferred_supplier_code' => $supplier->code,
+            'supplier_item_code' => '',
             'average_cost' => '999.99',
             'sale_price' => '30.00',
         ]], 'update_existing');
@@ -658,6 +664,7 @@ final class ProductImportWorkflowTest extends TestCase
         self::assertSame('Updated name', $existing->name_en);
         self::assertSame('30.00', $existing->sale_price);
         self::assertSame('77.25', $existing->average_cost, 'Update Existing must preserve cost when the importer cannot view cost.');
+        self::assertSame('LOCAL-21', $existing->fresh()->preferredProductSupplier?->supplier_item_code);
         self::assertSame(1, $batch->fresh()->rows()->where('status', 'updated')->count());
     }
 

@@ -231,6 +231,7 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function confirmSupplierChange(SupplierProductPrice $prices): void
     {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
         $this->orderForm['supplier_id'] = $this->pendingSupplierId;
         $this->confirmedSupplierId = $this->pendingSupplierId;
         $this->pendingSupplierId = '';
@@ -244,7 +245,7 @@ new #[Title('Purchase Orders')] class extends Component
             $product = Product::query()->sellable()->find((int) $line['product_id']);
             $price = $product && $branch && filled($this->confirmedSupplierId)
                 ? $prices->resolve($product, (int) $this->confirmedSupplierId, (int) $branch->company_id)
-                : ['unit_cost' => '0.0000', 'price_source' => 'no_supplier_history', 'price_date' => null, 'price_currency' => null];
+                : ['unit_cost' => null, 'price_source' => 'no_supplier_history', 'price_date' => null, 'price_currency' => null];
             $line['unit_cost'] = $price['unit_cost'];
             $line['price_source'] = $price['price_source'];
             $line['price_date'] = $price['price_date'] ?? '';
@@ -316,6 +317,7 @@ new #[Title('Purchase Orders')] class extends Component
 
     public function selectOrderProduct(int $index, int $productId, SupplierProductPrice $prices): void
     {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
         abort_unless(filled($this->orderForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         $branch = Branch::query()->visibleTo(auth()->user())->findOrFail((int) $this->orderForm['branch_id']);
         $product = Product::query()->sellable()->availableToCompany((int) $branch->company_id)->findOrFail($productId);

@@ -3199,5 +3199,8 @@
     "Purchase invoice approved.": "Purchase invoice approved.",
     "Review supplier invoices, receiving and approvals within your scope.": "Review supplier invoices, receiving and approvals within your scope.",
     "Drafts do not change stock or current prices. Approving the invoice records accepted stock and updates current product prices.": "Drafts do not change stock or current prices. Approving the invoice records accepted stock and updates current product prices.",
-    "A supplier code is required to generate a product code when model number is blank.": "A supplier code is required to generate a product code when model number is blank."
+    "A supplier code is required to generate a product code when model number is blank.": "A supplier code is required to generate a product code when model number is blank.",
+    "Current product cost": "Current product cost",
+    "No current product cost": "No current product cost",
+    "Optional initial cost; approved invoices update the current cost.": "Optional initial cost; approved invoices update the current cost."
 }

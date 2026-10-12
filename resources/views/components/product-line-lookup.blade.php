@@ -41,8 +41,8 @@
     data-label-unit="{{ __('Unit') }}"
     data-label-supplier-code="{{ __('Supplier product code') }}"
     data-label-last-price="{{ __('Last supplier price') }}"
-    data-label-fallback-price="{{ __('Fallback product cost') }}"
-    data-label-no-price="{{ __('No approved cost history for this supplier') }}"
+    data-label-fallback-price="{{ __('Current product cost') }}"
+    data-label-no-price="{{ __('No current product cost') }}"
 >
     <label class="{{ $labelVisuallyHidden ? 'sr-only' : 'mb-1 block text-xs font-semibold' }}" data-product-label>{{ $label }}</label>
     <input

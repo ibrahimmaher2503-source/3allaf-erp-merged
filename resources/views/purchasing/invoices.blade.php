@@ -9,6 +9,7 @@ use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Services\ResolveProductTaxSnapshot;
+use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
@@ -340,6 +341,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function selectInvoiceProduct(int $index, int $productId, SupplierProductPrice $prices): void
     {
+        Gate::authorize('purchase_invoices.draft');
         abort_unless(filled($this->invoiceForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         abort_unless(array_key_exists($index, $this->lineItems), 422);
         $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
@@ -350,6 +352,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function addItemEntry(SupplierProductPrice $prices): void
     {
+        Gate::authorize('purchase_invoices.draft');
         if (! filled($this->invoiceForm['supplier_id'])) { Flux::toast(__('Select a supplier before adding products.'), variant: 'warning'); return; }
         $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
         $lookup = trim($this->itemEntry);
@@ -366,6 +369,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function selectSearchProduct(int $productId, SupplierProductPrice $prices): void
     {
+        Gate::authorize('purchase_invoices.draft');
         abort_unless(filled($this->invoiceForm['supplier_id']), 422, __('Select a supplier before adding products.'));
         $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
         $product = Product::query()->sellable()->availableToCompany((int) $store->company_id)->findOrFail($productId);
@@ -480,6 +484,7 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function createQuickProduct(SaveProductAction $save, AddBarcodeAction $barcodes): void
     {
+        Gate::authorize('purchase_invoices.draft');
         Gate::authorize('products_categories_brands.create');
 
         try {
@@ -494,7 +499,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 'quickProduct.preferred_supplier_id' => [Rule::requiredIf(fn (): bool => $this->quickProduct['barcode_registration_type'] === 'local'), 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
                 'quickProduct.product_type' => ['required', Rule::in(['standard', 'composite', 'service'])],
                 'quickProduct.status' => ['required', Rule::in(['active', 'inactive'])],
-                'quickProduct.average_cost' => ['required', 'numeric', 'min:0'],
+                'quickProduct.average_cost' => [Rule::excludeIf(! Gate::allows('products_categories_brands.cost_view')), ...app(ProductPricingContract::class)->costRules()],
                 'quickProduct.sale_price' => ['required', 'numeric', 'min:0.01'],
                 'quickProduct.open_price' => ['required', 'boolean'],
             ], [], [
@@ -546,12 +551,9 @@ new #[Title('Purchase Invoices')] class extends Component
             $this->showQuickProduct = false;
             $targetIndex = $this->quickProductLineIndex;
             $this->quickProductLineIndex = null;
-            $this->insertProduct($product, [
-                'unit_cost' => (string) $validated['average_cost'],
-                'price_source' => 'manual_quick_product',
-                'price_date' => null,
-                'price_currency' => $this->invoiceForm['currency_code'] ?: null,
-            ], $targetIndex);
+            $store = Store::query()->visibleTo(auth()->user())->findOrFail((int) $this->invoiceForm['store_id']);
+            $price = app(SupplierProductPrice::class)->resolve($product, (int) $this->invoiceForm['supplier_id'], (int) $store->company_id, $this->invoiceForm['currency_code'] ?: null);
+            $this->insertProduct($product, $price, $targetIndex);
             Flux::toast(__('Product card created and added to the draft invoice.'), variant: 'success');
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
@@ -793,7 +795,7 @@ new #[Title('Purchase Invoices')] class extends Component
             'product_id' => '',
             'purchase_order_line_id' => '',
             'quantity' => '1',
-            'unit_cost' => '0',
+            'unit_cost' => '',
             'base_consumer_price' => '0',
             'discount_type' => '',
             'discount_value' => '0',
@@ -1158,7 +1160,7 @@ new #[Title('Purchase Invoices')] class extends Component
                 <fieldset class="rounded-xl border border-border p-3">
                     <legend class="px-1 text-sm font-semibold text-text-primary">{{ __('Commercial fields') }}</legend>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-                        <flux:input wire:model="quickProduct.average_cost" type="number" min="0" step="0.01" :label="__('Purchase unit cost')" required />
+                        @can('products_categories_brands.cost_view')<flux:input wire:model="quickProduct.average_cost" type="number" min="0" step="0.01" :label="__('Cost price')" />@endcan
                         <flux:input wire:model="quickProduct.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" required />
                         <flux:checkbox wire:model="quickProduct.open_price" :label="__('Open-price product')" />
                     </div>
