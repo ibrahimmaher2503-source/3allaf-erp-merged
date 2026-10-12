@@ -105,6 +105,7 @@ final class ProductionSeeder extends Seeder
         foreach ([
             ['code' => 'suppliers.preferred_change', 'module' => 'suppliers', 'action' => 'preferred_change'],
             ['code' => 'inventory_stock_card.cost_view', 'module' => 'inventory_stock_card', 'action' => 'cost_view'],
+            ['code' => 'products_categories_brands.cost_view', 'module' => 'products_categories_brands', 'action' => 'cost_view'],
             ['code' => 'transfers.dispatch', 'module' => 'transfers', 'action' => 'dispatch'],
             ['code' => 'transfers.receive', 'module' => 'transfers', 'action' => 'receive'],
             ['code' => 'transfers.difference', 'module' => 'transfers', 'action' => 'difference'],

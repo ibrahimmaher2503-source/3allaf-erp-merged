@@ -165,6 +165,10 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
+        if ($code === 'products_categories_brands.cost_view' && $this->isSystemAdministrator()) {
+            return true;
+        }
+
         return isset($this->activePermissionLookup()[$code]);
     }
 

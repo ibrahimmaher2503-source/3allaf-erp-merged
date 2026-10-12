@@ -351,6 +351,41 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertFalse($withoutCost->hasIncompleteCard());
     }
 
+    public function test_system_administrator_product_card_shows_optional_cost_without_an_active_permission_row(): void
+    {
+        Permission::query()->where('code', 'products_categories_brands.cost_view')->update(['status' => 'inactive']);
+        $administrator = User::factory()->create(['status' => 'active']);
+        $administrator->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
+        self::assertTrue($administrator->hasPermission('products_categories_brands.cost_view'));
+
+        $this->actingAs($administrator);
+        app()->setLocale('ar');
+        Livewire::test('catalog::product-form')->assertSee('سعر التكلفة')->assertSeeHtml('wire:model="productForm.average_cost"');
+        app()->setLocale('en');
+        Livewire::test('catalog::product-form')->assertSee('Cost price')->assertSeeHtml('wire:model="productForm.average_cost"');
+
+        $data = ['name_ar' => 'منتج تكلفة الإدارة', 'name_en' => 'Administrator cost product',
+            'category_id' => $this->fixture['category']->id, 'preferred_supplier_id' => $this->supplier->id,
+            'barcode_registration_type' => 'local', 'product_type' => 'service', 'sale_price' => '25', 'status' => 'active'];
+        $save = app(SaveProductAction::class);
+        $product = $save->execute([...$data, 'average_cost' => '10']);
+        self::assertSame('10.00', $product->average_cost);
+        Livewire::test('catalog::product-form', ['product' => $product])->assertSet('productForm.average_cost', '10.00');
+        $product = $save->execute([...$data, 'name_en' => 'Unrelated edit', 'average_cost' => ''], $product->id, $product->lock_version);
+        self::assertSame('10.00', $product->fresh()->average_cost);
+        self::assertNull($save->execute([...$data, 'name_en' => 'No initial cost'])->average_cost);
+
+        $role = Role::query()->firstOrCreate(['code' => 'qa-card-editor'], ['name_ar' => 'محرر بطاقة', 'name_en' => 'Card editor', 'status' => 'active']);
+        $role->permissions()->sync(Permission::query()->whereIn('code', ['products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit'])->pluck('id'));
+        $editor = User::factory()->create(['status' => 'active']);
+        $editor->roles()->attach($role);
+        $editor->storeScopes()->create(['store_id' => $this->fixture['receiving']->id, 'status' => 'active']);
+        self::assertFalse($editor->hasPermission('products_categories_brands.cost_view'));
+        $this->actingAs($editor);
+        Livewire::test('catalog::product-form')->assertDontSeeHtml('wire:model="productForm.average_cost"');
+        Livewire::test('catalog::product-form', ['product' => $product->fresh()])->assertSet('productForm.average_cost', '')->assertDontSeeHtml('wire:model="productForm.average_cost"');
+    }
+
     public function test_current_product_cost_defaults_po_and_invoice_without_mutating_drafts_or_history(): void
     {
         $prices = app(SupplierProductPrice::class);
