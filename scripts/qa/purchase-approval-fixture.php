@@ -7,6 +7,7 @@ require __DIR__.'/fixture.php';
 
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 
@@ -17,9 +18,13 @@ $supplier = Supplier::query()->create(['code' => 'SUP-9134', 'name_ar' => 'مو�
 $product = app(SaveProductAction::class)->execute(['preferred_supplier_id' => $supplier->id, 'name_ar' => 'منتج فحص الاستلام', 'name_en' => 'Receiving QA product', 'category_id' => $f['category']->id, 'sale_price' => '25', 'average_cost' => '10', 'product_type' => 'service', 'barcode_registration_type' => 'local', 'status' => 'active']);
 $invoice = app(SavePurchaseInvoiceAction::class)->execute(['supplier_id' => $supplier->id, 'store_id' => $f['receiving']->id, 'invoice_date' => '2026-10-12'], [['product_id' => $product->id, 'quantity' => '1000', 'unit_cost' => '12', 'base_consumer_price' => '30']]);
 $invoice = app(SubmitPurchaseInvoiceAction::class)->execute($invoice->id);
+$englishInvoice = app(SavePurchaseInvoiceAction::class)->execute(['supplier_id' => $supplier->id, 'store_id' => $f['receiving']->id, 'invoice_date' => '2026-10-12'], [['product_id' => $product->id, 'quantity' => '5', 'unit_cost' => '12', 'base_consumer_price' => '30']]);
+$englishInvoice = app(SubmitPurchaseInvoiceAction::class)->execute($englishInvoice->id);
 $password = bin2hex(random_bytes(20));
 $f['admin']->update(['password' => $password]);
+$f['admin']->forceFill(['is_super_admin' => false])->save();
+$f['admin']->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
 $path = getenv('QA_STORAGE').'/purchase-browser.json';
-file_put_contents($path, json_encode(['username' => $f['admin']->username, 'password' => $password, 'invoice' => $invoice->id, 'line' => $invoice->lines->first()->id, 'product' => $product->id], JSON_THROW_ON_ERROR));
+file_put_contents($path, json_encode(['username' => $f['admin']->username, 'password' => $password, 'invoice' => $invoice->id, 'line' => $invoice->lines->first()->id, 'englishInvoice' => $englishInvoice->id, 'product' => $product->id], JSON_THROW_ON_ERROR));
 chmod($path, 0600);
 echo "PASS disposable Dokki invoice and browser account prepared\n";

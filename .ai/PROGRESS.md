@@ -1,3 +1,9 @@
+# 2026-10-12 — Purchase-invoice approval locale and administrator hotfix
+
+D3 hotfix completed on `hotfix/purchase-approval-locale-admin` from source `7960c7a`. The invoice approval and receiving screen now has complete `ar-EG`/`ar` translation coverage; English remains LTR. The canonical active System Administrator role can approve its own purchase invoice via the existing permission, scope, transaction, and audit paths. Ordinary creator separation, optional distribution, stock and price posting, shortages, retry idempotency, and other purchasing workflows remain intact. Focused isolated MariaDB PASS 14/121; Arabic/English browser smoke PASS; single Fast QA PASS 8/8 (71/448). No migration, production access, main merge, deployment, or business gate advancement. Commit and branch push follow this status update.
+
+## Preserved previous state
+
 # 2026-10-07 - Owner-authorized integration of all GitHub branches
 
 The owner now explicitly authorizes main integration of all six GitHub module branches and requires every branch to remain. All fetched tips are ancestors of the verified combined history. Integration merges: `cc0fb64` (Module 3), `d713e2e` (Module 9), `a2ec03a` (Module 7); the Module 5 tip already includes Modules 1/2. Focused PASS 52 tests / 500 assertions; 80 changed runtime PHP syntax checks, locale JSON, runtime diff hygiene, conflict-marker checks, Pint and one build passed. Only inherited Markdown hard-break/EOF whitespace was reported by the broad documentation diff check; historical reports were preserved. Existing policy/data/server blockers are retained. Main publication follows this verified closure; no production release or business gate advances.

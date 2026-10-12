@@ -272,3 +272,7 @@ Status: Requires Owner Decision. M3-12 confirms audit views format timestamps wi
 ## DEC-103 — Module 7 inspection rejection and attachments (2026-10-07)
 
 **Status: Requires Owner Decision.** M7-06 asks whether a distinct Rejected inspection result and inspection photo/file attachments are required. PRD RET-03 and docs/26-discount-return-policy.md require inspection, approval and separate handling of non-saleable/damaged goods, but do not clearly require these additions; the precise condition list is configurable. Existing document approval rejection remains available. No new condition, attachment policy or workflow is invented. All other Module 7 Part 1 fixes and local P0 scenarios continue independently and are complete.
+
+## DEC-104 — Purchase-invoice System Administrator self-approval (2026-10-12)
+
+**Status: Approved — explicit owner hotfix request.** For purchase-invoice receiving and approval only, the active canonical `system-administrator` role may approve an invoice it created, subject to the existing purchase-invoice permission, branch/store visibility, transaction, approval-record policy, and audit checks. The immutable Super Admin flag retains its existing bypass. Ordinary creators remain subject to independent approval. This narrow exception supersedes the 2026-09-27 maker/checker restriction only for purchase invoices; purchase orders, purchase returns, and other approval workflows remain unchanged. No username/email exception, migration, production change, or deployment is authorized by this decision.

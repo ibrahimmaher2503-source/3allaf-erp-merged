@@ -52,7 +52,7 @@ final class ApprovePurchaseInvoiceAction
             if (! in_array($invoice->status, ['awaiting_distribution', 'submitted'], true)) {
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be approved.'));
             }
-            if ($invoice->created_by === $actorId && ! $actor->canBypassApproval()) {
+            if ($invoice->created_by === $actorId && ! $actor->canBypassPurchaseInvoiceApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
 

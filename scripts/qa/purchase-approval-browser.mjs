@@ -16,13 +16,16 @@ try {
     await page.locator('input[name=username]').fill(f.username);
     await page.locator('input[name=password]').fill(f.password);
     await Promise.all([page.waitForURL(u => !u.pathname.endsWith('/login')),page.locator('[data-test=login-button]').click()]);
-    await page.evaluate(async () => { const token=document.querySelector('meta[name=csrf-token]').content;await fetch('/locale',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({_token:token,locale:'ar'})}); });
+    await page.evaluate(async () => { const token=document.querySelector('meta[name=csrf-token]').content;await fetch('/locale',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({_token:token,locale:'ar-EG'})}); });
     await open('/purchasing/invoices');
     check(await page.locator('html').getAttribute('dir') === 'rtl','Arabic RTL');
     check(!/التوزيع الإلزامي|اعتماد وترحيل|اعتماد وتوزيع/.test(await page.locator('body').innerText()),'No obsolete workflow wording');
     await page.locator(`[wire\\:click="openReceivingReview(${f.invoice})"]`).click();
     const quantity = page.locator(`[wire\\:model="receivedQuantities.${f.line}"]`);
     await quantity.waitFor();
+    const arabicApproval = await page.locator('body').innerText();
+    for (const label of ['اعتماد الفاتورة', 'الكمية الأصلية', 'الكمية المستلمة فعلياً', 'راجع الكميات المستلمة']) check(arabicApproval.includes(label),'Arabic approval label '+label);
+    for (const label of ['Approve invoice', 'Accepted quantity', 'Original quantity', 'Verify accepted quantities before approval.']) check(!arabicApproval.includes(label),'No English approval label '+label);
     check(await quantity.inputValue() === '1000','Original accepted quantity loaded');
     await quantity.fill('900');
     await page.locator(`form[wire\\:submit="approveInvoice(${f.invoice})"] button[type=submit]`).click();
@@ -49,5 +52,10 @@ try {
     await open('/purchasing/quantity-differences');
     check(await page.locator('html').getAttribute('dir') === 'ltr','English LTR');
     check((await page.locator('body').innerText()).includes('Quantity differences'),'English report labels');
+    await open('/purchasing/invoices');
+    await page.locator(`[wire\\:click="openReceivingReview(${f.englishInvoice})"]`).click();
+    await page.getByText('Verify accepted quantities before approval. Undistributed stock stays in this receiving store.').waitFor();
+    check((await page.locator('body').innerText()).includes('Verify accepted quantities before approval.'),'English approval guidance');
+    check((await page.locator('body').innerText()).includes('Accepted quantity'),'English accepted quantity');
     check(errors.length===0,'No browser errors: '+errors.join('; '));
 } finally { await browser.close(); }

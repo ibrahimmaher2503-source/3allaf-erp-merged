@@ -33,7 +33,10 @@ class ApproveRequest
 
     private function assertSeparation(ApprovalRecord $record, User $approver): void
     {
-        if ($record->requester_id === $approver->id && ! $approver->canBypassApproval()) {
+        $canBypass = $record->source_type === 'purchase_invoices'
+            ? $approver->canBypassPurchaseInvoiceApproval()
+            : $approver->canBypassApproval();
+        if ($record->requester_id === $approver->id && ! $canBypass) {
             throw ValidationException::withMessages(['approver' => __('A requester cannot approve their own request.')]);
         }
     }

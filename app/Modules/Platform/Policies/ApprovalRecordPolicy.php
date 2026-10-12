@@ -23,8 +23,12 @@ class ApprovalRecordPolicy
 
     public function decide(User $user, ApprovalRecord $record): bool
     {
+        $canBypass = $record->source_type === 'purchase_invoices'
+            ? $user->canBypassPurchaseInvoiceApproval()
+            : $user->canBypassApproval();
+
         return ! $record->approval_state->isTerminal()
-            && ($record->requester_id !== $user->id || $user->canBypassApproval())
+            && ($record->requester_id !== $user->id || $canBypass)
             && $this->hasScope($user, $record)
             && ($user->is_super_admin || $user->hasPermission($record->decisionPermission()));
     }

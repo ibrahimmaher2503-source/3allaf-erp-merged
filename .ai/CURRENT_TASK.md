@@ -1,3 +1,11 @@
+# Current Task — Purchase-invoice approval locale and administrator hotfix (2026-10-12)
+
+Owner-authorized D3 hotfix on `hotfix/purchase-approval-locale-admin` from fetched `origin/main` `7960c7a81714f7f8bf8f28563c86770fc67fb1c3` (reported production release `7960c7a`, active production path unverified). For purchase invoices only, the active canonical `system-administrator` role can approve its own invoice through receiving save, invoice action, shared approval-record policy/action, and audit. Ordinary creator separation, other purchase document workflows, existing permission and store scope, stock/pricing posting, and retry behavior remain unchanged. Missing `ar-EG` purchase-flow JSON translations are supplied, with matching canonical Arabic keys and professional creator-denial wording. No migration, production access, merge, or deployment.
+
+Focused disposable MariaDB PASS 14 tests / 121 assertions; scoped purchase approval/action Larastan PASS 0 findings; changed PHP/JS syntax and Pint PASS; authenticated `ar-EG` RTL and English LTR browser smoke PASS; one Fast QA PASS 8/8, 71 tests / 448 assertions. QA evidence: `.ai/qa/runs/20261012T130306Z-8884-fast` and `.ai/TEST_RESULTS.md`. Commit and branch push follow this factual update; business milestone/UAT gates do not advance.
+
+## Preserved previous task
+
 # Current Task — Purchase approval, receiving and Product Card quantity batch (2026-10-12)
 
 Owner-authorized I4 cross-module change on `feature/purchase-approval-quantity-differences` from freshly fetched `origin/main` `365c277bbc9f0aa769c0341f9bceac845e9ddc11`. One additive nullable `purchase_invoice_lines.original_quantity` column preserves first-entered quantity; accepted quantity remains the invoice line quantity and approval posts it once to the invoice receiving store. Optional distribution transfers only deliberately allocated stock. The existing approval action updates current product cost/List 0 and supplier purchase history only for positive accepted lines. A scoped read-only Quantity Differences report/CSV uses the line snapshot. Model number is optional across card, quick creation, import and readiness. No production access, migration, merge or deployment. Focused QA and Fast Gate outcomes are recorded in `.ai/TEST_RESULTS.md`; business milestone/UAT gates do not advance.

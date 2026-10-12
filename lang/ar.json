@@ -3795,7 +3795,7 @@
     "The import is limited to 5,000 data rows.": "The استيراد is limited إلى 5,000 data rows.",
     "The inspection outcome is invalid.": "The inspection outcome is غير صحيح.",
     "The internal item code is immutable after product creation.": "The internal صنف كود is immutable after الصنف creation.",
-    "The invoice creator cannot approve the same invoice.": "The فاتورة creator cannot approve the same فاتورة.",
+    "The invoice creator cannot approve the same invoice.": "لا يمكن لمنشئ الفاتورة اعتماد الفاتورة نفسها.",
     "The invoice discount cannot exceed the net value of the sale.": "The فاتورة خصم cannot exceed the الصافي القيمة من the عملية البيع.",
     "The invoice line is not linked to the selected purchase order.": "The فاتورة سطر is ليس linked إلى the selected purchase طلب.",
     "The item code already exists; Create Only does not update existing products.": "The صنف كود already exists; إنشاء only does ليس تحديث existing الأصناف.",
@@ -6382,5 +6382,13 @@
     "Purchase invoice approved.": "تم اعتماد الفاتورة.",
     "Review supplier invoices, receiving and approvals within your scope.": "راجع فواتير الموردين والاستلام والاعتمادات ضمن نطاقك.",
     "Drafts do not change stock or current prices. Approving the invoice records accepted stock and updates current product prices.": "المسودات لا تغيّر المخزون أو الأسعار الحالية. اعتماد الفاتورة يسجل الكميات المستلمة ويحدث أسعار المنتجات الحالية.",
-    "A supplier code is required to generate a product code when model number is blank.": "يلزم رمز مورد لتوليد رمز المنتج عند ترك رقم الموديل فارغاً."
+    "A supplier code is required to generate a product code when model number is blank.": "يلزم رمز مورد لتوليد رمز المنتج عند ترك رقم الموديل فارغاً.",
+    "Purchase invoice transition": "إجراء على فاتورة المشتريات",
+    "Tax total": "إجمالي الضريبة",
+    "Automatically created from approved purchase invoice :invoice.": "أُنشئ تلقائيًا من فاتورة المشتريات المعتمدة :invoice.",
+    "Distribution destinations and quantities are invalid.": "وجهات التوزيع أو كمياته غير صالحة.",
+    "The distribution contains a line outside this invoice.": "يحتوي التوزيع على بند لا ينتمي لهذه الفاتورة.",
+    "The invoice line product does not match the selected purchase-order line.": "منتج بند الفاتورة لا يطابق بند أمر الشراء المحدد.",
+    "The linked destination transfer is not in the expected state.": "التحويل المرتبط بوجهة التوزيع ليس في الحالة المتوقعة.",
+    "This invoice was modified in another session. Please reload.": "عُدلت هذه الفاتورة في جلسة أخرى. أعد تحميل الصفحة."
 }

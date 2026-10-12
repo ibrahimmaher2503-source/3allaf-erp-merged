@@ -81,6 +81,11 @@ class User extends Authenticatable implements PasskeyUser
         return $this->is_super_admin;
     }
 
+    public function canBypassPurchaseInvoiceApproval(): bool
+    {
+        return $this->canBypassApproval() || $this->isSystemAdministrator();
+    }
+
     public function isSystemAdministrator(): bool
     {
         return $this->systemAdministratorRole ??= $this->status === 'active'

@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
+use App\Models\User;
 use App\Modules\Catalog\Actions\ImportProductCardsWorkbookAction;
 use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ProductPricingReadiness;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
@@ -66,6 +70,100 @@ final class PurchaseApprovalReceivingTest extends TestCase
     private function submit(PurchaseInvoice $invoice): PurchaseInvoice
     {
         return app(SubmitPurchaseInvoiceAction::class)->execute($invoice->id, $invoice->lock_version);
+    }
+
+    private function ordinaryApprover(): User
+    {
+        $role = Role::query()->firstOrCreate(['code' => 'qa-purchase-approver'], ['name_ar' => 'معتمد مشتريات', 'name_en' => 'Purchase approver', 'status' => 'active']);
+        $role->permissions()->sync(Permission::query()->whereIn('code', ['purchase_invoices.view', 'purchase_invoices.draft', 'purchase_invoices.approve', 'purchase_invoices.change_cost', 'purchase_invoices.change_list0_price', 'purchase_invoices_supplier_returns.edit', 'purchase_invoices_supplier_returns.approve'])->pluck('id'));
+        $user = User::factory()->create(['status' => 'active']);
+        $user->roles()->attach($role);
+        $user->storeScopes()->create(['store_id' => $this->fixture['receiving']->id, 'status' => 'active']);
+
+        return $user;
+    }
+
+    public function test_system_administrator_role_can_approve_own_invoice_with_audit_and_no_duplicate_posting(): void
+    {
+        $administrator = User::factory()->create(['status' => 'active']);
+        $administrator->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
+        $this->actingAs($administrator);
+        self::assertFalse($administrator->is_super_admin);
+        self::assertTrue($administrator->isSystemAdministrator());
+
+        $invoice = $this->submit($this->draft('1000'));
+        $line = $invoice->lines->firstOrFail();
+        app()->setLocale('ar-EG');
+        $component = Livewire::test('purchasing::invoices')->call('openReceivingReview', $invoice->id);
+        self::assertStringContainsString('اعتماد الفاتورة', $component->html());
+        self::assertStringContainsString('الكمية الأصلية', $component->html());
+        self::assertStringNotContainsString('Verify accepted quantities before approval.', $component->html());
+        $component->set('receivedQuantities.'.$line->id, '900')->call('approveInvoice', $invoice->id)->assertHasNoErrors();
+
+        $approved = $invoice->fresh();
+        self::assertSame('approved', $approved->status);
+        self::assertSame($administrator->id, $approved->created_by);
+        self::assertSame($administrator->id, $approved->approved_by);
+        self::assertSame('1000.000000', $line->fresh()->original_quantity);
+        self::assertSame('900.000000', $line->fresh()->quantity);
+        self::assertSame('900.000000', StockBalance::query()->where('store_id', $invoice->store_id)->firstOrFail()->on_hand);
+        self::assertSame('12.00', $this->product->fresh()->average_cost);
+        self::assertSame('30.00', $this->product->fresh()->sale_price);
+        self::assertSame(1, PurchaseInvoiceLine::query()->withShortage()->count());
+        self::assertSame(1, StockMovement::query()->count());
+        $approval = ApprovalRecord::query()->where('source_type', 'purchase_invoices')->where('source_id', (string) $invoice->id)->firstOrFail();
+        self::assertSame($administrator->id, $approval->requester_id);
+        self::assertSame($administrator->id, $approval->approver_id);
+        self::assertTrue((bool) AuditLog::query()->where('event', 'approval_approved')->latest('id')->firstOrFail()->metadata['system_administrator_bypass']);
+        $auditCount = AuditLog::query()->count();
+        app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+        self::assertSame(1, StockMovement::query()->count());
+        self::assertSame($auditCount, AuditLog::query()->count());
+    }
+
+    public function test_ordinary_creator_is_blocked_but_another_authorized_approver_can_approve(): void
+    {
+        $creator = $this->ordinaryApprover();
+        $approver = $this->ordinaryApprover();
+        $this->actingAs($creator);
+        $invoice = $this->submit($this->draft('10'));
+        self::assertFalse($creator->canBypassPurchaseInvoiceApproval());
+        try {
+            app(SavePurchaseReceivingAction::class)->execute($invoice->id, [], $invoice->lock_version);
+            self::fail('Ordinary creator saved a receiving review.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertSame(__('The invoice creator cannot approve the same invoice.'), $exception->getMessage());
+        }
+        try {
+            app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+            self::fail('Ordinary creator approved their own invoice.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertSame(__('The invoice creator cannot approve the same invoice.'), $exception->getMessage());
+        }
+        self::assertSame(0, StockMovement::query()->count());
+        $this->actingAs($approver);
+        $approved = app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+        self::assertSame('approved', $approved->status);
+        self::assertSame($creator->id, $approved->created_by);
+        self::assertSame($approver->id, $approved->approved_by);
+    }
+
+    public function test_purchase_receiving_localizes_egyptian_arabic_and_english(): void
+    {
+        $invoice = $this->submit($this->draft('10'));
+        foreach (['ar-EG' => ['rtl', 'اعتماد الفاتورة', 'الكمية الأصلية'], 'en' => ['ltr', 'Approve invoice', 'Original quantity']] as $locale => [$direction, $heading, $quantity]) {
+            app()->setLocale($locale);
+            $html = Livewire::test('purchasing::invoices')->call('openReceivingReview', $invoice->id)->html();
+            self::assertStringContainsString($heading, $html);
+            self::assertStringContainsString($quantity, $html);
+            $page = $this->get(route('purchasing.invoices'))->assertOk()->getContent();
+            self::assertIsString($page);
+            self::assertStringContainsString('dir="'.$direction.'"', $page);
+            if ($locale === 'ar-EG') {
+                self::assertStringNotContainsString('Verify accepted quantities before approval.', $html);
+                self::assertStringNotContainsString('Accepted quantity', $html);
+            }
+        }
     }
 
     public function test_direct_approval_posts_only_accepted_stock_and_current_prices_once(): void

@@ -36,7 +36,7 @@ final class SavePurchaseReceivingAction
             if (! in_array($invoice->status, ['submitted', 'awaiting_distribution'], true)) {
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be reviewed.'));
             }
-            if ($invoice->created_by === $actor->id && ! $actor->canBypassApproval()) {
+            if ($invoice->created_by === $actor->id && ! $actor->canBypassPurchaseInvoiceApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
             if (array_diff(array_map('intval', array_keys($quantities)), $invoice->lines->modelKeys()) !== []) {
