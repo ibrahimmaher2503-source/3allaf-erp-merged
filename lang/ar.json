@@ -6393,5 +6393,18 @@
     "This invoice was modified in another session. Please reload.": "عُدلت هذه الفاتورة في جلسة أخرى. أعد تحميل الصفحة.",
     "Current product cost": "سعر التكلفة الحالي للمنتج",
     "No current product cost": "لا يوجد سعر تكلفة حالي للمنتج",
-    "Optional initial cost; approved invoices update the current cost.": "سعر التكلفة الأولي اختياري؛ تحدّث الفواتير المعتمدة سعر التكلفة الحالي."
+    "Optional initial cost; approved invoices update the current cost.": "سعر التكلفة الأولي اختياري؛ تحدّث الفواتير المعتمدة سعر التكلفة الحالي.",
+    "Blocking active shift": "وردية نشطة تمنع فتح الدرج",
+    "This cash drawer is assigned to another cashier. You cannot open a new shift on it.": "هذا الدرج مخصص حاليًا لأمين صندوق آخر. لا يمكنك فتح وردية جديدة عليه.",
+    "Every available cash drawer is occupied by an active shift. See the blocking shift above.": "كل الأدراج المتاحة مشغولة بورديات نشطة. راجع الوردية المانعة أعلاه.",
+    "Branch / store": "الفرع / المتجر",
+    "Shift ID": "رقم الوردية",
+    "Administrator blind close": "إغلاق إداري بعد الجرد المخفي",
+    "Count the drawer, submit actual amounts, then approve the close in the canonical approval inbox.": "اجرد الدرج وأرسل المبالغ الفعلية، ثم اعتمد الإغلاق من صندوق الموافقات الرسمي.",
+    "Resolution reason": "سبب المعالجة",
+    "Submit count for approval": "إرسال الجرد للاعتماد",
+    "Your active shift is outside your current location access. Ask a System Administrator to resolve it.": "ورديتك النشطة خارج نطاق صلاحية موقعك الحالي. اطلب من مسؤول النظام معالجتها.",
+    "Your active shift needs administrator review before POS can be used. Open shift management to see it.": "تحتاج ورديتك النشطة إلى مراجعة مسؤول النظام قبل استخدام نقطة البيع. افتح إدارة الورديات لعرضها.",
+    "A cash drawer in your sales outlet is assigned to another cashier. Open shift management to see the blocking shift.": "أحد أدراج منفذ البيع مخصص لأمين صندوق آخر. افتح إدارة الورديات لمعرفة الوردية المانعة.",
+    "An administrator must record a reason for resolving another cashier shift.": "يجب على المسؤول تسجيل سبب معالجة وردية أمين صندوق آخر."
 }

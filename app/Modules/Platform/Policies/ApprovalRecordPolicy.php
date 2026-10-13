@@ -23,9 +23,11 @@ class ApprovalRecordPolicy
 
     public function decide(User $user, ApprovalRecord $record): bool
     {
-        $canBypass = $record->source_type === 'purchase_invoices' && $record->requested_action === 'approve'
-            ? $user->canBypassPurchaseInvoiceApproval()
-            : $user->canBypassApproval();
+        $canBypass = match (true) {
+            $record->source_type === 'purchase_invoices' && $record->requested_action === 'approve' => $user->canBypassPurchaseInvoiceApproval(),
+            $record->source_type === 'pos_shifts' && $record->requested_action === 'approve_close' => $user->canBypassShiftCloseApproval(),
+            default => $user->canBypassApproval(),
+        };
 
         return ! $record->approval_state->isTerminal()
             && ($record->requester_id !== $user->id || $canBypass)
