@@ -6406,5 +6406,14 @@
     "Your active shift is outside your current location access. Ask a System Administrator to resolve it.": "ورديتك النشطة خارج نطاق صلاحية موقعك الحالي. اطلب من مسؤول النظام معالجتها.",
     "Your active shift needs administrator review before POS can be used. Open shift management to see it.": "تحتاج ورديتك النشطة إلى مراجعة مسؤول النظام قبل استخدام نقطة البيع. افتح إدارة الورديات لعرضها.",
     "A cash drawer in your sales outlet is assigned to another cashier. Open shift management to see the blocking shift.": "أحد أدراج منفذ البيع مخصص لأمين صندوق آخر. افتح إدارة الورديات لمعرفة الوردية المانعة.",
-    "An administrator must record a reason for resolving another cashier shift.": "يجب على المسؤول تسجيل سبب معالجة وردية أمين صندوق آخر."
+    "An administrator must record a reason for resolving another cashier shift.": "يجب على المسؤول تسجيل سبب معالجة وردية أمين صندوق آخر.",
+    "Cash payment cannot be completed because the cash rounding setting is incomplete. Ask an administrator to set the rounding denomination in POS settings.": "لا يمكن إتمام الدفع النقدي لأن إعداد التقريب النقدي غير مكتمل. يرجى ضبط فئة التقريب من إعدادات نقطة البيع.",
+    "Cash rounding state": "حالة التقريب النقدي",
+    "Enabled": "مفعّل",
+    "Choose Yes or No for cash rounding.": "اختر نعم أو لا لتفعيل التقريب النقدي.",
+    "Enter a positive cash rounding denomination in whole units or cents.": "أدخل فئة تقريب نقدي موجبة بالوحدات أو القروش.",
+    "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.": "أدخل فئة التقريب الموجبة المعتمدة بالوحدات أو القروش. يظل إعداد 5 جنيهات الحالي فعالًا حتى تغييره.",
+    "The cash rounding enabled setting must be Yes or No.": "يجب أن تكون حالة التقريب النقدي نعم أو لا.",
+    "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.": "فعّل أو عطّل التقريب النقدي للمبيعات النقدية والمختلطة الجديدة. تظل بيانات المبيعات السابقة كما هي.",
+    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "عند التفعيل، يُقرّب المبلغ النقدي المستحق إلى أقرب فئة مُعتمدة ومُعدّة."
 }

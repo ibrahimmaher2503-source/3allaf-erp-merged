@@ -29,7 +29,7 @@ The same rule as `docs/41` applies — rounding must be defined once and applied
 | Cash and manually recorded electronic payment with evidence | PRD Requirement (POS-03) |
 | Cashier never sees expected values before closing | PRD Requirement (CSH-02) |
 | Rounding level (line vs receipt) | **PENDING — POSF-01** |
-| Cash rounding / smallest denomination | **Owner Approved — POSF-02: 5 EGP, nearest denomination, cash tender only** |
+| Cash rounding / smallest denomination | **Owner Approved — POSF-02: explicit positive two-decimal denomination, nearest denomination, cash tender only; existing 5 EGP remains configured until changed** |
 | Split payment ordering and residual | **PENDING — POSF-03** |
 | Discount replacement behaviour | **PENDING — POSF-04** |
 
@@ -54,7 +54,7 @@ Rounding is applied at step 3 and step 7 only. Intermediate values are not re-ro
 
 Step 8 is critical: cash rounding adjusts **what is collected**, not the invoice total. The difference is posted as a distinct rounding line so that the drawer reconciles and the invoice remains arithmetically intact. Absorbing it into the total makes the receipt total disagree with the sum of its lines.
 
-POSF-02 uses an exact 5 EGP denomination and the existing nearest-denomination rule (`37 → 35`, `38 → 40`, `35 → 35`). It applies only when a cash tender participates in settlement; electronic and other non-cash-only settlements retain the exact invoice total. Missing or invalid configuration blocks cash with a localized safe message and must not prevent non-cash checkout.
+POSF-02 uses the administrator-configured positive two-decimal denomination and the existing nearest-denomination rule (`37 → 35`, `38 → 40`, `35 → 35` with the existing 5 EGP setting; `550.37 → 550.50` with an explicitly configured 0.50 EGP setting). It applies only when enabled and a cash tender participates in settlement; electronic and other non-cash-only settlements retain the exact invoice total. An explicit disabled state leaves cash payable equal to the invoice total. When enabled but the denomination is missing or invalid, a total divisible by the previously approved 5 EGP policy may settle unchanged; a total requiring adjustment blocks cash with a localized administrative message. The 5 EGP check never posts a substitute adjustment. Existing sale snapshots remain unchanged.
 
 ---
 

@@ -1,3 +1,9 @@
+# 2026-10-13 — POS cash-rounding consistency hotfix
+
+D3 fix on `hotfix/pos-cash-rounding`, source `548c0ef`: exact 550.00 cash checkout now succeeds with disabled rounding or enabled rounding whose denomination is missing; an actual nonzero adjustment still requires an explicit valid setting. Owner approved configurable positive cent-denominations, including 0.50; the existing 5 EGP version remains until changed. The canonical calculator and sale/payment snapshots are reused, with a separate audited versioned enable setting and bilingual cashier message. Focused clean MariaDB PASS 6/49; authenticated browser generic PASS 78 and targeted PASS 20; syntax/Pint/JSON/core Larastan PASS; Fast QA PASS 8/8 (75/485). Three pre-existing whole-file Larastan findings remain on unchanged payment-action lines. No migration, production access, merge, deployment, milestone gate or UAT advancement. Commit/push follow.
+
+## Preserved previous state
+
 # 2026-10-12 — Product Card cost visibility hotfix
 
 D3 narrow correction on `hotfix/product-card-cost-visibility`, source `90e60bc`: the live Product Card Blade already had the field, but the missing `products_categories_brands.cost_view` permission row hid it. Canonical active System Administrator role now passes only this cost visibility/edit check, and the authorization seeder registers the permission for future ordinary grants. Focused isolated MariaDB PASS 1/13 with the row inactive; authenticated Arabic/English browser smoke PASS, including save/reload 10, blank edit preservation, and ordinary denial. PHP/JS syntax, Pint and diff hygiene PASS. No Fast Gate by owner instruction, migration, production mutation, merge or deploy. Commit/push follow.

@@ -19,6 +19,7 @@ use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
+use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
@@ -145,26 +146,27 @@ final class Module5PosQaTest extends TestCase
         $cash = PaymentMethod::factory()->create(['type' => 'cash']);
         $card = PaymentMethod::factory()->create(['type' => 'card']);
         $this->product->update(['sale_price' => '32']);
-        $this->get(route('pos'))->assertOk()->assertSee('5 EGP')->assertSee(route('pos.financial-readiness'), false);
-        PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '1.2345', 'version' => 1, 'created_by' => $this->cashier->id]);
-        $this->get(route('pos'))->assertOk()->assertSee('5 EGP');
+        $this->get(route('pos'))->assertOk();
+        $nextVersion = ((int) PosFinancialSettingVersion::query()->where('key', 'pos.cash_rounding_denomination')->max('version')) + 1;
+        PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '1.2345', 'version' => $nextVersion, 'created_by' => $this->cashier->id]);
+        $this->get(route('pos'))->assertOk();
         $versions = PosFinancialSettingVersion::query()->count();
         try {
-            app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', '2');
-            self::fail('An unapproved cash rounding denomination was saved.');
+            app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', '0.001');
+            self::fail('A subcent cash rounding denomination was saved.');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('value', $exception->errors());
         }
         self::assertSame($versions, PosFinancialSettingVersion::query()->count());
-        PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '2', 'version' => 2, 'created_by' => $this->cashier->id]);
+        PosFinancialSettingVersion::query()->create(['key' => 'pos.cash_rounding_denomination', 'value' => '0.001', 'version' => $nextVersion + 1, 'created_by' => $this->cashier->id]);
         try {
             app(PosCalculationService::class)->cashRoundingDenomination();
-            self::fail('Cash settlement accepted a stored unapproved denomination.');
+            self::fail('Cash settlement accepted a stored subcent denomination.');
         } catch (PosFinancialConfigurationException $exception) {
-            self::assertStringContainsString('5 EGP', $exception->getMessage());
+            self::assertStringContainsString('cash rounding setting is incomplete', $exception->getMessage());
         }
         $this->post(route('admin.settings.pos-financial.save'), ['key' => 'pos.cash_rounding_denomination', 'value' => '5'])->assertSessionHasNoErrors();
-        $this->get(route('pos.financial-readiness', ['company_id' => $this->store->company_id]))->assertOk()->assertSee(__('Approved cash rounding: nearest 5 EGP for cash and mixed payments.'));
+        $this->get(route('pos.financial-readiness', ['company_id' => $this->store->company_id]))->assertOk()->assertSee(__('Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.'));
         foreach (['cash', 'split'] as $mode) {
             $context = app(PosContextResolver::class)->resolve($this->cashier);
             $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context, false);
@@ -181,6 +183,90 @@ final class Module5PosQaTest extends TestCase
         }
         self::assertSame(2, Sale::query()->count());
         self::assertSame('0.000000', StockBalance::query()->firstOrFail()->on_hand);
+    }
+
+    public function test_exact_cash_sale_posts_once_when_rounding_is_disabled(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $this->product->update(['sale_price' => '550.00']);
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_enabled', '0');
+        self::assertSame('0.00', app(PosCalculationService::class)->cashRoundingAdjustment('550.37'));
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, app(PosContextResolver::class)->resolve($this->cashier));
+        $payload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'cash', 'payments' => [['method_id' => $cash->id, 'tendered' => '550.00']]];
+        $this->post(route('pos.checkout'), $payload)->assertSessionHasNoErrors();
+        $this->post(route('pos.checkout'), $payload)->assertRedirect();
+        $sale = Sale::query()->sole();
+        self::assertSame('550.00', $sale->total);
+        self::assertSame('0.00', $sale->cash_rounding_amount);
+        self::assertSame('550.00', $sale->payable_total);
+        self::assertSame(1, SalePayment::query()->count());
+    }
+
+    public function test_exact_cash_sale_posts_with_enabled_but_missing_denomination(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $this->product->update(['sale_price' => '550.00']);
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_enabled', '1');
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', null);
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, app(PosContextResolver::class)->resolve($this->cashier));
+        $payload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'cash', 'payments' => [['method_id' => $cash->id, 'tendered' => '550.00']]];
+        $this->post(route('pos.checkout'), $payload)->assertSessionHasNoErrors();
+        $sale = Sale::query()->sole();
+        self::assertSame('0.00', $sale->cash_rounding_amount);
+        self::assertSame('550.00', $sale->payable_total);
+        self::assertSame('550.00', SalePayment::query()->sole()->amount);
+    }
+
+    public function test_configured_half_unit_rounds_cash_and_preserves_card_checkout(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $this->product->update(['sale_price' => '550.37']);
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_enabled', '1');
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', '0.50');
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, app(PosContextResolver::class)->resolve($this->cashier));
+        $payload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'cash', 'payments' => [['method_id' => $cash->id, 'tendered' => '550.50']]];
+        $this->post(route('pos.checkout'), $payload)->assertSessionHasNoErrors();
+        $sale = Sale::query()->sole();
+        self::assertSame('550.37', $sale->total);
+        self::assertSame('0.13', $sale->cash_rounding_amount);
+        self::assertSame('550.50', $sale->payable_total);
+        self::assertSame('550.50', SalePayment::query()->sole()->amount);
+        $this->post(route('pos.checkout'), $payload)->assertRedirect();
+        self::assertSame(1, SalePayment::query()->count());
+    }
+
+    public function test_nonzero_cash_adjustment_with_missing_denomination_blocks_but_card_posts(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $card = PaymentMethod::factory()->create(['type' => 'card']);
+        $this->product->update(['sale_price' => '550.37']);
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_enabled', '1');
+        app(SavePosFinancialSettingAction::class)->execute('pos.cash_rounding_denomination', null);
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, app(PosContextResolver::class)->resolve($this->cashier));
+        $cashPayload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'cash', 'payments' => [['method_id' => $cash->id, 'tendered' => '550.37']]];
+        $this->post(route('pos.checkout'), $cashPayload)->assertSessionHasErrors('payments');
+        self::assertSame(0, Sale::query()->count());
+        $cardPayload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'card', 'payments' => [['method_id' => $card->id, 'amount' => '550.37']]];
+        $this->post(route('pos.checkout'), $cardPayload)->assertSessionHasNoErrors();
+        self::assertSame('0.00', Sale::query()->sole()->cash_rounding_amount);
+        self::assertSame('550.37', SalePayment::query()->sole()->amount);
+    }
+
+    public function test_role_based_administrator_can_configure_rounding_but_ordinary_cashier_cannot(): void
+    {
+        $administrator = User::factory()->create(['status' => 'active', 'is_super_admin' => false]);
+        $role = Role::query()->firstOrCreate(['code' => 'system-administrator'], ['name_ar' => 'مسؤول النظام', 'name_en' => 'System Administrator', 'status' => 'active']);
+        $administrator->roles()->attach($role);
+        $settingsUrl = route('pos.financial-readiness', ['company_id' => $this->store->company_id]);
+        $this->actingAs($administrator)->get($settingsUrl)->assertOk()->assertSee(__('Cash rounding denomination'));
+        $this->post(route('admin.settings.pos-financial.save'), ['key' => 'pos.cash_rounding_denomination', 'value' => '0.50', 'notes' => 'QA approved half unit'])
+            ->assertSessionHasNoErrors();
+        self::assertSame('0.5000', PosFinancialSettingVersion::query()->where('key', 'pos.cash_rounding_denomination')->latest('version')->value('value'));
+
+        $ordinary = User::factory()->create(['status' => 'active', 'is_super_admin' => false]);
+        $this->actingAs($ordinary)->get($settingsUrl)->assertForbidden();
+        $this->post(route('admin.settings.pos-financial.save'), ['key' => 'pos.cash_rounding_enabled', 'value' => '0'])->assertForbidden();
+        self::assertNull(PosFinancialSettingVersion::query()->where('key', 'pos.cash_rounding_enabled')->value('value'));
     }
 
     public function test_above_gross_discount_is_rejected_before_approval_or_cart_mutation(): void

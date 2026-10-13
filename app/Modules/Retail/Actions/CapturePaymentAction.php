@@ -11,10 +11,9 @@ use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Enums\AttachmentState;
 use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
-use App\Modules\Retail\Models\GiftCard;
-use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\DecimalMoney;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +22,6 @@ use InvalidArgumentException;
 /** Capture one immutable, source-linked tender against an unapproved sale. */
 final class CapturePaymentAction
 {
-    public function __construct(private readonly PosCalculationService $calculator) {}
-
     public function execute(
         User $cashier,
         Sale $sale,
@@ -109,9 +106,6 @@ final class CapturePaymentAction
             }
 
             if ($isCash) {
-                // POSF-02: this check applies to every cash tender, including an
-                // amount that happens to have no rounding delta.
-                $this->calculator->cashRoundingDenomination();
                 // POSF-03: cash is not an independently allocated amount. It
                 // settles the exact residual after explicitly entered electronic tenders.
                 $amount = $residual;
@@ -169,8 +163,7 @@ final class CapturePaymentAction
                         storeId: (int) $sale->store_id,
                         visibility: 'private',
                     ),
-                    static fn (User $user, Attachment $candidate, AttachmentSourceReference $source): bool =>
-                        $user->id === $cashier->id
+                    static fn (User $user, Attachment $candidate, AttachmentSourceReference $source): bool => $user->id === $cashier->id
                         && $user->can('pos_sales.payment_evidence_upload')
                         && $candidate->purpose === 'payment_evidence'
                         && $source->sourceType === SalePayment::class

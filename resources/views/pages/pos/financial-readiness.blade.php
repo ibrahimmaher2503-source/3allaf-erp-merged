@@ -40,10 +40,10 @@
                     <article class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-2"><flux:heading size="sm">{{ __($definition['title']) }}</flux:heading><x-context-help :title="__($definition['title'])" :label="__('Open contextual help')"><p>{{ __($definition['description']) }}</p></x-context-help></div>
-                            <flux:badge :color="$record && filled($record->value) ? 'green' : 'amber'">{{ $record && filled($record->value) ? __('Configured') : __('Unset') }}</flux:badge>
+                            <flux:badge :color="$record && filled($record->value) ? 'green' : 'amber'">{{ $record && filled($record->value) ? ($key === \App\Modules\Retail\Support\PosFinancialSettingRegistry::CASH_ROUNDING_ENABLED ? ($record->value === '1' ? __('Enabled') : __('Disabled')) : __('Configured')) : __('Unset') }}</flux:badge>
                         </div>
                         @if ($key === \App\Modules\Retail\Support\PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION)
-                            <p class="mt-3 text-xs text-zinc-500">{{ __('Approved cash rounding: nearest 5 EGP for cash and mixed payments.') }}</p>
+                            <p class="mt-3 text-xs text-zinc-500">{{ __('Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.') }}</p>
                         @endif
                         <dl class="mt-3 text-sm">
                             <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Current value') }}</dt><dd class="font-mono font-semibold">{{ $record?->value ?? __('Unset') }}</dd></div>
@@ -53,7 +53,11 @@
                             <form method="POST" action="{{ route('admin.settings.pos-financial.save') }}" class="mt-4 grid gap-3">
                                 @csrf
                                 <input type="hidden" name="key" value="{{ $key }}">
-                                <div><flux:input name="value" type="number" min="0.0001" step="0.0001" :label="__('New value')" /><x-context-help :title="__('New value')" :label="__('Open contextual help')"><p>{{ __('Saving creates a new immutable version.') }}</p></x-context-help></div>
+                                @if ($key === \App\Modules\Retail\Support\PosFinancialSettingRegistry::CASH_ROUNDING_ENABLED)
+                                    <flux:select name="value" :label="__('Cash rounding state')" required><flux:select.option value="1">{{ __('Enabled') }}</flux:select.option><flux:select.option value="0">{{ __('Disabled') }}</flux:select.option></flux:select>
+                                @else
+                                    <div><flux:input name="value" type="number" min="{{ $key === \App\Modules\Retail\Support\PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION ? '0.01' : '0.0001' }}" step="{{ $key === \App\Modules\Retail\Support\PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION ? '0.01' : '0.0001' }}" :label="__('New value')" /><x-context-help :title="__('New value')" :label="__('Open contextual help')"><p>{{ __('Saving creates a new immutable version.') }}</p></x-context-help></div>
+                                @endif
                                 <flux:input name="notes" :label="__('Configuration reason / note')" />
                                 <flux:button type="submit" size="sm" variant="subtle">{{ __('Save new version') }}</flux:button>
                             </form>
