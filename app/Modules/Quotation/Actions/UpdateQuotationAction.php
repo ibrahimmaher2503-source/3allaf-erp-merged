@@ -6,8 +6,8 @@ namespace App\Modules\Quotation\Actions;
 
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
-use App\Modules\Quotation\Models\Quotation;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Quotation\Models\Quotation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -19,34 +19,69 @@ final class UpdateQuotationAction
     {
         Gate::forUser($user)->authorize('quotations.edit');
         abort_unless($user->is_super_admin || $user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
-        $lines = app(CreateQuotationAction::class)->validateLines($quotation->activity_type, (array) ($data['lines'] ?? []));
-        if ($lines === []) throw ValidationException::withMessages(['lines' => __('At least one compatible quotation line is required.')]);
+        $submittedLines = array_values((array) ($data['lines'] ?? []));
+        $validatedLines = app(CreateQuotationAction::class)->validateLines($quotation->activity_type, $submittedLines);
         if (filled($data['customer_id'] ?? null)) {
             abort_unless(Customer::query()->whereKey($data['customer_id'])->whereHas('scopes', fn ($scope) => $scope->where('branch_id', $quotation->branch_id)->orWhere('store_id', $quotation->store_id))->exists(), 404);
         }
 
-        return DB::transaction(function () use ($user, $quotation, $data, $lines): Quotation {
+        return DB::transaction(function () use ($user, $quotation, $data, $submittedLines, $validatedLines): Quotation {
             $locked = Quotation::query()->whereKey($quotation->id)->lockForUpdate()->firstOrFail();
-            if ($locked->status !== 'draft') throw ValidationException::withMessages(['quotation' => __('Only draft quotations can be edited.')]);
+            if ($locked->status !== 'draft') {
+                throw ValidationException::withMessages(['quotation' => __('Only draft quotations can be edited.')]);
+            }
             $before = $locked->only(['customer_id', 'valid_until', 'terms', 'notes', 'subtotal', 'total']);
+            $existingLines = $locked->lines()->orderBy('line_number')->orderBy('id')->lockForUpdate()->get();
+            $existingById = $existingLines->keyBy('id');
+            $removedIds = array_map('intval', (array) ($data['removed_line_ids'] ?? []));
+            foreach ($removedIds as $removedId) {
+                if (! $existingById->has($removedId)) {
+                    throw ValidationException::withMessages(['removed_line_ids' => __('The selected quotation line is unavailable.')]);
+                }
+            }
+            $removedLookup = array_fill_keys($removedIds, true);
+            $remainingLines = $existingLines->reject(fn ($line): bool => isset($removedLookup[$line->id]))->values();
+            $seenIds = [];
+            foreach ($submittedLines as $index => $submittedLine) {
+                $lineId = (int) ($submittedLine['id'] ?? 0);
+                if ($lineId === 0) {
+                    $remainingLines->push($locked->lines()->make($validatedLines[$index]));
+
+                    continue;
+                }
+                if (! $existingById->has($lineId) || isset($seenIds[$lineId])) {
+                    throw ValidationException::withMessages(['lines' => __('The selected quotation line is unavailable.')]);
+                }
+                $seenIds[$lineId] = true;
+                if (! isset($removedLookup[$lineId])) {
+                    $existingById->get($lineId)->fill([...$validatedLines[$index], 'source_reference' => $existingById->get($lineId)->source_reference]);
+                }
+            }
+            if ($remainingLines->isEmpty()) {
+                throw ValidationException::withMessages(['lines' => __('At least one compatible quotation line is required.')]);
+            }
+
+            if ($removedIds !== []) {
+                $locked->lines()->whereKey($removedIds)->delete();
+            }
             $subtotal = 0.0;
-            $locked->lines()->delete();
-            foreach ($lines as $index => $line) {
+            foreach ($remainingLines as $index => $line) {
                 $lineTotal = round((float) $line['quantity'] * (float) $line['unit_price'], 2);
                 $subtotal += $lineTotal;
-                $locked->lines()->create([...$line, 'line_number' => $index + 1, 'line_total' => $lineTotal]);
+                $line->fill(['line_number' => $index + 1, 'line_total' => $lineTotal])->save();
             }
             $locked->mutate([
-                'customer_id' => $data['customer_id'] ?? null,
+                'customer_id' => array_key_exists('customer_id', $data) ? $data['customer_id'] : $locked->customer_id,
                 'valid_until' => $data['valid_until'],
-                'terms' => $data['terms'] ?? null,
-                'notes' => $data['notes'] ?? null,
+                'terms' => array_key_exists('terms', $data) ? $data['terms'] : $locked->terms,
+                'notes' => array_key_exists('notes', $data) ? $data['notes'] : $locked->notes,
                 'subtotal' => $subtotal,
                 'total' => $subtotal,
                 'updated_by' => $user->id,
                 'lock_version' => $locked->lock_version + 1,
             ]);
-            app(RecordAuditEvent::class)->execute('quotations', 'quotation_updated', $locked, before: $before, after: $locked->only(['customer_id', 'valid_until', 'terms', 'notes', 'subtotal', 'total']), branchId: $locked->branch_id, storeId: $locked->store_id, metadata: ['line_count' => count($lines), 'non_posting' => true]);
+            app(RecordAuditEvent::class)->execute('quotations', 'quotation_updated', $locked, before: $before, after: $locked->only(['customer_id', 'valid_until', 'terms', 'notes', 'subtotal', 'total']), branchId: $locked->branch_id, storeId: $locked->store_id, metadata: ['line_count' => $remainingLines->count(), 'non_posting' => true]);
+
             return $locked->fresh('lines');
         }, 5);
     }
