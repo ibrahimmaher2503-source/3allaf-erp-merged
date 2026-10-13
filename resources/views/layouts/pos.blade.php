@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-@props(['title' => 'POS', 'store' => null, 'shift' => null])
+@props(['title' => 'POS', 'store' => null, 'shift' => null, 'showCloseShift' => false])
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
     dir="{{ in_array(app()->getLocale(), config('app.rtl_locales'), true) ? 'rtl' : 'ltr' }}"
@@ -42,6 +42,11 @@
                         <span class="text-[10px] font-medium uppercase tracking-wide">{{ __('Shift') }}</span>
                         @if($posShift)<x-status.badge :status="$posShift->status->value" />@else<span class="font-semibold">{{ __('Not ready') }}</span>@endif
                     </div>
+                    @if($showCloseShift && $posShift?->status->acceptsActivity())
+                        @can('shifts_cash_movements.submit')
+                            <flux:button href="{{ route('pos.shift').'#shift-close-'.$posShift->id }}" size="sm" variant="subtle" icon="lock-closed">{{ __('Close shift') }}</flux:button>
+                        @endcan
+                    @endif
                 </div>
 
                 <!-- Connectivity, Locale, and Navigation controls -->

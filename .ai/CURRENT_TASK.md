@@ -1,3 +1,11 @@
+# Current Task — POS close-shift header link hotfix (2026-10-13)
+
+Owner-authorized V1 navigation hotfix on `hotfix/pos-close-shift-link` from main `d29816d6b1eef129c0471826fea72d6b3b339ad7`; RELEASE_NOW=NO. The production-facing `/pos` page resolves its assigned shift through `PosContextResolver` and renders `pages.pos.index`, but its visible shift status offered no direct close action. The POS header now shows a permission-gated, bilingual link only for the signed-in cashier's ready open shift. It targets that shift's existing blind-count section on `/pos/shift`; the existing route, owner/admin authorization, approval, audit and history remain the only close workflow. No POS financial, shift transaction, route, policy, or schema logic changed.
+
+Focused disposable MariaDB checkout/rounding regression PASS 2 tests/14 assertions. Authenticated disposable MariaDB browser smoke PASS 16 checks for no-shift hiding, own-shift visibility and exact anchor, canonical blind count, foreign-cashier POST denial, and English LTR/Arabic RTL. Blade/PHP syntax, Arabic JSON and diff hygiene PASS. Fast QA omitted under the narrow UI verification budget. No production access, merge or deployment; commit/push follow.
+
+## Preserved previous task
+
 # Current Task — POS cash-rounding consistency hotfix (2026-10-13)
 
 Owner-authorized D3 hotfix on `hotfix/pos-cash-rounding` from main `548c0ef32b7865c930f4ba341352c99de8645014`; RELEASE_NOW=NO. The active POS calculator required a denomination for every cash tender and `CapturePaymentAction` repeated the check even after the payable snapshot was fixed. The prior rule accepted only 5 EGP and had no separate enable state. Cash rounding now uses an explicit versioned enable setting and administrator-configured positive cent-denomination; absent enable versions preserve legacy configured behavior. Disabled rounding never adjusts or blocks. When enabled but denomination is invalid/missing, totals divisible by the previously approved 5 EGP value settle unchanged with zero adjustment; other cash totals block with a short bilingual administrative message. The old 5 EGP setting remains in place until an administrator changes it. Card/mixed settlement, existing accounting snapshots, refund paths, role-based access, audit and idempotency remain canonical. No migration, production data access, main merge or deployment.
