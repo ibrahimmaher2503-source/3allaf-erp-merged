@@ -122,3 +122,7 @@ Production access, deployment, backup execution, migration execution, active-sym
 - BUG-18 / V1 / undeployed: visible required outlet and default branch context in barcode label form/render; focused proof 1/10 PASS. Stock-linked queue remains blocked; single fix/module2-qa commit.
 
 - BUG-20 / V0 / undeployed: visible next-5-EGP rounding explanation in pricing matrix, en/ar/ar-EG; existing calculator focused proof 1/7 PASS. Separate commit on fix/module2-qa.
+
+## 2026-10-13 — Repository consolidation candidate
+
+- **V0 / undeployed:** Shared application footer displays `v1.22` for the existing `0.1.22-cost-optional` release value. It strips the legacy leading `0.` and any descriptive suffix; later numeric releases display as `v1.22.1` or `v1.23`. **Commit:** `integration/full-repository-consolidation` candidate commit. **File:** `resources/views/components/app-footer.blade.php`. **Status:** Prepared for review; no release artifact, main merge, or deployment.
