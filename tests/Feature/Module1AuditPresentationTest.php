@@ -259,21 +259,45 @@ final class Module1AuditPresentationTest extends TestCase
             ->assertDontSee($userAgent);
     }
 
-    public function test_audit_export_stays_blocked_when_no_approved_row_limit_is_configured(): void
+    public function test_audit_export_uses_the_bounded_default_when_the_environment_override_is_unset(): void
     {
         $this->grantPermissions('audit_logs.export');
         $actor = $this->superAdmin();
         $this->actingAs($actor);
-        config(['audit.export_max_rows' => null]);
+        $original = getenv('AUDIT_EXPORT_MAX_ROWS');
+        putenv('AUDIT_EXPORT_MAX_ROWS');
+        $auditConfig = require base_path('config/audit.php');
+        config(['audit.export_max_rows' => $auditConfig['export_max_rows']]);
+        app(RecordAuditEvent::class)->execute('platform', 'audit_default_limit_event');
 
         try {
-            app(ExportAuditLogs::class)->execute([]);
-            self::fail('Audit export was allowed without a configured row limit.');
-        } catch (ValidationException $exception) {
-            self::assertArrayHasKey('export', $exception->errors());
-        }
+            $response = app(ExportAuditLogs::class)->execute([]);
+            ob_start();
+            $response->sendContent();
+            $csv = (string) ob_get_clean();
 
-        self::assertDatabaseMissing('audit_logs', ['event' => 'audit_log_exported', 'actor_id' => $actor->id]);
+            self::assertSame(5000, config('audit.export_max_rows'));
+            self::assertStringContainsString('event_id,created_at,category,event', $csv);
+            self::assertStringContainsString('audit_default_limit_event', $csv);
+        } finally {
+            if ($original === false) {
+                putenv('AUDIT_EXPORT_MAX_ROWS');
+            } else {
+                putenv('AUDIT_EXPORT_MAX_ROWS='.$original);
+            }
+        }
+    }
+
+    public function test_audit_export_respects_an_explicit_configured_limit(): void
+    {
+        $this->grantPermissions('audit_logs.export');
+        $this->actingAs($this->superAdmin());
+        config(['audit.export_max_rows' => 1]);
+        app(RecordAuditEvent::class)->execute('platform', 'audit_explicit_limit_event_one');
+        app(RecordAuditEvent::class)->execute('platform', 'audit_explicit_limit_event_two');
+
+        $this->expectException(ValidationException::class);
+        app(ExportAuditLogs::class)->execute([]);
     }
 
     private function superAdmin(): User
