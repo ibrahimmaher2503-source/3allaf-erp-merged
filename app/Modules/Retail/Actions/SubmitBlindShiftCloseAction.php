@@ -101,9 +101,13 @@ final class SubmitBlindShiftCloseAction
             }
 
             abort_unless(
-                (int) $shift->getAttribute('cashier_id') === $cashier->id || $cashier->is_super_admin,
+                (int) $shift->getAttribute('cashier_id') === $cashier->id
+                    || ($cashier->hasGlobalApplicationAccess() && $cashier->can('shifts_cash_movements.approve')),
                 403,
             );
+            if ((int) $shift->getAttribute('cashier_id') !== $cashier->id && blank($notes)) {
+                throw new InvalidArgumentException(__('An administrator must record a reason for resolving another cashier shift.'));
+            }
 
             if (bccomp($actual, '0', 2) < 0) {
                 throw new InvalidArgumentException(__('The counted cash cannot be negative.'));
@@ -240,7 +244,7 @@ final class SubmitBlindShiftCloseAction
     }
 
     /**
-     * @param array<string, numeric-string> $actualByMethod
+     * @param  array<string, numeric-string>  $actualByMethod
      */
     private function assertReplaySafe(
         ?ShiftClosingSubmission $existing,

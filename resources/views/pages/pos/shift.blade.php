@@ -20,13 +20,53 @@
             <flux:callout class="mt-4" variant="success" icon="check-circle">{{ session('success') }}</flux:callout>
         @endif
 
+        @foreach ($blockingShifts as $blockingShift)
+            <section class="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-700 dark:bg-amber-950/30" aria-label="{{ __('Blocking active shift') }}">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <flux:heading size="lg">{{ __('Blocking active shift') }} #{{ $blockingShift->id }}</flux:heading>
+                    <x-status.badge :status="$blockingShift->status->value" />
+                </div>
+                <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('This cash drawer is assigned to another cashier. You cannot open a new shift on it.') }}</flux:callout>
+                <flux:text class="mt-3">{{ __('Drawer') }}: {{ $blockingShift->cashDrawer?->code ?: $blockingShift->cash_drawer_code_snapshot }}</flux:text>
+                @if (auth()->user()->hasGlobalApplicationAccess() && auth()->user()->can('shifts_cash_movements.approve'))
+                    <dl class="mt-4 grid gap-2 text-sm">
+                        <div class="flex justify-between gap-3"><dt>{{ __('Branch / store') }}</dt><dd>{{ $blockingShift->branch?->code ?: $blockingShift->branch_code_snapshot }} / {{ $blockingShift->store?->code ?: $blockingShift->store_code_snapshot }}</dd></div>
+                        <div class="flex justify-between gap-3"><dt>{{ __('Opened at') }}</dt><dd>{{ $blockingShift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
+                        <div class="flex justify-between gap-3"><dt>{{ __('Opening float') }}</dt><dd><x-money :amount="$blockingShift->opening_cash" :currency="$blockingShift->currency_code" /></dd></div>
+                        <div class="flex justify-between gap-3"><dt>{{ __('Cashier') }}</dt><dd>{{ $blockingShift->cashier?->name ?? $blockingShift->cashier?->username ?? '—' }}</dd></div>
+                    </dl>
+                    @if ($blockingShift->status->acceptsActivity())
+                        <form method="POST" action="{{ route('pos.shift.blind-close', $blockingShift) }}" class="mt-5 grid gap-3 border-t border-amber-300 pt-4 dark:border-amber-700">
+                            @csrf
+                            <input type="hidden" name="idempotency_key" value="{{ \Illuminate\Support\Str::uuid() }}">
+                            <flux:heading size="sm">{{ __('Administrator blind close') }}</flux:heading>
+                            <flux:text>{{ __('Count the drawer, submit actual amounts, then approve the close in the canonical approval inbox.') }}</flux:text>
+                            <flux:input type="number" step="0.01" min="0" name="actual_cash" :label="__('Counted cash')" required />
+                            @foreach ($methods as $method)
+                                <flux:input type="number" step="0.01" min="0" name="actual_by_method[{{ $method->code }}]" :label="(str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en).' — '.__('counted total')" />
+                            @endforeach
+                            <flux:textarea name="notes" :label="__('Resolution reason')" rows="2" required />
+                            @error('notes')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
+                            @error('actual_cash')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
+                            <flux:button type="submit" variant="primary" icon="lock-closed">{{ __('Submit count for approval') }}</flux:button>
+                        </form>
+                    @else
+                        <flux:button class="mt-4" :href="route('admin.approvals')" variant="primary" icon="inbox-arrow-down">{{ __('Open canonical approval request') }}</flux:button>
+                    @endif
+                @endif
+            </section>
+        @endforeach
+        @if ($blockingShifts->hasPages())
+            <div class="mt-4">{{ $blockingShifts->links() }}</div>
+        @endif
+
         @if (! $shift)
             <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                 <flux:heading size="lg">{{ __('Open a shift') }}</flux:heading>
                 <flux:text class="mt-1">{{ __('A shift must be open before any sale can be recorded.') }}</flux:text>
 
                 @if ($drawers->isEmpty())
-                    <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('No active cash drawer is assigned to you.') }}</flux:callout>
+                    <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ $blockingShifts->total() > 0 ? __('Every available cash drawer is occupied by an active shift. See the blocking shift above.') : __('No active cash drawer is assigned to you.') }}</flux:callout>
                 @else
                     <form method="POST" action="{{ route('pos.shift.store') }}" class="mt-4 grid gap-3">
                         @csrf
@@ -92,7 +132,9 @@
                     <x-status.badge :status="$shift->status->value" />
                 </div>
                 <dl class="mt-4 grid gap-2 text-sm">
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Shift ID') }}</dt><dd class="font-mono font-semibold">#{{ $shift->id }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Cashier') }}</dt><dd>{{ $shift->cashier?->name ?? $shift->cashier?->username ?? '—' }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>
                     @if ($shift->recount_count > 0)
@@ -101,7 +143,9 @@
                 </dl>
             </div>
 
-            @if ($shift->status->acceptsActivity())
+            @if (! $canManageOwnShift)
+                <flux:callout class="mt-6" variant="warning" icon="exclamation-triangle">{{ __('Your active shift is outside your current location access. Ask a System Administrator to resolve it.') }}</flux:callout>
+            @elseif ($shift->status->acceptsActivity())
                 <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <flux:heading size="lg">{{ __('Cash movement') }}</flux:heading>
                     <form method="POST" action="{{ route('pos.shift.cash-movement', $shift) }}" class="mt-4 grid gap-3">
