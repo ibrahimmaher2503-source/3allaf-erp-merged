@@ -29,7 +29,7 @@ final class SubmitStockCountAction
             }
             if ($count->manager_id !== null && (int) $count->manager_id !== (int) auth()->id() && ! auth()->user()?->can('stock_counts.close')) abort(403);
             if ($count->lines->contains(fn ($line): bool => ! $line->is_counted || $line->completed_at === null)) {
-                throw new InvalidArgumentException(__('Every scoped product/location must be counted or explicitly confirmed as zero before entry can close.'));
+                throw new InvalidArgumentException(__('Complete a count for every scoped product/location, or explicitly confirm zero, before submitting.'));
             }
             foreach ($count->lines as $line) {
                 $this->scope->execute((int) $line->store_id);

@@ -3550,6 +3550,7 @@
     "Stock count quantities saved.": "تم حفظ كميات جرد المخزن.",
     "Stock count reconciled; uncounted products were preserved.": "تمت مطابقة الجرد، والمنتجات اللي ماتعدّتش فضلت زي ما هي.",
     "Stock count submitted with movement-window calculation.": "تم إرسال الجرد مع حساب حركات فترة الجرد.",
+    "Complete a count for every scoped product/location, or explicitly confirm zero, before submitting.": "كمّل عدّ كل منتج في كل موقع داخل نطاق الجرد، أو أكّد إن كميته صفر بشكل صريح، قبل الإرسال.",
     "Stock counts": "الجرد",
     "Stock disposition": "التصرف في المخزون",
     "Stock in / out & adjustments": "إدخال وإخراج وتسويات المخزون",

@@ -457,6 +457,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             $action->execute($count->id);
 
             return back()->with('success', __('Stock count submitted with movement-window calculation.'));
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
         } catch (Throwable $exception) {
             if ($exception instanceof AuthorizationException) {
                 throw $exception;

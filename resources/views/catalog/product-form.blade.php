@@ -151,7 +151,7 @@ new #[Title('Product Card')] class extends Component
                 'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
             ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
             $validated['_save_as_draft'] = $saveAsDraft;
-            if (! $saveAsDraft && $validated['barcode_registration_type'] === 'local' && blank($validated['item_code'])) {
+            if (! $saveAsDraft && blank($validated['item_code'])) {
                 try {
                     app(ReserveProductIdentityAction::class)->preview((int) $validated['preferred_supplier_id']);
                 } catch (InvalidArgumentException $exception) {

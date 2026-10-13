@@ -1,3 +1,11 @@
+# Current Task — High-priority GitHub issues batch 1 (2026-10-13)
+
+Owner-authorized D3 batch on `issues/high-priority-batch-1` from fetched `origin/main` `c4560c3ae23b4a7f395c86a58e8eafcd6ecea048`; RELEASE_NOW=NO. Scope is only issues #1, #2, #7, #9, #11, #33 and #41. The owner supplied authoritative issue details because private GitHub issue access was unavailable. #41 quotation edits now preserve omitted lines and require explicit line IDs for removal. #33 stock count retains its existing completed-count rule and shows the actionable reason. #7 final international-barcode save now validates the generated supplier code on the same field as the local path; incomplete drafts may retain a supplier without generating a code. #1 purchase approval, #2 POS rounding, and #11 shift approval/close are already fixed and verified.
+
+#9 is blocked by production runtime ownership: supplied error IDs show Livewire `touch(): Operation not permitted` against root-owned, mode-755 files in `/home/rajeh/shared/toyjoy/storage/framework/views/blaze`. A separate export exception is absent from the supplied Laravel log; an isolated current-main Arabic audit page and CSV export passed. Production cache repair needs separate authorization; no production files or services were changed. Focused checks, one Fast QA gate, and exact outcomes are in `.ai/TEST_RESULTS.md`. No main merge, deployment, production migration, or issue closure occurred.
+
+## Preserved previous task
+
 # Current Task — POS close-shift header link hotfix (2026-10-13)
 
 Owner-authorized V1 navigation hotfix on `hotfix/pos-close-shift-link` from main `d29816d6b1eef129c0471826fea72d6b3b339ad7`; RELEASE_NOW=NO. The production-facing `/pos` page resolves its assigned shift through `PosContextResolver` and renders `pages.pos.index`, but its visible shift status offered no direct close action. The POS header now shows a permission-gated, bilingual link only for the signed-in cashier's ready open shift. It targets that shift's existing blind-count section on `/pos/shift`; the existing route, owner/admin authorization, approval, audit and history remain the only close workflow. No POS financial, shift transaction, route, policy, or schema logic changed.
