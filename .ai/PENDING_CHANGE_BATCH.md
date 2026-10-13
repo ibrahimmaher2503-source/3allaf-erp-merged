@@ -125,4 +125,4 @@ Production access, deployment, backup execution, migration execution, active-sym
 
 ## 2026-10-13 — Repository consolidation candidate
 
-- **V0 / undeployed:** Shared application footer displays only the numeric portion of the existing release value (`v0.1.22` for `0.1.22-cost-optional`), without a feature or hotfix suffix. **Commit:** `integration/full-repository-consolidation` candidate commit. **File:** `resources/views/components/app-footer.blade.php`. **Status:** Prepared for review; no release artifact, main merge, or deployment.
+- **V0 / undeployed:** Shared application footer displays `v1.22` for the existing `0.1.22-cost-optional` release value. It strips the legacy leading `0.` and any descriptive suffix; later numeric releases display as `v1.22.1` or `v1.23`. **Commit:** `integration/full-repository-consolidation` candidate commit. **File:** `resources/views/components/app-footer.blade.php`. **Status:** Prepared for review; no release artifact, main merge, or deployment.
