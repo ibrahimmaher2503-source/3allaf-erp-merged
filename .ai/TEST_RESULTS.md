@@ -1,3 +1,7 @@
+## 2026-10-13 — Shift close workflow focused verification
+
+Focused disposable MariaDB run: `Module9CashShiftsQaTest.php` selected shift cases PASS, 8 tests / 74 assertions. Covered existing approval/recount and drawer guards plus cash-only blind submission, immutable system-derived electronic totals, pre-approval thermal/A4 print, final approved print, submitted-shift operational release, two pending closes allowed, and third-open rejection. PHP syntax, locale JSON, diff hygiene and Pint PASS. Fast QA ran once: 7/8 checks passed; CodeGraph failed because the new worktree initially pointed at the main-worktree index. A local CodeGraph index was initialized afterward; Fast QA was not rerun. No migration, production database operation, merge or deployment.
+
 ## 2026-10-13 — Audit 500 focused verification
 
 Focused disposable MariaDB run covering audit detail/pagination without compiled islands, localized timestamps, and audit page plus CSV export. PASS: 3 tests, 12 assertions. Both `GET admin.audit` and `GET admin.audit.export` returned successful responses with CSV content validation. Production Laravel logs were read-only inspected; no production cache or runtime mutation was performed. No Fast QA was run because the change is isolated to the audit component and deployment cache lifecycle.

@@ -40,11 +40,8 @@
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ \Illuminate\Support\Str::uuid() }}">
                             <flux:heading size="sm">{{ __('Administrator blind close') }}</flux:heading>
-                            <flux:text>{{ __('Count the drawer, submit actual amounts, then approve the close in the canonical approval inbox.') }}</flux:text>
+                            <flux:text>{{ __('Count the physical cash only. Electronic totals are calculated from recorded shift transactions, then reviewed in the canonical approval inbox.') }}</flux:text>
                             <flux:input type="number" step="0.01" min="0" name="actual_cash" :label="__('Counted cash')" required />
-                            @foreach ($methods as $method)
-                                <flux:input type="number" step="0.01" min="0" name="actual_by_method[{{ $method->code }}]" :label="(str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en).' — '.__('counted total')" />
-                            @endforeach
                             <flux:textarea name="notes" :label="__('Resolution reason')" rows="2" required />
                             @error('notes')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
                             @error('actual_cash')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
@@ -60,6 +57,35 @@
             <div class="mt-4">{{ $blockingShifts->links() }}</div>
         @endif
 
+        @if ($pendingShifts->isNotEmpty())
+            <section class="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-700 dark:bg-amber-950/30" aria-labelledby="pending-shifts-heading">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <flux:heading id="pending-shifts-heading" size="lg">{{ __('Pending close review') }}</flux:heading>
+                        <flux:text class="mt-1">{{ __('Submitted shifts are operationally closed. You may open the next shift while management reviews them.') }}</flux:text>
+                    </div>
+                    <flux:badge color="amber">{{ $pendingCloseCount }}/2</flux:badge>
+                </div>
+                <div class="mt-4 grid gap-3">
+                    @foreach ($pendingShifts as $pendingShift)
+                        @php($pendingSubmission = $pendingShift->closingSubmissions->sortByDesc('attempt')->first())
+                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white p-3 dark:border-amber-800 dark:bg-zinc-900">
+                            <div>
+                                <div class="font-semibold">#{{ $pendingShift->id }} · {{ $pendingShift->cashDrawer?->code ?: $pendingShift->cash_drawer_code_snapshot }}</div>
+                                <div class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Submitted') }}: {{ $pendingSubmission?->submitted_at?->toDayDateTimeString() }} · {{ $pendingShift->status->value === 'variance_review' ? __('In review') : __('Pending approval') }}</div>
+                            </div>
+                            @can('shifts_cash_movements.print')
+                                <div class="flex flex-wrap gap-2">
+                                    <x-actions.button semantic="print" :label="__('Print Shift Close Sheet')" :href="route('pos.shift.print.thermal', $pendingShift)" target="_blank" rel="noopener">{{ __('Print Shift Close Sheet') }}</x-actions.button>
+                                    <x-actions.button semantic="print" :label="__('Print A4')" :href="route('pos.shift.print.a4', $pendingShift)" target="_blank" rel="noopener">{{ __('Print A4') }}</x-actions.button>
+                                </div>
+                            @endcan
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         @if (! $shift)
             <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                 <flux:heading size="lg">{{ __('Open a shift') }}</flux:heading>
@@ -67,6 +93,8 @@
 
                 @if ($drawers->isEmpty())
                     <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ $blockingShifts->total() > 0 ? __('Every available cash drawer is occupied by an active shift. See the blocking shift above.') : __('No active cash drawer is assigned to you.') }}</flux:callout>
+                @elseif ($pendingCloseCount >= 2)
+                    <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.') }}</flux:callout>
                 @else
                     <form method="POST" action="{{ route('pos.shift.store') }}" class="mt-4 grid gap-3">
                         @csrf
@@ -186,19 +214,11 @@
                 <div id="shift-close-{{ $shift->id }}" class="mt-6 scroll-mt-24 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <flux:heading size="lg">{{ __('Blind close') }}</flux:heading>
                     {{-- CSH-02: the cashier counts first and is shown nothing to count towards. --}}
-                    <flux:text class="mt-1">{{ __('Count the drawer and enter the actual amounts. Expected totals are not shown before you submit.') }}</flux:text>
+                    <flux:text class="mt-1">{{ __('Count the physical cash in the drawer and enter only that amount. Electronic totals are calculated from recorded shift transactions.') }}</flux:text>
                     <form method="POST" action="{{ route('pos.shift.blind-close', $shift) }}" class="mt-4 grid gap-3">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $closeToken }}">
                         <flux:input type="number" step="0.01" min="0" name="actual_cash" :label="__('Counted cash')" required />
-                        @foreach ($methods as $method)
-                            <flux:input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                name="actual_by_method[{{ $method->code }}]"
-                                :label="(str_starts_with(app()->getLocale(), 'ar') ? $method->name_ar : $method->name_en).' — '.__('counted total')" />
-                        @endforeach
                         <flux:textarea name="notes" :label="__('Notes (optional)')" rows="2" />
                         @error('actual_cash')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
                         <flux:button type="submit" variant="primary" icon="lock-closed">{{ __('Submit count') }}</flux:button>

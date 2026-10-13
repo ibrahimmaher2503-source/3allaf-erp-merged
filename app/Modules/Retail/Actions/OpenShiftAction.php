@@ -40,10 +40,10 @@ final class OpenShiftAction
                 return $this->assertReplaySafe($existing, $cashier, $drawer, $openingFloat);
             }
 
-            if (PosShift::query()->active()->where('cashier_id', $cashier->id)->exists()) {
+            if (PosShift::query()->where('cashier_id', $cashier->id)->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'), previous: $e);
             }
-            if (PosShift::query()->active()->where('cash_drawer_id', $drawer->getKey())->exists()) {
+            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This drawer already has an active shift.'), previous: $e);
             }
 
@@ -122,14 +122,21 @@ final class OpenShiftAction
                 throw new InvalidArgumentException(__('The drawer company must have an approved three-letter currency before a shift can open.'));
             }
 
-            $activeStates = $this->activeStates();
-
-            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->whereIn('status', $activeStates)->exists()) {
+            if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->whereIn('status', [ShiftState::Open->value])->exists()) {
                 throw new InvalidArgumentException(__('This drawer already has an active shift.'));
             }
 
-            if (PosShift::query()->where('cashier_id', $cashier->id)->whereIn('status', $activeStates)->exists()) {
+            if (PosShift::query()->where('cashier_id', $cashier->id)->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'));
+            }
+
+            $pendingCount = PosShift::query()
+                ->where('cashier_id', $cashier->id)
+                ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+                ->lockForUpdate()
+                ->count();
+            if ($pendingCount >= 2) {
+                throw new InvalidArgumentException(__('You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.'));
             }
 
             $shift = PosShift::query()->create([
@@ -207,15 +214,6 @@ final class OpenShiftAction
             ->first();
 
         abort_unless($storeScope !== null, 403);
-    }
-
-    /** @return list<string> */
-    private function activeStates(): array
-    {
-        return array_values(array_map(
-            static fn (ShiftState $state): string => $state->value,
-            array_filter(ShiftState::cases(), static fn (ShiftState $state): bool => $state->isActive()),
-        ));
     }
 
     private function replay(string $idempotencyKey, User $cashier, CashDrawer $drawer, string $openingFloat): PosShift

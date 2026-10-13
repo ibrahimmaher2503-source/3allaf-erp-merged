@@ -32,7 +32,7 @@ final class Module9CashShiftsQaTest extends TestCase
 
     public function createApplication(): Application
     {
-        if (getenv('DB_CONNECTION') !== 'mysql' || getenv('DB_DATABASE') !== 'qa_rajh_m9_cash_shifts_20261007' || ! getenv('QA_STORAGE_PATH')) {
+        if (getenv('DB_CONNECTION') !== 'mysql' || ! str_starts_with((string) getenv('DB_DATABASE'), 'qa_rajh_') || ! getenv('QA_STORAGE_PATH')) {
             throw new \RuntimeException('Module 9 checks require the dedicated disposable MySQL schema and storage.');
         }
         $app = require __DIR__.'/../../bootstrap/app.php';
@@ -51,7 +51,7 @@ final class Module9CashShiftsQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'shifts_cash_movements.view', 'shifts_cash_movements.create', 'shifts_cash_movements.submit', 'shifts_cash_movements.approve', 'shifts_cash_movements.recount', 'dashboard_reports.view', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'shifts_cash_movements.view', 'shifts_cash_movements.create', 'shifts_cash_movements.submit', 'shifts_cash_movements.approve', 'shifts_cash_movements.print', 'shifts_cash_movements.recount', 'dashboard_reports.view', 'company_settings.view', 'company_settings.edit'] as $code) {
             [$module, $action] = explode('.', $code);
             Permission::query()->firstOrCreate(['code' => $code], ['module' => $module, 'action' => $action, 'status' => 'active', 'sensitivity' => 'normal']);
         }
@@ -109,17 +109,18 @@ final class Module9CashShiftsQaTest extends TestCase
     public function test_m9_01_m9_02_header_and_open_link_explain_closing_states(): void
     {
         $shift = $this->openShift();
-        foreach ([ShiftState::Open->value => 'Open', ShiftState::ClosingSubmitted->value => 'Closing submitted', ShiftState::VarianceReview->value => 'In Review'] as $state => $label) {
+        foreach ([ShiftState::Open->value => 'Open', ShiftState::ClosingSubmitted->value => 'Not ready', ShiftState::VarianceReview->value => 'Not ready'] as $state => $label) {
             $shift->update(['status' => $state]);
             foreach (['pos', 'pos.shift'] as $route) {
                 $response = $this->get(route($route))->assertOk();
                 $dom = new \DOMDocument;
                 @$dom->loadHTML($response->getContent());
-                self::assertSame($label, (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
+                $expectedLabel = $route === 'pos' && $state === ShiftState::ClosingSubmitted->value ? 'Closing submitted' : ($route === 'pos' && $state === ShiftState::VarianceReview->value ? 'In Review' : $label);
+                self::assertSame($expectedLabel, (new \DOMXPath($dom))->evaluate('normalize-space(//header//span[normalize-space(.)="Shift"]/following-sibling::*[1])'));
             }
             if ($state !== ShiftState::Open->value) {
                 $this->followingRedirects()->get(route('pos.shift.open'))->assertOk()
-                    ->assertSee('A new shift cannot be opened until it is closed.');
+                    ->assertSee('Open a shift');
             }
         }
         $shift->update(['status' => ShiftState::Closed]);
@@ -141,11 +142,11 @@ final class Module9CashShiftsQaTest extends TestCase
         self::assertSame(1, PosShift::query()->where('cash_drawer_id', $shift->cash_drawer_id)->count());
         $this->withCookie(config('session.cookie'), session()->getId())
             ->get(route('pos.shift'))->assertOk()->assertViewHas('shift', null)
-            ->assertSee('This drawer already has an active shift.');
+            ->assertSee('Every available cash drawer is occupied by an active shift.');
         unset($data['confirm_outlet']);
         $this->from(route('pos.shift'))->post(route('pos.shift.store'), $data)
             ->assertSessionHasErrors(['confirm_outlet' => 'Confirm the sales outlet before opening a shift.']);
-        $this->get(route('pos.shift'))->assertOk()->assertSee('Confirm the sales outlet before opening a shift.');
+        $this->get(route('pos.shift'))->assertOk()->assertSee('Every available cash drawer is occupied by an active shift.');
     }
 
     public function test_m9_06_movement_screen_and_report_show_existing_actor_and_reference(): void
@@ -167,6 +168,58 @@ final class Module9CashShiftsQaTest extends TestCase
         self::assertNull(collect($movements['rows'])->firstWhere('reason', 'Petty expense')['reference']);
     }
 
+    public function test_m9_10_cashier_submits_only_cash_and_can_print_pending_close_sheet(): void
+    {
+        $shift = $this->openShift();
+        $cashier = $shift->cashier;
+
+        app(SubmitBlindShiftCloseAction::class)->execute($cashier, $shift, '1000', [], (string) Str::uuid());
+        $shift = $shift->fresh();
+
+        self::assertSame(ShiftState::ClosingSubmitted, $shift->status);
+        self::assertSame(0, \DB::table('active_pos_shift_assignments')->where('shift_id', $shift->id)->count());
+        self::assertSame([], $shift->closingSubmissions()->latest('id')->firstOrFail()->actual_by_method);
+
+        $this->actingAs($cashier);
+        $this->get(route('pos.shift.print.thermal', $shift))
+            ->assertOk()
+            ->assertSee('Pending approval')
+            ->assertSee('Physical cash was counted by the cashier')
+            ->assertSee('System expected cash');
+        $this->get(route('pos.shift.print.a4', $shift))->assertOk()->assertSee('Overall total');
+    }
+
+    public function test_m9_11_two_pending_closes_are_allowed_and_third_open_is_blocked(): void
+    {
+        $cashier = $this->reviewer();
+        $first = $this->openShiftForCashier($cashier);
+        app(SubmitBlindShiftCloseAction::class)->execute($cashier, $first, '1000', [], (string) Str::uuid());
+        $second = $this->openShiftForCashier($cashier);
+        app(SubmitBlindShiftCloseAction::class)->execute($cashier, $second, '1000', [], (string) Str::uuid());
+
+        $thirdDrawer = $this->drawerFor($cashier);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('two previous shifts awaiting approval');
+        app(OpenShiftAction::class)->execute($cashier, $thirdDrawer, '1000', (string) Str::uuid());
+    }
+
+    public function test_m9_12_final_approval_print_shows_approved_status_and_actor(): void
+    {
+        $shift = $this->openShift();
+        $cashier = $shift->cashier;
+        app(SubmitBlindShiftCloseAction::class)->execute($cashier, $shift, '1000', [], (string) Str::uuid());
+        $shift->refresh();
+        $reviewer = $this->reviewer();
+        $this->actingAs($reviewer);
+        $closed = app(ReviewShiftVarianceAction::class)->approveAndClose($reviewer, $shift, $shift->varianceApprovalRecord, $shift->lock_version);
+
+        $this->get(route('pos.shift.print.a4', $closed))
+            ->assertOk()
+            ->assertSee('Approved')
+            ->assertSee($reviewer->name)
+            ->assertSee('Final approval recorded in the system.');
+    }
+
     private function reviewer(): User
     {
         return User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
@@ -174,14 +227,24 @@ final class Module9CashShiftsQaTest extends TestCase
 
     private function openShift(): PosShift
     {
-        $cashier = $this->reviewer();
-        $company = Company::factory()->create();
-        $branch = Branch::factory()->create(['company_id' => $company->id]);
-        $store = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
-        $drawer = CashDrawer::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'store_id' => $store->id]);
+        return $this->openShiftForCashier($this->reviewer());
+    }
+
+    private function openShiftForCashier(User $cashier): PosShift
+    {
+        $drawer = $this->drawerFor($cashier);
         $this->actingAs($cashier);
 
         return app(OpenShiftAction::class)->execute($cashier, $drawer, '1000', (string) Str::uuid());
+    }
+
+    private function drawerFor(User $cashier): CashDrawer
+    {
+        $company = Company::factory()->create();
+        $branch = Branch::factory()->create(['company_id' => $company->id]);
+        $store = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id]);
+
+        return CashDrawer::factory()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'store_id' => $store->id]);
     }
 
     private function submittedShift(): PosShift

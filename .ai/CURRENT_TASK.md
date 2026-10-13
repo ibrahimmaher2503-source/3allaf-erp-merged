@@ -1,3 +1,9 @@
+# Current Task — Shift close receipt and pending allowance (2026-10-13)
+
+Owner-authorized D3 workflow change on `feature/shift-close-receipt-pending-allowance` from `origin/main` `7972d963`. Cashier submission now accepts only physical cash; non-cash totals are derived from canonical shift payments. Submission releases operational cashier/drawer assignment while retaining immutable approval/recount history. Pending close sheets are printable before approval and final sheets after approval. Only open shifts block selling/drawer reuse; up to two prior pending closes are allowed and a third open is blocked with a clear explanation. No migration, production operation, merge or deployment occurred. Focused shift checks passed 8 tests/74 assertions. Fast QA ran once and completed 7/8 checks; its only failure was the pre-existing worktree-local CodeGraph index mismatch, then this worktree was indexed locally without rerunning the gate.
+
+## Preserved previous task
+
 # Current Task — Audit 500 fix (2026-10-13)
 
 Owner-authorized I4 fix on `issues/fix-audit-500` from fetched `origin/main` `5151a8e6`. Production logs identify stale root-owned Livewire island source files under shared `storage/framework/views/livewire/islands`: the audit page's island compiler can write the file but cannot update its mtime through `touch()`. The audit view no longer uses compiled islands, and the deployment template clears only generated Livewire/Blaze caches during maintenance and recreates them for `rajeh`. Focused current-main audit page and CSV export checks passed. No production cache, migration, service, merge or deployment operation occurred.
