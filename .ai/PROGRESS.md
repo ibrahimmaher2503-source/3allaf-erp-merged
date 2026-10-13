@@ -1,3 +1,9 @@
+# 2026-10-13 — High-priority issues batch 1
+
+D3 candidate on `issues/high-priority-batch-1` from `origin/main` `c4560c3`: #41 quotation line preservation, #33 actionable incomplete stock-count submission, and #7 international-barcode supplier-code validation are committed. #1 purchase approval, #2 POS rounding, and #11 shift approval/close passed focused checks without reimplementation. #9 production audit page 500 traces to root-owned Livewire compiled cache; export's production 500 has no corresponding Laravel exception and remains unproven. One Fast QA PASS 8/8, including 75 tests/485 assertions and compact browser smoke. Production was inspected read-only for #9; no production write, migration, merge, deployment, issue closure, or milestone/UAT advancement. Final documentation commit and task-branch push follow.
+
+## Preserved previous state
+
 # 2026-10-13 — POS close-shift header link hotfix
 
 V1 on `hotfix/pos-close-shift-link`, source `d29816d`: the active POS status bar now links the signed-in cashier's open assigned shift to its existing `/pos/shift` blind-count form. Existing authorization, administrator override, approval, audit and financial logic are unchanged. Focused authenticated browser PASS 16 checks; isolated MariaDB checkout/rounding PASS 2/14; syntax, Arabic JSON and diff hygiene PASS. No Fast QA, merge or deployment. Commit and task-branch push follow.
