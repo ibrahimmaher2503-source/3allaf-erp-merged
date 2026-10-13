@@ -1,4 +1,8 @@
-# Current Task — High-priority GitHub issues batch 1 (2026-10-13)
+# Current Task — Audit 500 fix (2026-10-13)
+
+Owner-authorized I4 fix on `issues/fix-audit-500` from fetched `origin/main` `5151a8e6`. Production logs identify stale root-owned Livewire island source files under shared `storage/framework/views/livewire/islands`: the audit page's island compiler can write the file but cannot update its mtime through `touch()`. The audit view no longer uses compiled islands, and the deployment template clears only generated Livewire/Blaze caches during maintenance and recreates them for `rajeh`. Focused current-main audit page and CSV export checks passed. No production cache, migration, service, merge or deployment operation occurred.
+
+## Preserved previous task
 
 Owner-authorized D3 batch on `issues/high-priority-batch-1` from fetched `origin/main` `c4560c3ae23b4a7f395c86a58e8eafcd6ecea048`; RELEASE_NOW=NO. Scope is only issues #1, #2, #7, #9, #11, #33 and #41. The owner supplied authoritative issue details because private GitHub issue access was unavailable. #41 quotation edits now preserve omitted lines and require explicit line IDs for removal. #33 stock count retains its existing completed-count rule and shows the actionable reason. #7 final international-barcode save now validates the generated supplier code on the same field as the local path; incomplete drafts may retain a supplier without generating a code. #1 purchase approval, #2 POS rounding, and #11 shift approval/close are already fixed and verified.
 

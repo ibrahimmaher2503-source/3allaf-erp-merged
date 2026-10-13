@@ -56,6 +56,16 @@ find "$candidate" -type d -exec chmod a+rX {} +
 find "$candidate" -type f -exec chmod a+r,a-w {} +
 install -d -m 0770 -o rajeh -g rajeh "$candidate/bootstrap/cache" "$candidate/bootstrap/cache/views"
 runuser -u rajeh -- env APP_ENV=production CACHE_STORE=array MAIL_MAILER=log VIEW_COMPILED_PATH="$candidate/bootstrap/cache/views" "$php" "$candidate/artisan" optimize --no-interaction
+# Livewire island source files are generated under shared storage at request
+# time. Clear only those generated caches while maintenance is active, then
+# recreate them for the FPM account. This prevents a root-run warmup or copied
+# release cache from leaving files whose mtime cannot be changed by FPM.
+for runtime_cache in "$shared_storage/framework/views/livewire" "$shared_storage/framework/views/blaze"; do
+    install -d -m 0770 -o rajeh -g rajeh "$runtime_cache"
+    find "$runtime_cache" -mindepth 1 -delete
+    chown -R rajeh:rajeh "$runtime_cache"
+    chmod -R u+rwX,g+rwX,o-rwx "$runtime_cache"
+done
 runuser -u rajeh -- env CACHE_STORE=array MAIL_MAILER=log "$php" -r '
 $root=$argv[1];require $root."/vendor/autoload.php";$app=require $root."/bootstrap/app.php";$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $paths=[config("logging.channels.single.path"),config("view.compiled"),config("session.files"),config("cache.stores.file.path"),config("filesystems.disks.local.root"),config("backup.backup.temporary_directory")];
