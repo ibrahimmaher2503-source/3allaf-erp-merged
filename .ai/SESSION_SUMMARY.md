@@ -1,3 +1,7 @@
+## 2026-10-13 — Audit 500 fix
+
+Traced issue #9 from production logs to Livewire island compilation touching stale root-owned generated files under shared `storage/framework/views/livewire/islands`; normal writes succeeded but mtime updates failed for the FPM account. Removed compiled islands from the audit view and added a deployment-template guard that clears only generated Livewire/Blaze caches and recreates them for `rajeh`. Updated focused audit presentation/export coverage. Focused isolated MariaDB check passed 3 tests/12 assertions. Production inspection was read-only; no migration, cache mutation, service restart, merge or deployment occurred. Code and documentation changed; commit and branch push follow.
+
 ## 2026-09-26 — Hotfix46 user-management and admin-verification repair
 
 - **Task/work:** Traced the generic authorization banner and recent immutable authorization events to user ID 2 / username `karim`, created by ID 1 and assigned the active System Administrator role with no branch/store scopes. Fixed `UserManagementScope` so that role receives its documented global user-management scope without the operational super-admin bypass; replaced the generic banner body with exact validation messages and added Arabic translations. The authorized admin creation action now verifies email immediately, sends no verification message, and records creator/verifier audits.

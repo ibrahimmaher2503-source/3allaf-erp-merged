@@ -207,7 +207,6 @@ new #[Title('Audit Logs')] class extends Component
     class="space-y-5"
     data-guide="audit-header"
 >
-    @island(name: 'audit-table')
     @if($this->screen['canExport'])
         <div class="flex flex-wrap items-center justify-end gap-3">
             @if($this->screen['exportConfigured'])
@@ -291,7 +290,7 @@ new #[Title('Audit Logs')] class extends Component
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
-                            <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" wire:island="audit-details" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
+                            <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -320,7 +319,7 @@ new #[Title('Audit Logs')] class extends Component
                             @endif
                         </dd></div>
                     </dl>
-                    <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})" wire:island="audit-details">{{ __('View') }}</x-actions.button>
+                    <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</x-actions.button>
                 </x-cards.section-card>
             @endforeach
         </div>
@@ -345,9 +344,6 @@ new #[Title('Audit Logs')] class extends Component
             <div class="hidden sm:block" data-guide="audit-pagination">{{ $this->screen['logs']->links() }}</div>
         </x-slot:footer>
     </x-tables.data-panel>
-    @endisland
-
-    @island(name: 'audit-details', always: true)
     <flux:modal wire:model="selectedAuditId" class="max-w-3xl">
         @if ($this->screen['selectedAudit'])
             <div class="space-y-5">
@@ -379,5 +375,4 @@ new #[Title('Audit Logs')] class extends Component
             </div>
         @endif
     </flux:modal>
-    @endisland
 </x-app.page>
