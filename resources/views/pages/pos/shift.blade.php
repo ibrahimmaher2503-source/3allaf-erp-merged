@@ -183,7 +183,7 @@
                     @endif
                 </div>
 
-                <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                <div id="shift-close-{{ $shift->id }}" class="mt-6 scroll-mt-24 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <flux:heading size="lg">{{ __('Blind close') }}</flux:heading>
                     {{-- CSH-02: the cashier counts first and is shown nothing to count towards. --}}
                     <flux:text class="mt-1">{{ __('Count the drawer and enter the actual amounts. Expected totals are not shown before you submit.') }}</flux:text>

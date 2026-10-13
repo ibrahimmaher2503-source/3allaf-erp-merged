@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-13 — POS close-shift link (undeployed)
+
+| Class | Repair | Commit | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Show a cashier-owned open-shift link beside the POS shift indicator, targeting the existing blind-count form | `hotfix/pos-close-shift-link` task commit | POS layout/index/shift Blade and Arabic locale JSON | Focused authenticated browser 16 checks and isolated MariaDB checkout/rounding 2 tests/14 assertions passed; no Fast QA, merge or deployment |
+
 ## 2026-10-07 — Local Module 1/2 QA presentation batch (undeployed)
 
 V0/V1 presentation portions: named validation labels and titles, localized approval errors, Settings pagination/search, saved barcode display, image-limit feedback and product metadata fields. Included in the separately authorized sensitive D3/I4 QA integration; exact per-bug commits are in `.ai/qa/module2-20261007/results.json`. One initial Module 1 asset build and one final combined build passed; final Blade compilation passed. No version bump, release artifact or deployment; production and all historical batch records are preserved. Full-suite/static debt remains documented. This entry records local completion, not closure of a production release batch.

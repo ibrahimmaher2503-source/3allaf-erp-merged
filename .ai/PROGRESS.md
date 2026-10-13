@@ -1,3 +1,9 @@
+# 2026-10-13 — POS close-shift header link hotfix
+
+V1 on `hotfix/pos-close-shift-link`, source `d29816d`: the active POS status bar now links the signed-in cashier's open assigned shift to its existing `/pos/shift` blind-count form. Existing authorization, administrator override, approval, audit and financial logic are unchanged. Focused authenticated browser PASS 16 checks; isolated MariaDB checkout/rounding PASS 2/14; syntax, Arabic JSON and diff hygiene PASS. No Fast QA, merge or deployment. Commit and task-branch push follow.
+
+## Preserved previous state
+
 # 2026-10-13 — POS cash-rounding consistency hotfix
 
 D3 fix on `hotfix/pos-cash-rounding`, source `548c0ef`: exact 550.00 cash checkout now succeeds with disabled rounding or enabled rounding whose denomination is missing; an actual nonzero adjustment still requires an explicit valid setting. Owner approved configurable positive cent-denominations, including 0.50; the existing 5 EGP version remains until changed. The canonical calculator and sale/payment snapshots are reused, with a separate audited versioned enable setting and bilingual cashier message. Focused clean MariaDB PASS 6/49; authenticated browser generic PASS 78 and targeted PASS 20; syntax/Pint/JSON/core Larastan PASS; Fast QA PASS 8/8 (75/485). Three pre-existing whole-file Larastan findings remain on unchanged payment-action lines. No migration, production access, merge, deployment, milestone gate or UAT advancement. Commit/push follow.
