@@ -3202,5 +3202,14 @@
     "A supplier code is required to generate a product code when model number is blank.": "A supplier code is required to generate a product code when model number is blank.",
     "Current product cost": "Current product cost",
     "No current product cost": "No current product cost",
-    "Optional initial cost; approved invoices update the current cost.": "Optional initial cost; approved invoices update the current cost."
+    "Optional initial cost; approved invoices update the current cost.": "Optional initial cost; approved invoices update the current cost.",
+    "Cash payment cannot be completed because the cash rounding setting is incomplete. Ask an administrator to set the rounding denomination in POS settings.": "Cash payment cannot be completed because the cash rounding setting is incomplete. Ask an administrator to set the rounding denomination in POS settings.",
+    "Cash rounding state": "Cash rounding state",
+    "Enabled": "Enabled",
+    "Choose Yes or No for cash rounding.": "Choose Yes or No for cash rounding.",
+    "Enter a positive cash rounding denomination in whole units or cents.": "Enter a positive cash rounding denomination in whole units or cents.",
+    "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.": "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.",
+    "The cash rounding enabled setting must be Yes or No.": "The cash rounding enabled setting must be Yes or No.",
+    "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.": "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.",
+    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "When enabled, cash tender payable amounts round to the nearest approved configured denomination."
 }

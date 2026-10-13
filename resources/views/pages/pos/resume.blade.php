@@ -47,7 +47,7 @@
                     <div class="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold dark:border-zinc-700"><dt>{{ __('Invoice total') }}</dt><dd>{{ $preview['totals']['total'] }} {{ $currency }}</dd></div>
                 </dl>
 
-                @if ($cashDenomination === null)
+                @if ($cashRoundingConfigurationError)
                     <flux:callout class="mt-3" variant="warning" icon="exclamation-triangle">{{ $cashRoundingConfigurationError }}</flux:callout>
                     @can('company_settings.view')
                         <flux:button class="mt-2" href="{{ route('pos.financial-readiness') }}" size="sm">{{ __('POS Financial Controls') }}</flux:button>
@@ -78,7 +78,7 @@
                     @if ($cashMethod)
                         <fieldset class="grid gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
                             <legend class="px-1 text-sm font-semibold">{{ __('Cash residual') }}</legend>
-                            <flux:checkbox name="payments[0][method_id]" value="{{ $cashMethod->id }}" :label="__('Use cash for the remaining residual')" :disabled="$cashDenomination === null" />
+                            <flux:checkbox name="payments[0][method_id]" value="{{ $cashMethod->id }}" :label="__('Use cash for the remaining residual')" :disabled="$cashRoundingConfigurationError !== null" />
                             <input type="hidden" name="payments[0][amount]" value="0">
                             <flux:input name="payments[0][tendered]" type="number" min="0" step="0.01" :label="__('Cash tendered')" />
                         </fieldset>

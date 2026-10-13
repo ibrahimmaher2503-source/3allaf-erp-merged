@@ -6491,5 +6491,14 @@
     "Your active shift is outside your current location access. Ask a System Administrator to resolve it.": "ورديتك النشطة خارج صلاحية موقعك الحالي. اطلب من مسؤول النظام يعالجها.",
     "Your active shift needs administrator review before POS can be used. Open shift management to see it.": "ورديتك النشطة محتاجة مراجعة مسؤول النظام قبل استخدام نقطة البيع. افتح إدارة الورديات لعرضها.",
     "A cash drawer in your sales outlet is assigned to another cashier. Open shift management to see the blocking shift.": "درج في منفذ البيع مخصص لكاشير تاني. افتح إدارة الورديات لمعرفة الوردية المانعة.",
-    "An administrator must record a reason for resolving another cashier shift.": "لازم المسؤول يسجل سبب معالجة وردية كاشير تاني."
+    "An administrator must record a reason for resolving another cashier shift.": "لازم المسؤول يسجل سبب معالجة وردية كاشير تاني.",
+    "Cash payment cannot be completed because the cash rounding setting is incomplete. Ask an administrator to set the rounding denomination in POS settings.": "لا يمكن إتمام الدفع النقدي لأن إعداد التقريب النقدي غير مكتمل. يرجى ضبط فئة التقريب من إعدادات نقطة البيع.",
+    "Cash rounding state": "حالة التقريب النقدي",
+    "Enabled": "شغال",
+    "Choose Yes or No for cash rounding.": "اختار نعم أو لا للتقريب النقدي.",
+    "Enter a positive cash rounding denomination in whole units or cents.": "اكتب فئة تقريب نقدي موجبة بالجنيهات أو القروش.",
+    "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.": "اكتب فئة التقريب الموجبة المعتمدة بالجنيهات أو القروش. إعداد 5 جنيهات الحالي هيفضل شغال لحد ما يتغير.",
+    "The cash rounding enabled setting must be Yes or No.": "حالة التقريب النقدي لازم تكون نعم أو لا.",
+    "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.": "فعّل أو عطّل التقريب النقدي للمبيعات النقدية والمختلطة الجديدة. بيانات المبيعات القديمة مش هتتغير.",
+    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "لما يكون شغال، المبلغ النقدي المستحق بيتقرب لأقرب فئة معتمدة ومتظبطة."
 }

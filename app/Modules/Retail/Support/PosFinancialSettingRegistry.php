@@ -10,13 +10,14 @@ use InvalidArgumentException;
 /**
  * Owner-configurable POS financial values (DEC-066, DEC-065).
  *
- * POSF-02 is owner-approved at 5 EGP. The value remains append-only database
- * configuration so invalid or missing state fails closed instead of silently
- * changing settlement arithmetic.
+ * POSF-02 values remain append-only database configuration. Existing 5 EGP
+ * installations retain their behavior until an administrator changes it.
  */
 final class PosFinancialSettingRegistry
 {
     public const CASH_ROUNDING_DENOMINATION = 'pos.cash_rounding_denomination';
+
+    public const CASH_ROUNDING_ENABLED = 'pos.cash_rounding_enabled';
 
     public const DISCOUNT_APPROVAL_LIMIT = 'pos.discount_approval_limit_percent';
 
@@ -28,9 +29,13 @@ final class PosFinancialSettingRegistry
     public static function all(): array
     {
         return [
+            self::CASH_ROUNDING_ENABLED => [
+                'title' => 'Cash rounding',
+                'description' => 'Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.',
+            ],
             self::CASH_ROUNDING_DENOMINATION => [
                 'title' => 'Cash rounding denomination',
-                'description' => 'Cash tender payable amounts round to the nearest configured denomination (5 EGP); missing or invalid configuration blocks cash safely.',
+                'description' => 'When enabled, cash tender payable amounts round to the nearest approved configured denomination.',
             ],
             self::DISCOUNT_APPROVAL_LIMIT => [
                 'title' => 'Discount approval limit (percent)',
@@ -88,5 +93,22 @@ final class PosFinancialSettingRegistry
     public static function isConfigured(string $key): bool
     {
         return self::value($key) !== null;
+    }
+
+    public static function cashRoundingEnabled(): bool
+    {
+        $enabled = self::value(self::CASH_ROUNDING_ENABLED);
+        if ($enabled === '1') {
+            return true;
+        }
+        if ($enabled === '0') {
+            return false;
+        }
+        if ($enabled !== null) {
+            throw new InvalidArgumentException(__('The cash rounding enabled setting must be Yes or No.'));
+        }
+
+        // Existing installations with a denomination retain their settlement policy.
+        return self::isConfigured(self::CASH_ROUNDING_DENOMINATION);
     }
 }

@@ -236,7 +236,21 @@ final class PosCalculationService
      */
     public function cashRoundingAdjustment(string $total): string
     {
-        return $this->cashRoundingAdjustmentForDenomination($total, $this->cashRoundingDenomination());
+        try {
+            if (! PosFinancialSettingRegistry::cashRoundingEnabled()) {
+                return '0.00';
+            }
+
+            return $this->cashRoundingAdjustmentForDenomination($total, $this->cashRoundingDenomination());
+        } catch (InvalidArgumentException $exception) {
+            // The previously approved 5 EGP policy establishes that these
+            // totals need no adjustment. No substitute denomination is posted.
+            if (bccomp(bcmod($total, '5', self::MONEY_SCALE), '0', self::MONEY_SCALE) === 0) {
+                return '0.00';
+            }
+
+            throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage(), previous: $exception);
+        }
     }
 
     /**
@@ -249,7 +263,8 @@ final class PosCalculationService
      */
     public function cashRoundingAdjustmentForDenomination(string $total, string $denomination): string
     {
-        if (bccomp($denomination, '0', self::MONEY_SCALE) <= 0) {
+        if (bccomp($denomination, '0', self::RATE_SCALE) <= 0
+            || bccomp($denomination, DecimalMoney::round($denomination, self::MONEY_SCALE), self::RATE_SCALE) !== 0) {
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 
@@ -278,7 +293,7 @@ final class PosCalculationService
     public function cashRoundingIsUnresolved(string $total): bool
     {
         try {
-            $this->cashRoundingDenomination();
+            $this->cashRoundingAdjustment($total);
 
             return false;
         } catch (PosFinancialConfigurationException) {
@@ -290,12 +305,17 @@ final class PosCalculationService
     public function cashRoundingDenomination(): string
     {
         try {
+            $rawDenomination = PosFinancialSettingRegistry::value(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
+            if ($rawDenomination !== null && preg_match('/^\d+(?:\.\d{1,2}0*)?$/', $rawDenomination) !== 1) {
+                throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
+            }
             $denomination = PosFinancialSettingRegistry::numericValue(PosFinancialSettingRegistry::CASH_ROUNDING_DENOMINATION);
         } catch (InvalidArgumentException $exception) {
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage(), previous: $exception);
         }
 
-        if ($denomination === null || bccomp($denomination, '5', self::RATE_SCALE) !== 0) {
+        if ($denomination === null || bccomp($denomination, '0', self::RATE_SCALE) <= 0
+            || bccomp($denomination, DecimalMoney::round($denomination, self::MONEY_SCALE), self::RATE_SCALE) !== 0) {
             throw new PosFinancialConfigurationException($this->cashRoundingConfigurationMessage());
         }
 
@@ -304,7 +324,7 @@ final class PosCalculationService
 
     private function cashRoundingConfigurationMessage(): string
     {
-        return __('Cash payment is unavailable because POS cash rounding is missing or invalid. Set the approved denomination to 5 EGP in POS Financial Controls. Cash and mixed payments round to the nearest denomination.');
+        return __('Cash payment cannot be completed because the cash rounding setting is incomplete. Ask an administrator to set the rounding denomination in POS settings.');
     }
 
     /**
