@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Shift closing receipt') }} {{ $shift->closing_document_number }}</title>
+    <title>{{ __('Shift closing receipt') }} {{ $shift->closing_document_number ?: '#'.$shift->id }}</title>
     <style>
         @page { size: 80mm auto; margin: 4mm; }
         * { box-sizing: border-box; }
@@ -30,7 +30,8 @@
     <header class="center">
         <h1>{{ $shift->store?->company?->name_en ?: $shift->company_name_en_snapshot ?: 'TOY & JOY' }}</h1>
         <p>{{ $storeName ?: $shift->store_code_snapshot }}</p>
-        <p class="small">{{ __('Shift closing receipt') }} · {{ $shift->closing_document_number }}</p>
+        <p class="small">{{ __('Branch') }}: {{ $shift->branch?->name_en ?: $shift->branch_name_en_snapshot }} · {{ __('POS / cash drawer') }}: {{ $shift->cashDrawer?->code ?: $shift->cash_drawer_code_snapshot }}</p>
+        <p class="small">{{ __('Shift closing receipt') }} · {{ $shift->closing_document_number ?: '#'.$shift->id }}</p>
     </header>
 
     <div class="rule"></div>
@@ -38,14 +39,19 @@
     <div class="row"><span class="label">{{ __('Cash drawer') }}</span><span class="value">{{ $shift->cashDrawer?->code ?: $shift->cash_drawer_code_snapshot }} · {{ $drawerName }}</span></div>
     <div class="row"><span class="label">{{ __('Cashier') }}</span><span class="value">{{ $shift->cashier?->name ?: $shift->cashier?->username }}</span></div>
     <div class="row"><span class="label">{{ __('Opened at') }}</span><span class="value">{{ $shift->opened_at?->format('Y-m-d H:i') }}</span></div>
-    <div class="row"><span class="label">{{ __('Closed at') }}</span><span class="value">{{ $shift->closed_at?->format('Y-m-d H:i') }}</span></div>
+    <div class="row"><span class="label">{{ __('Close submitted') }}</span><span class="value">{{ $submission->submitted_at?->format('Y-m-d H:i') }}</span></div>
+    <div class="row"><span class="label">{{ __('Status') }}</span><span class="value">{{ $statusLabel }}</span></div>
+    <div class="row"><span class="label">{{ __('Opening float') }}</span><span class="value"><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></span></div>
 
     <div class="rule"></div>
-    <h2>{{ __('Actual totals') }}</h2>
-    <div class="row"><span class="label">{{ __('Cash') }}</span><span class="value"><x-money :amount="$submission->actual_cash" :currency="$shift->currency_code" /></span></div>
+    <h2>{{ __('System and counted totals') }}</h2>
+    <div class="row"><span class="label">{{ __('System expected cash') }}</span><span class="value"><x-money :amount="$submission->expected_cash" :currency="$shift->currency_code" /></span></div>
+    <div class="row"><span class="label">{{ __('Cash physically counted by cashier') }}</span><span class="value"><x-money :amount="$submission->actual_cash" :currency="$shift->currency_code" /></span></div>
     @foreach ($methodRows as $row)
         <div class="row"><span class="label">{{ $row['code'] }}</span><span class="value"><x-money :amount="$row['actual']" :currency="$shift->currency_code" /></span></div>
     @endforeach
+
+    <div class="row"><span class="label">{{ __('Overall total') }}</span><span class="value"><x-money :amount="$recordedTotal" :currency="$shift->currency_code" /></span></div>
 
     @if ($canViewExpected)
         <div class="rule"></div>
@@ -56,10 +62,15 @@
     @else
         <p class="notice">{{ __('Variance details are restricted to authorized reviewers.') }}</p>
     @endif
+    @if ($pendingApproval)
+        <p class="notice">{{ __('Physical cash was counted by the cashier; non-cash totals come from the system. Final approval is still pending.') }}</p>
+    @endif
 
     <div class="rule"></div>
-    <div class="row"><span class="label">{{ __('Approval') }}</span><span class="value">{{ $shift->variance_approved_at?->format('Y-m-d H:i') ?: __('Approved') }}</span></div>
-    <p class="center small">{{ __('Printed from the immutable closed-shift record.') }}</p>
+    @if (! $pendingApproval && $shift->varianceApprover)
+        <div class="row"><span class="label">{{ __('Approved by') }}</span><span class="value">{{ $shift->varianceApprover->name ?: $shift->varianceApprover->username }}</span></div>
+    @endif
+    <p class="center small">{{ $pendingApproval ? __('Awaiting final approval.') : __('Final approval recorded in the system.') }}</p>
     <button class="no-print" type="button" onclick="window.print()">{{ __('Print') }}</button>
 </body>
 </html>

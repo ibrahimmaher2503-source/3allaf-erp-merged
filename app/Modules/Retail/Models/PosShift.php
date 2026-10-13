@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Models;
 
 use App\Models\User;
-use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Enums\ShiftState;
-use App\Modules\Platform\Contracts\ImmutableSourceContract;
-use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,6 +69,12 @@ final class PosShift extends Model implements ImmutableSourceContract
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function varianceApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'variance_approved_by');
     }
 
     /** The current/settling canonical approval request; history stays in Platform. */

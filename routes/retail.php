@@ -811,7 +811,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('shifts_cash_movements.view'), 403);
 
-        $shift = PosShift::query()->active()
+        $shift = PosShift::query()->open()
             ->where('cashier_id', $user->id)
             ->with(['branch', 'store', 'cashDrawer', 'cashier', 'cashMovements.creator'])
             ->latest('opened_at')
@@ -821,14 +821,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->where('status', 'active')
             ->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))
             ->with(['branch', 'store'])->orderBy('code')->get();
-        $blockingShifts = PosShift::query()->active()
+        $blockingShifts = PosShift::query()->open()
             ->where('cashier_id', '!=', $user->id)
             ->whereIn('cash_drawer_id', $user->hasGlobalApplicationAccess()
                 ? CashDrawer::query()->select('id')
                 : CashDrawer::query()->visibleTo($user)->select('id'))
             ->with(['branch', 'store', 'cashDrawer', 'cashier'])
             ->latest('opened_at')->paginate(20);
-        $occupiedDrawerIds = PosShift::query()->active()->whereIn('cash_drawer_id', $drawers->pluck('id'))
+        $occupiedDrawerIds = PosShift::query()->open()->whereIn('cash_drawer_id', $drawers->pluck('id'))
             ->pluck('cash_drawer_id');
         $availableDrawers = $drawers->whereNotIn('id', $occupiedDrawerIds);
         $canManageOwnShift = $shift !== null && PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists();
@@ -840,6 +840,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->latest('closed_at')
             ->limit(10)
             ->get();
+
+        $pendingShifts = PosShift::query()->visibleTo($user)
+            ->where('cashier_id', $user->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+            ->with(['cashDrawer', 'closingSubmissions'])
+            ->latest('submitted_at')
+            ->limit(10)
+            ->get();
+        $pendingCloseCount = PosShift::query()
+            ->where('cashier_id', $user->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])
+            ->count();
 
         $openToken = (string) $request->session()->get('pos.shift.open_token', '');
         if ($openToken === '') {
@@ -870,8 +882,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'canManageOwnShift' => $canManageOwnShift,
             'blockingShifts' => $blockingShifts,
             'closedShifts' => $closedShifts,
+            'pendingShifts' => $pendingShifts,
+            'pendingCloseCount' => $pendingCloseCount,
             'drawers' => $availableDrawers,
-            'methods' => PaymentMethod::query()->where('status', 'active')->orderBy('code')->get()->reject->isCash()->values(),
             'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,
             'movementToken' => $movementToken,
@@ -965,27 +978,16 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $validated = $request->validate([
             'actual_cash' => ['required', 'numeric', 'gte:0'],
-            'actual_by_method' => ['nullable', 'array'],
-            'actual_by_method.*' => ['nullable', 'numeric', 'gte:0'],
             'notes' => [Rule::requiredIf((int) $shift->cashier_id !== $user->id), 'nullable', 'string', 'max:1000'],
             'idempotency_key' => ['required', 'uuid'],
         ]);
-
-        /** @var array<string, mixed> $submitted */
-        $submitted = $validated['actual_by_method'] ?? [];
-        $actualByMethod = [];
-        foreach ($submitted as $code => $value) {
-            if ($value !== null && $value !== '') {
-                $actualByMethod[(string) $code] = (string) $value;
-            }
-        }
 
         try {
             $action->execute(
                 $user,
                 $shift,
                 (string) $validated['actual_cash'],
-                $actualByMethod,
+                [],
                 'SHIFT-CLOSE:'.$validated['idempotency_key'],
                 $validated['notes'] ?? null,
             );
@@ -997,7 +999,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         // or variance figure (docs/32 §15 redaction).
         $request->session()->forget('pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count'));
 
-        return redirect()->route('pos.shift')->with('success', __('Count submitted for review.'));
+        return redirect()->route('pos.shift')->with('success', __('Count submitted for review.'))->with('shift_close_print_shift_id', $shift->getKey());
     })->middleware('can:shifts_cash_movements.submit')->name('pos.shift.blind-close');
 
     Route::get('pos/shift-variance', function (Request $request) {
@@ -1040,13 +1042,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $shift = PosShift::query()
             ->visibleTo($user)
             ->whereKey($routeShift->getKey())
-            ->where('status', ShiftState::Closed->value)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value, ShiftState::Closed->value])
             ->with([
                 'branch',
                 'store.company',
                 'cashDrawer',
                 'cashier',
-                'closingSubmissions',
+                'closingSubmissions.submitter',
+                'varianceApprover',
                 'cashMovements',
                 'sales' => static fn ($query) => $query->approved()->with('payments.paymentMethod'),
             ])
@@ -1055,7 +1058,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $submission = $shift->closingSubmissions->sortByDesc('attempt')->first();
         abort_unless($submission !== null, 409, __('This closed shift has no immutable closing submission.'));
 
-        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve');
+        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve') || (int) $shift->getAttribute('cashier_id') === $user->id;
+        abort_unless($viewerCanSeeExpected, 403);
+        $pendingApproval = ! $shift->status->isTerminal();
         $event = $format === 'thermal' ? 'shift_thermal_printed' : 'shift_a4_printed';
         $alreadyPrinted = AuditLog::query()
             ->where('event', $event)
@@ -1087,6 +1092,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         )));
         sort($methodCodes);
 
+        $expectedTotal = (string) $submission->expected_cash;
+        $recordedTotal = (string) $submission->actual_cash;
+        foreach ($methodCodes as $methodCode) {
+            $expectedTotal = bcadd($expectedTotal, (string) ($expectedByMethod[$methodCode] ?? '0.00'), 2);
+            $recordedTotal = bcadd($recordedTotal, (string) ($actualByMethod[$methodCode] ?? '0.00'), 2);
+        }
+
         $salesTotal = $shift->sales->reduce(
             static fn (string $total, Sale $sale): string => bcadd($total, (string) $sale->payable_total, 2),
             '0.00',
@@ -1096,6 +1108,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'shift' => $shift,
             'submission' => $submission,
             'canViewExpected' => $viewerCanSeeExpected,
+            'pendingApproval' => $pendingApproval,
+            'statusLabel' => $pendingApproval ? __('Pending approval') : __('Approved'),
+            'expectedTotal' => $expectedTotal,
+            'recordedTotal' => $recordedTotal,
             'methodRows' => collect($methodCodes)->map(static fn (string $code): array => [
                 'code' => $code,
                 'expected' => $expectedByMethod[$code] ?? '0.00',

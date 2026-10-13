@@ -26,16 +26,13 @@ final class PosContextResolver
             ->first();
 
         if ($shift === null) {
-            $activeShift = PosShift::query()->active()->where('cashier_id', $cashier->id)->first();
-            if ($activeShift !== null && ! $activeShift->status->acceptsActivity()) {
-                return new PosContext(null, null, null, null, __('Your current shift is awaiting closing approval. A new shift cannot be opened until it is closed.'));
-            }
-            if ($activeShift !== null) {
+            $openShift = PosShift::query()->open()->where('cashier_id', $cashier->id)->first();
+            if ($openShift !== null) {
                 return new PosContext(null, null, null, null, __('Your active shift needs administrator review before POS can be used. Open shift management to see it.'));
             }
 
             $drawerIds = CashDrawer::query()->visibleTo($cashier)->pluck('id');
-            if (PosShift::query()->active()->whereIn('cash_drawer_id', $drawerIds)->exists()) {
+            if (PosShift::query()->open()->whereIn('cash_drawer_id', $drawerIds)->exists()) {
                 return new PosContext(null, null, null, null, __('A cash drawer in your sales outlet is assigned to another cashier. Open shift management to see the blocking shift.'));
             }
 

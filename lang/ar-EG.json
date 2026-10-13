@@ -6502,5 +6502,14 @@
     "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.": "اكتب فئة التقريب الموجبة المعتمدة بالجنيهات أو القروش. إعداد 5 جنيهات الحالي هيفضل شغال لحد ما يتغير.",
     "The cash rounding enabled setting must be Yes or No.": "حالة التقريب النقدي لازم تكون نعم أو لا.",
     "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.": "فعّل أو عطّل التقريب النقدي للمبيعات النقدية والمختلطة الجديدة. بيانات المبيعات القديمة مش هتتغير.",
-    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "لما يكون شغال، المبلغ النقدي المستحق بيتقرب لأقرب فئة معتمدة ومتظبطة."
+    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "لما يكون شغال، المبلغ النقدي المستحق بيتقرب لأقرب فئة معتمدة ومتظبطة.",
+"Print Shift Close Sheet": "طباعة كشف إغلاق الوردية",
+"Pending close review": "مراجعة إغلاق معلقة",
+"Submitted shifts are operationally closed. You may open the next shift while management reviews them.": "الورديات المرسلة مغلقة تشغيليًا. يمكنك فتح الوردية التالية أثناء مراجعة الإدارة.",
+"Only the physical cash count may be entered. Electronic totals are calculated from recorded shift transactions.": "يُسمح بإدخال العد النقدي الفعلي فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة.",
+"Count the physical cash only. Electronic totals are calculated from recorded shift transactions, then reviewed in the canonical approval inbox.": "اعدّ النقد الفعلي فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة ثم تُراجع في صندوق الاعتمادات المعتمد.",
+"Count the physical cash in the drawer and enter only that amount. Electronic totals are calculated from recorded shift transactions.": "اعدّ النقد الفعلي في الدرج وأدخل هذا المبلغ فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة.",
+"You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.": "لديك ورديتان سابقتان في انتظار الاعتماد. احسم إغلاقًا معلقًا واحدًا على الأقل قبل فتح وردية أخرى.",
+"Submitted": "تم الإرسال",
+"In review": "قيد المراجعة"
 }

@@ -1,3 +1,9 @@
+# Current Task — Shift close receipt and pending allowance (2026-10-13)
+
+Implemented the scoped shift workflow changes from `origin/main` `7972d963`: cash-only blind close, canonical system-derived non-cash totals, pre-approval/final print sheets, operational release on submission, one open shift limit, two-pending cap, and explicit pending-open guidance. No schema change or production action.
+
+## Preserved previous task
+
 # Current Task — Audit 500 fix (2026-10-13)
 
 Issue #9 root cause is stale root-owned Livewire island source files in shared runtime storage. The audit page now avoids request-time island compilation, and the deployment template clears only generated Livewire/Blaze caches before runtime. Focused audit page/export checks passed on the dedicated branch; production was inspected read-only and not modified.
