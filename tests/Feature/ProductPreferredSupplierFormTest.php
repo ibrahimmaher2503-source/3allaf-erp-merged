@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
@@ -71,6 +72,63 @@ final class ProductPreferredSupplierFormTest extends TestCase
         app()->setLocale('en');
 
         self::assertSame($beforeProductCount, Product::query()->count());
+    }
+
+    public function test_international_barcode_reports_invalid_supplier_code_on_final_save(): void
+    {
+        Company::factory()->create();
+        $category = Category::factory()->create();
+        $supplier = Supplier::query()->create([
+            'code' => 'QA-M10-A',
+            'name_ar' => 'مورد اختبار',
+            'name_en' => 'QA supplier',
+            'status' => 'active',
+        ]);
+        $actor = $this->createCatalogEditor();
+        $beforeProductCount = Product::query()->count();
+        $this->actingAs($actor);
+
+        Livewire::test('catalog::product-form')
+            ->set('productForm.barcode_registration_type', 'international')
+            ->set('productForm.name_ar', 'اختبار المورد')
+            ->set('productForm.name_en', 'International supplier validation')
+            ->set('productForm.model_number', 'QA-SUPPLIER-INT-7')
+            ->set('productForm.category_id', (string) $category->id)
+            ->set('productForm.preferred_supplier_id', (string) $supplier->id)
+            ->set('productForm.sale_price', '25.00')
+            ->set('supplierBarcode', '6291234500005')
+            ->call('save')
+            ->assertHasErrors('productForm.preferred_supplier_id')
+            ->assertSee('The selected supplier code must be numeric with at least four digits or use the canonical SUP-#### format before a local product code can be generated.');
+
+        self::assertSame($beforeProductCount, Product::query()->count());
+    }
+
+    public function test_noncanonical_supplier_can_remain_on_an_incomplete_draft_without_generating_a_code(): void
+    {
+        Company::factory()->create();
+        $category = Category::factory()->create();
+        $supplier = Supplier::query()->create([
+            'code' => 'QA-M10-A',
+            'name_ar' => 'مورد اختبار',
+            'name_en' => 'QA supplier',
+            'status' => 'active',
+        ]);
+        $this->actingAs($this->createCatalogEditor());
+
+        Livewire::test('catalog::product-form')
+            ->set('productForm.barcode_registration_type', 'international')
+            ->set('productForm.name_ar', 'مسودة المورد')
+            ->set('productForm.name_en', 'Supplier draft')
+            ->set('productForm.model_number', 'QA-SUPPLIER-DRAFT-7')
+            ->set('productForm.category_id', (string) $category->id)
+            ->set('productForm.preferred_supplier_id', (string) $supplier->id)
+            ->call('saveDraft')
+            ->assertHasNoErrors();
+
+        $draft = Product::query()->where('model_number', 'QA-SUPPLIER-DRAFT-7')->firstOrFail();
+        self::assertNull($draft->item_code);
+        self::assertSame('inactive', $draft->status);
     }
 
     public function test_international_barcode_validation_reports_duplicate_format_and_check_digit_reasons(): void
