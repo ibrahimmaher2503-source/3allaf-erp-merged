@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Throwable;
 use WeakMap;
 
@@ -22,8 +24,22 @@ final class UserSafeError
             self::$reported[$exception] = true;
         }
 
-        return $exception instanceof PosFinancialConfigurationException
-            ? $exception->getMessage()
-            : __('Unable to complete the request. Please review the data and try again.');
+        if ($exception instanceof ValidationException) {
+            $message = collect($exception->errors())->flatten()->first();
+
+            if (is_string($message) && trim($message) !== '') {
+                return $message;
+            }
+        }
+
+        if ($exception instanceof PosFinancialConfigurationException || $exception instanceof InvalidArgumentException) {
+            $message = trim($exception->getMessage());
+
+            if ($message !== '') {
+                return $message;
+            }
+        }
+
+        return __('Unable to complete the request. Please review the data and try again.');
     }
 }
