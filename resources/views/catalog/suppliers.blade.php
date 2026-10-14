@@ -16,6 +16,7 @@ use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\AuditLog;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Support\Hierarchy\GroupHierarchy;
@@ -75,6 +76,7 @@ new #[Title('Supplier Masters')] class extends Component
         'tax_number' => '',
         'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
         'payment_terms' => '',
+        'preferred_payment_method_id' => '',
         'settlement_method' => '',
         'settlement_other_description' => '',
         'address' => '',
@@ -174,6 +176,7 @@ new #[Title('Supplier Masters')] class extends Component
             'tax_number' => '',
             'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => '',
+            'preferred_payment_method_id' => '',
             'settlement_method' => '',
             'settlement_other_description' => '',
             'address' => '',
@@ -201,6 +204,7 @@ new #[Title('Supplier Masters')] class extends Component
             'tax_number' => $supplier->tax_number ?? '',
             'country_code' => $supplier->country_code ?? SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => $supplier->payment_terms ?? '',
+            'preferred_payment_method_id' => $supplier->preferred_payment_method_id ?? '',
             'settlement_method' => $supplier->settlement_method ?? '',
             'settlement_other_description' => $supplier->settlement_other_description ?? '',
             'address' => $supplier->address ?? '',
@@ -259,6 +263,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.tax_number' => ['nullable', 'string', 'max:50'],
             'supplierForm.country_code' => ['required', 'string', 'size:2', 'regex:/^[A-Z]{2}$/'],
             'supplierForm.payment_terms' => ['nullable', 'string', 'max:1000'],
+            'supplierForm.preferred_payment_method_id' => ['nullable', 'integer', Rule::exists('payment_methods', 'id')->where('status', 'active')],
             'supplierForm.settlement_method' => ['required', Rule::in(SupplierSettlementMethod::VALUES)],
             'supplierForm.settlement_other_description' => ['nullable', 'required_if:supplierForm.settlement_method,other', 'string', 'max:255'],
             'supplierForm.address' => ['nullable', 'string', 'max:1000'],
@@ -271,6 +276,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.status' => str_starts_with(app()->getLocale(), 'ar') ? 'حالة التشغيل' : __('Operational status'),
             'supplierForm.country_code' => str_starts_with(app()->getLocale(), 'ar') ? 'دولة المورد' : __('Supplier country'),
             'supplierForm.settlement_method' => str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method'),
+            'supplierForm.preferred_payment_method_id' => str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method'),
         ])['supplierForm'];
 
         $duplicateWarnings = $this->duplicateSupplierWarnings($validated);
@@ -558,9 +564,11 @@ new #[Title('Supplier Masters')] class extends Component
         $suppliers = null;
         $viewingSupplier = null;
         $availableProducts = collect();
+        $paymentMethods = collect();
 
         if ($isSupplierMasters) {
             $query = Supplier::query()->with(['supplierGroup', 'preferredPaymentMethod'])->withCount('productSuppliers');
+            $paymentMethods = PaymentMethod::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
             $term = trim($this->search);
 
             if ($term !== '') {
@@ -611,6 +619,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierHistory' => $supplierHistory ?? collect(),
             'productNames' => $productNames ?? collect(),
             'settlementMethods' => SupplierSettlementMethod::options(),
+            'paymentMethods' => $paymentMethods,
             'supplierGroups' => $supplierGroups,
             'supplierGroupParents' => $supplierGroupParents,
             'canCreate' => Gate::allows('suppliers.create'),
@@ -926,6 +935,12 @@ new #[Title('Supplier Masters')] class extends Component
                     @if (($supplierForm['settlement_method'] ?? '') === 'other')
                         <flux:input wire:model="supplierForm.settlement_other_description" :label="__('Other settlement description')" required />
                     @endif
+                    <flux:select wire:model="supplierForm.preferred_payment_method_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method')">
+                        <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون طريقة دفع مفضلة' : __('No preferred payment method') }}</option>
+                        @foreach ($paymentMethods as $paymentMethod)
+                            <option value="{{ $paymentMethod->id }}">{{ str_starts_with(app()->getLocale(), 'ar') ? $paymentMethod->name_ar : $paymentMethod->name_en }}</option>
+                        @endforeach
+                    </flux:select>
                 </div>
 
                 <flux:textarea
@@ -1043,7 +1058,11 @@ new #[Title('Supplier Masters')] class extends Component
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->supplierGroup?->name_ar ?: __('No supplier group') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">
-                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة' : __('Preferred payment method') }}</dt>
+                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب التسوية المالية' : __('Supplier Settlement Method') }}</dt>
+                            <dd class="mt-1 text-sm font-medium">{{ $settlementMethods[$viewingSupplier->settlement_method] ?? __('Not configured') }}{{ $viewingSupplier->settlement_method === 'other' && $viewingSupplier->settlement_other_description ? ' — '.$viewingSupplier->settlement_other_description : '' }}</dd>
+                        </div>
+                        <div class="catalog-detail-field sm:col-span-2">
+                            <dt class="catalog-detail-label">{{ str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method') }}</dt>
                             <dd class="mt-1 text-sm font-medium">{{ $viewingSupplier->preferredPaymentMethod ? (str_starts_with(app()->getLocale(), 'ar') ? $viewingSupplier->preferredPaymentMethod->name_ar : $viewingSupplier->preferredPaymentMethod->name_en) : __('Not configured') }}</dd>
                         </div>
                         <div class="catalog-detail-field sm:col-span-2">

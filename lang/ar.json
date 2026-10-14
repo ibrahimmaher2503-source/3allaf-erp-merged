@@ -5347,6 +5347,7 @@
     ,"Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.": "أنشئ موردًا نشطًا واحدًا على الأقل وحدد طريقة التسوية المالية الخاصة به. تظل شروط الدفع ومراجع أصناف المورد اختيارية."
     ,"Create an active category before adding product cards.": "أنشئ تصنيفًا نشطًا قبل إضافة كروت الأصناف."
     ,"Select an active supplier financial-settlement method.": "حدد طريقة تسوية مالية نشطة للمورد."
+    ,"Select an active supplier preferred payment method.": "حدد طريقة دفع مفضلة نشطة للمورد."
     ,"Financial-settlement method": "طريقة التسوية المالية"
     ,"Build reusable bilingual product filters for explicit standard-product variation families.": "أنشئ فلاتر منتجات ثنائية اللغة قابلة لإعادة الاستخدام لعائلات متغيرات الأصناف المحددة."
     ,"Supplier Settlement Method": "أسلوب سداد مستحقات المورد"
