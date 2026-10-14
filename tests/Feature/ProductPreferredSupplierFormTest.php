@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Catalog\Actions\SaveProductSupplierAction;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -129,6 +133,26 @@ final class ProductPreferredSupplierFormTest extends TestCase
         $draft = Product::query()->where('model_number', 'QA-SUPPLIER-DRAFT-7')->firstOrFail();
         self::assertNull($draft->item_code);
         self::assertSame('inactive', $draft->status);
+    }
+
+    public function test_preferred_supplier_switch_records_before_and_after_audit_events(): void
+    {
+        Company::factory()->create();
+        $product = Product::factory()->create();
+        $first = Supplier::query()->create(['code' => 'QA-HISTORY-A', 'name_ar' => 'مورد أ', 'name_en' => 'History supplier A', 'status' => 'active']);
+        $second = Supplier::query()->create(['code' => 'QA-HISTORY-B', 'name_ar' => 'مورد ب', 'name_en' => 'History supplier B', 'status' => 'active']);
+        $actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
+        Gate::before(static fn (): bool => true);
+        $this->actingAs($actor);
+
+        $action = app(SaveProductSupplierAction::class);
+        $action->execute(['product_id' => $product->id, 'supplier_id' => $first->id, 'is_preferred' => true]);
+        $action->execute(['product_id' => $product->id, 'supplier_id' => $second->id, 'is_preferred' => true]);
+
+        self::assertTrue(ProductSupplier::query()->where('product_id', $product->id)->where('supplier_id', $second->id)->where('is_preferred', true)->exists());
+        self::assertFalse(ProductSupplier::query()->where('product_id', $product->id)->where('supplier_id', $first->id)->where('is_preferred', true)->exists());
+        self::assertDatabaseHas('audit_logs', ['event' => 'change_product_supplier_preference', 'source_id' => (string) ProductSupplier::query()->where('product_id', $product->id)->where('supplier_id', $first->id)->value('id')]);
+        self::assertSame(3, AuditLog::query()->where('event', 'change_product_supplier_preference')->count());
     }
 
     public function test_international_barcode_validation_reports_duplicate_format_and_check_digit_reasons(): void

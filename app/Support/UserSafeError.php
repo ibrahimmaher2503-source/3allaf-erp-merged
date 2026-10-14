@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -32,7 +33,9 @@ final class UserSafeError
             }
         }
 
-        if ($exception instanceof PosFinancialConfigurationException || $exception instanceof InvalidArgumentException) {
+        if ($exception instanceof PosFinancialConfigurationException
+            || $exception instanceof StaleCatalogRecordException
+            || $exception instanceof InvalidArgumentException) {
             $message = trim($exception->getMessage());
 
             if ($message !== '') {

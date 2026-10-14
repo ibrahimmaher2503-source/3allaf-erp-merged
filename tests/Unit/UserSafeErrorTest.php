@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Support\UserSafeError;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -29,6 +30,14 @@ final class UserSafeErrorTest extends TestCase
         self::assertSame(
             'Correct linked distribution transfers before reversing this invoice.',
             UserSafeError::message(new InvalidArgumentException('Correct linked distribution transfers before reversing this invoice.')),
+        );
+    }
+
+    public function test_supplier_stale_record_messages_are_visible_to_the_user(): void
+    {
+        self::assertSame(
+            'This supplier master record changed in another session. Reload it before saving.',
+            UserSafeError::message(new StaleCatalogRecordException('This supplier master record changed in another session. Reload it before saving.')),
         );
     }
 
