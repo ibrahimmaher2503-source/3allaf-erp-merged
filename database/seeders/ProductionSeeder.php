@@ -313,7 +313,12 @@ final class ProductionSeeder extends Seeder
         }
         TaxSetting::query()->firstOrCreate(['company_id' => $company->id, 'code' => 'ZERO'], [
             'name_ar' => 'ضريبة صفرية', 'name_en' => 'Zero Rated', 'rate' => '0.00',
-            'treatment' => 'zero_rated', 'is_default' => true, 'is_tax_inclusive' => true, 'status' => 'active',
+            'treatment' => 'zero_rated', 'is_default' => false, 'is_tax_inclusive' => true, 'status' => 'active',
+        ]);
+        TaxSetting::query()->firstOrCreate(['company_id' => $company->id, 'code' => 'EG-VAT-14'], [
+            'name_ar' => 'ضريبة القيمة المضافة المصرية', 'name_en' => 'Egypt VAT', 'rate' => '14.00',
+            'treatment' => 'standard', 'is_default' => true, 'is_tax_inclusive' => false, 'status' => 'active',
+            'policy_notes' => 'Configurable Egypt default; confirm applicable exemptions and inclusive pricing per product.',
         ]);
         foreach ([
             'retail_sale' => 'SAL-', 'purchase_order' => 'PO-', 'purchase_invoice' => 'PIN-',

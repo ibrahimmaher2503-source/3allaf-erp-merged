@@ -34,6 +34,7 @@ class Supplier extends Model
         'email',
         'phone',
         'tax_number',
+        'country_code',
         'payment_terms',
         'preferred_payment_method_id',
         'settlement_method',
