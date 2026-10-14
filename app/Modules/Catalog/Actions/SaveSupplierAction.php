@@ -6,6 +6,7 @@ use App\Modules\Catalog\Exceptions\StaleCatalogRecordException;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
+use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\Auth;
@@ -73,6 +74,16 @@ class SaveSupplierAction
                 throw new InvalidArgumentException(__('Describe the supplier settlement method when Other is selected.'));
             }
 
+            $countryCode = SupplierTaxIdentity::normalizeCountry($data['country_code'] ?? null);
+            $taxNumber = SupplierTaxIdentity::normalizeTaxNumber($data['tax_number'] ?? null, $countryCode);
+            $taxQuery = Supplier::query()->where('tax_number', $taxNumber);
+            if ($supplier !== null) {
+                $taxQuery->whereKeyNot($supplier->id);
+            }
+            if ($taxNumber !== null && $taxQuery->exists()) {
+                throw new InvalidArgumentException(__('This supplier Tax ID is already used by another supplier.'));
+            }
+
             $attributes = [
                 'code' => strtoupper(trim((string) $data['code'])),
                 'barcode_prefix' => $barcodePrefix !== '' ? $barcodePrefix : null,
@@ -81,7 +92,8 @@ class SaveSupplierAction
                 'contact_name' => ! empty($data['contact_name']) ? trim((string) $data['contact_name']) : null,
                 'email' => ! empty($data['email']) ? trim((string) $data['email']) : null,
                 'phone' => filled($data['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['phone']) : null,
-                'tax_number' => ! empty($data['tax_number']) ? trim((string) $data['tax_number']) : null,
+                'tax_number' => $taxNumber,
+                'country_code' => $countryCode,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
                 'settlement_method' => $settlementMethod,
                 'settlement_other_description' => $settlementMethod === 'other' ? $settlementOther : null,
@@ -98,7 +110,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -111,7 +123,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();

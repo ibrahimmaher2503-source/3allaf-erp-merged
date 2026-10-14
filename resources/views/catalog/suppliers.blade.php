@@ -16,6 +16,7 @@ use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
+use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Support\Hierarchy\GroupHierarchy;
 use App\Support\Bulk\WithBulkSelection;
 use Flux\Flux;
@@ -71,6 +72,7 @@ new #[Title('Supplier Masters')] class extends Component
         'email' => '',
         'phone' => '',
         'tax_number' => '',
+        'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
         'payment_terms' => '',
         'settlement_method' => '',
         'settlement_other_description' => '',
@@ -169,6 +171,7 @@ new #[Title('Supplier Masters')] class extends Component
             'email' => '',
             'phone' => '',
             'tax_number' => '',
+            'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => '',
             'settlement_method' => '',
             'settlement_other_description' => '',
@@ -195,6 +198,7 @@ new #[Title('Supplier Masters')] class extends Component
             'email' => $supplier->email ?? '',
             'phone' => $supplier->phone ?? '',
             'tax_number' => $supplier->tax_number ?? '',
+            'country_code' => $supplier->country_code ?? SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => $supplier->payment_terms ?? '',
             'settlement_method' => $supplier->settlement_method ?? '',
             'settlement_other_description' => $supplier->settlement_other_description ?? '',
@@ -229,6 +233,14 @@ new #[Title('Supplier Masters')] class extends Component
     {
         Gate::authorize($this->editingSupplierId ? 'suppliers.edit' : 'suppliers.create');
         $this->supplierForm['barcode_prefix'] = strtoupper(trim((string) ($this->supplierForm['barcode_prefix'] ?? '')));
+        try {
+            $this->supplierForm['country_code'] = SupplierTaxIdentity::normalizeCountry($this->supplierForm['country_code'] ?? null);
+            $this->supplierForm['tax_number'] = SupplierTaxIdentity::normalizeTaxNumber($this->supplierForm['tax_number'] ?? null, $this->supplierForm['country_code']);
+        } catch (\InvalidArgumentException $exception) {
+            $this->addError('supplierForm.tax_number', $exception->getMessage());
+
+            return;
+        }
         $validated = $this->validate([
             'supplierForm.code' => [
                 'required',
@@ -244,6 +256,7 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.email' => ['nullable', 'email', 'max:255'],
             'supplierForm.phone' => ['nullable', 'string', 'max:50', PhoneNormalizer::validationRule()],
             'supplierForm.tax_number' => ['nullable', 'string', 'max:50'],
+            'supplierForm.country_code' => ['required', 'string', 'size:2', 'regex:/^[A-Z]{2}$/'],
             'supplierForm.payment_terms' => ['nullable', 'string', 'max:1000'],
             'supplierForm.settlement_method' => ['required', Rule::in(SupplierSettlementMethod::VALUES)],
             'supplierForm.settlement_other_description' => ['nullable', 'required_if:supplierForm.settlement_method,other', 'string', 'max:255'],
@@ -255,7 +268,14 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.name_ar' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالعربية' : __('Arabic name'),
             'supplierForm.name_en' => str_starts_with(app()->getLocale(), 'ar') ? 'اسم المورد بالإنجليزية' : __('English name'),
             'supplierForm.status' => str_starts_with(app()->getLocale(), 'ar') ? 'حالة التشغيل' : __('Operational status'),
+            'supplierForm.country_code' => str_starts_with(app()->getLocale(), 'ar') ? 'دولة المورد' : __('Supplier country'),
+            'supplierForm.settlement_method' => str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method'),
         ])['supplierForm'];
+
+        $duplicateWarnings = $this->duplicateSupplierWarnings($validated);
+        foreach ($duplicateWarnings as $warning) {
+            Flux::toast(variant: 'warning', text: $warning);
+        }
 
         try {
             $action->execute(
@@ -273,6 +293,25 @@ new #[Title('Supplier Masters')] class extends Component
             $this->addError('supplierForm', \App\Support\UserSafeError::message($exception));
             Flux::toast(variant: 'danger', text: \App\Support\UserSafeError::message($exception));
         }
+    }
+
+    /** @param array<string, mixed> $data @return list<string> */
+    private function duplicateSupplierWarnings(array $data): array
+    {
+        $query = Supplier::query()->when($this->editingSupplierId !== null, fn ($builder) => $builder->whereKeyNot($this->editingSupplierId));
+        $warnings = [];
+        $name = trim((string) ($data['name_en'] ?? ''));
+        $arabicName = trim((string) ($data['name_ar'] ?? ''));
+        if (($name !== '' && $query->clone()->whereRaw('LOWER(name_en) = ?', [mb_strtolower($name)])->exists())
+            || ($arabicName !== '' && $query->clone()->where('name_ar', $arabicName)->exists())) {
+            $warnings[] = __('Another supplier already uses this name. Review the existing record before saving.');
+        }
+        $email = trim((string) ($data['email'] ?? ''));
+        if ($email !== '' && $query->clone()->whereRaw('LOWER(email) = ?', [mb_strtolower($email)])->exists()) {
+            $warnings[] = __('Another supplier already uses this email. Review the existing record before saving.');
+        }
+
+        return $warnings;
     }
 
     public function toggleSupplierStatus(int $id, ToggleSupplierStatusAction $action): void
@@ -863,6 +902,7 @@ new #[Title('Supplier Masters')] class extends Component
                         :label="str_starts_with(app()->getLocale(), 'ar') ? 'الرقم الضريبي' : __('Tax registration number')"
                         placeholder="123-456-789"
                     />
+                    <flux:input wire:model="supplierForm.country_code" :label="__('Supplier country code')" maxlength="2" placeholder="EG" required />
                     <flux:select wire:model.live="supplierForm.settlement_method" :label="str_starts_with(app()->getLocale(), 'ar') ? 'أسلوب سداد مستحقات المورد' : __('Supplier Settlement Method')" required>
                         <option value="">{{ __('Select settlement method') }}</option>
                         @foreach ($settlementMethods as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
