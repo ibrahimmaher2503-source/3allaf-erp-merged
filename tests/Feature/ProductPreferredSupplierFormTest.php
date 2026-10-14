@@ -16,6 +16,7 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;

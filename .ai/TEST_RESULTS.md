@@ -686,3 +686,9 @@ Focused `UserSafeErrorTest`: PASS 3 tests / 3 assertions on an isolated socket-o
 - Focused tests requested: `ProductCardMetadataFormTest::test_stale_product_edit_shows_a_clear_reason_and_preserves_the_winning_record` and `ProductPreferredSupplierFormTest::test_preferred_supplier_switch_records_before_and_after_audit_events` could not execute. Direct PHPUnit stopped on unavailable local MySQL credentials; the established `scripts/qa/mariadb-run.sh focused` harness stopped before MariaDB provisioning because Playwright is unavailable in this worktree.
 - Fast QA: not run; no shared business calculation logic changed.
 - No migration, production database operation, merge, deployment, or issue closure.
+## 2026-10-14 — Supplier batch validation completion
+
+- Isolated MariaDB focused run: stale-edit regression PASS; preferred-supplier audit test initially exposed a missing test import.
+- Test-only correction: imported `Illuminate\Support\Facades\Gate`.
+- Affected rerun: preferred-supplier audit test PASS, 1 test / 4 assertions.
+- PHP syntax: PASS. Pint: PASS. Browser dependency was skipped with `QA_CHROMIUM=/bin/true`; no Fast QA, production operation, merge, deployment, or issue closure.
