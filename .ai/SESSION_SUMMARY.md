@@ -1915,3 +1915,7 @@ For #9, read only the production Laravel log and cache ownership. All three supp
 - **Task:** Added a bounded application default for `AUDIT_EXPORT_MAX_ROWS` on `hotfix/audit-export-default-limit`; explicit environment/config overrides remain authoritative.
 - **Verification actually run:** Pint passed. Focused `Module1AuditPresentationTest` passed 9 tests / 47 assertions on disposable socket-only MariaDB, covering unset-environment CSV export and explicit configured-limit enforcement.
 - **Boundaries:** No production deployment, migration, merge, or unrelated module changes.
+
+## 2026-10-14 — GitHub issues #24/#25/#28 actionable-error batch
+
+Selected the coherent open-issue batch #24 (customer return approval/rejection), #25 (POS line-discount checkout), and #28 (purchase-invoice reversal). Current main already had domain-specific validation in each action, but `UserSafeError` masked `ValidationException` and `InvalidArgumentException` as a generic message. Updated the shared helper to expose the first validation message and non-empty domain argument messages while preserving the generic fallback for unexpected exceptions. Added focused `UserSafeErrorTest` coverage. Isolated MariaDB focused test passed 3/3; PHP syntax and Pint passed; one Fast QA gate passed 8/8 (`.ai/qa/runs/20261014T045151Z-27196-fast`). No migration, production access, deployment, merge or issue closure. Dedicated branch `issues/batch-24-25-28` is ready for commit and push.
