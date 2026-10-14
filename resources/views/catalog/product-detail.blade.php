@@ -2,7 +2,9 @@
 
 use App\Modules\Catalog\Actions\RemoveProductAction;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Services\ProductDependencyService;
+use App\Modules\Platform\Models\AuditLog;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -37,11 +39,27 @@ new #[Title('Product Details')] class extends Component {
     public function render()
     {
         $canRemove = Gate::allows('products_categories_brands.logical_delete');
+        $supplierHistory = collect();
+        if (Gate::allows('audit_logs.view')) {
+            $supplierHistory = AuditLog::query()
+                ->where('source_type', ProductSupplier::class)
+                ->whereIn('source_id', $this->product->productSuppliers->pluck('id'))
+                ->whereIn('event', ['change_product_supplier_preference', 'update_product_supplier', 'create_product_supplier'])
+                ->latest('id')
+                ->limit(20)
+                ->get();
+        }
+        $supplierNames = $this->product->productSuppliers->mapWithKeys(fn (ProductSupplier $relation): array => [
+            (int) $relation->supplier_id => \App\Support\HumanName::name($relation->supplier, fallback: $relation->supplier?->code ?: '#'.$relation->supplier_id),
+        ]);
+
         return view('catalog.product-detail', [
             'canEdit' => Gate::allows('products_categories_brands.edit'),
             'canViewCost' => auth()->user()?->hasPermission('products_categories_brands.cost_view') ?? false,
             'canRemove' => $canRemove,
             'removalReport' => $canRemove ? app(ProductDependencyService::class)->inspect($this->product) : null,
+            'supplierHistory' => $supplierHistory,
+            'supplierNames' => $supplierNames,
         ]);
     }
 }; ?>
@@ -136,6 +154,24 @@ new #[Title('Product Details')] class extends Component {
                         <x-state.empty :title="__('No supplier linked')" :description="__('Supplier preferences and product history can be managed from the Suppliers menu.')" icon="truck"><x-slot:action><flux:button href="{{ route('catalog.suppliers') }}" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open supplier masters') }}</flux:button></x-slot:action></x-state.empty>
                     @endforelse
                 </div>
+                @can('audit_logs.view')
+                    <div class="border-t border-border pt-4" data-supplier-preference-history>
+                        <flux:heading size="sm">{{ __('Supplier preference history') }}</flux:heading>
+                        <div class="mt-3 space-y-2">
+                            @forelse ($supplierHistory as $history)
+                                <div class="rounded-lg border border-border px-3 py-2 text-xs">
+                                    <div class="flex flex-wrap justify-between gap-2">
+                                        <span class="font-medium">{{ __($history->event === 'change_product_supplier_preference' ? 'Preferred supplier changed' : 'Supplier link updated') }}</span>
+                                        <span class="text-text-muted">{{ $history->created_at?->format('Y-m-d H:i') }} · {{ $history->actor_name ?: __('System') }}</span>
+                                    </div>
+                                    <div class="mt-1 text-text-muted">{{ __('Before') }}: {{ $supplierNames[(int) ($history->before_values['supplier_id'] ?? 0)] ?? __('None') }} / {{ ($history->before_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }} · {{ __('After') }}: {{ $supplierNames[(int) ($history->after_values['supplier_id'] ?? 0)] ?? __('None') }} / {{ ($history->after_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }}</div>
+                                </div>
+                            @empty
+                                <p class="text-xs text-text-muted">{{ __('No supplier preference changes recorded yet.') }}</p>
+                            @endforelse
+                        </div>
+                    </div>
+                @endcan
             </flux:card>
         </div>
 

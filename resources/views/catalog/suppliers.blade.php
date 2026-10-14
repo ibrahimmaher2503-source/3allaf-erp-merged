@@ -15,6 +15,7 @@ use App\Modules\Catalog\Models\SupplierContact;
 use App\Modules\Catalog\Models\SupplierGroup;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Catalog\Support\SupplierSettlementMethod;
 use App\Modules\Catalog\Support\SupplierTaxIdentity;
 use App\Support\Hierarchy\GroupHierarchy;
@@ -585,6 +586,19 @@ new #[Title('Supplier Masters')] class extends Component
             $viewingSupplier = $this->viewingSupplierId
                 ? Supplier::query()->with(['productSuppliers.product', 'supplierGroup', 'preferredPaymentMethod', 'contacts'])->find($this->viewingSupplierId)
                 : null;
+            $supplierHistory = collect();
+            if ($viewingSupplier !== null && Gate::allows('audit_logs.view')) {
+                $supplierHistory = AuditLog::query()
+                    ->where('source_type', ProductSupplier::class)
+                    ->whereIn('source_id', $viewingSupplier->productSuppliers->pluck('id'))
+                    ->whereIn('event', ['change_product_supplier_preference', 'update_product_supplier', 'create_product_supplier'])
+                    ->latest('id')
+                    ->limit(20)
+                    ->get();
+            }
+            $productNames = $viewingSupplier?->productSuppliers->mapWithKeys(fn (ProductSupplier $relation): array => [
+                (int) $relation->product_id => \App\Support\HumanName::name($relation->product, fallback: $relation->product?->item_code ?: '#'.$relation->product_id),
+            ]) ?? collect();
             if ($this->showLinkProductModal) {
                 $availableProducts = Product::query()->where('status', 'active')->orderBy('item_code')->limit(200)->get(['id', 'item_code', 'name_ar', 'name_en']);
             }
@@ -594,6 +608,8 @@ new #[Title('Supplier Masters')] class extends Component
             'suppliers' => $suppliers,
             'viewingSupplier' => $viewingSupplier,
             'availableProducts' => $availableProducts,
+            'supplierHistory' => $supplierHistory ?? collect(),
+            'productNames' => $productNames ?? collect(),
             'settlementMethods' => SupplierSettlementMethod::options(),
             'supplierGroups' => $supplierGroups,
             'supplierGroupParents' => $supplierGroupParents,
@@ -1103,6 +1119,24 @@ new #[Title('Supplier Masters')] class extends Component
                                 </tbody>
                             </table>
                         </div>
+                        @can('audit_logs.view')
+                            <div class="mt-4 border-t border-border pt-4" data-supplier-preference-history>
+                                <flux:heading size="sm">{{ __('Supplier preference history') }}</flux:heading>
+                                <div class="mt-3 space-y-2">
+                                    @forelse ($supplierHistory as $history)
+                                        <div class="rounded-lg border border-border px-3 py-2 text-xs">
+                                            <div class="flex flex-wrap justify-between gap-2">
+                                                <span class="font-medium">{{ __($history->event === 'change_product_supplier_preference' ? 'Preferred supplier changed' : 'Supplier link updated') }}</span>
+                                                <span class="text-text-muted">{{ $history->created_at?->format('Y-m-d H:i') }} · {{ $history->actor_name ?: __('System') }}</span>
+                                            </div>
+                                            <div class="mt-1 text-text-muted">{{ $productNames[(int) ($history->before_values['product_id'] ?? 0)] ?? __('Product') }} · {{ __('Before') }}: {{ ($history->before_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }} · {{ __('After') }}: {{ ($history->after_values['is_preferred'] ?? false) ? __('Preferred') : __('Not preferred') }}</div>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-text-muted">{{ __('No supplier preference changes recorded yet.') }}</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        @endcan
                     </div>
                 @endif
 

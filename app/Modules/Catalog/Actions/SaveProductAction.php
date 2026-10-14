@@ -240,16 +240,40 @@ class SaveProductAction
                     $this->syncFilters($product, $data['filter_value_ids']);
                 }
                 if (array_key_exists('preferred_supplier_id', $data)) {
-                    $product->productSuppliers()->update(['is_preferred' => false]);
+                    $previousPreferred = $product->productSuppliers()
+                        ->where('is_preferred', true)
+                        ->lockForUpdate()
+                        ->get();
+                    foreach ($previousPreferred as $previousRelation) {
+                        $previousBefore = $previousRelation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']);
+                        $previousRelation->update(['is_preferred' => false]);
+                        app(RecordAuditEvent::class)->execute(
+                            category: 'master_data',
+                            event: 'change_product_supplier_preference',
+                            source: $previousRelation,
+                            before: $previousBefore,
+                            after: $previousRelation->fresh()->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']),
+                            metadata: ['source' => 'product_card'],
+                        );
+                    }
 
                     if ($supplier !== null) {
-                        $existingSupplierCode = $product->productSuppliers()
-                            ->where('supplier_id', $supplier->id)
-                            ->value('supplier_item_code');
-                        $product->productSuppliers()->updateOrCreate(['supplier_id' => $supplier->id], [
+                        $relation = $product->productSuppliers()->firstOrNew(['supplier_id' => $supplier->id]);
+                        $beforeRelation = $relation->exists
+                            ? $relation->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes'])
+                            : null;
+                        $relation->fill([
                             'is_preferred' => true,
-                            'supplier_item_code' => $this->nullableString($data['supplier_item_code'] ?? null) ?? $existingSupplierCode,
-                        ]);
+                            'supplier_item_code' => $this->nullableString($data['supplier_item_code'] ?? null) ?? $relation->supplier_item_code,
+                        ])->save();
+                        app(RecordAuditEvent::class)->execute(
+                            category: 'master_data',
+                            event: 'change_product_supplier_preference',
+                            source: $relation,
+                            before: $beforeRelation,
+                            after: $relation->fresh()->only(['product_id', 'supplier_id', 'supplier_item_code', 'is_preferred', 'notes']),
+                            metadata: ['source' => 'product_card'],
+                        );
                     }
                 }
 
