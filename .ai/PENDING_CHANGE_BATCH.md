@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-14 — Supplier settlement and preferred payment separation (#31)
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Expose the existing nullable preferred payment method separately from supplier settlement method; persist both independently, validate active payment-method references, include both in supplier audit snapshots, and show distinct bilingual form/detail labels | `issues/supplier-settlement-preferred-payment-31` | `app/Modules/Catalog/Actions/SaveSupplierAction.php`, `resources/views/catalog/suppliers.blade.php`, `tests/Feature/SupplierBusinessDecisionTest.php` | Focused isolated MariaDB PASS 2 tests / 12 assertions; PHP syntax, Pint and diff checks PASS; no migration, merge or deployment |
+
 ## 2026-10-13 — POS close-shift link (undeployed)
 
 | Class | Repair | Commit | Affected files | Verification/status |

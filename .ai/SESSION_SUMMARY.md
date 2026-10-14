@@ -1937,3 +1937,9 @@ Verification actually run: PHP syntax checks and `git diff --check` passed; Pint
 ## 2026-10-14 — Supplier batch validation completion
 
 Validated `issues/supplier-26-29` after commit `bf7e11e`. The established isolated MariaDB runner was used with `QA_CHROMIUM=/bin/true` because these backend-focused tests do not need browser automation. The stale supplier conflict regression passed in the combined run; the preferred-supplier audit test first exposed a missing `Gate` facade import, which was fixed in the test only and passed on the one permitted rerun (1 test / 4 assertions). PHP syntax and Pint passed. No production access, merge, deployment, or issue closure.
+
+## 2026-10-14 — Supplier settlement and preferred payment separation (#31)
+
+On `issues/supplier-settlement-preferred-payment-31` from latest `origin/main` `e666cf21ca46576cb2d9dc13d8e3b1a48a2074bd`, verified that the schema already contains separate `suppliers.settlement_method` and nullable `suppliers.preferred_payment_method_id` fields plus the canonical `payment_methods` master. The defect was limited to supplier create/edit not loading or persisting the preferred field while the profile displayed it as `Not configured`. Wired the existing field through active-reference validation, persistence, before/after supplier audit snapshots, the bilingual create/edit form, and distinct supplier-detail labels. No migration or unrelated supplier refactor.
+
+Focused isolated MariaDB PASS: 2 tests / 12 assertions covering independent create/edit persistence, non-overwrite behavior, audit snapshots, and supplier detail display. PHP syntax, Pint and diff hygiene passed. No Fast QA, production access, merge, deployment or issue closure. Commit and task-branch push follow.

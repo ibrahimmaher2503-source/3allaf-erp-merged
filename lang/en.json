@@ -2306,6 +2306,7 @@
     ,"Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional.": "Create at least one active supplier and select its financial-settlement method. Payment terms and supplier-product references remain optional."
     ,"Create an active category before adding product cards.": "Create an active category before adding product cards."
     ,"Select an active supplier financial-settlement method.": "Select an active supplier financial-settlement method."
+    ,"Select an active supplier preferred payment method.": "Select an active supplier preferred payment method."
     ,"Financial-settlement method": "Financial-settlement method"
     ,"Build reusable bilingual product filters for explicit standard-product variation families.": "Build reusable bilingual product filters for explicit standard-product variation families."
     ,"Supplier Settlement Method": "Supplier Settlement Method"
