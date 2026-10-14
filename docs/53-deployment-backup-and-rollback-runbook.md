@@ -51,6 +51,15 @@ Prepare each immutable release from the approved Git commit, not from the workin
 
 All Laravel cache generation, cache clearing, maintenance, queue, and scheduled Artisan commands must execute as the runtime user `rajeh`. The scheduler entry and any deployment automation must invoke Artisan as `rajeh`, never as `root` or the release-preparation account. This keeps generated `bootstrap/cache` files writable by the serving runtime and prevents recurring permission failures.
 
+Generate the caches only after the immutable release has been moved into its final directory. Laravel's cached route closures can embed absolute framework and storage paths; generating `config`, `route`, or `view` caches in a temporary staging directory and then renaming that directory leaves those caches pointing at paths that no longer exist. The deployment must therefore:
+
+1. finish copying the release and linking shared `.env` and `storage` paths;
+2. switch to the final release directory;
+3. remove any `config.php`, `events.php`, or `routes-*.php` generated during staging, then run cache generation in the final directory as `rajeh` (using the release-scoped compiled-view path); and
+4. before activation, scan `bootstrap/cache/*.php` for the staging-directory prefix and abort if any generated cache still references it. Confirm that `/up` returns HTTP 200 against the candidate release before switching the active symlink.
+
+Do not repair this condition by editing a generated cache after activation. Discard the candidate and regenerate its caches from the final release path.
+
 ```
 1. Announce maintenance window
 2. Verified backup (§5)
