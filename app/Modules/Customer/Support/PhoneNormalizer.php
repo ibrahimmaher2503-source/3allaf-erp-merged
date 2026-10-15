@@ -37,6 +37,10 @@ final class PhoneNormalizer
             $digits = '0'.$national;
         }
 
+        if (preg_match('/^01[0125][0-9]{8}$/', '0'.$digits) === 1 && strlen($digits) === 10) {
+            $digits = '0'.$digits;
+        }
+
         if (str_starts_with($digits, '0')) {
             if (! self::isEgyptianNational($digits)) {
                 throw new InvalidArgumentException(__('Enter a valid Egyptian phone number, for example 01012345678 or +20 1012345678.'));

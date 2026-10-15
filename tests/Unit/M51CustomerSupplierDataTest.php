@@ -56,6 +56,7 @@ final class M51CustomerSupplierDataTest extends TestCase
         self::assertSame('01012345678', PhoneNormalizer::normalize('01012345678'));
         self::assertSame('01012345678', PhoneNormalizer::normalize('201012345678'));
         self::assertSame('01012345678', PhoneNormalizer::normalize('+20 10 1234 5678'));
+        self::assertSame('01012345678', PhoneNormalizer::normalize('1012345678'));
         self::assertSame('441234567890', PhoneNormalizer::normalize('+44 1234 567890'));
     }
 

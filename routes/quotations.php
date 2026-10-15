@@ -12,6 +12,7 @@ use App\Modules\Quotation\Actions\CreateQuotationAction;
 use App\Modules\Quotation\Actions\ShareQuotationAction;
 use App\Modules\Quotation\Actions\UpdateQuotationAction;
 use App\Modules\Quotation\Models\Quotation;
+use App\Modules\Quotation\Models\QuotationShareLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -19,7 +20,11 @@ use Illuminate\Validation\Rule;
 
 Route::get('quotations/{quotation}/print', function (Request $request, Quotation $quotation) {
     /** @var User|null $user */ $user = $request->user();
-    if (! $request->hasValidSignature()) {
+    if ($request->filled('share')) {
+        abort_unless($request->hasValidSignature(), 403);
+        $link = QuotationShareLink::query()->whereKey($request->integer('share'))->where('quotation_id', $quotation->id)->where('token_hash', hash('sha256', (string) $request->string('token')))->firstOrFail();
+        abort_if($link->revoked_at !== null || $link->expires_at->isPast(), 410);
+    } else {
         abort_unless($user instanceof User, 403);
         Gate::forUser($user)->authorize('quotations.print');
         $quotation = Quotation::query()->visibleTo($user)->whereKey($quotation->id)->firstOrFail();
@@ -36,7 +41,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('quotations', function (Request $request) {
         /** @var User $user */ $user = $request->user();
         abort_unless($user->can('quotations.view'), 403);
-        $quotations = Quotation::query()->visibleTo($user)->with(['customer', 'store', 'lines'])->when($request->filled('activity_type'), fn ($q) => $q->where('activity_type', $request->string('activity_type')))->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))->latest('id')->paginate(20)->withQueryString();
+        $quotations = Quotation::query()->visibleTo($user)->with(['customer', 'store', 'lines', 'shareLinks'])->when($request->filled('activity_type'), fn ($q) => $q->where('activity_type', $request->string('activity_type')))->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))->latest('id')->paginate(20)->withQueryString();
         $customers = Customer::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->limit(300)->get();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->with('branch')->orderBy('name_en')->get();
         $products = Product::query()->sellable()->orderBy('name_en')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
@@ -74,4 +79,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return back()->with('share_url', $action->execute($user, $quotation));
     })->middleware('can:quotations.share')->name('quotations.share');
+    Route::post('quotations/{quotation}/share/{link}/revoke', function (Request $request, Quotation $quotation, QuotationShareLink $link) {
+        /** @var User $user */ $user = $request->user();
+        Gate::forUser($user)->authorize('quotations.share');
+        abort_unless($link->quotation_id === $quotation->id, 404);
+        $link->update(['revoked_at' => now()]);
+        app(RecordAuditEvent::class)->execute('quotations', 'quotation_share_revoked', $quotation, branchId: $quotation->branch_id, storeId: $quotation->store_id, metadata: ['share_link_id' => $link->id, 'non_posting' => true]);
+
+        return back()->with('success', __('Quotation share link revoked.'));
+    })->middleware('can:quotations.share')->name('quotations.share.revoke');
 });
