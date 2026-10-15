@@ -132,3 +132,13 @@ Production access, deployment, backup execution, migration execution, active-sym
 ## 2026-10-13 — Repository consolidation candidate
 
 - **V0 / undeployed:** Shared application footer displays `v1.22` for the existing `0.1.22-cost-optional` release value. It strips the legacy leading `0.` and any descriptive suffix; later numeric releases display as `v1.22.1` or `v1.23`. **Commit:** `integration/full-repository-consolidation` candidate commit. **File:** `resources/views/components/app-footer.blade.php`. **Status:** Prepared for review; no release artifact, main merge, or deployment.
+
+## 2026-10-15 — Operational context batch #15/#34/#35/#36/#42/#52/#55 (undeployed)
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Restore permission-gated navigation for existing Party, quotation, gift-card, suspended-sale, supplier-history, invoice-readiness, price-history, and POS financial-control screens; add the POS readiness setup link | `issues/operational-context-15-35-36-42-52-55` | `config/navigation.php`, `resources/views/platform/initial-setup.blade.php` | Focused batch PASS; no migration; undeployed |
+| V1 | Keep count-entry errors on the count page, accept explicit zero through the canonical zero-completion path, and show count recovery for transfer locks | `issues/operational-context-15-35-36-42-52-55` | `app/Modules/Inventory/Actions/RecordStockCountZeroAction.php`, `routes/inventory.php`, `resources/views/inventory/index.blade.php` | Focused batch PASS; Fast QA focused regression PASS; undeployed |
+| V1 | Show specific maker-checker feedback for inventory-adjustment self approval | `issues/operational-context-15-35-36-42-52-55` | `routes/inventory.php`, `resources/views/inventory/index.blade.php` | Focused batch PASS; undeployed |
+| V1 | Resolve bounded document/product references for movement, approval, alert, report, and audit presentations | `issues/operational-context-15-35-36-42-52-55` | `app/Modules/Inventory/Support/StockMovementSourceReferences.php`, `app/Modules/Platform/Support/ApprovalInboxReferences.php`, `app/Modules/Platform/Support/AuditLogPresentation.php`, `app/Modules/Reporting/Queries/ReportSnapshot.php`, `routes/reporting.php`, related views | Focused batch PASS; undeployed |
+| L2 | Give permission checkboxes specific accessible names | `issues/operational-context-15-35-36-42-52-55` | `resources/views/platform/admin/role-permissions.blade.php` | Focused batch PASS; #55 broader permission taxonomy remains blocked on owner decision; undeployed |

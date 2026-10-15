@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Platform\Support;
 
+use Illuminate\Support\Str;
+
 final class AuditLogPresentation
 {
     /** @var array<string,string> */
@@ -103,14 +105,14 @@ final class AuditLogPresentation
 
     public function event(string $event): string
     {
-        return __(self::EVENTS[$event] ?? 'Other audit event');
+        return __(self::EVENTS[$event] ?? Str::headline(str_replace('_', ' ', $event)));
     }
 
     public function source(?string $sourceType): string
     {
         $name = class_basename((string) $sourceType);
 
-        return __(self::SOURCES[$name] ?? 'Other source record');
+        return __(self::SOURCES[$name] ?? Str::headline($name));
     }
 
     public function category(string $category): string

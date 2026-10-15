@@ -692,3 +692,7 @@ Focused `UserSafeErrorTest`: PASS 3 tests / 3 assertions on an isolated socket-o
 - Test-only correction: imported `Illuminate\Support\Facades\Gate`.
 - Affected rerun: preferred-supplier audit test PASS, 1 test / 4 assertions.
 - PHP syntax: PASS. Pint: PASS. Browser dependency was skipped with `QA_CHROMIUM=/bin/true`; no Fast QA, production operation, merge, deployment, or issue closure.
+
+# 2026-10-15 — Operational context batch #15/#34/#35/#36/#42/#52/#55
+
+Focused isolated MariaDB run: `IssueOperationalContextBatchTest.php` PASS 7 tests / 27 assertions. Coverage includes permission-gated navigation, non-team count feedback, explicit zero count persistence without a contribution row, open-count transfer recovery, inventory maker-checker feedback, document/product approval and movement references, alert product context, audit-event fallback labels, and accessible permission checkbox names. PHP 8.4 syntax, Pint and `git diff --check` passed. One Fast QA gate was run at `.ai/qa/runs/20261015T052438Z-19059-fast`: 7/8 checks passed; the only failure was the pre-existing PHPStan finding in unchanged `app/Modules/Catalog/Actions/SaveProductAction.php:267` (`Model::$supplier_item_code`). Fast QA's focused regression, MariaDB integrity, runtime and compact browser checks passed. No migration, merge, deployment, or issue closure occurred.

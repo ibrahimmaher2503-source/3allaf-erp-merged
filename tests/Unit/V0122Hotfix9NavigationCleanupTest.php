@@ -27,7 +27,7 @@ final class V0122Hotfix9NavigationCleanupTest extends TestCase
         $administrationRoutes = $administrationItems->pluck('route')->all();
         $administrationLabels = $administrationItems->pluck('label')->flatten()->all();
 
-        self::assertFalse($groups['parties']['enabled']);
+        self::assertTrue($groups['parties']['enabled']);
         self::assertNotContains('Roles & permissions', $administrationLabels);
         self::assertNotContains('الأدوار والصلاحيات', $administrationLabels);
         self::assertNotContains('admin.branches', $administrationRoutes);

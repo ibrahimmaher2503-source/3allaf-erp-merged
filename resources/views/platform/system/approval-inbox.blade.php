@@ -7,6 +7,7 @@ use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApprovalPresentation;
+use App\Modules\Platform\Support\ApprovalInboxReferences;
 use App\Modules\Platform\Support\UiLabel;
 use App\Modules\Retail\Models\PosShift;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -163,14 +164,21 @@ new #[Title('Approval Inbox')] class extends Component
             : null;
         $shiftSubmission = $selectedShift?->closingSubmissions()->orderByDesc('attempt')->first();
 
+        $branches = Branch::query()->visibleTo($user)->orderBy('code')->get();
+        $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
+        $references = new ApprovalInboxReferences($approvals->getCollection()->concat($selectedApproval === null ? [] : [$selectedApproval]));
+
         return view('platform.system.approval-inbox', [
             'approvals' => $approvals,
             'selectedApproval' => $selectedApproval,
             'selectedShift' => $selectedShift,
             'shiftSubmission' => $shiftSubmission,
             'sourceTypes' => (clone $base)->distinct()->orderBy('source_type')->pluck('source_type'),
-            'branches' => Branch::query()->visibleTo($user)->orderBy('code')->get(),
-            'stores' => Store::query()->visibleTo($user)->orderBy('code')->get(),
+            'branches' => $branches,
+            'branchNames' => $branches->keyBy('id'),
+            'stores' => $stores,
+            'storeNames' => $stores->keyBy('id'),
+            'references' => $references,
             'canDecide' => $selectedApproval !== null && Gate::allows('decide', $selectedApproval),
             'canReject' => $selectedApproval !== null && app(DecideApprovalSource::class)->canReject($selectedApproval),
             'sourceUrl' => $selectedApproval === null ? null : app(DecideApprovalSource::class)->sourceRoute($selectedApproval),
@@ -240,10 +248,10 @@ new #[Title('Approval Inbox')] class extends Component
             <div class="hidden overflow-x-auto md:block">
                 <flux:table class="min-w-[980px] table-fixed" aria-label="{{ __('Approval requests') }}">
                     <flux:table.columns><flux:table.column class="w-[130px] whitespace-nowrap">{{ __('Requested') }}</flux:table.column><flux:table.column class="w-[280px]">{{ __('Source') }}</flux:table.column><flux:table.column class="w-[190px]">{{ __('Requester') }}</flux:table.column><flux:table.column class="w-[170px]">{{ __('Scope') }}</flux:table.column><flux:table.column class="w-[120px] whitespace-nowrap">{{ __('State') }}</flux:table.column><flux:table.column class="w-[110px] whitespace-nowrap">{{ __('Actions') }}</flux:table.column></flux:table.columns>
-                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="w-[130px] whitespace-nowrap align-top font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell class="w-[280px] max-w-[280px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-medium leading-5">{{ ApprovalPresentation::source($approval->source_type, $approval->source_id) }}</div><div class="min-w-0 break-all whitespace-normal font-mono text-xs leading-5 text-text-muted">{{ ApprovalPresentation::action($approval->requested_action) }}</div></flux:table.cell><flux:table.cell class="w-[190px] max-w-[190px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal leading-5">{{ $approval->requester?->name }}</div></flux:table.cell><flux:table.cell class="w-[170px] max-w-[170px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-mono text-xs leading-5">{{ $approval->branch_id ? __('Branch').' #'.$approval->branch_id : '' }} {{ $approval->store_id ? __('Store').' #'.$approval->store_id : '' }}</div></flux:table.cell><flux:table.cell class="w-[120px] align-top"><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell class="w-[110px] align-top whitespace-nowrap"><x-actions.button semantic="view" :label="__('Review')" size="xs" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
+                    <flux:table.rows>@foreach($approvals as $approval)<flux:table.row key="approval-{{ $approval->id }}"><flux:table.cell class="w-[130px] whitespace-nowrap align-top font-mono text-xs">{{ $approval->requested_at->format('Y-m-d H:i') }}</flux:table.cell><flux:table.cell class="w-[280px] max-w-[280px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-medium leading-5">{{ $references->label($approval) }}</div><div class="min-w-0 break-all whitespace-normal font-mono text-xs leading-5 text-text-muted">{{ ApprovalPresentation::action($approval->requested_action) }}</div>@if($references->amount($approval) !== null)<div class="text-xs text-text-muted">{{ __('Amount') }}: {{ $references->amount($approval) }}</div>@endif @if($approval->reason_text)<div class="truncate text-xs text-text-muted">{{ $approval->reason_text }}</div>@endif</flux:table.cell><flux:table.cell class="w-[190px] max-w-[190px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal leading-5">{{ $approval->requester?->name }}</div></flux:table.cell><flux:table.cell class="w-[170px] max-w-[170px] min-w-0 align-top"><div class="min-w-0 break-words whitespace-normal font-mono text-xs leading-5">{{ $approval->branch_id ? __('Branch').' '.($branchNames->get($approval->branch_id) ? \App\Support\HumanName::name($branchNames->get($approval->branch_id)).' ('.$branchNames->get($approval->branch_id)->code.')' : '#'.$approval->branch_id) : '' }} {{ $approval->store_id ? __('Store').' '.($storeNames->get($approval->store_id) ? \App\Support\HumanName::name($storeNames->get($approval->store_id)).' ('.$storeNames->get($approval->store_id)->code.')' : '#'.$approval->store_id) : '' }}</div></flux:table.cell><flux:table.cell class="w-[120px] align-top"><x-status.badge :status="$approval->approval_state->value" /></flux:table.cell><flux:table.cell class="w-[110px] align-top whitespace-nowrap"><x-actions.button semantic="view" :label="__('Review')" size="xs" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></flux:table.cell></flux:table.row>@endforeach</flux:table.rows>
                 </flux:table>
             </div>
-            <div class="space-y-3 md:hidden">@foreach($approvals as $approval)<x-cards.section-card :title="ApprovalPresentation::source($approval->source_type, $approval->source_id)"><div class="space-y-3 text-sm"><div class="flex items-center justify-between gap-3"><x-status.badge :status="$approval->approval_state->value" /><span class="font-mono text-xs text-text-muted">{{ $approval->requested_at->format('Y-m-d H:i') }}</span></div><p>{{ __('Requester') }}: {{ $approval->requester?->name }}</p><x-actions.button semantic="view" :label="__('Review')" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></div></x-cards.section-card>@endforeach</div>
+            <div class="space-y-3 md:hidden">@foreach($approvals as $approval)<x-cards.section-card :title="$references->label($approval)"><div class="space-y-3 text-sm"><div class="flex items-center justify-between gap-3"><x-status.badge :status="$approval->approval_state->value" /><span class="font-mono text-xs text-text-muted">{{ $approval->requested_at->format('Y-m-d H:i') }}</span></div><p>{{ __('Requester') }}: {{ $approval->requester?->name }}</p>@if($references->amount($approval) !== null)<p>{{ __('Amount') }}: {{ $references->amount($approval) }}</p>@endif<x-actions.button semantic="view" :label="__('Review')" wire:click="showApproval({{ $approval->id }})">{{ __('Review') }}</x-actions.button></div></x-cards.section-card>@endforeach</div>
         @endif
         <x-slot:footer>{{ $approvals->links() }}</x-slot:footer>
     </x-tables.data-panel>
@@ -253,7 +261,7 @@ new #[Title('Approval Inbox')] class extends Component
             <div class="space-y-5">
                 <div><flux:heading size="lg">{{ __('Approval request') }}</flux:heading><flux:text class="mt-1 font-mono text-xs">{{ $selectedApproval->uuid }}</flux:text></div>
                 @error('approval')<x-state.error :title="$message" />@enderror
-                <dl class="grid gap-3 text-sm sm:grid-cols-2"><div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ ApprovalPresentation::source($selectedApproval->source_type, $selectedApproval->source_id) }}</dd></div><div><dt class="text-text-muted">{{ __('State') }}</dt><dd><x-status.badge :status="$selectedApproval->approval_state->value" /></dd></div><div><dt class="text-text-muted">{{ __('Requester') }}</dt><dd>{{ $selectedApproval->requester?->name }}</dd></div><div><dt class="text-text-muted">{{ __('Requested action') }}</dt><dd>{{ ApprovalPresentation::action($selectedApproval->requested_action) }}</dd></div>@if($selectedApproval->reason_text)<div class="sm:col-span-2"><dt class="text-text-muted">{{ __('Reason') }}</dt><dd>{{ $selectedApproval->reason_text }}</dd></div>@endif</dl>
+                <dl class="grid gap-3 text-sm sm:grid-cols-2"><div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ $references->label($selectedApproval) }}</dd></div><div><dt class="text-text-muted">{{ __('State') }}</dt><dd><x-status.badge :status="$selectedApproval->approval_state->value" /></dd></div>@if($references->amount($selectedApproval) !== null)<div><dt class="text-text-muted">{{ __('Amount') }}</dt><dd>{{ $references->amount($selectedApproval) }}</dd></div>@endif<div><dt class="text-text-muted">{{ __('Requester') }}</dt><dd>{{ $selectedApproval->requester?->name }}</dd></div><div><dt class="text-text-muted">{{ __('Requested action') }}</dt><dd>{{ ApprovalPresentation::action($selectedApproval->requested_action) }}</dd></div>@if($selectedApproval->reason_text)<div class="sm:col-span-2"><dt class="text-text-muted">{{ __('Reason') }}</dt><dd>{{ $selectedApproval->reason_text }}</dd></div>@endif</dl>
 
                 @if($reviewDetails && $reviewDetails['type'] === 'tax_setting')
                     <x-cards.section-card :title="__('Tax settings')">
