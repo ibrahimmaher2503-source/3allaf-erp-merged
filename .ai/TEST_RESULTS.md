@@ -702,3 +702,8 @@ Focused isolated MariaDB run: `IssueOperationalContextBatchTest.php` PASS 7 test
 - `RolePermissionPersistenceTest`: PASS, 2 tests / 11 assertions, isolated disposable MariaDB. Existing permission-group persistence and invalid-ID protection remain green.
 - PHP syntax, Pint, and `git diff --check`: PASS.
 - One Fast QA run: focused critical regression, MariaDB integrity, runtime configuration, tool self-check, and CodeGraph passed. PHPStan failed only on the existing unchanged `app/Modules/Catalog/Actions/SaveProductAction.php:267` property finding. Compact browser smoke was not applicable to this backend-focused batch and failed because it was intentionally run with `QA_CHROMIUM=/bin/true`; no browser dependency was installed. No second Fast QA run was made.
+
+## 2026-10-15 — Audit Logs permission data cleanup (#55)
+
+- Focused isolated MariaDB run: `PermissionTaxonomyDataCleanupTest`, `PermissionTaxonomyTest`, and `RolePermissionPersistenceTest` PASS, 6 tests / 24 assertions. The new test verifies obsolete Audit Logs rows and pivots are removed while unrelated supplier permissions and assignments remain.
+- PHP syntax, Pint, and `git diff --check` passed. No Fast QA was run because authorization logic did not change. The targeted migration is prepared but was not run in production; no production data, merge, or deployment operation occurred.

@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-15 — Audit Logs permission data cleanup (#55)
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Remove only obsolete `audit_logs` permission rows (`approve`, `cancel`, `create`, `edit`, `logical_delete`, `override`, `reject`, `reverse`, `submit`) and their role pivots; preserve `view`, `export`, `print` and every other module | `issues/permission-taxonomy-55-data-cleanup` | `database/migrations/2026_10_15_000123_clean_audit_log_permissions.php`, `tests/Feature/PermissionTaxonomyDataCleanupTest.php` | Focused isolated MariaDB PASS 6 tests / 24 assertions; PHP syntax, Pint and diff checks PASS; migration not run in production, no merge or deployment |
+
 ## 2026-10-15 — Permission taxonomy #55
 
 | Class | Repair | Branch | Affected files | Verification/status |
