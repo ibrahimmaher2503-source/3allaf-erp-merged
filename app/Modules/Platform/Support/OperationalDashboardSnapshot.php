@@ -7,6 +7,7 @@ namespace App\Modules\Platform\Support;
 use App\Models\User;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Support\LowStockRule;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
@@ -16,7 +17,6 @@ use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SaleLine;
-use Illuminate\Database\Eloquent\Builder;
 
 final class OperationalDashboardSnapshot
 {
@@ -47,10 +47,9 @@ final class OperationalDashboardSnapshot
                 'count' => (clone $purchases)->whereDate('invoice_date', $today)->count(),
                 'recent' => (clone $purchases)->with(['store:id,code,name_ar,name_en', 'supplier:id,name_ar,name_en'])->latest('invoice_date')->latest('id')->limit(5)->get(['id', 'store_id', 'supplier_id', 'invoice_number', 'total_amount', 'status', 'invoice_date']),
             ] : null,
-            'low_stock' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)
-                ->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= ?', [5])
+            'low_stock' => $user->can('inventory_stock_card.view') ? LowStockRule::apply((clone $stockBalances))
                 ->with(['product:id,item_code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->orderByRaw('(on_hand - reserved) asc')->limit(6)->get() : collect(),
-            'low_stock_count' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= ?', [5])->count() : null,
+            'low_stock_count' => $user->can('inventory_stock_card.view') ? LowStockRule::apply((clone $stockBalances))->count() : null,
             'out_of_stock_count' => $user->can('inventory_stock_card.view') ? (clone $stockBalances)->whereRaw('(on_hand - reserved) <= 0')->count() : null,
             'recent_movements' => $user->can('inventory_stock_card.view') ? StockMovement::query()
                 ->whereIn('store_id', clone $storeIds)->with(['product:id,item_code,name_ar,name_en', 'store:id,code,name_ar,name_en'])->latest('posted_at')->latest('id')->limit(5)->get() : collect(),

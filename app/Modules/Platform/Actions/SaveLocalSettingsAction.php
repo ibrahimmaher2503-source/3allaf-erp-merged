@@ -50,7 +50,7 @@ class SaveLocalSettingsAction
                 'commercial_registration' => $data['company']['commercial_registration'] ?? null,
                 'currency_code' => $data['company']['currency_code'] ?? 'TBD',
                 'currency_symbol' => $data['company']['currency_symbol'] ?? 'TBD',
-                'timezone' => $data['company']['timezone'] ?? 'UTC',
+                'timezone' => $data['company']['timezone'] ?? 'Africa/Cairo',
                 'locale_default' => $data['company']['locale_default'] ?? 'ar',
                 'phone' => filled($data['company']['phone'] ?? null) ? PhoneNormalizer::normalize((string) $data['company']['phone']) : null,
                 'email' => $data['company']['email'] ?? null,

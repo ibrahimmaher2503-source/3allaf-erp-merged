@@ -36,6 +36,7 @@ use App\Modules\Inventory\Models\StockCountLine;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Support\InventoryMovementLabel;
+use App\Modules\Inventory\Support\LowStockRule;
 use App\Modules\Inventory\Support\StockMovementSourceReferences;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
@@ -101,7 +102,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     }
     match ($stockState) {
         'available' => $balancesQuery->whereRaw('(on_hand - reserved) > 0'),
-        'low' => $balancesQuery->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= COALESCE((SELECT reorder_threshold FROM products WHERE products.id = stock_balances.product_id), 0)'),
+        'low' => LowStockRule::apply($balancesQuery),
         'out' => $balancesQuery->whereRaw('(on_hand - reserved) = 0'),
         'negative' => $balancesQuery->whereRaw('(on_hand - reserved) < 0'),
         default => null,
@@ -114,7 +115,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         'visible_products' => (clone $scopedBalances)->distinct()->count('product_id'),
         'stock_on_hand' => (string) (clone $scopedBalances)->sum('on_hand'),
         'inventory_value' => $canViewCost ? (string) (clone $scopedBalances)->sum('total_value') : null,
-        'low_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) > 0')->whereRaw('(on_hand - reserved) <= COALESCE((SELECT reorder_threshold FROM products WHERE products.id = stock_balances.product_id), 0)')->count(),
+        'low_stock' => LowStockRule::apply((clone $scopedBalances))->count(),
         'out_of_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) = 0')->count(),
         'negative_stock' => (clone $scopedBalances)->whereRaw('(on_hand - reserved) < 0')->count(),
         'today_movements' => (clone $scopedMovements)->whereBetween('posted_at', [today()->startOfDay(), today()->endOfDay()])->count(),
