@@ -712,4 +712,4 @@ Focused isolated MariaDB run: `IssueOperationalContextBatchTest.php` PASS 7 test
 
 - Focused `M51CustomerSupplierDataTest`: PASS, 10 tests / 33 assertions.
 - Additional read-only normalization probe confirmed local `01012345678`, Egyptian `+20 1012345678`, Arabic digits, and Persian digits resolve to the same canonical search digits; malformed partial terms retain digit search behavior.
-- PHP syntax, Pint, and `git diff --check`: PASS. No migration added or run. Fast QA not run yet because shared business logic was not changed; the batch is pending final branch publication.
+- PHP syntax, Pint, and `git diff --check`: PASS. No migration added or run. Fast QA run once at `.ai/qa/runs/20261015T135231Z-26770-fast`: 7/8 checks passed. The only failure is the pre-existing unchanged `SaveProductAction.php:267` PHPStan property finding; focused regression, MariaDB integrity, runtime, and browser smoke passed.
