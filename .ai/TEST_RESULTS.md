@@ -713,3 +713,9 @@ Focused isolated MariaDB run: `IssueOperationalContextBatchTest.php` PASS 7 test
 - Focused `M51CustomerSupplierDataTest`: PASS, 10 tests / 33 assertions.
 - Additional read-only normalization probe confirmed local `01012345678`, Egyptian `+20 1012345678`, Arabic digits, and Persian digits resolve to the same canonical search digits; malformed partial terms retain digit search behavior.
 - PHP syntax, Pint, and `git diff --check`: PASS. No migration added or run. Fast QA run once at `.ai/qa/runs/20261015T135231Z-26770-fast`: 7/8 checks passed. The only failure is the pre-existing unchanged `SaveProductAction.php:267` PHPStan property finding; focused regression, MariaDB integrity, runtime, and browser smoke passed.
+
+## 2026-10-15 — Customer and quotation policy batch
+
+- Focused `M51CustomerSupplierDataTest`: PASS, 10 tests / 33 assertions, including a bare 10-digit Egyptian mobile normalizing to the canonical national value.
+- PHP syntax and Pint: PASS. `git diff --check`: PASS.
+- Migration `000124_create_quotation_share_links` was inspected but not run. Fast QA ran once at `.ai/qa/runs/20261015T163106Z-32695-fast`: 7/8 checks passed. The only failure was the pre-existing unchanged `SaveProductAction.php:267` PHPStan property finding; focused regression, MariaDB integrity, runtime and browser smoke passed.

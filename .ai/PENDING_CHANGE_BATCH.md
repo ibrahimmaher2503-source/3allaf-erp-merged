@@ -163,3 +163,10 @@ Production access, deployment, backup execution, migration execution, active-sym
 | V0 | #13 current bounded audit-export and label-search implementation verified from current main | same | existing routes/services | ALREADY_FIXED_VERIFIED |
 | Blocked | #50 existing duplicate customer records need owner-approved merge/retention and non-Egyptian uniqueness policy before data correction | same | none | BLOCKED pending Ahmed decision |
 | Blocked | #58 quotation detail and shared-link expiry need approved retention/expiry policy before implementing irreversible link behavior | same | none | BLOCKED pending Ahmed decision |
+
+## 2026-10-15 — Customer and quotation policy batch (#13/#17/#19/#20/#43/#44/#50/#58/#60)
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Normalize Egyptian mobile variants before customer uniqueness checks while preserving existing duplicate records; add persistent quotation share links with 30-day/valid-until expiry, signed-token validation, audit metadata, revoke and regenerate controls; expose existing quotation status transitions in the UI | `issues/customer-quotation-policy-43-50-58` | Customer phone normalizer, quotation share action/model/routes/view, quotation model, migration, focused customer test | Focused normalization test PASS; PHP syntax/Pint/diff checks PASS; Fast QA 7/8 with the only failure a pre-existing PHPStan finding in unchanged `app/Modules/Catalog/Actions/SaveProductAction.php:267`; migration not run |
+| V0 | #13, #17, #19, #20, #44 and #60 behavior from current main verified as already present | same | existing current-main implementation | ALREADY_FIXED_VERIFIED |

@@ -34,7 +34,8 @@
             @forelse($quotations as $quotation)
                 <tr class="border-t border-zinc-100 align-top dark:border-zinc-800"><td class="font-mono font-semibold">{{ $quotation->quotation_number }}</td><td>{{ __(ucfirst($quotation->activity_type)) }}</td><td>{{ $quotation->customer ? (str_starts_with(app()->getLocale(), 'ar') ? $quotation->customer->name_ar : $quotation->customer->name_en) : __('Walk-in') }}</td><td>{{ $quotation->store?->code }}</td><td>{{ $quotation->valid_until?->format('Y-m-d') }}</td><td>{{ number_format((float)$quotation->total, 2) }} {{ $quotation->currency_code }}</td><td><x-status.badge :status="$quotation->status" /></td><td><div class="flex flex-wrap gap-2">
                     @can('quotations.print')<x-actions.button semantic="print" :label="__('Print')" :href="URL::signedRoute('quotations.print', ['quotation' => $quotation->id])">{{ __('Print') }}</x-actions.button>@endcan
-                    @can('quotations.share')<form method="POST" action="{{ route('quotations.share', $quotation) }}">@csrf<flux:button type="submit" size="sm" variant="subtle">{{ __('Share') }}</flux:button></form>@endcan
+                    @can('quotations.share')<form method="POST" action="{{ route('quotations.share', $quotation) }}">@csrf<flux:button type="submit" size="sm" variant="subtle">{{ __('Share / regenerate link') }}</flux:button></form>@endcan
+                    @can('quotations.edit') @foreach($quotation->shareLinks ?? [] as $link) @if($link->revoked_at === null && $link->expires_at?->isFuture())<form method="POST" action="{{ route('quotations.share.revoke', [$quotation, $link]) }}">@csrf<flux:button type="submit" size="sm" variant="subtle">{{ __('Revoke link') }}</flux:button></form>@endif @endforeach @endcan
                     @if($quotation->status==='draft')
                         @can('quotations.edit')<details class="w-full rounded-lg border border-zinc-200 p-3"><summary class="cursor-pointer text-sm font-semibold">{{ __('Edit draft') }}</summary><form method="POST" action="{{ route('quotations.update', $quotation) }}" class="mt-3 grid gap-3" data-product-line-editor>@csrf @method('PUT')
                             @foreach($quotation->lines->sortBy('line_number')->values() as $lineIndex => $quotationLine)
@@ -54,6 +55,14 @@
                             <flux:input name="valid_until" type="date" :value="$quotation->valid_until?->format('Y-m-d')" :label="__('Valid until')" required /><flux:textarea name="terms" :label="__('Terms')" rows="2">{{ $quotation->terms }}</flux:textarea><flux:textarea name="notes" :label="__('Notes')" rows="2">{{ $quotation->notes }}</flux:textarea><flux:button type="submit" size="sm">{{ __('Save edit without posting') }}</flux:button>
                         </form></details>@endcan
                         @can('quotations.issue')<form method="POST" action="{{ route('quotations.status', $quotation) }}">@csrf<input type="hidden" name="status" value="issued"><flux:button type="submit" size="sm" variant="primary">{{ __('Issue') }}</flux:button></form>@endcan
+                        @can('quotations.edit')<form method="POST" action="{{ route('quotations.status', $quotation) }}">@csrf<input type="hidden" name="status" value="cancelled"><input type="hidden" name="reason" value="{{ __('Cancelled by authorized user.') }}"><flux:button type="submit" size="sm" variant="subtle">{{ __('Cancel') }}</flux:button></form>@endcan
+                    @endif
+                    @if($quotation->status === 'issued')
+                        @can('quotations.edit')
+                            @foreach(['accepted' => 'Accept', 'rejected' => 'Reject', 'expired' => 'Expire', 'cancelled' => 'Cancel'] as $nextStatus => $label)
+                                <form method="POST" action="{{ route('quotations.status', $quotation) }}">@csrf<input type="hidden" name="status" value="{{ $nextStatus }}"><input type="hidden" name="reason" value="{{ __($label.' by authorized user.') }}"><flux:button type="submit" size="sm" variant="subtle">{{ __($label) }}</flux:button></form>
+                            @endforeach
+                        @endcan
                     @endif
                 </div></td></tr>
             @empty<tr><td colspan="8"><x-state.empty :title="__('No quotations yet.')" :description="__('Create a typed draft to communicate an offer without posting any operational effect.')" /></td></tr>@endforelse
