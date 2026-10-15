@@ -1961,3 +1961,9 @@ Verification: isolated MariaDB focused tests passed 5 tests / 20 assertions; PHP
 - **Code:** Added migration `2026_10_15_000123_clean_audit_log_permissions.php`, which deletes only noncanonical Audit Logs permission rows and their cascading role pivots in a transaction, preserving `view`, `export`, `print` and unrelated modules. Added focused data-cleanup coverage.
 - **Verification:** Isolated MariaDB focused suite passed 6 tests / 24 assertions; PHP syntax, Pint, and diff checks passed. No Fast QA, production migration, merge, deployment, or issue closure occurred.
 - **Next action:** Review, merge, and run the targeted migration only through the approved production deployment process.
+
+## 2026-10-15 — Customer/catalog/reporting consolidated batch
+
+Selected open issues #13, #17, #19, #20, #44, #50, #58 and #60 after inspecting current main. #13 is already fixed and verified. Implemented customer phone-search normalization for Egyptian international and Arabic/Persian forms, sales invoice customer/phone/cashier filters, product-name fallback, consistent product draft/status display, pending-code guidance, and base selling-price visibility. #50 remains blocked by the need for Ahmed to decide how existing duplicate records and foreign-phone uniqueness are resolved. #58 remains blocked by the need for an approved quotation shared-link expiry policy. No migration, database mutation, merge, deployment or issue closure occurred.
+
+Verification actually run: focused M51CustomerSupplierDataTest passed 10 tests / 33 assertions; PHP syntax, Pint and diff checks passed. Branch created: issues/customer-catalog-reporting-13-17-19-20-44-50-58-60. Commit `4da3f6e607842f596cf75493395626d1deb0ac08` was pushed. One Fast QA gate then ran: 7/8 checks passed; the only failure was the pre-existing unchanged `SaveProductAction.php:267` PHPStan property finding. No merge, deployment or issue closure occurred.

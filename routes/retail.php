@@ -2059,15 +2059,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $request->merge(['store_id' => $contextStoreId]);
         }
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
-        $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier'])->withCount('payments');
+        $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier', 'customer'])->withCount('payments');
         $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));
         $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
+        $query->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')));
+        $query->when($request->filled('customer_phone'), fn ($query) => $query->whereHas('customer', fn ($customer) => $customer->where('phone_normalized', 'like', '%'.preg_replace('/[^0-9]+/', '', (string) $request->string('customer_phone')).'%')));
+        $query->when($request->filled('cashier_id'), fn ($query) => $query->where('cashier_id', $request->integer('cashier_id')));
         $query->when($request->filled('date_from'), fn ($query) => $query->whereDate('approved_at', '>=', $request->string('date_from')));
         $query->when($request->filled('date_to'), fn ($query) => $query->whereDate('approved_at', '<=', $request->string('date_to')));
         $sales = $query->latest('approved_at')->latest('id')->paginate($perPage)->withQueryString();
         $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
+        $customers = Customer::query()->visibleTo($user)->orderBy('name_en')->limit(500)->get(['id', 'name_ar', 'name_en', 'phone_display']);
+        $cashiers = User::query()->whereHas('roles', fn ($roles) => $roles->where('name', 'cashier'))->orderBy('name')->get(['id', 'name']);
 
-        return view('pages.sales.invoices', compact('sales', 'stores'));
+        return view('pages.sales.invoices', compact('sales', 'stores', 'customers', 'cashiers'));
     })->middleware('can:pos_sales.view')->name('sales.invoices');
 
     Route::get('payments', function (Request $request) {

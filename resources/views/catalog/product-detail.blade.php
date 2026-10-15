@@ -91,15 +91,19 @@ new #[Title('Product Details')] class extends Component {
                     </div>
                     <div class="space-y-5 p-5 sm:p-7">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="catalog-code-chip">{{ $product->item_code }}</span>
-                            <flux:badge size="sm" color="{{ $product->status === 'active' ? 'emerald' : 'zinc' }}">{{ __($product->status === 'active' ? 'Active' : 'Inactive') }}</flux:badge>
+                            <span class="catalog-code-chip">{{ $product->item_code ?: __('Pending code') }}</span>
+                            @if (! $product->item_code)
+                                <span class="text-xs text-amber-700">{{ __('Complete the supplier and required product details to generate an item code.') }}</span>
+                            @endif
+                            <flux:badge size="sm" color="{{ $product->status === 'active' ? 'emerald' : ($product->status === 'draft' ? 'amber' : 'zinc') }}">{{ __(ucfirst($product->status)) }}</flux:badge>
                             <flux:badge size="sm" color="sky">{{ __(ucfirst($product->product_type)) }}</flux:badge>
                         </div>
                         <div>
-                            <flux:heading size="xl">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en }}</flux:heading>
+                            <flux:heading size="xl">{{ \App\Support\HumanName::name($product) }}</flux:heading>
                             <flux:text class="mt-2 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_en : $product->name_ar }}</flux:text>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
+                            <div><div class="catalog-detail-label">{{ __('Base consumer selling price') }}</div><div class="font-medium">{{ $product->sale_price !== null ? number_format((float) $product->sale_price, 2).' EGP' : __('Pricing pending') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(str_starts_with(app()->getLocale(), 'ar') ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Model / item number') }}</div><div class="font-medium">{{ $product->model_number ?: __('Not provided') }}</div></div>
