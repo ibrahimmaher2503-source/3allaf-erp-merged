@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Gate::forUser($user)->authorize('quotations.share');
         abort_unless($link->quotation_id === $quotation->id, 404);
         $link->update(['revoked_at' => now()]);
+        app(RecordAuditEvent::class)->execute('quotations', 'quotation_share_revoked', $quotation, branchId: $quotation->branch_id, storeId: $quotation->store_id, metadata: ['share_link_id' => $link->id, 'non_posting' => true]);
 
         return back()->with('success', __('Quotation share link revoked.'));
     })->middleware('can:quotations.share')->name('quotations.share.revoke');
