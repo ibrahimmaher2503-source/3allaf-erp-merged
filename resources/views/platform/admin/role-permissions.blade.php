@@ -208,6 +208,7 @@ new #[Title('Role Permissions')] class extends Component
                                             <label class="flex shrink-0 items-center gap-2 text-sm font-medium text-text-primary">
                                                 <input
                                                     type="checkbox"
+                                                    aria-label="{{ $permissionPresentation['label'] }}"
                                                     class="size-4 rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
                                                     wire:key="role-permission-checkbox-{{ $role->id }}-{{ $permission->id }}"
                                                     wire:model.live="permissionIds"

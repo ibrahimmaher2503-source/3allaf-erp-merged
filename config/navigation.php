@@ -12,6 +12,8 @@ return [
         ['route' => 'purchasing.invoices', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'receipt-percent', 'label' => ['ar' => 'فواتير المشتريات والاستلام', 'en' => 'Invoices & receiving']],
         ['route' => 'purchasing.quantity-differences', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'clipboard-document-list', 'label' => ['ar' => 'فروق الكميات', 'en' => 'Quantity differences']],
         ['route' => 'purchasing.returns', 'permission' => 'purchase_returns.view', 'icon' => 'arrow-path', 'label' => ['ar' => 'مرتجعات الموردين', 'en' => 'Supplier returns']],
+        ['route' => 'purchasing.invoices.readiness', 'permission' => 'purchase_orders.view', 'icon' => 'check-circle', 'label' => ['ar' => 'جاهزية فواتير الشراء', 'en' => 'Invoice readiness']],
+        ['route' => 'purchasing.history.suppliers', 'permission' => 'purchase_invoices_supplier_returns.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل الموردين', 'en' => 'Supplier history']],
         ['route' => 'catalog.suppliers', 'parameters' => ['section' => 'supplier-groups'], 'permission' => 'suppliers.view', 'icon' => 'rectangle-stack', 'label' => ['ar' => 'مجموعات الموردين', 'en' => 'Supplier groups']],
         ['route' => 'catalog.suppliers', 'parameters' => ['section' => 'supplier-masters'], 'permission' => 'suppliers.view', 'icon' => 'building-storefront', 'label' => ['ar' => 'الموردون', 'en' => 'Suppliers']],
     ]],
@@ -19,6 +21,9 @@ return [
         ['route' => 'sales.index', 'permission' => 'pos_sales.view', 'icon' => 'presentation-chart-line', 'label' => ['ar' => 'نظرة عامة على المبيعات', 'en' => 'Sales overview']],
         ['route' => 'pos', 'permission' => 'pos_sales.view', 'icon' => 'shopping-cart', 'label' => ['ar' => 'نقطة البيع', 'en' => 'Point of sale']],
         ['route' => 'sales.invoices', 'permission' => 'pos_sales.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales invoices']],
+        ['route' => 'quotations.index', 'permission' => 'quotations.view', 'icon' => 'document-text', 'label' => ['ar' => 'عروض الأسعار', 'en' => 'Quotations']],
+        ['route' => 'gift.cards.index', 'permission' => ['gift_cards.view', 'returns_exchanges_gift_instruments.view'], 'icon' => 'gift', 'label' => ['ar' => 'بطاقات الهدايا', 'en' => 'Gift cards']],
+        ['route' => 'pos.suspended', 'permission' => 'suspended_sales.view', 'icon' => 'pause-circle', 'label' => ['ar' => 'المبيعات المعلقة', 'en' => 'Suspended sales']],
         ['route' => 'returns.index', 'active_routes' => ['returns.*'], 'permission' => ['returns.view', 'returns_exchanges_gift_instruments.view'], 'icon' => 'arrow-uturn-left', 'label' => ['ar' => 'مرتجعات واستبدال العملاء', 'en' => 'Customer returns & exchanges']],
         ['route' => 'gift.receipts.index', 'active_routes' => ['gift.receipts.*'], 'permission' => ['gift_receipts.view', 'returns_exchanges_gift_instruments.view'], 'icon' => 'gift', 'label' => ['ar' => 'إيصالات الهدايا', 'en' => 'Gift Receipts']],
         ['route' => 'customers.index', 'permission' => 'customers.view', 'icon' => 'users', 'label' => ['ar' => 'العملاء', 'en' => 'Customers']],
@@ -39,8 +44,9 @@ return [
     ['key' => 'pricing', 'icon' => 'tag', 'label' => ['ar' => 'التسعير', 'en' => 'Pricing'], 'items' => [
         ['route' => 'pricing.lists', 'permission' => 'pricing_lists.view', 'icon' => 'banknotes', 'label' => ['ar' => 'قوائم الأسعار', 'en' => 'Pricing Lists']],
         ['route' => 'pricing.index', 'permission' => 'pricing_labels.view', 'icon' => 'scale', 'label' => ['ar' => 'اعتمادات الأسعار', 'en' => 'Price approvals']],
+        ['route' => 'pricing.focus', 'parameters' => ['mode' => 'history'], 'permission' => 'pricing_labels.view', 'icon' => 'clock', 'label' => ['ar' => 'سجل الأسعار', 'en' => 'Price history']],
     ]],
-    ['key' => 'parties', 'enabled' => false, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
+    ['key' => 'parties', 'enabled' => true, 'icon' => 'cake', 'label' => ['ar' => 'الحفلات والحجوزات', 'en' => 'Parties & bookings'], 'items' => [
         ['route' => 'parties.bookings.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'chart-bar-square', 'label' => ['ar' => 'نظرة عامة والحجوزات', 'en' => 'Overview & bookings']],
         ['route' => 'parties.calendar', 'permission' => 'rental_assets.view', 'icon' => 'calendar-days', 'label' => ['ar' => 'التقويم والأجندة', 'en' => 'Calendar & agenda']],
         ['route' => 'parties.invoices.index', 'permission' => 'party_bookings_invoices.view', 'icon' => 'document-text', 'label' => ['ar' => 'فواتير ومدفوعات الحفلات', 'en' => 'Party invoices & payments']],
@@ -60,6 +66,7 @@ return [
         ['route' => 'admin.overview', 'permission' => 'access-administration-center', 'icon' => 'squares-2x2', 'label' => ['ar' => 'مركز الإدارة', 'en' => 'Administration center']],
         ['route' => 'initial-setup', 'permission' => 'company_settings.edit', 'icon' => 'circle-stack', 'label' => ['ar' => 'البيانات الأساسية', 'en' => 'Basic Data']],
         ['route' => 'admin.settings', 'parameters' => ['tab' => 'printers'], 'permission' => 'company_settings.view', 'icon' => 'printer', 'label' => ['ar' => 'الطابعات وقوالب الطباعة', 'en' => 'Printers & print templates']],
+        ['route' => 'pos.financial-readiness', 'permission' => 'company_settings.view', 'icon' => 'check-circle', 'label' => ['ar' => 'جاهزية تحصيل نقطة البيع', 'en' => 'POS financial readiness']],
         ['route' => 'admin.audit', 'permission' => 'access-activity-log', 'icon' => 'clock', 'label' => ['ar' => 'سجل النشاط', 'en' => 'Activity log']],
     ]],
 ];

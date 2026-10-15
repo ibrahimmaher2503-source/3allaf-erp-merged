@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Assets\Models\RentalAsset;
-use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\AgeLabel;
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Character;
 use App\Modules\Catalog\Models\Colour;
 use App\Modules\Catalog\Models\Gender;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\RecordAuditEvent;
@@ -159,7 +159,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             return $alert;
         });
 
-        return view('pages.alerts.index', compact('alerts'));
+        $alertProductIds = $alerts->getCollection()->filter(fn (Alert $alert): bool => in_array($alert->source_type, [StockBalance::class, Product::class], true))
+            ->map(fn (Alert $alert): int => (int) ($alert->metadata['product_id'] ?? $alert->source_id))->filter()->unique();
+        $alertProducts = Product::query()->whereIn('id', $alertProductIds)->get(['id', 'item_code', 'name_ar', 'name_en'])->keyBy('id');
+
+        return view('pages.alerts.index', compact('alerts', 'alertProducts'));
     })->middleware('can:dashboard_reports.view')->name('alerts.index');
 
     Route::post('alerts/{alert}/acknowledge', function (Request $request, Alert $alert) {
@@ -197,15 +201,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         abort_unless($job->storage_path !== null && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 404);
         app(RecordAuditEvent::class)->execute('reporting', 'export_downloaded', $job, branchId: $job->branch_id, storeId: $job->store_id, metadata: ['row_count' => $job->row_count, 'filters' => $job->filters, 'expires_at' => $job->expires_at?->toIso8601String()]);
         $extension = $job->format;
-        $mime = match($job->format) { 'pdf'=>'application/pdf','csv'=>'text/csv; charset=UTF-8',default=>'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+        $mime = match ($job->format) {
+            'pdf' => 'application/pdf','csv' => 'text/csv; charset=UTF-8',default => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        };
 
         return Storage::disk($job->storage_disk ?: 'local')->download($job->storage_path, 'toyjoy-'.$job->report_key.'-'.$job->id.'.'.$extension, ['Content-Type' => $mime]);
     })->name('exports.download');
 
     Route::get('exports/{job}/view', function (Request $request, ExportJob $job) {
-        /** @var User $user */ $user=$request->user();
-        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id,403);
-        abort_unless($job->status==='ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk?:'local')->exists($job->storage_path),410);
-        return Storage::disk($job->storage_disk?:'local')->response($job->storage_path, null, ['Cache-Control'=>'private, no-store','X-Content-Type-Options'=>'nosniff']);
+        /** @var User $user */ $user = $request->user();
+        abort_unless($user->can('dashboard_reports.export_'.($job->format === 'csv' ? 'xlsx' : $job->format)) && $job->requested_by === $user->id, 403);
+        abort_unless($job->status === 'ready' && $job->expires_at?->isFuture() && $job->storage_path && Storage::disk($job->storage_disk ?: 'local')->exists($job->storage_path), 410);
+
+        return Storage::disk($job->storage_disk ?: 'local')->response($job->storage_path, null, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     })->name('exports.view');
 });
