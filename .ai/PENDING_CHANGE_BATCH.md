@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-15 — Permission taxonomy #55
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Map legacy `edit`/`logical_delete` presentation to canonical Update/Delete labels, restrict fresh Audit Logs permissions to View/Export/Print, and retain legacy permission rows and role pivots for compatibility | `issues/permission-taxonomy-55` | `app/Modules/Platform/Support/PermissionPresentation.php`, `database/seeders/ProductionSeeder.php`, `tests/Feature/PermissionTaxonomyTest.php` | Focused isolated MariaDB PASS 5 tests / 20 assertions; PHP syntax, Pint and diff checks PASS; Fast QA ran once with focused regression/integrity/runtime PASS and pre-existing PHPStan plus unavailable-browser failures; no migration, merge or deployment |
+
 ## 2026-10-14 — Supplier settlement and preferred payment separation (#31)
 
 | Class | Repair | Branch | Affected files | Verification/status |

@@ -6,6 +6,17 @@ use App\Modules\Platform\Models\Permission;
 
 final class PermissionPresentation
 {
+    /** @var array<string, string> */
+    private const LEGACY_ACTION_ALIASES = [
+        'edit' => 'update',
+        'logical_delete' => 'delete',
+    ];
+
+    /** @var array<string, list<string>> */
+    private const CANONICAL_MODULE_ACTIONS = [
+        'audit_logs' => ['view', 'export', 'print'],
+    ];
+
     /** @var array<string, array{ar: array{name: string, object: string, description: string}, en: array{name: string, object: string, description: string}}> | null */
     private static ?array $sectionDefinitions = null;
 
@@ -125,6 +136,8 @@ final class PermissionPresentation
         'submit' => self::action('إرسال :object للمراجعة', 'نقل :object من المسودة إلى مسار المراجعة.', 'Submit :object for review', 'Move :object from draft into the review workflow.'),
         'validate' => self::action('التحقق من :object', 'التحقق من صلاحية المستند دون استخدامه أو تغييره.', 'Validate :object', 'Check whether a document is valid without using or changing it.'),
         'view' => self::action('عرض :object', 'عرض :object ضمن نطاق المستخدم المصرح به.', 'View :object', 'View :object within the user authorized scope.'),
+        'update' => self::action('تحديث :object', 'تحديث :object قبل الوصول إلى حالة محمية.', 'Update :object', 'Update :object before it reaches a protected state.'),
+        'delete' => self::action('حذف :object', 'حذف :object وفق سياسة الحذف المنطقي وحفظ أثره التاريخي.', 'Delete :object', 'Delete :object using the permitted logical-delete policy while preserving its history.'),
         'view_patterns' => self::action('عرض نماذج واجهة النظام', 'مراجعة المكونات والأنماط المرئية المعتمدة للواجهة.', 'View interface patterns', 'Review approved visual components and interface patterns.'),
         'void' => self::action('إبطال :object', 'إبطال قيمة غير مستخدمة مع حفظ سجلها التاريخي.', 'Void :object', 'Void unused value while preserving its history.'),
         ];
@@ -150,7 +163,7 @@ final class PermissionPresentation
     {
         $language = self::language($locale);
         $section = self::sections()[$permission->module][$language] ?? null;
-        $action = self::actions()[$permission->action][$language] ?? null;
+        $action = self::actions()[self::canonicalAction($permission->action)][$language] ?? null;
 
         if ($section === null || $action === null) {
             return $language === 'ar'
@@ -162,6 +175,17 @@ final class PermissionPresentation
             'label' => str_replace(':object', $section['object'], $action['label']),
             'description' => str_replace(':object', $section['object'], $action['description']),
         ];
+    }
+
+    public static function canonicalAction(string $action): string
+    {
+        return self::LEGACY_ACTION_ALIASES[$action] ?? $action;
+    }
+
+    /** @return list<string> */
+    public static function canonicalActionsForModule(string $module, array $fallback): array
+    {
+        return self::CANONICAL_MODULE_ACTIONS[$module] ?? $fallback;
     }
 
     /** @return list<string> */

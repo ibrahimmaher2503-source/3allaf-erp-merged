@@ -93,7 +93,11 @@ final class ProductionSeeder extends Seeder
             'company_settings', 'branches_stores', 'drawers_payments_tax_numbering_printers', 'users_roles_permissions', 'products_categories_brands', 'suppliers', 'purchase_orders', 'purchase_invoices_supplier_returns', 'purchase_returns', 'pricing_labels', 'inventory_stock_card', 'transfers', 'stock_counts', 'pos_sales', 'suspended_sales', 'shifts_cash_movements', 'customers_children', 'loyalty', 'product_wallet', 'party_wallet', 'returns_exchanges_gift_instruments', 'party_bookings_invoices', 'party_operating_orders_consumables', 'rental_assets', 'quotations', 'dashboard_reports', 'audit_logs', 'offline_queue_conflicts',
         ];
         foreach ($modules as $module) {
-            foreach (['view', 'create', 'edit', 'submit', 'logical_delete', 'print', 'approve', 'reject', 'export', 'reverse', 'cancel', 'override'] as $action) {
+            $actions = $module === 'audit_logs'
+                ? ['view', 'export', 'print']
+                : ['view', 'create', 'edit', 'submit', 'logical_delete', 'print', 'approve', 'reject', 'export', 'reverse', 'cancel', 'override'];
+
+            foreach ($actions as $action) {
                 Permission::query()->updateOrCreate(['code' => $module.'.'.$action], ['module' => $module, 'action' => $action, 'sensitivity' => in_array($action, ['approve', 'submit', 'reject', 'export', 'reverse', 'cancel', 'override', 'logical_delete'], true) ? 'sensitive' : 'normal', 'status' => 'active']);
             }
         }
