@@ -52,6 +52,17 @@ final class PhoneNormalizer
         return $digits;
     }
 
+    public static function digits(string $phone): string
+    {
+        $translated = self::westernDigits($phone);
+
+        try {
+            return self::normalize($translated);
+        } catch (InvalidArgumentException) {
+            return $translated;
+        }
+    }
+
     /** @return Closure(string, mixed, Closure): void */
     public static function validationRule(): Closure
     {

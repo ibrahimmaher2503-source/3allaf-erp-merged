@@ -707,3 +707,9 @@ Focused isolated MariaDB run: `IssueOperationalContextBatchTest.php` PASS 7 test
 
 - Focused isolated MariaDB run: `PermissionTaxonomyDataCleanupTest`, `PermissionTaxonomyTest`, and `RolePermissionPersistenceTest` PASS, 6 tests / 24 assertions. The new test verifies obsolete Audit Logs rows and pivots are removed while unrelated supplier permissions and assignments remain.
 - PHP syntax, Pint, and `git diff --check` passed. No Fast QA was run because authorization logic did not change. The targeted migration is prepared but was not run in production; no production data, merge, or deployment operation occurred.
+
+## 2026-10-15 — Customer/catalog/reporting consolidated batch
+
+- Focused `M51CustomerSupplierDataTest`: PASS, 10 tests / 33 assertions.
+- Additional read-only normalization probe confirmed local `01012345678`, Egyptian `+20 1012345678`, Arabic digits, and Persian digits resolve to the same canonical search digits; malformed partial terms retain digit search behavior.
+- PHP syntax, Pint, and `git diff --check`: PASS. No migration added or run. Fast QA not run yet because shared business logic was not changed; the batch is pending final branch publication.

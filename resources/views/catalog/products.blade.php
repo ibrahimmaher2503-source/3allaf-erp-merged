@@ -575,8 +575,8 @@ new #[Title('Product Masters')] class extends Component
                             </flux:table.cell>
                             <flux:table.cell data-primary class="whitespace-nowrap"><span class="catalog-code-chip">{{ $product->item_code ?? __('Pending code') }}</span></flux:table.cell>
                             <flux:table.cell data-label="{{ __('Product name') }}">
-                                <div class="font-medium text-text-primary">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en }}</div>
-                                <div class="catalog-secondary-line">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_en : $product->name_ar }}</div>
+                                <div class="font-medium text-text-primary">{{ \App\Support\HumanName::name($product) }}</div>
+                                <div class="catalog-secondary-line">{{ \App\Support\HumanName::name($product, str_starts_with(app()->getLocale(), 'ar') ? 'en' : 'ar') }}</div>
                             </flux:table.cell>
                             <flux:table.cell data-label="{{ __('Type') }}"><flux:badge size="sm" color="zinc">{{ __(ucfirst($product->product_type)) }}</flux:badge><div class="mt-1 text-xs text-text-muted">{{ $product->colour ?: __('No colour') }}</div></flux:table.cell>
                             <flux:table.cell data-label="{{ __('Category / brand') }}" class="text-xs">

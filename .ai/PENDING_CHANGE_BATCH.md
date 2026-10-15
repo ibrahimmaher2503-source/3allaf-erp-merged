@@ -154,3 +154,12 @@ Production access, deployment, backup execution, migration execution, active-sym
 | V1 | Show specific maker-checker feedback for inventory-adjustment self approval | `issues/operational-context-15-35-36-42-52-55` | `routes/inventory.php`, `resources/views/inventory/index.blade.php` | Focused batch PASS; undeployed |
 | V1 | Resolve bounded document/product references for movement, approval, alert, report, and audit presentations | `issues/operational-context-15-35-36-42-52-55` | `app/Modules/Inventory/Support/StockMovementSourceReferences.php`, `app/Modules/Platform/Support/ApprovalInboxReferences.php`, `app/Modules/Platform/Support/AuditLogPresentation.php`, `app/Modules/Reporting/Queries/ReportSnapshot.php`, `routes/reporting.php`, related views | Focused batch PASS; undeployed |
 | L2 | Give permission checkboxes specific accessible names | `issues/operational-context-15-35-36-42-52-55` | `resources/views/platform/admin/role-permissions.blade.php` | Focused batch PASS; #55 broader permission taxonomy remains blocked on owner decision; undeployed |
+
+## 2026-10-15 — Customer/catalog/reporting consolidated batch (#13/#17/#19/#20/#44/#50/#58/#60)
+
+| Class | Repair | Branch | Affected files | Verification/status |
+|---|---|---|---|---|
+| V1 | Normalize customer phone search across Arabic/Persian digits and Egyptian international forms; add sales invoice customer, phone, and cashier filters; use bilingual product-name fallback, consistent draft/status presentation, pending-code guidance, and base selling-price display | `issues/customer-catalog-reporting-13-17-19-20-44-50-58-60` | `app/Modules/Customer/Support/PhoneNormalizer.php`, `routes/customers.php`, `routes/retail.php`, `resources/views/pages/sales/invoices.blade.php`, `resources/views/catalog/products.blade.php`, `resources/views/catalog/product-detail.blade.php` | Focused customer normalization PASS; PHP syntax, Pint, and diff checks PASS; no migration |
+| V0 | #13 current bounded audit-export and label-search implementation verified from current main | same | existing routes/services | ALREADY_FIXED_VERIFIED |
+| Blocked | #50 existing duplicate customer records need owner-approved merge/retention and non-Egyptian uniqueness policy before data correction | same | none | BLOCKED pending Ahmed decision |
+| Blocked | #58 quotation detail and shared-link expiry need approved retention/expiry policy before implementing irreversible link behavior | same | none | BLOCKED pending Ahmed decision |

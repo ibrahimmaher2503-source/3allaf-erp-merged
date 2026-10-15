@@ -79,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     })->name('customers.import');
     Route::get('customers/import/template', function (Request $request, ImportTemplateFactory $templates) {
         abort_unless($request->user()->can('customers.create'), 403);
+
         return $templates->customers($request->user(), $request->input('company_id'));
     })->middleware('can:customers.create')->name('customers.import.template');
     Route::post('customers/import', function (Request $request, StageCustomerImportAction $action) use ($sellingStore) {
@@ -179,7 +180,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             return $documents->xlsx('customer-group-rejections.xlsx', [__('Original row'), ...ImportCustomerGroups::HEADERS, __('Rejection reason')], $result['rejected']);
         }
 
-return back()->with('success', __('Customer groups imported: :count', ['count' => $result['added']]));
+        return back()->with('success', __('Customer groups imported: :count', ['count' => $result['added']]));
     })->middleware('can:customers.edit')->name('customers.groups.import');
 
     Route::post('customers/groups', function (Request $request, CreateCustomerGroupAction $action) use ($sellingStore) {
@@ -237,12 +238,14 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $query = Customer::query()->visibleTo($user)->with(['scopes.store', 'scopes.branch', 'group.parent', 'governorate', 'city'])->withCount(['consents', 'children']);
         $term = trim((string) $request->string('q'));
         if ($term !== '') {
-            $digits = preg_replace('/[^0-9]+/', '', $term);
+            $digits = preg_replace('/[^0-9]+/', '', PhoneNormalizer::digits($term));
             $customerCodeId = preg_match('/^CUS-0*(\d+)$/i', $term, $match) ? (int) $match[1] : null;
             $query->where(function ($scope) use ($term, $digits, $customerCodeId): void {
                 $scope->where('name_ar', 'like', '%'.$term.'%')
                     ->orWhere('name_en', 'like', '%'.$term.'%');
-                if ($customerCodeId) $scope->orWhereKey($customerCodeId);
+                if ($customerCodeId) {
+                    $scope->orWhereKey($customerCodeId);
+                }
                 if (is_string($digits) && $digits !== '') {
                     $scope->orWhere('phone_normalized', 'like', '%'.$digits.'%');
                 }
@@ -274,7 +277,7 @@ return back()->with('success', __('Customer groups imported: :count', ['count' =
         $term = trim((string) $request->string('q'));
         $query = Customer::query()->visibleTo($user)->with(['group.parent', 'governorate', 'city'])->limit(5000);
         if ($term !== '') {
-            $digits = preg_replace('/[^0-9]+/', '', $term);
+            $digits = preg_replace('/[^0-9]+/', '', PhoneNormalizer::digits($term));
             $query->where(function ($scope) use ($term, $digits): void {
                 $scope->where('name_ar', 'like', '%'.$term.'%')->orWhere('name_en', 'like', '%'.$term.'%');
                 if (is_string($digits) && $digits !== '') {
