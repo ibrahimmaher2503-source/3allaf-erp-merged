@@ -13,11 +13,11 @@
             <nav class="marketing-nav" aria-label="التنقل الرئيسي">
                 <a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
             </nav>
-            <a class="marketing-button marketing-button--small marketing-button--primary marketing-header__cta" href="mailto:hello@s-eg.com?subject=طلب%20تجربة%20راجح">اطلب تجربة مجانية <span aria-hidden="true">←</span></a>
+            <div class="marketing-header__actions"><a class="marketing-button marketing-button--small marketing-button--outline marketing-header__login" href="{{ route('login') }}">تسجيل الدخول</a><a class="marketing-button marketing-button--small marketing-button--primary marketing-header__cta" href="mailto:hello@s-eg.com?subject=طلب%20تجربة%20راجح">اطلب تجربة مجانية <span aria-hidden="true">←</span></a></div>
             <button class="marketing-menu-button" type="button" aria-label="فتح القائمة" aria-expanded="false" data-marketing-menu>☰</button>
         </div>
         <nav class="marketing-mobile-nav marketing-shell" aria-label="التنقل للجوال" data-marketing-mobile hidden>
-            <a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
+            <a class="marketing-mobile-nav__login" href="{{ route('login') }}">تسجيل الدخول</a><a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
         </nav>
     </header>
 

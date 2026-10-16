@@ -1990,3 +1990,6 @@ Re-ran public Rajeh frontend validation with Node.js 20.20.2 from `/opt/cpanel/e
 
 ## 2026-10-16 — Public frontend fidelity v2
 Reworked the public landing page against the approved references with shared compact spacing/type/card tokens, reduced inter-section whitespace, tighter hero and AI/roadmap/CTA proportions, and corrected CTA contrast. Replaced the cropped logo with transparent `public/images/rajeh-logo.png` and added a transparent compact mark variant. Node 20 Vite build, view cache, Pint, browser screenshots at 1440/1024/390, RTL, overflow, mobile menu, asset, and console checks passed. Screenshots are stored under `storage/app/frontend-review/fidelity-v2/` and remain uncommitted.
+
+## 2026-10-16 — Public frontend authentication action
+Added the existing `route('login')` authentication link as a secondary outlined `تسجيل الدخول` action beside the primary trial CTA on desktop/tablet headers and inside the mobile navigation. No public registration link was added. Node 20 build, view cache, Pint, RTL/overflow smoke, login href resolution, mobile menu visibility, screenshots, and console checks passed.
