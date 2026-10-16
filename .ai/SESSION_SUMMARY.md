@@ -1979,3 +1979,8 @@ Recovered the interrupted #48/#51/#56/#59 worktree, preserved the existing recei
 
 ## 2026-10-16 — Issues #12 #30 #16 #21
 Implemented supplier commercial-term persistence and validation, guarded soft deletion for unsubmitted purchase invoice drafts, and wired the purchase invoice UI action. Added migrations 000126 and 000127. Focused PHPUnit M51CustomerSupplierDataTest passed (10 tests, 34 assertions); PHP syntax and Pint passed. No production migration/deploy performed. Shared confirmation work remains limited to existing Livewire/Flux confirmation controls in the scoped purchasing/approval screens.
+
+## 2026-10-16 — Public marketing frontend v1
+Implemented the Arabic-first public Rajeh ERP marketing homepage on `feature/public-frontend-v1`, replacing the placeholder welcome view with responsive semantic sections for navigation, hero/product preview, real ERP capabilities, AI availability, benefits, roadmap, CTA and footer. Added scoped marketing CSS and a cropped approved Rajeh logo asset; admin/backoffice styles and routes were left unchanged.
+
+Verification actually run: Laravel view cache succeeded, Pint succeeded, `git diff --check` succeeded, and the public route returned HTTP 200 with a temporary local environment. `npm run build` could not run because the environment has Node.js 16.20.2 while the installed Rolldown/Vite tooling requires Node.js 20+. Playwright screenshot checks could not run for the same Node version requirement; no browser screenshots were produced. No merge or deployment occurred.
