@@ -1979,3 +1979,20 @@ Recovered the interrupted #48/#51/#56/#59 worktree, preserved the existing recei
 
 ## 2026-10-16 — Issues #12 #30 #16 #21
 Implemented supplier commercial-term persistence and validation, guarded soft deletion for unsubmitted purchase invoice drafts, and wired the purchase invoice UI action. Added migrations 000126 and 000127. Focused PHPUnit M51CustomerSupplierDataTest passed (10 tests, 34 assertions); PHP syntax and Pint passed. No production migration/deploy performed. Shared confirmation work remains limited to existing Livewire/Flux confirmation controls in the scoped purchasing/approval screens.
+
+## 2026-10-16 — Public marketing frontend v1
+Implemented the Arabic-first public Rajeh ERP marketing homepage on `feature/public-frontend-v1`, replacing the placeholder welcome view with responsive semantic sections for navigation, hero/product preview, real ERP capabilities, AI availability, benefits, roadmap, CTA and footer. Added scoped marketing CSS and a cropped approved Rajeh logo asset; admin/backoffice styles and routes were left unchanged.
+
+Verification actually run: Laravel view cache succeeded, Pint succeeded, `git diff --check` succeeded, and the public route returned HTTP 200 with a temporary local environment. `npm run build` could not run because the environment has Node.js 16.20.2 while the installed Rolldown/Vite tooling requires Node.js 20+. Playwright screenshot checks could not run for the same Node version requirement; no browser screenshots were produced. No merge or deployment occurred.
+
+## 2026-10-16 — Public frontend visual validation
+Re-ran public Rajeh frontend validation with Node.js 20.20.2 from `/opt/cpanel/ea-nodejs20/bin`. Vite production build passed, local Laravel route returned HTTP 200, and Playwright captured desktop, tablet, and mobile screenshots under `storage/app/frontend-review/`. Browser checks confirmed RTL, no horizontal overflow, no clipped Arabic text, mobile navigation visibility, loaded image assets, and no console/page errors. Visual comparison against the approved mockup, handoff board, and brand identity is aligned; no design corrections were needed. Screenshots remain uncommitted review artifacts.
+
+## 2026-10-16 — Public frontend fidelity v2
+Reworked the public landing page against the approved references with shared compact spacing/type/card tokens, reduced inter-section whitespace, tighter hero and AI/roadmap/CTA proportions, and corrected CTA contrast. Replaced the cropped logo with transparent `public/images/rajeh-logo.png` and added a transparent compact mark variant. Node 20 Vite build, view cache, Pint, browser screenshots at 1440/1024/390, RTL, overflow, mobile menu, asset, and console checks passed. Screenshots are stored under `storage/app/frontend-review/fidelity-v2/` and remain uncommitted.
+
+## 2026-10-16 — Public frontend authentication action
+Added the existing `route('login')` authentication link as a secondary outlined `تسجيل الدخول` action beside the primary trial CTA on desktop/tablet headers and inside the mobile navigation. No public registration link was added. Node 20 build, view cache, Pint, RTL/overflow smoke, login href resolution, mobile menu visibility, screenshots, and console checks passed.
+
+## 2026-10-16 — Public frontend final polish
+Enforced the closed-by-default mobile navigation state using the existing hidden/ARIA toggle and added the same outlined secondary treatment to desktop/tablet login plus a compact outlined mobile menu action. Node 20 build, view cache, Pint, RTL, overflow, console, menu open/close, and final 1440/1024/390 screenshots passed.
