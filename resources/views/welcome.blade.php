@@ -26,11 +26,6 @@
                             {{ __('Sign in') }}
                         </flux:button>
 
-                        @if (Route::has('register'))
-                            <flux:button :href="route('register')" variant="primary" wire:navigate>
-                                {{ __('Create account') }}
-                            </flux:button>
-                        @endif
                     @endauth
                 </nav>
             </header>
