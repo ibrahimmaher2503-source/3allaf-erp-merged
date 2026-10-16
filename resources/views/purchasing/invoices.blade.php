@@ -19,6 +19,7 @@ use App\Modules\Purchasing\Actions\ReversePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\SavePurchaseDistributionAction;
+use App\Modules\Purchasing\Actions\DeletePurchaseDraftAction;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
@@ -694,6 +695,13 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->showTransitionModal = true;
     }
 
+    public function deleteDraft(int $id, DeletePurchaseDraftAction $delete): void
+    {
+        Gate::authorize('purchase_invoices.draft');
+        $delete->execute($id, (int) Auth::id());
+        Flux::toast(__('Draft purchase invoice deleted.'), variant: 'success');
+    }
+
     public function executeTransition(RejectPurchaseInvoiceAction $reject, CancelPurchaseInvoiceAction $cancel, ReversePurchaseInvoiceAction $reverse): void
     {
         $this->validate(['transitionReason' => 'required|string|min:3|max:500']);
@@ -936,6 +944,9 @@ new #[Title('Purchase Invoices')] class extends Component
                                     @endif
                                     @can('purchase_invoices_supplier_returns.cancel')
                                         <flux:button size="sm" variant="subtle" wire:click="openTransitionModal('cancel', {{ $invoice->id }})">{{ __('Cancel') }}</flux:button>
+                                    @endcan
+                                    @can('purchase_invoices.draft')
+                                        <flux:button size="sm" variant="danger" wire:click="deleteDraft({{ $invoice->id }})" wire:confirm="{{ __('Delete this unsubmitted draft?') }}">{{ __('Delete draft') }}</flux:button>
                                     @endcan
                                 </div>
                             @elseif (in_array($invoice->status, ['submitted','awaiting_distribution'], true))

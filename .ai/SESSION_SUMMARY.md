@@ -1976,3 +1976,6 @@ Verification actually run: focused M51CustomerSupplierDataTest passed 10 tests /
 
 ## 2026-10-15 — Batch recovery
 Recovered the interrupted #48/#51/#56/#59 worktree, preserved the existing receipt/timezone/alert/migration changes, and completed the canonical LowStockRule integration across inventory, dashboard, and alert evaluation. Ran Pint, PHP syntax checks, timezone conversion assertion, low-stock consistency assertion, alert lifecycle assertion, receipt field assertion, and git diff checks. No merge or deployment occurred.
+
+## 2026-10-16 — Issues #12 #30 #16 #21
+Implemented supplier commercial-term persistence and validation, guarded soft deletion for unsubmitted purchase invoice drafts, and wired the purchase invoice UI action. Added migrations 000126 and 000127. Focused PHPUnit M51CustomerSupplierDataTest passed (10 tests, 34 assertions); PHP syntax and Pint passed. No production migration/deploy performed. Shared confirmation work remains limited to existing Livewire/Flux confirmation controls in the scoped purchasing/approval screens.

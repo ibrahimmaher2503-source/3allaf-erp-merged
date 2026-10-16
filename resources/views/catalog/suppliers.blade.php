@@ -76,6 +76,8 @@ new #[Title('Supplier Masters')] class extends Component
         'tax_number' => '',
         'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
         'payment_terms' => '',
+        'credit_limit' => '',
+        'lead_time_days' => '',
         'preferred_payment_method_id' => '',
         'settlement_method' => '',
         'settlement_other_description' => '',
@@ -176,6 +178,8 @@ new #[Title('Supplier Masters')] class extends Component
             'tax_number' => '',
             'country_code' => SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => '',
+            'credit_limit' => '',
+            'lead_time_days' => '',
             'preferred_payment_method_id' => '',
             'settlement_method' => '',
             'settlement_other_description' => '',
@@ -204,6 +208,8 @@ new #[Title('Supplier Masters')] class extends Component
             'tax_number' => $supplier->tax_number ?? '',
             'country_code' => $supplier->country_code ?? SupplierTaxIdentity::DEFAULT_COUNTRY,
             'payment_terms' => $supplier->payment_terms ?? '',
+            'credit_limit' => $supplier->credit_limit ?? '',
+            'lead_time_days' => $supplier->lead_time_days ?? '',
             'preferred_payment_method_id' => $supplier->preferred_payment_method_id ?? '',
             'settlement_method' => $supplier->settlement_method ?? '',
             'settlement_other_description' => $supplier->settlement_other_description ?? '',
@@ -263,6 +269,8 @@ new #[Title('Supplier Masters')] class extends Component
             'supplierForm.tax_number' => ['nullable', 'string', 'max:50'],
             'supplierForm.country_code' => ['required', 'string', 'size:2', 'regex:/^[A-Z]{2}$/'],
             'supplierForm.payment_terms' => ['nullable', 'string', 'max:1000'],
+            'supplierForm.credit_limit' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+            'supplierForm.lead_time_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'supplierForm.preferred_payment_method_id' => ['nullable', 'integer', Rule::exists('payment_methods', 'id')->where('status', 'active')],
             'supplierForm.settlement_method' => ['required', Rule::in(SupplierSettlementMethod::VALUES)],
             'supplierForm.settlement_other_description' => ['nullable', 'required_if:supplierForm.settlement_method,other', 'string', 'max:255'],
@@ -935,6 +943,9 @@ new #[Title('Supplier Masters')] class extends Component
                     @if (($supplierForm['settlement_method'] ?? '') === 'other')
                         <flux:input wire:model="supplierForm.settlement_other_description" :label="__('Other settlement description')" required />
                     @endif
+                    <flux:input wire:model="supplierForm.credit_limit" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الحد الائتماني (اختياري)' : __('Credit limit (optional)')" type="number" min="0" step="0.0001" />
+                    <flux:input wire:model="supplierForm.lead_time_days" :label="str_starts_with(app()->getLocale(), 'ar') ? 'مدة التوريد بالأيام (اختياري)' : __('Lead time in days (optional)')" type="number" min="0" max="3650" step="1" />
+                    <p class="text-xs text-zinc-500">{{ str_starts_with(app()->getLocale(), 'ar') ? 'مدة التوريد للمساعدة في التخطيط ولا تمنع إنشاء أمر شراء.' : __('Lead time is planning information and does not block purchasing.') }}</p>
                     <flux:select wire:model="supplierForm.preferred_payment_method_id" :label="str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الدفع المفضلة للمورد' : __('Preferred supplier payment method')">
                         <option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'بدون طريقة دفع مفضلة' : __('No preferred payment method') }}</option>
                         @foreach ($paymentMethods as $paymentMethod)

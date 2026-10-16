@@ -36,6 +36,8 @@ class Supplier extends Model
         'tax_number',
         'country_code',
         'payment_terms',
+        'credit_limit',
+        'lead_time_days',
         'preferred_payment_method_id',
         'settlement_method',
         'settlement_other_description',
@@ -49,6 +51,8 @@ class Supplier extends Model
 
     protected $casts = [
         'lock_version' => 'integer',
+        'credit_limit' => 'decimal:4',
+        'lead_time_days' => 'integer',
     ];
 
     public function productSuppliers(): HasMany

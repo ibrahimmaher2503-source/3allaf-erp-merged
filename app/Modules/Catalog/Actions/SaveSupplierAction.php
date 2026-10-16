@@ -104,6 +104,8 @@ class SaveSupplierAction
                 'tax_number' => $taxNumber,
                 'country_code' => $countryCode,
                 'payment_terms' => ! empty($data['payment_terms']) ? trim((string) $data['payment_terms']) : null,
+                'credit_limit' => filled($data['credit_limit'] ?? null) ? (string) $data['credit_limit'] : null,
+                'lead_time_days' => filled($data['lead_time_days'] ?? null) ? (int) $data['lead_time_days'] : null,
                 'preferred_payment_method_id' => $preferredPaymentMethodId,
                 'settlement_method' => $settlementMethod,
                 'settlement_other_description' => $settlementMethod === 'other' ? $settlementOther : null,
@@ -120,7 +122,7 @@ class SaveSupplierAction
                 $event = 'create_supplier';
                 $before = null;
             } else {
-                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']);
+                $before = $supplier->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'credit_limit', 'lead_time_days', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']);
                 $supplier->update([
                     ...$attributes,
                     'lock_version' => $supplier->lock_version + 1,
@@ -133,7 +135,7 @@ class SaveSupplierAction
                 event: $event,
                 source: $supplier,
                 before: $before,
-                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']),
+                after: $supplier->fresh()->only(['code', 'barcode_prefix', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'credit_limit', 'lead_time_days', 'preferred_payment_method_id', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_id', 'lock_version']),
             );
 
             return $supplier->fresh();
