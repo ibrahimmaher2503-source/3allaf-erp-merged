@@ -353,14 +353,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $store = $sellingStore($user);
         try {
-            $customer = $action->execute($user, $store, $validated + [
-                'consents' => [[
-                    'purpose' => 'service_delivery',
-                    'status' => 'granted',
-                    'source' => 'profile_create',
-                ]],
-                'children' => $children,
-            ]);
+            $purposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
+            $consents = collect($purposes)->map(fn (string $purpose): array => [
+                'purpose' => $purpose,
+                'status' => 'denied',
+                'source' => 'profile_create',
+            ])->all();
+            $customer = $action->execute($user, $store, $validated + ['consents' => $consents, 'children' => $children]);
         } catch (InvalidArgumentException|UniqueConstraintViolationException $exception) {
             $normalizedPhone = PhoneNormalizer::normalize((string) ($validated['phone'] ?? ''));
             $candidate = Customer::query()

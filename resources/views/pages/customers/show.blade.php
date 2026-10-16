@@ -109,7 +109,7 @@
 
                 @can('customers.sensitive')
                     <section class="grid gap-6 xl:grid-cols-2">
-                        @if(false)<div class="hidden rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20" aria-hidden="true">
+                        <div class="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 shadow-sm dark:border-cyan-900 dark:bg-cyan-950/20">
                             <flux:heading size="lg">{{ __('Consent history') }}</flux:heading>
                             <div class="mt-4 space-y-3">
                                 @forelse ($consents as $consent)
@@ -128,7 +128,7 @@
                                 <div><flux:select name="status" :label="__('Consent response')" required><flux:select.option value="granted">{{ __('Granted') }}</flux:select.option><flux:select.option value="withdrawn">{{ __('Withdrawn') }}</flux:select.option><flux:select.option value="denied">{{ __('Denied') }}</flux:select.option></flux:select><x-context-help :title="__('Consent response')" :label="__('Open contextual help')"><p>{{ __('Granted, withdrawn, or denied.') }}</p></x-context-help></div>
                                 <div class="flex items-end"><flux:button type="submit" variant="subtle">{{ __('Record consent') }}</flux:button></div>
                             </form>
-                        </div>@endif
+                        </div>
                         <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm dark:border-amber-900 dark:bg-amber-950/20">
                             <flux:heading size="lg">{{ __('Child profiles') }}</flux:heading>
                             <flux:text class="mt-1 text-sm">{{ __('Purpose-scoped child data is kept separate and is never included in a normal customer export.') }}</flux:text>
