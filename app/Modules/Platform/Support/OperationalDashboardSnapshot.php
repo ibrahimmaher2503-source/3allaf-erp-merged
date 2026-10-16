@@ -21,10 +21,18 @@ use App\Modules\Retail\Models\SaleLine;
 final class OperationalDashboardSnapshot
 {
     /** @return array<string, mixed> */
-    public function for(User $user): array
+    public function for(User $user, array $filters = []): array
     {
         $storeIds = Store::query()->visibleTo($user)->select('id');
         $today = now()->toDateString();
+        $from = filled($filters['date_from'] ?? null) ? (string) $filters['date_from'] : $today;
+        $to = filled($filters['date_to'] ?? null) ? (string) $filters['date_to'] : $today;
+        if (filled($filters['branch_id'] ?? null)) {
+            $storeIds->where('branch_id', (int) $filters['branch_id']);
+        }
+        if (filled($filters['store_id'] ?? null)) {
+            $storeIds->whereKey((int) $filters['store_id']);
+        }
         $canDecideApprovals = collect([
             'pricing_labels.approve', 'purchase_orders.approve', 'purchase_invoices_supplier_returns.approve',
             'purchase_returns.approve', 'inventory_stock_card.approve', 'stock_counts.reconcile',
@@ -38,13 +46,13 @@ final class OperationalDashboardSnapshot
 
         return [
             'sales' => $user->can('pos_sales.view') ? [
-                'total' => (string) (clone $sales)->whereDate('approved_at', $today)->sum('payable_total'),
-                'count' => (clone $sales)->whereDate('approved_at', $today)->count(),
+                'total' => (string) (clone $sales)->whereBetween('approved_at', [$from.' 00:00:00', $to.' 23:59:59'])->sum('payable_total'),
+                'count' => (clone $sales)->whereBetween('approved_at', [$from.' 00:00:00', $to.' 23:59:59'])->count(),
                 'recent' => (clone $sales)->with(['store:id,code,name_ar,name_en', 'cashier:id,name'])->latest('approved_at')->latest('id')->limit(5)->get(['id', 'store_id', 'cashier_id', 'document_number', 'payable_total', 'approved_at']),
             ] : null,
             'purchases' => $user->can('purchase_invoices_supplier_returns.view') ? [
-                'total' => (string) (clone $purchases)->whereDate('invoice_date', $today)->sum('total_amount'),
-                'count' => (clone $purchases)->whereDate('invoice_date', $today)->count(),
+                'total' => (string) (clone $purchases)->whereBetween('invoice_date', [$from, $to])->sum('total_amount'),
+                'count' => (clone $purchases)->whereBetween('invoice_date', [$from, $to])->count(),
                 'recent' => (clone $purchases)->with(['store:id,code,name_ar,name_en', 'supplier:id,name_ar,name_en'])->latest('invoice_date')->latest('id')->limit(5)->get(['id', 'store_id', 'supplier_id', 'invoice_number', 'total_amount', 'status', 'invoice_date']),
             ] : null,
             'low_stock' => $user->can('inventory_stock_card.view') ? LowStockRule::apply((clone $stockBalances))

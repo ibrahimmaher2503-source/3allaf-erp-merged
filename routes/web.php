@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\User;
 use App\Modules\Platform\Support\AuthenticatedLanding;
 use App\Modules\Platform\Support\InitialSetupStatus;
+use App\Modules\Platform\Support\OperationalDashboardSnapshot;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('build/{path}', function (string $path) {
@@ -40,9 +43,9 @@ Route::get('build/{path}', function (string $path) {
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (InitialSetupStatus $setupStatus, \App\Modules\Platform\Support\OperationalDashboardSnapshot $dashboard, AuthenticatedLanding $landing) {
+    Route::get('dashboard', function (Request $request, InitialSetupStatus $setupStatus, OperationalDashboardSnapshot $dashboard, AuthenticatedLanding $landing) {
         $user = request()->user();
-        abort_unless($user instanceof \App\Models\User, 403);
+        abort_unless($user instanceof User, 403);
 
         if (($scopeSetup = $landing->scopeSetupDestination($user)) !== null) {
             return redirect()->to($scopeSetup);
@@ -50,7 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('dashboard', [
             'setup' => $setupStatus->snapshot(),
-            'dashboard' => $dashboard->for($user),
+            'dashboard' => $dashboard->for($user, $request->only(['date_from', 'date_to', 'branch_id', 'store_id'])),
         ]);
     })->middleware('can:dashboard_reports.view')->name('dashboard');
     require __DIR__.'/retail.php';
