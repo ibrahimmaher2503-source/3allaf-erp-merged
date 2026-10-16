@@ -1465,3 +1465,27 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
     .marketing-page .marketing-mobile-nav__login { color:var(--marketing-blue); font-weight:900; }
     @media (max-width:1000px) { .marketing-page .marketing-header__actions { display:none; } }
 }
+@layer components {
+    .marketing-page .marketing-mobile-nav[hidden] { display:none !important; }
+    .marketing-page .marketing-header__login {
+        min-height:2.35rem;
+        border:1px solid #b7cce8;
+        border-radius:.65rem;
+        background:#fff;
+        color:var(--marketing-navy);
+        padding:.45rem .82rem;
+        font-weight:800;
+    }
+    .marketing-page .marketing-header__login:hover,
+    .marketing-page .marketing-header__login:focus-visible {
+        border-color:var(--marketing-blue);
+        background:#f4f8ff;
+        color:var(--marketing-blue);
+    }
+    .marketing-page .marketing-mobile-nav__login {
+        border:1px solid #b7cce8;
+        border-radius:.65rem;
+        background:#fff;
+        padding:.6rem .75rem;
+    }
+}

@@ -1993,3 +1993,6 @@ Reworked the public landing page against the approved references with shared com
 
 ## 2026-10-16 — Public frontend authentication action
 Added the existing `route('login')` authentication link as a secondary outlined `تسجيل الدخول` action beside the primary trial CTA on desktop/tablet headers and inside the mobile navigation. No public registration link was added. Node 20 build, view cache, Pint, RTL/overflow smoke, login href resolution, mobile menu visibility, screenshots, and console checks passed.
+
+## 2026-10-16 — Public frontend final polish
+Enforced the closed-by-default mobile navigation state using the existing hidden/ARIA toggle and added the same outlined secondary treatment to desktop/tablet login plus a compact outlined mobile menu action. Node 20 build, view cache, Pint, RTL, overflow, console, menu open/close, and final 1440/1024/390 screenshots passed.
