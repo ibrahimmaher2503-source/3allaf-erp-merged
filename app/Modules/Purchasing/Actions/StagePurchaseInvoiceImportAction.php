@@ -31,7 +31,7 @@ final class StagePurchaseInvoiceImportAction
     private const ALLOWED_HEADERS = [
         'supplier_code', 'supplier_invoice_number', 'invoice_date', 'receiving_store_code', 'purchase_order_number',
         'item_code', 'barcode', 'quantity', 'unit_cost', 'line_discount_value', 'line_discount_type',
-        'tax_rate', 'tax_code', 'notes',
+        'notes',
     ];
 
     public function stage(string|Attachment $sourceFile, string $originalFilename, string $mimeType, int $sizeBytes, int $userId): PurchaseInvoiceImportBatch
@@ -310,8 +310,6 @@ final class StagePurchaseInvoiceImportAction
             'unit_cost' => (string) ($raw['unit_cost'] ?? ''),
             'discount_type' => trim((string) ($raw['line_discount_type'] ?? '')),
             'discount_value' => (string) ($raw['line_discount_value'] ?? '0'),
-            'tax_rate' => (string) ($raw['tax_rate'] ?? '0'),
-            'tax_code' => trim((string) ($raw['tax_code'] ?? '')),
             'notes' => trim((string) ($raw['notes'] ?? '')),
         ];
     }

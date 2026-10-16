@@ -164,9 +164,9 @@ final class SavePurchaseInvoiceAction
                     $line['discount_value'] = $purchaseOrderLine->discount_type === 'amount'
                         ? bcdiv(bcmul((string) $purchaseOrderLine->discount_amount, $requested, 10), (string) $purchaseOrderLine->quantity_ordered, 4)
                         : (string) $purchaseOrderLine->discount_value;
-                    $line['tax_rate'] = (string) $purchaseOrderLine->tax_rate;
-                    $line['tax_code'] = $purchaseOrderLine->tax_code;
-                    $line['tax_inclusive'] = (bool) $purchaseOrderLine->tax_inclusive;
+                    $line['tax_rate'] = '0';
+                    $line['tax_code'] = null;
+                    $line['tax_inclusive'] = false;
                 }
                 $normalizedLines[] = [...$line, 'product_id' => $product->id, 'purchase_order_line_id' => $purchaseOrderLine?->id, 'line_number' => $index + 1];
             }

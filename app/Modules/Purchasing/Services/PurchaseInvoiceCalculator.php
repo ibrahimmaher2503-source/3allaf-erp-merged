@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Services;
 
-use InvalidArgumentException;
 use App\Support\ProductQuantity;
+use InvalidArgumentException;
 
 final class PurchaseInvoiceCalculator
 {
     /**
+     * Purchase unit costs are supplier-gross prices. Tax columns remain only as
+     * compatibility snapshots and are always zero for newly saved invoices.
+     *
      * @param  array<string, mixed>  $line
      * @return array{quantity: numeric-string, unit_cost: numeric-string, discount_type: null|string, discount_value: numeric-string, discount_amount: numeric-string, tax_rate: numeric-string, tax_code: null|string, tax_inclusive: bool, tax_amount: numeric-string, subtotal: numeric-string, line_total: numeric-string}
      */
@@ -22,7 +25,6 @@ final class PurchaseInvoiceCalculator
         if ($discountType === null) {
             $discountValue = '0.0000';
         }
-        $taxRate = $this->decimal($line['tax_rate'] ?? 0, 4, 'Tax rate');
 
         if (bccomp($quantity, '0', 6) <= 0) {
             throw new InvalidArgumentException(__('Quantity must be greater than zero.'));
@@ -36,9 +38,6 @@ final class PurchaseInvoiceCalculator
         if (bccomp($discountValue, '0', 4) < 0) {
             throw new InvalidArgumentException(__('Discount cannot be negative.'));
         }
-        if (bccomp($taxRate, '100', 4) > 0) {
-            throw new InvalidArgumentException(__('Tax rate cannot exceed 100 percent.'));
-        }
 
         $gross = bcmul($quantity, $unitCost, 8);
         $discount = match ($discountType) {
@@ -46,22 +45,11 @@ final class PurchaseInvoiceCalculator
             'amount' => $discountValue,
             default => '0',
         };
-
         if (bccomp($discount, $gross, 8) > 0) {
             throw new InvalidArgumentException(__('Discount cannot exceed the line value.'));
         }
 
-        $discounted = bcsub($gross, $discount, 8);
-        $taxInclusive = (bool) ($line['tax_inclusive'] ?? false);
-        if ($taxInclusive && bccomp($taxRate, '0', 4) > 0) {
-            $tax = bcdiv(bcmul($discounted, $taxRate, 8), bcadd('100', $taxRate, 4), 8);
-            $subtotal = bcsub($discounted, $tax, 8);
-            $lineTotal = $discounted;
-        } else {
-            $subtotal = $discounted;
-            $tax = bcdiv(bcmul($subtotal, $taxRate, 8), '100', 8);
-            $lineTotal = bcadd($subtotal, $tax, 8);
-        }
+        $lineTotal = bcsub($gross, $discount, 8);
 
         return [
             'quantity' => bcadd($quantity, '0', 6),
@@ -69,11 +57,11 @@ final class PurchaseInvoiceCalculator
             'discount_type' => $discountType,
             'discount_value' => bcadd($discountValue, '0', 4),
             'discount_amount' => bcadd($discount, '0', 4),
-            'tax_rate' => bcadd($taxRate, '0', 4),
-            'tax_code' => (($line['tax_code'] ?? '') !== '') ? ($line['tax_code'] ?? null) : null,
-            'tax_inclusive' => $taxInclusive,
-            'tax_amount' => bcadd($tax, '0', 4),
-            'subtotal' => bcadd($subtotal, '0', 4),
+            'tax_rate' => '0.0000',
+            'tax_code' => null,
+            'tax_inclusive' => false,
+            'tax_amount' => '0.0000',
+            'subtotal' => bcadd($lineTotal, '0', 4),
             'line_total' => bcadd($lineTotal, '0', 4),
         ];
     }
@@ -88,22 +76,17 @@ final class PurchaseInvoiceCalculator
             throw new InvalidArgumentException(__('A purchase invoice must contain at least one line item.'));
         }
 
-        $subtotal = '0.0000';
-        $discountAmount = '0.0000';
-        $taxAmount = '0.0000';
-        $totalAmount = '0.0000';
+        $subtotal = $discountAmount = $totalAmount = '0.0000';
         $calculated = [];
-
         foreach ($lines as $line) {
             $result = $this->calculateLine($line);
             $subtotal = bcadd($subtotal, (string) $result['subtotal'], 4);
             $discountAmount = bcadd($discountAmount, (string) $result['discount_amount'], 4);
-            $taxAmount = bcadd($taxAmount, (string) $result['tax_amount'], 4);
             $totalAmount = bcadd($totalAmount, (string) $result['line_total'], 4);
             $calculated[] = $result;
         }
 
-        return compact('subtotal', 'discountAmount', 'taxAmount', 'totalAmount', 'calculated');
+        return compact('subtotal', 'discountAmount', 'totalAmount') + ['taxAmount' => '0.0000', 'calculated' => $calculated];
     }
 
     /** @return numeric-string */
@@ -114,9 +97,7 @@ final class PurchaseInvoiceCalculator
             throw new InvalidArgumentException(__(':label must be a valid non-negative number.', ['label' => $label]));
         }
 
-        $numericValue = $value;
-
         // @phpstan-ignore argument.type
-        return bcadd($numericValue, '0', $scale);
+        return bcadd($value, '0', $scale);
     }
 }
