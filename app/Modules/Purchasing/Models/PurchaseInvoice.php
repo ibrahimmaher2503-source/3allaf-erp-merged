@@ -12,10 +12,12 @@ use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class PurchaseInvoice extends Model implements ImmutableSourceContract
 {
     use GuardsApprovedDocument;
+    use SoftDeletes;
 
     protected $fillable = [
         'invoice_number', 'supplier_id', 'purchase_order_id', 'store_id', 'supplier_reference',

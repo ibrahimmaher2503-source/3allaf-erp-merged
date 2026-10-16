@@ -24,7 +24,7 @@ use OpenSpout\Reader\Common\Creator\ReaderFactory;
 
 class StageSupplierImportAction
 {
-    public const HEADERS = ['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_code'];
+    public const HEADERS = ['code', 'name_ar', 'name_en', 'contact_name', 'email', 'phone', 'tax_number', 'country_code', 'payment_terms', 'credit_limit', 'lead_time_days', 'settlement_method', 'settlement_other_description', 'address', 'status', 'supplier_group_code'];
 
     public static function templateHeaders(): array
     {
@@ -121,6 +121,16 @@ class StageSupplierImportAction
                 }
                 if ($method === 'other' && blank($d['settlement_other_description'] ?? null)) {
                     $errors[] = __('Describe the supplier settlement method when Other is selected.');
+                }
+                if (filled($d['credit_limit'] ?? null) && (! is_numeric($d['credit_limit']) || (float) $d['credit_limit'] < 0)) {
+                    $errors[] = __('Credit limit must be a non-negative number.');
+                } elseif (filled($d['credit_limit'] ?? null)) {
+                    $d['credit_limit'] = (string) $d['credit_limit'];
+                }
+                if (filled($d['lead_time_days'] ?? null) && (filter_var($d['lead_time_days'], FILTER_VALIDATE_INT) === false || (int) $d['lead_time_days'] < 0 || (int) $d['lead_time_days'] > 3650)) {
+                    $errors[] = __('Lead time must be an integer from 0 to 3650 days.');
+                } elseif (filled($d['lead_time_days'] ?? null)) {
+                    $d['lead_time_days'] = (int) $d['lead_time_days'];
                 }
                 if (! in_array($d['status'] ?? '', ['active', 'inactive'], true)) {
                     $errors[] = __('The selected supplier status is not supported.');
