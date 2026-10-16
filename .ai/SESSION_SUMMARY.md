@@ -1996,3 +1996,6 @@ Added the existing `route('login')` authentication link as a secondary outlined 
 
 ## 2026-10-16 — Public frontend final polish
 Enforced the closed-by-default mobile navigation state using the existing hidden/ARIA toggle and added the same outlined secondary treatment to desktop/tablet login plus a compact outlined mobile menu action. Node 20 build, view cache, Pint, RTL, overflow, console, menu open/close, and final 1440/1024/390 screenshots passed.
+
+## 2026-10-16 — Frontend deployment routing correction
+Diagnosed the failed frontend activation: cPanel/Apache for `rajeh.xyz` serves `/home/rajeh/public_html/erp`, while activation changed only `/home/rajeh/laravel`; the former was a copied static public tree, so Apache did not follow the active Laravel release. Preserved that directory as `erp-legacy-20261016` and created the stable symlink `/home/rajeh/public_html/erp -> /home/rajeh/laravel/public`. Documented the topology and activation rule in `docs/53-deployment-backup-and-rollback-runbook.md`. Re-activated the approved frontend release and verified real-host `/`, `/up`, `/login`, CSS, logo, RTL, desktop/mobile overflow, menu interaction, and browser console checks. No database, migration, seeder, business logic, or unrelated cPanel changes occurred.

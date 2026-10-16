@@ -60,6 +60,17 @@ Generate the caches only after the immutable release has been moved into its fin
 
 Do not repair this condition by editing a generated cache after activation. Discard the candidate and regenerate its caches from the final release path.
 
+### cPanel document-root topology
+
+The cPanel vhost for `rajeh.xyz` serves `/home/rajeh/public_html/erp`, not `/home/rajeh/laravel` directly. Keep `/home/rajeh/public_html/erp` as a stable symlink to `/home/rajeh/laravel/public`. Release activation must atomically switch only `/home/rajeh/laravel` to the new immutable release; the stable document-root symlink then follows the active release automatically. Never replace the document-root symlink with a release root, copy a release into `public_html/erp`, or reconfigure Apache per release. Before activation, verify:
+
+```
+readlink -f /home/rajeh/public_html/erp
+# must resolve to /home/rajeh/laravel/public
+```
+
+If the stable document-root symlink is missing, preserve the existing directory as an explicitly named backup, create the symlink, and verify the real hostname before attempting release activation.
+
 ```
 1. Announce maintenance window
 2. Verified backup (§5)
