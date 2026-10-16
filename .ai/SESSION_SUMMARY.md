@@ -1987,3 +1987,6 @@ Verification actually run: Laravel view cache succeeded, Pint succeeded, `git di
 
 ## 2026-10-16 — Public frontend visual validation
 Re-ran public Rajeh frontend validation with Node.js 20.20.2 from `/opt/cpanel/ea-nodejs20/bin`. Vite production build passed, local Laravel route returned HTTP 200, and Playwright captured desktop, tablet, and mobile screenshots under `storage/app/frontend-review/`. Browser checks confirmed RTL, no horizontal overflow, no clipped Arabic text, mobile navigation visibility, loaded image assets, and no console/page errors. Visual comparison against the approved mockup, handoff board, and brand identity is aligned; no design corrections were needed. Screenshots remain uncommitted review artifacts.
+
+## 2026-10-16 — Public frontend fidelity v2
+Reworked the public landing page against the approved references with shared compact spacing/type/card tokens, reduced inter-section whitespace, tighter hero and AI/roadmap/CTA proportions, and corrected CTA contrast. Replaced the cropped logo with transparent `public/images/rajeh-logo.png` and added a transparent compact mark variant. Node 20 Vite build, view cache, Pint, browser screenshots at 1440/1024/390, RTL, overflow, mobile menu, asset, and console checks passed. Screenshots are stored under `storage/app/frontend-review/fidelity-v2/` and remain uncommitted.

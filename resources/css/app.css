@@ -1392,3 +1392,69 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
     @media (max-width: 480px){.marketing-feature-grid{grid-template-columns:1fr}.marketing-dashboard__body aside{width:34px}.marketing-dashboard__content{padding:.7rem}.marketing-dashboard__table{font-size:.42rem}.marketing-trust{gap:.65rem}.marketing-footer__inner{grid-template-columns:1fr}.marketing-footer__bottom{font-size:.58rem}}
     @media (prefers-reduced-motion: reduce){.marketing-page *,.marketing-page *:before,.marketing-page *:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}.marketing-dashboard,.marketing-feature-card{transform:none!important}}
 }
+
+/* Public reference fidelity pass: shared tokens keep every section on the approved compact rhythm. */
+@layer components {
+    .marketing-page { --marketing-max:1120px; --marketing-section-y:4.25rem; --marketing-radius:1rem; background:#f7fbff; }
+    .marketing-page .marketing-shell { width:min(var(--marketing-max),calc(100% - 3rem)); }
+    .marketing-page .marketing-header__inner { min-height:68px; gap:1.1rem; }
+    .marketing-page .marketing-brand img { width:128px; height:56px; object-fit:contain; }
+    .marketing-page .marketing-nav { gap:1rem; font-size:.7rem; }
+    .marketing-page .marketing-button { min-height:2.75rem; border-radius:.65rem; padding:.58rem 1.1rem; font-size:.72rem; }
+    .marketing-page .marketing-button--small { min-height:2.35rem; padding:.45rem .82rem; }
+    .marketing-page .marketing-hero { padding:3.9rem 0 4.15rem; }
+    .marketing-page .marketing-hero__grid { grid-template-columns:minmax(0,.9fr) minmax(0,1.05fr); gap:3.25rem; }
+    .marketing-page .marketing-hero h1 { margin:1rem 0 .85rem; font-size:clamp(2.15rem,3.65vw,3.65rem); line-height:1.2; }
+    .marketing-page .marketing-hero__copy>p { max-width:31rem; font-size:.86rem; line-height:1.9; }
+    .marketing-page .marketing-actions { margin-top:1.35rem; }
+    .marketing-page .marketing-trust { margin-top:1.45rem; gap:1rem; font-size:.61rem; }
+    .marketing-page .marketing-dashboard { border-radius:1.1rem; }
+    .marketing-page .marketing-dashboard__body { min-height:300px; }
+    .marketing-page .marketing-section { padding:var(--marketing-section-y) 0; }
+    .marketing-page .marketing-section-heading h2 { margin:.72rem 0 .45rem; font-size:clamp(1.75rem,2.6vw,2.65rem); line-height:1.25; }
+    .marketing-page .marketing-section-heading p { font-size:.8rem; line-height:1.75; }
+    .marketing-page .marketing-feature-grid { gap:.75rem; margin-top:2rem; }
+    .marketing-page .marketing-feature-card { min-height:168px; border-radius:var(--marketing-radius); padding:1.05rem; }
+    .marketing-page .marketing-feature-card__icon { width:2.2rem; height:2.2rem; border-radius:.6rem; font-size:1rem; }
+    .marketing-page .marketing-feature-card h3 { margin:.7rem 0 .25rem; font-size:.86rem; }
+    .marketing-page .marketing-feature-card p { font-size:.67rem; line-height:1.65; }
+    .marketing-page .marketing-feature-card__arrow { bottom:.9rem; left:1rem; font-size:.8rem; }
+    .marketing-page .marketing-ai { padding:4.25rem 0; }
+    .marketing-page .marketing-ai__inner { gap:3rem; }
+    .marketing-page .marketing-ai h2,.marketing-page .marketing-cta h2 { margin:.75rem 0; font-size:clamp(1.95rem,2.8vw,3rem); line-height:1.25; }
+    .marketing-page .marketing-ai__cards { gap:.7rem; }
+    .marketing-page .marketing-ai__cards article { min-height:190px; border-radius:var(--marketing-radius); padding:1rem; }
+    .marketing-page .marketing-ai__cards b { margin:1rem 0 .45rem; font-size:1.45rem; }
+    .marketing-page .marketing-ai__cards h3 { font-size:.84rem; }
+    .marketing-page .marketing-ai__cards p { font-size:.66rem; line-height:1.65; }
+    .marketing-page .marketing-why { gap:3rem; }
+    .marketing-page .marketing-benefit-grid { gap:.75rem; }
+    .marketing-page .marketing-benefit-grid article { border-radius:var(--marketing-radius); padding:1rem; }
+    .marketing-page .marketing-benefit-grid h3 { margin:.55rem 0 .2rem; font-size:.84rem; }
+    .marketing-page .marketing-benefit-grid p { font-size:.66rem; line-height:1.65; }
+    .marketing-page .marketing-roadmap { gap:.75rem; margin-top:2rem; }
+    .marketing-page .marketing-roadmap>div { border-radius:var(--marketing-radius); padding:1.25rem; }
+    .marketing-page .marketing-roadmap h3 { margin:.75rem 0 .35rem; font-size:.9rem; }
+    .marketing-page .marketing-roadmap p,.marketing-page .marketing-roadmap li { font-size:.68rem; line-height:1.7; }
+    .marketing-page .marketing-cta { padding:3.9rem 0; }
+    .marketing-page .marketing-cta p { font-size:.78rem; }
+    .marketing-page .marketing-footer { padding:2.2rem 0 .8rem; }
+    .marketing-page .marketing-footer img { width:122px; filter:none; }
+    .marketing-page .marketing-footer__inner { gap:2rem; }
+    .marketing-page .marketing-footer__bottom { margin-top:1.6rem; }
+    @media (max-width:760px) {
+        .marketing-page .marketing-shell { width:min(100% - 1.5rem,620px); }
+        .marketing-page .marketing-hero { padding:2.8rem 0 3rem; }
+        .marketing-page .marketing-hero__grid { gap:1.75rem; }
+        .marketing-page .marketing-hero h1 { font-size:2.25rem; }
+        .marketing-page .marketing-section { padding:3rem 0; }
+        .marketing-page .marketing-ai { padding:3rem 0; }
+        .marketing-page .marketing-ai__cards { gap:.55rem; }
+        .marketing-page .marketing-ai__cards article { min-height:0; }
+        .marketing-page .marketing-cta { padding:3rem 0; }
+    }
+}
+@layer components {
+    .marketing-page .marketing-button--white { color:var(--marketing-blue); }
+    .marketing-page .marketing-cta .marketing-button--white { color:var(--marketing-blue); }
+}
