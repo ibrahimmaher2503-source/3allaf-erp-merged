@@ -21,16 +21,28 @@ use Illuminate\Support\Carbon;
 
 final class OperationalDashboardSnapshot
 {
+    /** @return array{from: Carbon, to: Carbon, previous_from: Carbon, previous_to: Carbon} */
+    public static function periodBounds(array $filters = [], ?Carbon $now = null): array
+    {
+        $now ??= now();
+        $from = filled($filters['date_from'] ?? null) ? Carbon::parse((string) $filters['date_from'])->startOfDay() : $now->copy()->startOfDay();
+        $to = filled($filters['date_to'] ?? null) ? Carbon::parse((string) $filters['date_to'])->endOfDay() : $now->copy()->endOfDay();
+        $days = $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
+
+        return ['from' => $from, 'to' => $to, 'previous_from' => $from->copy()->subDays($days), 'previous_to' => $from->copy()->subDay()->endOfDay()];
+    }
+
     /** @return array<string, mixed> */
     public function for(User $user, array $filters = []): array
     {
         $storeIds = Store::query()->visibleTo($user)->select('id');
         $today = now()->toDateString();
-        $from = filled($filters['date_from'] ?? null) ? Carbon::parse((string) $filters['date_from'])->startOfDay() : now()->startOfDay();
-        $to = filled($filters['date_to'] ?? null) ? Carbon::parse((string) $filters['date_to'])->endOfDay() : now()->endOfDay();
+        $period = self::periodBounds($filters);
+        $from = $period['from'];
+        $to = $period['to'];
         $periodDays = $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
-        $previousFrom = $from->copy()->subDays($periodDays);
-        $previousTo = $from->copy()->subDay()->endOfDay();
+        $previousFrom = $period['previous_from'];
+        $previousTo = $period['previous_to'];
         if (filled($filters['branch_id'] ?? null)) {
             $storeIds->where('branch_id', (int) $filters['branch_id']);
         }
