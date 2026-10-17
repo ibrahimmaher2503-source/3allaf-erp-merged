@@ -11,6 +11,7 @@ use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 final class StockTransfer extends Model implements ImmutableSourceContract
 {
@@ -38,8 +39,8 @@ final class StockTransfer extends Model implements ImmutableSourceContract
         return $this->hasMany(StockTransferLine::class);
     }
 
-    /** @return HasMany<StockTransferAllocation, $this> */
-    public function allocations(): HasMany
+    /** @return HasManyThrough<StockTransferAllocation, StockTransferLine, $this> */
+    public function allocations(): HasManyThrough
     {
         return $this->hasManyThrough(StockTransferAllocation::class, StockTransferLine::class, 'stock_transfer_id', 'stock_transfer_line_id');
     }

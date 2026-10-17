@@ -4,71 +4,142 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use App\Modules\Catalog\Models\Barcode;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
+use App\Modules\Inventory\Actions\DispatchStockTransferAction;
+use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
+use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Store;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\TestCase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 
 final class InventoryMultiDestinationTransferFocusedTest extends TestCase
 {
-    public function test_allocation_schema_and_transfer_contract_are_present(): void
+    private User $user;
+
+    private Product $product;
+
+    private Store $source;
+
+    private Store $destinationA;
+
+    private Store $destinationB;
+
+    protected function setUp(): void
     {
-        self::assertTrue(Schema::hasTable('stock_transfer_allocations'));
-        self::assertSame(1, DB::table('migrations')->where('migration', 'like', '%create_stock_transfer_allocations%')->count());
-        $columns = DB::select('SHOW COLUMNS FROM stock_transfer_allocations');
-        $names = array_map(static fn (object $column): string => (string) $column->Field, $columns);
-        self::assertContains('stock_transfer_line_id', $names);
-        self::assertContains('destination_store_id', $names);
-        self::assertContains('quantity', $names);
-        self::assertContains('quantity_received', $names);
+        parent::setUp();
+        DB::beginTransaction();
+        $company = Company::query()->create(['code' => 'QA-'.uniqid(), 'name_ar' => 'شركة اختبار', 'name_en' => 'QA Company', 'currency_code' => 'EGP', 'currency_symbol' => 'EGP', 'timezone' => 'UTC', 'locale_default' => 'en', 'status' => 'active']);
+        $branch = Branch::query()->create(['company_id' => $company->id, 'code' => 'QA-BR-'.uniqid(), 'name_ar' => 'فرع اختبار', 'name_en' => 'QA Branch', 'timezone' => 'UTC', 'status' => 'active']);
+        $this->source = Store::query()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'code' => 'QA-S-'.uniqid(), 'type' => 'warehouse', 'name_ar' => 'المصدر', 'name_en' => 'Source', 'status' => 'active', 'allows_negative_stock' => false]);
+        $this->destinationA = Store::query()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'code' => 'QA-A-'.uniqid(), 'type' => 'warehouse', 'name_ar' => 'الوجهة أ', 'name_en' => 'Destination A', 'status' => 'active', 'allows_negative_stock' => false]);
+        $this->destinationB = Store::query()->create(['company_id' => $company->id, 'branch_id' => $branch->id, 'code' => 'QA-B-'.uniqid(), 'type' => 'warehouse', 'name_ar' => 'الوجهة ب', 'name_en' => 'Destination B', 'status' => 'active', 'allows_negative_stock' => false]);
+        $this->user = User::query()->create(['name' => 'QA Transfer User', 'email' => 'qa-transfer-'.uniqid().'@example.test', 'password' => 'password', 'status' => 'active', 'is_super_admin' => true]);
+        $this->user->forceFill(['is_super_admin' => true])->save();
+        Auth::login($this->user);
+        Gate::define('transfers.create', static fn (): bool => true);
+        Gate::define('transfers.dispatch', static fn (): bool => true);
+        Gate::define('transfers.receive', static fn (): bool => true);
+        $this->product = Product::factory()->create(['status' => 'active', 'item_code' => 'QA-SKU-'.uniqid(), 'name_ar' => 'منتج اختبار', 'sale_price' => 20, 'average_cost' => 10]);
+        Barcode::query()->create(['product_id' => $this->product->id, 'barcode' => 'QA-BAR-'.uniqid(), 'source' => 'local', 'status' => 'active', 'is_primary' => true]);
+        $this->balance($this->source, 10);
+        $this->balance($this->destinationA, 0);
+        $this->balance($this->destinationB, 0);
     }
 
-    public function test_multi_destination_allocation_math_is_independent_and_partial(): void
+    protected function tearDown(): void
     {
-        $allocation = ['A' => '3', 'B' => '2'];
-        self::assertSame('5', bcadd($allocation['A'], $allocation['B'], 0));
-        $allocation['A'] = '4';
-        self::assertSame('2', $allocation['B']);
-        self::assertSame('4', bcsub('10', bcadd($allocation['A'], $allocation['B'], 0), 0));
+        DB::rollBack();
+        Auth::logout();
+        parent::tearDown();
     }
 
-    public function test_over_allocation_is_rejected_by_transfer_actions(): void
+    public function test_dispatches_one_line_to_two_destinations_once_and_preserves_independence(): void
     {
-        $source = file_get_contents(base_path('app/Modules/Inventory/Actions/CreateStockTransferDraftAction.php'));
-        self::assertIsString($source);
-        self::assertStringContainsString('distributed quantity cannot exceed', $source);
-        self::assertSame(11, 6 + 5);
-        self::assertGreaterThan(10, 11);
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        $transfer = app(DispatchStockTransferAction::class)->execute($transfer->id);
+        self::assertSame('5.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->value('on_hand'));
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('in_transit'));
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('in_transit'));
+        self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
+        self::assertSame('3.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationA->id)->value('quantity'));
+        self::assertSame('2.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
+        self::assertNotSame('3', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
     }
 
-    public function test_dispatch_and_receive_use_each_destination_once(): void
+    public function test_partial_and_full_allocations_have_expected_remaining_stock(): void
     {
-        $dispatch = file_get_contents(base_path('app/Modules/Inventory/Actions/DispatchStockTransferAction.php'));
-        $receive = file_get_contents(base_path('app/Modules/Inventory/Actions/ReceiveStockTransferAction.php'));
-        self::assertIsString($dispatch);
-        self::assertIsString($receive);
-        self::assertStringContainsString('adjustInTransit', $dispatch);
-        self::assertStringContainsString('DEMO-TRANSFER-DISPATCH:', $dispatch);
-        self::assertStringContainsString('DEMO-TRANSFER-RECEIPT:', $receive);
-        self::assertStringContainsString('quantity_received', $receive);
-        self::assertStringContainsString("status !== 'in_transit'", $receive);
+        $partial = $this->approvedTransfer('4', '2', '2');
+        app(DispatchStockTransferAction::class)->execute($partial->id);
+        self::assertSame('6.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->value('on_hand'));
+        $this->balance($this->source, 10);
+        $full = $this->approvedTransfer('10', '4', '6');
+        app(DispatchStockTransferAction::class)->execute($full->id);
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->value('on_hand'));
     }
 
-    public function test_approved_invoice_lookup_limits_products_to_current_source_stock(): void
+    public function test_over_allocation_is_rejected_before_any_movement(): void
     {
-        $routes = file_get_contents(base_path('routes/inventory.php'));
-        self::assertIsString($routes);
-        self::assertStringContainsString("\$invoice->status === 'approved'", $routes);
-        self::assertStringContainsString("where('store_id', \$sourceStoreId)", $routes);
-        self::assertStringContainsString("bccomp(\$available, '0', 6) > 0", $routes);
-        self::assertStringContainsString('warehouse_mismatch', $routes);
+        $before = StockMovement::query()->count();
+        $this->expectException(InvalidArgumentException::class);
+        try {
+            app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '10', 'allocations' => [$this->destinationA->id => '6', $this->destinationB->id => '5']]], idempotencyKey: 'qa-over-'.uniqid());
+        } finally {
+            self::assertSame($before, StockMovement::query()->count());
+        }
     }
 
-    public function test_invoice_mismatch_requires_explicit_source_switch(): void
+    public function test_dispatch_and_receive_are_idempotent_and_post_each_destination(): void
     {
-        $view = file_get_contents(base_path('resources/views/inventory/index.blade.php'));
-        self::assertIsString($view);
-        self::assertStringContainsString('Use invoice warehouse as source', $view);
-        self::assertStringContainsString('استخدام مخزن الفاتورة كمصدر', $view);
-        self::assertStringContainsString('warehouse_mismatch', $view);
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $dispatchCount = StockMovement::query()->where('movement_type', 'transfer_dispatch')->count();
+        self::assertThrows(fn (): StockTransfer => app(DispatchStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
+        self::assertSame($dispatchCount, StockMovement::query()->where('movement_type', 'transfer_dispatch')->count());
+        $transfer = StockTransfer::query()->with('lines.allocations')->findOrFail($transfer->id);
+        $line = $transfer->lines->first();
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '5', $line->id.'.'.$line->allocations[0]->id => '3', $line->id.'.'.$line->allocations[1]->id => '2'], null, null);
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
+        self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '5'], null, null), InvalidArgumentException::class);
+        self::assertSame(2, StockMovement::query()->where('movement_type', 'transfer_receipt')->count());
+    }
+
+    public function test_direct_source_balance_is_authoritative(): void
+    {
+        $this->balance($this->destinationA, 99);
+        self::assertSame('10.000000', (string) StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->source->id)->value('on_hand'));
+        self::assertSame('99.000000', (string) StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->destinationA->id)->value('on_hand'));
+    }
+
+    public function test_unauthorized_store_is_rejected(): void
+    {
+        $this->user->is_super_admin = false;
+        $this->user->save();
+        Gate::define('transfers.create', static fn (): bool => false);
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-auth-'.uniqid()), AuthorizationException::class);
+    }
+
+    private function approvedTransfer(string $requested, string $a, string $b): StockTransfer
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => $requested, 'allocations' => [$this->destinationA->id => $a, $this->destinationB->id => $b]]], idempotencyKey: 'qa-transfer-'.uniqid());
+        $transfer->update(['status' => 'approved', 'approved_by' => $this->user->id, 'approved_at' => now()]);
+
+        return $transfer->fresh(['lines.allocations']);
+    }
+
+    private function balance(Store $store, int $onHand): void
+    {
+        StockBalance::query()->updateOrCreate(['product_id' => $this->product->id, 'store_id' => $store->id], ['on_hand' => $onHand, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 10, 'total_value' => $onHand * 10, 'version' => 1]);
     }
 }
