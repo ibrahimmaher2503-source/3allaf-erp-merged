@@ -287,6 +287,47 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertSame('900.000000', $line->fresh()->quantity_received);
     }
 
+    public function test_livewire_full_quantity_approval_posts_once_and_shows_current_selling_price(): void
+    {
+        $invoice = $this->submit($this->draft('5'));
+        $line = $invoice->lines->firstOrFail();
+        app()->setLocale('ar-EG');
+
+        $component = Livewire::test('purchasing::invoices')->call('openReceivingReview', $invoice->id);
+        $html = $component->html();
+        foreach (['المنتج', 'الكمية الأصلية', 'سعر البيع', 'الكمية المستلمة فعليًا', '25.00'] as $expected) {
+            self::assertStringContainsString($expected, $html);
+        }
+
+        $component->call('approveInvoice', $invoice->id)->assertHasNoErrors()->assertSet('showReceiving', false);
+        self::assertSame('approved', $invoice->fresh()->status);
+        self::assertSame('5.000000', $line->fresh()->quantity_received);
+        self::assertSame('5.000000', StockBalance::query()->where('store_id', $invoice->store_id)->firstOrFail()->on_hand);
+        self::assertSame('12.00', $this->product->fresh()->average_cost);
+        self::assertSame(1, StockMovement::query()->count());
+        self::assertSame(1, AuditLog::query()->where('event', 'approve_purchase_invoice')->count());
+
+        app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+        self::assertSame(1, StockMovement::query()->count());
+    }
+
+    public function test_invalid_received_quantity_shows_arabic_error_and_leaves_approval_unposted(): void
+    {
+        $invoice = $this->submit($this->draft('5'));
+        $line = $invoice->lines->firstOrFail();
+        app()->setLocale('ar-EG');
+
+        $component = Livewire::test('purchasing::invoices')->call('openReceivingReview', $invoice->id)
+            ->set('receivedQuantities.'.$line->id, '-1')
+            ->call('approveInvoice', $invoice->id)
+            ->assertHasErrors(['approval'])
+            ->assertSet('showReceiving', true);
+        self::assertStringContainsString('يجب أن تكون كميات المنتجات أعدادًا صحيحة.', $component->html());
+        self::assertSame('submitted', $invoice->fresh()->status);
+        self::assertSame(0, StockMovement::query()->count());
+        self::assertSame(0, AuditLog::query()->where('event', 'approve_purchase_invoice')->count());
+    }
+
     public function test_unauthorized_approval_and_report_are_denied(): void
     {
         $invoice = $this->submit($this->draft('10'));
