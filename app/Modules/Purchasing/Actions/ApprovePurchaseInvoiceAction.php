@@ -55,6 +55,7 @@ final class ApprovePurchaseInvoiceAction
             if ($invoice->created_by === $actorId && ! $actor->canBypassPurchaseInvoiceApproval()) {
                 throw new InvalidArgumentException(__('The invoice creator cannot approve the same invoice.'));
             }
+            $receivingStore = Store::query()->visibleTo($actor)->where('status', 'active')->lockForUpdate()->findOrFail($invoice->store_id);
 
             $before = $invoice->only(['invoice_number', 'status', 'total_amount', 'lock_version']);
             $approval = ApprovalRecord::query()
@@ -67,7 +68,7 @@ final class ApprovePurchaseInvoiceAction
             Product::query()->whereKey($invoice->lines->pluck('product_id'))->orderBy('id')->lockForUpdate()->get();
             $this->validateBusinessRules($invoice);
 
-            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute((int) $invoice->store->branch_id);
+            $number = $invoice->invoice_number ?: app(AllocatePurchaseInvoiceNumberAction::class)->execute($receivingStore);
             foreach ($invoice->lines as $line) {
                 $this->postLine($invoice, $line, $actorId);
                 if ($this->compare($line->quantity, '0') > 0) {

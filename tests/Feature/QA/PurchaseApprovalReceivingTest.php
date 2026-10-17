@@ -32,6 +32,7 @@ use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use App\Support\ProductQuantity;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -63,10 +64,10 @@ final class PurchaseApprovalReceivingTest extends TestCase
         request()->setLaravelSession(app('session')->driver());
     }
 
-    private function draft(string $quantity = '1000', string $cost = '12', string $price = '30'): PurchaseInvoice
+    private function draft(string $quantity = '1000', string $cost = '12', string $price = '30', ?Store $store = null): PurchaseInvoice
     {
         return app(SavePurchaseInvoiceAction::class)->execute(
-            ['supplier_id' => $this->supplier->id, 'store_id' => $this->fixture['receiving']->id, 'invoice_date' => '2026-10-12'],
+            ['supplier_id' => $this->supplier->id, 'store_id' => ($store ?? $this->fixture['receiving'])->id, 'invoice_date' => '2026-10-12'],
             [['product_id' => $this->product->id, 'quantity' => $quantity, 'unit_cost' => $cost, 'base_consumer_price' => $price]],
         );
     }
@@ -309,6 +310,79 @@ final class PurchaseApprovalReceivingTest extends TestCase
 
         app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
         self::assertSame(1, StockMovement::query()->count());
+    }
+
+    public function test_active_unassigned_central_warehouse_approves_full_receipt_once(): void
+    {
+        $central = Store::factory()->warehouse()->create(['company_id' => $this->fixture['company']->id, 'branch_id' => null, 'status' => 'active']);
+        $invoice = $this->submit($this->draft('5', store: $central));
+
+        $approved = app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+
+        self::assertSame('approved', $approved->status);
+        self::assertSame($central->id, $approved->store_id);
+        self::assertNotNull($approved->invoice_number);
+        self::assertSame('5.000000', StockBalance::query()->where('store_id', $central->id)->firstOrFail()->on_hand);
+        self::assertSame($central->id, StockMovement::query()->sole()->store_id);
+        self::assertSame('12.00', $this->product->fresh()->average_cost);
+        self::assertSame(1, AuditLog::query()->where('event', 'approve_purchase_invoice')->count());
+        $auditCount = AuditLog::query()->count();
+
+        app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+
+        self::assertSame(1, StockMovement::query()->count());
+        self::assertSame($auditCount, AuditLog::query()->count());
+    }
+
+    public function test_active_unassigned_central_warehouse_approves_partial_receipt(): void
+    {
+        $central = Store::factory()->warehouse()->create(['company_id' => $this->fixture['company']->id, 'branch_id' => null, 'status' => 'active']);
+        $invoice = $this->submit($this->draft('5', store: $central));
+        $line = $invoice->lines->firstOrFail();
+
+        Livewire::test('purchasing::invoices')->call('openReceivingReview', $invoice->id)
+            ->set('receivedQuantities.'.$line->id, '3')->call('approveInvoice', $invoice->id)->assertHasNoErrors();
+
+        self::assertSame('approved', $invoice->fresh()->status);
+        self::assertSame('5.000000', $line->fresh()->original_quantity);
+        self::assertSame('3.000000', $line->fresh()->quantity_received);
+        self::assertSame('3.000000', StockBalance::query()->where('store_id', $central->id)->firstOrFail()->on_hand);
+        self::assertSame($central->id, StockMovement::query()->sole()->store_id);
+    }
+
+    public function test_active_branch_linked_warehouse_still_approves(): void
+    {
+        $invoice = $this->submit($this->draft('5'));
+
+        $approved = app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+
+        self::assertSame('approved', $approved->status);
+        self::assertSame($this->fixture['receiving']->id, StockMovement::query()->sole()->store_id);
+    }
+
+    public function test_inactive_or_nonexistent_receiving_warehouse_cannot_be_approved(): void
+    {
+        $central = Store::factory()->warehouse()->create(['company_id' => $this->fixture['company']->id, 'branch_id' => null, 'status' => 'active']);
+        $invoice = $this->submit($this->draft('5', store: $central));
+        $central->update(['status' => 'inactive']);
+
+        try {
+            app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id);
+            self::fail('An inactive receiving warehouse was approved.');
+        } catch (ModelNotFoundException) {
+            self::assertSame('submitted', $invoice->fresh()->status);
+            self::assertSame(0, StockMovement::query()->count());
+        }
+
+        try {
+            app(SavePurchaseInvoiceAction::class)->execute(
+                ['supplier_id' => $this->supplier->id, 'store_id' => 999999999, 'invoice_date' => '2026-10-12'],
+                [['product_id' => $this->product->id, 'quantity' => '5', 'unit_cost' => '12', 'base_consumer_price' => '30']],
+            );
+            self::fail('A nonexistent receiving warehouse was accepted.');
+        } catch (ModelNotFoundException) {
+            self::assertSame(0, StockMovement::query()->count());
+        }
     }
 
     public function test_invalid_received_quantity_shows_arabic_error_and_leaves_approval_unposted(): void
