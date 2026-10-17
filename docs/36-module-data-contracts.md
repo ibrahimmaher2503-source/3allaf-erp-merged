@@ -146,7 +146,11 @@ supplier, source PO, receiving store, supplier reference, tax/discount, status, 
 
 ### purchase_returns / lines
 
-supplier, source invoice, store, reason, status, cost/reference quantities.
+supplier, optional source invoice, active return source store, reason, status, cost source and snapshotted unit cost/reference quantities. Invoice-linked lines use their historical invoice-line cost; invoice-free lines use the product card's current cost at creation. Approved returns post one stock debit and one supplier payable debit.
+
+### supplier_payable_entries
+
+Append-only supplier payable amounts scoped to company and supplier, with source type/id, store, posted time and actor. Approved purchase invoices increase payable; approved supplier returns decrease it. Reversals post opposite entries. Negative computed balances are valid. Historical approved invoices are not silently backfilled and no opening balance is invented.
 
 ## 8. Pricing
 

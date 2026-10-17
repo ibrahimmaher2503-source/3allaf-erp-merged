@@ -237,7 +237,7 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertCount(1, $invoice->distributions);
         self::assertSame('30.000', $invoice->distributions->first()->effective_selling_price);
         app(ApprovePurchaseInvoiceAction::class)->execute($invoice->id, $invoice->lock_version);
-        self::assertSame('7.000000', StockBalance::query()->where('store_id', $invoice->store_id)->firstOrFail()->on_hand);
+        self::assertSame('7.000000', StockBalance::query()->where('store_id', $invoice->store_id)->where('product_id', $this->product->id)->firstOrFail()->on_hand);
         self::assertSame(1, StockTransfer::query()->count());
         self::assertSame('3.000000', StockBalance::query()->where('store_id', $this->fixture['store']->id)->firstOrFail()->in_transit);
         self::assertSame(0, PurchaseInvoiceLine::query()->withShortage()->count());

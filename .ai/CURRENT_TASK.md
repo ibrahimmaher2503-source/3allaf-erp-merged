@@ -1,3 +1,8 @@
+# Current focused task — 2026-10-17
+Purchasing distribution and supplier returns v2 on `feature/purchasing-distribution-supplier-returns-v2` from exact main baseline `0e09f86e6d8b3b8eeb937e9e3ec6d75b4a99c84d`. Scope: independent optional distribution allocations, canonical price resolution without selling-price mutation, full-page supplier-return creation with optional invoice, current-cost snapshot for invoice-free returns, and the owner-approved minimal supplier payable ledger. Source and focused verification are complete locally; commit is pending. No merge, deployment, production data change, historical payable backfill, or opening balance is authorized.
+
+## Preserved previous task
+
 # Current Task — Shift close receipt and pending allowance (2026-10-13)
 
 Owner-authorized D3 workflow change on `feature/shift-close-receipt-pending-allowance` from `origin/main` `7972d963`. Cashier submission now accepts only physical cash; non-cash totals are derived from canonical shift payments. Submission releases operational cashier/drawer assignment while retaining immutable approval/recount history. Pending close sheets are printable before approval and final sheets after approval. Only open shifts block selling/drawer reuse; up to two prior pending closes are allowed and a third open is blocked with a clear explanation. No migration, production operation, merge or deployment occurred. Focused shift checks passed 8 tests/74 assertions. Fast QA ran once and completed 7/8 checks; its only failure was the pre-existing worktree-local CodeGraph index mismatch, then this worktree was indexed locally without rerunning the gate.

@@ -7,6 +7,7 @@
     'valueField' => 'id',
     'display' => '',
     'purchasing' => false,
+    'supplierReturn' => false,
     'supplierId' => '',
     'supplierOnly' => true,
     'currencyCode' => '',
@@ -24,7 +25,7 @@
     data-product-lookup
     data-search-url="{{ route('transaction-products.search') }}"
     data-value-field="{{ $valueField }}"
-    data-context="{{ $transfer ? 'transfer' : ($purchasing ? 'purchasing' : 'transaction') }}"
+    data-context="{{ $supplierReturn ? 'purchase_return' : ($transfer ? 'transfer' : ($purchasing ? 'purchasing' : 'transaction')) }}"
     data-source-store-selector="{{ $sourceStoreSelector }}"
     data-supplier-id="{{ $supplierId }}"
     data-supplier-only="{{ $supplierOnly ? '1' : '0' }}"
