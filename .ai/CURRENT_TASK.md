@@ -1,3 +1,9 @@
+# Current task — Purchasing production rollout stopped after rollback (2026-10-17)
+
+Both Purchasing branches were pushed, and main contains explicit merge commits `0e09f86` (central warehouse) and `df1e308` (supplier returns). The additive supplier payable migration `000128` ran on production after a verified backup. Candidate `df1e308` passed loopback checks but real-host `/purchasing/returns/create` returned 404 immediately after activation. The active symlink was rolled back to `toyjoy-v0.1.25-central-warehouse-0e09f86`; maintenance is off and `/up`, `/`, `/login` return 200. The new ledger has zero entries. Real-host serving-path caching is implicated, but the exact cache layer is unproven. Do not reactivate this candidate until that mismatch is diagnosed and verified. No production business records were mutated for verification.
+
+## Preserved previous task
+
 # Current focused task — 2026-10-17
 Purchasing distribution and supplier returns v2 on `feature/purchasing-distribution-supplier-returns-v2` from exact main baseline `0e09f86e6d8b3b8eeb937e9e3ec6d75b4a99c84d`. Scope: independent optional distribution allocations, canonical price resolution without selling-price mutation, full-page supplier-return creation with optional invoice, current-cost snapshot for invoice-free returns, and the owner-approved minimal supplier payable ledger. Source and focused verification are complete locally; commit is pending. No merge, deployment, production data change, historical payable backfill, or opening balance is authorized.
 
