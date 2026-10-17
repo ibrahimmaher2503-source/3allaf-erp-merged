@@ -38,6 +38,12 @@ final class StockTransfer extends Model implements ImmutableSourceContract
         return $this->hasMany(StockTransferLine::class);
     }
 
+    /** @return HasMany<StockTransferAllocation, $this> */
+    public function allocations(): HasMany
+    {
+        return $this->hasManyThrough(StockTransferAllocation::class, StockTransferLine::class, 'stock_transfer_id', 'stock_transfer_line_id');
+    }
+
     /** @return BelongsTo<User, $this> */
     public function requester(): BelongsTo
     {

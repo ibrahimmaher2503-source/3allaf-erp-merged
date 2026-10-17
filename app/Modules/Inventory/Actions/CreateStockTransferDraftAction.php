@@ -22,7 +22,7 @@ final class CreateStockTransferDraftAction
     public function __construct(private readonly AssertInventoryStoreScope $scope) {}
 
     /**
-     * @param  array<int, array{product_id: int, quantity_requested: string}>  $lines
+     * @param  array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}>  $lines
      */
     public function execute(
         int $sourceStoreId,
@@ -82,7 +82,12 @@ final class CreateStockTransferDraftAction
             ]);
 
             foreach ($normalizedLines as $line) {
-                $transfer->lines()->create($line);
+                $allocations = $line['allocations'] ?? [];
+                unset($line['allocations']);
+                $savedLine = $transfer->lines()->create($line);
+                foreach ($allocations as $destinationId => $quantity) {
+                    $savedLine->allocations()->create(['destination_store_id' => (int) $destinationId, 'quantity' => $quantity]);
+                }
             }
 
             app(RecordAuditEvent::class)->execute(
@@ -192,10 +197,30 @@ final class CreateStockTransferDraftAction
                 throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
             }
 
+            $allocations = [];
+            foreach ((array) ($line['allocations'] ?? []) as $destinationId => $allocated) {
+                $destinationId = (int) $destinationId;
+                if ($destinationId <= 0 || $destinationId === $sourceStoreId) {
+                    throw new InvalidArgumentException(__('Every destination must be different from the source store.'));
+                }
+                $amount = $this->decimal($allocated);
+                if (bccomp($amount, '0', 6) < 0) {
+                    throw new InvalidArgumentException(__('Destination quantities cannot be negative.'));
+                }
+                if (bccomp($amount, '0', 6) > 0) {
+                    $this->scope->execute($destinationId);
+                    $allocations[$destinationId] = $amount;
+                }
+            }
+            $allocatedTotal = array_reduce($allocations, fn (string $total, string $amount): string => bcadd($total, $amount, 6), '0');
+            if (bccomp($allocatedTotal, $quantity, 6) > 0) {
+                throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
+            }
             $normalized[$productId] = [
                 'product_id' => $productId,
                 'quantity_requested' => $quantity,
                 'unit_cost' => $this->decimal($balance?->average_cost ?? '0'),
+                'allocations' => $allocations,
             ];
         }
 

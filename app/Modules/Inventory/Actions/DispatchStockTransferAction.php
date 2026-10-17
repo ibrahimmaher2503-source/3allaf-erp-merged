@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Actions;
 
-use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\StockBalance;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,22 +21,35 @@ final class DispatchStockTransferAction
         Gate::authorize('transfers.dispatch');
 
         return DB::transaction(function () use ($id): StockTransfer {
-            $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $transfer = StockTransfer::query()->with(['lines.allocations'])->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer, source: true, destination: false);
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
+            foreach ($transfer->allocations->pluck('destination_store_id')->unique() as $destinationId) {
+                app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, (int) $destinationId);
+            }
             if ($transfer->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved transfers can be dispatched.'));
             }
             $poster = app(PostInventoryMovement::class);
             foreach ($transfer->lines as $line) {
-                $quantity = (string) $line->quantity_requested;
+                $quantity = $line->allocations->isEmpty() ? (string) $line->quantity_requested : (string) $line->allocations->sum('quantity');
+                if (bccomp($quantity, '0', 6) <= 0) {
+                    continue;
+                }
                 $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $transfer->source_store_id)->lockForUpdate()->first();
                 $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);
                 if (bccomp($available, $quantity, 6) < 0) {
                     throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
                 }
                 $poster->execute($line->product_id, $transfer->source_store_id, '-'.$quantity, 'transfer_dispatch', (string) $line->unit_cost, 'DEMO-TRANSFER-DISPATCH:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
-                $poster->adjustInTransit($line->product_id, $transfer->destination_store_id, $quantity);
+                $allocations = $line->allocations;
+                if ($allocations->isEmpty()) {
+                    $allocations = collect([(object) ['destination_store_id' => $transfer->destination_store_id, 'quantity' => $quantity]]);
+                }
+                foreach ($allocations as $allocation) {
+                    if (bccomp((string) $allocation->quantity, '0', 6) > 0) {
+                        $poster->adjustInTransit($line->product_id, (int) $allocation->destination_store_id, (string) $allocation->quantity);
+                    }
+                }
                 $line->mutateApprovedParentLine(['quantity_dispatched' => $quantity]);
             }
             $before = $transfer->only(['status', 'lock_version']);

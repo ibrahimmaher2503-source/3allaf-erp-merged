@@ -223,7 +223,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     $router->get('inventory/transfers/{transfer}/edit', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
 
-        return $renderInventory(null, 'transfer-edit', $transfer->load(['sourceStore', 'destinationStore', 'lines.product']));
+        return $renderInventory(null, 'transfer-edit', $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']));
     })->middleware('can:transfers.edit')->name('inventory.transfers.edit');
     $router->get('inventory/transfers/{transfer}/dispatch', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
@@ -261,7 +261,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->middleware('can:stock_counts.reconcile')->name('inventory.counts.reconcile-page');
 
     $router->post('inventory/transfers', function (CreateStockTransferDraftAction $action) {
-        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['required', 'integer', 'different:source_store_id', 'exists:stores,id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'integer', 'min:1'], 'lines.*.unit_cost' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $destination = (int) ($validated['destination_store_ids'][0] ?? $validated['destination_store_id'] ?? 0);
+        foreach ($validated['lines'] as &$line) {
+            $line['allocations'] = $line['allocations'] ?? ($destination > 0 ? [$destination => $line['quantity_requested']] : []);
+        }
         try {
             $transfer = $action->execute((int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null);
 
@@ -278,7 +282,11 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->middleware('can:transfers.create')->name('inventory.transfers.store');
 
     $router->post('inventory/transfers/{transfer}', function (StockTransfer $transfer, UpdateStockTransferDraftAction $action) {
-        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['required', 'integer', 'different:source_store_id', 'exists:stores,id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'integer', 'min:1'], 'lines.*.unit_cost' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $destination = (int) ($validated['destination_store_ids'][0] ?? $validated['destination_store_id'] ?? 0);
+        foreach ($validated['lines'] as &$line) {
+            $line['allocations'] = $line['allocations'] ?? ($destination > 0 ? [$destination => $line['quantity_requested']] : []);
+        }
         try {
             $saved = $action->execute($transfer->id, (int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null, $validated['lock_version'] ?? $transfer->lock_version);
 
