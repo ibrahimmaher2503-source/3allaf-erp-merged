@@ -71,6 +71,12 @@ readlink -f /home/rajeh/public_html/erp
 
 If the stable document-root symlink is missing, preserve the existing directory as an explicitly named backup, create the symlink, and verify the real hostname before attempting release activation.
 
+### Real-vhost route gate after an atomic switch
+
+The `rajeh.xyz` HTTPS vhost currently uses `DocumentRoot /home/rajeh/public_html/erp` and the `ea-php85-php-fpm` socket. Check `httpd -S` and the vhost handler for the actual origin IP and PHP-FPM service at each release; the CLI PHP version does not identify the web handler. A request to `127.0.0.1` reaches the server's default vhost, so it cannot validate this site. On 2026-10-17, switching `/home/rajeh/laravel` left PHP 8.5 FPM serving the previous release's routes: the new supplier-return route returned 404 through the origin vhost, while the candidate's direct Laravel server redirected it to login. Reloading `ea-php85-php-fpm` during a controlled maintenance test changed 12 consecutive origin-vhost responses from 404 to the expected 302. Reloading `ea-php84-php-fpm` had no effect.
+
+Before opening a release to the public, keep maintenance mode on with a private bypass secret, atomically select the candidate under `/home/rajeh/laravel`, and reload the PHP-FPM service bound to this vhost. Use the bypass cookie and `curl --resolve rajeh.xyz:443:<origin-ip> https://rajeh.xyz/<path>` to check `/`, `/up`, `/login`, and a release-specific protected route through the actual Apache vhost. Require 200 for the public paths and the expected login redirect or authenticated page for the protected route; a 404 fails the gate. Also confirm that `public_html/erp` still resolves through `/home/rajeh/laravel/public`. Then disable maintenance and repeat the same checks on the public hostname. If any gate fails, atomically restore the previous release, reload that same PHP-FPM service again, and disable maintenance on the previous release. Do not substitute a direct Laravel server or a `127.0.0.1` default-vhost check for this gate.
+
 ```
 1. Announce maintenance window
 2. Verified backup (§5)

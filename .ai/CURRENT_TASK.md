@@ -1,3 +1,9 @@
+# Current task — Supplier-return v2 real-host retry complete (2026-10-17)
+
+Production application SHA `df1e3088dedecfb1afcebd56bd6a12544db6064d` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.26-purchasing-df1e308`. The previous rollback release is `toyjoy-v0.1.25-central-warehouse-0e09f86`. The first activation's 404 was traced to the `rajeh.xyz` Apache vhost using `ea-php85-php-fpm`, whose workers retained the previous route view after the atomic symlink switch. The controlled origin-vhost test reproduced 404 before reloading that service and 302 after. One retry passed origin-vhost checks under maintenance and public-host checks after reopening. Migration `000128` was already Ran and was not rerun; the payable ledger remains empty. No production business transaction was submitted for verification. The runbook now requires the actual-vhost gate and the bound FPM reload.
+
+## Preserved previous task
+
 # Current task — Purchasing production rollout stopped after rollback (2026-10-17)
 
 Both Purchasing branches were pushed, and main contains explicit merge commits `0e09f86` (central warehouse) and `df1e308` (supplier returns). The additive supplier payable migration `000128` ran on production after a verified backup. Candidate `df1e308` passed loopback checks but real-host `/purchasing/returns/create` returned 404 immediately after activation. The active symlink was rolled back to `toyjoy-v0.1.25-central-warehouse-0e09f86`; maintenance is off and `/up`, `/`, `/login` return 200. The new ledger has zero entries. Real-host serving-path caching is implicated, but the exact cache layer is unproven. Do not reactivate this candidate until that mismatch is diagnosed and verified. No production business records were mutated for verification.
