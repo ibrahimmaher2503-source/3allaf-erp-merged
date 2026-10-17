@@ -6,12 +6,13 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class InventoryMultiDestinationTransferFocusedTest extends TestCase
 {
     public function test_allocation_schema_and_transfer_contract_are_present(): void
     {
-        self::assertTrue(DB::table('stock_transfer_allocations')->exists());
+        self::assertTrue(Schema::hasTable('stock_transfer_allocations'));
         self::assertSame(1, DB::table('migrations')->where('migration', 'like', '%create_stock_transfer_allocations%')->count());
         $columns = DB::select('SHOW COLUMNS FROM stock_transfer_allocations');
         $names = array_map(static fn (object $column): string => (string) $column->Field, $columns);
@@ -27,7 +28,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('5', bcadd($allocation['A'], $allocation['B'], 0));
         $allocation['A'] = '4';
         self::assertSame('2', $allocation['B']);
-        self::assertSame('6', bcsub('10', bcadd($allocation['A'], $allocation['B'], 0), 0));
+        self::assertSame('4', bcsub('10', bcadd($allocation['A'], $allocation['B'], 0), 0));
     }
 
     public function test_over_allocation_is_rejected_by_transfer_actions(): void
@@ -58,7 +59,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertIsString($routes);
         self::assertStringContainsString("\$invoice->status === 'approved'", $routes);
         self::assertStringContainsString("where('store_id', \$sourceStoreId)", $routes);
-        self::assertStringContainsString("bccomp($available, '0', 6) > 0", $routes);
+        self::assertStringContainsString("bccomp(\$available, '0', 6) > 0", $routes);
         self::assertStringContainsString('warehouse_mismatch', $routes);
     }
 

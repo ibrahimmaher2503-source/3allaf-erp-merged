@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('quantity_received', 18, 6)->default(0);
             $table->timestamps();
             $table->unique(['stock_transfer_line_id', 'destination_store_id'], 'stock_transfer_allocation_line_destination_unique');
-            $table->index(['destination_store_id', 'quantity_received']);
+            $table->index(['destination_store_id', 'quantity_received'], 'sta_destination_received_idx');
         });
     }
 
