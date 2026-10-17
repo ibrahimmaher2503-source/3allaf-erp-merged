@@ -99,20 +99,58 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         }
     }
 
-    public function test_dispatch_and_receive_are_idempotent_and_post_each_destination(): void
+    public function test_receive_is_independent_per_destination_and_idempotent(): void
     {
         $transfer = $this->approvedTransfer('5', '3', '2');
         app(DispatchStockTransferAction::class)->execute($transfer->id);
-        $dispatchCount = StockMovement::query()->where('movement_type', 'transfer_dispatch')->count();
-        self::assertThrows(fn (): StockTransfer => app(DispatchStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
-        self::assertSame($dispatchCount, StockMovement::query()->where('movement_type', 'transfer_dispatch')->count());
         $transfer = StockTransfer::query()->with('lines.allocations')->findOrFail($transfer->id);
         $line = $transfer->lines->first();
-        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '5', $line->id.'.'.$line->allocations[0]->id => '3', $line->id.'.'.$line->allocations[1]->id => '2'], null, null);
+        $a = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        $b = $line->allocations->firstWhere('destination_store_id', $this->destinationB->id);
+
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$a->id => '3'], null, null);
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('in_transit'));
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('in_transit'));
+        self::assertSame('in_transit', (string) StockTransfer::query()->whereKey($transfer->id)->value('status'));
+
+        self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$a->id => '3'], null, null), InvalidArgumentException::class);
+        self::assertSame(1, StockMovement::query()->where('movement_type', 'transfer_receipt')->count());
+
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$b->id => '2'], null, null);
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('in_transit'));
+        self::assertSame('received', (string) StockTransfer::query()->whereKey($transfer->id)->value('status'));
+        self::assertSame(2, StockMovement::query()->where('movement_type', 'transfer_receipt')->count());
+        self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$b->id => '2'], null, null), InvalidArgumentException::class);
+    }
+
+    public function test_receive_order_b_then_a_also_completes_allocation_lifecycle(): void
+    {
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $line = StockTransfer::query()->with('lines.allocations')->findOrFail($transfer->id)->lines->first();
+        $a = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        $b = $line->allocations->firstWhere('destination_store_id', $this->destinationB->id);
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$b->id => '2'], null, null);
+        self::assertSame('in_transit', (string) StockTransfer::query()->whereKey($transfer->id)->value('status'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$a->id => '3'], null, null);
+        self::assertSame('received', (string) StockTransfer::query()->whereKey($transfer->id)->value('status'));
         self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
         self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
-        self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '5'], null, null), InvalidArgumentException::class);
-        self::assertSame(2, StockMovement::query()->where('movement_type', 'transfer_receipt')->count());
+    }
+
+    public function test_legacy_single_destination_transfer_still_receives_normally(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '3']], idempotencyKey: 'qa-legacy-'.uniqid());
+        $transfer->update(['status' => 'approved', 'approved_by' => $this->user->id, 'approved_at' => now()]);
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $line = StockTransfer::query()->with('lines')->findOrFail($transfer->id)->lines->first();
+        app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id => '3'], null, null);
+        self::assertSame('received', (string) StockTransfer::query()->whereKey($transfer->id)->value('status'));
+        self::assertSame('3.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
     }
 
     public function test_direct_source_balance_is_authoritative(): void

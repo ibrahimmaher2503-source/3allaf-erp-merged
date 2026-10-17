@@ -33,6 +33,9 @@ final class ReceiveStockTransferAction
             if ($transfer->lines->isEmpty()) {
                 throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
             }
+            if ($this->isAllocationReceipt($transfer, $receivedQuantities)) {
+                return $this->receiveAllocationBatch($transfer, $receivedQuantities);
+            }
             if ($differenceType !== null && ! in_array($differenceType, ['shortage', 'damage', 'refusal'], true)) {
                 throw new InvalidArgumentException(__('A valid transfer difference type is required.'));
             }
@@ -81,6 +84,73 @@ final class ReceiveStockTransferAction
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
         });
+    }
+
+    /**
+     * @param  array<int|string, string>  $receivedQuantities
+     */
+    private function isAllocationReceipt(StockTransfer $transfer, array $receivedQuantities): bool
+    {
+        return $transfer->lines->contains(fn ($line): bool => $line->allocations->isNotEmpty())
+            && collect($receivedQuantities)->keys()->contains(fn ($key): bool => str_contains((string) $key, '.'));
+    }
+
+    /**
+     * @param  array<int|string, string>  $receivedQuantities
+     */
+    private function receiveAllocationBatch(StockTransfer $transfer, array $receivedQuantities): StockTransfer
+    {
+        foreach ($transfer->lines as $line) {
+            foreach ($line->allocations as $allocation) {
+                $key = $line->id.'.'.$allocation->id;
+                $amount = $this->decimal($receivedQuantities[$key] ?? $receivedQuantities[(string) $key] ?? '0');
+                $remaining = bcsub((string) $allocation->quantity, (string) $allocation->quantity_received, 6);
+                if (bccomp($amount, '0', 6) < 0 || bccomp($amount, $remaining, 6) > 0) {
+                    throw new InvalidArgumentException(__('Received quantity must be between zero and the remaining allocated quantity.'));
+                }
+                if (bccomp($amount, '0', 6) === 0) {
+                    continue;
+                }
+                app(PostInventoryMovement::class)->execute(
+                    $line->product_id,
+                    (int) $allocation->destination_store_id,
+                    $amount,
+                    'transfer_receipt',
+                    (string) $line->unit_cost,
+                    'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id.':'.$allocation->id.':'.$allocation->quantity_received,
+                    StockTransfer::class,
+                    $transfer->id,
+                    $line->id,
+                );
+                app(PostInventoryMovement::class)->adjustInTransit($line->product_id, (int) $allocation->destination_store_id, '-'.$amount);
+                $allocation->update(['quantity_received' => bcadd((string) $allocation->quantity_received, $amount, 6)]);
+            }
+            $received = (string) $line->allocations->sum('quantity_received');
+            $dispatched = (string) $line->allocations->sum('quantity');
+            $line->mutateApprovedParentLine(['quantity_received' => $received, 'difference_quantity' => bcsub($dispatched, $received, 6)]);
+        }
+
+        $fresh = $transfer->fresh('lines.allocations');
+        $complete = $fresh->lines->every(fn ($line): bool => $line->allocations->every(fn ($allocation): bool => bccomp((string) $allocation->quantity_received, (string) $allocation->quantity, 6) === 0));
+        $before = $transfer->only(['status', 'difference_status', 'lock_version']);
+        $transfer->mutateApprovedDocument([
+            'status' => $complete ? 'received' : 'in_transit',
+            'difference_status' => null,
+            'received_by' => $complete ? Auth::id() : null,
+            'received_at' => $complete ? now() : null,
+            'lock_version' => $transfer->lock_version + 1,
+        ]);
+        app(RecordAuditEvent::class)->execute(
+            'inventory',
+            'receive_stock_transfer',
+            $transfer,
+            $before,
+            $transfer->only(['status', 'received_by', 'received_at', 'lock_version']),
+            storeId: $transfer->destination_store_id,
+            metadata: ['allocation_receipt' => true],
+        );
+
+        return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
     }
 
     /** @return numeric-string */
