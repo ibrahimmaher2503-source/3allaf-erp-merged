@@ -180,6 +180,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
     $router->livewire('purchasing/returns', 'purchasing::returns')
         ->middleware('can:purchase_returns.view')
         ->name('purchasing.returns');
+    $router->livewire('purchasing/returns/create', 'purchasing::returns')
+        ->middleware('can:purchase_returns.create')
+        ->name('purchasing.returns.create');
 
     $router->livewire('purchasing/returns/settings', 'purchasing::return-settings')
         ->middleware('can:company_settings.view')

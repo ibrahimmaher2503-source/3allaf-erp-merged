@@ -313,6 +313,8 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 - **Manual Browser Verification:** Local Demo Auth verified empty-state/settings/detail/print pages with 0 JS errors; end-to-end lifecycle and balance/idempotency verified by transactional Tinker smoke. Production/UAT hardware, real reasons, financial limits, scopes, and printer approval remain pending.
 - **Definition of Done:** DoD; balance and cost history reconcile.
 
+**2026-10-17 owner amendment (DEC-105):** The historical Phase 1 invoice-line requirement above remains the prior baseline. The current approved rule allows a supplier return without a Rajeh purchase invoice. Invoice-linked lines still use the historical invoice unit cost; invoice-free lines snapshot current Product Card cost. One supplier and active source store are required per document. Approval posts a single stock reduction and supplier payable debit; negative supplier payable is permitted. The dedicated full-page create workflow replaces popup creation. Production migration and UAT remain pending.
+
 ### TSK-017 — Implement Price Proposals, Version Approval, and Open-Price Policy
 
 - **Task ID / Phase / Milestone / Status:** TSK-017; Phase 2; DM 2.3; **Local/Dev slice complete — Production/UAT pending; no Production claim**.

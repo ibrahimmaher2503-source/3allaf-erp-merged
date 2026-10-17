@@ -18,6 +18,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Models\StockBalance;
 use App\Modules\Purchasing\Models\StockMovement;
+use App\Modules\Purchasing\Models\SupplierPayableEntry;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +112,9 @@ final class ReversePurchaseInvoiceAction
                     return $invoice;
                 },
             );
+            if (SupplierPayableEntry::query()->where('source_type', 'purchase_invoice')->where('source_id', $invoice->id)->exists()) {
+                app(PostSupplierPayableEntryAction::class)->execute($invoice->supplier_id, $invoice->store_id, 'purchase_invoice_reversal', $invoice->id, bcsub('0', (string) $invoice->total_amount, 4), $actorId);
+            }
             app(RecordAuditEvent::class)->execute(category: 'procurement', event: 'reverse_purchase_invoice', source: $invoice, before: $before, after: $invoice->only(['status', 'cancelled_at', 'cancelled_by', 'cancel_reason', 'lock_version']), storeId: $invoice->store_id, reasonText: $reason, metadata: ['stock_reversed' => true, 'reversal_movement_ids' => $reversalMovementIds, 'correction_request_id' => $requestId]);
 
             return $invoice->fresh(['lines']);

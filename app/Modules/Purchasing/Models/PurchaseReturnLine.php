@@ -14,7 +14,7 @@ final class PurchaseReturnLine extends Model
     use GuardsApprovedParent;
 
     protected $fillable = [
-        'purchase_return_id', 'purchase_invoice_line_id', 'product_id', 'quantity', 'unit_cost', 'total_cost',
+        'purchase_return_id', 'purchase_invoice_line_id', 'product_id', 'quantity', 'unit_cost', 'total_cost', 'cost_source',
     ];
 
     protected $casts = [

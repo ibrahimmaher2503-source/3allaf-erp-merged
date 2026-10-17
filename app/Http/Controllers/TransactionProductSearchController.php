@@ -8,10 +8,10 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductSupplier;
 use App\Modules\Catalog\Models\Supplier;
-use App\Modules\Platform\Models\Store;
 use App\Modules\Inventory\Models\StockBalance;
-use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceLine;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
@@ -42,7 +42,11 @@ final class TransactionProductSearchController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $purchasing = $request->query('context') === 'purchasing';
+        $supplierReturnLookup = $request->query('context') === 'purchase_return';
+        if ($supplierReturnLookup) {
+            abort_unless($actor->can('purchase_returns.create') || $actor->can('purchase_returns.edit'), 403);
+        }
+        $purchasing = $request->query('context') === 'purchasing' || $supplierReturnLookup;
         $transferLookup = $request->query('context') === 'transfer';
         $supplierId = $request->integer('supplier_id');
         $supplierOnly = $purchasing && $request->boolean('supplier_only', true);
@@ -53,7 +57,7 @@ final class TransactionProductSearchController extends Controller
             $sourceStore = Store::query()->visibleTo($actor)->where('status', 'active')->findOrFail($request->integer('source_store_id'));
         }
 
-        if ($purchasing && $supplierId < 1) {
+        if ($purchasing && ! $supplierReturnLookup && $supplierId < 1) {
             return response()->json(['data' => [], 'meta' => ['supplier_required' => true]]);
         }
         if ($supplierId > 0) {

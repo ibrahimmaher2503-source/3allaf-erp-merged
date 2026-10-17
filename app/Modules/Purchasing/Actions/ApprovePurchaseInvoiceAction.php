@@ -85,6 +85,9 @@ final class ApprovePurchaseInvoiceAction
                 'approved_by' => $actorId,
                 'lock_version' => $invoice->lock_version + 1,
             ]);
+            if (bccomp((string) $invoice->total_amount, '0', 4) > 0) {
+                app(PostSupplierPayableEntryAction::class)->execute($invoice->supplier_id, $invoice->store_id, 'purchase_invoice', $invoice->id, (string) $invoice->total_amount, $actorId);
+            }
             foreach ($invoice->lines as $line) {
                 if ($this->compare($line->quantity, '0') > 0) {
                     app(SyncSupplierProductAssociation::class)->recordApprovedPrice($invoice, $line, $actorId);

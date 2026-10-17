@@ -9,6 +9,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Pricing\Services\PriceListResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Support\ProductQuantity;
@@ -39,6 +40,7 @@ final class SavePurchaseDistributionAction
                 throw new InvalidArgumentException(__('Only submitted purchase invoices can be allocated.'));
             }
             $before = $invoice->distributions()->get()->map->only(['purchase_invoice_line_id', 'destination_store_id', 'quantity'])->all();
+            $savedPrices = $invoice->distributions()->get()->keyBy(fn ($distribution): string => $distribution->purchase_invoice_line_id.':'.$distribution->destination_store_id);
             $invoice->distributions()->delete();
             $lineIds = $invoice->lines->pluck('id')->map(fn ($id) => (int) $id)->all();
             foreach ($matrix as $lineId => $destinations) {
@@ -59,17 +61,29 @@ final class SavePurchaseDistributionAction
                         throw new InvalidArgumentException(__('Stock retained in the receiving store needs no distribution entry.'));
                     }
                     $price = null;
-                    if ($destination->type === 'selling') {
-                        $list = app(PriceListResolver::class)->listForOutlet($destination);
-                        $price = app(PriceListResolver::class)->resolveWithBasePrice($line->product, $list, (string) $line->base_consumer_price);
+                    $fallbackPrice = null;
+                    $savedPrice = $savedPrices->get($line->id.':'.$destination->id);
+                    if ($destination->type === 'selling' && $savedPrice === null) {
+                        try {
+                            $list = app(PriceListResolver::class)->listForOutlet($destination);
+                            $price = app(PriceListResolver::class)->resolveWithBasePrice($line->product, $list, (string) $line->base_consumer_price);
+                        } catch (ValidationException $exception) {
+                            if (! isset($exception->errors()['price_list'])) {
+                                throw $exception;
+                            }
+                            $fallbackPrice = app(EffectivePriceResolver::class)->resolve($line->product_id, $destination->id)?->amount;
+                            if ($fallbackPrice === null) {
+                                throw $exception;
+                            }
+                        }
                     }
-                    $invoice->distributions()->create(['purchase_invoice_line_id' => (int) $lineId, 'destination_store_id' => $destination->id, 'quantity' => bcadd((string) $quantity, '0', 6), 'price_list_id' => $price?->priceListId, 'effective_selling_price' => $price?->finalPrice, 'price_is_override' => $price->overridden ?? false]);
+                    $invoice->distributions()->create(['purchase_invoice_line_id' => (int) $lineId, 'destination_store_id' => $destination->id, 'quantity' => bcadd((string) $quantity, '0', 6), 'price_list_id' => $savedPrice?->price_list_id ?? $price?->priceListId, 'effective_selling_price' => $savedPrice?->effective_selling_price ?? $price?->finalPrice ?? $fallbackPrice, 'price_is_override' => $savedPrice?->price_is_override ?? $price->overridden ?? false]);
                 }
             }
             foreach ($invoice->lines as $line) {
                 $allocated = $invoice->distributions()->where('purchase_invoice_line_id', $line->id)->sum('quantity');
                 if (bccomp((string) $allocated, (string) $line->quantity, 6) > 0) {
-                    throw ValidationException::withMessages(['distributionMatrix.'.$line->id => __('Distribution cannot exceed the accepted quantity.')]);
+                    throw ValidationException::withMessages(['distributionMatrix.'.$line->id => 'إجمالي التوزيع لا يمكن أن يتجاوز الكمية المستلمة.']);
                 }
             }
             $invoice->update(['status' => 'submitted', 'lock_version' => $invoice->lock_version + 1, 'updated_by' => $actor->id]);
