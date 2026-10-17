@@ -56,8 +56,8 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
     {
         $routes = file_get_contents(base_path('routes/inventory.php'));
         self::assertIsString($routes);
-        self::assertStringContainsString("$invoice->status === 'approved'", $routes);
-        self::assertStringContainsString("where('store_id', $sourceStoreId)", $routes);
+        self::assertStringContainsString("\$invoice->status === 'approved'", $routes);
+        self::assertStringContainsString("where('store_id', \$sourceStoreId)", $routes);
         self::assertStringContainsString("bccomp($available, '0', 6) > 0", $routes);
         self::assertStringContainsString('warehouse_mismatch', $routes);
     }
