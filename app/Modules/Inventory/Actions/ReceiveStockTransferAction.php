@@ -21,9 +21,12 @@ final class ReceiveStockTransferAction
         Gate::authorize('transfers.receive');
 
         return DB::transaction(function () use ($id, $receivedQuantities, $differenceType, $differenceReason): StockTransfer {
-            $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
+            $transfer = StockTransfer::query()->with(['lines.allocations'])->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer, source: false, destination: true);
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
+            foreach ($transfer->allocations->pluck('destination_store_id')->unique() as $destinationId) {
+                $this->scope->execute((int) $destinationId);
+                app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, (int) $destinationId);
+            }
             if ($transfer->status !== 'in_transit') {
                 throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));
             }
@@ -50,10 +53,25 @@ final class ReceiveStockTransferAction
             }
             foreach ($transfer->lines as $line) {
                 $quantities = $receivedByLine[$line->id];
-                if (bccomp($quantities['received'], '0', 6) > 0) {
-                    app(PostInventoryMovement::class)->execute($line->product_id, $transfer->destination_store_id, $quantities['received'], 'transfer_receipt', (string) $line->unit_cost, 'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id, StockTransfer::class, $transfer->id, $line->id);
+                $allocations = $line->allocations;
+                if ($allocations->isEmpty()) {
+                    $allocations = collect([(object) ['id' => 0, 'destination_store_id' => $transfer->destination_store_id, 'quantity' => $quantities['dispatched'], 'quantity_received' => 0]]);
                 }
-                app(PostInventoryMovement::class)->adjustInTransit($line->product_id, $transfer->destination_store_id, '-'.$quantities['dispatched']);
+                foreach ($allocations as $allocation) {
+                    $key = $line->id.'.'.$allocation->id;
+                    $receivedAllocation = $this->decimal($receivedQuantities[$key] ?? $receivedQuantities[(string) $key] ?? ($allocations->count() === 1 ? ($receivedQuantities[$line->id] ?? '0') : '0'));
+                    $dispatchedAllocation = $this->decimal($allocation->quantity);
+                    if (bccomp($receivedAllocation, $dispatchedAllocation, 6) > 0) {
+                        throw new InvalidArgumentException(__('Received quantity must be between zero and the allocated quantity.'));
+                    }
+                    if (bccomp($receivedAllocation, '0', 6) > 0) {
+                        app(PostInventoryMovement::class)->execute($line->product_id, (int) $allocation->destination_store_id, $receivedAllocation, 'transfer_receipt', (string) $line->unit_cost, 'DEMO-TRANSFER-RECEIPT:'.$transfer->id.':'.$line->id.':'.$allocation->id, StockTransfer::class, $transfer->id, $line->id);
+                    }
+                    app(PostInventoryMovement::class)->adjustInTransit($line->product_id, (int) $allocation->destination_store_id, '-'.$dispatchedAllocation);
+                    if ($allocation->id > 0) {
+                        $allocation->update(['quantity_received' => $receivedAllocation]);
+                    }
+                }
                 $line->mutateApprovedParentLine(['quantity_received' => $quantities['received'], 'difference_quantity' => $quantities['difference'], 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
             }
             $status = bccomp($totalDifference, '0', 6) === 0 ? 'received' : 'difference_review';
