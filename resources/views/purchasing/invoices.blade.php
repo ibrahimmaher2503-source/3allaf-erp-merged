@@ -645,8 +645,9 @@ new #[Title('Purchase Invoices')] class extends Component
 
     public function approveInvoice(int $id, ApprovePurchaseInvoiceAction $action): void
     {
-        Gate::authorize('purchase_invoices.approve');
+        $this->resetErrorBag('approval');
         try {
+            Gate::authorize('purchase_invoices.approve');
             \Illuminate\Support\Facades\DB::transaction(function () use ($id, $action): void {
                 $invoice = PurchaseInvoice::query()->findOrFail($id);
                 $version = $invoice->lock_version;
@@ -663,11 +664,12 @@ new #[Title('Purchase Invoices')] class extends Component
             $this->showDistribution = false;
             Flux::toast(__('Purchase invoice approved.'), variant: 'success');
         } catch (\Illuminate\Validation\ValidationException $exception) {
-            throw $exception;
+            $this->addError('approval', collect($exception->errors())->flatten()->first() ?: (str_starts_with(app()->getLocale(), 'ar') ? 'تعذر اعتماد الفاتورة. راجع الكميات المستلمة.' : 'Unable to approve this invoice. Please review the received quantities.'));
         } catch (\InvalidArgumentException $exception) {
             $this->addError('approval', $exception->getMessage());
         } catch (Throwable $exception) {
-            Flux::toast(\App\Support\UserSafeError::message($exception), variant: 'danger');
+            report($exception);
+            $this->addError('approval', str_starts_with(app()->getLocale(), 'ar') ? 'تعذر اعتماد الفاتورة. حاول مرة أخرى أو تواصل مع الدعم.' : 'Unable to approve this invoice. Please try again or contact support.');
         }
     }
 
@@ -891,33 +893,22 @@ new #[Title('Purchase Invoices')] class extends Component
                         @php($stageOneComplete=$invoice->lines->isNotEmpty())
             @php($stage=\App\Modules\Platform\Support\UiLabel::status($invoice->status))
             @php($nextAction=match($invoice->status){'draft'=>$stageOneComplete?__('Submit for approval'):__('Complete invoice'),'submitted','awaiting_distribution'=>__('Approve invoice'),default=>__('No further action')})
-            <flux:card class="overflow-hidden" wire:key="invoice-card-{{ $invoice->id }}">
-                <div class="grid min-w-0 gap-5 lg:grid-cols-[minmax(11rem,1.25fr)_minmax(10rem,1fr)_minmax(9rem,.8fr)_minmax(13rem,1.35fr)] lg:items-start">
-                    <div class="min-w-0 space-y-2">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <strong class="truncate" dir="ltr">{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}</strong>
-                            <x-status.badge :status="$invoice->status" />
-                        </div>
-                        @if(filled($invoice->supplier_reference))<div class="truncate text-xs text-text-muted" dir="ltr">{{ $invoice->supplier_reference }}</div>@endif
-                        <div class="text-sm">{{ str_starts_with(app()->getLocale(), 'ar') ? ($invoice->supplier?->name_ar ?: '—') : ($invoice->supplier?->name_en ?: '—') }}</div>
-                    </div>
-                    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm lg:grid-cols-1">
-                        <div><dt class="text-xs text-text-muted">{{ __('Store') }}</dt><dd>{{ str_starts_with(app()->getLocale(), 'ar') ? ($invoice->store?->name_ar ?: '—') : ($invoice->store?->name_en ?: '—') }}</dd></div>
-                        <div><dt class="text-xs text-text-muted">{{ __('Date') }}</dt><dd dir="ltr">{{ $invoice->invoice_date?->format('Y-m-d') }}</dd></div>
-                        <div><dt class="text-xs text-text-muted">{{ __('Total') }}</dt><dd><x-money :amount="$invoice->total_amount" :currency="$invoice->currency_code" /></dd></div>
-                    </dl>
-                    <dl class="grid grid-cols-2 gap-3 text-sm lg:grid-cols-1">
-                        <div><dt class="text-xs text-text-muted">{{ __('Current stage') }}</dt><dd class="font-medium">{{ $stage }}</dd></div>
-                        <div><dt class="text-xs text-text-muted">{{ __('Quantity retained in receiving store') }}</dt><dd class="tabular-nums" dir="ltr">{{ __(':quantity units', ['quantity'=>$this->formatQuantity($remaining)]) }}</dd></div>
-                    </dl>
-                    <div class="min-w-0 space-y-3 lg:border-s lg:ps-5">
-                        <div><div class="text-xs text-text-muted">{{ __('Next required action') }}</div><div class="font-medium">{{ $nextAction }}</div></div>
-                        <div class="flex flex-wrap gap-2">
+            <flux:card class="overflow-x-auto !p-3 transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40" wire:key="invoice-card-{{ $invoice->id }}">
+                <div class="grid min-w-0 grid-cols-2 items-center gap-x-3 gap-y-2 text-sm sm:grid-cols-4 md:min-w-[72rem] md:grid-cols-[minmax(5rem,.7fr)_minmax(5rem,.7fr)_minmax(8rem,1.2fr)_minmax(7rem,1fr)_6.5rem_minmax(7rem,.9fr)_minmax(5rem,.7fr)_minmax(7rem,1fr)_minmax(16rem,2fr)] md:gap-x-2">
+                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Invoice number') }}</div><strong class="block truncate" dir="ltr" title="{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}">{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}</strong></div>
+                    <div><div class="text-[11px] text-text-muted">{{ __('Status') }}</div><x-status.badge :status="$invoice->status" /></div>
+                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Supplier') }}</div><div class="truncate" title="{{ \App\Support\HumanName::name($invoice->supplier) }}">{{ \App\Support\HumanName::name($invoice->supplier) }}</div></div>
+                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Store') }}</div><div class="truncate" title="{{ \App\Support\HumanName::name($invoice->store) }}">{{ \App\Support\HumanName::name($invoice->store) }}</div></div>
+                    <div><div class="text-[11px] text-text-muted">{{ __('Date') }}</div><div class="whitespace-nowrap tabular-nums" dir="ltr">{{ $invoice->invoice_date?->format('Y-m-d') }}</div></div>
+                    <div><div class="text-[11px] text-text-muted">{{ __('Total') }}</div><x-money :amount="$invoice->total_amount" :currency="$invoice->currency_code" /></div>
+                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Current stage') }}</div><div class="truncate font-medium">{{ $stage }}</div></div>
+                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Next required action') }}</div><div class="truncate font-medium">{{ $nextAction }}</div></div>
+                    <div class="col-span-2 min-w-0 md:col-span-1"><div class="text-[11px] text-text-muted">{{ __('Actions') }}</div><div class="flex items-center gap-1 overflow-x-auto whitespace-nowrap pb-1">
                             @can('purchase_invoices_supplier_returns.print')
                                 <x-actions.button semantic="print" :label="__('Print')" :href="route('purchasing.invoices.print', $invoice)" target="_blank">{{ __('Print') }}</x-actions.button>
                             @endcan
                             @if ($invoice->status === 'draft')
-                                <div class="flex flex-wrap gap-2">
+                                <div class="flex items-center gap-1">
                                     @if($stageOneComplete)
                                         @can('purchase_invoices_supplier_returns.edit')
                                             <flux:button size="sm" variant="primary" wire:click="submitInvoice({{ $invoice->id }})">{{ __('Submit for approval') }}</flux:button>
@@ -936,7 +927,7 @@ new #[Title('Purchase Invoices')] class extends Component
                                     @endcan
                                 </div>
                             @elseif (in_array($invoice->status, ['submitted','awaiting_distribution'], true))
-                                <div class="flex flex-wrap gap-2">
+                                <div class="flex items-center gap-1">
                                     @can('purchase_invoices.approve')
                                         <flux:button size="sm" variant="primary" wire:click="openReceivingReview({{ $invoice->id }})">{{ __('Approve invoice') }}</flux:button>
                                     @else
@@ -1068,21 +1059,21 @@ new #[Title('Purchase Invoices')] class extends Component
         </div>
     </flux:modal>
 
-    <flux:error name="approval" />
     @if($showReceiving && $receivingInvoice)
         <flux:card class="space-y-4" aria-label="{{ __('Review received quantities') }}">
             <flux:heading size="xl">{{ __('Approve invoice') }}</flux:heading>
             <p>{{ __('Receiving store') }}: {{ \App\Support\HumanName::name($receivingInvoice->store) }}</p>
             <p class="text-sm text-text-muted">{{ __('Verify accepted quantities before approval. Undistributed stock stays in this receiving store.') }}</p>
-            <form wire:submit="approveInvoice({{ $receivingInvoice->id }})" class="space-y-4">
-                <div class="overflow-x-auto"><table class="data-table w-full"><thead><tr><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ __('Accepted quantity') }}</th></tr></thead><tbody>
+            <div class="space-y-4">
+                <div class="overflow-x-auto"><table class="data-table w-full"><thead><tr><th>{{ __('Product') }}</th><th>{{ __('Original quantity') }}</th><th>{{ str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع' : 'Selling price' }}</th><th>{{ __('Accepted quantity') }}</th></tr></thead><tbody>
                     @foreach($receivingInvoice->lines as $line)
-                        <tr wire:key="receiving-line-{{ $line->id }}"><td>{{ \App\Support\HumanName::name($line->product) }}<small class="block" dir="ltr">{{ $line->product?->item_code }}</small></td><td><x-product-quantity :value="$line->original_quantity ?? $line->quantity" /></td><td><flux:input wire:model="receivedQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted quantity')" required /><flux:error name="receivedQuantities.{{ $line->id }}" /></td></tr>
+                        <tr wire:key="receiving-line-{{ $line->id }}"><td>{{ \App\Support\HumanName::name($line->product) }}<small class="block" dir="ltr">{{ $line->product?->item_code }}</small></td><td><x-product-quantity :value="$line->original_quantity ?? $line->quantity" /></td><td><x-money :amount="$line->product?->sale_price" :currency="$receivingInvoice->currency_code" /></td><td class="min-w-32"><flux:input wire:model="receivedQuantities.{{ $line->id }}" type="number" min="0" step="1" :aria-label="__('Accepted quantity')" required /><flux:error name="receivedQuantities.{{ $line->id }}" /></td></tr>
                     @endforeach
                 </tbody></table></div>
                 <flux:error name="receivedQuantities" />
-                <div class="flex justify-end gap-2"><flux:button type="button" wire:click="$set('showReceiving', false)" wire:confirm="{{ __('Discard unsaved receiving changes?') }}">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="approveInvoice" wire:confirm="{{ __('Approve this invoice with the accepted quantities?') }}">{{ __('Approve invoice') }}</flux:button></div>
-            </form>
+                <flux:error name="approval" />
+                <div class="flex justify-end gap-2"><flux:button type="button" wire:click="$set('showReceiving', false)" wire:confirm="{{ __('Discard unsaved receiving changes?') }}">{{ __('Cancel') }}</flux:button><flux:button type="button" variant="primary" wire:click="approveInvoice({{ $receivingInvoice->id }})" wire:loading.attr="disabled" wire:target="approveInvoice" wire:confirm="{{ __('Approve this invoice with the accepted quantities?') }}"><span wire:loading.remove wire:target="approveInvoice">{{ __('Approve invoice') }}</span><span wire:loading wire:target="approveInvoice">{{ __('Approving...') }}</span></flux:button></div>
+            </div>
         </flux:card>
     @endif
 
