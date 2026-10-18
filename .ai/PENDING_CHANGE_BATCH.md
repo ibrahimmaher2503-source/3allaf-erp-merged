@@ -1,5 +1,14 @@
 # Pending Change Batch
 
+## 2026-10-18 — Inventory transfer allocation UI/state
+
+- Class: V1; status: focused verification PASS, undeployed; merge/deployment excluded.
+- Commit: the commit containing this entry on `hotfix/inventory-transfer-allocation-ui-state`.
+- Runtime file: `resources/views/inventory/index.blade.php`; supporting records: CURRENT_TASK, TEST_RESULTS, SESSION_SUMMARY, and this ledger.
+- Safe finite allocation totals/remaining and delayed over-allocation warning; responsive readable allocation cells; matching added-row state. Existing server validation and inventory lifecycle preserved.
+- Focused Node 20 form browser checks at 1440/1024/390, PHP syntax, Pint, Blade cache passed. Final diff check recorded at commit. No build or release created.
+
+
 ## 2026-10-15 — Audit Logs permission data cleanup (#55)
 
 | Class | Repair | Branch | Affected files | Verification/status |
