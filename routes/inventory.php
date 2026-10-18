@@ -151,7 +151,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $inventorySummary['balances'] = $balances->total();
     $inventorySummary['movements'] = $movements->total();
     $movementReferences = new StockMovementSourceReferences($movements->getCollection());
-    $transfers = $showTransfers ? (clone $transferQuery)->with(['sourceStore', 'destinationStore', 'lines.product'])->latest('id')->limit(20)->get() : collect();
+    $transfers = $showTransfers ? (clone $transferQuery)->with(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination'])->latest('id')->limit(20)->get() : collect();
     $transferApprovals = $showTransfers ? ApprovalRecord::query()
         ->where('source_type', 'stock_transfers')
         ->whereIn('source_id', $transfers->pluck('id')->map(fn (int $id): string => (string) $id))
@@ -253,7 +253,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     $router->get('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
 
-        return $renderInventory(null, 'transfer-receive', $transfer->load(['sourceStore', 'destinationStore', 'lines.product']));
+        return $renderInventory(null, 'transfer-receive', $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']));
     })->middleware('can:transfers.view')->name('inventory.transfers.receive-page');
     $router->get('inventory/transfers/{transfer}/differences', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
