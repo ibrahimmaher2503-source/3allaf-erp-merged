@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Actions;
 
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\StockBalance;
-use App\Modules\Platform\Models\Store;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
+use App\Modules\Platform\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +18,7 @@ final class UpdateStockTransferDraftAction
 {
     public function __construct(private readonly AssertInventoryStoreScope $scope) {}
 
-    /** @param array<int, array{product_id: int, quantity_requested: string}> $lines */
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
     public function execute(
         int $id,
         int $sourceStoreId,
@@ -71,7 +71,12 @@ final class UpdateStockTransferDraftAction
             ]);
             $transfer->lines()->delete();
             foreach ($normalized as $line) {
-                $transfer->lines()->create($line);
+                $allocations = $line['allocations'] ?? [];
+                unset($line['allocations']);
+                $savedLine = $transfer->lines()->create($line);
+                foreach ($allocations as $destinationId => $quantity) {
+                    $savedLine->allocations()->create(['destination_store_id' => (int) $destinationId, 'quantity' => $quantity]);
+                }
             }
             app(RecordAuditEvent::class)->execute(
                 category: 'inventory',
@@ -116,14 +121,35 @@ final class UpdateStockTransferDraftAction
             if (bccomp($available, $quantity, 6) < 0) {
                 throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
             }
-            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($balance?->average_cost ?? '0'), '0', 4)];
+            $allocations = [];
+            foreach ((array) ($line['allocations'] ?? []) as $destinationId => $allocated) {
+                $destinationId = (int) $destinationId;
+                if ($destinationId <= 0 || $destinationId === $sourceStoreId) {
+                    throw new InvalidArgumentException(__('Every destination must be different from the source store.'));
+                }
+                $amount = bcadd((string) $allocated, '0', 6);
+                if (bccomp($amount, '0', 6) < 0) {
+                    throw new InvalidArgumentException(__('Destination quantities cannot be negative.'));
+                }
+                if (bccomp($amount, '0', 6) > 0) {
+                    $this->scope->execute($destinationId);
+                    $allocations[$destinationId] = $amount;
+                }
+            }
+            $allocatedTotal = array_reduce($allocations, fn (string $total, string $amount): string => bcadd($total, $amount, 6), '0');
+            if (bccomp($allocatedTotal, $quantity, 6) > 0) {
+                throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
+            }
+            $normalized[$product->id] = ['product_id' => $product->id, 'quantity_requested' => $quantity, 'unit_cost' => bcadd((string) ($balance?->average_cost ?? '0'), '0', 4), 'allocations' => $allocations];
         }
+
         return array_values($normalized);
     }
 
     private function nullableTrimmed(?string $value): ?string
     {
         $value = trim((string) $value);
+
         return $value === '' ? null : $value;
     }
 }
