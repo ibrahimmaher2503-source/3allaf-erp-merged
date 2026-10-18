@@ -24,8 +24,6 @@
             <div class="flex items-center gap-2"><h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ $t('المخزون', 'Inventory') }}</h1><x-context-help :title="$t('المخزون', 'Inventory')" :label="__('Open contextual help')"><p>{{ $t('تابع الرصيد والحركة والتحويل والجرد ضمن نطاقك.', 'Track balances, movements, transfers, and counts within your scope.') }}</p></x-context-help></div>
             <div class="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
                 @can('transfers.create')<a href="{{ route('inventory.transfers.create') }}" class="{{ $button }} bg-sky-700 text-white">{{ $t('تحويل جديد', 'New transfer') }}</a>@endcan
-                @can('inventory_stock_card.create')<a href="{{ route('inventory.adjustments.create') }}" class="{{ $button }} border border-zinc-300 text-zinc-800 dark:border-zinc-700 dark:text-zinc-100">{{ $t('مستند حركة', 'New movement') }}</a>@endcan
-                @can('stock_counts.create')<a href="{{ route('inventory.counts.create') }}" class="{{ $button }} border border-zinc-300 text-zinc-800 dark:border-zinc-700 dark:text-zinc-100">{{ $t('جرد جديد', 'New count') }}</a>@endcan
             </div>
         </header>
         @endif

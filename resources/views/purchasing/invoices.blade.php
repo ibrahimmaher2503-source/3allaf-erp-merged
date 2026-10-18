@@ -895,7 +895,19 @@ new #[Title('Purchase Invoices')] class extends Component
             @php($nextAction=match($invoice->status){'draft'=>$stageOneComplete?__('Submit for approval'):__('Complete invoice'),'submitted','awaiting_distribution'=>__('Approve invoice'),default=>__('No further action')})
             <flux:card class="overflow-x-auto !p-3 transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40" wire:key="invoice-card-{{ $invoice->id }}">
                 <div class="grid min-w-0 grid-cols-2 items-center gap-x-3 gap-y-2 text-sm sm:grid-cols-4 md:min-w-[52rem] md:grid-cols-[3.5rem_4.5rem_6rem_5rem_5.5rem_6rem_4.5rem_5.5rem_8.5rem] md:gap-x-1 xl:grid-cols-[4rem_5rem_minmax(7rem,1fr)_6rem_6rem_6.5rem_5rem_7rem_9rem] xl:gap-x-2">
-                    <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Invoice number') }}</div><strong class="block truncate" dir="ltr" title="{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}">{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}</strong></div>
+                    <div class="min-w-0" x-data="{ copied: false, async copyNumber() { try { await navigator.clipboard.writeText(this.$refs.number.textContent.trim()); this.copied = true; setTimeout(() => this.copied = false, 1500); } catch { this.copied = false; } } }">
+                        <div class="text-[11px] text-text-muted">{{ __('Invoice number') }}</div>
+                        <div class="flex min-w-0 items-center gap-1">
+                            <strong x-ref="number" class="block min-w-0 truncate" dir="ltr" title="{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}">{{ $invoice->invoice_number ?: $invoice->supplier_reference ?: '#'.$invoice->id }}</strong>
+                            @if ($invoice->invoice_number)
+                                <button type="button" class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-text-muted hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" x-on:click="copyNumber()" x-bind:title="copied ? '{{ str_starts_with(app()->getLocale(), 'ar') ? 'تم النسخ' : 'Copied' }}' : '{{ str_starts_with(app()->getLocale(), 'ar') ? 'نسخ رقم الفاتورة' : 'Copy invoice number' }}'" aria-label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'نسخ رقم الفاتورة' : 'Copy invoice number' }}">
+                                    <flux:icon.document-duplicate x-show="!copied" variant="mini" />
+                                    <flux:icon.check x-show="copied" x-cloak variant="mini" class="text-emerald-600" />
+                                </button>
+                                <span class="sr-only" role="status" x-text="copied ? '{{ str_starts_with(app()->getLocale(), 'ar') ? 'تم النسخ' : 'Copied' }}' : ''"></span>
+                            @endif
+                        </div>
+                    </div>
                     <div><div class="text-[11px] text-text-muted">{{ __('Status') }}</div><x-status.badge :status="$invoice->status" /></div>
                     <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'المورد' : 'Supplier' }}</div><div class="break-words leading-tight" title="{{ \App\Support\HumanName::name($invoice->supplier) }}">{{ \App\Support\HumanName::name($invoice->supplier) }}</div></div>
                     <div class="min-w-0"><div class="text-[11px] text-text-muted">{{ __('Store') }}</div><div class="break-words leading-tight" title="{{ \App\Support\HumanName::name($invoice->store) }}">{{ \App\Support\HumanName::name($invoice->store) }}</div></div>
