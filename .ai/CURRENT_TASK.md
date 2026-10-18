@@ -1,3 +1,9 @@
+# Current task — Inventory allocation UI/state hotfix ready for review (2026-10-18)
+
+V1 correction complete on `hotfix/inventory-transfer-allocation-ui-state` from `e7b55567a931e2b66c0949594532b23f2c7d2c8a`. Scoped browser validation with Node 20 at 1440/1024/390 passed; syntax, Pint and Blade cache passed. Only the existing inventory view changes runtime behavior. Commit and exact task-branch push authorized; no merge or deployment. Detailed scope, verification limits, and evidence are in the latest `.ai/TEST_RESULTS.md` and `.ai/SESSION_SUMMARY.md` entries. Production remains `toyjoy-v0.1.27-inventory-e7b5556-r2` at the source SHA.
+
+## Preserved previous task
+
 # Current task — Supplier-return v2 real-host retry complete (2026-10-17)
 
 Production application SHA `df1e3088dedecfb1afcebd56bd6a12544db6064d` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.26-purchasing-df1e308`. The previous rollback release is `toyjoy-v0.1.25-central-warehouse-0e09f86`. The first activation's 404 was traced to the `rajeh.xyz` Apache vhost using `ea-php85-php-fpm`, whose workers retained the previous route view after the atomic symlink switch. The controlled origin-vhost test reproduced 404 before reloading that service and 302 after. One retry passed origin-vhost checks under maintenance and public-host checks after reopening. Migration `000128` was already Ran and was not rerun; the payable ledger remains empty. No production business transaction was submitted for verification. The runbook now requires the actual-vhost gate and the bound FPM reload.

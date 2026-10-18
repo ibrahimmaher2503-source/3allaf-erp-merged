@@ -111,7 +111,7 @@
                     action="{{ $transfer ? route('inventory.transfers.update', $transfer) : route('inventory.transfers.store') }}"
                     x-data="{ attempted: false, source: @js((string) old('source_store_id', $transfer?->source_store_id ?? '')), destination: @js((string) old('destination_store_id', $transfer?->destination_store_id ?? '')) }"
                     x-on:submit="attempted = true; if (!source || !destination || source === destination) { $event.preventDefault(); $refs.destination?.focus(); } else { $el.querySelector('button[type=submit]').disabled = true; }"
-                    data-product-line-editor data-autofocus="true" data-next-index="{{ max(1, $transfer?->lines?->count() ?? 1) }}"
+                    data-transfer-allocation-editor data-product-line-editor data-autofocus="true" data-next-index="{{ max(1, $transfer?->lines?->count() ?? 1) }}"
                 >
                     @csrf
                     <div class="grid gap-4 sm:grid-cols-2">
@@ -152,12 +152,45 @@
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $balance?->average_cost ?? '—' }}</output></div>
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $selling ?? '—' }}</output></div>
                                 <div><label class="text-xs font-semibold">{{ $t('الإجمالي المطلوب', 'Requested total') }}</label><input data-line-quantity name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ old('lines.'.$lineIndex.'.quantity_requested', $transferLine?->quantity_requested) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
-                                <div class="lg:col-span-full grid gap-2 sm:grid-cols-2">@foreach($visibleStores as $destination)<label class="text-xs font-semibold">{{ \App\Support\HumanName::name($destination) }}<input name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input></label>@endforeach</div>
-                                <div class="lg:col-span-full grid grid-cols-2 gap-2 text-xs"><div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div><div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">—</output></div></div><p class="lg:col-span-full text-xs text-rose-700" data-line-allocation-error hidden>{{ $t('إجمالي التوزيع يتجاوز الكمية المتاحة.', 'Allocated quantity exceeds available stock.') }}</p>
+                                <div data-transfer-allocations>
+                                    @foreach($visibleStores as $destination)
+                                        <label class="text-xs font-semibold">
+                                            <span>{{ \App\Support\HumanName::name($destination) }}</span>
+                                            <input name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <div data-transfer-allocation-summary class="grid grid-cols-2 gap-2 text-xs" hidden>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
+                                </div>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('إجمالي التوزيع يتجاوز الكمية المتاحة.', 'Allocated quantity exceeds available stock.') }}</p>
                                 @if($lineIndex > 0)<button type="button" data-remove-line class="text-sm text-rose-700 underline">{{ $t('حذف', 'Remove') }}</button>@endif
                             </div>
                         @endforeach
-                        <template data-line-template><div class="grid gap-3 rounded-2xl border border-zinc-200/80 bg-white/55 p-4 shadow-sm lg:grid-cols-[minmax(14rem,1fr)_7rem_7rem_7rem_7rem_2.5rem]" data-product-line><div><x-product-line-lookup name="lines[__INDEX__][product_id]" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-source" /></div><div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div><div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div><div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div><div><label class="text-xs font-semibold">{{ $t('كمية التحويل', 'Transfer quantity') }}</label><input data-line-quantity name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="1" step="1" required></div><button type="button" data-remove-line class="text-sm text-rose-700 underline">{{ $t('حذف', 'Remove') }}</button></div></template>
+                        <template data-line-template>
+                            <div class="grid gap-3 rounded-2xl border border-zinc-200/80 bg-white/55 p-4 shadow-sm lg:grid-cols-[minmax(14rem,1fr)_7rem_7rem_7rem_7rem_2.5rem]" data-product-line>
+                                <div><x-product-line-lookup name="lines[__INDEX__][product_id]" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-source" /></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل', 'Transfer quantity') }}</label><input data-line-quantity name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="1" step="1" required></div>
+                                <div data-transfer-allocations>
+                                    @foreach($visibleStores as $destination)
+                                        <label class="text-xs font-semibold">
+                                            <span>{{ \App\Support\HumanName::name($destination) }}</span>
+                                            <input name="lines[__INDEX__][allocations][{{ $destination->id }}]" value="" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <div data-transfer-allocation-summary class="grid grid-cols-2 gap-2 text-xs" hidden>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
+                                </div>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('إجمالي التوزيع يتجاوز الكمية المتاحة.', 'Allocated quantity exceeds available stock.') }}</p>
+                                <button type="button" data-remove-line class="text-sm text-rose-700 underline">{{ $t('حذف', 'Remove') }}</button>
+                            </div>
+                        </template>
                         <button type="button" data-add-line class="text-sm font-semibold text-sky-700 underline">{{ $t('إضافة بند', 'Add item') }}</button>
                     </div>
                     <div><label for="transfer-reason" class="text-xs font-semibold">{{ $t('السبب', 'Reason') }}</label><input id="transfer-reason" name="reason_code" value="{{ old('reason_code', $transfer?->reason_code) }}" class="{{ $field }}" required></div>
@@ -220,9 +253,66 @@
         <section class="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="movements-heading" data-guide="inventory-movements"><div class="border-b border-zinc-200 px-5 py-4"><h2 id="movements-heading" class="text-xl font-bold">{{ $t('دفتر حركات المخزون', 'Inventory movement ledger') }}</h2><p class="mt-1 text-sm text-zinc-500">{{ $t('كل حركة مرتبطة بمصدرها وغير قابلة للتعديل بعد الترحيل.', 'Every movement is source-linked and immutable after posting.') }}</p></div><x-tables.table-shell :label="$t('حركات المخزون', 'Inventory movements')"><div class="overflow-x-auto"><table class="data-table responsive-resource-table w-full text-start text-sm"><thead><tr><th>{{ $t('التاريخ', 'Posted') }}</th><th>{{ $t('المنتج', 'Product') }}</th><th>{{ $t('المتجر', 'Store') }}</th><th>{{ $t('الحركة', 'Movement') }}</th><th>{{ $t('الكمية', 'Quantity') }}</th><th>{{ $t('المصدر', 'Source') }}</th></tr></thead><tbody>@forelse($movements as $movement)<tr data-movement-row><td data-label="{{ $t('التاريخ', 'Posted') }}" class="text-xs text-text-muted">{{ $movement->posted_at?->format('Y-m-d H:i') }}</td><td data-primary dir="ltr">{{ $movement->product?->item_code }}</td><td data-label="{{ $t('المتجر', 'Store') }}" dir="ltr">{{ $movement->store?->code }}</td><td data-label="{{ $t('الحركة', 'Movement') }}"><x-status.badge :status="$movement->movement_type" :label="$movementLabel($movement->movement_type)" /></td><td data-label="{{ $t('الكمية', 'Quantity') }}" dir="ltr" class="font-mono {{ (float) $movement->quantity < 0 ? 'text-rose-700' : 'text-emerald-700' }}">{{ $qty($movement->quantity) }}</td><td data-label="{{ $t('المصدر', 'Source') }}" class="text-xs text-text-muted">@if($movementReferences->url($movement))<a class="font-semibold text-primary underline" href="{{ $movementReferences->url($movement) }}">{{ $movementReferences->label($movement) }}</a>@else{{ $movementReferences->label($movement) }}@endif</td></tr>@empty<tr><td colspan="6" class="px-5 py-8 text-center text-zinc-500">{{ $t('لا توجد حركات ضمن النطاق.', 'No movements in this scope.') }}</td></tr>@endforelse</tbody></table></div><div class="border-t border-zinc-200 px-5 py-3"><x-tables.pagination :paginator="$movements" :page-sizes="[50]" /></div></x-tables.table-shell></section>
         @endif
         @endunless
-        @if($focus === 'transfer-create')
+        @if($focus === 'transfer-create' || $transfer?->status === 'draft')
+        <style>
+            [data-transfer-allocation-editor] [data-product-line] > * { min-width: 0; }
+            [data-transfer-allocations], [data-transfer-allocation-summary], [data-line-allocation-error] { grid-column: 1 / -1; min-width: 0; }
+            [data-transfer-allocations] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+            [data-transfer-allocations] label { display: flex; flex-direction: column; min-width: 0; gap: 0.25rem; }
+            [data-transfer-allocations] label > span { white-space: normal; word-break: normal; overflow-wrap: break-word; }
+            [data-transfer-allocations] input { box-sizing: border-box; width: 100%; min-width: 0; }
+            [data-transfer-allocation-editor] [hidden] { display: none !important; }
+            @media (min-width: 640px) {
+                [data-transfer-allocations] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+            }
+            @media (min-width: 1024px) {
+                [data-transfer-allocation-editor] [data-product-line] { grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); }
+            }
+        </style>
         <script>
-            (() => { const update = (line) => { const requested = Number(line.querySelector('[data-line-quantity]')?.value || 0); const available = Number(line.querySelector('[data-line-available]')?.textContent || 0); const allocated = [...line.querySelectorAll('[data-allocation-input]')].reduce((sum, input) => sum + (Number(input.value) || 0), 0); const allocatedOutput = line.querySelector('[data-line-allocated]'); const remainingOutput = line.querySelector('[data-line-remaining]'); const error = line.querySelector('[data-line-allocation-error]'); if (allocatedOutput) allocatedOutput.value = String(allocated); if (remainingOutput) remainingOutput.value = String(Math.max(available - allocated, 0)); if (error) error.hidden = allocated > requested || allocated > available; }; document.querySelectorAll('[data-product-line]').forEach((line) => { line.addEventListener('input', () => update(line)); update(line); }); })();
+            (() => {
+                const editor = document.querySelector('[data-transfer-allocation-editor]');
+                if (!editor) return;
+
+                const numeric = (value) => {
+                    if (value === null || value === undefined || String(value).trim() === '') return null;
+                    const number = Number(value);
+                    return Number.isFinite(number) ? number : null;
+                };
+                const update = (line) => {
+                    const productId = numeric(line.querySelector('[data-product-id]')?.value);
+                    const availableOutput = line.querySelector('[data-line-available]');
+                    const sourceQuantity = numeric(availableOutput?.textContent);
+                    if (availableOutput && sourceQuantity === null) availableOutput.textContent = '—';
+                    const ready = Number.isInteger(productId) && productId > 0 && sourceQuantity !== null;
+                    const inputs = [...line.querySelectorAll('[data-allocation-input]')];
+                    const quantities = inputs.map((input) => numeric(input.value));
+                    const available = ready ? sourceQuantity : 0;
+                    const total = ready ? quantities.reduce((sum, quantity) => sum + (quantity ?? 0), 0) : 0;
+                    const allocated = Number.isFinite(total) ? total : 0;
+                    const remaining = ready ? Math.max(numeric(available - allocated) ?? 0, 0) : 0;
+                    const overAllocated = ready && quantities.some((quantity) => quantity !== null)
+                        && (!Number.isFinite(total) || allocated > available);
+
+                    line.querySelector('[data-line-allocated]').value = String(allocated);
+                    line.querySelector('[data-line-remaining]').value = String(remaining);
+                    line.querySelector('[data-transfer-allocation-summary]').hidden = !ready;
+                    line.querySelector('[data-line-allocation-error]').hidden = !overAllocated;
+                    inputs.forEach((input) => { input.disabled = !ready; });
+                };
+                const refresh = () => editor.querySelectorAll('[data-product-line]').forEach(update);
+                editor.addEventListener('input', (event) => {
+                    const line = event.target.closest('[data-product-line]');
+                    if (line) update(line);
+                });
+                // ProductLookup writes stock outputs after dispatching product-selected.
+                editor.addEventListener('product-selected', () => queueMicrotask(refresh));
+                editor.addEventListener('change', () => queueMicrotask(refresh));
+                editor.addEventListener('click', (event) => {
+                    if (event.target.closest('[data-add-line]')) queueMicrotask(refresh);
+                });
+                refresh();
+            })();
         </script>
         @endif
     </div>
