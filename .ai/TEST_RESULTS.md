@@ -1,3 +1,9 @@
+# 2026-10-18 — Inventory header and invoice-number copy UI hotfix
+
+Focused Node 20 browser verification PASS using the exact edited Blade header-action and invoice-number cell fragments compiled by Laravel with synthetic invoice `INV-2026-0014`, existing CSS/Cairo fonts, and the installed Livewire/Alpine runtime. At 1440 and 390 px: Inventory default header shows only `تحويل جديد`; numbered invoice has one inline 24 px copy button, 4 px from the number; clicking copies exactly `INV-2026-0014`; copied feedback becomes `تم النسخ`; fallback supplier-reference row has no copy button; document and body width equal viewport; zero browser console/page errors. This was an isolated rendered-fragment check, not an authenticated full-page or Production check. Initial fixture font requests returned 404; serving the existing fonts fixed the fixture and the affected check passed. Affected PHP/Blade syntax, Blade cache, Pint and `git diff --check` PASS. No broad QA, database operation, migration, merge, deployment, or business transaction.
+
+## Preserved previous results
+
 ## 2026-10-13 — Shift close workflow focused verification
 
 Focused disposable MariaDB run: `Module9CashShiftsQaTest.php` selected shift cases PASS, 8 tests / 74 assertions. Covered existing approval/recount and drawer guards plus cash-only blind submission, immutable system-derived electronic totals, pre-approval thermal/A4 print, final approved print, submitted-shift operational release, two pending closes allowed, and third-open rejection. PHP syntax, locale JSON, diff hygiene and Pint PASS. Fast QA ran once: 7/8 checks passed; CodeGraph failed because the new worktree initially pointed at the main-worktree index. A local CodeGraph index was initialized afterward; Fast QA was not rerun. No migration, production database operation, merge or deployment.

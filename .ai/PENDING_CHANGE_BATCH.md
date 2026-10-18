@@ -1,27 +1,34 @@
 # Pending Change Batch
 
+## 2026-10-18 — Inventory header and invoice-number copy UI
+
+- Class V1; verified, undeployed. Branch `hotfix/inventory-header-and-invoice-copy` from `f9bfdb2d164582e12cd8541ad20493463928b44b`; commit is this branch's focused hotfix commit.
+- Runtime files: `resources/views/inventory/index.blade.php`, `resources/views/purchasing/invoices.blade.php`.
+- Default Inventory header keeps New transfer only; Purchasing invoice rows with an actual number have an inline copy control that copies only the displayed number and shows success feedback. No fallback ID/reference copy button, business rule, schema, route, permission, or API change.
+- Focused compiled-Blade browser fixture PASS at desktop 1440 and mobile 390 for visible header, exact clipboard value, inline layout, no horizontal overflow or console errors. Affected PHP/Blade syntax, Blade cache, Pint and diff hygiene PASS. No merge or deployment.
+
 ## 2026-10-18 — Inventory transfer mobile overflow containment
 
-- Class V1; undeployed. Branch `hotfix/inventory-transfer-mobile-overflow`; source main `6d0a0a10c15c78e374f923f03d5069438fc1e544`.
+- Class V1; deployed in Production `f9bfdb2d164582e12cd8541ad20493463928b44b`. Branch `hotfix/inventory-transfer-mobile-overflow`; source main `6d0a0a10c15c78e374f923f03d5069438fc1e544`.
 - Runtime file `resources/views/inventory/index.blade.php`; the only change wraps transfer-screen topbar actions below the identity/search row at mobile widths up to 767 px.
 - Rendered 390 px root cause: `.app-topbar__actions` x=-96 to 210, width 306 px, made `body.scrollWidth` 486 despite `documentElement.scrollWidth` being masked at 390. After correction, viewport/client/document/body/full-page-image widths are all 390.
-- Authenticated GET-only Node 20 browser checks at 1440/1024/768/430/390/375 passed; PHP syntax, Pint, Blade cache and diff hygiene passed. No merge or deployment.
+- Authenticated GET-only Node 20 browser checks at 1440/1024/768/430/390/375 passed; PHP syntax, Pint, Blade cache and diff hygiene passed. Subsequently merged and deployed in the approved `f9bfdb2` release.
 
 ## 2026-10-18 — Selected destination transfer UX
 
-- Class V1; undeployed. Branch `hotfix/inventory-transfer-selected-destinations-ux`; commit is this branch's focused hotfix commit.
+- Class V1; deployed in Production `f9bfdb2d164582e12cd8541ad20493463928b44b`. Branch `hotfix/inventory-transfer-selected-destinations-ux`; commit is this branch's focused hotfix commit.
 - Runtime file `resources/views/inventory/index.blade.php`; supporting CURRENT_TASK, SESSION_SUMMARY, TEST_RESULTS, and pending-batch entries.
 - Allocation controls follow checked destinations, unchecking clears values, remaining uses requested quantity, and numeric values use LTR isolation.
-- Focused Node 20 browser checks at 1440/1024/390 plus PHP syntax, Pint, Blade cache and diff hygiene passed. No release, merge, or deployment.
+- Focused Node 20 browser checks at 1440/1024/390 plus PHP syntax, Pint, Blade cache and diff hygiene passed. Subsequently merged and deployed in the approved `f9bfdb2` release.
 
 
 ## 2026-10-18 — Inventory transfer allocation UI/state
 
-- Class: V1; status: focused verification PASS, undeployed; merge/deployment excluded.
+- Class: V1; status: focused verification PASS; deployed in Production `5206127df0fa92ad944faf10304dad0fc566a13b` and retained in `f9bfdb2d164582e12cd8541ad20493463928b44b`.
 - Commit: the commit containing this entry on `hotfix/inventory-transfer-allocation-ui-state`.
 - Runtime file: `resources/views/inventory/index.blade.php`; supporting records: CURRENT_TASK, TEST_RESULTS, SESSION_SUMMARY, and this ledger.
 - Safe finite allocation totals/remaining and delayed over-allocation warning; responsive readable allocation cells; matching added-row state. Existing server validation and inventory lifecycle preserved.
-- Focused Node 20 form browser checks at 1440/1024/390, PHP syntax, Pint, Blade cache passed. Final diff check recorded at commit. No build or release created.
+- Focused Node 20 form browser checks at 1440/1024/390, PHP syntax, Pint, Blade cache passed. Final diff check recorded at commit. The focused implementation session created no build or release; subsequent Production releases are recorded above.
 
 
 ## 2026-10-15 — Audit Logs permission data cleanup (#55)
