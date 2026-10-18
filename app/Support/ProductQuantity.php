@@ -9,15 +9,19 @@ final class ProductQuantity
 {
     public static function format(string|int|float|null $value): string
     {
-        if ($value === null || $value === '') return '0';
+        if ($value === null || $value === '') {
+            return '0';
+        }
         $raw = trim((string) $value);
-        if (! preg_match('/^[+-]?\d+(?:\.\d+)?$/', $raw)) throw new UnexpectedValueException(__('Invalid product quantity data. Please review the source document.'));
-        $negative = str_starts_with($raw, '-');
-        [$whole, $fraction] = array_pad(explode('.', ltrim($raw, '+-'), 2), 2, '');
-        if ($fraction !== '' && trim($fraction, '0') !== '') throw new UnexpectedValueException(__('A non-integral product quantity was found. Correct the source data before continuing.'));
-        $whole = ltrim($whole, '0');
-        if ($whole === '') return '0';
-        return ($negative ? '-' : '').$whole;
+        if (! preg_match('/^[+-]?\d+(?:\.\d+)?$/', $raw)) {
+            throw new UnexpectedValueException(__('Invalid product quantity data. Please review the source document.'));
+        }
+        $formatted = number_format((float) $raw, 2, '.', '');
+        if ((float) $formatted === 0.0) {
+            return '0';
+        }
+
+        return rtrim(rtrim($formatted, '0'), '.') ?: '0';
     }
 
     public static function normalize(mixed $value, string $field = 'quantity', bool $allowZero = false): int
@@ -29,10 +33,13 @@ final class ProductQuantity
         // DECIMAL columns retain a zero-only fractional suffix. Validate it
         // before extracting the integer text; never round or pass through float.
         $raw = explode('.', $raw, 2)[0];
-        if ((!$allowZero && bccomp($raw, '1', 0) < 0) || ($allowZero && bccomp($raw, '0', 0) < 0)) {
+        if ((! $allowZero && bccomp($raw, '1', 0) < 0) || ($allowZero && bccomp($raw, '0', 0) < 0)) {
             throw ValidationException::withMessages([$field => __('Product quantities must be whole numbers.')]);
         }
-        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) throw ValidationException::withMessages([$field => __('Product quantity exceeds the allowed limit.')]);
+        if (bccomp($raw, (string) PHP_INT_MAX, 0) > 0) {
+            throw ValidationException::withMessages([$field => __('Product quantity exceeds the allowed limit.')]);
+        }
+
         return (int) $raw;
     }
 

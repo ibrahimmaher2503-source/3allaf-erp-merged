@@ -381,6 +381,9 @@ const initializeEditor = (editor) => {
         return;
     }
     editor.dataset.productLineEditorReady = 'true';
+    editor.addEventListener('purchase-invoice-loaded', (event) => {
+        importTransferInvoiceLines(editor, event.detail?.lines ?? []);
+    });
     editor.addEventListener('product-selected', (event) => {
         const line = event.target.closest('[data-product-line]');
         if (!line) return;
@@ -435,6 +438,7 @@ const initializeEditor = (editor) => {
         if (remove) {
             remove.closest('[data-product-line]')?.remove();
             renumberStaticLines(editor);
+            editor.dispatchEvent(new CustomEvent('transfer-lines-changed', { bubbles: true }));
             return;
         }
         const add = event.target.closest?.('[data-add-line]');
@@ -460,6 +464,80 @@ const renumberStaticLines = (editor) => {
         });
     });
     editor.dataset.nextIndex = String(editor.querySelectorAll('[data-product-line]').length);
+};
+
+const formatTransferQuantity = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+    return number.toFixed(2).replace(/\.?(0+)$/, '');
+};
+
+const formatTransferMoney = (value) => {
+    if (value === null || value === undefined || String(value).trim() === '') return '—';
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toFixed(2) : '—';
+};
+
+const appendTransferLine = (editor) => {
+    const template = editor.querySelector('template[data-line-template]');
+    if (!template) return null;
+    const index = Number(editor.dataset.nextIndex || editor.querySelectorAll('[data-product-line]').length);
+    const holder = document.createElement('template');
+    holder.innerHTML = template.innerHTML.replaceAll('__INDEX__', String(index));
+    const line = holder.content.firstElementChild;
+    template.before(holder.content);
+    editor.dataset.nextIndex = String(index + 1);
+    boot();
+
+    return line;
+};
+
+const hydrateTransferLine = (line, product) => {
+    const productId = line.querySelector('[data-product-id]');
+    const search = line.querySelector('[data-product-search]');
+    const available = Number(product.available);
+    const requested = Number.isFinite(available) && available >= 1 ? 1 : 0;
+    const quantity = line.querySelector('[data-line-quantity]');
+
+    if (productId) {
+        productId.value = String(product.product_id);
+        productId.dispatchEvent(new Event('input', { bubbles: true }));
+        productId.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (search) {
+        search.value = product.product;
+        search.dataset.selected = 'true';
+    }
+    line.querySelector('[data-line-available]').textContent = formatTransferQuantity(product.available);
+    line.querySelector('[data-line-cost]').textContent = formatTransferMoney(product.source_unit_cost);
+    line.querySelector('[data-line-selling-price]').textContent = formatTransferMoney(product.source_selling_price);
+    if (quantity) {
+        quantity.value = formatTransferQuantity(requested);
+        quantity.min = '0';
+        quantity.max = formatTransferQuantity(Math.max(0, Number.isFinite(available) ? available : 0));
+        quantity.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+};
+
+const importTransferInvoiceLines = (editor, products) => {
+    const existing = new Set([...editor.querySelectorAll('[data-product-id]')]
+        .map((input) => Number(input.value))
+        .filter((productId) => Number.isInteger(productId) && productId > 0));
+    let blank = [...editor.querySelectorAll('[data-product-line]')].find(lineIsBlank);
+    let imported = 0;
+
+    products.forEach((product) => {
+        const productId = Number(product.product_id);
+        if (!Number.isInteger(productId) || productId < 1 || existing.has(productId)) return;
+        blank ??= appendTransferLine(editor);
+        if (!blank) return;
+        hydrateTransferLine(blank, product);
+        existing.add(productId);
+        imported++;
+        blank = [...editor.querySelectorAll('[data-product-line]')].find(lineIsBlank);
+    });
+
+    editor.dispatchEvent(new CustomEvent('transfer-lines-changed', { bubbles: true, detail: { imported } }));
 };
 
 const updateTotal = (line) => {
