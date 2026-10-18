@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-18 — Inventory/invoice UI batch Production deployment
+
+- Class I4; deployed from approved main `708826b49ea70155150bc5059015d1fefac3a07f` as immutable release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.32-ui-708826b`. Previous rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.30-inventory-mobile-f9bfdb2` (`f9bfdb2d164582e12cd8541ad20493463928b44b`).
+- Preserved shared `.env`, shared `storage`, and `public/storage`; generated Laravel caches only in the final release path; no migrations or seeders ran. Atomic activation and immediate `ea-php85-php-fpm` reload passed. The first candidate browser invocation rolled back automatically because its stage variable was applied to the transformer rather than the browser; the corrected retry passed.
+- Focused origin/public HTTP checks for `/`, `/up`, `/login`, CSS and JS assets returned 200. Authenticated GET-only browser checks at 1440 and 390 passed Inventory header, invoice copy/feedback, RTL/Cairo, zero mutating requests, and zero console errors. At 390, viewport/client/document/body widths were exactly `390/390/390/390`; no new Laravel errors; final rollback required: NO.
+
 ## 2026-10-18 — Inventory header and invoice-number copy UI
 
 - Class V1; verified, undeployed. Branch `hotfix/inventory-header-and-invoice-copy` from `f9bfdb2d164582e12cd8541ad20493463928b44b`; commit is this branch's focused hotfix commit.
