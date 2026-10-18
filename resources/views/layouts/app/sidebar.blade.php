@@ -34,7 +34,8 @@
         .app-topbar__identity { min-width: 0; overflow: hidden; flex: 0 0 7.5rem; }
         .app-topbar__search { flex: 0 0 2.75rem; }
         .app-topbar__mobile-brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .app-topbar__actions { flex: none; }
+        .app-topbar { flex-wrap: wrap; }
+        .app-topbar__actions { flex: 1 1 100%; width: 100%; flex-wrap: wrap; justify-content: flex-start; }
         .app-topbar__actions > form { display: none !important; }
     }
 </style>

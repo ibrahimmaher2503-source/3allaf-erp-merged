@@ -7,6 +7,13 @@
 - Default Inventory header keeps New transfer only; Purchasing invoice rows with an actual number have an inline copy control that copies only the displayed number and shows success feedback. No fallback ID/reference copy button, business rule, schema, route, permission, or API change.
 - Focused compiled-Blade browser fixture PASS at desktop 1440 and mobile 390 for visible header, exact clipboard value, inline layout, no horizontal overflow or console errors. Affected PHP/Blade syntax, Blade cache, Pint and diff hygiene PASS. No merge or deployment.
 
+## 2026-10-18 — Shared mobile topbar overflow containment
+
+- Class V0; undeployed. Branch `hotfix/f160-mobile-overflow-regression`, source main `f1603bcc8f2fde04368036eedc8b5c69f910bbd9`; commit is this branch's focused hotfix commit.
+- Runtime file `resources/views/layouts/app/sidebar.blade.php`; mobile `.app-topbar__actions` now wraps below the identity/search row at widths up to 767 px, preserving the action controls and the latest inventory/invoice UI.
+- Exact 390 px cause: `.app-topbar__actions { flex: none; }` kept a 306 px action group beside the 120 px identity and 44 px search controls, placing it at x=-96..210 and extending `body.scrollWidth` to 486. The prior wrap existed only in the transfer-specific inventory view; current main did not change the shared selector, so default inventory and invoice pages remained exposed to the overflow.
+- Authenticated GET-only browser checks PASS at 1440 and 390 for body/document width containment, inventory header, real-invoice copy value and `تم النسخ`, with zero console errors and no writes. Affected syntax, Pint, Blade cache and diff hygiene PASS. No merge or deployment.
+
 ## 2026-10-18 — Inventory transfer mobile overflow containment
 
 - Class V1; deployed in Production `f9bfdb2d164582e12cd8541ad20493463928b44b`. Branch `hotfix/inventory-transfer-mobile-overflow`; source main `6d0a0a10c15c78e374f923f03d5069438fc1e544`.
