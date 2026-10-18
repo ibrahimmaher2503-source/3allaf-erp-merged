@@ -109,11 +109,14 @@
                     class="mt-4 space-y-4"
                     method="POST"
                     action="{{ $transfer ? route('inventory.transfers.update', $transfer) : route('inventory.transfers.store') }}"
-                    x-data="{ attempted: false, source: @js((string) old('source_store_id', $transfer?->source_store_id ?? '')), destination: @js((string) old('destination_store_id', $transfer?->destination_store_id ?? '')) }"
-                    x-on:submit="attempted = true; if (!source || !destination || source === destination) { $event.preventDefault(); $refs.destination?.focus(); } else { $el.querySelector('button[type=submit]').disabled = true; }"
+                    x-data="{ attempted: false, source: @js((string) old('source_store_id', $transfer?->source_store_id ?? '')) }"
+                    x-on:submit="attempted = true; if (!source || !$el.querySelector('[data-destination-choice] input:checked') || $el.querySelector('[data-line-allocation-error]:not([hidden])')) { $event.preventDefault(); } else { $el.querySelector('button[type=submit]').disabled = true; }"
                     data-transfer-allocation-editor data-product-line-editor data-autofocus="true" data-next-index="{{ max(1, $transfer?->lines?->count() ?? 1) }}"
                 >
                     @csrf
+                    @php
+                        $selectedDestinationIds = old('destination_store_ids', $transfer ? $transfer->lines->flatMap(fn ($line) => $line->allocations->pluck('destination_store_id'))->push($transfer->destination_store_id)->unique()->all() : []);
+                    @endphp
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="rounded-2xl border border-sky-200/80 bg-white/75 p-4 shadow-sm dark:border-sky-800/70 dark:bg-zinc-900/60">
                             <label for="transfer-source" class="text-xs font-semibold">{{ $t('المتجر المصدر', 'Source store') }}</label>
@@ -128,7 +131,7 @@
                         </div>
                         <div class="rounded-2xl border border-indigo-200/80 bg-white/75 p-4 shadow-sm dark:border-indigo-800/70 dark:bg-zinc-900/60">
                             <span class="text-xs font-semibold">{{ $t('المخازن المحول إليها', 'Destination warehouses') }}</span>
-                            <div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($visibleStores as $store)<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="destination_store_ids[]" value="{{ $store->id }}" @checked((int) old('destination_store_id', $transfer?->destination_store_id) === $store->id)>{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}</label>@endforeach</div>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($visibleStores as $store)<label class="flex items-center gap-2 text-sm" data-destination-choice><input type="checkbox" name="destination_store_ids[]" value="{{ $store->id }}" @checked(in_array($store->id, array_map('intval', (array) $selectedDestinationIds), true))>{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}</label>@endforeach</div>
                             <input type="hidden" name="destination_store_id" value="{{ old('destination_store_id', $transfer?->destination_store_id) }}">
                             @error('destination_store_ids')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
                         </div>
@@ -148,46 +151,50 @@
                             @endphp
                             <div class="grid gap-3 rounded-2xl border border-zinc-200/80 bg-white/55 p-4 shadow-sm lg:grid-cols-[minmax(14rem,1fr)_7rem_7rem_7rem_7rem_2.5rem]" data-product-line>
                                 <div><x-product-line-lookup :name="'lines['.$lineIndex.'][product_id]'" :value="old('lines.'.$lineIndex.'.product_id', $transferLine?->product_id)" :display="$transferLine?->product ? ((str_starts_with(app()->getLocale(), 'ar') ? $transferLine->product->name_ar : $transferLine->product->name_en).' · '.$transferLine->product->item_code) : ''" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-source" /></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $available ?? '—' }}</output></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $balance?->average_cost ?? '—' }}</output></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $selling ?? '—' }}</output></div>
-                                <div><label class="text-xs font-semibold">{{ $t('الإجمالي المطلوب', 'Requested total') }}</label><input data-line-quantity name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ old('lines.'.$lineIndex.'.quantity_requested', $transferLine?->quantity_requested) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $available ?? '—' }}</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $balance?->average_cost ?? '—' }}</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $selling ?? '—' }}</output></div>
+                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity dir="ltr" name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ old('lines.'.$lineIndex.'.quantity_requested', $transferLine?->quantity_requested) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
                                 <div data-transfer-allocations>
                                     @foreach($visibleStores as $destination)
-                                        <label class="text-xs font-semibold">
+                                        <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
-                                            <input name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
+                                            <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
                                         </label>
                                     @endforeach
                                 </div>
                                 <div data-transfer-allocation-summary class="grid grid-cols-2 gap-2 text-xs" hidden>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الكمية المتاحة', 'Available quantity') }} <output data-line-summary-available dir="ltr">0</output></div>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }} <output data-line-summary-requested dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
                                 </div>
-                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('إجمالي التوزيع يتجاوز الكمية المتاحة.', 'Allocated quantity exceeds available stock.') }}</p>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الموزع يتجاوز كمية التحويل المطلوبة أو الكمية المتاحة.', 'Allocated quantity exceeds the requested transfer or available stock.') }}</p>
                                 @if($lineIndex > 0)<button type="button" data-remove-line class="text-sm text-rose-700 underline">{{ $t('حذف', 'Remove') }}</button>@endif
                             </div>
                         @endforeach
                         <template data-line-template>
                             <div class="grid gap-3 rounded-2xl border border-zinc-200/80 bg-white/55 p-4 shadow-sm lg:grid-cols-[minmax(14rem,1fr)_7rem_7rem_7rem_7rem_2.5rem]" data-product-line>
                                 <div><x-product-line-lookup name="lines[__INDEX__][product_id]" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-source" /></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
-                                <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
-                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل', 'Transfer quantity') }}</label><input data-line-quantity name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="1" step="1" required></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
+                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity dir="ltr" name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="1" step="1" required></div>
                                 <div data-transfer-allocations>
                                     @foreach($visibleStores as $destination)
-                                        <label class="text-xs font-semibold">
+                                        <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
-                                            <input name="lines[__INDEX__][allocations][{{ $destination->id }}]" value="" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
+                                            <input dir="ltr" name="lines[__INDEX__][allocations][{{ $destination->id }}]" value="" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
                                         </label>
                                     @endforeach
                                 </div>
                                 <div data-transfer-allocation-summary class="grid grid-cols-2 gap-2 text-xs" hidden>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الكمية المتاحة', 'Available quantity') }} <output data-line-summary-available dir="ltr">0</output></div>
+                                    <div class="rounded-lg bg-zinc-50 p-2">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }} <output data-line-summary-requested dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
                                 </div>
-                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('إجمالي التوزيع يتجاوز الكمية المتاحة.', 'Allocated quantity exceeds available stock.') }}</p>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الموزع يتجاوز كمية التحويل المطلوبة أو الكمية المتاحة.', 'Allocated quantity exceeds the requested transfer or available stock.') }}</p>
                                 <button type="button" data-remove-line class="text-sm text-rose-700 underline">{{ $t('حذف', 'Remove') }}</button>
                             </div>
                         </template>
@@ -260,6 +267,7 @@
             [data-transfer-allocations] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
             [data-transfer-allocations] label { display: flex; flex-direction: column; min-width: 0; gap: 0.25rem; }
             [data-transfer-allocations] label > span { white-space: normal; word-break: normal; overflow-wrap: break-word; }
+            [data-transfer-allocation-editor] [dir="ltr"] { unicode-bidi: isolate; }
             [data-transfer-allocations] input { box-sizing: border-box; width: 100%; min-width: 0; }
             [data-transfer-allocation-editor] [hidden] { display: none !important; }
             @media (min-width: 640px) {
@@ -279,21 +287,46 @@
                     const number = Number(value);
                     return Number.isFinite(number) ? number : null;
                 };
+                const source = editor.querySelector('[data-transfer-source]');
+                const destinationChoices = [...editor.querySelectorAll('input[name="destination_store_ids[]"]')];
+                const selectedDestinations = () => new Set(destinationChoices
+                    .filter((choice) => choice.checked && choice.value !== source.value)
+                    .map((choice) => choice.value));
+                const syncDestinations = () => {
+                    const selected = selectedDestinations();
+                    destinationChoices.forEach((choice) => {
+                        const isSource = choice.value === source.value;
+                        if (isSource) choice.checked = false;
+                        choice.closest('[data-destination-choice]').hidden = isSource;
+                    });
+                    editor.querySelector('input[name="destination_store_id"]').value = [...selected][0] ?? '';
+                    editor.querySelectorAll('[data-transfer-allocations] [data-destination-id]').forEach((label) => {
+                        const active = selected.has(label.dataset.destinationId);
+                        const input = label.querySelector('[data-allocation-input]');
+                        if (!active) input.value = '';
+                        label.hidden = !active;
+                        input.disabled = !active;
+                    });
+                    editor.querySelectorAll('[data-product-line]').forEach(update);
+                };
                 const update = (line) => {
                     const productId = numeric(line.querySelector('[data-product-id]')?.value);
                     const availableOutput = line.querySelector('[data-line-available]');
                     const sourceQuantity = numeric(availableOutput?.textContent);
                     if (availableOutput && sourceQuantity === null) availableOutput.textContent = '—';
                     const ready = Number.isInteger(productId) && productId > 0 && sourceQuantity !== null;
-                    const inputs = [...line.querySelectorAll('[data-allocation-input]')];
+                    const inputs = [...line.querySelectorAll('[data-allocation-input]')].filter((input) => !input.closest('[data-destination-id]').hidden);
                     const quantities = inputs.map((input) => numeric(input.value));
                     const available = ready ? sourceQuantity : 0;
                     const total = ready ? quantities.reduce((sum, quantity) => sum + (quantity ?? 0), 0) : 0;
                     const allocated = Number.isFinite(total) ? total : 0;
-                    const remaining = ready ? Math.max(numeric(available - allocated) ?? 0, 0) : 0;
+                    const requested = ready ? numeric(line.querySelector('[data-line-quantity]')?.value) ?? 0 : 0;
+                    const remaining = ready ? Math.max(numeric(requested - allocated) ?? 0, 0) : 0;
                     const overAllocated = ready && quantities.some((quantity) => quantity !== null)
-                        && (!Number.isFinite(total) || allocated > available);
+                        && (!Number.isFinite(total) || allocated > requested || allocated > available);
 
+                    line.querySelector('[data-line-summary-available]').value = String(available);
+                    line.querySelector('[data-line-summary-requested]').value = String(requested);
                     line.querySelector('[data-line-allocated]').value = String(allocated);
                     line.querySelector('[data-line-remaining]').value = String(remaining);
                     line.querySelector('[data-transfer-allocation-summary]').hidden = !ready;
@@ -307,11 +340,14 @@
                 });
                 // ProductLookup writes stock outputs after dispatching product-selected.
                 editor.addEventListener('product-selected', () => queueMicrotask(refresh));
-                editor.addEventListener('change', () => queueMicrotask(refresh));
-                editor.addEventListener('click', (event) => {
-                    if (event.target.closest('[data-add-line]')) queueMicrotask(refresh);
+                editor.addEventListener('change', (event) => {
+                    if (event.target === source || event.target.matches('input[name=\"destination_store_ids[]\"]')) queueMicrotask(syncDestinations);
+                    else queueMicrotask(refresh);
                 });
-                refresh();
+                editor.addEventListener('click', (event) => {
+                    if (event.target.closest('[data-add-line]')) requestAnimationFrame(syncDestinations);
+                });
+                syncDestinations();
             })();
         </script>
         @endif

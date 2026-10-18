@@ -1,3 +1,9 @@
+# Current task — Selected destination transfer UX ready for review (2026-10-18)
+
+V1 hotfix on `hotfix/inventory-transfer-selected-destinations-ux` from `5206127df0fa92ad944faf10304dad0fc566a13b`. The transfer create form now shows allocations only for selected destinations, clears unchecked amounts, calculates remaining from requested transfer quantity, and isolates numeric values as LTR. Focused 1440/1024/390 Node 20 browser checks and syntax/Pint/Blade/diff checks passed. Commit and push the task branch only; do not merge or deploy. Full scope and verification are in the latest SESSION_SUMMARY and TEST_RESULTS entries.
+
+## Preserved previous task
+
 # Current task — Inventory allocation UI/state hotfix ready for review (2026-10-18)
 
 V1 correction complete on `hotfix/inventory-transfer-allocation-ui-state` from `e7b55567a931e2b66c0949594532b23f2c7d2c8a`. Scoped browser validation with Node 20 at 1440/1024/390 passed; syntax, Pint and Blade cache passed. Only the existing inventory view changes runtime behavior. Commit and exact task-branch push authorized; no merge or deployment. Detailed scope, verification limits, and evidence are in the latest `.ai/TEST_RESULTS.md` and `.ai/SESSION_SUMMARY.md` entries. Production remains `toyjoy-v0.1.27-inventory-e7b5556-r2` at the source SHA.

@@ -1,5 +1,13 @@
 # Pending Change Batch
 
+## 2026-10-18 — Selected destination transfer UX
+
+- Class V1; undeployed. Branch `hotfix/inventory-transfer-selected-destinations-ux`; commit is this branch's focused hotfix commit.
+- Runtime file `resources/views/inventory/index.blade.php`; supporting CURRENT_TASK, SESSION_SUMMARY, TEST_RESULTS, and pending-batch entries.
+- Allocation controls follow checked destinations, unchecking clears values, remaining uses requested quantity, and numeric values use LTR isolation.
+- Focused Node 20 browser checks at 1440/1024/390 plus PHP syntax, Pint, Blade cache and diff hygiene passed. No release, merge, or deployment.
+
+
 ## 2026-10-18 — Inventory transfer allocation UI/state
 
 - Class: V1; status: focused verification PASS, undeployed; merge/deployment excluded.
