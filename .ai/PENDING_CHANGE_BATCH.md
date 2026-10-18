@@ -1,5 +1,11 @@
 # Pending Change Batch
 
+## 2026-10-18 — Transfer zero-stock quantity guard hotfix
+
+- Class D3; branch `hotfix/transfer-zero-stock-quantity-guard` from approved main `b92656d171d5ee675c8517d0f68ca165f7d37ed6`; verified, awaiting commit/push, unmerged and undeployed. Production remains at safe `708826b49ea70155150bc5059015d1fefac3a07f` after the failed immutable purchase-transfer candidate was rolled back.
+- Runtime files: `resources/js/keyboard-product-lines.js`, `resources/views/inventory/index.blade.php`. Requested transfer quantity is a native number input with current source-store maximum for imported, manually selected, and existing draft lines; zero availability starts at zero and disables/clears destination allocation inputs. The existing server create/update actions reject quantities above locked source availability; no second server rule or schema change was added.
+- Focused disposable MariaDB test PASS 9/36; authenticated local browser PASS at 1440 and 390 for zero/5/6 and imported/manual parity. PHP/JS syntax, Pint, Blade cache, Node 20 build, diff hygiene PASS. Disposable database/user/server cleaned up. No broad QA, merge, or deployment.
+
 ## 2026-10-18 — Purchase invoice transfer lines and clean numeric display
 
 - Class: D3 follow-up (corrected from V1 because the branch changes a route response, queries, shared formatting, and invoice-store authorization); branch `feature/purchase-invoice-transfer-lines-clean-numeric`, based on recorded Production baseline `708826b49ea70155150bc5059015d1fefac3a07f`; validated, undeployed, and unmerged.

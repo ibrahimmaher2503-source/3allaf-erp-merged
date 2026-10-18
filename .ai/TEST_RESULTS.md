@@ -1,3 +1,13 @@
+# 2026-10-18 — Transfer zero-stock requested-quantity guard
+
+Focused `InventoryMultiDestinationTransferFocusedTest.php` on disposable `rajeh_qa_transfer_zero_guard_20261018`: PASS 9 tests / 36 assertions. The added case verifies canonical server rejection of requested `1` at source availability `0`, acceptance of `5` at availability `5`, and rejection of `6`. The first run's new assertion expected the database decimal spelling `5.000000` from a model cast that returns `5`; correcting that assertion yielded the passing focused rerun.
+
+Authenticated loopback browser with disposable approved invoices, two products, and current source balances: PASS at 1440 and 390. Imported and manually selected zero-stock rows start at `0`, have native `type=number` and `max=0`, reject `1` via `checkValidity()`, block form validity, and disable zero-stock allocation inputs. Both entry paths with availability `5` have `max=5.000000`, accept `5`, and reject `6`. Imported/manual states match; Arabic RTL/Cairo, document and body containment, no console errors, and no mutating requests passed. The initial browser probe exposed a repeated-initialization loop in the first implementation; moving limit initialization after the one-time editor guard resolved it. No real transfer was submitted.
+
+PHP/JS syntax, Pint, isolated Blade cache, Node 20 build, and `git diff --check` passed. The named QA database, restricted temporary user, and loopback server were removed and verified absent. No broad QA, Production change, merge, or deployment occurred.
+
+## Preserved previous results
+
 # 2026-10-18 — Inventory header and invoice-number copy UI hotfix
 
 Focused Node 20 browser verification PASS using the exact edited Blade header-action and invoice-number cell fragments compiled by Laravel with synthetic invoice `INV-2026-0014`, existing CSS/Cairo fonts, and the installed Livewire/Alpine runtime. At 1440 and 390 px: Inventory default header shows only `تحويل جديد`; numbered invoice has one inline 24 px copy button, 4 px from the number; clicking copies exactly `INV-2026-0014`; copied feedback becomes `تم النسخ`; fallback supplier-reference row has no copy button; document and body width equal viewport; zero browser console/page errors. This was an isolated rendered-fragment check, not an authenticated full-page or Production check. Initial fixture font requests returned 404; serving the existing fonts fixed the fixture and the affected check passed. Affected PHP/Blade syntax, Blade cache, Pint and `git diff --check` PASS. No broad QA, database operation, migration, merge, deployment, or business transaction.

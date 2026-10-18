@@ -151,7 +151,7 @@
                                 <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">{{ $available === null ? '—' : $qty($available) }}</output></div>
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">@if($balance)<x-money :amount="$balance->average_cost" />@else—@endif</output></div>
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">@if($selling !== null)<x-money :amount="$selling" />@else—@endif</output></div>
-                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity dir="ltr" name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ $qty(old('lines.'.$lineIndex.'.quantity_requested', $transferLine ? $transferLine->quantity_requested : 1)) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
+                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity type="number" dir="ltr" name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ $qty(old('lines.'.$lineIndex.'.quantity_requested', $transferLine ? $transferLine->quantity_requested : 1)) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
                                 <div data-transfer-allocations>
                                     @foreach($visibleStores as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
@@ -176,7 +176,7 @@
                                 <div><span class="block text-xs font-semibold">{{ $t('الكمية المتاحة', 'Available quantity') }}</span><output data-line-available dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر التكلفة', 'Cost price') }}</span><output data-line-cost dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
-                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity dir="ltr" name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="1" step="1" required></div>
+                                <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity type="number" dir="ltr" name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
                                 <div data-transfer-allocations>
                                     @foreach($visibleStores as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
@@ -315,7 +315,7 @@
                     const availableOutput = line.querySelector('[data-line-available]');
                     const sourceQuantity = numeric(availableOutput?.textContent);
                     if (availableOutput && sourceQuantity === null) availableOutput.textContent = '—';
-                    const ready = Number.isInteger(productId) && productId > 0 && sourceQuantity !== null;
+                    const ready = Number.isInteger(productId) && productId > 0 && sourceQuantity !== null && sourceQuantity > 0;
                     const inputs = [...line.querySelectorAll('[data-allocation-input]')].filter((input) => !input.closest('[data-destination-id]').hidden);
                     const quantities = inputs.map((input) => numeric(input.value));
                     const available = ready ? sourceQuantity : 0;
@@ -332,7 +332,10 @@
                     line.querySelector('[data-line-remaining]').value = String(remaining);
                     line.querySelector('[data-transfer-allocation-summary]').hidden = !ready;
                     line.querySelector('[data-line-allocation-error]').hidden = !overAllocated;
-                    inputs.forEach((input) => { input.disabled = !ready; });
+                    inputs.forEach((input) => {
+                        if (!ready && sourceQuantity === 0) input.value = '';
+                        input.disabled = !ready;
+                    });
                 };
                 const refresh = () => editor.querySelectorAll('[data-product-line]').forEach(update);
                 editor.addEventListener('input', (event) => {

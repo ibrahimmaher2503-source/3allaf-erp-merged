@@ -1,3 +1,11 @@
+# Current task — Transfer zero-stock quantity guard hotfix (2026-10-18)
+
+The owner-requested `hotfix/transfer-zero-stock-quantity-guard` branch starts from main `b92656d171d5ee675c8517d0f68ca165f7d37ed6`. Production remains safely rolled back to `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.32-ui-708826b` at `708826b49ea70155150bc5059015d1fefac3a07f`; the failed `toyjoy-v0.1.33-purchase-transfer-b92656d` candidate is inactive. The only defect addressed is that transfer quantity inputs were text fields, so their `max` attributes did not participate in native validity. Imported, manually selected, and prefilled draft lines now share one browser quantity limit; zero-stock allocations are disabled. The existing locked source-balance create/update validation remains authoritative. No import, delete, invoice lookup, numeric formatting, dispatch/receive, route, API, or schema change was made.
+
+Focused disposable MariaDB transfer test PASS 9 tests/36 assertions. Authenticated loopback browser checks PASS at 1440 and 390 for zero/5/6 stock bounds, imported/manual parity, disabled zero-stock allocations, RTL/Cairo, containment, and zero console errors or mutating requests. PHP/JS syntax, Pint, Blade cache, Node 20 asset build, and diff hygiene passed. The disposable QA database/user and local server were removed and verified absent. Commit and push only this hotfix branch; no merge or deployment.
+
+## Preserved previous task
+
 # Current task — Purchase invoice transfer lines and clean numeric display (2026-10-18)
 
 The branch `feature/purchase-invoice-transfer-lines-clean-numeric` starts from main `708826b49ea70155150bc5059015d1fefac3a07f`, also the recorded Production application baseline `toyjoy-v0.1.32-ui-708826b`. Its pushed feature commit is `b6c4d8c443be07e7c5aeca9623b1d9ea282fa447`; this D3 follow-up is locally verified and awaiting its commit/push. The import response now looks up approved invoices only within the signed-in user's visible stores. It accepts the displayed invoice number or numeric ID, correcting the real UI/endpoint mismatch found in the browser. Quantity display rounds decimal strings to two meaningful places without losing large integer digits; normalization and stored precision are unchanged. The earlier V1 classification was incorrect.
