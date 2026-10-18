@@ -262,6 +262,10 @@
         @endunless
         @if($focus === 'transfer-create' || $transfer?->status === 'draft')
         <style>
+            @media (max-width: 767px) {
+                .app-topbar { flex-wrap: wrap; }
+                .app-topbar__actions { flex: 1 1 100%; width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+            }
             [data-transfer-allocation-editor] [data-product-line] > * { min-width: 0; }
             [data-transfer-allocations], [data-transfer-allocation-summary], [data-line-allocation-error] { grid-column: 1 / -1; min-width: 0; }
             [data-transfer-allocations] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }

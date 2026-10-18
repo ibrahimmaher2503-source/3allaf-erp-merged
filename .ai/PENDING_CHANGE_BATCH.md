@@ -1,5 +1,12 @@
 # Pending Change Batch
 
+## 2026-10-18 — Inventory transfer mobile overflow containment
+
+- Class V1; undeployed. Branch `hotfix/inventory-transfer-mobile-overflow`; source main `6d0a0a10c15c78e374f923f03d5069438fc1e544`.
+- Runtime file `resources/views/inventory/index.blade.php`; the only change wraps transfer-screen topbar actions below the identity/search row at mobile widths up to 767 px.
+- Rendered 390 px root cause: `.app-topbar__actions` x=-96 to 210, width 306 px, made `body.scrollWidth` 486 despite `documentElement.scrollWidth` being masked at 390. After correction, viewport/client/document/body/full-page-image widths are all 390.
+- Authenticated GET-only Node 20 browser checks at 1440/1024/768/430/390/375 passed; PHP syntax, Pint, Blade cache and diff hygiene passed. No merge or deployment.
+
 ## 2026-10-18 — Selected destination transfer UX
 
 - Class V1; undeployed. Branch `hotfix/inventory-transfer-selected-destinations-ux`; commit is this branch's focused hotfix commit.

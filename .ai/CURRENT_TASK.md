@@ -1,3 +1,9 @@
+# Current task — Inventory transfer mobile overflow hotfix ready for review (2026-10-18)
+
+V1 fix on `hotfix/inventory-transfer-mobile-overflow` from main `6d0a0a10c15c78e374f923f03d5069438fc1e544`. Production remains on safe `5206127df0fa92ad944faf10304dad0fc566a13b` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.28-inventory-ui-5206127` after the selected-destinations release was rolled back. The mobile transfer page's application topbar action group was 306 px wide beside a 120 px identity and 44 px search control; at a 390 px viewport it began at x=-96 and made `body.scrollWidth` 486. Only the transfer view's mobile CSS now wraps the action group onto a contained second header row. At 390 px, viewport/client/document/body/image widths all measure 390. Focused authenticated Node 20 checks passed at 1440/1024/768/430/390/375; PHP syntax, Pint, Blade cache, and diff hygiene passed. Commit and push this branch only; do not merge or deploy. No business logic, allocation state, migration, or posting change occurred.
+
+## Preserved previous task
+
 # Current task — Selected destination transfer UX ready for review (2026-10-18)
 
 V1 hotfix on `hotfix/inventory-transfer-selected-destinations-ux` from `5206127df0fa92ad944faf10304dad0fc566a13b`. The transfer create form now shows allocations only for selected destinations, clears unchecked amounts, calculates remaining from requested transfer quantity, and isolates numeric values as LTR. Focused 1440/1024/390 Node 20 browser checks and syntax/Pint/Blade/diff checks passed. Commit and push the task branch only; do not merge or deploy. Full scope and verification are in the latest SESSION_SUMMARY and TEST_RESULTS entries.
