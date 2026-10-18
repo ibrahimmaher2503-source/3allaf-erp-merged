@@ -16,12 +16,20 @@ final class ProductQuantity
         if (! preg_match('/^[+-]?\d+(?:\.\d+)?$/', $raw)) {
             throw new UnexpectedValueException(__('Invalid product quantity data. Please review the source document.'));
         }
-        $formatted = number_format((float) $raw, 2, '.', '');
-        if ((float) $formatted === 0.0) {
+        $negative = str_starts_with($raw, '-');
+        [$whole, $fraction] = array_pad(explode('.', ltrim($raw, '+-'), 2), 2, '');
+        $whole = ltrim($whole, '0') ?: '0';
+        $fraction = str_pad($fraction, 3, '0');
+        $rounded = $whole.'.'.substr($fraction, 0, 2);
+        if ($fraction[2] >= '5') {
+            $rounded = bcadd($rounded, '0.01', 2);
+        }
+        $formatted = rtrim(rtrim($rounded, '0'), '.');
+        if ($formatted === '0') {
             return '0';
         }
 
-        return rtrim(rtrim($formatted, '0'), '.') ?: '0';
+        return ($negative ? '-' : '').$formatted;
     }
 
     public static function normalize(mixed $value, string $field = 'quantity', bool $allowZero = false): int

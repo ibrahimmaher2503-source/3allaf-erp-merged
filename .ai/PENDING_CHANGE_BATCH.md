@@ -2,11 +2,12 @@
 
 ## 2026-10-18 — Purchase invoice transfer lines and clean numeric display
 
-- Class: V1; branch `feature/purchase-invoice-transfer-lines-clean-numeric`, based on Production baseline `708826b49ea70155150bc5059015d1fefac3a07f`; undeployed and unmerged.
+- Class: D3 follow-up (corrected from V1 because the branch changes a route response, queries, shared formatting, and invoice-store authorization); branch `feature/purchase-invoice-transfer-lines-clean-numeric`, based on recorded Production baseline `708826b49ea70155150bc5059015d1fefac3a07f`; validated, undeployed, and unmerged.
 - Runtime files: `routes/inventory.php`, `resources/js/keyboard-product-lines.js`, `resources/views/inventory/index.blade.php`, `app/Support/ProductQuantity.php`, plus shared numeric presentation updates in the affected inventory/purchasing views.
 - Approved purchase invoice loading now returns every distinct invoice product and its current source-store availability, canonical source cost, and effective selling price. The existing product-line template imports those products into normal transfer rows, skips product IDs already in the draft, includes zero-stock rows with a zero maximum, and keeps the explicit warehouse-mismatch source switch. Compact delete controls remove any line and trigger allocation recalculation.
 - `ProductQuantity::format` now displays quantities rounded to at most two decimals with insignificant zeros removed; the existing `x-money` component remains the monetary formatter at two decimals. Database columns, stored values, normalization rules, and posting/lifecycle architecture were not changed.
-- Verification: affected PHP/JS syntax, Pint, Blade cache, diff hygiene, and formatter examples passed. The existing focused transfer feature file was attempted but all 8 tests were blocked before assertions by local MySQL credentials (`root` without a password); no browser check or business transaction was run. Review and a disposable authorized DB/browser run remain before merge readiness.
+- D3 follow-up: invoice lookup is scoped to visible stores before loading document data and accepts the displayed invoice number or numeric ID; the UI encodes the entered identifier. Decimal-string quantity formatting retains exact large integer digits. Two existing quantity methods now expect legitimate decimal display while continuing to assert integer normalization.
+- Verification: disposable `rajeh_qa_purchase_transfer_d3`, restricted temporary user, migrations, transfer feature 8/33 PASS, authenticated browser visible/hidden invoice and UI checks PASS, quantity methods 1/17 and 1/10 PASS; PHP lint, Pint, Blade cache, Node 20 build, and diff hygiene PASS. The QA database/user/private runtime were removed and verified absent. No broad QA, Production write, merge, or deployment.
 
 ## 2026-10-18 — Inventory/invoice UI batch Production deployment
 

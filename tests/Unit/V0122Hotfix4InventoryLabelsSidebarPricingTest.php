@@ -6,21 +6,30 @@ namespace Tests\Unit;
 
 use App\Modules\Inventory\Support\InventoryMovementLabel;
 use App\Support\ProductQuantity;
+use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Translation\ArrayLoader;
+use Illuminate\Translation\Translator;
 use PHPUnit\Framework\TestCase;
-use UnexpectedValueException;
+use Psr\Log\NullLogger;
 
 final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
-        $container = new \Illuminate\Container\Container;
-        \Illuminate\Container\Container::setInstance($container);
-        $container->instance('translator', new \Illuminate\Translation\Translator(new \Illuminate\Translation\ArrayLoader, 'en'));
-        $container->instance('log', new \Psr\Log\NullLogger);
-        \Illuminate\Support\Facades\Facade::setFacadeApplication($container);
+        $container = new Container;
+        Container::setInstance($container);
+        $container->instance('translator', new Translator(new ArrayLoader, 'en'));
+        $container->instance('log', new NullLogger);
+        Facade::setFacadeApplication($container);
     }
-    private function source(string $path): string { return (string) file_get_contents(dirname(__DIR__, 2).'/'.$path); }
+
+    private function source(string $path): string
+    {
+        return (string) file_get_contents(dirname(__DIR__, 2).'/'.$path);
+    }
+
     private function labelWorkspaceSource(): string
     {
         $source = $this->source('resources/views/pricing/labels.blade.php');
@@ -32,21 +41,25 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
         return $source;
     }
 
-    public function test_product_quantity_is_central_strict_and_integer_only(): void
+    public function test_product_quantity_formats_decimals_and_keeps_integer_validation(): void
     {
         self::assertSame('14', ProductQuantity::format('14.000'));
         self::assertSame('2', ProductQuantity::format('2.000000'));
         self::assertSame('-2', ProductQuantity::format('-2.000000'));
         self::assertSame('0', ProductQuantity::format('0.000'));
         self::assertSame(-2, ProductQuantity::normalizeSigned('-2'));
-        try { ProductQuantity::format('1.5'); self::fail('Fractional presentation data must fail.'); } catch (UnexpectedValueException $e) { self::assertStringContainsString('non-integral', $e->getMessage()); }
-        self::assertStringContainsString("preg_match('/^\\d+$/', \$raw)", $this->source('app/Support/ProductQuantity.php'));
+        self::assertSame('1.5', ProductQuantity::format('1.500000'));
+        self::assertSame('1.24', ProductQuantity::format('1.235000'));
+        self::assertSame('9007199254740993', ProductQuantity::format('9007199254740993.000000'));
+        self::assertContains('integer', ProductQuantity::rule());
         self::assertStringContainsString('ProductQuantity::format', $this->source('resources/views/components/product-quantity.blade.php'));
     }
 
     public function test_every_inventory_movement_has_a_localized_safe_label(): void
     {
-        foreach (InventoryMovementLabel::options() as $key => $label) self::assertNotSame($key, $label);
+        foreach (InventoryMovementLabel::options() as $key => $label) {
+            self::assertNotSame($key, $label);
+        }
         self::assertSame('Purchase receipt reversal', InventoryMovementLabel::label('purchase_receipt_reversal'));
         self::assertSame('Unknown movement', InventoryMovementLabel::label('legacy_private_key'));
         $report = $this->source('app/Modules/Reporting/Queries/ReportSnapshot.php');
@@ -56,9 +69,10 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
 
     public function test_label_workspace_is_bounded_stateful_and_scanner_ready(): void
     {
-        $routes = $this->source('routes/pricing.php'); $view = $this->labelWorkspaceSource();
-        self::assertStringContainsString("forPage(\$page, 21)", $routes);
-        self::assertStringContainsString("\$products = \$prefill === [] ? collect()", $routes);
+        $routes = $this->source('routes/pricing.php');
+        $view = $this->labelWorkspaceSource();
+        self::assertStringContainsString('forPage($page, 21)', $routes);
+        self::assertStringContainsString('$products = $prefill === [] ? collect()', $routes);
         self::assertStringContainsString('x-on:input.debounce.350ms', $view);
         self::assertStringContainsString('x-on:keydown.enter.prevent="search(true)"', $view);
         self::assertStringContainsString('if (exact && payload.data.length === 1)', $view);
@@ -69,17 +83,19 @@ final class V0122Hotfix4InventoryLabelsSidebarPricingTest extends TestCase
 
     public function test_base_consumer_price_is_immediate_fallback_and_unpriced_definition(): void
     {
-        $resolver=$this->source('app/Modules/Pricing/Services/EffectivePriceResolver.php');
-        $workspace=$this->source('resources/views/pricing/index.blade.php');
+        $resolver = $this->source('app/Modules/Pricing/Services/EffectivePriceResolver.php');
+        $workspace = $this->source('resources/views/pricing/index.blade.php');
         self::assertStringContainsString("'amount'=>(string)\$product->sale_price", $resolver);
         self::assertStringContainsString("whereNull('sale_price')->orWhere('sale_price', '<=', 0)", $workspace);
         self::assertStringNotContainsString('whereNotIn(\'id\', $pricedProductIds)', $workspace);
-        self::assertStringContainsString("\$price = \$list ? app(PriceListResolver::class)->resolve(\$product, \$list)->finalPrice : \$product->sale_price", $this->source('app/Modules/Pricing/Services/BarcodeLabelService.php'));
+        self::assertStringContainsString('$price = $list ? app(PriceListResolver::class)->resolve($product, $list)->finalPrice : $product->sale_price', $this->source('app/Modules/Pricing/Services/BarcodeLabelService.php'));
     }
 
     public function test_desktop_sidebar_uses_document_scroll_and_mobile_keeps_drawer_scroll(): void
     {
-        $css=$this->source('resources/css/app.css'); $layout=$this->source('resources/views/layouts/app/sidebar.blade.php'); $navigation=$this->source('config/navigation.php');
+        $css = $this->source('resources/css/app.css');
+        $layout = $this->source('resources/views/layouts/app/sidebar.blade.php');
+        $navigation = $this->source('config/navigation.php');
         self::assertStringContainsString('body.app-layout .app-sidebar .app-navigation { flex:0 0 auto!important', $css);
         self::assertStringContainsString('overflow:visible!important', $css);
         self::assertStringContainsString('@media(max-width:1023px)', $css);

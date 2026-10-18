@@ -120,8 +120,9 @@ final class CriticalRegressionTest extends PureCalculatorTestCase
                 self::assertArrayHasKey('quantity', $e->errors());
             }
         }
-        $this->expectException(\UnexpectedValueException::class);
-        ProductQuantity::format('1.2');
+        self::assertSame('1.2', ProductQuantity::format('1.200000'));
+        self::assertSame('1.24', ProductQuantity::format('1.235000'));
+        self::assertSame('9007199254740993', ProductQuantity::format('9007199254740993.000000'));
     }
 
     public function test_boundary_product_prices_reject_invalid_cost(): void
