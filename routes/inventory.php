@@ -42,6 +42,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\WorkContext;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Support\HumanName;
 use App\Support\ProductQuantity;
@@ -220,25 +221,40 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         }, 'inventory-balances-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     })->middleware('can:inventory_stock_card.export')->name('inventory.export');
     $router->get('inventory/transfers', fn () => $renderInventory(null, 'transfers'))->middleware('can:transfers.view')->name('inventory.transfers');
-    $router->get('inventory/transfers/purchase-invoices/{invoice}/products', function (PurchaseInvoice $invoice) {
+    $router->get('inventory/transfers/purchase-invoices/{invoice}/products', function (string $invoice) {
         Gate::authorize('transfers.create');
         $user = Auth::user();
         abort_unless($user instanceof User, 403);
         $sourceStoreId = request()->integer('source_store_id');
         abort_unless($sourceStoreId > 0, 422);
         app(AssertInventoryStoreScope::class)->execute($sourceStoreId);
+        $lookup = trim($invoice);
+        abort_unless($lookup !== '' && strlen($lookup) <= 50, 404);
+        $visibleInvoices = PurchaseInvoice::query()->whereIn('store_id', Store::query()->visibleTo($user)->select('id'));
+        $invoice = (clone $visibleInvoices)->where('invoice_number', $lookup)->first();
+        if ($invoice === null && ctype_digit($lookup)) {
+            $invoice = (clone $visibleInvoices)->whereKey($lookup)->first();
+        }
+        abort_unless($invoice instanceof PurchaseInvoice, 404);
         $invoice->load(['store', 'lines.product']);
         abort_unless($invoice->status === 'approved', 404);
         $mismatch = (int) $invoice->store_id !== $sourceStoreId;
         $lines = $invoice->lines->map(function ($line) use ($sourceStoreId): array {
             $balance = StockBalance::query()->where('store_id', $sourceStoreId)->where('product_id', $line->product_id)->first();
             $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
+            $sellingPrice = app(EffectivePriceResolver::class)->resolve((int) $line->product_id, $sourceStoreId)?->amount;
 
-            return ['product_id' => (int) $line->product_id, 'product' => HumanName::name($line->product), 'available' => $available, 'unit_cost' => (string) $line->unit_cost, 'eligible' => bccomp($available, '0', 6) > 0];
-        })->filter(fn (array $line): bool => $line['eligible'])->values();
+            return [
+                'product_id' => (int) $line->product_id,
+                'product' => HumanName::name($line->product).' · '.(string) $line->product?->item_code,
+                'available' => $available,
+                'source_unit_cost' => (string) ($balance?->average_cost ?? '0'),
+                'source_selling_price' => $sellingPrice,
+            ];
+        })->unique('product_id')->values();
 
         return response()->json(['invoice_id' => $invoice->id, 'invoice_store_id' => (int) $invoice->store_id, 'invoice_store' => HumanName::name($invoice->store), 'source_store_id' => $sourceStoreId, 'warehouse_mismatch' => $mismatch, 'message' => $mismatch ? __('فاتورة الشراء تتبع مخزنًا آخر. استخدم مخزن الفاتورة كمصدر صراحةً لتحميل المنتجات.') : null, 'lines' => $lines]);
-    })->whereNumber('invoice')->middleware('can:transfers.create')->name('inventory.transfers.purchase-invoice-products');
+    })->middleware('can:transfers.create')->name('inventory.transfers.purchase-invoice-products');
     $router->get('inventory/transfers/create', fn () => $renderInventory(null, 'transfer-create'))->middleware('can:transfers.create')->name('inventory.transfers.create');
     $router->get('inventory/transfers/{transfer}/edit', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);

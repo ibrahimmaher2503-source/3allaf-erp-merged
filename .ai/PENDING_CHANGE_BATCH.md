@@ -1,5 +1,20 @@
 # Pending Change Batch
 
+## 2026-10-18 — Purchase invoice transfer lines and clean numeric display
+
+- Class: D3 follow-up (corrected from V1 because the branch changes a route response, queries, shared formatting, and invoice-store authorization); branch `feature/purchase-invoice-transfer-lines-clean-numeric`, based on recorded Production baseline `708826b49ea70155150bc5059015d1fefac3a07f`; validated, undeployed, and unmerged.
+- Runtime files: `routes/inventory.php`, `resources/js/keyboard-product-lines.js`, `resources/views/inventory/index.blade.php`, `app/Support/ProductQuantity.php`, plus shared numeric presentation updates in the affected inventory/purchasing views.
+- Approved purchase invoice loading now returns every distinct invoice product and its current source-store availability, canonical source cost, and effective selling price. The existing product-line template imports those products into normal transfer rows, skips product IDs already in the draft, includes zero-stock rows with a zero maximum, and keeps the explicit warehouse-mismatch source switch. Compact delete controls remove any line and trigger allocation recalculation.
+- `ProductQuantity::format` now displays quantities rounded to at most two decimals with insignificant zeros removed; the existing `x-money` component remains the monetary formatter at two decimals. Database columns, stored values, normalization rules, and posting/lifecycle architecture were not changed.
+- D3 follow-up: invoice lookup is scoped to visible stores before loading document data and accepts the displayed invoice number or numeric ID; the UI encodes the entered identifier. Decimal-string quantity formatting retains exact large integer digits. Two existing quantity methods now expect legitimate decimal display while continuing to assert integer normalization.
+- Verification: disposable `rajeh_qa_purchase_transfer_d3`, restricted temporary user, migrations, transfer feature 8/33 PASS, authenticated browser visible/hidden invoice and UI checks PASS, quantity methods 1/17 and 1/10 PASS; PHP lint, Pint, Blade cache, Node 20 build, and diff hygiene PASS. The QA database/user/private runtime were removed and verified absent. No broad QA, Production write, merge, or deployment.
+
+## 2026-10-18 — Inventory/invoice UI batch Production deployment
+
+- Class I4; deployed from approved main `708826b49ea70155150bc5059015d1fefac3a07f` as immutable release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.32-ui-708826b`. Previous rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.30-inventory-mobile-f9bfdb2` (`f9bfdb2d164582e12cd8541ad20493463928b44b`).
+- Preserved shared `.env`, shared `storage`, and `public/storage`; generated Laravel caches only in the final release path; no migrations or seeders ran. Atomic activation and immediate `ea-php85-php-fpm` reload passed. The first candidate browser invocation rolled back automatically because its stage variable was applied to the transformer rather than the browser; the corrected retry passed.
+- Focused origin/public HTTP checks for `/`, `/up`, `/login`, CSS and JS assets returned 200. Authenticated GET-only browser checks at 1440 and 390 passed Inventory header, invoice copy/feedback, RTL/Cairo, zero mutating requests, and zero console errors. At 390, viewport/client/document/body widths were exactly `390/390/390/390`; no new Laravel errors; final rollback required: NO.
+
 ## 2026-10-18 — Inventory header and invoice-number copy UI
 
 - Class V1; verified, undeployed. Branch `hotfix/inventory-header-and-invoice-copy` from `f9bfdb2d164582e12cd8541ad20493463928b44b`; commit is this branch's focused hotfix commit.
