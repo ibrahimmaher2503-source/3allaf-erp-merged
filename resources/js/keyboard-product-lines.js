@@ -267,6 +267,7 @@ class ProductLookup {
                 const output = line.querySelector(selector);
                 if (output) output.textContent = value ?? '—';
             });
+            syncTransferQuantityLimit(line, item.available_quantity);
         }
         requestAnimationFrame(() => this.root.closest('[data-product-line]')?.querySelector('[data-line-quantity]')?.focus());
     }
@@ -381,6 +382,13 @@ const initializeEditor = (editor) => {
         return;
     }
     editor.dataset.productLineEditorReady = 'true';
+    if (editor.hasAttribute('data-transfer-allocation-editor')) {
+        editor.querySelectorAll('[data-product-line]').forEach((line) => {
+            if (line.querySelector('[data-product-id]')?.value) {
+                syncTransferQuantityLimit(line, line.querySelector('[data-line-available]')?.textContent);
+            }
+        });
+    }
     editor.addEventListener('purchase-invoice-loaded', (event) => {
         importTransferInvoiceLines(editor, event.detail?.lines ?? []);
     });
@@ -478,6 +486,20 @@ const formatTransferMoney = (value) => {
     return Number.isFinite(number) ? number.toFixed(2) : '—';
 };
 
+const syncTransferQuantityLimit = (line, availableValue) => {
+    const quantity = line.querySelector('[data-line-quantity]');
+    const available = Number(availableValue);
+    if (!quantity || !Number.isFinite(available)) return;
+
+    quantity.min = '0';
+    quantity.max = available > 0 ? String(availableValue).trim() : '0';
+    const requested = Number(quantity.value);
+    if (available < 1) quantity.value = '0';
+    else if (!Number.isFinite(requested) || requested < 1) quantity.value = '1';
+    else if (requested > available) quantity.value = String(Math.floor(available));
+    quantity.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 const appendTransferLine = (editor) => {
     const template = editor.querySelector('template[data-line-template]');
     if (!template) return null;
@@ -513,9 +535,7 @@ const hydrateTransferLine = (line, product) => {
     line.querySelector('[data-line-selling-price]').textContent = formatTransferMoney(product.source_selling_price);
     if (quantity) {
         quantity.value = formatTransferQuantity(requested);
-        quantity.min = '0';
-        quantity.max = formatTransferQuantity(Math.max(0, Number.isFinite(available) ? available : 0));
-        quantity.dispatchEvent(new Event('input', { bubbles: true }));
+        syncTransferQuantityLimit(line, product.available);
     }
 };
 

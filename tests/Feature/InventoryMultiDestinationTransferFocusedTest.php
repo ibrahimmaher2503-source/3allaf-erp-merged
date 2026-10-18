@@ -160,6 +160,17 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('99.000000', (string) StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->destinationA->id)->value('on_hand'));
     }
 
+    public function test_source_availability_bounds_requested_quantity_before_draft_save(): void
+    {
+        $this->balance($this->source, 0);
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-zero-'.uniqid()), InvalidArgumentException::class);
+
+        $this->balance($this->source, 5);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '5']], idempotencyKey: 'qa-max-'.uniqid());
+        self::assertSame('5', (string) $transfer->lines()->firstOrFail()->quantity_requested);
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '6']], idempotencyKey: 'qa-over-'.uniqid()), InvalidArgumentException::class);
+    }
+
     public function test_unauthorized_store_is_rejected(): void
     {
         $this->user->is_super_admin = false;
