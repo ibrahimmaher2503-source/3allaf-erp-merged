@@ -344,7 +344,7 @@
                 });
                 // ProductLookup writes stock outputs after dispatching product-selected.
                 editor.addEventListener('product-selected', () => queueMicrotask(refresh));
-                editor.addEventListener('transfer-lines-changed', () => queueMicrotask(refresh));
+                editor.addEventListener('transfer-lines-changed', () => queueMicrotask(syncDestinations));
                 editor.addEventListener('change', (event) => {
                     if (event.target === source || event.target.matches('input[name=\"destination_store_ids[]\"]')) queueMicrotask(syncDestinations);
                     else queueMicrotask(refresh);

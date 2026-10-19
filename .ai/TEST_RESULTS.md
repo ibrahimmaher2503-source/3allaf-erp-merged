@@ -1,3 +1,11 @@
+# 2026-10-19 — Invoice import destination propagation hotfix
+
+Actual browser check: PASS at 1440 and 390 in a local DOM fixture running the repository's real transfer allocation inline script and `keyboard-product-lines.js`. Three simulated invoice products with source availability 10, 5, and 0 each displayed both selected destination controls. Product/destination values remained independent; unchecking B hid and cleared B in all rows; rechecking B restored clean inputs in all rows while preserving A. The zero-stock row retained zero requested quantity and disabled allocations; maximums were 10, 5, and 0. Existing row deletion worked. No horizontal overflow or page errors were observed in the fixture. This was not an authenticated invoice/database check.
+
+Focused `InventoryMultiDestinationTransferFocusedTest.php`: PASS 9 tests / 36 assertions on disposable local MariaDB `rajeh_qa_invoice_destination_propagation`. The temporary `qa_invoice_destination` user had privileges only on that database. Test bootstrap and QA name checks were adapted temporarily for the named database and restored afterward; the shared Composer autoloader was temporarily pinned to this checkout. Setup-only attempts stopped before test execution until those runtime guards were aligned. No application defect was exposed. Affected PHP/JS syntax, Pint, Blade cache, and diff hygiene passed. The database and QA user were dropped; both absence checks returned zero. No broad QA, Production operation, merge, or deployment occurred.
+
+## Preserved previous results
+
 # 2026-10-18 — Transfer zero-stock requested-quantity guard
 
 Focused `InventoryMultiDestinationTransferFocusedTest.php` on disposable `rajeh_qa_transfer_zero_guard_20261018`: PASS 9 tests / 36 assertions. The added case verifies canonical server rejection of requested `1` at source availability `0`, acceptance of `5` at availability `5`, and rejection of `6`. The first run's new assertion expected the database decimal spelling `5.000000` from a model cast that returns `5`; correcting that assertion yielded the passing focused rerun.

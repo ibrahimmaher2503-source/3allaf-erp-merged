@@ -1,3 +1,11 @@
+# Current task — Invoice import destination propagation hotfix (2026-10-19)
+
+V1 scoped change on `hotfix/invoice-import-destination-propagation` from exact main and owner-supplied Production commit `e558aafea96ee485145c6e445f62eeba9b32b073` (`toyjoy-v0.1.34-purchase-transfer-e558aaf`). Imported transfer rows now run the same selected-destination synchronization used for manually added rows after invoice import. The transfer line template, per-line quantities, source warehouse, invoice lookup/security, deletion, zero-stock guard, availability limit, formatting, lifecycle, and schema are unchanged.
+
+Focused browser fixture using the actual transfer allocation and invoice import scripts passed at 1440 and 390 for three imported products, both destinations on every row, independent values, all-row uncheck/recheck clearing, zero-stock disablement, quantity maximums, and deletion. PHP/JS syntax, Pint, Blade cache, and diff hygiene passed. Owner-authorized focused feature test PASS 9 tests / 36 assertions on disposable local MariaDB `rajeh_qa_invoice_destination_propagation` with a restricted temporary QA user. The database and user were dropped and verified absent. Commit and push only this hotfix branch; do not merge or deploy.
+
+## Preserved previous task
+
 # Current task — Transfer zero-stock quantity guard hotfix (2026-10-18)
 
 The owner-requested `hotfix/transfer-zero-stock-quantity-guard` branch starts from main `b92656d171d5ee675c8517d0f68ca165f7d37ed6`. Production remains safely rolled back to `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.32-ui-708826b` at `708826b49ea70155150bc5059015d1fefac3a07f`; the failed `toyjoy-v0.1.33-purchase-transfer-b92656d` candidate is inactive. The only defect addressed is that transfer quantity inputs were text fields, so their `max` attributes did not participate in native validity. Imported, manually selected, and prefilled draft lines now share one browser quantity limit; zero-stock allocations are disabled. The existing locked source-balance create/update validation remains authoritative. No import, delete, invoice lookup, numeric formatting, dispatch/receive, route, API, or schema change was made.
