@@ -7,7 +7,6 @@ namespace App\Modules\Inventory\Actions;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockTransfer;
-use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -68,9 +67,10 @@ final class CreateStockTransferDraftAction
                 return $this->assertReplayMatches($existing, $sourceStoreId, $destinationStoreId, $normalizedLines, $reasonCode, $notes);
             }
 
-            $sourceBranchId = Store::query()->whereKey($sourceStoreId)->value('branch_id');
+            $sourceStore = Store::query()->findOrFail($sourceStoreId);
+            $sourceBranchId = $sourceStore->branch_id;
             $transfer = StockTransfer::query()->create([
-                'transfer_number' => app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $sourceBranchId),
+                'transfer_number' => app(AllocateStockTransferNumberAction::class)->execute($sourceStore),
                 'source_store_id' => $sourceStoreId,
                 'destination_store_id' => $destinationStoreId,
                 'status' => 'draft',
@@ -145,10 +145,10 @@ final class CreateStockTransferDraftAction
         $stores = Store::query()->whereKey([$sourceStoreId, $destinationStoreId])->get()->keyBy('id');
         $source = $stores->get($sourceStoreId);
         $destination = $stores->get($destinationStoreId);
-        if ($source?->branch_id === null) {
-            throw new InvalidArgumentException(__('The source store must belong to a branch.'));
+        if ($source?->status !== 'active' || $destination?->status !== 'active') {
+            throw new InvalidArgumentException(__('The selected store is inactive.'));
         }
-        $sourceBranchCompanyId = $source->branch()->value('company_id');
+        $sourceBranchCompanyId = $source->branch_id === null ? $source->company_id : $source->branch()->value('company_id');
         if ($source?->company_id === null
             || $destination?->company_id === null
             || $sourceBranchCompanyId === null
@@ -168,6 +168,7 @@ final class CreateStockTransferDraftAction
             throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
         }
 
+        $sourceCompanyId = Store::query()->whereKey($sourceStoreId)->value('company_id');
         $normalized = [];
         foreach ($lines as $line) {
             $productId = (int) ($line['product_id'] ?? 0);
@@ -209,6 +210,9 @@ final class CreateStockTransferDraftAction
                 }
                 if (bccomp($amount, '0', 6) > 0) {
                     $this->scope->execute($destinationId);
+                    if (! Store::query()->whereKey($destinationId)->where('status', 'active')->where('company_id', $sourceCompanyId)->exists()) {
+                        throw new InvalidArgumentException(__('Select an active destination within your company and store scope.'));
+                    }
                     $allocations[$destinationId] = $amount;
                 }
             }

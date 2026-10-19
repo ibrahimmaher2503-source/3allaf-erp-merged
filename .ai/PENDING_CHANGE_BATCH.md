@@ -1,3 +1,11 @@
+# 2026-10-19 — Standalone warehouse and transfer numeric UI
+
+- Class D3; branch `hotfix/inventory-standalone-warehouse-and-numeric-ui`; source/Production baseline `2b29a067177d6dc615fd95dca0ea3768d358d8a1`; unmerged and undeployed.
+- An active warehouse/store may exist and operate with branch_id = NULL. Branch membership is not required for inventory transfers or purchase receiving.
+- Removed the transfer create/update source-branch requirement while retaining active, same-company and visible-store checks. Branchless transfer numbering is atomic and company scoped; linked branch numbering is unchanged. Purchase receiving's generated transfers use the same allocator.
+- Manual lookup now uses the invoice-import quantity and money presentation formatters. Transfer-row numeric fields and values are centered without changing numeric direction or storage.
+- Focused disposable MariaDB feature tests and 1440/390 local browser fixture passed; see `.ai/TEST_RESULTS.md`. No migration, broad QA, merge, deployment, or Production data action.
+
 # Pending Change Batch
 
 ## 2026-10-18 — Transfer zero-stock quantity guard hotfix

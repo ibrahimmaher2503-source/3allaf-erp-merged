@@ -1,3 +1,9 @@
+# Current task — Standalone warehouse and transfer numeric UI (2026-10-19)
+
+D3 focused batch on `hotfix/inventory-standalone-warehouse-and-numeric-ui` from approved main and Production baseline `2b29a067177d6dc615fd95dca0ea3768d358d8a1`. An active warehouse/store may exist and operate with branch_id = NULL. Branch membership is not required for inventory transfers or purchase receiving. Active and visible branchless stores are selectable as transfer source/destination. A branchless source receives an atomic company-scoped `CENTRAL-NNNNNN` transfer number; branch-linked numbering and immutable source-branch behavior continue. Purchase-invoice receiving uses the same allocator. No branch is fabricated, and inactive, cross-company, or out-of-scope stores remain invalid.
+
+Manual product hydration now uses the same existing quantity and money display formatters as invoice import. Transfer-row numeric values and inputs are centered while digit direction remains LTR inside the RTL/Cairo UI. No stored/API precision, schema, stock lifecycle, or dispatch/receive architecture changes. Focused MariaDB tests and 1440/390 local browser fixture passed; syntax/Pint/Blade/diff checks are recorded in `.ai/TEST_RESULTS.md`. Commit and push this branch only; no merge or deployment.
+
 # Current task — Invoice import destination propagation hotfix (2026-10-19)
 
 V1 scoped change on `hotfix/invoice-import-destination-propagation` from exact main and owner-supplied Production commit `e558aafea96ee485145c6e445f62eeba9b32b073` (`toyjoy-v0.1.34-purchase-transfer-e558aaf`). Imported transfer rows now run the same selected-destination synchronization used for manually added rows after invoice import. The transfer line template, per-line quantities, source warehouse, invoice lookup/security, deletion, zero-stock guard, availability limit, formatting, lifecycle, and schema are unchanged.

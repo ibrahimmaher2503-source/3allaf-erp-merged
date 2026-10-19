@@ -259,9 +259,9 @@ class ProductLookup {
         const line = this.root.closest('[data-product-line]');
         if (this.root.dataset.context === 'transfer' && line) {
             const values = {
-                '[data-line-available]': item.available_quantity,
-                '[data-line-cost]': item.source_unit_cost,
-                '[data-line-selling-price]': item.source_selling_price,
+                '[data-line-available]': formatTransferQuantity(item.available_quantity),
+                '[data-line-cost]': formatTransferMoney(item.source_unit_cost),
+                '[data-line-selling-price]': formatTransferMoney(item.source_selling_price),
             };
             Object.entries(values).forEach(([selector, value]) => {
                 const output = line.querySelector(selector);

@@ -1,5 +1,9 @@
 # Owner Decisions
 
+## 2026-10-19 — Standalone warehouse transfer and purchasing override
+
+An active warehouse/store may exist and operate with branch_id = NULL. Branch membership is not required for inventory transfers or purchase receiving. This owner instruction supersedes the 2026-09-27 source-branch numbering assumption only for a branchless source. Its transfer numbers use an atomic company-scoped `CENTRAL-NNNNNN` sequence; branch-linked sources retain the existing branch-scoped number and immutable source-branch behavior. The source/destination must still be active, same-company, and within the signed-in user's store scope. No branch is assigned automatically.
+
 ## 2026-10-13 — POS cash-rounding hotfix override
 
 - The owner explicitly approved administrator-configured positive cash-rounding denominations, including 0.50 EGP, superseding the Hotfix14 fixed-5-EGP restriction for new sales. The existing versioned 5 EGP value remains effective until an authorized administrator changes it. Denominations must be positive and expressible in the currency's two-decimal payment scale; no denomination is selected implicitly for settlement.

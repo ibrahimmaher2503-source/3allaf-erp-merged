@@ -1,3 +1,11 @@
+# 2026-10-19 — Standalone warehouse and transfer numeric UI
+
+Focused disposable MariaDB `InventoryMultiDestinationTransferFocusedTest.php`: 14 tests/54 assertions PASS after the test fixture was granted the existing `inventory_stock_card.view` permission. Verified branchless source and destination, two sequential central numbers, unchanged branch-linked prefix, branchless edit, inactive/out-of-scope rejection, and form visibility with no incorrect Arabic branch error. The test database was disposable and removed by the QA runner; Production data was untouched.
+
+Local DOM browser fixture executing the edited transfer JavaScript and scoped CSS: 1440 PASS and 390 PASS. Manual quantities `53`, `53.5`, `53.25`; manual money `300.00`, `900.00`; invoice import `53.5`, `300.00`, `900.00`; centered numeric columns, LTR digits in RTL/Cairo, destination all-row propagation/uncheck/recheck, independent quantities, zero-stock disabled/max 0, no NaN or mirroring, no horizontal overflow or console errors. This was a fixture, not an authenticated full-app browser session.
+
+Affected PHP/JS syntax, Pint, Blade cache, and `git diff --check`: PASS. No broad QA, merge, or deployment.
+
 # 2026-10-19 — Invoice import destination propagation hotfix
 
 Actual browser check: PASS at 1440 and 390 in a local DOM fixture running the repository's real transfer allocation inline script and `keyboard-product-lines.js`. Three simulated invoice products with source availability 10, 5, and 0 each displayed both selected destination controls. Product/destination values remained independent; unchecking B hid and cleared B in all rows; rechecking B restored clean inputs in all rows while preserving A. The zero-stock row retained zero requested quantity and disabled allocations; maximums were 10, 5, and 0. Existing row deletion worked. No horizontal overflow or page errors were observed in the fixture. This was not an authenticated invoice/database check.

@@ -47,10 +47,13 @@ final class UpdateStockTransferDraftAction
             $source = Store::query()->findOrFail($sourceStoreId);
             $destination = Store::query()->findOrFail($destinationStoreId);
             $originalSourceBranchId = Store::query()->whereKey($transfer->source_store_id)->value('branch_id');
-            if ($source->branch_id === null || (int) $source->branch_id !== (int) $originalSourceBranchId) {
+            if ((string) ($source->branch_id ?? '') !== (string) ($originalSourceBranchId ?? '')) {
                 throw new InvalidArgumentException(__('A numbered transfer cannot move to another source branch. Create a new transfer instead.'));
             }
-            $sourceBranchCompanyId = $source->branch()->value('company_id');
+            if ($source->status !== 'active' || $destination->status !== 'active') {
+                throw new InvalidArgumentException(__('The selected store is inactive.'));
+            }
+            $sourceBranchCompanyId = $source->branch_id === null ? $source->company_id : $source->branch()->value('company_id');
             if ($source->company_id === null
                 || $destination->company_id === null
                 || $sourceBranchCompanyId === null
@@ -99,6 +102,7 @@ final class UpdateStockTransferDraftAction
         if ($lines === []) {
             throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
         }
+        $sourceCompanyId = Store::query()->whereKey($sourceStoreId)->value('company_id');
         $normalized = [];
         foreach ($lines as $line) {
             $product = Product::query()->sellable()->find((int) ($line['product_id'] ?? 0));
@@ -133,6 +137,9 @@ final class UpdateStockTransferDraftAction
                 }
                 if (bccomp($amount, '0', 6) > 0) {
                     $this->scope->execute($destinationId);
+                    if (! Store::query()->whereKey($destinationId)->where('status', 'active')->where('company_id', $sourceCompanyId)->exists()) {
+                        throw new InvalidArgumentException(__('Select an active destination within your company and store scope.'));
+                    }
                     $allocations[$destinationId] = $amount;
                 }
             }
