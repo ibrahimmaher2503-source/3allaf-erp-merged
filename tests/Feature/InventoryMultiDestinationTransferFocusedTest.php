@@ -10,6 +10,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
+use App\Modules\Inventory\Actions\UpdateStockTransferDraftAction;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
@@ -48,6 +49,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $this->user->forceFill(['is_super_admin' => true])->save();
         Auth::login($this->user);
         Gate::define('transfers.create', static fn (): bool => true);
+        Gate::define('inventory_stock_card.view', static fn (): bool => true);
         Gate::define('transfers.dispatch', static fn (): bool => true);
         Gate::define('transfers.receive', static fn (): bool => true);
         $this->product = Product::factory()->create(['status' => 'active', 'item_code' => 'QA-SKU-'.uniqid(), 'name_ar' => 'منتج اختبار', 'sale_price' => 20, 'average_cost' => 10]);
@@ -177,6 +179,81 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $this->user->save();
         Gate::define('transfers.create', static fn (): bool => false);
         self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-auth-'.uniqid()), AuthorizationException::class);
+    }
+
+    public function test_active_branchless_warehouse_is_a_source_with_central_numbering(): void
+    {
+        $centralSource = $this->branchlessWarehouse();
+        $this->balance($centralSource, 10);
+
+        $first = app(CreateStockTransferDraftAction::class)->execute($centralSource->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '2']], idempotencyKey: 'qa-central-source-'.uniqid());
+        $second = app(CreateStockTransferDraftAction::class)->execute($centralSource->id, $this->destinationB->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-central-source-'.uniqid());
+
+        self::assertSame('CENTRAL-000001', $first->transfer_number);
+        self::assertSame('CENTRAL-000002', $second->transfer_number);
+        self::assertNull($centralSource->fresh()->branch_id);
+        self::assertSame($centralSource->id, $first->source_store_id);
+    }
+
+    public function test_active_branchless_warehouse_is_a_destination_and_linked_source_keeps_numbering(): void
+    {
+        $centralDestination = $this->branchlessWarehouse();
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $centralDestination->id, [['product_id' => $this->product->id, 'quantity_requested' => '2', 'allocations' => [$centralDestination->id => '2']]], idempotencyKey: 'qa-central-destination-'.uniqid());
+
+        self::assertNull($centralDestination->fresh()->branch_id);
+        self::assertSame($centralDestination->id, $transfer->destination_store_id);
+        self::assertStringStartsWith('QA-BR-', $transfer->transfer_number);
+        self::assertSame('2.000000', (string) $transfer->lines()->firstOrFail()->allocations()->firstOrFail()->quantity);
+    }
+
+    public function test_transfer_form_offers_active_branchless_warehouses_without_branch_error(): void
+    {
+        $central = $this->branchlessWarehouse();
+        $this->actingAs($this->user);
+
+        $response = $this->get('/inventory/transfers/create');
+
+        $response->assertOk();
+        $response->assertSee('value="'.$central->id.'"', false);
+        $response->assertDontSee('المتجر المصدر لازم يكون تابع لفرع');
+        self::assertNull($central->fresh()->branch_id);
+    }
+
+    public function test_branchless_source_draft_can_be_updated_without_assigning_a_branch(): void
+    {
+        $centralSource = $this->branchlessWarehouse();
+        $this->balance($centralSource, 10);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($centralSource->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '2']], idempotencyKey: 'qa-central-edit-'.uniqid());
+        Gate::define('transfers.edit', static fn (): bool => true);
+
+        $updated = app(UpdateStockTransferDraftAction::class)->execute($transfer->id, $centralSource->id, $this->destinationB->id, [['product_id' => $this->product->id, 'quantity_requested' => '3']], expectedVersion: $transfer->lock_version);
+
+        self::assertSame($transfer->transfer_number, $updated->transfer_number);
+        self::assertSame($this->destinationB->id, $updated->destination_store_id);
+        self::assertNull($centralSource->fresh()->branch_id);
+    }
+
+    public function test_inactive_or_out_of_scope_branchless_warehouse_is_rejected(): void
+    {
+        $central = $this->branchlessWarehouse();
+        $this->balance($central, 10);
+        $central->update(['status' => 'inactive']);
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($central->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-inactive-source-'.uniqid()), InvalidArgumentException::class);
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $central->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-inactive-destination-'.uniqid()), InvalidArgumentException::class);
+
+        $central->update(['status' => 'active']);
+        $this->user->forceFill(['is_super_admin' => false])->save();
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($central->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-out-of-scope-'.uniqid()), AuthorizationException::class);
+    }
+
+    private function branchlessWarehouse(): Store
+    {
+        $warehouse = $this->source->replicate();
+        $warehouse->code = 'QA-CENTRAL-'.uniqid();
+        $warehouse->branch_id = null;
+        $warehouse->save();
+
+        return $warehouse;
     }
 
     private function approvedTransfer(string $requested, string $a, string $b): StockTransfer

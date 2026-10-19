@@ -120,7 +120,7 @@
                             <label for="transfer-source" class="text-xs font-semibold">{{ $t('المتجر المصدر', 'Source store') }}</label>
                             <select id="transfer-source" name="source_store_id" class="{{ $field }}" x-model="source" x-on:invalid="attempted = true" :aria-invalid="attempted && !source ? 'true' : 'false'" aria-describedby="transfer-source-error" data-transfer-source required>
                                 <option value="" disabled>{{ __('Select source store') }}</option>
-                                @foreach($visibleStores as $store)
+                                @foreach($visibleStores->where('status', 'active') as $store)
                                     <option value="{{ $store->id }}">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}</option>
                                 @endforeach
                             </select>
@@ -129,7 +129,7 @@
                         </div>
                         <div class="rounded-2xl border border-indigo-200/80 bg-white/75 p-4 shadow-sm dark:border-indigo-800/70 dark:bg-zinc-900/60">
                             <span class="text-xs font-semibold">{{ $t('المخازن المحول إليها', 'Destination warehouses') }}</span>
-                            <div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($visibleStores as $store)<label class="flex items-center gap-2 text-sm" data-destination-choice><input type="checkbox" name="destination_store_ids[]" value="{{ $store->id }}" @checked(in_array($store->id, array_map('intval', (array) $selectedDestinationIds), true))>{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}</label>@endforeach</div>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-2">@foreach($visibleStores->where('status', 'active') as $store)<label class="flex items-center gap-2 text-sm" data-destination-choice><input type="checkbox" name="destination_store_ids[]" value="{{ $store->id }}" @checked(in_array($store->id, array_map('intval', (array) $selectedDestinationIds), true))>{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}</label>@endforeach</div>
                             <input type="hidden" name="destination_store_id" value="{{ old('destination_store_id', $transfer?->destination_store_id) }}">
                             @error('destination_store_ids')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
                         </div>
@@ -153,7 +153,7 @@
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">@if($selling !== null)<x-money :amount="$selling" />@else—@endif</output></div>
                                 <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity type="number" dir="ltr" name="lines[{{ $lineIndex }}][quantity_requested]" value="{{ $qty(old('lines.'.$lineIndex.'.quantity_requested', $transferLine ? $transferLine->quantity_requested : 1)) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
                                 <div data-transfer-allocations>
-                                    @foreach($visibleStores as $destination)
+                                    @foreach($visibleStores->where('status', 'active') as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
                                             <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
@@ -178,7 +178,7 @@
                                 <div><span class="block text-xs font-semibold">{{ $t('سعر البيع', 'Selling price') }}</span><output data-line-selling-price dir="ltr" class="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 font-mono">—</output></div>
                                 <div><label class="text-xs font-semibold">{{ $t('كمية التحويل المطلوبة', 'Requested transfer quantity') }}</label><input data-line-quantity type="number" dir="ltr" name="lines[__INDEX__][quantity_requested]" value="1" class="{{ $field }}" inputmode="numeric" min="0" step="1" required></div>
                                 <div data-transfer-allocations>
-                                    @foreach($visibleStores as $destination)
+                                    @foreach($visibleStores->where('status', 'active') as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
                                             <input dir="ltr" name="lines[__INDEX__][allocations][{{ $destination->id }}]" value="" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
@@ -269,7 +269,14 @@
             [data-transfer-allocations] label { display: flex; flex-direction: column; min-width: 0; gap: 0.25rem; }
             [data-transfer-allocations] label > span { white-space: normal; word-break: normal; overflow-wrap: break-word; }
             [data-transfer-allocation-editor] [dir="ltr"] { unicode-bidi: isolate; }
+            [data-transfer-allocation-editor] [data-line-available],
+            [data-transfer-allocation-editor] [data-line-cost],
+            [data-transfer-allocation-editor] [data-line-selling-price] { justify-content: center; text-align: center; }
+            [data-transfer-allocation-editor] [data-line-quantity],
+            [data-transfer-allocations] input { text-align: center; }
             [data-transfer-allocations] input { box-sizing: border-box; width: 100%; min-width: 0; }
+            [data-transfer-allocation-summary] > div { display: flex; flex-direction: column; align-items: center; text-align: center; }
+            [data-transfer-allocation-summary] output { text-align: center; }
             [data-transfer-allocation-editor] [hidden] { display: none !important; }
             @media (min-width: 640px) {
                 [data-transfer-allocations] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }

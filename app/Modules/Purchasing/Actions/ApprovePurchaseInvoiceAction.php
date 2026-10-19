@@ -6,9 +6,9 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Actions\AllocateStockTransferNumberAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockTransfer;
-use App\Modules\Platform\Actions\AllocateDocumentNumber;
 use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Enums\ApprovalState;
@@ -153,7 +153,7 @@ final class ApprovePurchaseInvoiceAction
             }
             $transfer = StockTransfer::query()->create([
                 'purchase_invoice_id' => $invoice->id,
-                'transfer_number' => app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $invoice->store->branch_id),
+                'transfer_number' => app(AllocateStockTransferNumberAction::class)->execute($invoice->store),
                 'source_store_id' => $invoice->store_id,
                 'destination_store_id' => (int) $destinationId,
                 'status' => 'approved',
