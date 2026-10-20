@@ -642,3 +642,7 @@ Validation completed for `issues/supplier-26-29`: isolated MariaDB focused tests
 - Replaced supplier-return creation modal with a responsive Arabic RTL full page. Invoice reference is optional; linked lines snapshot historical invoice unit cost, while invoice-free lines snapshot current product `average_cost`. Supplier-product relationships, active source store/reason, stock, audit, and approval checks remain enforced.
 - Added the owner-approved supplier payable entry ledger with source-document uniqueness and signed invoice/return postings, including negative balances. No historical invoice backfill or opening balance was invented. Additive migration only.
 - Focused disposable MariaDB tests, authenticated 1440/1024/390 browser review, RTL/overflow/console checks, PHP syntax, Pint, Blade cache, and diff hygiene passed. Screenshots are in `storage/app/frontend-review/supplier-return-v2/`. No broad QA, production data operation, merge, or deployment occurred.
+
+## 2026-10-20 — Inventory live stocktake feature branch
+
+Class I4 implementation on `feature/inventory-live-stocktake-and-draft-preservation` from `7e50a0b`. Existing count sessions, lines, contributions, stock balances, canonical movements, document numbering, and permission gates were reused. Open-count transfer blocking was removed. Session load, scanning, autosave, review, movement visibility, approved settlement, pagination and branchless warehouse support were added. The branch remains unmerged and undeployed; Production remains `7e50a0b`.

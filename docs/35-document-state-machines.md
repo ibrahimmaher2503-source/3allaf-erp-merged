@@ -314,3 +314,7 @@ Every module implementation must record:
 ## 26. Manual Browser Verification
 
 For every implemented machine verify all allowed transitions, denied transitions, stale/double actions, role separation, locked fields, terminal immutability, and referenced correction.
+
+## Live stocktake lifecycle — 2026-10-20
+
+`draft → in_progress → submitted → reconciled` or a business-safe `cancelled` state. The persisted session can be resumed while counting. Submission completes counting and prevents normal edits, but posts no stock. Authorized reconciliation recalculates live ledger variance and posts canonical adjustments once. The counter and approver remain distinct under existing gates.

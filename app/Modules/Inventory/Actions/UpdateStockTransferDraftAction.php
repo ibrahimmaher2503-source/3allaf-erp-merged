@@ -27,10 +27,11 @@ final class UpdateStockTransferDraftAction
         ?string $reasonCode = null,
         ?string $notes = null,
         ?int $expectedVersion = null,
+        ?string $invoiceReference = null,
     ): StockTransfer {
         Gate::authorize('transfers.edit');
 
-        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion): StockTransfer {
+        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer);
             if ($transfer->status !== 'draft') {
@@ -61,7 +62,6 @@ final class UpdateStockTransferDraftAction
                 || (int) $source->company_id !== (int) $destination->company_id) {
                 throw new InvalidArgumentException(__('Source and destination stores must belong to the same company.'));
             }
-            app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
             $normalized = $this->normalizeLines($lines, $sourceStoreId);
             $before = $transfer->only(['source_store_id', 'destination_store_id', 'reason_code', 'notes', 'status', 'lock_version']);
             $transfer->mutateApprovedDocument([
@@ -69,6 +69,7 @@ final class UpdateStockTransferDraftAction
                 'destination_store_id' => $destinationStoreId,
                 'reason_code' => $this->nullableTrimmed($reasonCode),
                 'notes' => $this->nullableTrimmed($notes),
+                'invoice_reference' => $this->nullableTrimmed($invoiceReference),
                 'requested_by' => Auth::id(),
                 'lock_version' => $transfer->lock_version + 1,
             ]);

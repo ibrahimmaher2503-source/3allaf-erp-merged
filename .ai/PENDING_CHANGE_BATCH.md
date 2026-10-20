@@ -1,6 +1,12 @@
+## 2026-10-20 — Live stocktake and transfer preservation
+
+- I4 feature branch `feature/inventory-live-stocktake-and-draft-preservation` from Production/main `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`; local, unmerged, undeployed.
+- Canonical movement-ledger reconciliation uses each line’s baseline and count movement watermark, carries later movements into the closing position, and posts only approved variances. Counting never posts stock. Transfer drafts retain input and persist invoice reference; open stocktakes no longer block transfer lifecycle.
+- Additive migrations add count-line movement watermarks/counter and transfer invoice reference. Focused QA and browser results are recorded in `.ai/TEST_RESULTS.md`; review and owner UAT remain before merge.
+
 # 2026-10-19 — Standalone warehouse and transfer numeric UI
 
-- Class D3; branch `hotfix/inventory-standalone-warehouse-and-numeric-ui`; source/Production baseline `2b29a067177d6dc615fd95dca0ea3768d358d8a1`; unmerged and undeployed.
+- Class D3; branch `hotfix/inventory-standalone-warehouse-and-numeric-ui`; source/previous Production baseline `2b29a067177d6dc615fd95dca0ea3768d358d8a1`; merged and deployed at `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` to `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`. Rollback target: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.35-invoice-destinations-2b29a06`; rollback required NO.
 - An active warehouse/store may exist and operate with branch_id = NULL. Branch membership is not required for inventory transfers or purchase receiving.
 - Removed the transfer create/update source-branch requirement while retaining active, same-company and visible-store checks. Branchless transfer numbering is atomic and company scoped; linked branch numbering is unchanged. Purchase receiving's generated transfers use the same allocator.
 - Manual lookup now uses the invoice-import quantity and money presentation formatters. Transfer-row numeric fields and values are centered without changing numeric direction or storage.

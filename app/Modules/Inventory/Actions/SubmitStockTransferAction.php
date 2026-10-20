@@ -23,7 +23,6 @@ final class SubmitStockTransferAction
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer);
-            app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, $transfer->destination_store_id);
             if ($transfer->status !== 'draft') {
                 throw new InvalidArgumentException(__('Only draft transfers can be submitted.'));
             }

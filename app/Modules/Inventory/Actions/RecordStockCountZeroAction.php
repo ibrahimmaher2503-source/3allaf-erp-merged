@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Actions;
 
-use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockCountLine;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Support\ResolveStockCountProduct;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -31,21 +33,16 @@ final class RecordStockCountZeroAction
             }
             app(AssertInventoryStoreScope::class)->execute($storeId);
 
-            $lookup = trim($lookup);
-            $product = Product::query()->where('status', 'active')->where(function ($query) use ($lookup): void {
-                $query->where('item_code', $lookup)->orWhere('model_number', $lookup)
-                    ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', $lookup)->where('status', 'active'));
-            })->first();
-            if ($product === null) {
-                throw new InvalidArgumentException(__('Unknown barcode or product identifier. Search by product name, code, or model number.'));
-            }
+            $product = app(ResolveStockCountProduct::class)->resolve($lookup);
 
             $line = $count->lines()->where('store_id', $storeId)->where('product_id', $product->id)->lockForUpdate()->first();
             if ($line === null) {
                 if ($count->count_type === 'full' || in_array($count->scope_type, ['category', 'supplier'], true)) {
                     throw new InvalidArgumentException(__('This product is outside the count-session scope.'));
                 }
-                $line = $count->lines()->create(['store_id' => $storeId, 'product_id' => $product->id, 'reference_on_hand' => '0', 'is_counted' => false]);
+                $balance = StockBalance::query()->where('store_id', $storeId)->where('product_id', $product->id)->lockForUpdate()->first();
+                $watermark = StockMovement::query()->where('store_id', $storeId)->where('product_id', $product->id)->max('id') ?? 0;
+                $line = $count->lines()->create(['store_id' => $storeId, 'product_id' => $product->id, 'reference_on_hand' => $balance?->on_hand ?? '0', 'reference_movement_id' => $watermark, 'is_counted' => false]);
             }
             if ($line->completed_at !== null && $line->explicit_zero) {
                 return $line;

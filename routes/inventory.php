@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
+use App\Modules\Inventory\Actions\AddAllStockCountProductsAction;
 use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\ApproveStockTransferAction;
 use App\Modules\Inventory\Actions\AssertInventoryStoreScope;
@@ -25,6 +26,7 @@ use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\ReverseInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveStockCountAction;
+use App\Modules\Inventory\Actions\SetStockCountQuantityAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
 use App\Modules\Inventory\Actions\SubmitStockTransferAction;
@@ -55,7 +57,7 @@ use Illuminate\Validation\ValidationException;
 
 $router = app('router');
 $renderInventory = static function (?int $productId = null, ?string $focus = null, ?StockTransfer $transfer = null, ?InventoryAdjustment $adjustment = null, ?StockCount $count = null) {
-    Gate::authorize('inventory_stock_card.view');
+    Gate::authorize($focus === 'count-create' ? 'stock_counts.create' : (str_starts_with((string) $focus, 'count') ? 'stock_counts.view' : 'inventory_stock_card.view'));
     $user = Auth::user();
     abort_unless($user instanceof User, 403);
     $visibleStores = Store::query()->with('branch')->visibleTo($user)->orderBy('branch_id')->orderBy('name_ar')->orderBy('code')->limit(200)->get();
@@ -137,9 +139,8 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
     });
     $adjustmentQuery = InventoryAdjustment::query()->whereIn('store_id', $visibleStoreIds);
-    $countQuery = StockCount::query()->where(function ($query) use ($visibleStoreIds): void {
-        $query->whereIn('store_id', $visibleStoreIds)->orWhereHas('locations', fn ($locations) => $locations->whereIn('store_id', $visibleStoreIds));
-    });
+    $countQuery = StockCount::query()->whereIn('store_id', $visibleStoreIds)
+        ->whereDoesntHave('locations', fn ($locations) => $locations->whereNotIn('store_id', $visibleStoreIds));
     $inventorySummary = [
         'transfers' => (clone $transferQuery)->count(),
         'adjustments' => (clone $adjustmentQuery)->count(),
@@ -161,7 +162,14 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         ->unique('source_id')
         ->keyBy('source_id') : collect();
     $adjustments = $showCountWorkspace ? (clone $adjustmentQuery)->with(['store', 'lines.product'])->latest('id')->limit(20)->get() : collect();
-    $counts = $showCountWorkspace ? (clone $countQuery)->with(['store', 'lines:id,stock_count_id,is_counted'])->latest('id')->limit(20)->get() : collect();
+    $counts = $showCountWorkspace ? (clone $countQuery)
+        ->when(request('count_number'), fn ($query, $number) => $query->where('count_number', 'like', '%'.addcslashes((string) $number, '%_\\').'%'))
+        ->when(request('count_store_id'), fn ($query, $storeId) => $query->where('store_id', (int) $storeId))
+        ->when(request('count_status'), fn ($query, $status) => $query->where('status', (string) $status))
+        ->when(request('count_from'), fn ($query, $from) => $query->whereDate('created_at', '>=', $from))
+        ->when(request('count_to'), fn ($query, $to) => $query->whereDate('created_at', '<=', $to))
+        ->with(['store', 'creator'])->withCount(['lines as total_lines_count', 'lines as counted_lines_count' => fn ($lines) => $lines->where('is_counted', true), 'lines as matched_lines_count' => fn ($lines) => $lines->where('is_counted', true)->where('variance_quantity', 0), 'lines as different_lines_count' => fn ($lines) => $lines->where('variance_quantity', '!=', 0)])
+        ->latest('id')->paginate(20, ['*'], 'counts_page')->withQueryString() : collect();
     $needsProductOptions = str_starts_with((string) $focus, 'transfer') || str_starts_with((string) $focus, 'adjustment');
     $products = $needsProductOptions ? Product::query()->sellable()->select(['id', 'item_code', 'name_en', 'name_ar', 'fractional_quantity', 'parent_product_id'])->when($search !== '', static function ($query) use ($search): void {
         $like = '%'.addcslashes($search, '%_\\').'%';
@@ -283,33 +291,37 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
         return $renderInventory(null, 'adjustment-edit', null, $adjustment->load(['store', 'lines.product']));
     })->middleware('can:inventory_stock_card.edit')->name('inventory.adjustments.edit');
-    $router->get('inventory/counts', fn () => $renderInventory(null, 'counts'))->middleware('can:inventory_stock_card.view')->name('inventory.counts');
+    $router->get('inventory/counts', fn () => $renderInventory(null, 'counts'))->middleware('can:stock_counts.view')->name('inventory.counts');
     $router->get('inventory/counts/create', fn () => $renderInventory(null, 'count-create'))->middleware('can:stock_counts.create')->name('inventory.counts.create');
     $router->get('inventory/counts/{count}/entry', function (StockCount $count) use ($renderInventory) {
-        app(AssertInventoryStoreScope::class)->execute((int) $count->store_id);
+        foreach ($count->locations as $location) {
+            app(AssertInventoryStoreScope::class)->execute((int) $location->store_id);
+        }
 
-        return $renderInventory(null, 'count-entry', null, null, $count->load(['store', 'locations.store', 'members.user', 'lines.product']));
+        return $renderInventory(null, 'count-entry', null, null, $count->load(['store', 'locations.store', 'members.user']));
     })->middleware('can:stock_counts.view')->name('inventory.counts.entry');
     $router->get('inventory/counts/{count}/reconcile', function (StockCount $count) use ($renderInventory) {
-        app(AssertInventoryStoreScope::class)->execute((int) $count->store_id);
+        foreach ($count->locations as $location) {
+            app(AssertInventoryStoreScope::class)->execute((int) $location->store_id);
+        }
 
-        return $renderInventory(null, 'count-reconcile', null, null, $count->load(['store', 'locations.store', 'members.user', 'lines.product']));
-    })->middleware('can:stock_counts.reconcile')->name('inventory.counts.reconcile-page');
+        return $renderInventory(null, 'count-reconcile', null, null, $count->load(['store', 'locations.store', 'members.user']));
+    })->middleware('can:stock_counts.view')->name('inventory.counts.reconcile-page');
 
     $router->post('inventory/transfers', function (CreateStockTransferDraftAction $action) {
-        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer'], 'idempotency_key' => ['nullable', 'uuid'], 'invoice_reference' => ['nullable', 'string', 'max:120']]);
         $destination = (int) ($validated['destination_store_ids'][0] ?? $validated['destination_store_id'] ?? 0);
         foreach ($validated['lines'] as &$line) {
             $line['allocations'] = $line['allocations'] ?? ($destination > 0 ? [$destination => $line['quantity_requested']] : []);
         }
         try {
-            $transfer = $action->execute((int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null);
+            $transfer = $action->execute((int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null, $validated['idempotency_key'] ?? null, $validated['invoice_reference'] ?? null);
 
             return redirect()->route('inventory.transfers.edit', $transfer)->with('success', __('Transfer saved as draft.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->with('error', UserSafeError::message($exception))->with('count-recovery', true);
+            return back()->withInput()->with('error', UserSafeError::message($exception));
         } catch (Throwable $exception) {
             report($exception);
 
@@ -318,19 +330,19 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->middleware('can:transfers.create')->name('inventory.transfers.store');
 
     $router->post('inventory/transfers/{transfer}', function (StockTransfer $transfer, UpdateStockTransferDraftAction $action) {
-        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer']]);
+        $validated = request()->validate(['source_store_id' => ['required', 'integer', 'exists:stores,id'], 'destination_store_id' => ['nullable', 'integer', 'different:source_store_id', 'exists:stores,id'], 'destination_store_ids' => ['nullable', 'array', 'min:1'], 'destination_store_ids.*' => ['integer', 'exists:stores,id', 'different:source_store_id'], 'reason_code' => ['required', 'string', 'max:100'], 'reason_notes' => ['nullable', 'string', 'max:1000'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'integer'], 'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'], 'lines.*.allocations' => ['nullable', 'array'], 'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'], 'lock_version' => ['nullable', 'integer'], 'idempotency_key' => ['nullable', 'uuid'], 'invoice_reference' => ['nullable', 'string', 'max:120']]);
         $destination = (int) ($validated['destination_store_ids'][0] ?? $validated['destination_store_id'] ?? 0);
         foreach ($validated['lines'] as &$line) {
             $line['allocations'] = $line['allocations'] ?? ($destination > 0 ? [$destination => $line['quantity_requested']] : []);
         }
         try {
-            $saved = $action->execute($transfer->id, (int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null, $validated['lock_version'] ?? $transfer->lock_version);
+            $saved = $action->execute($transfer->id, (int) $validated['source_store_id'], (int) $validated['destination_store_id'], $validated['lines'], $validated['reason_code'], $validated['reason_notes'] ?? null, $validated['lock_version'] ?? $transfer->lock_version, $validated['invoice_reference'] ?? null);
 
             return redirect()->route('inventory.transfers.edit', $saved)->with('success', __('Transfer draft updated.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->with('error', UserSafeError::message($exception))->with('count-recovery', true);
+            return back()->withInput()->with('error', UserSafeError::message($exception));
         } catch (Throwable $exception) {
             report($exception);
 
@@ -531,7 +543,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('count')->middleware('can:stock_counts.submit')->name('inventory.counts.submit');
 
     $router->post('inventory/counts', function (SaveStockCountAction $action) {
-        $validated = request()->validate(['branch_id' => ['required', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial'], 'scope_type' => ['required', 'in:full,category,supplier,partial'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
+        $validated = request()->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial'], 'scope_type' => ['required', 'in:full,category,supplier,partial'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
         try {
             $count = $action->execute($validated);
 
@@ -550,6 +562,33 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
         return back()->with('success', __('Count session opened with immutable location snapshots.'));
     })->whereNumber('count')->middleware('can:stock_counts.open')->name('inventory.counts.open');
+    $router->post('inventory/counts/{count}/add-all', function (StockCount $count, AddAllStockCountProductsAction $action) {
+        $validated = request()->validate(['store_id' => ['required', 'integer', 'exists:stores,id']]);
+        try {
+            $added = $action->execute($count->id, (int) $validated['store_id']);
+
+            return back()->with('success', __('Products added to the stocktake: :count', ['count' => $added]));
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', UserSafeError::message($exception));
+        }
+    })->whereNumber('count')->middleware('can:stock_counts.edit')->name('inventory.counts.add-all');
+    $router->post('inventory/counts/{count}/quantity', function (StockCount $count, SetStockCountQuantityAction $action) {
+        $validated = request()->validate(['store_id' => ['required', 'integer', 'exists:stores,id'], 'lookup' => ['required', 'string', 'max:255'], 'quantity' => ['required', 'numeric', 'min:0'], 'request_id' => ['required', 'uuid'], 'device_id' => ['required', 'string', 'max:120'], 'note' => ['nullable', 'string', 'max:1000']]);
+        try {
+            $line = $action->execute($count->id, (int) $validated['store_id'], $validated['lookup'], (string) $validated['quantity'], $validated['request_id'], $validated['device_id'], $validated['note'] ?? null);
+            if (request()->expectsJson()) {
+                return response()->json(['product_id' => $line->product_id, 'name' => HumanName::name($line->product), 'sku' => $line->product?->item_code, 'quantity' => ProductQuantity::format($line->counted_quantity)]);
+            }
+
+            return back()->with('success', __('Stocktake quantity saved.'));
+        } catch (InvalidArgumentException $exception) {
+            if (request()->expectsJson()) {
+                return response()->json(['message' => UserSafeError::message($exception)], 422);
+            }
+
+            return back()->withInput()->with('error', UserSafeError::message($exception));
+        }
+    })->whereNumber('count')->middleware('can:stock_counts.participate')->name('inventory.counts.quantity');
     $router->post('inventory/counts/{count}/contributions', function (StockCount $count, RecordStockCountContributionAction $action, RecordStockCountZeroAction $zeroAction) {
         $validated = request()->validate(['store_id' => ['required', 'integer'], 'lookup' => ['required', 'string', 'max:255'], 'quantity' => ['required', 'numeric', 'min:0'], 'request_id' => ['required', 'uuid'], 'device_id' => ['required', 'string', 'max:120'], 'input_method' => ['required', 'in:scan,batch,manual']]);
         if (! $count->members()->where('user_id', Auth::id())->exists()) {
@@ -563,8 +602,19 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             }
             $entry = $action->execute($count->id, (int) $validated['store_id'], $validated['lookup'], (string) $validated['quantity'], $validated['request_id'], $validated['device_id'], $validated['input_method']);
 
-            return back()->with('success', __('Quantity added. Updated counted total: :total', ['total' => $entry->count->contributions()->where('store_id', $entry->store_id)->where('product_id', $entry->product_id)->sum('quantity')]));
+            $total = $entry->count->lines()->where('store_id', $entry->store_id)->where('product_id', $entry->product_id)->value('counted_quantity');
+            if (request()->expectsJson()) {
+                $product = $entry->product;
+
+                return response()->json(['product_id' => $product->id, 'name' => HumanName::name($product), 'sku' => $product->item_code, 'quantity' => ProductQuantity::format($total)]);
+            }
+
+            return back()->with('success', __('Quantity added. Updated counted total: :total', ['total' => $total]));
         } catch (InvalidArgumentException $exception) {
+            if (request()->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => UserSafeError::message($exception)]);
+            }
+
             return back()->withInput()->with('error', UserSafeError::message($exception));
         }
     })->whereNumber('count')->middleware('can:stock_counts.participate')->name('inventory.counts.contribute');
@@ -583,7 +633,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         $v = request()->validate(['reason' => ['required', 'string', 'max:1000']]);
         $action->execute($count->id, $v['reason']);
 
-        return redirect()->route('inventory.counts')->with('success', __('Count session cancelled and transfer locks released.'));
+        return redirect()->route('inventory.counts')->with('success', __('Count session cancelled.'));
     })->whereNumber('count')->middleware('can:stock_counts.cancel')->name('inventory.counts.cancel');
     $router->get('inventory/counts/{count}/products', function (StockCount $count) {
         $user = Auth::user();
@@ -603,6 +653,18 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
         return view('inventory.count-report', compact('count'));
     })->whereNumber('count')->middleware('can:stock_counts.view')->name('inventory.counts.report');
+    $router->get('inventory/counts/{count}/lines/{line}/movements', function (StockCount $count, StockCountLine $line) {
+        abort_unless((int) $line->stock_count_id === (int) $count->id && $count->locations()->where('store_id', $line->store_id)->exists(), 404);
+        app(AssertInventoryStoreScope::class)->execute((int) $line->store_id);
+        $line->load(['product', 'store', 'counter']);
+        $movements = StockMovement::query()->with('creator')->where('store_id', $line->store_id)->where('product_id', $line->product_id)
+            ->when($line->reference_movement_id !== null,
+                fn ($query) => $query->where('id', '>', $line->reference_movement_id),
+                fn ($query) => $query->where('posted_at', '>', $count->reference_at))
+            ->orderBy('id')->paginate(50)->withQueryString();
+
+        return view('inventory.count-movements', compact('count', 'line', 'movements'));
+    })->whereNumber('count')->whereNumber('line')->middleware('can:stock_counts.view')->name('inventory.counts.movements');
 
     $router->post('inventory/counts/{count}/entry', function (StockCount $count, RecordStockCountLineAction $action) {
         $validated = request()->validate(['counted_quantities' => ['required', 'array'], 'counted_quantities.*' => ['required', 'numeric', 'min:0'], 'input_methods' => ['nullable', 'array'], 'recount' => ['nullable', 'boolean']]);
