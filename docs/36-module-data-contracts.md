@@ -337,3 +337,7 @@ Include user/device/branch binding, schema/policy version, payload hash, idempot
 ## 20. Manual Verification
 
 Use browser workflows and database inspection only when authorized to confirm constraints, source linkage, immutability, scope, duplicate prevention, and reconciliation. No automated tests under current directive.
+
+## Stocktake and transfer data contract — 2026-10-20
+
+Stock count lines retain baseline `reference_on_hand`, `reference_movement_id`, physical `counted_quantity`, `counted_at`, `counted_movement_id`, and `counted_by`. Canonical `stock_movements` remain the only movement history and settlement posting path. Transfer drafts persist the optional `invoice_reference` independently from the existing purchase-invoice foreign key and retain a stable idempotency key across retries. Warehouse `branch_id` may be null.

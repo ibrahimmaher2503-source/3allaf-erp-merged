@@ -30,19 +30,20 @@ final class CreateStockTransferDraftAction
         ?string $reasonCode = null,
         ?string $notes = null,
         ?string $idempotencyKey = null,
+        ?string $invoiceReference = null,
     ): StockTransfer {
         Gate::authorize('transfers.create');
 
         $key = filled($idempotencyKey) ? trim((string) $idempotencyKey) : (string) Str::uuid();
 
         try {
-            return $this->create($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $key);
+            return $this->create($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $key, $invoiceReference);
         } catch (UniqueConstraintViolationException $exception) {
             if (! str_contains($exception->getMessage(), 'idempotency_key')) {
                 throw $exception;
             }
 
-            return $this->replay($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $key);
+            return $this->replay($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $key, $invoiceReference);
         }
     }
 
@@ -56,15 +57,15 @@ final class CreateStockTransferDraftAction
         ?string $reasonCode,
         ?string $notes,
         string $idempotencyKey,
+        ?string $invoiceReference,
     ): StockTransfer {
-        return DB::transaction(function () use ($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $idempotencyKey): StockTransfer {
+        return DB::transaction(function () use ($sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $idempotencyKey, $invoiceReference): StockTransfer {
             $this->assertStores($sourceStoreId, $destinationStoreId);
-            app(AssertNoOpenStockCountTransfer::class)->execute($sourceStoreId, $destinationStoreId);
             $normalizedLines = $this->normalizeLines($lines, $sourceStoreId);
 
-            $existing = StockTransfer::query()->with('lines')->where('idempotency_key', $idempotencyKey)->first();
+            $existing = StockTransfer::query()->with('lines.allocations')->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                return $this->assertReplayMatches($existing, $sourceStoreId, $destinationStoreId, $normalizedLines, $reasonCode, $notes);
+                return $this->assertReplayMatches($existing, $sourceStoreId, $destinationStoreId, $normalizedLines, $reasonCode, $notes, $invoiceReference);
             }
 
             $sourceStore = Store::query()->findOrFail($sourceStoreId);
@@ -76,6 +77,7 @@ final class CreateStockTransferDraftAction
                 'status' => 'draft',
                 'reason_code' => $this->nullableTrimmed($reasonCode),
                 'notes' => $this->nullableTrimmed($notes),
+                'invoice_reference' => $this->nullableTrimmed($invoiceReference),
                 'requested_by' => Auth::id(),
                 'idempotency_key' => $idempotencyKey,
                 'lock_version' => 1,
@@ -121,16 +123,18 @@ final class CreateStockTransferDraftAction
         ?string $reasonCode,
         ?string $notes,
         string $idempotencyKey,
+        ?string $invoiceReference,
     ): StockTransfer {
         $this->assertStores($sourceStoreId, $destinationStoreId);
 
         return $this->assertReplayMatches(
-            StockTransfer::query()->with('lines')->where('idempotency_key', $idempotencyKey)->firstOrFail(),
+            StockTransfer::query()->with('lines.allocations')->where('idempotency_key', $idempotencyKey)->firstOrFail(),
             $sourceStoreId,
             $destinationStoreId,
             $this->normalizeLines($lines, $sourceStoreId),
             $reasonCode,
             $notes,
+            $invoiceReference,
         );
     }
 
@@ -241,12 +245,14 @@ final class CreateStockTransferDraftAction
         array $lines,
         ?string $reasonCode,
         ?string $notes,
+        ?string $invoiceReference,
     ): StockTransfer {
         $matches = $transfer->source_store_id === $sourceStoreId
             && $transfer->destination_store_id === $destinationStoreId
             && $transfer->status === 'draft'
             && $transfer->reason_code === $this->nullableTrimmed($reasonCode)
             && $transfer->notes === $this->nullableTrimmed($notes)
+            && $transfer->invoice_reference === $this->nullableTrimmed($invoiceReference)
             && $this->linesMatch($transfer, $lines);
 
         if (! $matches) {
@@ -269,6 +275,16 @@ final class CreateStockTransferDraftAction
             $existing = $transfer->lines->firstWhere('product_id', $line['product_id']);
             if ($existing === null || bccomp((string) $existing->quantity_requested, $line['quantity_requested'], 6) !== 0) {
                 return false;
+            }
+            $requestedAllocations = $line['allocations'] ?? [];
+            if ($existing->allocations->count() !== count($requestedAllocations)) {
+                return false;
+            }
+            foreach ($requestedAllocations as $destinationId => $quantity) {
+                $savedAllocation = $existing->allocations->firstWhere('destination_store_id', (int) $destinationId);
+                if ($savedAllocation === null || bccomp((string) $savedAllocation->quantity, $quantity, 6) !== 0) {
+                    return false;
+                }
             }
         }
 

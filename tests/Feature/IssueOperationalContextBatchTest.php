@@ -66,20 +66,6 @@ final class IssueOperationalContextBatchTest extends TestCase
         self::assertSame(0, $count->contributions()->count());
     }
 
-    public function test_open_count_transfer_error_names_the_blocking_session_and_recovery(): void
-    {
-        $count = $this->openCount();
-        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '25.00']);
-        $this->post(route('inventory.transfers.store'), [
-            'source_store_id' => $this->fixture['store']->id,
-            'destination_store_id' => $this->fixture['receiving']->id,
-            'reason_code' => 'qa-count-lock',
-            'lines' => [['product_id' => $product->id, 'quantity_requested' => 1]],
-        ])->assertSessionHas('error', __('Transfer blocked by open count session :session.', ['session' => $count->count_number]))
-            ->assertSessionHas('count-recovery', true);
-        self::assertSame(0, StockTransfer::query()->count());
-    }
-
     public function test_adjustment_creator_gets_specific_maker_checker_message(): void
     {
         $creator = $this->userWithPermission('inventory_stock_card.approve');

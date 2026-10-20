@@ -3,6 +3,7 @@ import './sidebar-navigation-state';
 import './pos-payment-calculator';
 import './offline-pos';
 import './keyboard-product-lines';
+import './stocktake-scan';
 
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {

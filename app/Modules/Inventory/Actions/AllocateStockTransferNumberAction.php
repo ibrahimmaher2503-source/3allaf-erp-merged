@@ -17,23 +17,28 @@ final class AllocateStockTransferNumberAction
 {
     public function execute(Store $sourceStore): string
     {
+        return $this->executeFor($sourceStore, 'stock_transfer');
+    }
+
+    public function executeFor(Store $sourceStore, string $documentType): string
+    {
         if ($sourceStore->branch_id !== null) {
-            return app(AllocateDocumentNumber::class)->executeForBranch('stock_transfer', (int) $sourceStore->branch_id);
+            return app(AllocateDocumentNumber::class)->executeForBranch($documentType, (int) $sourceStore->branch_id);
         }
 
-        return DB::transaction(function () use ($sourceStore): string {
+        return DB::transaction(function () use ($sourceStore, $documentType): string {
             $company = Company::query()->whereKey($sourceStore->company_id)->lockForUpdate()->firstOrFail();
             $sequence = DocumentSequence::query()
-                ->where('document_type', 'stock_transfer')
+                ->where('document_type', $documentType)
                 ->where('scope_key', DocumentSequence::scopeKeyFor('company'))
                 ->lockForUpdate()
                 ->first();
             if ($sequence === null) {
                 $sequence = DocumentSequence::query()->create([
-                    'document_type' => 'stock_transfer',
+                    'document_type' => $documentType,
                     'scope_type' => 'company',
                     'scope_id' => null,
-                    'prefix' => DocumentTypeCatalog::prefix('CENTRAL', 'stock_transfer'),
+                    'prefix' => DocumentTypeCatalog::prefix('CENTRAL', $documentType),
                     'padding_length' => 6,
                     'next_value' => 1,
                     'reset_rule' => 'never',
@@ -67,7 +72,7 @@ final class AllocateStockTransferNumberAction
                 after: $sequence->only(['next_value', 'lock_version', 'last_reset_period']),
                 storeId: $sourceStore->id,
                 metadata: [
-                    'document_type' => 'stock_transfer',
+                    'document_type' => $documentType,
                     'scope_type' => 'company',
                     'scope_id' => null,
                     'company_id' => $company->id,

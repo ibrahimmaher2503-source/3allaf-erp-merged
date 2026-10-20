@@ -289,3 +289,16 @@ Status: Requires Owner Decision. M3-12 confirms audit views format timestamps wi
 ## DEC-105 — Invoice-optional supplier returns and supplier payables (2026-10-17)
 
 **Status: Approved — explicit owner request.** Supplier returns may reference an approved Rajeh purchase invoice or omit the invoice for stock purchased before Rajeh. Linked lines use the original invoice-line unit cost; invoice-free lines use and snapshot the product card's current cost at creation. Each return belongs to one explicitly identified valid supplier and one active source store. Approval reduces available stock and supplier payable by the return value, allowing a negative supplier balance. One append-only supplier payable ledger records approved invoice increases, approved return decreases, and opposite reversal entries with source identity and idempotent posting. Historical approved invoices are not silently backfilled, and no opening balance is invented. This narrowly supersedes the source-invoice requirement in the previous purchasing return contract. No general ledger, unrelated module, production migration, merge, or deployment is approved.
+
+## 2026-10-20 — Locked live stocktake and draft safety rules
+
+1. Open inventory count sessions do NOT freeze or block warehouse operations.
+2. Sales, returns, receiving, transfers and valid inventory movements continue during stocktake.
+3. Stocktake reconciliation accounts for inventory movements that occur during the counting period.
+4. Per-product `counted_at` is used where available to accurately reconcile movements relative to the physical count. Canonical movement IDs provide the persisted ordering boundary for new lines.
+5. Physical count entry does not mutate live stock. Stock changes occur only during approved settlement.
+6. Inventory operational documents preserve user-entered draft/form state when validation or business errors occur.
+7. Stocktake supports hardware barcode scanners and mobile-camera barcode scanning.
+8. An active warehouse may have `branch_id = NULL`.
+
+These are owner-locked rules for this feature batch.

@@ -25,7 +25,6 @@ final class ReceiveStockTransferAction
             $this->scope->transfer($transfer, source: false, destination: true);
             foreach ($transfer->allocations->pluck('destination_store_id')->unique() as $destinationId) {
                 $this->scope->execute((int) $destinationId);
-                app(AssertNoOpenStockCountTransfer::class)->execute($transfer->source_store_id, (int) $destinationId);
             }
             if ($transfer->status !== 'in_transit') {
                 throw new InvalidArgumentException(__('Only in-transit transfers can be received.'));

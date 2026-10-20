@@ -1,3 +1,9 @@
+## 2026-10-20 — Live stocktake and transfer preservation
+
+- I4 feature branch `feature/inventory-live-stocktake-and-draft-preservation` from Production/main `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`; focused movement validation passed; unmerged and undeployed.
+- Canonical movement-ledger reconciliation uses each line’s baseline and count movement watermark, carries later movements into the closing position, and posts only approved variances. Counting never posts stock. Transfer drafts retain input and persist invoice reference; open stocktakes no longer block transfer lifecycle.
+- Additive migrations add count-line movement watermarks/counter and transfer invoice reference. Focused QA and browser results are recorded in `.ai/TEST_RESULTS.md`; POS/return/receiving and transfer follow-up checks passed. Physical camera and owner operational UAT remain; merge and deployment are separate approvals.
+
 # 2026-10-19 — Standalone warehouse and transfer numeric UI
 
 - Class D3; branch `hotfix/inventory-standalone-warehouse-and-numeric-ui`; source/previous Production baseline `2b29a067177d6dc615fd95dca0ea3768d358d8a1`; merged and deployed at `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` to `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`. Rollback target: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.35-invoice-destinations-2b29a06`; rollback required NO.

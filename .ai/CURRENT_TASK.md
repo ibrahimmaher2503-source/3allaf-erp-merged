@@ -1,3 +1,11 @@
+# Current task — Focused live stocktake movement validation (2026-10-20)
+
+Class D3 follow-up on `feature/inventory-live-stocktake-and-draft-preservation` from implementation commit `ee9096668b0262299c93c5ac5ea8cc18b4bc340e`; Production remains `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`. Three focused real-action MariaDB cases passed for POS sale, customer return, purchase receiving, and movement-aware reconciliation; the existing transfer non-blocking case passed. No application defect was found. Ahmed's concise QA-versus-read-only-Production checklist is in `docs/58-inventory-tutorial-guide.md`. Simulated camera PASS; physical camera PENDING OWNER UAT. Branch is ready for owner code review and UAT, without merge or deployment authorization.
+
+# Current task — Live stocktake and transfer draft preservation (2026-10-20)
+
+Class I4. Feature branch `feature/inventory-live-stocktake-and-draft-preservation` starts from confirmed Production/main `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`. The branch is local, unmerged and undeployed. Implement a resumable, movement-aware stocktake and preserve Inventory Transfer draft/form input on errors. Open counts do not block operational movements. Two additive migrations cover count-line movement/audit boundaries and transfer invoice-reference persistence. Focused disposable MariaDB and 1440/390 browser evidence is in `.ai/TEST_RESULTS.md`. The exact next action is code review and owner UAT before any separately authorized merge or deployment.
+
 # Current task — Standalone warehouse and numeric UI Production deployment (2026-10-19)
 
 Merged main SHA and deployed application SHA: `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`. Immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`. Previous rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.35-invoice-destinations-2b29a06`. An active warehouse/store may exist and operate with branch_id = NULL. Branch membership is not required for inventory transfers or purchase receiving.

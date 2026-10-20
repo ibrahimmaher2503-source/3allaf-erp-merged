@@ -149,3 +149,7 @@ Verify:
 10. RTL/LTR, responsive, console, and network.
 
 No automated tests are created or executed.
+
+## Live stocktake policy — 2026-10-20
+
+An open inventory count does not freeze a warehouse. Sales, POS, returns, purchase receiving, transfers, transfer receiving and other valid stock movements continue. Counting is observational: scans, manual quantities, notes and completion do not post stock. Only a separately authorized settlement posts canonical adjustments. Uncounted lines require an explicit count or zero confirmation. A branchless active warehouse is valid when within the user’s store scope.
