@@ -146,3 +146,29 @@ These pages and guides are suitable for local browser walkthroughs and determini
 - A replacement for production reconciliation, migration, policy sign-off, or real warehouse controls.
 
 Arabic uses RTL and English uses LTR. The Appearance Customizer remains independent of inventory business state and must remain persistent and functional.
+
+## Owner UAT checklist — live stocktake (Ahmed, 2026-10-20)
+
+Use a disposable QA company, products, warehouse, POS shift, and supplier documents for every posting step. Production checks in this table are read-only visual checks of existing screens or records; they do not require creating a Production sale, receipt, transfer, count, or settlement. Record the actual device and scanner model when performing hardware acceptance.
+
+| Check | Expected observation | Where to check |
+|---|---|---|
+| Create stocktake | Number and warehouse are saved; session resumes by ID | QA transaction; Production form can be viewed without submission |
+| Add all products | Eligible SKUs/variants load once; prior counts stay intact | QA only |
+| Manual add | Correct product/SKU resolves and appears once | QA only |
+| Hardware barcode scan | Each keyboard-wedge scan increments one line by one | QA with physical scanner |
+| Mobile scan mode | Camera opens, reads repeated codes, shows last item and quantity, stops/restarts, and handles unknown code | QA with physical phone; Production layout may be viewed without scanning |
+| Autosave | Quantity and note show saved feedback; refresh retains values | QA only |
+| Resume session | Saved counts reappear after leaving and returning | QA; existing Production count may be opened read-only |
+| Sale during stocktake | Valid POS sale posts one canonical outbound movement while count remains active | QA only |
+| Customer return during stocktake | Approved sellable return posts one canonical inbound movement | QA only |
+| Purchase receiving during stocktake | Approved receiving posts one canonical inbound movement | QA only |
+| Transfer during stocktake | Dispatch and receipt remain available; expected canonical movements post once | QA only |
+| Review differences | Expected-at-count, actual, movement history, counter, and variance are understandable | QA; existing Production review may be viewed read-only |
+| Complete counting | Entry closes and no stock adjustment posts | QA only |
+| Settlement | Authorized approver posts only nonzero variances; matched lines post none | QA only |
+| Second settlement | Retry is rejected or returns settled state without another movement | QA only |
+| Branchless warehouse | Active warehouse with `branch_id = NULL` is selectable when authorized | QA transaction; Production selector/read-only details may be viewed |
+| Mobile 390 px | Count cards, scan controls, progress, and review fit without horizontal overflow | QA; Production read-only layout check is safe |
+
+Automated browser validation with a simulated mobile camera **PASS**. Physical-device camera scanning is **PENDING OWNER UAT** and should be recorded by Ahmed; it does not alone block code merge readiness.
