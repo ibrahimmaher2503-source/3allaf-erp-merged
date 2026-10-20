@@ -2,6 +2,7 @@
 
 - I4 release candidate `a12f1768301ec7b66b89b000cb098fa0609facb7` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.37-live-stocktake-a12f176` failed the authenticated manual-add form gate and was rolled back. Active Production code remains `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`.
 - Production schema retains the two additive stocktake/transfer migrations in batch 37; no seeder, business test posting, or migration reversal occurred. The failed candidate is inactive. Corrective source is local on `hotfix/live-stocktake-manual-add-form`, pending review and a newly authorized merge/release. Physical camera UAT remains pending.
+- Manual-add fix commit `9d7eb0bdd79db5e4bb660f41e107a5c023e6dc8e` closes the Blade `class` quote so the existing POST action and CSRF field render correctly. Focused disposable MariaDB PASS 1 test/23 assertions; local authenticated 1440 and 390 browser submissions PASS. The hotfix branch remains separate from main; merge and Production deployment are pending separate authorization.
 
 ## 2026-10-20 — Live stocktake and transfer preservation
 
