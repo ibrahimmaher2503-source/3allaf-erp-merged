@@ -66,6 +66,52 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
         return $count->fresh();
     }
 
+    public function test_manual_add_form_posts_and_rejects_duplicate_hidden_and_unknown_products(): void
+    {
+        $setup = $this->setupInventory();
+        $count = $this->openCount($setup['branchless'], $setup['admin']);
+        $url = route('inventory.counts.contribute', $count);
+        $response = $this->get(route('inventory.counts.entry', $count))->assertOk();
+        $document = new \DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML($response->getContent());
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        $xpath = new \DOMXPath($document);
+        $forms = $xpath->query('//form[@action="'.$url.'" and @data-product-line-editor]');
+        self::assertCount(1, $forms);
+        self::assertSame('POST', $forms->item(0)->getAttribute('method'));
+        self::assertCount(1, $xpath->query('.//input[@name="_token"]', $forms->item(0)));
+
+        $requestId = (string) Str::uuid();
+        $payload = ['store_id' => $setup['branchless']->id, 'lookup' => $setup['product']->item_code,
+            'quantity' => '2', 'request_id' => $requestId, 'device_id' => 'qa-manual', 'input_method' => 'manual'];
+        $this->from(route('inventory.counts.entry', $count))->post($url, $payload)
+            ->assertRedirect(route('inventory.counts.entry', $count))->assertSessionHas('success');
+        $this->get(route('inventory.counts.entry', $count))->assertOk()->assertSee($setup['product']->item_code);
+        self::assertSame(1, $count->lines()->count());
+        self::assertSame('2.000000', (string) $count->lines()->firstOrFail()->counted_quantity);
+
+        $this->post($url, $payload)->assertRedirect()->assertSessionHas('success');
+        self::assertSame(1, $count->lines()->count());
+        self::assertSame(1, $count->contributions()->count());
+
+        $hidden = Product::factory()->inactive()->create(['category_id' => $setup['product']->category_id]);
+        foreach ([$hidden->item_code, 'QA-UNKNOWN-PRODUCT'] as $lookup) {
+            $this->post($url, [...$payload, 'lookup' => $lookup, 'request_id' => (string) Str::uuid()])
+                ->assertRedirect()->assertSessionHas('error');
+        }
+        self::assertSame(1, $count->lines()->count());
+        self::assertSame(1, $count->contributions()->count());
+
+        $restricted = User::query()->create(['name' => 'QA Restricted Counter',
+            'email' => 'qa-counter-'.Str::random(8).'@example.test', 'password' => Str::random(32),
+            'status' => 'active', 'is_super_admin' => false]);
+        $this->actingAs($restricted)->post($url, [...$payload, 'request_id' => (string) Str::uuid()])
+            ->assertForbidden();
+        self::assertSame(1, $count->contributions()->count());
+    }
+
     public function test_live_count_uses_each_products_count_boundary_and_settles_only_variances(): void
     {
         $setup = $this->setupInventory();
