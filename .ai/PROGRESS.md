@@ -1,3 +1,7 @@
+# 2026-10-20 — Live stocktake Production attempt rolled back
+
+Approved main `a12f1768301ec7b66b89b000cb098fa0609facb7` was activated as candidate `toyjoy-v0.1.37-live-stocktake-a12f176` after a verified backup and two additive migrations. Authenticated stocktake entry revealed a malformed manual-add form method, so the candidate failed and Production code was rolled back to `toyjoy-v0.1.36-standalone-numeric-7e50a0b` (`7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`). Maintenance is off, PHP 8.5 FPM is active, and `/`, `/up`, `/login` return 200. Batch-37 additive schema remains. Local corrective branch `hotfix/live-stocktake-manual-add-form` is unmerged and undeployed; physical-camera and full Production UI UAT remain pending. Next action: review and authorize a new merged SHA/release.
+
 # Current Task — Shift close receipt and pending allowance (2026-10-13)
 
 Implemented the scoped shift workflow changes from `origin/main` `7972d963`: cash-only blind close, canonical system-derived non-cash totals, pre-approval/final print sheets, operational release on submission, one open shift limit, two-pending cap, and explicit pending-open guidance. No schema change or production action.

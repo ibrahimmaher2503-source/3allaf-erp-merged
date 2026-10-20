@@ -1,3 +1,8 @@
+## 2026-10-20 — Live stocktake release attempt rolled back
+
+- I4 release candidate `a12f1768301ec7b66b89b000cb098fa0609facb7` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.37-live-stocktake-a12f176` failed the authenticated manual-add form gate and was rolled back. Active Production code remains `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`.
+- Production schema retains the two additive stocktake/transfer migrations in batch 37; no seeder, business test posting, or migration reversal occurred. The failed candidate is inactive. Corrective source is local on `hotfix/live-stocktake-manual-add-form`, pending review and a newly authorized merge/release. Physical camera UAT remains pending.
+
 ## 2026-10-20 — Live stocktake and transfer preservation
 
 - I4 feature branch `feature/inventory-live-stocktake-and-draft-preservation` from Production/main `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa`; focused movement validation passed; unmerged and undeployed.
