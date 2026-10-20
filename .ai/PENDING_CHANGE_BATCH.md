@@ -1,3 +1,8 @@
+## 2026-10-20 — Live stocktake 390 px review containment hotfix
+
+- Approved main `7a5358f2ffd2a6c1babda7ae0bdc45931540e459` was packaged at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.38-live-stocktake-hotfix-7a5358f-r2`. Controlled actual-vhost gates found a real 390 px reconciliation page overflow (`body.scrollWidth` 622). Both controlled switches rolled back; the first stopped on an overbroad verification selector, and the second exposed the overflow. Active Production remains `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`; PHP 8.5 FPM was reloaded after rollback and maintenance is OFF.
+- Both additive stocktake migrations remain applied in batch 37. No Production stocktake, transfer, sale, return, receiving, settlement, migration, or seeder was submitted for verification. The minimal `min-w-0` review section fix is local on `hotfix/live-stocktake-review-mobile-overflow` and passed focused 1440/390 browser checks using disposable MariaDB. Merge and deployment of a new SHA require separate owner authorization. Physical camera UAT remains pending.
+
 ## 2026-10-20 — Live stocktake release attempt rolled back
 
 - I4 release candidate `a12f1768301ec7b66b89b000cb098fa0609facb7` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.37-live-stocktake-a12f176` failed the authenticated manual-add form gate and was rolled back. Active Production code remains `7e50a0ba3c5b2e12325d6d439f72d4572985c1aa` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.36-standalone-numeric-7e50a0b`.
