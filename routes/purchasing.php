@@ -310,7 +310,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         Gate::authorize('purchase_orders.print');
         $user = Auth::user();
         abort_unless(
-            $order->store_id === null || ($user !== null && Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()),
+            $user !== null && ($order->store_id !== null
+                ? Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()
+                : ($order->branch_id !== null && $user->canAccessBranch((int) $order->branch_id))),
             403,
         );
 
