@@ -1,4 +1,8 @@
-# Current task — Stocktake reference UI deployed to Production (2026-10-21)
+# Current task — system-administrator operational-authority mapping hotfix (2026-10-21)
+
+Class D3 narrow hotfix on `hotfix/system-administrator-operational-authority` from merged main `b9b67a79560af0dcae73c259630d8e47da6fe409`. The privileged-authority Production deployment stopped **before build** because the central self-approval bypass omitted the active `system-administrator` role. Safe Production remains application SHA `d4b6a854266662706701cb881d69844ecfbd4422` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.40-stocktake-reference-ui-d4b6a85`. The hotfix adds that role to `User::canBypassApproval()` and its existing single-company operational-scope fallback; account-level `is_super_admin` and `company-owner` retain their authority. Disposable QA passed transfer authority 4 tests/71 assertions and directly affected purchase approval 3 tests/34 assertions. Changed PHP syntax, Pint, and diff hygiene passed. No migration, Production build, merge, or deployment occurred. Exact next action: owner review of the pushed hotfix, then separately authorize merge and deployment.
+
+# Historical task — Stocktake reference UI deployed to Production (2026-10-21)
 
 Class I4 release of approved merged main/deployed application SHA `d4b6a854266662706701cb881d69844ecfbd4422`. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.40-stocktake-reference-ui-d4b6a85`; rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.39-live-stocktake-mobile-b037a59` (`b037a59f749b30cd8b458c090d434fac59131139`). The delta is stocktake Blade UI plus continuity Markdown only; no backend/domain/route/controller/permission/schema/business-logic change. Production had zero pending migrations; none was run. No seeder or Production business form was submitted, and no database backup was required for this UI-only release.
 

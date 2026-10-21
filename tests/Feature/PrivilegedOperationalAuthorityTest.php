@@ -83,7 +83,10 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
     public function test_ordinary_authorized_requester_still_cannot_approve_own_transfer(): void
     {
         $fixture = $this->setupTransfer();
-        $actor = $this->actor('system-administrator', $fixture['branch']);
+        Role::query()->where('code', 'warehouse-manager')->firstOrFail()->permissions()->syncWithoutDetaching(
+            Permission::query()->whereIn('code', ['transfers.create', 'transfers.submit', 'transfers.approve'])->pluck('id')->all(),
+        );
+        $actor = $this->actor('warehouse-manager', $fixture['branch']);
         $this->actingAs($actor);
         $transfer = $this->submittedTransfer($fixture);
         $approval = ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->firstOrFail();
@@ -96,9 +99,13 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
         self::assertSame(0, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->count());
     }
 
-    public function test_super_admin_and_company_owner_can_self_approve_and_post_once_with_audit(): void
+    public function test_all_privileged_identities_can_self_approve_and_post_once_with_audit(): void
     {
         $fixture = $this->setupTransfer();
+        $systemAdministrator = User::factory()->create(['status' => 'active']);
+        $systemAdministrator->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
+        self::assertFalse($systemAdministrator->is_super_admin);
+        self::assertTrue($systemAdministrator->isSystemAdministrator());
         $owner = $this->actor('company-owner', $fixture['branch']);
         $ownerRole = Role::query()->where('code', 'company-owner')->firstOrFail();
         $approvalPermission = Permission::query()->where('code', 'transfers.approve')->firstOrFail();
@@ -106,7 +113,7 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
         self::assertFalse($ownerRole->permissions()->whereKey($approvalPermission->id)->exists());
         self::assertTrue($owner->hasPermission('transfers.approve'));
 
-        foreach ([$fixture['admin'], $owner] as $actor) {
+        foreach ([$fixture['admin'], $systemAdministrator, $owner] as $actor) {
             $this->actingAs($actor);
             $transfer = $this->submittedTransfer($fixture);
             $approval = ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->firstOrFail();
@@ -120,7 +127,9 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
             self::assertSame($actor->id, $approval->fresh()->approver_id);
             $audit = AuditLog::query()->where('event', 'approval_approved')->where('source_id', (string) $approval->id)->latest('id')->firstOrFail();
             self::assertSame($actor->id, $audit->actor_id);
-            self::assertTrue((bool) $audit->metadata[$actor->is_super_admin ? 'super_admin_bypass' : 'company_owner_bypass']);
+            if ($actor->is_super_admin || $actor->isCompanyOwner()) {
+                self::assertTrue((bool) $audit->metadata[$actor->is_super_admin ? 'super_admin_bypass' : 'company_owner_bypass']);
+            }
 
             app(DispatchStockTransferAction::class)->execute($transfer->id);
             $line = $transfer->lines()->firstOrFail();
@@ -137,6 +146,7 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
     public function test_privileged_roles_cannot_create_or_approve_transfer_in_another_company(): void
     {
         $fixture = $this->setupTransfer();
+        $systemAdministrator = $this->actor('system-administrator', $fixture['branch']);
         $owner = $this->actor('company-owner', $fixture['branch']);
         UserBranchScope::query()->create(['user_id' => $fixture['admin']->id, 'branch_id' => $fixture['branch']->id, 'status' => 'active']);
         $sameCompanyBranch = Branch::query()->create(['company_id' => $fixture['company']->id, 'code' => 'QA-SECOND-BR', 'name_ar' => 'فرع ثان', 'name_en' => 'Second branch', 'timezone' => 'UTC', 'status' => 'active']);
@@ -146,7 +156,7 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
         $otherSource = Store::query()->create(['company_id' => $otherCompany->id, 'branch_id' => $otherBranch->id, 'code' => 'QA-OTHER-S', 'type' => 'warehouse', 'name_ar' => 'مخزن آخر', 'name_en' => 'Other source', 'status' => 'active']);
         $otherDestination = Store::query()->create(['company_id' => $otherCompany->id, 'branch_id' => $otherBranch->id, 'code' => 'QA-OTHER-D', 'type' => 'warehouse', 'name_ar' => 'وجهة أخرى', 'name_en' => 'Other destination', 'status' => 'active']);
 
-        foreach ([$fixture['admin'], $owner] as $actor) {
+        foreach ([$fixture['admin'], $systemAdministrator, $owner] as $actor) {
             $this->actingAs($actor);
             self::assertTrue($actor->canAccessStore($sameCompanyStore->id));
             self::assertTrue(Store::query()->visibleTo($actor)->whereKey($sameCompanyStore->id)->exists());

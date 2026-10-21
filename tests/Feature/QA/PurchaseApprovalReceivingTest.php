@@ -10,7 +10,6 @@ use App\Modules\Catalog\Actions\SaveProductAction;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Inventory\Models\StockTransfer;
-use App\Modules\Platform\Actions\ApproveRequest;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
@@ -126,7 +125,7 @@ final class PurchaseApprovalReceivingTest extends TestCase
         self::assertSame($auditCount, AuditLog::query()->count());
     }
 
-    public function test_shared_approval_record_bypass_requires_invoice_approve_context(): void
+    public function test_system_administrator_shared_approval_policy_covers_existing_approval_contexts(): void
     {
         $administrator = User::factory()->create(['status' => 'active']);
         $administrator->roles()->attach(Role::query()->where('code', 'system-administrator')->firstOrFail());
@@ -138,13 +137,7 @@ final class PurchaseApprovalReceivingTest extends TestCase
         foreach ([['purchase_invoices', 'cancel'], ['purchase_orders', 'approve'], ['purchase_returns', 'approve'], ['platform_settings', 'approve']] as [$sourceType, $requestedAction]) {
             DB::table('approval_records')->where('id', $approval->id)->update(['source_type' => $sourceType, 'requested_action' => $requestedAction]);
             $record = $approval->fresh();
-            self::assertFalse(Gate::forUser($administrator)->allows('decide', $record));
-            try {
-                app(ApproveRequest::class)->execute($record, (string) $invoice->lock_version);
-                self::fail('System Administrator self-approved a non-invoice-approval record.');
-            } catch (ValidationException $exception) {
-                self::assertArrayHasKey('approver', $exception->errors());
-            }
+            self::assertTrue(Gate::forUser($administrator)->allows('decide', $record));
         }
         self::assertSame(0, StockMovement::query()->count());
     }
