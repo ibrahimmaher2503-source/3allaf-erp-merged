@@ -47,7 +47,7 @@
 @endphp
 
 <x-layouts.app :title="$isStocktakeFocus ? $t('الجرد المخزني', 'Stocktake') : $t('المخزون', 'Inventory')">
-    <div class="mx-auto {{ $isStocktakeFocus ? 'max-w-[1600px]' : 'max-w-7xl' }} space-y-6 px-4 py-6 sm:px-6 lg:px-8" data-inventory-demo data-inventory-focus="{{ $focus ?: 'workspace' }}">
+    <div class="mx-auto {{ $isStocktakeFocus ? 'max-w-[1600px] space-y-4 py-4' : 'max-w-7xl space-y-6 py-6' }} px-4 sm:px-6 lg:px-8" data-inventory-demo data-inventory-focus="{{ $focus ?: 'workspace' }}">
         @unless($isStocktakeFocus)
         @if($isBalancesFocus)
             <header class="flex items-center gap-2 border-b border-border pb-5" data-guide="inventory-hero"><h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ __('Inventory balances') }}</h1><x-context-help :title="__('Inventory balances')" :label="__('Open contextual help')"><p>{{ __('Scoped balances, availability, and reorder by product and permitted store.') }}</p></x-context-help></header>
