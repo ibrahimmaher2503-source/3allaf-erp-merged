@@ -83,7 +83,7 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canBypassApproval(): bool
     {
-        return $this->is_super_admin || $this->isCompanyOwner();
+        return $this->is_super_admin || $this->isSystemAdministrator() || $this->isCompanyOwner();
     }
 
     public function isCompanyOwner(): bool
@@ -118,7 +118,7 @@ class User extends Authenticatable implements PasskeyUser
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
 
-        if ($companyIds === [] && $this->is_super_admin) {
+        if ($companyIds === [] && ($this->is_super_admin || $this->isSystemAdministrator())) {
             $companyIds = Company::query()->where('status', 'active')->limit(2)->pluck('id')->all();
 
             return count($companyIds) === 1 ? array_map('intval', $companyIds) : [];
@@ -153,7 +153,7 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * System Administrator keeps its existing application-wide permissions;
-     * operational self-approval is governed separately by canBypassApproval().
+     * operational self-approval and company scope use canBypassApproval().
      */
     public function hasGlobalApplicationAccess(): bool
     {

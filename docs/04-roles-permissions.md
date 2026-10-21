@@ -15,7 +15,7 @@ All permissions must be enforced through server-side policies/gates and scoped q
 
 | Role | Source capability | Default scope | Sensitive boundary |
 |---|---|---|---|
-| System Administrator | Company settings, users, roles, policies, global review, audit. | Global, subject to policy. | Operational approve/override rights are R, not automatic. |
+| System Administrator | Company settings, users, roles, policies, global review, audit, and privileged operational authority. | Global application permissions; operational actions stay inside the actor's company. | No cross-company, state-integrity, or duplicate-posting bypass. |
 | General Manager (`company-owner`) | All existing operational actions and approvals, including own documents. | One assigned company; all of its branches, stores, and warehouses. | No cross-company, infrastructure, impersonation, or duplicate-posting bypass. |
 | Branch Manager | Branch monitoring, cash control, store override, shift review, return/adjustment approvals. | Assigned branches/stores. | No global configuration unless separately granted. |
 | Cashier | POS, own shift, payment evidence, suspended sales, receipts, availability search. | Assigned active branch/store/drawer; own shift. | Party Wallet is N; expected close before submission is N. |
@@ -80,7 +80,7 @@ Cell values name the permitted roles followed by status code. `—` means no rol
 - Stock Counter: no reconciliation approval.
 - Reviewer: no operational edits unless a distinct, explicit operational role grants them.
 - No role directly edits an approved document or ledger entry.
-- Active Super Admin and General Manager (`company-owner`) bypass ordinary operational permission and maker/checker restrictions within their own company. Their actions retain state, integrity, audit, and idempotency checks.
+- Active account-level Super Admin (`is_super_admin`), `system-administrator`, and General Manager (`company-owner`) bypass ordinary operational permission and maker/checker restrictions within their own company. Their actions retain state, integrity, audit, and idempotency checks.
 - Logical delete never removes approved history; exports and audit access are separately permissioned.
 
 ## Owner Approval Required
