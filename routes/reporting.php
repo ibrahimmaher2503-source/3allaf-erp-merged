@@ -61,7 +61,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $users = User::query()->where('status', 'active')->when($user->canBypassApproval(), function (Builder $query) use ($user): void {
             $query->where(function (Builder $scope) use ($user): void {
                 $scope->whereHas('branchScopes', fn (Builder $branch): Builder => $branch->where('status', 'active')->whereIn('branch_id', Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id')))
-                    ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', Store::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id')));
+                    ->orWhereHas('storeScopes', fn (Builder $store): Builder => $store->where('status', 'active')->whereIn('store_id', Store::query()->whereIn('company_id', $user->operationalCompanyIds())->select('id')))
+                    ->orWhere('users.id', $user->id);
             });
         })->when(! $user->hasGlobalApplicationAccess() && ! $user->canBypassApproval(), function (Builder $query) use ($user): void {
             $query->where(function (Builder $scope) use ($user): void {

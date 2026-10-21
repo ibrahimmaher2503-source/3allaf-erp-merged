@@ -1044,6 +1044,10 @@ final class ReportSnapshot
     /** @param Collection<int, int> $storeIds */
     private function assertUserFilter(User $viewer, int $userId, Collection $storeIds): void
     {
+        if ($viewer->canBypassApproval() && $userId === $viewer->id) {
+            return;
+        }
+
         $visible = User::query()->whereKey($userId)->where('status', 'active')->where(function (Builder $query) use ($storeIds): void {
             $query->whereHas('storeScopes', fn (Builder $scope): Builder => $scope->where('status', 'active')->whereIn('store_id', $storeIds))
                 ->orWhereHas('branchScopes', fn (Builder $scope): Builder => $scope->where('status', 'active')->whereIn('branch_id', Store::query()->whereIn('id', $storeIds)->select('branch_id')));
