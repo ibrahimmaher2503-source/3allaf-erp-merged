@@ -85,7 +85,7 @@ new #[Title('Supplier Import')] class extends Component
             @if($selectedBatch->status==='mapping_required' && $selectedBatch->created_by===auth()->id())<flux:button wire:click="map">{{ __('Validate rows') }}</flux:button>@endif
             @foreach($selectedBatch->rows as $row)<div class="rounded border p-2 text-sm">{{ __('Row') }} {{ $row->row_number }} · {{ $row->raw_data['code'] ?? '—' }} @if($row->errors)<span class="text-red-600">{{ implode('; ', $row->errors) }}</span>@else<span class="text-emerald-700">{{ __($row->status) }}</span>@endif</div>@endforeach
             @if($selectedBatch->invalid_rows>0)<flux:button href="{{ route('catalog.suppliers.import.rejections',$selectedBatch) }}">{{ __('Download rejection report') }}</flux:button>@endif
-            @if($selectedBatch->status==='ready_for_review' && $selectedBatch->valid_rows>0 && $selectedBatch->created_by!==auth()->id())<flux:button wire:click="approve" variant="primary" wire:loading.attr="disabled" wire:target="approve"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>@endif
+            @if($selectedBatch->status==='ready_for_review' && $selectedBatch->valid_rows>0 && ($selectedBatch->created_by!==auth()->id() || auth()->user()?->canBypassApproval()))<flux:button wire:click="approve" variant="primary" wire:loading.attr="disabled" wire:target="approve"><span wire:loading.remove wire:target="approve">{{ __('Approve valid rows') }}</span><span wire:loading wire:target="approve">{{ __('Approving...') }}</span></flux:button>@endif
         </flux:card>
     @endif
 </x-app.page>

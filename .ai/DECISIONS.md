@@ -302,3 +302,7 @@ Status: Requires Owner Decision. M3-12 confirms audit views format timestamps wi
 8. An active warehouse may have `branch_id = NULL`.
 
 These are owner-locked rules for this feature batch.
+
+## DEC-106 — Super Admin and General Manager operational authority (2026-10-21)
+
+**Status: Approved — explicit owner locked rule.** `company-owner` is the existing role identified by the owner as General Manager; it is distinct from the immutable Super Admin flag and the `system-administrator` role. Super Admin and General Manager are unrestricted operational authorities within their company. They may approve/finalize their own documents and bypass normal permission/approval-chain restrictions, while tenant isolation, integrity checks, idempotency, and duplicate-posting protections remain enforced. Creator/requester and approver/actor identities, timestamps, and audit history remain visible even when they are the same user. Normal users retain maker/checker restrictions. This extends the existing Super Admin bypass and supersedes older blanket maker/checker rules for these two authorities; DEC-104 remains the separate narrow `system-administrator` purchase-invoice exception. This decision does not authorize a merge or deployment.

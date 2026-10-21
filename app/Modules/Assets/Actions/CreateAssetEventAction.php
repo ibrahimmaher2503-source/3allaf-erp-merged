@@ -20,20 +20,29 @@ final class CreateAssetEventAction
     public function execute(User $user, RentalAsset $asset, array $data): AssetEvent
     {
         Gate::forUser($user)->authorize('rental_assets.create');
-        abort_unless($user->is_super_admin || $user->canAccessBranch($asset->branch_id) || $user->canAccessStore($asset->store_id), 403);
+        abort_unless($user->canAccessBranch($asset->branch_id) || $user->canAccessStore($asset->store_id), 403);
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
         if ($idempotencyKey !== '') {
             $existing = AssetEvent::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
                 abort_unless((int) $existing->asset_id === (int) $asset->id, 409);
+
                 return $existing;
             }
         }
-        if (! in_array($data['event_type'] ?? '', ['damage', 'loss', 'maintenance', 'depreciation'], true)) throw ValidationException::withMessages(['event_type' => __('The asset event type is invalid.')]);
-        if (trim((string) ($data['assessment'] ?? '')) === '') throw ValidationException::withMessages(['assessment' => __('An assessment is required.')]);
+        if (! in_array($data['event_type'] ?? '', ['damage', 'loss', 'maintenance', 'depreciation'], true)) {
+            throw ValidationException::withMessages(['event_type' => __('The asset event type is invalid.')]);
+        }
+        if (trim((string) ($data['assessment'] ?? '')) === '') {
+            throw ValidationException::withMessages(['assessment' => __('An assessment is required.')]);
+        }
         $resultingStatus = $data['resulting_status'] ?? null;
-        if ($data['event_type'] !== 'depreciation' && ! in_array($resultingStatus, ['damaged', 'lost', 'under_maintenance', 'available', 'retired'], true)) throw ValidationException::withMessages(['resulting_status' => __('A valid resulting asset state is required.')]);
-        if (filled($data['cost_value'] ?? null)) Gate::forUser($user)->authorize('rental_assets.cost_edit');
+        if ($data['event_type'] !== 'depreciation' && ! in_array($resultingStatus, ['damaged', 'lost', 'under_maintenance', 'available', 'retired'], true)) {
+            throw ValidationException::withMessages(['resulting_status' => __('A valid resulting asset state is required.')]);
+        }
+        if (filled($data['cost_value'] ?? null)) {
+            Gate::forUser($user)->authorize('rental_assets.cost_edit');
+        }
 
         return DB::transaction(function () use ($user, $asset, $data, $resultingStatus, $idempotencyKey): AssetEvent {
             $locked = RentalAsset::query()->whereKey($asset->id)->lockForUpdate()->firstOrFail();
@@ -55,6 +64,7 @@ final class CreateAssetEventAction
             ));
             $event->transition(['approval_record_id' => $approval->id]);
             app(RecordAuditEvent::class)->execute('assets', 'asset_event_submitted', $event, after: $event->only(['asset_id', 'event_type', 'status', 'resulting_status', 'cost_value', 'approval_record_id']), branchId: $locked->branch_id, storeId: $locked->store_id, reasonCode: $data['event_type']);
+
             return $event;
         }, 5);
     }

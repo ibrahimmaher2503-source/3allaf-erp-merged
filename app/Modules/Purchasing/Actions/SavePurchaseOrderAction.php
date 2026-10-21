@@ -58,16 +58,18 @@ class SavePurchaseOrderAction
             abort_unless($actor instanceof User, 403);
             $branchId = (int) ($data['branch_id'] ?? 0);
             $branch = Branch::query()->where('status', 'active')
-                ->when(! $actor->hasGlobalApplicationAccess(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($actor)->whereNotNull('branch_id')->select('branch_id')))
+                ->when(! $actor->hasGlobalApplicationAccess() || $actor->canBypassApproval(), fn ($query) => $query->whereIn('id', Store::query()->visibleTo($actor)->whereNotNull('branch_id')->select('branch_id')))
                 ->findOrFail($branchId);
             $storeId = (int) ($data['store_id'] ?? 0);
-            if ($storeId < 1) throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
+            if ($storeId < 1) {
+                throw new InvalidArgumentException(__('A receiving store or warehouse is required so the purchase order has an explicit branch.'));
+            }
             $store = Store::query()->findOrFail($storeId);
             $this->assertStoreScope($storeId);
             if ($store->branch_id === null || (int) $store->branch_id !== $branch->id) {
                 throw new InvalidArgumentException(__('The receiving store must belong to the selected creating branch.'));
             }
-            if ($po !== null && $po->branch_id !== null && (int)$po->branch_id !== (int)$branchId) {
+            if ($po !== null && $po->branch_id !== null && (int) $po->branch_id !== (int) $branchId) {
                 throw new InvalidArgumentException(__('A numbered draft cannot move to another branch; create a new purchase order for that branch.'));
             }
 
@@ -178,7 +180,7 @@ class SavePurchaseOrderAction
     private function assertStoreScope(int $storeId): void
     {
         $user = Auth::user();
-        if (! $user instanceof User || $user->hasGlobalApplicationAccess()) {
+        if (! $user instanceof User || ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval())) {
             return;
         }
 
@@ -186,5 +188,4 @@ class SavePurchaseOrderAction
             throw new InvalidArgumentException(__('You are not authorized for the selected purchase-order store.'));
         }
     }
-
 }

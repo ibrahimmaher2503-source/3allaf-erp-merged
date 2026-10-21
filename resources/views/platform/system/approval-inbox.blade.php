@@ -202,7 +202,7 @@ new #[Title('Approval Inbox')] class extends Component
         abort_unless($user instanceof User, 403);
 
         $query = ApprovalRecord::query()->visibleTo($user);
-        if ($user->is_super_admin || $user->hasPermission('audit_logs.view')) {
+        if ($user->canBypassApproval() || $user->hasPermission('audit_logs.view')) {
             return $query;
         }
 

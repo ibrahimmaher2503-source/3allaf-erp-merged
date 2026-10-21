@@ -194,6 +194,12 @@ final class OpenShiftAction
      */
     private function assertVisibleToCurrentScope(User $cashier, int $branchId, int $storeId): void
     {
+        if ($cashier->canBypassApproval()) {
+            abort_unless($cashier->canAccessBranch($branchId) && $cashier->canAccessStore($storeId), 403);
+
+            return;
+        }
+
         if ($cashier->hasGlobalApplicationAccess()) {
             return;
         }

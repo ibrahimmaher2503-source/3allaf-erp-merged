@@ -111,7 +111,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('customers.import.approve'), 403);
         abort_unless($batch->status === 'ready_for_review' && $batch->valid_rows > 0, 422);
-        abort_if((int) $batch->created_by === (int) $user->id, 422, __('The requester cannot approve their own import batch.'));
+        abort_if((int) $batch->created_by === (int) $user->id && ! $user->canBypassApproval(), 422, __('The requester cannot approve their own import batch.'));
         $store = Store::query()->visibleTo($user)->where('company_id', $batch->company_id)->where('type', 'selling')->where('status', 'active')->orderBy('id')->firstOrFail();
         DB::transaction(function () use ($batch, $creator, $updater, $user, $store) {
             foreach ($batch->rows()->where('status', 'valid')->lockForUpdate()->get() as $row) {

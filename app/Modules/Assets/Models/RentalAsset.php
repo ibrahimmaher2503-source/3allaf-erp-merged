@@ -7,6 +7,7 @@ namespace App\Modules\Assets\Models;
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,26 +29,59 @@ final class RentalAsset extends Model
 
     protected static function booted(): void
     {
-        static::creating(fn (self $asset): ?string => $asset->public_id ??= (string) Str::uuid());
-        static::updating(function (self $asset): void {
+        self::creating(fn (self $asset): ?string => $asset->public_id ??= (string) Str::uuid());
+        self::updating(function (self $asset): void {
             if (! $asset->mutating) {
                 throw new LogicException('Rental assets may only change through named actions.');
             }
         });
-        static::deleting(fn (): never => throw new LogicException('Rental asset history is preserved.'));
+        self::deleting(fn (): never => throw new LogicException('Rental asset history is preserved.'));
     }
 
-    public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
-    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function reservations(): HasMany { return $this->hasMany(AssetReservation::class, 'asset_id'); }
-    public function checkouts(): HasMany { return $this->hasMany(AssetCheckout::class, 'asset_id'); }
-    public function returns(): HasMany { return $this->hasMany(AssetReturn::class, 'asset_id'); }
-    public function events(): HasMany { return $this->hasMany(AssetEvent::class, 'asset_id'); }
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(AssetReservation::class, 'asset_id');
+    }
+
+    public function checkouts(): HasMany
+    {
+        return $this->hasMany(AssetCheckout::class, 'asset_id');
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(AssetReturn::class, 'asset_id');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(AssetEvent::class, 'asset_id');
+    }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->hasGlobalApplicationAccess()) return $query;
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
+        if ($user->hasGlobalApplicationAccess()) {
+            return $query;
+        }
 
         return $query->where(function (Builder $scope) use ($user): void {
             $scope->whereIn('branch_id', $user->branchScopes()->where('status', 'active')->select('branch_id'))
@@ -59,6 +93,10 @@ final class RentalAsset extends Model
     public function mutate(array $attributes): void
     {
         $this->mutating = true;
-        try { $this->fill($attributes)->save(); } finally { $this->mutating = false; }
+        try {
+            $this->fill($attributes)->save();
+        } finally {
+            $this->mutating = false;
+        }
     }
 }

@@ -310,7 +310,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         Gate::authorize('purchase_orders.print');
         $user = Auth::user();
         abort_unless(
-            $order->store_id === null || $user?->is_super_admin || ($user !== null && Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()),
+            $order->store_id === null || ($user !== null && Store::query()->visibleTo($user)->whereKey($order->store_id)->exists()),
             403,
         );
 

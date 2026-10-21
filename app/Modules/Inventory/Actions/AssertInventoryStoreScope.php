@@ -18,6 +18,13 @@ final class AssertInventoryStoreScope
         if (! $user instanceof User) {
             throw new AuthorizationException(__('Authentication is required for this inventory operation.'));
         }
+        if ($user->canBypassApproval()) {
+            if (Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
+                return;
+            }
+
+            throw new AuthorizationException(__('You are not authorized for this inventory store.'));
+        }
         if ($user->hasGlobalApplicationAccess()) {
             return;
         }

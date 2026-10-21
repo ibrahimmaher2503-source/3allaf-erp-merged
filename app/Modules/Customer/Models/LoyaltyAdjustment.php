@@ -8,8 +8,9 @@ use App\Models\User;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
-use Illuminate\Database\Eloquent\Model;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use LogicException;
@@ -82,6 +83,10 @@ final class LoyaltyAdjustment extends Model
     /** @param Builder<LoyaltyAdjustment> $query */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
         if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }

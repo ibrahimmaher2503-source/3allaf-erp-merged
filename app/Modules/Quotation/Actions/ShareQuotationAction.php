@@ -17,7 +17,7 @@ final class ShareQuotationAction
     public function execute(User $user, Quotation $quotation): string
     {
         Gate::forUser($user)->authorize('quotations.share');
-        abort_unless($user->is_super_admin || $user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
+        abort_unless($user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
         $token = Str::random(64);
         $expiresAt = now()->addDays(30);
         if ($quotation->valid_until !== null) {

@@ -21,9 +21,13 @@ final class CreateAssetAction
         Gate::forUser($user)->authorize('rental_assets.create');
         $store = Store::query()->findOrFail((int) $data['store_id']);
         abort_unless((int) $store->branch_id === (int) $data['branch_id'], 422);
-        abort_unless($user->is_super_admin || $user->canAccessBranch((int) $data['branch_id']) || $user->canAccessStore($store->id), 403);
-        if ($store->status !== 'active') throw ValidationException::withMessages(['store_id' => __('The selected store is inactive.')]);
-        if (filled($data['cost_value'] ?? null)) Gate::forUser($user)->authorize('rental_assets.cost_edit');
+        abort_unless($user->canAccessBranch((int) $data['branch_id']) || $user->canAccessStore($store->id), 403);
+        if ($store->status !== 'active') {
+            throw ValidationException::withMessages(['store_id' => __('The selected store is inactive.')]);
+        }
+        if (filled($data['cost_value'] ?? null)) {
+            Gate::forUser($user)->authorize('rental_assets.cost_edit');
+        }
 
         return DB::transaction(function () use ($user, $data, $store): RentalAsset {
             $asset = RentalAsset::create([
@@ -36,6 +40,7 @@ final class CreateAssetAction
                 'cost_currency' => $data['cost_currency'] ?? 'EGP', 'created_by' => $user->id,
             ]);
             app(RecordAuditEvent::class)->execute('assets', 'asset_created', $asset, after: $asset->only(['code', 'name_en', 'category', 'branch_id', 'store_id', 'condition', 'status', 'cost_value']), branchId: $asset->branch_id, storeId: $asset->store_id);
+
             return $asset;
         });
     }
