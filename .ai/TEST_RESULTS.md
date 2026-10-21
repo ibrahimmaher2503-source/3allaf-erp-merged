@@ -1,3 +1,9 @@
+# 2026-10-21 — Stocktake final UI polish focused verification PASS
+
+- Affected UI files: `resources/views/inventory/stocktake-entry.blade.php` and `resources/views/inventory/stocktake-create.blade.php`. PHP 8.4 syntax PASS for both, Node 20 Vite build PASS, Blade cache PASS, Pint PASS, `git diff --check` PASS. No frontend JS, backend/domain/route/controller, or migration changed.
+- Authenticated local Playwright on disposable socket-only MariaDB: list/create/entry/review each HTTP 200 at 1440, 1024, and 390. At every width, Arabic RTL and computed Cairo PASS; document scrollWidth and body width remained within the viewport; zero console/page errors. Existing manual-add POST/CSRF, Add product and Barcode scan focus actions, scanner/camera controls, and three count rows PASS. At 390, every count row visibly exposed product/SKU, expected, existing editable actual input, difference, and status, with no horizontal table scroll. Quick Scan remained below the list. Screenshots: `/tmp/rajeh-stocktake-ui-screenshots/{list,create,entry,review}-{1440,1024,390}.png`.
+- Browser verification submitted no business form and did not write Production data. No broad QA, physical camera UAT, merge, or deployment occurred.
+
 # 2026-10-21 — Stocktake reference UI focused verification PASS
 
 - Owner reference screenshots 01–04 were viewed before finalizing the list, create, active, and counting layouts. CodeGraph reviewed the stocktake frontend paths before edits. The final source diff contains only `resources/views/inventory/index.blade.php`, five stocktake Blade partials, and canonical `.ai` continuity files; no backend, route, controller, domain, migration, or schema file changed.

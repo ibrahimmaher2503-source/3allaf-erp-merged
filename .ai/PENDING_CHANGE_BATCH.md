@@ -1,3 +1,8 @@
+## 2026-10-21 — Stocktake reference UI final mobile polish awaiting merge review
+
+- Class V1; final revision on `feature/stocktake-reference-ui`, unmerged and undeployed. Runtime diff adds only mobile card presentation to the existing count table rows and adjusts spacing in the existing create and active-count toolbar views. Mobile rows expose product/SKU, expected, editable actual, difference, and status without changing input, autosave, scanner, route, or authorization contracts. Quick Scan remains after the list. Existing list/review and desktop/tablet table structure remain approved.
+- Authenticated local disposable-MariaDB browser checks PASS at 1440/1024/390 across list/create/entry/review, including all five mobile row facts, RTL/Cairo, zero page overflow/console errors, manual-add POST/CSRF, and toolbar focus. PHP/Blade syntax, Node 20 build, Blade cache, Pint, and diff hygiene PASS. No backend/domain/schema/migration change or Production action. Next action: owner review the pushed final revision and authorize a merge separately if accepted.
+
 ## 2026-10-21 — Stocktake reference UI redesign awaiting owner review
 
 - Class V1; branch `feature/stocktake-reference-ui` from `96951e3d3aab5810460f1baf0c9de2644b947e7e`; unmerged and undeployed. Runtime changes are confined to the stocktake inventory Blade view and five stocktake-only partials. The four owner reference screenshots drive the list, create, active counting, and review hierarchy. Rajeh shell, RTL, Cairo, colors, and existing components remain.
