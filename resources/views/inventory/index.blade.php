@@ -6,6 +6,7 @@
     $field = 'mt-1 w-full rounded-xl border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900';
     $button = 'rounded-xl px-3 py-2 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-sky-500';
     $isBalancesFocus = $focus === 'balances';
+    $isStocktakeFocus = in_array($focus, ['counts', 'count-create', 'count-entry', 'count-reconcile'], true);
     $inventoryRoute = $isBalancesFocus ? 'inventory.balances' : ($focus === 'movements' ? 'inventory.movements' : 'inventory.index');
     $movementTypes = \App\Modules\Inventory\Support\InventoryMovementLabel::options();
     $qty = static fn ($value): string => \App\Support\ProductQuantity::format($value);
@@ -45,8 +46,9 @@
     }
 @endphp
 
-<x-layouts.app :title="$t('المخزون', 'Inventory')">
-    <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8" data-inventory-demo data-inventory-focus="{{ $focus ?: 'workspace' }}">
+<x-layouts.app :title="$isStocktakeFocus ? $t('الجرد المخزني', 'Stocktake') : $t('المخزون', 'Inventory')">
+    <div class="mx-auto {{ $isStocktakeFocus ? 'max-w-[1600px]' : 'max-w-7xl' }} space-y-6 px-4 py-6 sm:px-6 lg:px-8" data-inventory-demo data-inventory-focus="{{ $focus ?: 'workspace' }}">
+        @unless($isStocktakeFocus)
         @if($isBalancesFocus)
             <header class="flex items-center gap-2 border-b border-border pb-5" data-guide="inventory-hero"><h1 class="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">{{ __('Inventory balances') }}</h1><x-context-help :title="__('Inventory balances')" :label="__('Open contextual help')"><p>{{ __('Scoped balances, availability, and reorder by product and permitted store.') }}</p></x-context-help></header>
         @elseif($focus === 'transfers')
@@ -61,6 +63,7 @@
             </div>
         </header>
         @endif
+        @endunless
 
         @if($focus === null)
         <section class="space-y-3" aria-labelledby="inventory-overview-heading">
@@ -93,10 +96,15 @@
         </section>
         @endif
 
-        @if(session('success'))<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('success') }}</div>@endif
-        @if(session('error'))<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{{ session('error') }}</div>@endif
-        @if($errors->any())<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert"><ul class="list-inside list-disc">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+        @unless($isStocktakeFocus)
+            @if(session('success'))<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('success') }}</div>@endif
+            @if(session('error'))<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{{ session('error') }}</div>@endif
+            @if($errors->any())<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert"><ul class="list-inside list-disc">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+        @endunless
 
+        @if($isStocktakeFocus)
+            @include('inventory.stocktake-workspace')
+        @else
         @if($focus !== 'transfer-create')
         <section class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="inventory-filters-heading">
             <div class="mb-4 flex flex-col gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800 md:flex-row md:items-center md:justify-between"><div><h2 id="inventory-filters-heading" class="text-base font-bold text-text-primary">{{ $t('تصفية العرض', 'Filter inventory') }}</h2><p class="mt-1 text-sm text-text-muted">{{ $t('حدّد المنتج أو المتجر أو نوع الحركة.', 'Narrow results by product, store, or movement type.') }}</p></div></div>
@@ -340,6 +348,7 @@
         <section class="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="movements-heading" data-guide="inventory-movements"><div class="border-b border-zinc-200 px-5 py-4"><h2 id="movements-heading" class="text-xl font-bold">{{ $t('دفتر حركات المخزون', 'Inventory movement ledger') }}</h2><p class="mt-1 text-sm text-zinc-500">{{ $t('كل حركة مرتبطة بمصدرها وغير قابلة للتعديل بعد الترحيل.', 'Every movement is source-linked and immutable after posting.') }}</p></div><x-tables.table-shell :label="$t('حركات المخزون', 'Inventory movements')"><div class="overflow-x-auto"><table class="data-table responsive-resource-table w-full text-start text-sm"><thead><tr><th>{{ $t('التاريخ', 'Posted') }}</th><th>{{ $t('المنتج', 'Product') }}</th><th>{{ $t('المتجر', 'Store') }}</th><th>{{ $t('الحركة', 'Movement') }}</th><th>{{ $t('الكمية', 'Quantity') }}</th><th>{{ $t('المصدر', 'Source') }}</th></tr></thead><tbody>@forelse($movements as $movement)<tr data-movement-row><td data-label="{{ $t('التاريخ', 'Posted') }}" class="text-xs text-text-muted">{{ $movement->posted_at?->format('Y-m-d H:i') }}</td><td data-primary dir="ltr">{{ $movement->product?->item_code }}</td><td data-label="{{ $t('المتجر', 'Store') }}" dir="ltr">{{ $movement->store?->code }}</td><td data-label="{{ $t('الحركة', 'Movement') }}"><x-status.badge :status="$movement->movement_type" :label="$movementLabel($movement->movement_type)" /></td><td data-label="{{ $t('الكمية', 'Quantity') }}" dir="ltr" class="font-mono {{ (float) $movement->quantity < 0 ? 'text-rose-700' : 'text-emerald-700' }}">{{ $qty($movement->quantity) }}</td><td data-label="{{ $t('المصدر', 'Source') }}" class="text-xs text-text-muted">@if($movementReferences->url($movement))<a class="font-semibold text-primary underline" href="{{ $movementReferences->url($movement) }}">{{ $movementReferences->label($movement) }}</a>@else{{ $movementReferences->label($movement) }}@endif</td></tr>@empty<tr><td colspan="6" class="px-5 py-8 text-center text-zinc-500">{{ $t('لا توجد حركات ضمن النطاق.', 'No movements in this scope.') }}</td></tr>@endforelse</tbody></table></div><div class="border-t border-zinc-200 px-5 py-3"><x-tables.pagination :paginator="$movements" :page-sizes="[50]" /></div></x-tables.table-shell></section>
         @endif
         @endunless
+        @endif
         @if($focus === 'transfer-create' || $transfer?->status === 'draft')
         <style>
             @media (max-width: 767px) {
