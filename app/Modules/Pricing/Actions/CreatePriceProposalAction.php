@@ -116,6 +116,6 @@ final class CreatePriceProposalAction
 
     private function authorizeScope(User $user, Store $store): void
     {
-        abort_unless($user->is_super_admin || Store::query()->visibleTo($user)->whereKey($store->id)->exists(), 403);
+        abort_unless(Store::query()->visibleTo($user)->whereKey($store->id)->exists(), 403);
     }
 }

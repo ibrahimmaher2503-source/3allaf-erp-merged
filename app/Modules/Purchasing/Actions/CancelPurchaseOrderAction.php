@@ -67,7 +67,7 @@ class CancelPurchaseOrderAction
     private function assertStoreScope(?int $storeId): void
     {
         $user = Auth::user();
-        if ($storeId === null || ! $user instanceof User || $user->is_super_admin) {
+        if ($storeId === null || ! $user instanceof User || ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval())) {
             return;
         }
         if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {

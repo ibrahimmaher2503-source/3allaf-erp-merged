@@ -37,7 +37,7 @@ final class ApprovalInboxAccess
             return false;
         }
 
-        return $user->is_super_admin
+        return $user->canBypassApproval()
             || $user->hasPermission('audit_logs.view')
             || collect(self::PERMISSIONS)->contains(
                 fn (string $permission): bool => $user->hasPermission($permission),

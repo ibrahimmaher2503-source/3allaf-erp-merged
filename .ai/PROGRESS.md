@@ -666,3 +666,7 @@ Class I4 implementation on `feature/inventory-live-stocktake-and-draft-preservat
 ## 2026-10-20 — Live stocktake movement validation follow-up
 
 D3 focused validation on the existing feature branch. Real POS sale, sellable customer return, and purchase-invoice receiving each posted a single canonical movement while the stocktake remained active. A 100-unit baseline reconciled to 97 after -10/+2/+5 and retained a -2 variance after a later sale. Existing transfer non-blocking case passed. No runtime defect or design change; only focused regression tests and canonical verification/UAT records were added. Production remains at `7e50a0b`; merge/deployment did not occur.
+
+## Privileged operational authority — merged, deployment pending
+
+Merged validated authority changes for `system-administrator` and `company-owner`. Both roles may self-approve and bypass normal operational approval gates within their own company. Normal users retain existing restrictions. Cross-company isolation, idempotency, state integrity, and duplicate-posting guards remain enforced. Focused validation passed; Production deployment is still pending.

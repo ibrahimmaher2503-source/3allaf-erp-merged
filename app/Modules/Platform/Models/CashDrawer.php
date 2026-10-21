@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Models;
 
 use App\Models\User;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Database\Factories\CashDrawerFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -105,6 +106,10 @@ class CashDrawer extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user);
+        }
+
         if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }

@@ -823,7 +823,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             ->with(['branch', 'store'])->orderBy('code')->get();
         $blockingShifts = PosShift::query()->open()
             ->where('cashier_id', '!=', $user->id)
-            ->whereIn('cash_drawer_id', $user->hasGlobalApplicationAccess()
+            ->whereIn('cash_drawer_id', $user->hasGlobalApplicationAccess() && ! $user->canBypassApproval()
                 ? CashDrawer::query()->select('id')
                 : CashDrawer::query()->visibleTo($user)->select('id'))
             ->with(['branch', 'store', 'cashDrawer', 'cashier'])
@@ -1235,9 +1235,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->hasPermission('offline_queue_conflicts.approve'), 403);
         $query = OfflineTransaction::query()->where('offline_transactions.state', 'conflict');
-        if (! $user->hasGlobalApplicationAccess()) {
-            $branchIds = $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
-            $storeIds = $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
+        if (! $user->hasGlobalApplicationAccess() || $user->canBypassApproval()) {
+            $branchIds = $user->canBypassApproval()
+                ? Branch::query()->whereIn('company_id', $user->operationalCompanyIds())->pluck('id')->all()
+                : $user->branchScopes()->where('status', 'active')->pluck('branch_id')->all();
+            $storeIds = $user->canBypassApproval()
+                ? Store::query()->whereIn('company_id', $user->operationalCompanyIds())->pluck('id')->all()
+                : $user->storeScopes()->where('status', 'active')->pluck('store_id')->all();
             $query->where(function ($scope) use ($branchIds, $storeIds): void {
                 $scope->whereIn('offline_transactions.branch_id', $branchIds)->orWhereIn('offline_transactions.store_id', $storeIds);
             });

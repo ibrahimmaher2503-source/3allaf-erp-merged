@@ -32,8 +32,10 @@ class RecordAuditEvent
         ?string $explicitSourceId = null,
     ): AuditLog {
         $actor = Auth::user();
-        if ($actor?->canBypassApproval()) {
+        if ($actor?->is_super_admin) {
             $metadata += ['super_admin_bypass' => true];
+        } elseif ($actor?->isCompanyOwner()) {
+            $metadata += ['company_owner_bypass' => true];
         }
         $sourceType = $source instanceof Model ? $source::class : $source;
         $sourceId = $source instanceof Model ? (string) $source->getKey() : $explicitSourceId;

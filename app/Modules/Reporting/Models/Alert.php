@@ -7,6 +7,7 @@ namespace App\Modules\Reporting\Models;
 use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\OperationalCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +35,10 @@ final class Alert extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
+        if ($user->canBypassApproval()) {
+            return app(OperationalCompanyScope::class)->apply($query, $user, 'branch_id', 'store_id');
+        }
+
         if ($user->hasGlobalApplicationAccess()) {
             return $query;
         }

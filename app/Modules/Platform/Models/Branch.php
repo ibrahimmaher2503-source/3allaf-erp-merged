@@ -3,6 +3,8 @@
 namespace App\Modules\Platform\Models;
 
 use App\Models\User;
+use App\Modules\Pricing\Models\PriceList;
+use App\Modules\Purchasing\Models\PurchaseOrder;
 use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -11,7 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Modules\Purchasing\Models\PurchaseOrder;
 
 class Branch extends Model
 {
@@ -41,14 +42,20 @@ class Branch extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function defaultPriceList(): BelongsTo { return $this->belongsTo(\App\Modules\Pricing\Models\PriceList::class, 'default_price_list_id'); }
+    public function defaultPriceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class, 'default_price_list_id');
+    }
 
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);
     }
 
-    public function purchaseOrders(): HasMany { return $this->hasMany(PurchaseOrder::class); }
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
 
     /**
      * Active warehouse locations directly belonging to this branch.
@@ -83,6 +90,10 @@ class Branch extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
+        if ($user->canBypassApproval()) {
+            return $query->whereIn('company_id', $user->operationalCompanyIds());
+        }
+
         return $user->hasGlobalApplicationAccess()
             ? $query
             : $query->whereIn('id', $user->branchScopes()->where('status', 'active')->select('branch_id'));

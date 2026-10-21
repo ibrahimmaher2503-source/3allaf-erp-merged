@@ -88,12 +88,12 @@ final class ReportSnapshot
         $stores = Store::query()->visibleTo($user)->where('status', 'active');
         if (filled($filters['branch_id'] ?? null)) {
             $branchId = (int) $filters['branch_id'];
-            abort_unless($user->is_super_admin || $user->canAccessBranch($branchId), 403);
+            abort_unless($user->canAccessBranch($branchId), 403);
             $stores->where('branch_id', $branchId);
         }
         if (filled($filters['store_id'] ?? null)) {
             $storeId = (int) $filters['store_id'];
-            abort_unless($user->is_super_admin || $user->canAccessStore($storeId), 403);
+            abort_unless($user->canAccessStore($storeId), 403);
             $stores->whereKey($storeId);
         }
 
@@ -1044,9 +1044,7 @@ final class ReportSnapshot
     /** @param Collection<int, int> $storeIds */
     private function assertUserFilter(User $viewer, int $userId, Collection $storeIds): void
     {
-        if ($viewer->is_super_admin) {
-            abort_unless(User::query()->whereKey($userId)->where('status', 'active')->exists(), 403);
-
+        if ($viewer->canBypassApproval() && $userId === $viewer->id) {
             return;
         }
 

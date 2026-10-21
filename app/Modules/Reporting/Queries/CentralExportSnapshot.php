@@ -24,6 +24,7 @@ use Illuminate\Validation\ValidationException;
 final class CentralExportSnapshot
 {
     public const DATASETS = ['products_barcodes', 'customers_groups', 'suppliers_groups', 'purchase_orders', 'purchase_invoices_receiving', 'opening_inventory', 'inventory_movements'];
+
     public const MAX_ROWS = 50000;
 
     private const PERMISSIONS = [
@@ -43,8 +44,12 @@ final class CentralExportSnapshot
         Gate::forUser($user)->authorize(self::PERMISSIONS[$dataset]);
         $branchId = filled($filters['branch_id'] ?? null) ? (int) $filters['branch_id'] : null;
         $storeId = filled($filters['store_id'] ?? null) ? (int) $filters['store_id'] : null;
-        if ($branchId !== null) abort_unless($user->is_super_admin || $user->canAccessBranch($branchId), 403);
-        if ($storeId !== null) abort_unless($user->is_super_admin || $user->canAccessStore($storeId), 403);
+        if ($branchId !== null) {
+            abort_unless($user->canAccessBranch($branchId), 403);
+        }
+        if ($storeId !== null) {
+            abort_unless($user->canAccessStore($storeId), 403);
+        }
 
         $branchIds = Branch::query()->visibleTo($user)->when($branchId !== null, fn (Builder $q): Builder => $q->whereKey($branchId))->pluck('id');
         $storeIds = Store::query()->visibleTo($user)
@@ -85,6 +90,7 @@ final class CentralExportSnapshot
             ->availableToCompanies($companies->map(fn ($id): int => (int) $id)->values()->all(), $branch, $store)
             ->when($category !== null, fn (Builder $q): Builder => $q->where('category_id', $category))->orderBy('item_code')->orderBy('id');
         $rows = $this->bounded($query, 'products_barcodes')->map(fn (Product $p): array => [$p->item_code, $p->name_ar, $p->name_en, $p->category?->code, $p->model_number, $p->productSuppliers->pluck('supplier_item_code')->filter()->join(' | '), $p->barcodes->pluck('barcode')->filter()->join(' | '), $p->status])->all();
+
         return [['internal_code', 'name_ar', 'name_en', 'category', 'model', 'supplier_codes', 'barcodes', 'status'], $rows];
     }
 
@@ -104,6 +110,7 @@ final class CentralExportSnapshot
         }
         $rows = $groups->map(fn (CustomerGroup $g): array => ['group', $g->code, $g->name_ar, $g->name_en, null, null, null, $g->status])
             ->concat($members->map(fn (Customer $c): array => ['customer', $c->group?->code, $c->group?->name_ar, $c->group?->name_en, $c->customer_code, $c->name_ar, $c->name_en, $c->status]))->values()->all();
+
         return [['record_type', 'group_code', 'group_name_ar', 'group_name_en', 'customer_code', 'customer_name_ar', 'customer_name_en', 'status'], $rows];
     }
 
@@ -121,6 +128,7 @@ final class CentralExportSnapshot
         }
         $rows = $groups->map(fn (SupplierGroup $g): array => ['group', $g->code, $g->name_ar, $g->name_en, null, null, null, $g->status])
             ->concat($members->map(fn (Supplier $s): array => ['supplier', $s->supplierGroup?->code, $s->supplierGroup?->name_ar, $s->supplierGroup?->name_en, $s->code, $s->name_ar, $s->name_en, $s->status]))->values()->all();
+
         return [['record_type', 'group_code', 'group_name_ar', 'group_name_en', 'supplier_code', 'supplier_name_ar', 'supplier_name_en', 'status'], $rows];
     }
 
@@ -130,6 +138,7 @@ final class CentralExportSnapshot
             ->when($branch !== null, fn (Builder $q): Builder => $q->where('branch_id', $branch))->when($store !== null, fn (Builder $q): Builder => $q->where('store_id', $store))
             ->whereBetween('order_date', [$from, $to])->when($status !== null, fn (Builder $q): Builder => $q->where('status', $status))->when($supplier !== null, fn (Builder $q): Builder => $q->where('supplier_id', $supplier))->orderByDesc('id');
         $rows = $this->bounded($query, 'purchase_orders')->map(fn (PurchaseOrder $o): array => [$o->po_number, $o->branch?->code, $o->store?->code, $o->supplier?->code, $o->order_date?->toDateString(), $o->status, $o->receivingState(), $o->total_amount])->all();
+
         return [['document', 'creating_branch', 'receiving_store', 'supplier', 'date', 'approval_status', 'receiving_status', 'total'], $rows];
     }
 
@@ -138,6 +147,7 @@ final class CentralExportSnapshot
         $query = PurchaseInvoice::query()->with(['purchaseOrder', 'store', 'supplier'])->whereIn('store_id', $stores)->whereBetween('invoice_date', [$from, $to])
             ->when($status !== null, fn (Builder $q): Builder => $q->where('status', $status))->when($supplier !== null, fn (Builder $q): Builder => $q->where('supplier_id', $supplier))->orderByDesc('id');
         $rows = $this->bounded($query, 'purchase_invoices_receiving')->map(fn (PurchaseInvoice $i): array => [$i->invoice_number, $i->purchaseOrder?->po_number, $i->store?->code, $i->supplier?->code, $i->invoice_date?->toDateString(), $i->status, $i->total_amount])->all();
+
         return [['document', 'purchase_order', 'receiving_store', 'supplier', 'date', 'status', 'total'], $rows];
     }
 
@@ -147,6 +157,7 @@ final class CentralExportSnapshot
             ->when($branch !== null, fn (Builder $q): Builder => $q->where('branch_id', $branch))->when($store !== null, fn (Builder $q): Builder => $q->where('store_id', $store))
             ->whereBetween('document_date', [$from, $to])->when($status !== null, fn (Builder $q): Builder => $q->where('status', $status))->orderByDesc('id');
         $rows = $this->bounded($query, 'opening_inventory')->map(fn (OpeningInventoryDocument $d): array => [$d->document_number, $d->branch?->code, $d->store?->code, $d->document_date?->toDateString(), $d->status, $d->lines_count])->all();
+
         return [['document', 'branch', 'store', 'date', 'status', 'lines'], $rows];
     }
 
@@ -154,6 +165,7 @@ final class CentralExportSnapshot
     {
         $query = StockMovement::query()->with('store')->whereIn('store_id', $stores)->whereBetween('posted_at', [$from.' 00:00:00', $to.' 23:59:59'])->orderByDesc('id');
         $rows = $this->bounded($query, 'inventory_movements')->map(fn (StockMovement $m): array => [$m->id, $m->store?->code, $m->product_id, $m->movement_type, $m->quantity, $m->unit_cost, $m->posted_at?->toIso8601String()])->all();
+
         return [['id', 'store', 'product_id', 'movement_type', 'quantity', 'unit_cost', 'posted_at'], $rows];
     }
 
@@ -163,12 +175,14 @@ final class CentralExportSnapshot
         if ($included + $count > self::MAX_ROWS) {
             throw ValidationException::withMessages(['export' => __('The :dataset export contains :count rows, above the explicit :limit-row limit. Narrow the filters and request the export again.', ['dataset' => __($dataset), 'count' => $included + $count, 'limit' => self::MAX_ROWS])]);
         }
+
         return $query->get();
     }
 
     public function fingerprint(array $snapshot): string
     {
         unset($snapshot['fresh_at']);
+
         return hash('sha256', json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     }
 }

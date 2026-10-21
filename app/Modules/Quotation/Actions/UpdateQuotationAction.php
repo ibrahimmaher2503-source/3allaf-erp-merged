@@ -18,7 +18,7 @@ final class UpdateQuotationAction
     public function execute(User $user, Quotation $quotation, array $data): Quotation
     {
         Gate::forUser($user)->authorize('quotations.edit');
-        abort_unless($user->is_super_admin || $user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
+        abort_unless($user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
         $submittedLines = array_values((array) ($data['lines'] ?? []));
         $validatedLines = app(CreateQuotationAction::class)->validateLines($quotation->activity_type, $submittedLines);
         if (filled($data['customer_id'] ?? null)) {

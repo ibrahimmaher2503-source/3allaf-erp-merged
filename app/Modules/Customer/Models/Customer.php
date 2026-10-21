@@ -164,7 +164,7 @@ final class Customer extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->hasGlobalApplicationAccess()) {
+        if ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval()) {
             return $query;
         }
 
@@ -179,7 +179,7 @@ final class Customer extends Model
      */
     public function scopeVisibleFrom(Builder $query, User $user, int $branchId, ?int $storeId = null): Builder
     {
-        abort_unless($user->is_super_admin || $user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
+        abort_unless($user->canAccessBranch($branchId) || ($storeId !== null && $user->canAccessStore($storeId)), 403);
         $companyId = $storeId !== null
             ? Store::query()->whereKey($storeId)->value('company_id')
             : Branch::query()->whereKey($branchId)->value('company_id');

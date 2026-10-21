@@ -3,12 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Models\UserBranchScope;
 use App\Modules\Platform\Models\UserStoreScope;
 use App\Modules\Platform\Models\UserUiPreference;
+use App\Modules\Platform\Support\CompanyOwnerPermissionProfile;
 use App\Modules\Platform\Support\RequestPermissionLookup;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -52,6 +55,8 @@ class User extends Authenticatable implements PasskeyUser
 
     private ?bool $systemAdministratorRole = null;
 
+    private ?bool $companyOwnerRole = null;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -78,7 +83,53 @@ class User extends Authenticatable implements PasskeyUser
 
     public function canBypassApproval(): bool
     {
-        return $this->is_super_admin;
+        return $this->is_super_admin || $this->isCompanyOwner();
+    }
+
+    public function isCompanyOwner(): bool
+    {
+        return $this->companyOwnerRole ??= $this->status === 'active'
+            && $this->roles()
+                ->where('roles.code', CompanyOwnerPermissionProfile::ROLE_CODE)
+                ->where('roles.status', 'active')
+                ->exists();
+    }
+
+    /** @return array<int, int> */
+    public function operationalCompanyIds(): array
+    {
+        if (! $this->canBypassApproval()) {
+            return [];
+        }
+
+        $branchCompanyIds = Branch::query()
+            ->whereIn('id', $this->branchScopes()->where('status', 'active')->select('branch_id'))
+            ->where('status', 'active')
+            ->whereNotNull('company_id')
+            ->pluck('company_id');
+        $storeCompanyIds = Store::query()
+            ->whereIn('id', $this->storeScopes()->where('status', 'active')->select('store_id'))
+            ->where('status', 'active')
+            ->pluck('company_id');
+        $companyIds = Company::query()
+            ->where('status', 'active')
+            ->whereIn('id', $branchCompanyIds->merge($storeCompanyIds)->unique())
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+
+        if ($companyIds === [] && $this->is_super_admin) {
+            $companyIds = Company::query()->where('status', 'active')->limit(2)->pluck('id')->all();
+
+            return count($companyIds) === 1 ? array_map('intval', $companyIds) : [];
+        }
+
+        return count($companyIds) === 1 ? array_values($companyIds) : [];
+    }
+
+    public function canOperateInCompany(int $companyId): bool
+    {
+        return $companyId > 0 && in_array($companyId, $this->operationalCompanyIds(), true);
     }
 
     public function canBypassPurchaseInvoiceApproval(): bool
@@ -101,8 +152,8 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * System Administrator is the owner-approved application-wide role. Keep
-     * approval self-bypass tied to the immutable Super Admin flag separately.
+     * System Administrator keeps its existing application-wide permissions;
+     * operational self-approval is governed separately by canBypassApproval().
      */
     public function hasGlobalApplicationAccess(): bool
     {
@@ -189,6 +240,12 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
+        if ($this->canBypassApproval()) {
+            $companyId = Branch::query()->whereKey($branchId)->value('company_id');
+
+            return $companyId !== null && $this->canOperateInCompany((int) $companyId);
+        }
+
         if ($this->hasGlobalApplicationAccess()) {
             return true;
         }
@@ -203,6 +260,12 @@ class User extends Authenticatable implements PasskeyUser
     {
         if ($this->status === 'inactive') {
             return false;
+        }
+
+        if ($this->canBypassApproval()) {
+            $companyId = Store::query()->whereKey($storeId)->value('company_id');
+
+            return $companyId !== null && $this->canOperateInCompany((int) $companyId);
         }
 
         if ($this->hasGlobalApplicationAccess()) {

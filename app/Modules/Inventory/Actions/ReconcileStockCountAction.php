@@ -36,7 +36,7 @@ final class ReconcileStockCountAction
             if ($count->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted stock counts can be reconciled.'));
             }
-            if ($count->members()->where('user_id', Auth::id())->where('role', 'counter')->exists()) {
+            if (! Auth::user()?->canBypassApproval() && $count->members()->where('user_id', Auth::id())->where('role', 'counter')->exists()) {
                 throw new InvalidArgumentException(__('A stock counter cannot approve a session in which they participated.'));
             }
             foreach ($count->lines as $line) {

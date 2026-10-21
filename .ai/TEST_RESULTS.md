@@ -883,3 +883,19 @@ The loopback server was stopped. The named QA database and temporary user were d
 - Local disposable MariaDB `rajeh_qa_stfollow_1792484525`, restricted random-password user with grants only on that schema. Focused real-action PHPUnit: **PASS 3 tests / 38 assertions**. Canonical `RetailSaleAction` posted -10 once during an active count; `RetailReturnAction` completed a sellable +2 return once; `ApprovePurchaseInvoiceAction` completed reviewed receiving and posted +5 once. Each left the stocktake `in_progress`; retrying each posting path did not duplicate its movement.
 - Cross-check for one product: baseline 100; canonical movement sequence `sale` -10, `retail_return` +2, `purchase_receipt` +5; expected at physical count 97; actual 95; variance -2. A later valid sale -1 produced expected closing 96 and normalized counted closing 94, preserving the -2 variance. Existing open-count transfer regression: **PASS 1 test / 20 assertions**. No stocktake freeze or application defect observed.
 - Blade cache PASS. No broad QA, Production transaction, or physical-device camera test. Prior simulated camera PASS remains valid; physical camera is PENDING OWNER UAT. See `docs/58-inventory-tutorial-guide.md` for QA versus read-only Production UAT steps.
+
+## Privileged operational authority — focused validation PASS
+
+- Normal-user self-approval: PASS, remains blocked.
+- Super Admin self-approval: PASS.
+- General Manager/company-owner self-approval: PASS.
+- Transfer lifecycle through receive: PASS.
+- Participated stocktake settlement by company-owner: PASS.
+- Idempotency / retry safety: PASS, no duplicate movement posting.
+- Cross-company isolation: PASS, access remains denied.
+- Same-company branch access: PASS.
+- Creator/requester/approver audit retention: PASS.
+- Focused authority tests: 4 tests / 52 assertions.
+- Purchase approval regressions: 3 tests / 38 assertions.
+- No migrations.
+- Production deployment: pending.

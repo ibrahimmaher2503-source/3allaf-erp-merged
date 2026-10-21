@@ -22,13 +22,19 @@ final class ReturnPurchaseOrderToDraftAction
     {
         Gate::authorize('purchase_orders.approve');
         $reason = trim($reason);
-        if ($reason === '') throw new InvalidArgumentException(__('A return reason is required.'));
+        if ($reason === '') {
+            throw new InvalidArgumentException(__('A return reason is required.'));
+        }
 
         return DB::transaction(function () use ($id, $reason, $expectedVersion): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($id);
             $this->assertStoreScope($order->store_id);
-            if ($order->status !== 'submitted') throw new InvalidArgumentException(__('Only a submitted purchase order can be returned to draft.'));
-            if ($expectedVersion !== null && $order->lock_version !== $expectedVersion) throw new InvalidArgumentException(__('This purchase order was modified in another session. Reload it before returning it.'));
+            if ($order->status !== 'submitted') {
+                throw new InvalidArgumentException(__('Only a submitted purchase order can be returned to draft.'));
+            }
+            if ($expectedVersion !== null && $order->lock_version !== $expectedVersion) {
+                throw new InvalidArgumentException(__('This purchase order was modified in another session. Reload it before returning it.'));
+            }
             $approval = ApprovalRecord::query()->where('source_type', 'purchase_orders')->where('source_id', (string) $order->id)
                 ->where('requested_action', 'approve')->where('approval_state', ApprovalState::Pending->value)->lockForUpdate()->firstOrFail();
             app(RejectRequest::class)->execute($approval, (string) $order->lock_version, $reason);
@@ -43,7 +49,7 @@ final class ReturnPurchaseOrderToDraftAction
     private function assertStoreScope(?int $storeId): void
     {
         $user = Auth::user();
-        if ($storeId === null || ! $user instanceof User || $user->is_super_admin) {
+        if ($storeId === null || ! $user instanceof User || ($user->hasGlobalApplicationAccess() && ! $user->canBypassApproval())) {
             return;
         }
         if (! Store::query()->visibleTo($user)->whereKey($storeId)->exists()) {
