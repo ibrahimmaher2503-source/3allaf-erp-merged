@@ -103,7 +103,7 @@ new #[Title('Product Details')] class extends Component {
                             <flux:text class="mt-2 text-sm text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $product->name_en : $product->name_ar }}</flux:text>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div><div class="catalog-detail-label">{{ __('Base consumer selling price') }}</div><div class="font-medium">{{ $product->sale_price !== null ? number_format((float) $product->sale_price, 2).' EGP' : __('Pricing pending') }}</div></div>
+                            <div><div class="catalog-detail-label">{{ __('Base consumer selling price') }}</div><div class="font-medium">@if ($product->sale_price !== null)<x-money :amount="$product->sale_price" currency="EGP" />@else {{ __('Pricing pending') }} @endif</div></div>
                             <div><div class="catalog-detail-label">{{ __('Category') }}</div><div class="font-medium">{{ $product->category?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $product->category?->name_ar : $product->category?->name_en }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Brand') }}</div><div class="font-medium">{{ $product->brand ? $product->brand->code.' · '.(str_starts_with(app()->getLocale(), 'ar') ? $product->brand->name_ar : $product->brand->name_en) : __('No brand') }}</div></div>
                             <div><div class="catalog-detail-label">{{ __('Model / item number') }}</div><div class="font-medium">{{ $product->model_number ?: __('Not provided') }}</div></div>
@@ -124,8 +124,8 @@ new #[Title('Product Details')] class extends Component {
             <flux:card class="space-y-5 p-5 sm:p-6" data-guide="product-detail-attributes">
                 <div class="flex items-center justify-between gap-3"><flux:heading size="lg">{{ __('Reportable attributes') }}</flux:heading><flux:badge size="sm" color="zinc">{{ __('No variants or balances') }}</flux:badge></div>
                 <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    @foreach ([['Colour', $product->colour], ['Size', $product->size], ['Character', $product->character], ['Target age', $product->target_age], ['Suitable gender', $product->suitable_gender], ['Weight', $product->weight], ['Dimensions', collect([$product->dimension_length, $product->dimension_width, $product->dimension_height])->filter(fn ($value) => $value !== null && $value !== '')->implode(' × ').($product->dimension_unit ? ' '.$product->dimension_unit : '')], ['Keywords Arabic', $product->keywords_ar], ['Keywords English', $product->keywords_en]] as [$label, $value])
-                        <div class="catalog-detail-field"><dt class="catalog-detail-label">{{ __($label) }}</dt><dd class="mt-1 text-sm font-medium">{{ $value ?: __('Not provided') }}</dd></div>
+                    @foreach ([['Colour', $product->colour], ['Size', $product->size], ['Character', $product->character], ['Target age', $product->target_age], ['Suitable gender', $product->suitable_gender], ['Weight', $product->weight !== null ? \App\Support\ProductQuantity::format($product->weight) : null], ['Dimensions', collect([$product->dimension_length, $product->dimension_width, $product->dimension_height])->filter(fn ($value) => $value !== null && $value !== '')->map(fn ($value) => \App\Support\ProductQuantity::format($value))->implode(' × ').($product->dimension_unit ? ' '.$product->dimension_unit : '')], ['Keywords Arabic', $product->keywords_ar], ['Keywords English', $product->keywords_en]] as [$label, $value])
+                        <div class="catalog-detail-field"><dt class="catalog-detail-label">{{ __($label) }}</dt><dd class="mt-1 text-sm font-medium">{{ $value !== null && $value !== '' ? $value : __('Not provided') }}</dd></div>
                     @endforeach
                 </dl>
             </flux:card>
@@ -151,7 +151,7 @@ new #[Title('Product Details')] class extends Component {
                                 @endif
                             </div>
                             <div class="text-xs text-text-muted text-end">
-                                <div>{{ __('Last Price') }}: {{ $ps->last_purchase_price ? number_format($ps->last_purchase_price, 2) : '—' }}</div>
+                                <div>{{ __('Last Price') }}: @if ($ps->last_purchase_price !== null)<x-money :amount="$ps->last_purchase_price" />@else — @endif</div>
                             </div>
                         </div>
                     @empty
@@ -201,7 +201,7 @@ new #[Title('Product Details')] class extends Component {
             </flux:card>
 
             @if ($canViewCost)
-                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost price') }}</flux:heading><flux:text>{{ $product->average_cost ?? __('Not provided') }}</flux:text></flux:card>
+                <flux:card class="space-y-3 p-5"><flux:heading size="lg">{{ __('Cost price') }}</flux:heading><flux:text>@if ($product->average_cost !== null)<x-money :amount="$product->average_cost" />@else {{ __('Not provided') }} @endif</flux:text></flux:card>
             @else
                 <flux:callout variant="info" icon="lock-closed" title="{{ __('Cost field protected') }}">{{ __('Cost information is restricted to authorized purchasing and finance users.') }}</flux:callout>
             @endif
