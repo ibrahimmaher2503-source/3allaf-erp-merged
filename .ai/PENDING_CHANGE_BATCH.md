@@ -1,4 +1,8 @@
-## 2026-10-21 — Stocktake reference UI batch closed by Production release
+## 2026-10-21 — Privileged operational authority batch closed by Production release
+
+- Class I4 release closure: merged/deployed SHA `83d516a9fc547c836b097ce72bbe0f79452ad9c3` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.41-privileged-authority-83d516a`; rollback `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.40-stocktake-reference-ui-d4b6a85`. The corrected central mapping recognizes account `is_super_admin`, role `system-administrator`, and role `company-owner` as privileged inside their own company. All three may self-approve/finalize; ordinary-user restrictions, tenant isolation, state integrity, canonical posting, audit, and idempotency remain. Source gate and focused QA (7 tests/105 assertions) passed. Zero pending migrations; none ran. Candidate/public actual-vhost public, transfer, stocktake, and purchasing GET checks passed; PHP 8.5 FPM immediately reloaded, maintenance OFF, no new Laravel errors, rollback NO. No Production business form or stock movement was posted for verification. Next action: Owner operational UAT on genuine documents and monitor this release.
+
+## Historical — 2026-10-21 Stocktake reference UI batch closed by Production release
 
 - Class I4 release closure: merged/deployed SHA `d4b6a854266662706701cb881d69844ecfbd4422` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.40-stocktake-reference-ui-d4b6a85`; rollback `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.39-live-stocktake-mobile-b037a59`. Runtime delta contains only stocktake Blade views; no backend/domain/route/controller/permission/schema/business-rule changes or migrations. Production migration status had zero pending; none ran. Candidate and public Apache-vhost list/create/count/review checks passed at 1440/1024/390, including four visible mobile cards with product/SKU, expected, editable actual, difference, and status. RTL/Cairo, assets, no NaN, no page overflow/console errors, PHP 8.5 FPM reload, maintenance OFF, and no new Laravel errors passed; rollback not required. No Production business form was submitted. Physical camera remains Owner UAT. Next action: owner visual/device UAT and release monitoring. Earlier pending entries below are historical pre-release records.
 
@@ -44,7 +48,7 @@
 
 # Pending Change Batch
 
-## 2026-10-21 — system-administrator operational-authority hotfix
+## Historical — 2026-10-21 system-administrator operational-authority hotfix
 
 - Class D3; branch `hotfix/system-administrator-operational-authority` from merged main `b9b67a79560af0dcae73c259630d8e47da6fe409`. The approved privileged-authority release was blocked before build when the central bypass omitted `system-administrator`. Production remains safely on `d4b6a854266662706701cb881d69844ecfbd4422` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.40-stocktake-reference-ui-d4b6a85`.
 - The narrow runtime correction adds the active `system-administrator` role to `User::canBypassApproval()` and its existing single-company operational-scope fallback. Focused QA passed 4 transfer tests/71 assertions and 3 shared purchasing tests/34 assertions, covering ordinary-user denial, all three privileged transfer lifecycles, company isolation, retry/idempotency, and audit actor/creator/approver IDs. PHP syntax, Pint, and diff hygiene passed. No migration, schema change, Production seeder, merge, or deployment is authorized by this branch. Exact next action: owner review of the pushed hotfix, then separately authorized merge and deployment.
