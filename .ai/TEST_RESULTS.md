@@ -1,3 +1,9 @@
+# 2026-10-22 — stocktake Excel Import panel micro-polish PASS
+
+- Blade compile, affected Blade PHP syntax, Node 20 asset build and diff hygiene passed. No import backend, route, schema, migration file, or business rule changed.
+- Focused authenticated local browser checks passed at 1440 and 390: the panel opens; `تنزيل نموذج Excel`, `اختيار ملف`, `لم يتم اختيار ملف` and `استيراد الكميات` render; choosing and clearing a file updates the visible filename; the native English file text remains visually hidden. The existing `.xlsx,.csv`, required input, POST and CSRF contract remains. RTL/Cairo passed, document scroll width equaled viewport, and no console/page errors occurred. Screenshots: `/tmp/rajeh-stocktake-import-polish-screenshots/import-panel-{1440,390}.png`.
+- Browser setup initialized and disposed a local socket-only QA database; no Production database, business form, stock movement, or settlement was touched. The first browser attempt stopped on an ambiguous test-text locator; narrowing the locator passed without any application change. No broad QA, merge, or deployment.
+
 # 2026-10-21 — stocktake final parity and Excel import focused PASS
 
 - Disposable socket-only MariaDB: the SKU/barcode, duplicate-file-row, XLSX retry, CSV, invalid/unknown, audit, no-movement and no-settlement method passed. The separate cross-company/warehouse/unauthorized method passed after giving its QA admin an explicit scope to the original company when a second company was introduced. The first attempt at that method returned 403 because the fixture admin lost implicit single-company scope; no application defect or Production action resulted. No broad QA.
