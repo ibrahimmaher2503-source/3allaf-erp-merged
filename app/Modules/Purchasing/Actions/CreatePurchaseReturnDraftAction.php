@@ -46,6 +46,7 @@ final class CreatePurchaseReturnDraftAction
             if ($reason === null) {
                 throw new InvalidArgumentException('لا يوجد سبب مرتجع نشط محدد. أضف سببًا نشطًا من الإعدادات.');
             }
+            $reason->assertNotes($notes);
             if ($lines === []) {
                 throw new InvalidArgumentException('أضف صنفًا واحدًا على الأقل إلى مرتجع المورد.');
             }
@@ -141,6 +142,7 @@ final class CreatePurchaseReturnDraftAction
             if ($reason === null) {
                 throw new InvalidArgumentException(__('An active supplier return reason is required.'));
             }
+            $reason->assertNotes($notes);
 
             if ($lines === []) {
                 throw new InvalidArgumentException(__('A supplier return must contain at least one invoice line.'));

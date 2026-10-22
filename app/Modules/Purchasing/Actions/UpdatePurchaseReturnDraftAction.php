@@ -45,6 +45,7 @@ final class UpdatePurchaseReturnDraftAction
             }
             if ($return->purchase_invoice_id === null) {
                 $reason = SupplierReturnReason::query()->where('is_active', true)->findOrFail($reasonId);
+                $reason->assertNotes($notes);
                 $existingLines = $return->lines()->lockForUpdate()->get()->keyBy('product_id');
                 if ($lines === []) {
                     throw new InvalidArgumentException('أضف صنفًا واحدًا على الأقل إلى مرتجع المورد.');
@@ -83,6 +84,7 @@ final class UpdatePurchaseReturnDraftAction
                 ->lockForUpdate()
                 ->findOrFail($return->purchase_invoice_id);
             $reason = SupplierReturnReason::query()->whereKey($reasonId)->where('is_active', true)->firstOrFail();
+            $reason->assertNotes($notes);
             if ($invoice->status !== 'approved' || $invoice->supplier_id !== $return->supplier_id || (int) $invoice->store->company_id !== (int) $return->store->company_id) {
                 throw new InvalidArgumentException(__('The source invoice is no longer eligible.'));
             }

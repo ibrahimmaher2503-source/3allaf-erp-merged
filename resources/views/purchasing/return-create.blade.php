@@ -24,18 +24,18 @@
                     @foreach($sourceInvoices->where('supplier_id', $selectedSupplierId) as $invoice)<flux:select.option value="{{ $invoice->id }}">{{ $invoice->invoice_number ?: '#'.$invoice->id }}</flux:select.option>@endforeach
                 </flux:select><flux:error name="selectedInvoiceId" /></div>
                 <div><flux:input type="date" value="{{ now()->toDateString() }}" label="التاريخ" readonly /></div>
-                <div><flux:select wire:model="selectedReasonId" label="سبب المرتجع" required>
+                <div><flux:select wire:model.live="selectedReasonId" label="سبب المرتجع" required>
                     <flux:select.option value="">اختر السبب</flux:select.option>
                     @foreach($reasons as $reason)<flux:select.option value="{{ $reason->id }}">{{ $reason->label_ar ?: $reason->label_en }}</flux:select.option>@endforeach
                 </flux:select><flux:error name="selectedReasonId" /></div>
             </div>
             <flux:callout variant="info">{{ $selectedInvoiceId ? 'مصدر التكلفة: فاتورة الشراء المحددة' : 'مصدر التكلفة: التكلفة الحالية للصنف في بطاقة الصنف' }}. تُحفظ تكلفة الوحدة على سطر المرتجع.</flux:callout>
-            <flux:textarea wire:model="returnNotes" label="ملاحظات / مرجع اختياري" rows="2" /><flux:error name="returnNotes" />
+            <flux:textarea wire:model="returnNotes" :label="$reasons->firstWhere('id', $selectedReasonId)?->requiresNotes() ? 'تفاصيل سبب المرتجع (مطلوبة)' : 'ملاحظات / مرجع اختياري'" :required="$reasons->firstWhere('id', $selectedReasonId)?->requiresNotes() ?? false" rows="2" /><flux:error name="returnNotes" />
         </flux:card>
 
         <flux:card class="space-y-5">
             <div class="flex flex-wrap items-center justify-between gap-3"><flux:heading size="lg">الأصناف</flux:heading><flux:text size="sm">اختر الصنف ثم أدخل كمية المرتجع.</flux:text></div>
-            <x-product-line-lookup wire:model="returnProductEntry" label="المنتج" :supplier-return="true" :supplier-id="$selectedSupplierId" :supplier-only="$selectedSupplierId !== null" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedStoreId === null" x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
+            <x-product-line-lookup wire:model="returnProductEntry" label="المنتج" :supplier-return="true" :supplier-id="$selectedSupplierId" :supplier-only="$selectedSupplierId !== null" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedStoreId === null" data-supplier-return-search x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
             <flux:error name="returnProductEntry" />
             @if($returnLines === [])
                 <flux:callout variant="info">لم تُضف أصناف بعد. اختر مخزن الإرجاع والمورد أو اختر صنفًا ذا مورد واحد.</flux:callout>

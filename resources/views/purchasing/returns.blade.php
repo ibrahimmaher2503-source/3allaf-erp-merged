@@ -231,6 +231,7 @@ new #[Title('Supplier Returns')] class extends Component
             }
             $this->returnLines[] = ['product_id' => (string) $productId, 'purchase_invoice_line_id' => '', 'quantity' => '1', 'unit_cost' => (string) $product->average_cost, 'available' => $available, 'product' => str_starts_with(app()->getLocale(), 'ar') ? ($product->name_ar ?: $product->name_en) : ($product->name_en ?: $product->name_ar)];
             $this->returnProductEntry = '';
+            $this->dispatch('supplier-return-product-added', focusSearch: true);
 
             return;
         }
@@ -255,6 +256,7 @@ new #[Title('Supplier Returns')] class extends Component
         }
         $this->returnLines[] = $entry;
         $this->returnProductEntry = '';
+        $this->dispatch('supplier-return-product-added', focusSearch: false);
         $this->dispatch('return-line-focus', index: array_key_last($this->returnLines));
     }
 
@@ -312,8 +314,8 @@ new #[Title('Supplier Returns')] class extends Component
             'returnLines.*.purchase_invoice_line_id' => $this->selectedInvoiceId === null ? 'nullable' : 'required|integer',
             'returnLines.*.product_id' => $this->selectedInvoiceId === null ? 'required|integer' : 'nullable',
             'returnLines.*.quantity' => 'required|integer|min:1',
-            'returnNotes' => 'nullable|string|max:500',
-        ]);
+            'returnNotes' => [Rule::requiredIf(SupplierReturnReason::query()->whereKey($this->selectedReasonId)->first()?->requiresNotes() ?? false), 'nullable', 'string', 'max:500'],
+        ], ['returnNotes.required' => 'يرجى توضيح سبب المرتجع عند اختيار «أخرى».']);
         $existingReturn = $this->selectedReturnId === null
             ? null
             : PurchaseReturn::query()
@@ -610,15 +612,17 @@ new #[Title('Supplier Returns')] class extends Component
                             <flux:button type="button" size="xs" variant="subtle" icon="plus" onclick="this.closest('[data-product-line-editor]').querySelector('[data-product-search]')?.focus()" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null">{{ __('Add item') }}</flux:button>
                         </div>
                     </div>
-                    <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
+                    <x-product-line-lookup wire:model="returnProductEntry" :label="__('Product')" :purchasing="true" :supplier-id="$selectedSupplierId" :supplier-only="$supplierProductsOnly" :purchase-invoice-id="$selectedInvoiceId" :disabled="$selectedSupplierId === null || $selectedInvoiceId === null" data-supplier-return-search x-on:product-selected="$wire.selectReturnProduct($event.detail.id)" />
                     @if($selectedSupplierId !== null && $selectedInvoiceId === null)<x-context-help :title="__('Return product lines')" :label="__('Open contextual help')"><p>{{ __('Select an approved invoice before searching its returnable products.') }}</p></x-context-help>@endif
                 </div>
-                <flux:select wire:model="selectedReasonId" :label="__('Return reason')">
+                <flux:select wire:model.live="selectedReasonId" :label="__('Return reason')">
                     <flux:select.option value="">{{ __('Select required reason') }}</flux:select.option>
                     @foreach ($reasons as $reason)
                         <flux:select.option value="{{ $reason->id }}">{{ $reason->code }} — {{ str_starts_with(app()->getLocale(), 'ar') ? ($reason->label_ar ?: $reason->label_en) : ($reason->label_en ?: $reason->label_ar) }}</flux:select.option>
                     @endforeach
                 </flux:select>
+                <flux:textarea wire:model="returnNotes" :label="__('Notes')" rows="2" :required="$reasons->firstWhere('id', $selectedReasonId)?->requiresNotes() ?? false" />
+                @error('returnNotes')<p class="text-sm text-rose-700">{{ $message }}</p>@enderror
                 @if ($returnLines !== [])
                     <div class="space-y-3">
                         <flux:heading size="base">{{ __('Invoice lines') }}</flux:heading>

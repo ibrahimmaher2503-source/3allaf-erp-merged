@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Data\ResolvedListPrice;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Models\ProductPriceOverride;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 final class PriceListResolver
@@ -41,36 +42,86 @@ final class PriceListResolver
     public function resolveWithBasePrice(Product $product, PriceList $list, string $base, ?\DateTimeInterface $at = null): ResolvedListPrice
     {
         $companyId = (int) Company::query()->where('status', 'active')->value('id');
-        if (! $list->isEffective($at) || $list->company_id !== $companyId) throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
-        if (bccomp($this->normalized($base, 3), '0', 3) <= 0) throw ValidationException::withMessages(['base_price' => __('Base consumer price is required and must be greater than zero.')]);
+        if (! $list->isEffective($at) || $list->company_id !== $companyId) {
+            throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
+        }
+        if (bccomp($this->normalized($base, 3), '0', 3) <= 0) {
+            throw ValidationException::withMessages(['base_price' => __('Base consumer price is required and must be greater than zero.')]);
+        }
         $calculation = $list->isBase() ? ['pre_round' => $base, 'rounded' => $base] : $this->calculate($base, (string) $list->percentage_increase);
         $override = ProductPriceOverride::query()->where('company_id', $companyId)->where('price_list_id', $list->id)->where('product_id', $product->id)->first();
         $active = $override?->isEffective($at) ? $override : null;
+
         return new ResolvedListPrice($list->id, $list->code, $base, $calculation['pre_round'], $active ? (string) $active->amount : $calculation['rounded'], $active !== null);
     }
 
     public function listForOutlet(Store $outlet, ?\DateTimeInterface $at = null): PriceList
     {
-        if ($outlet->type !== 'selling') throw ValidationException::withMessages(['store' => __('Only a Sales Outlet resolves a selling price list.')]);
+        if ($outlet->type !== 'selling') {
+            throw ValidationException::withMessages(['store' => __('Only a Sales Outlet resolves a selling price list.')]);
+        }
         $list = $outlet->priceList ?: $outlet->branch?->defaultPriceList;
-        if (! $list?->isEffective($at)) $list = PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first();
-        if (! $list?->isEffective($at)) throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
-        return $list;
+        if ($list !== null) {
+            if ((int) $list->company_id !== (int) $outlet->company_id || ! $list->isEffective($at)) {
+                throw ValidationException::withMessages(['price_list' => __('The selected price list is not active for this company and date.')]);
+            }
+
+            return $list;
+        }
+
+        $base = PriceList::query()->where('company_id', $outlet->company_id)->where('list_number', 0)->first();
+        if ($base !== null) {
+            if (! $base->isEffective($at)) {
+                throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
+            }
+
+            return $base;
+        }
+
+        $effectiveDate = Carbon::instance($at ?? now())->toDateString();
+        $applicable = PriceList::query()
+            ->where('company_id', $outlet->company_id)
+            ->where('status', 'active')
+            ->where(fn ($query) => $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $effectiveDate))
+            ->where(fn ($query) => $query->whereNull('effective_to')->orWhereDate('effective_to', '>=', $effectiveDate))
+            ->limit(2)
+            ->get();
+
+        if ($applicable->count() !== 1) {
+            throw ValidationException::withMessages(['price_list' => __('Create and activate Base Price List 0.')]);
+        }
+
+        return $applicable->first();
     }
 
     public function assignmentIsValid(Store $outlet, ?\DateTimeInterface $at = null): bool
     {
-        if ($outlet->type !== 'selling' || $outlet->status !== 'active') return true;
-        if ($outlet->price_list_id !== null && ! $outlet->priceList?->isEffective($at)) return false;
-        if ($outlet->price_list_id === null && $outlet->branch?->default_price_list_id !== null && ! $outlet->branch->defaultPriceList?->isEffective($at)) return false;
-        try { $this->listForOutlet($outlet, $at); return true; } catch (\Throwable) { return false; }
+        if ($outlet->type !== 'selling' || $outlet->status !== 'active') {
+            return true;
+        }
+        if ($outlet->price_list_id !== null && ! $outlet->priceList?->isEffective($at)) {
+            return false;
+        }
+        if ($outlet->price_list_id === null && $outlet->branch?->default_price_list_id !== null && ! $outlet->branch->defaultPriceList?->isEffective($at)) {
+            return false;
+        }
+        try {
+            $this->listForOutlet($outlet, $at);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function normalized(string $value, int $scale): string
     {
-        if (! preg_match('/^\d+(?:\.(\d+))?$/', trim($value))) throw ValidationException::withMessages(['price' => __('Enter a valid non-negative decimal value.')]);
+        if (! preg_match('/^\d+(?:\.(\d+))?$/', trim($value))) {
+            throw ValidationException::withMessages(['price' => __('Enter a valid non-negative decimal value.')]);
+        }
         $parts = explode('.', trim($value), 2);
         $whole = ltrim($parts[0], '0');
+
         return ($whole === '' ? '0' : $whole).'.'.str_pad(substr($parts[1] ?? '', 0, $scale), $scale, '0');
     }
 }

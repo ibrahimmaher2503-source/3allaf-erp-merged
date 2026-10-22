@@ -43,6 +43,9 @@ new #[Title('Approval Inbox')] class extends Component
     public function mount(): void
     {
         Gate::authorize('view-approval-inbox');
+        if (request()->integer('approval') > 0) {
+            $this->showApproval(request()->integer('approval'));
+        }
     }
 
     public function updated(string $property): void
