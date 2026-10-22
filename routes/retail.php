@@ -43,6 +43,7 @@ use App\Modules\Retail\Actions\RecordCashMovementAction;
 use App\Modules\Retail\Actions\ResolveOfflineConflictAction;
 use App\Modules\Retail\Actions\RetailSaleAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Actions\SaveSalesInvoiceDraftAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Actions\SyncOfflineTransactionsAction;
 use App\Modules\Retail\Enums\ShiftState;
@@ -2054,6 +2055,61 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return view('pages.sales.index', compact('sales', 'stores', 'dashboard', 'sort', 'direction'));
     })->middleware('can:pos_sales.view')->name('sales.index');
+
+    Route::get('sales/invoices/create', function (Request $request) {
+        /** @var User $user */
+        $user = $request->user();
+        $stores = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->orderBy('code')->get();
+
+        return view('pages.sales.invoices-create', ['stores' => $stores, 'creationToken' => (string) Str::uuid()]);
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.create');
+
+    Route::post('sales/invoices/drafts', function (Request $request, SaveSalesInvoiceDraftAction $drafts) {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validate([
+            'store_id' => ['required', 'integer'],
+            'creation_token' => ['required', 'uuid'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'lines' => ['required', 'array', 'min:1', 'max:100'],
+            'lines.*.identifier' => ['required', 'string', 'max:190'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1', 'max:999999'],
+        ]);
+        $store = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->findOrFail((int) $data['store_id']);
+        $lines = [];
+        foreach ($data['lines'] as $line) {
+            $identifier = trim($line['identifier']);
+            $product = Product::query()->sellable()
+                ->availableToCompany((int) $store->company_id, (int) $store->branch_id, (int) $store->id)
+                ->where(function ($query) use ($identifier): void {
+                    $query->where('item_code', $identifier)
+                        ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $identifier));
+                })->first();
+            if ($product === null) {
+                return back()->withInput()->withErrors(['lines' => __('A product code or barcode was not found in the selected store scope.')]);
+            }
+            $lines[] = ['product_id' => (int) $product->id, 'quantity' => (string) $line['quantity']];
+        }
+
+        try {
+            $draft = $drafts->execute($user, $store, $lines, $data['creation_token'], $data['notes'] ?? null);
+
+            return to_route('sales.invoices.drafts.show', $draft)->with('success', __('Sales invoice draft saved. No stock or payment was posted.'));
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->withErrors(['lines' => $exception->getMessage()]);
+        }
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.drafts.store');
+
+    Route::get('sales/invoices/drafts/{sale}', function (Request $request, Sale $sale) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($sale->status === 'draft' && $sale->shift_id === null, 404);
+        abort_unless((int) $sale->cashier_id === (int) $user->id || $user->canBypassApproval(), 403);
+        abort_unless(Sale::query()->visibleTo($user)->whereKey($sale->id)->exists(), 404);
+        $sale->load(['store', 'lines.product']);
+
+        return view('pages.sales.invoices-draft', ['sale' => $sale]);
+    })->middleware('can:sales_invoices.create')->name('sales.invoices.drafts.show');
 
     Route::get('sales/invoices', function (Request $request) {
         /** @var User $user */
