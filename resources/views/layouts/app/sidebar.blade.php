@@ -74,7 +74,7 @@
             <ul>
                 <li>{{ __('Use Tab to reach links and section controls, then Enter or Space to activate them.') }}</li>
                 <li>{{ __('Use Up and Down arrows to move between visible navigation controls. Use Left and Right arrows to close or open a section.') }}</li>
-                <li>{{ __('The highlighted destination is your current screen. Your expanded sections and sidebar position are preserved during navigation.') }}</li>
+                <li>{{ $isArabic ? 'القسم الذي يضم الشاشة الحالية يفتح تلقائيًا، وتبقى الأقسام الأخرى مطوية.' : 'The section containing the current screen opens automatically; other sections stay collapsed.' }}</li>
                 <li>{{ __('Supplier groups appear before customer groups. Product cards, categories, brands, filters, and inventory destinations are kept together.') }}</li>
             </ul>
         </x-context-help>

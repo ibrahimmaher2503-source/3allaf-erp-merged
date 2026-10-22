@@ -272,6 +272,16 @@ class ProductLookup {
         requestAnimationFrame(() => this.root.closest('[data-product-line]')?.querySelector('[data-line-quantity]')?.focus());
     }
 
+    resetSelection(focus = false) {
+        this.hidden.value = '';
+        this.hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        this.input.value = '';
+        delete this.input.dataset.selected;
+        this.lastResolvedTerm = null;
+        this.close();
+        if (focus) this.input.focus();
+    }
+
     close() {
         this.results.classList.add('hidden');
         delete this.results.dataset.state;
@@ -726,6 +736,9 @@ if (typeof document !== 'undefined') {
     document.addEventListener('keydown', posKeyboardNavigation);
     window.addEventListener('pos-product-search-focus', () => requestAnimationFrame(() => document.getElementById('live-pos-product-search')?.focus()));
     window.addEventListener('purchasing-product-focus', () => requestAnimationFrame(() => document.querySelector('[data-product-lookup][data-context="purchasing"] [data-product-search]:not(:disabled)')?.focus()));
+    window.addEventListener('supplier-return-product-added', (event) => requestAnimationFrame(() => {
+        document.querySelector('[data-supplier-return-search]')?._productLookup?.resetSelection(Boolean(event.detail?.focusSearch));
+    }));
     window.addEventListener('pagehide', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
     document.addEventListener('livewire:navigating', () => document.querySelectorAll('[data-product-lookup]').forEach((root) => root._productLookup?.closeCamera()));
     boot();

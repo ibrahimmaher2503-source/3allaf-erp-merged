@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Modules\Platform\Support\AuthenticatedLanding;
+use App\Modules\Platform\Support\DashboardApprovalPreview;
 use App\Modules\Platform\Support\InitialSetupStatus;
 use App\Modules\Platform\Support\OperationalDashboardSnapshot;
 use Illuminate\Http\Request;
@@ -43,7 +44,7 @@ Route::get('build/{path}', function (string $path) {
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (Request $request, InitialSetupStatus $setupStatus, OperationalDashboardSnapshot $dashboard, AuthenticatedLanding $landing) {
+    Route::get('dashboard', function (Request $request, InitialSetupStatus $setupStatus, OperationalDashboardSnapshot $dashboard, DashboardApprovalPreview $approvals, AuthenticatedLanding $landing) {
         $user = request()->user();
         abort_unless($user instanceof User, 403);
 
@@ -54,6 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', [
             'setup' => $setupStatus->snapshot(),
             'dashboard' => $dashboard->for($user, $request->only(['date_from', 'date_to', 'branch_id', 'store_id'])),
+            'approvalPreview' => $approvals->for($user),
         ]);
     })->middleware('can:dashboard_reports.view')->name('dashboard');
     require __DIR__.'/retail.php';

@@ -116,6 +116,8 @@ new #[Title('Purchase Invoices')] class extends Component
 
         if (($purchaseOrderId = request()->integer('purchase_order')) > 0) {
             $this->openReceivingModal($purchaseOrderId);
+        } elseif (request()->boolean('create') && Gate::allows('purchase_invoices.draft')) {
+            $this->openCreateModal();
         }
     }
 

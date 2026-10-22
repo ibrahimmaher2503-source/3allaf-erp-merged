@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 final class SupplierReturnReason extends Model
 {
@@ -31,5 +32,17 @@ final class SupplierReturnReason extends Model
     public function purchaseReturns(): HasMany
     {
         return $this->hasMany(PurchaseReturn::class, 'reason_id');
+    }
+
+    public function requiresNotes(): bool
+    {
+        return $this->code === 'OTHER' || trim((string) $this->label_ar) === 'أخرى';
+    }
+
+    public function assertNotes(?string $notes): void
+    {
+        if ($this->requiresNotes() && blank($notes)) {
+            throw ValidationException::withMessages(['returnNotes' => 'يرجى توضيح سبب المرتجع عند اختيار «أخرى».']);
+        }
     }
 }
