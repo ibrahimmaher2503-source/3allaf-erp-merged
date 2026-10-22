@@ -5,17 +5,21 @@
     <form id="stocktake-create-form" method="POST" action="{{ route('inventory.counts.store') }}" class="space-y-5 p-4 sm:p-5" data-stocktake-create-form>
         @csrf
         <div class="grid min-w-0 gap-4 lg:grid-cols-2 lg:items-start" data-stocktake-primary-fields>
-            <fieldset class="min-w-0 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 lg:order-1" data-stocktake-warehouse-field>
-                <legend class="px-1 text-sm font-bold">{{ $t('المخزن / المنفذ', 'Warehouse / store') }} <span class="text-rose-600">*</span></legend>
-                <div class="grid max-h-44 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div class="min-w-0 lg:order-1" data-stocktake-warehouse-field>
+                <span class="mb-1 block text-sm font-bold">{{ $t('المخزن / المنفذ', 'Warehouse / store') }} <span class="text-rose-600">*</span></span>
+                <details class="rounded-xl border border-zinc-200 dark:border-zinc-800" data-stocktake-location-picker>
+                    <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm"><span data-stocktake-location-summary>{{ $t('اختر المخزن أو المنفذ', 'Choose warehouse or store') }}</span><span aria-hidden="true">⌄</span></summary>
+                    <div class="grid max-h-44 gap-2 overflow-y-auto border-t border-zinc-100 p-2 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     @foreach($visibleStores->whereIn('type', ['warehouse', 'selling']) as $store)
                         <label class="flex min-w-0 items-start gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
                             <input type="checkbox" name="location_ids[]" value="{{ $store->id }}" @checked(in_array($store->id, array_map('intval', (array) old('location_ids', [])), true)) class="mt-1">
                             <span class="min-w-0"><strong class="block truncate">{{ \App\Support\HumanName::name($store) }}</strong><small class="block text-zinc-500" dir="ltr">{{ $store->code }}</small></span>
                         </label>
                     @endforeach
-                </div>
-            </fieldset>
+                    </div>
+                    <p class="px-3 pb-2 text-xs text-zinc-500">{{ $t('يمكن تحديد أكثر من موقع للجرد.', 'You can select more than one count location.') }}</p>
+                </details>
+            </div>
             <div class="min-w-0 space-y-3 lg:order-2" data-stocktake-reference-fields>
                 <div class="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 rounded-xl border border-zinc-200 px-3 py-2 dark:border-zinc-800">
                     <span class="text-xs font-semibold text-zinc-600">{{ $t('رقم الجرد', 'Reference') }}</span>
@@ -48,3 +52,14 @@
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800"><p class="text-xs text-zinc-500">{{ $t('إنشاء الجلسة لا يغير رصيد المخزون.', 'Creating a session does not change stock balances.') }}</p><button type="submit" class="{{ $button }} min-h-10 bg-emerald-700 px-6 text-white">{{ $t('إنشاء الجرد', 'Create stocktake') }}</button></div>
     </form>
 </section>
+<script>
+    document.querySelectorAll('[data-stocktake-location-picker]').forEach((picker) => {
+        const summary = picker.querySelector('[data-stocktake-location-summary]');
+        const update = () => {
+            const names = [...picker.querySelectorAll('input[name="location_ids[]"]:checked')].map((input) => input.closest('label').querySelector('strong').textContent.trim());
+            summary.textContent = names.length ? names.join('، ') : @js($t('اختر المخزن أو المنفذ', 'Choose warehouse or store'));
+        };
+        picker.addEventListener('change', update);
+        update();
+    });
+</script>

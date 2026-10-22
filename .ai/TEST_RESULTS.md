@@ -1,4 +1,10 @@
-# 2026-10-21 — strict stocktake reference UI focused visual PASS
+# 2026-10-21 — stocktake final parity and Excel import focused PASS
+
+- Disposable socket-only MariaDB: the SKU/barcode, duplicate-file-row, XLSX retry, CSV, invalid/unknown, audit, no-movement and no-settlement method passed. The separate cross-company/warehouse/unauthorized method passed after giving its QA admin an explicit scope to the original company when a second company was introduced. The first attempt at that method returned 403 because the fixture admin lost implicit single-company scope; no application defect or Production action resulted. No broad QA.
+- Authenticated local browser at 1440, 1024 and 390: list, create, empty and populated count, review each HTTP 200; RTL/Cairo PASS, no NaN, page-level overflow or console errors. The compact create picker and five toolbar methods rendered; at 390, count cards retained product/SKU, expected, editable actual, difference and status. Import panel POST/CSRF and template link rendered; a scoped GET downloaded a valid XLSX ZIP. Screenshots: `/tmp/rajeh-stocktake-final-parity-screenshots/`, including `import-ui-open-1440.png` and a separately recaptured closed `counting-empty-1440.png`.
+- Changed PHP/Blade syntax PASS, Pint PASS, Blade cache PASS, Node 20 Vite build PASS, `git diff --check` PASS. QA runtimes were disposed. No Production data operation, settlement, migration, merge or deployment. Physical device camera testing remains Owner UAT.
+
+# Historical — 2026-10-21 strict stocktake reference UI focused visual PASS
 
 - Inspected owner references 01-stocktake-list.jpg, 02-stocktake-create.jpg, 03-stocktake-active.jpg and 04-stocktake-counting.jpg under /home/rajeh_ahmed/reference/stocktake-ui/, then CodeGraph and current views. No stocktake Excel import/export route or handler exists.
 - Six UI Blade files changed; no backend/domain/routes/controllers/models/services/permissions/schema/migration or JS source. Direct PHP 8.4 syntax PASS for every affected view; Blade cache PASS; Node 20 Vite build PASS; Pint PASS; git diff --check PASS. No broad suite.

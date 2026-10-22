@@ -14,6 +14,7 @@ use App\Modules\Inventory\Actions\CancelStockCountSessionAction;
 use App\Modules\Inventory\Actions\CompleteStockCountLineAction;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
+use App\Modules\Inventory\Actions\ImportStockCountWorkbookAction;
 use App\Modules\Inventory\Actions\OpenStockCountSessionAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
 use App\Modules\Inventory\Actions\ReconcileStockCountAction;
@@ -46,6 +47,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
+use App\Support\DataExchange\MasterDataDocument;
 use App\Support\HumanName;
 use App\Support\ProductQuantity;
 use App\Support\UserSafeError;
@@ -572,6 +574,29 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return back()->withInput()->with('error', UserSafeError::message($exception));
         }
     })->whereNumber('count')->middleware('can:stock_counts.edit')->name('inventory.counts.add-all');
+    $router->get('inventory/counts/{count}/import-template.xlsx', function (StockCount $count, MasterDataDocument $documents) {
+        abort_unless($count->members()->where('user_id', Auth::id())->exists()
+            && $count->locations()->whereHas('store', fn ($store) => $store->visibleTo(Auth::user()))->exists(), 404);
+
+        return $documents->importTemplate('stocktake-count-template.xlsx', 'rajeh.stocktake-count.v1',
+            ImportStockCountWorkbookAction::HEADERS, [], [
+                ['ar' => 'أدخل كود الصنف أولاً، أو باركوداً فعالاً. الكود له الأولوية؛ الرموز الملتبسة مرفوضة.', 'en' => 'Use the product code first, or an active barcode. Product code has priority; ambiguous identifiers are rejected.'],
+                ['ar' => 'أدخل كمية فعلية صحيحة وغير سالبة. اختر موقع الجرد في شاشة الاستيراد. لا يغير الاستيراد المخزون الحي.', 'en' => 'Enter a non-negative whole actual count. Select the count location on the import screen. Import does not change live stock.'],
+            ], requiredColumns: [0, 1], formats: [1 => '0']);
+    })->whereNumber('count')->middleware('can:stock_counts.edit')->name('inventory.counts.import-template');
+    $router->post('inventory/counts/{count}/import', function (StockCount $count, ImportStockCountWorkbookAction $action) {
+        $validated = request()->validate([
+            'store_id' => ['required', 'integer', 'exists:stores,id'],
+            'import_file' => ['required', 'file', 'max:5120', 'extensions:xlsx,csv'],
+        ]);
+        try {
+            $summary = $action->execute($count->id, (int) $validated['store_id'], $validated['import_file']);
+
+            return back()->with('stocktake_import_summary', $summary);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', UserSafeError::message($exception))->with('stocktake_import_open', true);
+        }
+    })->whereNumber('count')->middleware('can:stock_counts.edit')->name('inventory.counts.import');
     $router->post('inventory/counts/{count}/quantity', function (StockCount $count, SetStockCountQuantityAction $action) {
         $validated = request()->validate(['store_id' => ['required', 'integer', 'exists:stores,id'], 'lookup' => ['required', 'string', 'max:255'], 'quantity' => ['required', 'numeric', 'min:0'], 'request_id' => ['required', 'uuid'], 'device_id' => ['required', 'string', 'max:120'], 'note' => ['nullable', 'string', 'max:1000']]);
         try {

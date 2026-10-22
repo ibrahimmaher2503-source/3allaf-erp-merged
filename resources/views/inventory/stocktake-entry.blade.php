@@ -29,6 +29,7 @@
         <div class="flex min-w-0 flex-wrap items-center gap-2 border-b border-zinc-200 bg-zinc-50/70 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-800/20 sm:px-5" data-stocktake-action-bar>
             @can('stock_counts.edit')
                 <a href="#stocktake-manual-add" onclick="document.getElementById('stocktake-manual-add').open = true; requestAnimationFrame(() => document.querySelector('[data-product-line-editor] [data-product-search]')?.focus())" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('إضافة عنصر', 'Add item') }}</a>
+                <a href="#stocktake-import" onclick="document.getElementById('stocktake-import').open = true" class="{{ $button }} inline-flex min-h-10 items-center border border-emerald-700 bg-white text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300" data-stocktake-import-open>{{ $t('استيراد Excel', 'Import Excel') }}</a>
                 <a href="#stocktake-scan-controls" onclick="event.preventDefault(); document.querySelector('[data-scan-input]')?.focus()" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('مسح باركود', 'Scan barcode') }}</a>
                 <button type="button" onclick="document.querySelector('[data-scan-camera]')?.click()" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('مسح بالكاميرا', 'Camera scan') }}</button>
                 <form method="POST" action="{{ route('inventory.counts.add-all', $count) }}" class="flex min-w-0 flex-wrap items-end gap-2" data-stocktake-add-all>
@@ -59,6 +60,27 @@
             <button type="submit" data-add-line class="{{ $button }} min-h-10 bg-emerald-700 text-white">{{ $t('إضافة بند', 'Add item') }}</button>
             </form>
         </details>
+        @can('stock_counts.edit')
+        <details id="stocktake-import" class="border-b border-zinc-100 dark:border-zinc-800" data-stocktake-import-panel @if(session('stocktake_import_summary') || session('stocktake_import_open') || $errors->has('import_file')) open @endif>
+            <summary class="sr-only">{{ $t('استيراد Excel', 'Import Excel') }}</summary>
+            <div class="space-y-3 px-4 py-3 sm:px-5">
+                <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-bold">{{ $t('استيراد كميات الجرد', 'Import stocktake counts') }}</h3><a href="{{ route('inventory.counts.import-template', $count) }}" class="text-xs font-semibold text-emerald-700 underline dark:text-emerald-300">{{ $t('تنزيل نموذج Excel', 'Download Excel template') }}</a></div>
+                <p class="text-xs text-zinc-600 dark:text-zinc-300">{{ $t('عمودان فقط: product_identifier (كود الصنف أولاً، ثم الباركود الفعال) وactual_quantity. اختر موقعاً من هذه الجلسة. تُرفض الرموز الملتبسة والصفوف غير الصالحة، ولا يتغير المخزون الحي.', 'Two columns: product_identifier (product code first, then active barcode) and actual_quantity. Choose a location in this session. Ambiguous or invalid rows are rejected. Live stock is unchanged.') }}</p>
+                <form method="POST" action="{{ route('inventory.counts.import', $count) }}" enctype="multipart/form-data" class="grid min-w-0 gap-2 sm:grid-cols-[minmax(9rem,1fr)_minmax(12rem,2fr)_auto] sm:items-end" data-stocktake-import-form>@csrf
+                    <label class="min-w-0 text-xs font-semibold">{{ $t('موقع الجرد', 'Count location') }}<select name="store_id" class="{{ $field }}">@foreach($count->locations as $location)<option value="{{ $location->store_id }}" @selected((string) old('store_id') === (string) $location->store_id)>{{ \App\Support\HumanName::name($location->store) }}</option>@endforeach</select></label>
+                    <label class="min-w-0 text-xs font-semibold">{{ $t('ملف Excel أو CSV', 'Excel or CSV file') }}<input type="file" name="import_file" accept=".xlsx,.csv" required class="{{ $field }} min-w-0" data-stocktake-import-file></label>
+                    <button type="submit" class="{{ $button }} min-h-10 bg-emerald-700 text-white">{{ $t('استيراد الكميات', 'Import counts') }}</button>
+                </form>
+                @error('import_file')<p role="alert" class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                @if($summary = session('stocktake_import_summary'))
+                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs dark:border-emerald-900 dark:bg-emerald-950/30" role="status" data-stocktake-import-summary>
+                        <strong>{{ $t('نتيجة الاستيراد', 'Import result') }}: {{ $summary['imported'] }} {{ $t('مقبول', 'imported') }} · {{ $summary['rejected'] }} {{ $t('مرفوض', 'rejected') }}</strong>
+                        @if($summary['rejected'] > 0)<ul class="mt-2 max-h-36 list-inside list-disc overflow-y-auto text-rose-800 dark:text-rose-300">@foreach($summary['errors'] as $error)<li>{{ $t('صف', 'Row') }} {{ $error['row'] }} — <span dir="ltr">{{ $error['identifier'] ?: '—' }}</span>: {{ $error['reason'] }}</li>@endforeach</ul>@endif
+                    </div>
+                @endif
+            </div>
+        </details>
+        @endcan
     @endif
     <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-5"><h3 class="text-sm font-bold">{{ $t('قائمة المنتجات والعد', 'Products and counts') }}</h3><span class="text-xs text-zinc-500">{{ $countLines->total() }} {{ $t('نتيجة', 'results') }}</span></div>
     @if($countProgress['total'] > 0)
