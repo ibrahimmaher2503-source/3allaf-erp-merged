@@ -20,25 +20,32 @@ use App\Modules\Inventory\Actions\RecordStockCountContributionAction;
 use App\Modules\Inventory\Actions\SaveStockCountAction;
 use App\Modules\Inventory\Actions\SetStockCountQuantityAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
+use App\Modules\Inventory\Models\ProductStoreAssignment;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Support\StockCountReconciliation;
+use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\UserStoreScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
 
 final class InventoryLiveStocktakeFocusedTest extends TestCase
 {
     use DatabaseTransactions;
 
-    /** @return array{admin:User, store:Store, branchless:Store, product:Product} */
+    /** @return array{admin:User, user:User, store:Store, branchless:Store, product:Product} */
     private function setupInventory(): array
     {
         require_once base_path('scripts/qa/fixture.php');
@@ -52,7 +59,7 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
         Barcode::query()->create(['product_id' => $product->id, 'barcode' => 'QA'.Str::upper(Str::random(12)),
             'source' => 'local', 'status' => 'active', 'is_primary' => true]);
 
-        return ['admin' => $admin, 'store' => $fixture['store'], 'branchless' => $branchless, 'product' => $product];
+        return ['admin' => $admin, 'user' => $fixture['user'], 'store' => $fixture['store'], 'branchless' => $branchless, 'product' => $product];
     }
 
     private function openCount(Store $store, User $admin, string $scope = 'partial'): StockCount
@@ -64,6 +71,80 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
         app(OpenStockCountSessionAction::class)->execute($count->id);
 
         return $count->fresh();
+    }
+
+    /** @param list<array{0:string,1:string}> $rows */
+    private function stocktakeWorkbook(array $rows): UploadedFile
+    {
+        $base = tempnam(sys_get_temp_dir(), 'qa-stocktake-');
+        $path = $base.'.xlsx';
+        unlink($base);
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $writer->addRow(Row::fromValues(['product_identifier', 'actual_quantity']));
+        foreach ($rows as $row) {
+            $writer->addRow(Row::fromValues($row));
+        }
+        $writer->close();
+        $upload = UploadedFile::fake()->createWithContent('stocktake-counts.xlsx', file_get_contents($path));
+        unlink($path);
+
+        return $upload;
+    }
+
+    public function test_stocktake_excel_import_matches_sku_and_barcode_and_is_retry_safe_without_posting(): void
+    {
+        $setup = $this->setupInventory();
+        $count = $this->openCount($setup['branchless'], $setup['admin']);
+        $barcode = $setup['product']->barcodes()->firstOrFail()->barcode;
+        $second = Product::factory()->create(['category_id' => $setup['product']->category_id, 'sale_price' => 20]);
+        Barcode::query()->create(['product_id' => $second->id, 'barcode' => 'QA'.Str::upper(Str::random(12)), 'source' => 'local', 'status' => 'active', 'is_primary' => true]);
+        $url = route('inventory.counts.import', $count);
+        $rows = [[$setup['product']->item_code, '4'], [$barcode, '9'], [$second->barcodes()->firstOrFail()->barcode, '7'], ['UNKNOWN-QA-CODE', '3'], [$second->item_code, '-2']];
+
+        $this->from(route('inventory.counts.entry', $count))->post($url, [
+            'store_id' => $setup['branchless']->id, 'import_file' => $this->stocktakeWorkbook($rows),
+        ])->assertRedirect(route('inventory.counts.entry', $count))->assertSessionHas('stocktake_import_summary', fn ($summary) => $summary['imported'] === 2 && $summary['rejected'] === 3);
+        self::assertSame(2, $count->lines()->count());
+        self::assertSame('4.000000', (string) $count->lines()->where('product_id', $setup['product']->id)->value('counted_quantity'));
+        self::assertSame('7.000000', (string) $count->lines()->where('product_id', $second->id)->value('counted_quantity'));
+        self::assertSame(2, $count->contributions()->count());
+        self::assertSame(0, StockMovement::query()->count());
+
+        self::assertNull($count->fresh()->reconciled_at);
+        self::assertSame($setup['admin']->id, (int) $count->lines()->where('product_id', $second->id)->value('counted_by'));
+
+        $this->post($url, ['store_id' => $setup['branchless']->id, 'import_file' => $this->stocktakeWorkbook($rows)])
+            ->assertRedirect()->assertSessionHas('stocktake_import_summary', fn ($summary) => $summary['imported'] === 2);
+        self::assertSame(2, $count->lines()->count());
+        self::assertSame(2, $count->contributions()->count());
+        self::assertSame(0, StockMovement::query()->count());
+
+        $this->post($url, ['store_id' => $setup['branchless']->id,
+            'import_file' => UploadedFile::fake()->createWithContent('stocktake-counts.csv', "product_identifier,actual_quantity\n{$setup['product']->item_code},6\n"),
+        ])->assertRedirect()->assertSessionHas('stocktake_import_summary', fn ($summary) => $summary['imported'] === 1 && $summary['rejected'] === 0);
+        self::assertSame('6.000000', (string) $count->lines()->where('product_id', $setup['product']->id)->value('counted_quantity'));
+        self::assertSame(2, $count->lines()->count());
+        self::assertSame(0, StockMovement::query()->count());
+    }
+
+    public function test_stocktake_excel_import_rejects_wrong_warehouse_cross_company_and_unauthorized_actor(): void
+    {
+        $setup = $this->setupInventory();
+        $count = $this->openCount($setup['branchless'], $setup['admin']);
+        $otherCompany = Company::query()->create(['code' => 'QA-OTHER-'.Str::upper(Str::random(5)), 'name_ar' => 'شركة أخرى', 'name_en' => 'Other company', 'status' => 'active', 'currency_code' => 'EGP', 'timezone' => 'Africa/Cairo']);
+        $otherBranch = Branch::query()->create(['company_id' => $otherCompany->id, 'code' => 'QA-OTHER-BR-'.Str::upper(Str::random(5)), 'name_ar' => 'فرع آخر', 'name_en' => 'Other branch', 'status' => 'active', 'timezone' => 'Africa/Cairo']);
+        $otherStore = Store::query()->create(['company_id' => $otherCompany->id, 'branch_id' => $otherBranch->id, 'code' => 'QA-OTHER-ST-'.Str::upper(Str::random(5)), 'type' => 'warehouse', 'name_ar' => 'مخزن آخر', 'name_en' => 'Other warehouse', 'status' => 'active', 'allows_negative_stock' => false]);
+        UserStoreScope::query()->create(['user_id' => $setup['admin']->id, 'store_id' => $setup['branchless']->id, 'status' => 'active']);
+        $otherProduct = Product::factory()->create(['category_id' => $setup['product']->category_id, 'sale_price' => 20]);
+        ProductStoreAssignment::query()->create(['company_id' => $otherCompany->id, 'branch_id' => $otherBranch->id, 'store_id' => $otherStore->id, 'product_id' => $otherProduct->id, 'status' => 'active', 'created_by' => $setup['admin']->id, 'updated_by' => $setup['admin']->id]);
+        $url = route('inventory.counts.import', $count);
+        $this->post($url, ['store_id' => $setup['branchless']->id, 'import_file' => $this->stocktakeWorkbook([[$otherProduct->item_code, '3']])])
+            ->assertRedirect()->assertSessionHas('stocktake_import_summary', fn ($summary) => $summary['imported'] === 0 && $summary['rejected'] === 1);
+        $this->post($url, ['store_id' => $setup['store']->id, 'import_file' => $this->stocktakeWorkbook([[$setup['product']->item_code, '3']])])->assertNotFound();
+        $this->actingAs($setup['user'])->post($url, ['store_id' => $setup['branchless']->id, 'import_file' => $this->stocktakeWorkbook([[$setup['product']->item_code, '3']])])->assertForbidden();
+        self::assertSame(0, $count->lines()->count());
+        self::assertSame(0, StockMovement::query()->count());
     }
 
     public function test_manual_add_form_posts_and_rejects_duplicate_hidden_and_unknown_products(): void

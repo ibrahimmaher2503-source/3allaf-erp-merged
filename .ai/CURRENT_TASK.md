@@ -427,3 +427,9 @@ Module 5 verify-and-finish follow-up: existing 10/119 and audit missing-cap 1/2 
 ## Pending merged change — Privileged operational authority
 
 The validated `feature/privileged-operational-authority` batch has been merged into main but is not yet deployed. Locked rule: `system-administrator` (Super Admin) and `company-owner` (General Manager) are unrestricted operational authorities inside their own company. They may approve/finalize their own documents and bypass normal permission/approval-chain restrictions, while company/tenant isolation, integrity rules, canonical posting, idempotency, and duplicate-posting protections remain enforced. Focused validation passed for transfer self-approval, stocktake settlement, normal-user restrictions, audit retention, same-company branch access, cross-company denial, and retry safety. Production remains on the currently recorded deployed stocktake UI release until a separately approved deployment.
+
+## Pending merged change — Final stocktake reference parity + Excel import
+
+The validated `feature/stocktake-strict-reference-match` batch at feature tip `00ef552b1c2eef8927cfa372f71e4d3365844d73` is being merged into main but is not yet deployed. Production remains on application SHA `83d516a9fc547c836b097ce72bbe0f79452ad9c3` until a separately approved deployment.
+
+The batch finalizes the Daftera-reference stocktake presentation while retaining Rajeh identity: simplified stocktake list, compact create flow, reference-style empty/populated counting workspace, mobile count cards, preserved review layout, and a real stocktake Excel import flow. Import supports `.xlsx` and `.csv`, uses `product_identifier` plus `actual_quantity`, prefers product code before active barcode, reports duplicate/invalid/unknown rows, respects company/warehouse/session authorization, does not create duplicate stocktake lines on retry, and does not create inventory movements or settlement. No migrations.

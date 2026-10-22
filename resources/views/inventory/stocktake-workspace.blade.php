@@ -1,7 +1,7 @@
 @php
     $stocktakeTitle = match ($focus) {
         'count-create' => $t('جرد جديد', 'New stocktake'),
-        'count-entry' => $t('عد المنتجات', 'Count products'),
+        'count-entry' => $t('جرد المخزون', 'Stocktake'),
         'count-reconcile' => $t('مراجعة الجرد', 'Stocktake review'),
         default => $t('عمليات الجرد', 'Stocktake sessions'),
     };
@@ -14,15 +14,15 @@
     }
 </style>
 <div class="min-w-0 space-y-4" data-guide="inventory-counts" data-stocktake-screen="{{ $focus }}">
-    <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:px-5">
+    <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-1 py-3 dark:border-zinc-800 sm:px-2" data-stocktake-page-header>
         <div class="min-w-0">
             <nav class="flex flex-wrap items-center gap-1.5 text-xs text-zinc-500" aria-label="{{ $t('مسار الجرد', 'Stocktake breadcrumb') }}">
                 <a href="{{ route('inventory.index') }}" class="hover:text-primary">{{ $t('المخزون', 'Inventory') }}</a><span>/</span>
                 @if($focus === 'counts')<span class="text-primary">{{ $t('الجرد', 'Stocktake') }}</span>
                 @else<a href="{{ route('inventory.counts') }}" class="hover:text-primary">{{ $t('الجرد', 'Stocktake') }}</a><span>/</span><span class="text-primary">{{ $stocktakeTitle }}</span>@endif
             </nav>
-            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2"><h1 class="text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl">{{ $stocktakeTitle }}</h1>
-                @if($count)<span class="font-mono text-sm font-semibold text-zinc-500" dir="ltr">{{ $count->count_number }}</span><x-status.badge :status="$count->status" :label="$status($count->status)" />@endif
+            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2"><h1 class="text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl">{{ $stocktakeTitle }} @if($count)<span class="font-mono text-base" dir="ltr">#{{ $count->count_number }}</span>@endif</h1>
+                @if($count)<x-status.badge :status="$count->status" :label="$status($count->status)" />@endif
             </div>
         </div>
         <div class="flex min-w-0 flex-wrap items-center gap-2">
@@ -30,10 +30,11 @@
                 @can('stock_counts.create')<a href="{{ route('inventory.counts.create') }}" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('جرد جديد', 'New stocktake') }}</a>@endcan
             @elseif($focus === 'count-create')
                 <a href="{{ route('inventory.counts') }}" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('كل الجلسات', 'All sessions') }}</a>
-                <button type="submit" form="stocktake-create-form" class="{{ $button }} min-h-10 bg-emerald-700 text-white">{{ $t('إنشاء الجرد', 'Create stocktake') }}</button>
             @else
                 <a href="{{ route('inventory.counts') }}" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('كل الجلسات', 'All sessions') }}</a>
-                @if($focus === 'count-entry')<a href="{{ route('inventory.counts.reconcile-page', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center border border-sky-300 text-sky-800 dark:text-sky-300">{{ $t('مراجعة الجرد', 'Review count') }}</a>
+                @if($focus === 'count-entry')
+                    @if($count->status === 'in_progress')@can('stock_counts.edit')<a href="#stocktake-manual-add" onclick="document.getElementById('stocktake-manual-add').open = true; requestAnimationFrame(() => document.querySelector('[data-product-line-editor] [data-product-search]')?.focus())" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('إضافة عنصر', 'Add item') }}</a>@endcan @endif
+                    <a href="{{ route('inventory.counts.reconcile-page', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center border border-sky-300 text-sky-800 dark:text-sky-300">{{ $t('مراجعة الجرد', 'Review count') }}</a>
                 @elseif(in_array($count->status, ['draft', 'in_progress'], true))@can('stock_counts.edit')<a href="{{ route('inventory.counts.entry', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center border border-sky-300 text-sky-800 dark:text-sky-300">{{ $t('متابعة العد', 'Resume count') }}</a>@endcan @endif
             @endif
         </div>
@@ -42,9 +43,9 @@
     @if(session('error'))<div class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{{ session('error') }}</div>@endif
     @if($errors->any())<div class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert"><ul class="list-inside list-disc">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @if($count)
-        <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm dark:border-emerald-900 dark:bg-emerald-950/20" data-stocktake-session-bar>
-            <div class="min-w-0"><strong class="text-emerald-900 dark:text-emerald-200">{{ \App\Support\HumanName::name($count->store) }}</strong><span class="mx-2 text-emerald-600">·</span><span class="font-mono text-xs" dir="ltr">{{ $count->store?->code }}</span></div>
-            <div class="flex items-center gap-3"><span>{{ $t('تم عد', 'Counted') }} <strong class="font-mono" dir="ltr">{{ $countProgress['counted'] }}/{{ $countProgress['total'] }}</strong></span><span class="rounded-full bg-white px-2 py-1 font-mono font-bold text-emerald-800 dark:bg-emerald-900" dir="ltr">{{ $progressPercent }}%</span></div>
+        <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-1 py-2 text-sm dark:border-zinc-800 sm:px-2" data-stocktake-session-bar>
+            <div class="min-w-0"><strong class="text-zinc-900 dark:text-zinc-100">{{ \App\Support\HumanName::name($count->store) }}</strong><span class="mx-2 text-zinc-400">·</span><span class="font-mono text-xs" dir="ltr">{{ $count->store?->code }}</span></div>
+            <div class="flex items-center gap-3"><span>{{ $t('تم عد', 'Counted') }} <strong class="font-mono" dir="ltr">{{ $countProgress['counted'] }}/{{ $countProgress['total'] }}</strong></span><span class="rounded-full bg-emerald-50 px-2 py-1 font-mono font-bold text-emerald-800 dark:bg-emerald-950/30" dir="ltr">{{ $progressPercent }}%</span></div>
         </div>
     @endif
     @if($focus === 'counts')@include('inventory.stocktake-list')

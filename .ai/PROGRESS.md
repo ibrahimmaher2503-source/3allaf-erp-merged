@@ -678,3 +678,7 @@ D3 focused validation on the existing feature branch. Real POS sale, sellable cu
 ## Privileged operational authority — merged, deployment pending
 
 Merged validated authority changes for `system-administrator` and `company-owner`. Both roles may self-approve and bypass normal operational approval gates within their own company. Normal users retain existing restrictions. Cross-company isolation, idempotency, state integrity, and duplicate-posting guards remain enforced. Focused validation passed; Production deployment is still pending.
+
+## Final stocktake reference parity + Excel import — validated, deployment pending
+
+Feature tip `00ef552b1c2eef8927cfa372f71e4d3365844d73` completed the final owner-approved stocktake reference-parity pass. List, Create, empty count, populated count, mobile count cards, Review, and Excel Import UI passed focused 1440/1024/390 checks with RTL/Cairo, no console errors, and no page overflow. Excel import focused QA passed without stock movements or settlement. No migrations. Production deployment remains pending.

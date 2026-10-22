@@ -282,3 +282,17 @@ Production access, deployment, backup execution, migration execution, active-sym
 |---|---|---|---|---|
 | V1 | Normalize Egyptian mobile variants before customer uniqueness checks while preserving existing duplicate records; add persistent quotation share links with 30-day/valid-until expiry, signed-token validation, audit metadata, revoke and regenerate controls; expose existing quotation status transitions in the UI | `issues/customer-quotation-policy-43-50-58` | Customer phone normalizer, quotation share action/model/routes/view, quotation model, migration, focused customer test | Focused normalization test PASS; PHP syntax/Pint/diff checks PASS; Fast QA 7/8 with the only failure a pre-existing PHPStan finding in unchanged `app/Modules/Catalog/Actions/SaveProductAction.php:267`; migration not run |
 | V0 | #13, #17, #19, #20, #44 and #60 behavior from current main verified as already present | same | existing current-main implementation | ALREADY_FIXED_VERIFIED |
+
+## Pending Production deployment — Final stocktake reference parity + Excel import
+
+The validated `feature/stocktake-strict-reference-match` batch is merged/pending completion into main from feature tip `00ef552b1c2eef8927cfa372f71e4d3365844d73`. Production remains on `83d516a9fc547c836b097ce72bbe0f79452ad9c3` until explicit deployment approval.
+
+Scope:
+- reference-matched stocktake list/create/count/review UI
+- compact warehouse selector on create
+- Add Item / Excel Import / Barcode / Camera / Add All toolbar
+- populated desktop/tablet count table
+- mobile product cards exposing product/SKU, expected, actual, difference, and status
+- stocktake-specific `.xlsx` / `.csv` quantity import
+- no migrations
+- no stock posting during import
