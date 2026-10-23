@@ -21,14 +21,14 @@ use InvalidArgumentException;
 final class CreateCustomerAction
 {
     /** @param array<string, mixed> $data */
-    public function execute(User $actor, Store $store, array $data): Customer
+    public function execute(User $actor, Store $store, array $data, bool $cityOptional = false): Customer
     {
         Gate::forUser($actor)->authorize('customers.create');
         abort_unless($store->status === 'active' && $actor->canAccessStore((int) $store->id), 403);
 
         CustomerPolicy::phoneNormalization();
         [$phone, $secondaryPhone] = CustomerIdentity::normalizedPhones((string) ($data['phone'] ?? ''), $data['secondary_phone'] ?? null);
-        [$governorateId, $cityId] = ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null);
+        [$governorateId, $cityId] = ResidenceGeography::validate((int) $store->company_id, $data['governorate_id'] ?? null, $data['city_id'] ?? null, $cityOptional);
         [$firstNameAr, $lastNameAr, $firstNameEn, $lastNameEn, $nameAr, $nameEn] = self::normaliseNames($data);
         $email = filled($data['email'] ?? null) ? strtolower(trim((string) $data['email'])) : null;
         if ($firstNameAr === '' || $lastNameAr === '') {

@@ -69,7 +69,7 @@ final class RefundWizard extends Component
     }
 
     #[On('open-pos-refund')]
-    public function openWizard(): void
+    public function openWizard(?string $invoiceNumber = null): void
     {
         Gate::authorize('returns.create');
         Gate::authorize('returns.submit');
@@ -80,6 +80,7 @@ final class RefundWizard extends Component
         ]);
         $this->open = true;
         $this->step = 1;
+        $this->lookupTerm = $invoiceNumber ?? '';
         $this->idempotencyKey = (string) Str::uuid();
         $this->dispatch('focus-refund-lookup');
     }

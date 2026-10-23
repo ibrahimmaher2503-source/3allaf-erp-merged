@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Support\PosContextResolver;
+use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -109,7 +110,7 @@ final class ProductBrowser extends Component
             $this->selectedVariantId = null;
             $this->quantity = '1';
         } catch (\Throwable $exception) {
-            $this->addError('selection', \App\Support\UserSafeError::message($exception));
+            $this->addError('selection', UserSafeError::message($exception));
         }
     }
 
@@ -143,7 +144,8 @@ final class ProductBrowser extends Component
                     ->orWhereHas('variants', fn ($v) => $v->where('item_code', 'like', $prefix)->orWhere('model_number', 'like', $prefix)->orWhereHas('barcodes', fn ($b) => $b->active()->where('barcode', 'like', $prefix))->orWhereHas('variantValues.value', fn ($value) => $value->where('name_ar', 'like', $contains)->orWhere('name_en', 'like', $contains)));
             });
         }
-        $products = $query->get();
+        $showCategories = $this->categoryId === null && trim($this->search) === '';
+        $products = $showCategories ? collect() : $query->get();
         $simpleIds = $products->where('has_variations', false)->pluck('id');
         $simplePrices = $store ? $prices->resolveForStore($simpleIds->all(), $store->id) : collect();
         $simpleStock = $store ? StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $simpleIds)->get()->keyBy('product_id') : collect();
@@ -192,8 +194,8 @@ final class ProductBrowser extends Component
                 }
             }
         }
-        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->limit(12)->get();
+        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->limit(24)->get();
 
-        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
+        return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'showCategories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
     }
 }

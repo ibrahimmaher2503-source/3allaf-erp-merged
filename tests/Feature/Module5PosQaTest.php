@@ -11,12 +11,14 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
+use App\Modules\Customer\Support\ResidenceGeography;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Data\AttachmentSourceReference;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
@@ -341,6 +343,62 @@ final class Module5PosQaTest extends TestCase
         $otherStore = Store::factory()->for($otherBranch)->create(['company_id' => $otherCompany->id]);
         $outside = Customer::query()->create(['idempotency_key' => (string) Str::uuid(), 'name_ar' => 'عميل خارجي', 'name_en' => 'Other company', 'phone_normalized' => '201099887766', 'phone_display' => '01099887766', 'status' => 'active', 'created_by' => $this->cashier->id, 'created_branch_id' => $otherStore->branch_id, 'created_store_id' => $otherStore->id]);
         $this->get(route('pos', ['customer_q' => $outside->public_id]))->assertOk()->assertViewHas('customerSearchResults', fn ($results) => $results->isEmpty());
+    }
+
+    public function test_pos_customer_governorate_is_required_in_arabic_while_city_can_be_omitted(): void
+    {
+        app()->setLocale('ar');
+        $this->post(route('pos.customer.create'), [
+            'idempotency_key' => (string) Str::uuid(),
+            'phone' => '01012345678',
+            'first_name_ar' => 'أحمد',
+            'last_name_ar' => 'محمد',
+            'consent_purpose' => 'retail',
+        ])->assertSessionHasErrors(['governorate_id' => 'يرجى اختيار المحافظة.']);
+
+        $governorate = Governorate::query()->create(['code' => 'QA-POS', 'name_ar' => 'محافظة الاختبار', 'name_en' => 'QA Governorate', 'status' => 'active']);
+        self::assertSame([$governorate->id, null], ResidenceGeography::validate((int) $this->store->company_id, $governorate->id, null, cityOptional: true));
+        self::assertSame(0, Customer::query()->count());
+    }
+
+    public function test_invoice_lookup_shows_approved_sale_without_mutation(): void
+    {
+        $sale = Sale::query()->create([
+            'branch_id' => $this->store->branch_id,
+            'store_id' => $this->store->id,
+            'cashier_id' => $this->cashier->id,
+            'document_number' => 'QA-POS-LOOKUP-001',
+            'status' => 'draft',
+            'idempotency_key' => (string) Str::uuid(),
+            'subtotal' => '30.00',
+            'total' => '30.00',
+        ]);
+        $sale->lines()->create([
+            'product_id' => $this->product->id,
+            'line_number' => 1,
+            'item_code' => $this->product->item_code,
+            'name_ar' => $this->product->name_ar,
+            'name_en' => 'QA product',
+            'quantity' => '1',
+            'unit_price' => '30',
+            'gross_amount' => '30',
+            'net_amount' => '30',
+        ]);
+        $sale->update(['status' => 'approved', 'approved_at' => now()]);
+        Sale::query()->create([
+            'branch_id' => $this->store->branch_id,
+            'store_id' => $this->store->id,
+            'cashier_id' => $this->cashier->id,
+            'document_number' => 'QA-POS-LOOKUP-DRAFT',
+            'status' => 'draft',
+            'idempotency_key' => (string) Str::uuid(),
+        ]);
+        $this->get(route('pos', ['lookup' => 'invoices', 'invoice_q' => 'QA-POS-LOOKUP']))
+            ->assertOk()
+            ->assertSee('QA-POS-LOOKUP-001')
+            ->assertViewHas('invoiceResults', fn ($results) => $results->count() === 1 && $results->first()->is($sale));
+        self::assertSame('approved', $sale->fresh()->status);
+        self::assertSame('2.000000', StockBalance::query()->firstOrFail()->on_hand);
     }
 
     public function test_held_page_reuses_active_context_and_handles_unavailable_shift(): void

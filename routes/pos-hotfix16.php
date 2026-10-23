@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerGroup;
 use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Data\AttachmentSourceReference;
+use App\Modules\Platform\Models\City;
+use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\PaymentMethod;
-use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\CompletePosOpenOrderAction;
+use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
@@ -49,6 +52,9 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
     $selectedCustomer = $activeOrder?->customer;
     $customerSearchResults = collect();
     $customerQuery = trim((string) $request->query('customer_q', ''));
+    $lookup = in_array($request->query('lookup'), ['products', 'customers', 'invoices'], true)
+        ? $request->query('lookup')
+        : ($customerQuery !== '' ? 'customers' : 'products');
     $customerPurposes = [];
     $customerPolicyError = null;
     if ($store !== null && $user->can('customers.view')) {
@@ -57,7 +63,7 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         } catch (InvalidArgumentException $exception) {
             $customerPolicyError = $exception->getMessage();
         }
-        if ($customerQuery !== '') {
+        if ($lookup === 'customers' && $customerQuery !== '') {
             $escaped = addcslashes($customerQuery, '%_\\');
             $prefix = $escaped.'%';
             $digits = preg_replace('/[^0-9]+/', '', $customerQuery) ?: '';
@@ -85,6 +91,19 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         }
     }
 
+    $invoiceQuery = trim((string) $request->query('invoice_q', ''));
+    $invoiceResults = collect();
+    if ($lookup === 'invoices' && $invoiceQuery !== '') {
+        $invoiceResults = Sale::query()->visibleTo($user)->approved()
+            ->where('document_number', 'like', addcslashes($invoiceQuery, '%_\\').'%')
+            ->with(['customer', 'branch', 'store', 'lines.product', 'retailReturns'])
+            ->withCount('retailReturns')
+            ->latest('approved_at')->limit(8)->get();
+    }
+    $governorates = $store && $user->can('customers.create') ? Governorate::query()->active()->orderBy('sort_order')->get(['id', 'name_ar', 'name_en']) : collect();
+    $cities = $store && $user->can('customers.create') ? City::query()->visibleToCompany((int) $store->company_id)->active()->orderBy('sort_order')->get(['id', 'governorate_id', 'name_ar', 'name_en']) : collect();
+    $customerGroups = $store && $user->can('customers.create') ? CustomerGroup::query()->forCompany((int) $store->company_id)->active()->orderBy('sort_order')->get(['id', 'name_ar', 'name_en']) : collect();
+
     $completedSale = null;
     if (is_numeric($completedSaleId)) {
         $completedSale = Sale::query()->visibleTo($user)->whereKey((int) $completedSaleId)->where('status', 'approved')->first();
@@ -100,6 +119,12 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         'selectedCustomer' => $selectedCustomer,
         'customerSearchResults' => $customerSearchResults,
         'customerQuery' => $customerQuery,
+        'lookup' => $lookup,
+        'invoiceQuery' => $invoiceQuery,
+        'invoiceResults' => $invoiceResults,
+        'governorates' => $governorates,
+        'cities' => $cities,
+        'customerGroups' => $customerGroups,
         'customerPurposes' => $customerPurposes,
         'customerPolicyError' => $customerPolicyError,
         'previewError' => $snapshot['error'] ?? null,
@@ -118,7 +143,7 @@ Route::post('pos/orders', function (Request $request, PosContextResolver $contex
         $request->session()->forget('pos.completed_sale_id');
 
         return to_route('pos')->with('success', __('A clean order was created and activated.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.store');
@@ -132,7 +157,7 @@ Route::post('pos/orders/switch', function (Request $request, PosContextResolver 
         $request->session()->forget('pos.completed_sale_id');
 
         return to_route('pos');
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.switch');
@@ -145,7 +170,7 @@ Route::post('pos/orders/cancel', function (Request $request, PosContextResolver 
         $orders->cancel($request, $user, $contexts->resolve($user), $data['open_order_uuid'], $data['reason'] ?? null);
 
         return to_route('pos')->with('success', __('The open order was cancelled without posting a sale.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['order' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.orders.cancel');
@@ -156,7 +181,7 @@ Route::post('pos/cart/add', function (Request $request, PosCartAction $cart) {
         $cart->add($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
 
         return back()->with('success', __('Product added to the active order.'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.add');
@@ -167,7 +192,7 @@ Route::post('pos/cart/remove', function (Request $request, PosCartAction $cart) 
         $cart->remove($request, $request->user(), (int) $data['product_id']);
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.remove');
@@ -178,7 +203,7 @@ Route::post('pos/cart/quantity', function (Request $request, PosCartAction $cart
         $cart->quantity($request, $request->user(), (int) $data['product_id'], (string) $data['quantity']);
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.quantity');
@@ -188,7 +213,7 @@ Route::post('pos/cart/clear', function (Request $request, PosCartAction $cart) {
         $cart->clear($request, $request->user());
 
         return back();
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.cart.clear');
@@ -207,7 +232,7 @@ Route::post('pos/suspend', function (Request $request, CompletePosOpenOrderActio
         $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
 
         return to_route('pos')->with('success', __('Sale suspended. Resume code: :code', ['code' => $sale->suspendedSale?->resume_code]));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withErrors(['cart' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.suspend');
@@ -314,7 +339,7 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
         $request->session()->flash('pos.completed_sale_id', $sale->id);
 
         return to_route('pos')->with('success', __('Sale completed successfully'));
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         return back()->withInput()->withErrors(['payments' => UserSafeError::message($exception)]);
     }
 })->middleware('can:pos_sales.create')->name('pos.checkout');
