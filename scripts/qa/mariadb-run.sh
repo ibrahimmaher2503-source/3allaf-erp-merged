@@ -57,10 +57,11 @@ case "$mode" in
  integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
  hardening) "$QA_PHP" "$QA_ROOT/scripts/qa/financial-domain.php" ;;
  reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;
- compact|browser|purchase-approval|purchase-invoice-hotfix)
+ compact|browser|pos-reference|purchase-approval|purchase-invoice-hotfix)
    if [[ "$mode" == purchase-approval || "$mode" == purchase-invoice-hotfix ]] && [[ ${QA_PURCHASE_FIXTURE_READY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/purchase-approval-fixture.php"; fi
-   if [[ "$mode" == browser ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"
+   if [[ "$mode" == browser || "$mode" == pos-reference ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"
    export QA_BROWSER_ACCOUNTS="$work/accounts.json"; fi
+   if [[ "$mode" == pos-reference ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-reference-fixture.php"; fi
    export SESSION_DRIVER=file
    port=$("$QA_PHP" -r '$s=stream_socket_server("tcp://127.0.0.1:0");echo parse_url("tcp://".stream_socket_get_name($s,false),PHP_URL_PORT);')
    export QA_BROWSER_URL="http://127.0.0.1:$port"
@@ -68,7 +69,7 @@ case "$mode" in
    "$QA_PHP" -S "127.0.0.1:$port" "$QA_ROOT/scripts/qa/browser-router.php" >"$work/http.log" 2>&1 &
    http_pid=$!
    for _ in $(seq 1 50); do curl -fsS "$QA_BROWSER_URL/up" >/dev/null 2>&1 && break; sleep 0.2; done
-   if [[ "$mode" == purchase-approval ]]; then node "$QA_ROOT/scripts/qa/purchase-approval-browser.mjs"; elif [[ "$mode" == purchase-invoice-hotfix ]]; then node "$QA_ROOT/scripts/qa/purchase-invoice-hotfix-browser.mjs"; else node "$QA_ROOT/scripts/qa/browser-smoke.mjs"; fi
+   if [[ "$mode" == purchase-approval ]]; then node "$QA_ROOT/scripts/qa/purchase-approval-browser.mjs"; elif [[ "$mode" == purchase-invoice-hotfix ]]; then node "$QA_ROOT/scripts/qa/purchase-invoice-hotfix-browser.mjs"; elif [[ "$mode" == pos-reference ]]; then node "$QA_ROOT/scripts/qa/pos-reference-browser.mjs"; else node "$QA_ROOT/scripts/qa/browser-smoke.mjs"; fi
    ;;
  export) "$QA_PHP" "$QA_ROOT/scripts/qa/export-check.php" ;;
  backup) "$QA_PHP" "$QA_ROOT/scripts/qa/backup-fixture.php" "$work/backup.zip"; QA_BACKUP_ARCHIVE="$work/backup.zip" "$QA_ROOT/scripts/qa/backup-restore.sh" ;;

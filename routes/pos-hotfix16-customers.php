@@ -79,6 +79,11 @@ Route::post('pos/customer/create', function (Request $request, CreateCustomerAct
 
         return back()->with('success', __('Customer created and attached only to the active order.'))->with('pos_customer_code', $customer->customer_code);
     } catch (Throwable $exception) {
-        return back()->withInput()->withErrors(['customer' => UserSafeError::message($exception)]);
+        $message = UserSafeError::message($exception);
+        if (str_starts_with(app()->getLocale(), 'ar') && preg_match('/[A-Za-z]{3,}/u', $message) === 1) {
+            $message = __('Customer creation could not be completed. Check the entered details and try again.');
+        }
+
+        return back()->withInput()->withErrors(['customer' => $message]);
     }
 })->middleware(['can:pos_sales.create', 'can:customers.create'])->name('pos.customer.create');

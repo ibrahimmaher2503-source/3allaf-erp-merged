@@ -57,7 +57,7 @@ final class Module5PosQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'company_settings.view', 'company_settings.edit'] as $code) {
             Permission::query()->firstOrCreate(['code' => $code], ['module' => strstr($code, '.', true), 'action' => substr(strstr($code, '.'), 1), 'status' => 'active']);
         }
         $this->cashier = User::factory()->create(['status' => 'active']);
@@ -326,7 +326,7 @@ final class Module5PosQaTest extends TestCase
     public function test_arabic_only_product_name_is_visible_in_english_pos(): void
     {
         app()->setLocale('en');
-        Livewire::test(ProductBrowser::class)->assertSee('لعبة اختبار');
+        Livewire::test(ProductBrowser::class)->call('chooseCategory', $this->product->category_id)->assertSee('لعبة اختبار');
         request()->setLaravelSession(app('session')->driver());
         self::assertStringContainsString('لعبة اختبار', app(Cart::class)->render(app(PosCartSnapshot::class), app(PosContextResolver::class), app(PosOpenOrderManager::class))->with('errors', new ViewErrorBag)->render());
     }
@@ -347,7 +347,7 @@ final class Module5PosQaTest extends TestCase
 
     public function test_pos_customer_governorate_is_required_in_arabic_while_city_can_be_omitted(): void
     {
-        app()->setLocale('ar');
+        $this->withSession(['locale' => 'ar']);
         $this->post(route('pos.customer.create'), [
             'idempotency_key' => (string) Str::uuid(),
             'phone' => '01012345678',
@@ -358,6 +358,14 @@ final class Module5PosQaTest extends TestCase
 
         $governorate = Governorate::query()->create(['code' => 'QA-POS', 'name_ar' => 'محافظة الاختبار', 'name_en' => 'QA Governorate', 'status' => 'active']);
         self::assertSame([$governorate->id, null], ResidenceGeography::validate((int) $this->store->company_id, $governorate->id, null, cityOptional: true));
+        $this->post(route('pos.customer.create'), [
+            'idempotency_key' => (string) Str::uuid(),
+            'phone' => '01012345678',
+            'first_name_ar' => 'أحمد',
+            'last_name_ar' => 'محمد',
+            'governorate_id' => $governorate->id,
+            'consent_purpose' => 'retail',
+        ])->assertSessionHasErrors(['customer' => 'تعذر حفظ العميل. تحقق من البيانات المدخلة وحاول مرة أخرى.']);
         self::assertSame(0, Customer::query()->count());
     }
 

@@ -6534,5 +6534,9 @@
     "Please select a governorate.": "يرجى اختيار المحافظة.",
     "Governorate and city/locality are required for residence data.": "المحافظة والمدينة أو المنطقة مطلوبتان لبيانات السكن.",
     "The selected city/locality is not active in the selected governorate.": "المدينة أو المنطقة المختارة غير متاحة في المحافظة المختارة.",
-    "The selected governorate is unavailable.": "المحافظة المختارة غير متاحة."
+    "The selected governorate is unavailable.": "المحافظة المختارة غير متاحة.",
+    "retail": "البيع بالتجزئة",
+    "Primary and secondary phone numbers must be different.": "لازم رقم التليفون الأساسي يختلف عن الرقم الإضافي.",
+    "A customer already exists for one of these phone numbers. Review the existing profile instead of creating a duplicate.": "في عميل مسجل بأحد رقمي التليفون. راجع ملفه بدل ما تعمل سجل مكرر.",
+    "Customer creation could not be completed. Check the entered details and try again.": "تعذر حفظ العميل. راجع البيانات المدخلة وحاول مرة تانية."
 }
