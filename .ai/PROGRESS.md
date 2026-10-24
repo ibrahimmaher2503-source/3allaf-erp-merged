@@ -1,3 +1,9 @@
+# 2026-10-24 — R8 POS theme Production deployment PASS
+
+Application SHA `b762e57002c78e9444475a5409a49f2826369152` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`; previous `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2` is preserved for rollback. R8 Light/Dark UI passed authenticated Chromium on the real Apache-vhost candidate and after activation, including theme persistence and POS state preservation. Payment invariant after activation passed; payment configuration was not changed. No migration ran and zero remain pending.
+
+Owner-confirmed `/var/lib/toyjoy/r8-deployment/b762e570-20261024T181522Z` reports immediate PHP 8.5 FPM reload PASS, public health PASS, no new candidate/after-activation/public Laravel errors, maintenance UP and rollback required NO. Failed r1–r3 candidates remain forensic. R1–R7 remains separate and unmerged; next POS batch R9–R16 has not started. This main-only documentation update does not change the deployed application SHA or require redeployment.
+
 # 2026-10-24 — POS strict reference parity Production deployment PASS
 
 Owner-approved V3 POS visuals and final uncapped dynamic category browser are merged/deployed at application SHA `a61b75826f9dc61c268be290e1daf2899aca9f3a`, active `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2`; previous rollback release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.45-product-card-formatting-41ab1ed`. Products remain left, unified transaction right, exactly two desktop columns, 4/4/2 category columns at 1440/1024/390, real canonical category records and payment methods. Customer/invoice lookup, customer code and governorate rule, PRINT/EMAIL delivery, editable quantity, and multi-ticket state are retained. The post-POS R1–R5 batch has not started.

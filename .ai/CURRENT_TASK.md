@@ -1,3 +1,11 @@
+# Current task — R8 POS Light/Dark theme LIVE (2026-10-24)
+
+Class I4 Production deployment of application SHA `b762e57002c78e9444475a5409a49f2826369152` succeeded. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`. Previous release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2` is the rollback target. R8 changes POS presentation and Light/Dark behavior; canonical payment configuration is unchanged and no migration ran.
+
+The owner-confirmed Production journal `/var/lib/toyjoy/r8-deployment/b762e570-20261024T181522Z` records authenticated Chromium, Light/Dark, theme persistence and POS state preservation PASS at the real Apache-vhost candidate and after activation. PHP 8.5 FPM reload, public health and payment invariant after activation PASS; no new Laravel errors, zero pending migrations, maintenance UP and rollback required NO. Earlier r1–r3 candidates remain failed forensic releases.
+
+The separate R1–R7 post-POS batch remains unmerged and undeployed. The next POS batch is R9–R16 and has **not started**. This main-only continuity commit is documentation, so main will be newer than the deployed application SHA; it does not trigger or require redeployment.
+
 # Current task — POS strict reference parity LIVE (2026-10-24)
 
 Class I4 owner-approved acceptance, merge, and Production deployment are complete. Feature branch `feature/pos-strict-reference-parity-2026-10-23` finished at `e1c8bcf`; merged/deployed application SHA `a61b75826f9dc61c268be290e1daf2899aca9f3a` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2`. The prior `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.45-product-card-formatting-41ab1ed` remains the rollback release. The owner approved V3 visuals. The last POS category `limit(24)` was removed; all eligible canonical categories render in deterministic sort-order/ID order. No reference categories or filler records were added to application or Production data. Existing canonical cash, card, gift-card, and manual-electronic methods remain active.
