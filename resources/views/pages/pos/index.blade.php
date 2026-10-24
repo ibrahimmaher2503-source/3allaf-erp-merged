@@ -25,6 +25,7 @@
                                     @csrf<input type="hidden" name="customer_id" value="{{ $candidate->id }}">
                                     <div class="flex flex-col items-center justify-between border-e border-slate-200 bg-slate-50 py-2">
                                         <a href="{{ route('customers.show', $candidate) }}" target="_blank" aria-label="{{ __('View customer') }}" title="{{ __('View customer') }}" class="text-indigo-700"><flux:icon name="eye" class="size-4" /></a>
+                                        @can('customers.edit')<a href="{{ route('customers.show', $candidate) }}#customer-identity-heading" target="_blank" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" class="text-indigo-700"><flux:icon name="pencil-square" class="size-4" /></a>@endcan
                                         <button type="submit" aria-label="{{ __('Select') }}" title="{{ __('Select') }}" class="text-indigo-700"><flux:icon name="check-circle" class="size-4" /></button>
                                     </div>
                                     <div dir="{{ str_starts_with(app()->getLocale(), 'ar') ? 'rtl' : 'ltr' }}" class="min-w-0 p-2">

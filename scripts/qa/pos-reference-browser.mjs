@@ -40,6 +40,7 @@ async function navigate(path) {
 async function inspect(width, expectedZone) {
     const result = await page.evaluate(() => {
         const products = document.querySelector('[data-pos-products-zone]');
+        const categoryGrid = document.querySelector('[data-pos-category-grid]');
         const transaction = document.querySelector('[data-pos-transaction-zone]');
         const main = document.querySelector('main[aria-label]');
         const left = products?.getBoundingClientRect();
@@ -54,6 +55,7 @@ async function inspect(width, expectedZone) {
             left: left && { x: left.x, width: left.width },
             right: right && { x: right.x, width: right.width },
             workspace: workspace && { width: workspace.width, columns: getComputedStyle(main).gridTemplateColumns },
+            categoryColumns: categoryGrid && getComputedStyle(categoryGrid).gridTemplateColumns.trim().split(/\s+/).length,
             productsVisible: products && getComputedStyle(products).display !== 'none',
             transactionVisible: transaction && getComputedStyle(transaction).display !== 'none',
         };
@@ -63,6 +65,7 @@ async function inspect(width, expectedZone) {
     check(!result.overflow, `${width} no page overflow`);
     check(!result.nan, `${width} no NaN`);
     check(!result.untranslated, `${width} no known untranslated POS labels`);
+    if (result.productsVisible) check(result.categoryColumns === (width >= 1024 ? 4 : 2), `${width} real category grid has ${width >= 1024 ? 4 : 2} columns`);
     if (width >= 1024) {
         check(result.productsVisible && result.transactionVisible, `${width} both POS zones visible`);
         check(result.left.x < result.right.x, `${width} catalog physically left of transaction`);
@@ -96,9 +99,29 @@ try {
     await navigate('/pos');
     await inspect(1440);
     check(await page.locator('[data-pos-category-grid] button').count() === 12, 'real QA categories render as dense tiles');
+    check(await page.locator('[data-pos-category-grid] button').evaluateAll((buttons) => buttons.every((button) => button.textContent.trim() && button.hasAttribute('wire:click'))), 'every category tile uses a real dynamic category action');
+    const variableRows = await page.locator('[data-pos-category-grid]').evaluate((grid) => {
+        const sample = grid.cloneNode(true);
+        sample.removeAttribute('data-pos-category-grid');
+        sample.style.cssText = `position:absolute;left:-10000px;top:0;width:${grid.clientWidth}px`;
+        document.body.appendChild(sample);
+        const rows = (count) => {
+            while (sample.children.length > count) sample.lastElementChild.remove();
+            const byTop = new Map();
+            for (const child of sample.children) {
+                const top = Math.round(child.getBoundingClientRect().top);
+                byTop.set(top, (byTop.get(top) || 0) + 1);
+            }
+            return [...byTop.values()];
+        };
+        const patterns = [rows(12), rows(10), rows(7)];
+        sample.remove();
+        return patterns;
+    });
+    check(JSON.stringify(variableRows) === JSON.stringify([[4, 4, 4], [4, 4, 2], [4, 3]]), 'four-column grid adapts to 12, 10, and 7 real-category tiles without filler');
     check(await page.locator('[data-pos-ticket-header] button[aria-label]').count() >= 1, 'new ticket action visible');
     check(await page.locator('[data-pos-transaction-zone]').getByText('الدفع').count() > 0, 'payment area visible');
-    await capture('pos-main-1440-v2.png', false);
+    await capture('pos-main-1440-v3.png', false);
     await capture('pos-two-column-full-1440-v2.png');
 
     await page.locator('[data-pos-products-zone] details summary').click();
@@ -112,8 +135,13 @@ try {
     await page.locator('#pos-customer-search').fill('عميل اختبار');
     await page.waitForURL((url) => url.searchParams.get('customer_q')?.includes('عميل اختبار'));
     check(await page.locator('[data-customer-search-results] form').count() >= 6, 'customer search shows a dense scoped customer grid');
+    check(await page.locator('[data-customer-search-results] a[aria-label="تعديل"]').count() >= 6, 'permitted customer cards offer canonical Edit links');
     await page.locator('.pos-action-menu summary').click();
-    await capture('pos-customer-search-1440-v2.png');
+    await capture('pos-customer-search-1440-v3.png');
+    const [customerEditor] = await Promise.all([context.waitForEvent('page'), page.locator('[data-customer-search-results] a[aria-label="تعديل"]').first().click()]);
+    await customerEditor.waitForLoadState('networkidle');
+    check(customerEditor.url().includes('/customers/') && await customerEditor.locator('#customer-identity-heading').count() === 1, 'Customer Edit opens the canonical scoped customer page');
+    await customerEditor.close();
     await page.locator('[data-customer-search-results] form button').first().click();
     await page.waitForLoadState('networkidle');
     check(await page.locator('[data-pos-ticket-header]').innerText().then((text) => text.includes('عميل اختبار')), 'customer selection attaches to active ticket');
@@ -199,10 +227,10 @@ try {
 
     await page.setViewportSize({ width: 1024, height: 900 });
     await inspect(1024);
-    await capture('pos-main-1024-v2.png');
+    await capture('pos-main-1024-v3.png');
     await page.setViewportSize({ width: 390, height: 844 });
     await inspect(390, 'products');
-    await capture('pos-main-390-v2.png');
+    await capture('pos-main-390-v3.png');
     await page.getByRole('button', { name: 'الطلب الحالي' }).first().click();
     await inspect(390, 'transaction');
     await capture('pos-transaction-390-v2.png');

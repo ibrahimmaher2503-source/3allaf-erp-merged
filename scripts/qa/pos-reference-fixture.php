@@ -39,12 +39,10 @@ if (! PosShift::query()->where('cashier_id', $admin->id)->where('status', 'open'
     ]);
 }
 
-$names = [
-    'ألعاب و مستلزمات متنوعة', 'ألعاب بنات أخرى', 'العاب الكترونية',
-    'أشغال بنات مختلفة', 'ألعاب أولاد أخرى', 'ألعاب الموالد',
-    'العاب الصيف و البحر', 'أكتيفيتي و تلوين', 'ألعاب موسيقية',
-    'ألعاب رياضية', 'ألعاب خارجية', 'ألعاب جماعية',
-];
+$names = array_map(
+    fn (int $number): string => 'فئة اختبار نقطة البيع '.str_pad((string) $number, 2, '0', STR_PAD_LEFT),
+    range(1, 12),
+);
 foreach ($names as $index => $name) {
     $category = Category::query()->firstOrCreate(['code' => sprintf('QA-POS-%02d', $index + 1)], [
         'name_ar' => $name, 'name_en' => 'QA POS category '.($index + 1),
