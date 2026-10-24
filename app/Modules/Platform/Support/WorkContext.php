@@ -24,7 +24,7 @@ final class WorkContext
             ->visibleTo($actor)
             ->where('status', 'active')
             ->orderBy('code')
-            ->get(['id', 'company_id', 'code', 'name_ar', 'name_en']);
+            ->get(['id', 'company_id', 'branch_id', 'type', 'code', 'name_ar', 'name_en']);
     }
 
     public function selected(User $actor): ?Store

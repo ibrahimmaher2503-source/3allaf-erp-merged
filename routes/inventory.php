@@ -27,6 +27,7 @@ use App\Modules\Inventory\Actions\ResolveTransferDifferenceAction;
 use App\Modules\Inventory\Actions\ReverseInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveStockCountAction;
+use App\Modules\Inventory\Actions\SaveStockTransferReceivingDraftAction;
 use App\Modules\Inventory\Actions\SetStockCountQuantityAction;
 use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SubmitStockCountAction;
@@ -38,6 +39,7 @@ use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockCountLine;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Models\StockTransferReceivingDraft;
 use App\Modules\Inventory\Support\InventoryMovementLabel;
 use App\Modules\Inventory\Support\LowStockRule;
 use App\Modules\Inventory\Support\StockMovementSourceReferences;
@@ -138,7 +140,9 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         'top_moving_products' => StockMovement::query()->join('products', 'products.id', '=', 'stock_movements.product_id')->whereIn('stock_movements.store_id', $visibleStoreIds)->where('posted_at', '>=', now()->subDays(7))->select(['products.id', 'products.item_code', 'products.name_ar', 'products.name_en'])->selectRaw('SUM(ABS(stock_movements.quantity)) as moved_quantity')->groupBy('products.id', 'products.item_code', 'products.name_ar', 'products.name_en')->orderByDesc('moved_quantity')->limit(6)->get(),
     ] : [];
     $transferQuery = StockTransfer::query()->where(function ($query) use ($visibleStoreIds): void {
-        $query->whereIn('source_store_id', $visibleStoreIds)->orWhereIn('destination_store_id', $visibleStoreIds);
+        $query->whereIn('source_store_id', $visibleStoreIds)
+            ->orWhereIn('destination_store_id', $visibleStoreIds)
+            ->orWhereHas('allocations', fn ($allocations) => $allocations->whereIn('destination_store_id', $visibleStoreIds));
     });
     $adjustmentQuery = InventoryAdjustment::query()->whereIn('store_id', $visibleStoreIds);
     $countQuery = StockCount::query()->whereIn('store_id', $visibleStoreIds)
@@ -183,7 +187,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $countCategories = $focus === 'count-create' ? Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
     $countSuppliers = $focus === 'count-create' ? Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'visibleStoreIds', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
 };
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {
@@ -276,11 +280,29 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
         return $renderInventory(null, 'transfer-dispatch', $transfer->load(['sourceStore', 'destinationStore', 'lines.product']));
     })->middleware('can:transfers.view')->name('inventory.transfers.dispatch-page');
-    $router->get('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer) use ($renderInventory) {
+    $router->get('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
+        abort_unless($transfer->status === 'submitted', 422);
+        session(['transfer_approval_reviews.'.$transfer->id => $transfer->lock_version]);
 
-        return $renderInventory(null, 'transfer-receive', $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']));
-    })->middleware('can:transfers.view')->name('inventory.transfers.receive-page');
+        return view('inventory.transfer-approval-review', ['transfer' => $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination'])]);
+    })->middleware('can:transfers.approve')->name('inventory.transfers.approval-review');
+    $router->get('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer) {
+        $actor = request()->user();
+        abort_unless($actor instanceof User, 403);
+        $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']);
+        $destinationIds = $transfer->allocations->isNotEmpty()
+            ? $transfer->allocations->pluck('destination_store_id')->unique()
+            : collect([$transfer->destination_store_id]);
+        $destinations = Store::query()->visibleTo($actor)->whereIn('id', $destinationIds)->orderBy('code')->get();
+        abort_if($destinations->isEmpty(), 403);
+        $selectedId = request()->integer('destination_store_id') ?: ($destinations->count() === 1 ? $destinations->first()->id : null);
+        $destination = $selectedId ? $destinations->firstWhere('id', $selectedId) : null;
+        abort_if($selectedId && $destination === null, 403);
+        $draft = $destination ? StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->where('destination_store_id', $destination->id)->first() : null;
+
+        return view('inventory.transfer-receiving-review', compact('transfer', 'destinations', 'destination', 'draft'));
+    })->middleware('can:transfers.receive')->name('inventory.transfers.receive-page');
     $router->get('inventory/transfers/{transfer}/differences', function (StockTransfer $transfer) use ($renderInventory) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
 
@@ -367,8 +389,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('transfer')->middleware('can:transfers.submit')->name('inventory.transfers.submit');
 
     $router->post('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer, ApproveStockTransferAction $action) {
+        $review = request()->validate(['review_version' => ['required', 'integer']]);
+        abort_unless((int) $review['review_version'] === (int) $transfer->lock_version, 409);
+        abort_unless((int) session('transfer_approval_reviews.'.$transfer->id) === (int) $review['review_version'], 409);
         try {
             $action->execute($transfer->id);
+            session()->forget('transfer_approval_reviews.'.$transfer->id);
 
             return back()->with('success', __('Transfer approved in Local Demo.'));
         } catch (AuthorizationException|ValidationException $exception) {
@@ -415,12 +441,12 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         }
     })->whereNumber('transfer')->middleware('can:transfers.dispatch')->name('inventory.transfers.dispatch');
 
-    $router->post('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer, ReceiveStockTransferAction $action) {
+    $router->post('inventory/transfers/{transfer}/receive/draft', function (StockTransfer $transfer, SaveStockTransferReceivingDraftAction $action) {
         try {
-            $validated = request()->validate(['received_quantities' => ['required', 'array', 'min:1'], 'received_quantities.*' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'in:shortage,damage,refusal'], 'difference_reason' => ['nullable', 'string', 'max:1000']]);
-            $action->execute($transfer->id, $validated['received_quantities'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
+            $validated = request()->validate(['destination_store_id' => ['required', 'integer'], 'received_quantities' => ['required', 'array', 'min:1'], 'received_quantities.*' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'in:shortage,damage,refusal'], 'difference_reason' => ['nullable', 'string', 'max:1000']]);
+            $action->execute($transfer->id, (int) $validated['destination_store_id'], $validated['received_quantities'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
 
-            return back()->with('success', __('Transfer receipt recorded in Local Demo.'));
+            return redirect()->route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $validated['destination_store_id']])->with('success', __('Receiving draft saved. No stock was posted.'));
         } catch (Throwable $exception) {
             if ($exception instanceof AuthorizationException) {
                 throw $exception;
@@ -428,7 +454,22 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
             report($exception);
 
-            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
+            return back()->withInput()->with('error', UserSafeError::message($exception));
+        }
+    })->whereNumber('transfer')->middleware('can:transfers.receive')->name('inventory.transfers.receive-draft');
+    $router->post('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer, ReceiveStockTransferAction $action) {
+        $validated = request()->validate(['destination_store_id' => ['required', 'integer']]);
+        try {
+            $action->finalizeDraft($transfer->id, (int) $validated['destination_store_id']);
+
+            return redirect()->route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $validated['destination_store_id']])->with('success', __('Destination receipt finally confirmed.'));
+        } catch (Throwable $exception) {
+            if ($exception instanceof AuthorizationException) {
+                throw $exception;
+            }
+            report($exception);
+
+            return back()->with('error', UserSafeError::message($exception));
         }
     })->whereNumber('transfer')->middleware('can:transfers.receive')->name('inventory.transfers.receive');
 

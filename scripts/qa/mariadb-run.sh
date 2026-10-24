@@ -57,11 +57,12 @@ case "$mode" in
  integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
  hardening) "$QA_PHP" "$QA_ROOT/scripts/qa/financial-domain.php" ;;
  reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;
-	compact|browser|pos-reference|pos-theme-r8|purchase-approval|purchase-invoice-hotfix)
+	compact|browser|pos-reference|pos-theme-r8|post-pos-repairs|purchase-approval|purchase-invoice-hotfix)
    if [[ "$mode" == purchase-approval || "$mode" == purchase-invoice-hotfix ]] && [[ ${QA_PURCHASE_FIXTURE_READY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/purchase-approval-fixture.php"; fi
-	   if [[ "$mode" == browser || "$mode" == pos-reference || "$mode" == pos-theme-r8 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"
+	   if [[ "$mode" == browser || "$mode" == pos-reference || "$mode" == pos-theme-r8 || "$mode" == post-pos-repairs ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"
    export QA_BROWSER_ACCOUNTS="$work/accounts.json"; fi
 	   if [[ "$mode" == pos-reference || "$mode" == pos-theme-r8 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-reference-fixture.php"; fi
+	   if [[ "$mode" == post-pos-repairs ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/post-pos-repairs-fixture.php" "$work/post-pos-repairs.json"; export QA_POST_POS_FIXTURE="$work/post-pos-repairs.json" QA_POST_POS_SCREENSHOTS="${QA_POST_POS_SCREENSHOTS:-$(mktemp -d /tmp/rajeh-r1-r7-review.XXXXXX)}"; echo "Review screenshots: $QA_POST_POS_SCREENSHOTS"; fi
    export SESSION_DRIVER=file
    port=$("$QA_PHP" -r '$s=stream_socket_server("tcp://127.0.0.1:0");echo parse_url("tcp://".stream_socket_get_name($s,false),PHP_URL_PORT);')
    export QA_BROWSER_URL="http://127.0.0.1:$port"
@@ -69,7 +70,7 @@ case "$mode" in
    "$QA_PHP" -S "127.0.0.1:$port" "$QA_ROOT/scripts/qa/browser-router.php" >"$work/http.log" 2>&1 &
    http_pid=$!
    for _ in $(seq 1 50); do curl -fsS "$QA_BROWSER_URL/up" >/dev/null 2>&1 && break; sleep 0.2; done
-	   if [[ "$mode" == purchase-approval ]]; then node "$QA_ROOT/scripts/qa/purchase-approval-browser.mjs"; elif [[ "$mode" == purchase-invoice-hotfix ]]; then node "$QA_ROOT/scripts/qa/purchase-invoice-hotfix-browser.mjs"; elif [[ "$mode" == pos-reference ]]; then node "$QA_ROOT/scripts/qa/pos-reference-browser.mjs"; elif [[ "$mode" == pos-theme-r8 ]]; then node "$QA_ROOT/scripts/qa/pos-theme-r8-browser.mjs"; else node "$QA_ROOT/scripts/qa/browser-smoke.mjs"; fi
+	   if [[ "$mode" == purchase-approval ]]; then node "$QA_ROOT/scripts/qa/purchase-approval-browser.mjs"; elif [[ "$mode" == purchase-invoice-hotfix ]]; then node "$QA_ROOT/scripts/qa/purchase-invoice-hotfix-browser.mjs"; elif [[ "$mode" == pos-reference ]]; then node "$QA_ROOT/scripts/qa/pos-reference-browser.mjs"; elif [[ "$mode" == pos-theme-r8 ]]; then node "$QA_ROOT/scripts/qa/pos-theme-r8-browser.mjs"; elif [[ "$mode" == post-pos-repairs ]]; then node "$QA_ROOT/scripts/qa/post-pos-repairs-browser.mjs"; else node "$QA_ROOT/scripts/qa/browser-smoke.mjs"; fi
    ;;
  export) "$QA_PHP" "$QA_ROOT/scripts/qa/export-check.php" ;;
  backup) "$QA_PHP" "$QA_ROOT/scripts/qa/backup-fixture.php" "$work/backup.zip"; QA_BACKUP_ARCHIVE="$work/backup.zip" "$QA_ROOT/scripts/qa/backup-restore.sh" ;;

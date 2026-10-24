@@ -53,7 +53,7 @@ final class SavePurchaseInvoiceAction
                     ->lockForUpdate()
                     ->findOrFail($id);
 
-            $originalQuantities = $invoice?->lines()->get()->mapWithKeys(fn ($line): array => [$line->product_id => $line->original_quantity ?? $line->quantity])->all() ?? [];
+            $existingLines = $invoice?->lines()->lockForUpdate()->get()->keyBy('product_id') ?? collect();
 
             if ($invoice !== null) {
                 if ($expectedVersion !== null && $invoice->lock_version !== $expectedVersion) {
@@ -200,19 +200,31 @@ final class SavePurchaseInvoiceAction
                 $before = $invoice->only(['supplier_id', 'store_id', 'status', 'subtotal', 'tax_amount', 'discount_amount', 'total_amount', 'lock_version']);
                 $invoice->update([...$attributes, 'lock_version' => $invoice->lock_version + 1]);
                 $event = 'update_purchase_invoice';
-                $invoice->lines()->delete();
             }
 
             foreach ($totals['calculated'] as $index => $line) {
                 $product = Product::query()->findOrFail($normalizedLines[$index]['product_id']);
-                $invoice->lines()->create([
+                $lineAttributes = [
                     ...$line,
                     'product_id' => $normalizedLines[$index]['product_id'],
                     'purchase_order_line_id' => $normalizedLines[$index]['purchase_order_line_id'],
                     'base_consumer_price' => $normalizedLines[$index]['base_consumer_price'] ?? $product->sale_price,
-                    'original_quantity' => $originalQuantities[$normalizedLines[$index]['product_id']] ?? $line['quantity'],
+                    'original_quantity' => $line['quantity'],
                     'quantity_received' => 0,
-                ]);
+                ];
+                $existingLine = $existingLines->get($product->id);
+                if ($existingLine === null) {
+                    $invoice->lines()->create($lineAttributes);
+                } else {
+                    $existingLine->update($lineAttributes);
+                }
+            }
+            $submittedProductIds = array_map('intval', array_column($normalizedLines, 'product_id'));
+            $removedLineIds = $existingLines
+                ->filter(fn ($existingLine): bool => ! in_array((int) $existingLine->product_id, $submittedProductIds, true))
+                ->pluck('id');
+            if ($removedLineIds->isNotEmpty()) {
+                $invoice->lines()->whereKey($removedLineIds)->delete();
             }
 
             app(RecordAuditEvent::class)->execute(
