@@ -7,13 +7,46 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-zinc-100 dark:bg-zinc-950 font-sans antialiased text-zinc-900 dark:text-zinc-100 flex flex-col">
+    <body class="flex min-h-screen flex-col bg-page font-sans text-text-primary antialiased">
         @php($posStore = $store ?? null)
         @php($posShift = $shift ?? null)
         @php($posBranch = $posStore?->branch)
         @php($posReady = $posStore !== null && $posShift?->status->acceptsActivity() === true)
+        @php($isPosArabic = str_starts_with(app()->getLocale(), 'ar'))
         <!-- Dedicated POS Application Top Bar -->
-        <header class="sticky top-0 z-30 border-b border-indigo-950 bg-[#454b79] px-3 py-1 text-white shadow-xs" data-pos-shell>
+        <header
+            class="sticky top-0 z-30 border-b border-indigo-950 bg-[#454b79] px-3 py-1 text-white shadow-xs"
+            data-pos-shell
+            x-data="{
+                savingAppearance: false,
+                async persistAppearance(appearance) {
+                    const preferences = { ...(window.__toyJoyUiPreferences || {}), appearance };
+                    window.__toyJoyUiPreferences = preferences;
+                    this.savingAppearance = true;
+
+                    try {
+                        const response = await fetch(@js(route('platform.ui-preferences')), {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                            },
+                            body: JSON.stringify(preferences),
+                        });
+
+                        if (! response.ok) {
+                            throw new Error(`Appearance preference save failed: ${response.status}`);
+                        }
+                    } catch (error) {
+                        console.warn('Appearance preference could not be saved to the account.', error);
+                    } finally {
+                        this.savingAppearance = false;
+                    }
+                },
+            }"
+        >
             <div class="flex flex-wrap items-center justify-between gap-1 xl:flex-nowrap">
                 <div class="flex items-center gap-2">
                     <a href="{{ route('dashboard') }}" class="whitespace-nowrap text-sm font-black text-white">{{ __('POS') }}</a>
@@ -64,6 +97,19 @@
 
                     <!-- Locale switcher -->
                     <x-locale-switcher compact />
+
+                    <button
+                        type="button"
+                        data-pos-theme-toggle
+                        x-on:click="const appearance = $flux.dark ? 'light' : 'dark'; $flux.appearance = appearance; persistAppearance(appearance)"
+                        x-bind:aria-label="$flux.dark ? @js($isPosArabic ? 'التبديل إلى الوضع الفاتح' : 'Switch to light mode') : @js($isPosArabic ? 'التبديل إلى الوضع الداكن' : 'Switch to dark mode')"
+                        x-bind:title="$flux.dark ? @js($isPosArabic ? 'التبديل إلى الوضع الفاتح' : 'Switch to light mode') : @js($isPosArabic ? 'التبديل إلى الوضع الداكن' : 'Switch to dark mode')"
+                        class="inline-flex size-8 shrink-0 items-center justify-center rounded border border-white/30 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-60"
+                        x-bind:disabled="savingAppearance"
+                    >
+                        <flux:icon name="sun" class="size-4" x-show="$flux.dark" x-cloak aria-hidden="true" />
+                        <flux:icon name="moon" class="size-4" x-show="! $flux.dark" aria-hidden="true" />
+                    </button>
 
                     <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex items-center gap-1 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/10"><flux:icon name="arrow-left" class="size-4" />{{ __('Dashboard') }}</a>
 

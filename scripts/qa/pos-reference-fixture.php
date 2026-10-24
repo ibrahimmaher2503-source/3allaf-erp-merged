@@ -12,6 +12,7 @@ use App\Modules\Customer\Models\CustomerPolicySettingVersion;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\Governorate;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Pricing\Actions\ApprovePriceProposalAction;
 use App\Modules\Pricing\Actions\CreatePriceProposalAction;
 use App\Modules\Pricing\Actions\SubmitPriceProposalAction;
@@ -24,6 +25,23 @@ use Illuminate\Support\Str;
 $fixture = qaFixture();
 $admin = $fixture['admin'];
 $store = $fixture['store'];
+
+PaymentMethod::query()->firstOrCreate(['code' => 'QA-CARD'], [
+    'name_ar' => 'بطاقة اختبار',
+    'name_en' => 'QA Card',
+    'type' => 'card',
+    'requires_evidence' => false,
+    'offline_eligible' => false,
+    'status' => 'active',
+]);
+PaymentMethod::query()->firstOrCreate(['code' => 'QA-ELECTRONIC'], [
+    'name_ar' => 'دفع إلكتروني اختباري',
+    'name_en' => 'QA Electronic',
+    'type' => 'electronic',
+    'requires_evidence' => false,
+    'offline_eligible' => false,
+    'status' => 'active',
+]);
 
 if (! PosShift::query()->where('cashier_id', $admin->id)->where('status', 'open')->exists()) {
     $shift = PosShift::query()->create([
@@ -50,12 +68,21 @@ foreach ($names as $index => $name) {
     ]);
     $product = Product::query()->where('model_number', sprintf('QA-POS-%02d', $index + 1))->first();
     if ($product === null) {
-        $product = Product::factory()->create([
+        $product = Product::query()->create([
+            'item_code' => sprintf('QA-POS-SKU-%02d', $index + 1),
             'category_id' => $category->id,
             'model_number' => sprintf('QA-POS-%02d', $index + 1),
             'name_ar' => $index === 0 ? 'لعبة تركيب عربية' : 'لعبة اختبار '.($index + 1),
             'name_en' => 'QA Toy '.($index + 1),
+            'product_type' => 'standard',
+            'unit_of_measure' => 'piece',
+            'status' => 'active',
+            'barcode_mode' => 'single',
+            'average_cost' => '10.00',
             'sale_price' => '45.00',
+            'reorder_threshold' => '1.000',
+            'fractional_quantity' => false,
+            'lock_version' => 1,
         ]);
     }
     $product->barcodes()->firstOrCreate(['barcode' => sprintf('QA-POS-BAR-%02d', $index + 1)], [
