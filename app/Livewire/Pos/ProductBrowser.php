@@ -194,7 +194,7 @@ final class ProductBrowser extends Component
                 }
             }
         }
-        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->limit(24)->get();
+        $categories = Category::query()->active()->whereHas('products', fn ($q) => $q->active()->familiesAndSimple())->orderBy('sort_order')->orderBy('id')->get();
 
         return view('livewire.pos.product-browser', compact('context', 'store', 'products', 'categories', 'showCategories', 'simplePrices', 'simpleStock', 'familyRanges', 'familyStock', 'familyChildImages', 'drawer', 'drawerPrices', 'drawerStock', 'optionAvailability'));
     }

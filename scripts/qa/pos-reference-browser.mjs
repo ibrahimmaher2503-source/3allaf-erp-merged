@@ -98,8 +98,19 @@ try {
     }
     await navigate('/pos');
     await inspect(1440);
-    check(await page.locator('[data-pos-category-grid] button').count() === 12, 'real QA categories render as dense tiles');
+    check(await page.locator('[data-pos-category-grid] button').count() === 30, 'all 30 eligible canonical QA categories render without truncation');
     check(await page.locator('[data-pos-category-grid] button').evaluateAll((buttons) => buttons.every((button) => button.textContent.trim() && button.hasAttribute('wire:click'))), 'every category tile uses a real dynamic category action');
+    for (const categoryNumber of [25, 30]) {
+        const categoryName = `فئة اختبار نقطة البيع ${categoryNumber}`;
+        const categoryTile = page.locator('[data-pos-category-grid] button').filter({ hasText: categoryName });
+        check(await categoryTile.count() === 1, `category ${categoryNumber} is present in the real category grid`);
+        await categoryTile.scrollIntoViewIfNeeded();
+        check(await categoryTile.isVisible(), `category ${categoryNumber} is reachable by scrolling`);
+        await categoryTile.click();
+        await page.locator('[data-pos-product-grid] article').first().waitFor();
+        check(await page.locator('[data-pos-product-grid] article').count() === 1 && (await page.locator('[data-pos-product-grid] article').first().innerText()).includes(`لعبة اختبار ${categoryNumber}`), `category ${categoryNumber} filters its own canonical product`);
+        await navigate('/pos?lookup=products');
+    }
     const variableRows = await page.locator('[data-pos-category-grid]').evaluate((grid) => {
         const sample = grid.cloneNode(true);
         sample.removeAttribute('data-pos-category-grid');

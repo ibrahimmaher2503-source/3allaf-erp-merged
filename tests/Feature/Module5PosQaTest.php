@@ -9,6 +9,7 @@ use App\Livewire\Pos\CheckoutPanel;
 use App\Livewire\Pos\ProductBrowser;
 use App\Mail\PosInvoiceReceipt;
 use App\Models\User;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerPolicySettingVersion;
@@ -332,6 +333,23 @@ final class Module5PosQaTest extends TestCase
         Livewire::test(ProductBrowser::class)->call('chooseCategory', $this->product->category_id)->assertSee('لعبة اختبار');
         request()->setLaravelSession(app('session')->driver());
         self::assertStringContainsString('لعبة اختبار', app(Cart::class)->render(app(PosCartSnapshot::class), app(PosContextResolver::class), app(PosOpenOrderManager::class))->with('errors', new ViewErrorBag)->render());
+    }
+
+    public function test_pos_category_browser_exposes_all_eligible_categories_beyond_twenty_four(): void
+    {
+        app()->setLocale('ar');
+        for ($number = 1; $number <= 30; $number++) {
+            $category = Category::factory()->create([
+                'code' => sprintf('POS-CAP-%02d', $number),
+                'name_ar' => sprintf('فئة اختبار السقف %02d', $number),
+                'sort_order' => $number,
+            ]);
+            Product::factory()->create(['category_id' => $category->id]);
+        }
+
+        Livewire::test(ProductBrowser::class)
+            ->assertSee('فئة اختبار السقف 25')
+            ->assertSee('فئة اختبار السقف 30');
     }
 
     public function test_customer_lookup_reports_missing_policy_and_finds_the_displayed_code(): void

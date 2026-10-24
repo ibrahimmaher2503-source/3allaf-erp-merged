@@ -41,7 +41,7 @@ if (! PosShift::query()->where('cashier_id', $admin->id)->where('status', 'open'
 
 $names = array_map(
     fn (int $number): string => 'فئة اختبار نقطة البيع '.str_pad((string) $number, 2, '0', STR_PAD_LEFT),
-    range(1, 12),
+    range(1, 30),
 );
 foreach ($names as $index => $name) {
     $category = Category::query()->firstOrCreate(['code' => sprintf('QA-POS-%02d', $index + 1)], [
@@ -132,4 +132,4 @@ if (! Sale::query()->where('document_number', 'QA-POS-LOOKUP-001')->exists()) {
     $sale->update(['status' => 'approved', 'approved_at' => now()]);
 }
 
-echo 'PASS disposable POS browser fixture: 12 catalog categories, priced stock, open shift, customer, approved invoice'.PHP_EOL;
+echo 'PASS disposable POS browser fixture: 30 catalog categories, priced stock, open shift, customer, approved invoice'.PHP_EOL;
