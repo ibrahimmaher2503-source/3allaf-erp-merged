@@ -1,5 +1,5 @@
 @php
-    $initial = $products->map(function ($product) use ($restored, $prefill) {
+    $initial = $products->map(function ($product) use ($restored, $prefill, $documentPrices) {
         $selection = collect($restored)->first(
             fn ($row) => (int) ($row['product_id'] ?? 0) === $product->id
         ) ?? [];
@@ -15,8 +15,10 @@
                 'barcode' => $barcode->barcode,
                 'is_primary' => (bool) $barcode->is_primary,
             ])->values(),
-            'copies' => (int) ($selection['copies'] ?? ($prefill[$product->id] ?? 1)),
+            'copies' => (int) ($prefill[$product->id] ?? ($selection['copies'] ?? 1)),
             'barcode_id' => (int) ($selection['barcode_id'] ?? $product->barcodes->first()?->id),
+            'resolved_price' => $documentPrices[$product->id] ?? null,
+            'document_quantity' => $prefill[$product->id] ?? null,
         ];
     })->values();
 @endphp

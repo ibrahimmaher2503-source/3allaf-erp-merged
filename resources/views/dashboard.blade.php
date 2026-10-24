@@ -6,6 +6,9 @@
     $trendPurchasesTotal = (float) $dashboard['trend']->sum(fn (array $day): float => (float) $day['purchases']);
     $trendHasData = $trendSalesTotal > 0 || $trendPurchasesTotal > 0;
     $approvalReferences = new \App\Modules\Platform\Support\ApprovalInboxReferences($approvalPreview);
+    $workStore = app(\App\Modules\Platform\Support\WorkContext::class)->selected(auth()->user());
+    $posContext = app(\App\Modules\Retail\Support\PosContextResolver::class)->resolve(auth()->user());
+    $newPosUrl = $posContext->isReady() ? route('pos') : route('pos.shift', $workStore ? ['store_id' => $workStore->id] : []);
 @endphp
 <x-layouts::app :title="$isArabic ? 'لوحة القيادة' : 'Operational dashboard'">
 <x-app.page max-width="full" class="space-y-4" data-guide="dashboard-header">
@@ -16,7 +19,7 @@
     <section class="dashboard-panel" data-dashboard-quick-actions aria-labelledby="dashboard-quick-actions-heading">
         <div class="dashboard-panel__header"><h2 id="dashboard-quick-actions-heading" class="font-bold">{{ $isArabic ? 'إجراءات سريعة' : 'Quick actions' }}</h2></div>
         <div class="dashboard-quick-actions">
-            @if(auth()->user()->can('pos_sales.create') && auth()->user()->can('pos_sales.view'))<a href="{{ route('pos') }}" wire:navigate><flux:icon.shopping-cart class="size-5" /><span>{{ $isArabic ? 'نقطة بيع جديدة' : 'New POS sale' }}</span></a>@endif
+            @if(auth()->user()->can('pos_sales.create') && auth()->user()->can('pos_sales.view'))<a href="{{ $newPosUrl }}" wire:navigate><flux:icon.shopping-cart class="size-5" /><span>{{ $isArabic ? 'نقطة بيع جديدة' : 'New POS sale' }}</span></a>@endif
             @can('sales_invoices.create')<a href="{{ route('sales.invoices.create') }}" wire:navigate><flux:icon.receipt-percent class="size-5" /><span>{{ $isArabic ? 'فاتورة مبيعات جديدة' : 'New sales invoice' }}</span></a>@endcan
             @if(auth()->user()->can('purchase_invoices.draft') && auth()->user()->can('purchase_invoices_supplier_returns.view'))<a href="{{ route('purchasing.invoices', ['create' => 1]) }}" wire:navigate><flux:icon.receipt-percent class="size-5" /><span>{{ $isArabic ? 'فاتورة مشتريات جديدة' : 'New purchase invoice' }}</span></a>@endif
             @can('purchase_orders.create')<a href="{{ route('purchasing.orders.create') }}" wire:navigate><flux:icon.clipboard-document-list class="size-5" /><span>{{ $isArabic ? 'أمر شراء جديد' : 'New purchase order' }}</span></a>@endcan

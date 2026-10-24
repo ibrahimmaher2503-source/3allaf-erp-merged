@@ -44,7 +44,8 @@ final class PurchaseInvoiceLine extends Model
             $line->original_quantity ??= $line->quantity;
         });
         self::updating(function (self $line): void {
-            if ($line->getRawOriginal('original_quantity') !== null && $line->isDirty('original_quantity')) {
+            if ($line->getRawOriginal('original_quantity') !== null && $line->isDirty('original_quantity')
+                && $line->invoice()->value('status') !== 'draft') {
                 throw new \LogicException('The original invoice quantity is immutable.');
             }
         });

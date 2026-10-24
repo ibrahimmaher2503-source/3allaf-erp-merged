@@ -5,7 +5,7 @@
     </div>
 
     <div x-show="!selected.length" class="rounded-xl border border-dashed border-border p-5 text-center text-text-muted">
-        {{ __('Search and select one or more products to prepare labels.') }}
+        {{ str_starts_with(app()->getLocale(), 'ar') ? 'ابحث عن منتج واحد أو أكثر واختره لتجهيز الملصقات.' : 'Search and select one or more products to prepare labels.' }}
     </div>
 
     @if ($canCreateLabels)
@@ -17,7 +17,7 @@
             <flux:select name="store_id" :label="__('Selling outlet')" required>
                 <flux:select.option value="">{{ __('Select a selling outlet') }}</flux:select.option>
                 @foreach ($stores as $store)
-                    <flux:select.option :value="$store->id" :selected="(int) old('store_id', request('store')) === $store->id">
+                    <flux:select.option :value="$store->id" :selected="(int) old('store_id', $documentStoreId ?: request('store')) === $store->id">
                         {{ $store->branch?->code }} · {{ $store->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}
                     </flux:select.option>
                 @endforeach
