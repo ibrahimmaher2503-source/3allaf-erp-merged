@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Livewire\Pos\Cart;
 use App\Livewire\Pos\CheckoutPanel;
 use App\Livewire\Pos\ProductBrowser;
+use App\Mail\PosInvoiceReceipt;
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customer\Models\Customer;
@@ -31,12 +32,14 @@ use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Services\PosCalculationService;
+use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
@@ -435,5 +438,141 @@ final class Module5PosQaTest extends TestCase
         $this->get(route('pos.products.thumbnail', [$otherProduct, $attachment]))->assertForbidden();
         $this->actingAs(User::factory()->create(['status' => 'active']));
         $this->get($url)->assertForbidden();
+    }
+
+    public function test_pos_quick_create_persists_email_preference_without_internal_purpose_field(): void
+    {
+        foreach ([
+            'customer.consent.purpose' => '["retail"]',
+            'customer.phone_normalization' => 'digits_only',
+            'customer.consent.wording' => '{"version":"qa-1","text":"QA consent"}',
+            'customer.consent.retention' => '{"days":365}',
+        ] as $key => $value) {
+            CustomerPolicySettingVersion::query()->create(['key' => $key, 'value' => $value, 'value_type' => str_starts_with($value, '{') || str_starts_with($value, '[') ? 'json' : 'string', 'version' => 1, 'created_by' => $this->cashier->id]);
+        }
+        $governorate = Governorate::query()->create(['code' => 'QA-EMAIL', 'name_ar' => 'القاهرة', 'name_en' => 'Cairo', 'status' => 'active']);
+        $this->post(route('pos.customer.create'), [
+            'idempotency_key' => (string) Str::uuid(),
+            'phone' => '01012345678',
+            'first_name_ar' => 'عميل',
+            'last_name_ar' => 'بريد',
+            'governorate_id' => $governorate->id,
+            'email' => 'buyer@example.test',
+            'invoice_delivery_method' => 'email',
+        ])->assertSessionHasNoErrors();
+        $customer = Customer::query()->sole();
+        self::assertSame('email', $customer->invoice_delivery_method);
+        self::assertSame((int) $this->store->id, (int) $customer->created_store_id);
+        self::assertSame('retail', $customer->consents()->firstOrFail()->purpose);
+    }
+
+    public function test_invoice_delivery_defaults_to_print_and_missing_email_falls_back(): void
+    {
+        Mail::fake();
+        $customer = $this->deliveryCustomer(null);
+        self::assertSame('print', $customer->fresh()->invoice_delivery_method);
+        $sale = $this->deliverySale($customer);
+        self::assertSame('print', app(InvoiceDeliveryService::class)->deliver($sale));
+        $customer->update(['invoice_delivery_method' => 'email']);
+        self::assertSame('print', app(InvoiceDeliveryService::class)->deliver($sale));
+        Mail::assertNothingSent();
+        self::assertSame(0, DB::table('sale_invoice_delivery_attempts')->count());
+    }
+
+    public function test_invoice_delivery_sends_once_from_the_approved_sale_snapshot(): void
+    {
+        config()->set('mail.default', 'smtp');
+        Mail::fake();
+        $customer = $this->deliveryCustomer('buyer@example.test', 'email');
+        $sale = $this->deliverySale($customer);
+        self::assertSame('email_sent', app(InvoiceDeliveryService::class)->deliver($sale));
+        self::assertSame('already_attempted', app(InvoiceDeliveryService::class)->deliver($sale));
+        Mail::assertSent(PosInvoiceReceipt::class, 1);
+        self::assertSame('sent', DB::table('sale_invoice_delivery_attempts')->where('sale_id', $sale->id)->value('status'));
+        self::assertStringContainsString($sale->document_number, (new PosInvoiceReceipt($sale->load('store.company', 'branch', 'customer', 'lines')))->render());
+    }
+
+    public function test_log_mailer_is_reported_as_failed_instead_of_fake_email_success(): void
+    {
+        config()->set('mail.default', 'log');
+        Mail::fake();
+        $sale = $this->deliverySale($this->deliveryCustomer('buyer@example.test', 'email'));
+        self::assertSame('email_failed', app(InvoiceDeliveryService::class)->deliver($sale));
+        Mail::assertNothingSent();
+        self::assertSame('failed', DB::table('sale_invoice_delivery_attempts')->where('sale_id', $sale->id)->value('status'));
+        self::assertSame('approved', $sale->fresh()->status);
+    }
+
+    public function test_mail_transport_failure_preserves_approved_sale_and_is_not_retried(): void
+    {
+        config()->set('mail.default', 'smtp');
+        $customer = $this->deliveryCustomer('buyer@example.test', 'email');
+        $sale = $this->deliverySale($customer);
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('QA transport failure'));
+        self::assertSame('email_failed', app(InvoiceDeliveryService::class)->deliver($sale));
+        self::assertSame('approved', $sale->fresh()->status);
+        self::assertSame('failed', DB::table('sale_invoice_delivery_attempts')->where('sale_id', $sale->id)->value('status'));
+        self::assertSame('already_attempted', app(InvoiceDeliveryService::class)->deliver($sale));
+    }
+
+    public function test_checkout_stays_successful_when_post_sale_invoice_email_fails(): void
+    {
+        config()->set('mail.default', 'smtp');
+        $customer = $this->deliveryCustomer('buyer@example.test', 'email');
+        $order = app(PosOpenOrderManager::class)->active(request(), $this->cashier, app(PosContextResolver::class)->resolve($this->cashier));
+        $order->update(['customer_id' => $customer->id]);
+        foreach (['loyalty.retail_rule' => ['earn_points_per_currency' => '0.0001', 'redeem_currency_per_point' => '1'], 'loyalty.expiry_policy' => ['days' => 365], 'loyalty.rounding_policy' => ['earn' => 'floor', 'redeem' => 'floor'], 'loyalty.ledger_integrity' => ['enabled' => true]] as $key => $value) {
+            CustomerPolicySettingVersion::query()->create(['key' => $key, 'value' => json_encode($value), 'value_type' => 'json', 'version' => 1, 'created_by' => $this->cashier->id]);
+        }
+        $method = PaymentMethod::factory()->create(['type' => 'card']);
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('QA transport failure'));
+        $this->post(route('pos.checkout'), [
+            'checkout_token' => $order->checkout_token,
+            'open_order_uuid' => $order->uuid,
+            'payment_mode' => 'card',
+            'payments' => [['method_id' => $method->id, 'amount' => '30']],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('pos'));
+        $sale = Sale::query()->sole();
+        self::assertSame('approved', $sale->status);
+        self::assertSame('failed', DB::table('sale_invoice_delivery_attempts')->where('sale_id', $sale->id)->value('status'));
+        self::assertSame('1.000000', StockBalance::query()->firstOrFail()->on_hand);
+    }
+
+    public function test_invoice_delivery_rejects_customer_from_another_company(): void
+    {
+        Mail::fake();
+        $otherCompany = Company::factory()->create();
+        $otherBranch = Branch::factory()->for($otherCompany)->create();
+        $otherStore = Store::factory()->for($otherBranch)->create(['company_id' => $otherCompany->id]);
+        $customer = $this->deliveryCustomer('other@example.test', 'email', $otherStore);
+        self::assertSame('print', app(InvoiceDeliveryService::class)->deliver($this->deliverySale($customer)));
+        Mail::assertNothingSent();
+        self::assertSame(0, DB::table('sale_invoice_delivery_attempts')->count());
+    }
+
+    private function deliveryCustomer(?string $email, ?string $method = null, ?Store $store = null): Customer
+    {
+        $store ??= $this->store;
+
+        return Customer::query()->create([
+            'idempotency_key' => (string) Str::uuid(), 'name_ar' => 'عميل الفاتورة', 'name_en' => 'Invoice customer',
+            'phone_normalized' => '2010'.random_int(10000000, 99999999), 'phone_display' => '01012345678',
+            'email' => $email,
+            'status' => 'active', 'created_by' => $this->cashier->id,
+            'created_branch_id' => $store->branch_id, 'created_store_id' => $store->id,
+        ] + ($method === null ? [] : ['invoice_delivery_method' => $method]));
+    }
+
+    private function deliverySale(Customer $customer): Sale
+    {
+        $sale = Sale::query()->create([
+            'branch_id' => $this->store->branch_id, 'store_id' => $this->store->id,
+            'cashier_id' => $this->cashier->id, 'customer_id' => $customer->id,
+            'document_number' => 'QA-POS-EMAIL-'.Str::random(8), 'status' => 'draft',
+            'idempotency_key' => (string) Str::uuid(), 'subtotal' => '30.00', 'total' => '30.00', 'currency_code' => 'EGP',
+        ]);
+        $sale->update(['status' => 'approved', 'approved_at' => now()]);
+
+        return $sale->fresh();
     }
 }

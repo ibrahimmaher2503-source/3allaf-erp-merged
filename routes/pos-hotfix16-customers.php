@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Modules\Customer\Actions\CreateCustomerAction;
 use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
@@ -59,21 +60,27 @@ Route::post('pos/customer/create', function (Request $request, CreateCustomerAct
         'first_name_en' => ['nullable', 'string', 'max:190'],
         'last_name_en' => ['nullable', 'string', 'max:190'],
         'email' => ['nullable', 'email', 'max:190'],
+        'invoice_delivery_method' => ['nullable', 'in:print,email'],
         'secondary_phone' => ['nullable', 'string', 'max:64', PhoneNormalizer::validationRule()],
         'address_ar' => ['nullable', 'string', 'max:4000'],
         'address_en' => ['nullable', 'string', 'max:4000'],
         'customer_group_id' => ['nullable', 'integer'],
         'governorate_id' => ['required', 'integer'],
         'city_id' => ['nullable', 'integer'],
-        'consent_purpose' => ['required', 'string', 'max:80'],
+        'consent_purpose' => ['nullable', 'string', 'max:80'],
     ], ['governorate_id.required' => __('Please select a governorate.')]);
     try {
         $context = $contexts->resolve($user);
         if (! $context->isReady() || $context->store === null) {
             throw new InvalidArgumentException($context->disabledReason ?? __('The active order is unavailable.'));
         }
+        $purposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
+        $purpose = in_array('retail', $purposes, true) ? 'retail' : (string) ($validated['consent_purpose'] ?? '');
+        if (! in_array($purpose, $purposes, true)) {
+            throw new InvalidArgumentException(__('Choose an allowed customer consent purpose.'));
+        }
         $customer = $customers->execute($user, $context->store, $validated + ['consents' => [[
-            'purpose' => $validated['consent_purpose'], 'status' => 'granted', 'source' => 'pos',
+            'purpose' => $purpose, 'status' => 'granted', 'source' => 'pos',
         ]]], cityOptional: true);
         $orders->setCustomer($request, $user, $context, $customer);
 

@@ -22,7 +22,7 @@ final class Customer extends Model
     private bool $namedMutation = false;
 
     protected $fillable = [
-        'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email',
+        'public_id', 'phone_normalized', 'phone_display', 'first_name_ar', 'last_name_ar', 'first_name_en', 'last_name_en', 'name_ar', 'name_en', 'email', 'invoice_delivery_method',
         'secondary_phone', 'secondary_phone_normalized', 'address_ar', 'address_en', 'status', 'merged_into_id',
         'created_by', 'updated_by', 'created_branch_id', 'created_store_id', 'customer_group_id', 'governorate_id', 'city_id', 'idempotency_key', 'lock_version',
     ];

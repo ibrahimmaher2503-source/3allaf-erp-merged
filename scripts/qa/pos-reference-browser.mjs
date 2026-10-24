@@ -98,22 +98,22 @@ try {
     check(await page.locator('[data-pos-category-grid] button').count() === 12, 'real QA categories render as dense tiles');
     check(await page.locator('[data-pos-ticket-header] button[aria-label]').count() >= 1, 'new ticket action visible');
     check(await page.locator('[data-pos-transaction-zone]').getByText('الدفع').count() > 0, 'payment area visible');
-    await capture('pos-main-1440.png', false);
-    await capture('pos-two-column-full-1440.png');
+    await capture('pos-main-1440-v2.png', false);
+    await capture('pos-two-column-full-1440-v2.png');
 
     await page.locator('[data-pos-products-zone] details summary').click();
     check(await page.locator('[data-pos-products-zone] details[open] a').count() === 3, 'lookup shows only supported product, customer, invoice sources');
     await page.locator('.pos-action-menu summary').click();
     check(await page.locator('[data-pos-order-actions]').isVisible(), 'supported transaction action grid opens beside lookup');
-    await capture('pos-lookup-menu-1440.png');
+    await capture('pos-lookup-menu-1440-v2.png');
     await page.locator('[data-pos-products-zone] details a[href*="lookup=customers"]').click();
     await page.waitForLoadState('networkidle');
     check(await page.locator('[data-pos-customer-lookup]').count() === 1, 'customer lookup renders');
     await page.locator('#pos-customer-search').fill('عميل اختبار');
     await page.waitForURL((url) => url.searchParams.get('customer_q')?.includes('عميل اختبار'));
-    check(await page.locator('[data-customer-search-results] form').count() >= 1, 'customer search finds scoped customer');
+    check(await page.locator('[data-customer-search-results] form').count() >= 6, 'customer search shows a dense scoped customer grid');
     await page.locator('.pos-action-menu summary').click();
-    await capture('pos-customer-search-1440.png');
+    await capture('pos-customer-search-1440-v2.png');
     await page.locator('[data-customer-search-results] form button').first().click();
     await page.waitForLoadState('networkidle');
     check(await page.locator('[data-pos-ticket-header]').innerText().then((text) => text.includes('عميل اختبار')), 'customer selection attaches to active ticket');
@@ -124,23 +124,25 @@ try {
     check(await modal.locator('select[name=governorate_id]').count() === 1, 'governorate is visible in modal');
     check(!/\bretail\b/.test(await modal.innerText()), 'customer modal consent purpose is translated');
     await page.setViewportSize({ width: 1440, height: 480 });
-    await capture('pos-customer-create-top-1440.png', false);
+    await capture('pos-customer-create-top-1440-v2.png', false);
     await modal.locator('div.overflow-y-auto').first().evaluate((element) => { element.scrollTop = element.scrollHeight; });
-    await capture('pos-customer-create-bottom-1440.png', false);
-    await modal.getByText('طباعة الإيصال').scrollIntoViewIfNeeded();
-    check(await modal.getByText('طباعة الإيصال').isVisible(), 'supported print delivery shown in customer modal');
-    await capture('pos-customer-delivery-method-1440.png', false);
+    await capture('pos-customer-create-bottom-1440-v2.png', false);
+    await modal.locator('select[name=invoice_delivery_method]').scrollIntoViewIfNeeded();
+    check(await modal.locator('select[name=invoice_delivery_method] option').count() === 2, 'print and email delivery choices shown in customer modal');
+    await modal.locator('select[name=invoice_delivery_method]').selectOption('email');
+    await capture('pos-customer-delivery-method-1440-v2.png', false);
     await page.setViewportSize({ width: 1440, height: 900 });
 
     await modal.locator('input[name=first_name_ar]').fill('عميل');
     await modal.locator('input[name=last_name_ar]').fill('اختبار جديد');
     await modal.locator('input[name=phone]').fill(`0101${String(Date.now()).slice(-7)}`);
+    await modal.locator('input[name=email]').fill(`pos-v2-${Date.now()}@example.test`);
     await modal.locator('select[name=governorate_id]').evaluate((element) => element.removeAttribute('required'));
     await modal.getByRole('button', { name: 'حفظ' }).click();
     await page.waitForLoadState('networkidle');
     check(await page.getByText('يرجى اختيار المحافظة.').count() > 0, 'missing governorate returns Arabic validation');
     check(await page.locator('#pos-new-customer').evaluate((element) => element.open), 'validation retains modal and entered values');
-    await capture('pos-customer-validation-ar.png', false);
+    await capture('pos-customer-validation-ar-v2.png', false);
     await page.locator('#pos-new-customer select[name=governorate_id]').selectOption({ index: 1 });
     await page.locator('#pos-new-customer').getByRole('button', { name: 'حفظ' }).click();
     await page.waitForLoadState('networkidle');
@@ -150,7 +152,7 @@ try {
     await navigate('/pos?lookup=invoices&invoice_q=QA-POS-LOOKUP-001');
     check(await page.locator('[data-pos-invoice-lookup]').getByText('QA-POS-LOOKUP-001').count() > 0, 'approved invoice found by exact reference');
     check(await page.locator('[data-pos-invoice-lookup]').getByText('لعبة تركيب عربية').count() > 0, 'invoice lines visible');
-    await capture('pos-invoice-lookup-1440.png');
+    await capture('pos-invoice-lookup-1440-v2.png');
 
     await navigate('/pos?lookup=products');
     await page.locator('[data-pos-category-grid] button').first().click();
@@ -169,7 +171,7 @@ try {
     await page.locator('[data-cart-line]').first().waitFor({ state: 'visible' });
     await page.locator('[data-cart-line]').getByText('225.00').first().waitFor();
     check(await page.locator('[data-cart-line] input[aria-label]').first().inputValue() === '5', 'quantity keyboard Enter commits');
-    await capture('pos-quantity-keyboard-edit.png');
+    await capture('pos-quantity-keyboard-edit-v2.png');
     await page.locator('[data-cart-line] button[aria-label]').filter({ hasText: '+' }).count();
     await page.locator('[data-cart-line] button[aria-label]').first().click();
     await page.locator('[data-cart-line]').getByText('180.00').first().waitFor();
@@ -189,7 +191,7 @@ try {
     await page.waitForLoadState('networkidle');
     check(await page.locator('[data-open-order-tabs] button').count() >= 2, 'multi-ticket new order persists');
     check(await page.locator('[data-cart-line]').count() === 0, 'new ticket starts with independent empty cart');
-    await capture('pos-multi-ticket-1440.png');
+    await capture('pos-multi-ticket-1440-v2.png');
     await page.locator('[data-open-order-tabs]').getByRole('button', { name: populatedTicket, exact: true }).click();
     await page.waitForLoadState('networkidle');
     check(await page.locator('[data-cart-line]').count() === 1, 'switching ticket restores cart');
@@ -197,13 +199,13 @@ try {
 
     await page.setViewportSize({ width: 1024, height: 900 });
     await inspect(1024);
-    await capture('pos-main-1024.png');
+    await capture('pos-main-1024-v2.png');
     await page.setViewportSize({ width: 390, height: 844 });
     await inspect(390, 'products');
-    await capture('pos-main-390.png');
+    await capture('pos-main-390-v2.png');
     await page.getByRole('button', { name: 'الطلب الحالي' }).first().click();
     await inspect(390, 'transaction');
-    await capture('pos-transaction-390.png');
+    await capture('pos-transaction-390-v2.png');
     check(await page.locator('[data-cart-line]').count() === 1, 'mobile transaction switch preserves cart');
     check(await page.locator('[data-pos-ticket-header]').innerText().then((text) => text.includes('عميل اختبار جديد')), 'mobile transaction switch preserves customer');
 

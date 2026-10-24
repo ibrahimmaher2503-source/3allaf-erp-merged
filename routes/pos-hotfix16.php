@@ -17,6 +17,7 @@ use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
+use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PaymentReferenceGuard;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
@@ -24,6 +25,7 @@ use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Modules\Retail\Support\PosReceiptProfile;
 use App\Support\UserSafeError;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -334,6 +336,18 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
         }
 
         $sale = $sales->execute($user, $context, $order, $tenders, false, $validated['notes'] ?? null);
+
+        try {
+            $delivery = app(InvoiceDeliveryService::class)->deliver($sale);
+            if ($delivery === 'email_failed') {
+                $request->session()->flash('pos.invoice_delivery_warning', __('The sale is complete, but the invoice email could not be delivered. Print the receipt instead.'));
+            }
+        } catch (Throwable $deliveryException) {
+            Log::error('POS invoice delivery failed after completed sale.', [
+                'sale_id' => $sale->id, 'exception' => $deliveryException::class,
+            ]);
+            $request->session()->flash('pos.invoice_delivery_warning', __('The sale is complete, but the invoice email could not be delivered. Print the receipt instead.'));
+        }
 
         $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
         $request->session()->flash('pos.completed_sale_id', $sale->id);

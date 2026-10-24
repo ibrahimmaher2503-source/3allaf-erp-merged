@@ -103,6 +103,18 @@ $customer = Customer::query()->firstOrCreate(['phone_normalized' => '20101122339
     'created_branch_id' => $fixture['branch']->id,
     'created_store_id' => $store->id,
 ]);
+for ($index = 2; $index <= 6; $index++) {
+    Customer::query()->firstOrCreate(['phone_normalized' => '2010112233'.str_pad((string) $index, 2, '0', STR_PAD_LEFT)], [
+        'idempotency_key' => (string) Str::uuid(),
+        'name_ar' => 'عميل اختبار '.$index,
+        'name_en' => 'QA POS Customer '.$index,
+        'phone_display' => '010112233'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        'status' => 'active',
+        'created_by' => $admin->id,
+        'created_branch_id' => $fixture['branch']->id,
+        'created_store_id' => $store->id,
+    ]);
+}
 $firstProduct = Product::query()->where('model_number', 'QA-POS-01')->firstOrFail();
 if (! Sale::query()->where('document_number', 'QA-POS-LOOKUP-001')->exists()) {
     $sale = Sale::query()->create([
