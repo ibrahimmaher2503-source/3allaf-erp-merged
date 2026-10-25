@@ -1,3 +1,19 @@
+# 2026-10-25 — User B commercial UX focused acceptance closed, undeployed
+
+| Class | Branch / baseline | Scope | Status |
+|---|---|---|---|
+| D3 | `feature/purchasing-pos-commercial-ux` / `bba9065f682ab79416778ea3f516b8935dfc1b75` | DEC-108 safe mapping, live split remainder, ordinary-cashier print blindness, disposable DB/browser QA | Acceptance checks PASS; owner merge decision pending; no merge/deploy |
+
+Two socket-only MariaDB QA runtimes were created through `scripts/qa/mariadb-run.sh`; no database user was created and both databases/runtimes were removed after tests. Focused results: 6 commercial tests/52 assertions; 3 Invoice/Transfer barcode tests/13 assertions; one native DB smoke/15 assertions; one Node calculator test; 24 authenticated Chromium assertions at 1440/390, all PASS. Cairo/RTL and page overflow checks PASS; console/page errors and HTTP 5xx NONE. Existing Product barcode composer is covered in the commercial focused test. DEC-108 now requires one effective active outlet mapping, or one eligible outlet when unmapped; ambiguous/invalid mappings block price and labels. Files touched after `bba9065` include shared `app/Modules/Platform/Support/WorkContext.php`, `routes/retail.php`, `resources/js/pos-payment-calculator.js`, `resources/views/livewire/pos/checkout-panel.blade.php`, and `scripts/qa/mariadb-run.sh`; no User A inventory code was edited. `origin/main` remained at `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f` after fetch; no merge/rebase.
+
+# 2026-10-25 — User B commercial UX candidate, undeployed
+
+| Class | Branch / application commit | Scope | Status |
+|---|---|---|---|
+| D3 | `feature/purchasing-pos-commercial-ux` / `ab610c739381e8a0bb04312248d25fad738c4c06` | Global branch default, purchase contextual pricing/line labels, POS payment/customer search, strict blind close | Pushed for review; no merge/deploy; focused browser and MariaDB QA pending |
+
+This candidate is separate from User A inventory/stocktake work. Shared files touched: `resources/views/layouts/app/sidebar.blade.php`, `app/Modules/Platform/Support/WorkContext.php`, `routes/platform.php`, `routes/retail.php`, `routes/reporting.php`, and `app/Modules/Pricing/Services/BarcodeLabelService.php`. No stocktake or inventory transfer implementation was edited. Production continuity below is unchanged.
+
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 
 - Class I4: merged/deployed application `0cf121450502713be385e041cbaf66e2a93ea66e` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; previous R1–R7 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3` is rollback. R9–R16 is closed and no longer pending.

@@ -57,7 +57,7 @@ final class BarcodeLabelService
     }
 
     /** @param array<int,array<string,mixed>> $rows @return array<string,mixed> */
-    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null): array
+    public function compose(User $actor, array $rows, array $profile, ?int $storeId = null, array $serverPrices = []): array
     {
         if (! $storeId) {
             throw ValidationException::withMessages(['store_id' => __('Select a selling outlet')]);
@@ -82,9 +82,9 @@ final class BarcodeLabelService
             if ($copies === false || $copies < 1 || $copies > 500) {
                 throw ValidationException::withMessages(['products' => __('Copies must be a whole number from 1 to 500.')]);
             }
-            $price = $store
+            $price = $serverPrices[$product->id] ?? ($store
                 ? $prices->get($product->id)?->amount
-                : $product->sale_price;
+                : $product->sale_price);
             if ($price === null || bccomp((string) $price, '0', 3) <= 0) {
                 throw ValidationException::withMessages(['products' => __('No selling price')]);
             }

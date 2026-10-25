@@ -24,6 +24,9 @@ final class CheckoutPanel extends Component
     /** @var array<int, array<string, mixed>> */
     public array $paymentLines = [];
 
+    /** @var array<string, array<int, array<string, mixed>>> */
+    public array $savedModeLines = [];
+
     public string $notes = '';
 
     public function mount(PosOpenOrderManager $orders, PosContextResolver $contexts): void
@@ -48,6 +51,7 @@ final class CheckoutPanel extends Component
         if ($this->paymentLines === []) {
             $this->prepareMode($this->mode);
         }
+        $this->savedModeLines[$this->mode] = $this->paymentLines;
     }
 
     #[On('pos-cart-updated')]
@@ -60,8 +64,13 @@ final class CheckoutPanel extends Component
             return;
         }
         if ($this->mode !== $mode || $this->paymentLines === []) {
+            $this->savedModeLines[$this->mode] = $this->paymentLines;
             $this->mode = $mode;
-            $this->prepareMode($mode);
+            if (($this->savedModeLines[$mode] ?? []) !== []) {
+                $this->paymentLines = $this->savedModeLines[$mode];
+            } else {
+                $this->prepareMode($mode);
+            }
         }
         $this->saveDraft($orders, $contexts);
     }
@@ -78,11 +87,7 @@ final class CheckoutPanel extends Component
         if (! in_array($mode, ['cash', 'card', 'split', 'other'], true)) {
             return;
         }
-        if ($this->mode !== $mode || $this->paymentLines === []) {
-            $this->mode = $mode;
-            $this->prepareMode($mode);
-        }
-        $this->saveDraft($orders, $contexts);
+        $this->chooseMode($mode, $orders, $contexts);
         $this->dispatch('open-pos-checkout');
     }
 
@@ -97,7 +102,11 @@ final class CheckoutPanel extends Component
         if ($this->mode !== 'card') {
             $this->mode = 'split';
         }
-        $this->paymentLines[] = $this->emptyLine();
+        $line = $this->emptyLine();
+        $line['amount'] = $this->remainingForNewLine($orders, $contexts);
+        $line['auto_remaining'] = true;
+        $this->paymentLines[] = $line;
+        $this->savedModeLines[$this->mode] = $this->paymentLines;
         $this->saveDraft($orders, $contexts);
         $this->dispatch('open-pos-checkout');
     }
@@ -122,8 +131,19 @@ final class CheckoutPanel extends Component
         $this->dispatch('open-pos-checkout');
     }
 
-    public function updatedPaymentLines(): void
+    public function updatedPaymentLines(mixed $value = null, ?string $key = null): void
     {
+        if ($key !== null && str_ends_with($key, '.amount')) {
+            $index = (int) explode('.', $key)[0];
+            $this->paymentLines[$index]['auto_remaining'] = false;
+        } else {
+            foreach ($this->paymentLines as $index => $line) {
+                if (($line['auto_remaining'] ?? false) === true) {
+                    $this->paymentLines[$index]['amount'] = $this->remainingForNewLine(app(PosOpenOrderManager::class), app(PosContextResolver::class), $index);
+                }
+            }
+        }
+        $this->savedModeLines[$this->mode] = $this->paymentLines;
         $this->persistDraftUpdate();
     }
 
@@ -186,10 +206,14 @@ final class CheckoutPanel extends Component
             $this->paymentLines = [$this->emptyLine((string) $card->id)];
         } elseif ($mode === 'split') {
             if (count($this->paymentLines) < 2) {
-                $this->paymentLines = array_values(array_filter([
-                    $cash ? $this->emptyLine((string) $cash->id) : null,
-                    $card ? $this->emptyLine((string) $card->id) : null,
-                ]));
+                $first = $this->paymentLines[0] ?? ($cash ? $this->emptyLine((string) $cash->id) : null);
+                $firstIsCash = $cash !== null && (int) ($first['method_id'] ?? 0) === (int) $cash->id;
+                $second = $firstIsCash && $card ? $this->emptyLine((string) $card->id) : ($cash ? $this->emptyLine((string) $cash->id) : null);
+                $this->paymentLines = array_values(array_filter([$first, $second]));
+                if (isset($this->paymentLines[1])) {
+                    $this->paymentLines[1]['amount'] = $this->remainingForNewLine(app(PosOpenOrderManager::class), app(PosContextResolver::class), 1);
+                    $this->paymentLines[1]['auto_remaining'] = true;
+                }
             }
         } elseif ($this->paymentLines === []) {
             $this->paymentLines = [$this->emptyLine()];
@@ -200,6 +224,27 @@ final class CheckoutPanel extends Component
     private function emptyLine(string $methodId = ''): array
     {
         return ['method_id' => $methodId, 'amount' => '', 'tendered' => '', 'evidence_reference' => '', 'gift_card_identifier' => ''];
+    }
+
+    private function remainingForNewLine(PosOpenOrderManager $orders, PosContextResolver $contexts, ?int $excludeIndex = null): string
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $order = $orders->active(request(), $user, $contexts->resolve($user));
+        $remaining = (string) ($order?->total ?? '0.00');
+        $methods = PaymentMethod::query()->whereIn('id', array_filter(array_map(fn (array $line): int => (int) ($line['method_id'] ?? 0), $this->paymentLines)))->get()->keyBy('id');
+        foreach ($this->paymentLines as $index => $line) {
+            if ($index === $excludeIndex) {
+                continue;
+            }
+            $method = $methods->get((int) ($line['method_id'] ?? 0));
+            $amount = $method?->isCash() ? ($line['tendered'] ?? '') : ($line['amount'] ?? '');
+            if (is_numeric($amount) && bccomp((string) $amount, '0', 2) > 0) {
+                $remaining = bcsub($remaining, (string) $amount, 2);
+            }
+        }
+
+        return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
     }
 
     private function saveDraft(PosOpenOrderManager $orders, PosContextResolver $contexts): void
