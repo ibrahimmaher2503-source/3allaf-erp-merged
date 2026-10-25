@@ -1,4 +1,8 @@
-# Current task — R9–R16 POS completion deployed and closed (2026-10-25)
+# Current task — Inventory stocktake and transfer draft resilience (2026-10-25)
+
+Owner-assigned Inventory-only work on `feature/inventory-stocktake-and-resilient-drafts`, sourced from development HEAD `8e8cc88` (a descendant of the supplied `7e50a0b` starting Production reference). The latest recorded live application is `0cf1214` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; no merge or deployment is authorized by this batch. Existing persistent count sessions, barcode/quantity autosave, Add All batching, reconciliation, branchless warehouses, and canonical movements are reused. This branch allows transfer drafts to retain requested quantities when stock is currently insufficient; locked availability remains enforced at submit and dispatch. It adds category filtering, shortage/surplus list counts, and a permission-scoped estimated cost summary before settlement. Open counts currently allow transfers under the approved 2026-10-20 decision; a requested blocking example conflicts with that rule and is recorded as a pending owner decision in `.ai/DECISIONS.md`.
+
+# Previous task — R9–R16 POS completion deployed and closed (2026-10-25)
 
 Class I4 Production deployment of merged application `0cf121450502713be385e041cbaf66e2a93ea66e` succeeded. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`. R9–R16 is merged, deployed and closed; it is no longer pending.
 

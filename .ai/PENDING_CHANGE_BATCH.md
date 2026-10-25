@@ -1,3 +1,7 @@
+## 2026-10-25 — Pending Inventory draft and stocktake refinement
+
+- Class I4/D3; branch `feature/inventory-stocktake-and-resilient-drafts`; source development HEAD `8e8cc88`, supplied starting Production reference `7e50a0b`, latest recorded live application `0cf1214`. Transfer draft save retains positive requested quantities despite temporary stock shortage; submit/dispatch still lock and reject insufficient stock without posting. Existing canonical stocktake lifecycle and movement posting remain in place; count entry gains category filtering/reset, list shortage/surplus counts, and permission-scoped review quantity/estimated-cost totals. No migration or dependency change. This batch is unmerged and undeployed; focused verification is recorded in `.ai/TEST_RESULTS.md`.
+
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 
 - Class I4: merged/deployed application `0cf121450502713be385e041cbaf66e2a93ea66e` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; previous R1–R7 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3` is rollback. R9–R16 is closed and no longer pending.
