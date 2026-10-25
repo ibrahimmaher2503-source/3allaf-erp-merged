@@ -1,6 +1,6 @@
 # 2026-10-25 — Commercial and inventory integration, undeployed
 
-Owner-approved User B `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` merged first, then User A `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` onto `feature/integration-commercial-inventory-batch` from `origin/main` `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f`. Both workstreams are integrated on the feature branch; neither is pending development. DEC-107 retains nonblocking open stocktakes; DEC-108 retains explicit/sole eligible outlet resolution; User B's colliding DEC-107 header-context decision is retained as DEC-109. Integration verification is recorded in `.ai/TEST_RESULTS.md`. Production remains on `0cf1214`; no main merge or deployment occurred.
+Owner-approved User B `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` merged first, then User A `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` onto `feature/integration-commercial-inventory-batch` from `origin/main` `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f`. Both workstreams are integrated on the feature branch; neither is pending development. DEC-107 retains nonblocking open stocktakes; DEC-108 retains explicit/sole eligible outlet resolution; User B's colliding DEC-107 header-context decision is retained as DEC-109. Focused integration database and authenticated 1440/390 browser verification passed after correcting one pre-existing approval-review test assertion; exact results are in `.ai/TEST_RESULTS.md`. Production remains on `0cf1214`; no main merge or deployment occurred.
 
 # 2026-10-25 — Inventory stocktake and resilient drafts branch
 

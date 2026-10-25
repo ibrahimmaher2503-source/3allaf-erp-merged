@@ -180,7 +180,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('submitted', $transfer->fresh()->status);
         $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()
             ->assertSee($this->product->item_code)
-            ->assertSee((string) $this->destinationB->code);
+            ->assertSee($this->destinationB->name_en);
         $this->post(route('inventory.transfers.approve', $transfer), [])->assertSessionHasErrors('review_version');
         self::assertSame('submitted', $transfer->fresh()->status);
         $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version]);
