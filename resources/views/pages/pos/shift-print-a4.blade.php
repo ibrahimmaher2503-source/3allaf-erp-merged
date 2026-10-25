@@ -41,7 +41,7 @@
             <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Shift') }}</div><div class="mt-1 font-semibold">#{{ $shift->id }}</div></div>
             <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Cashier') }}</div><div class="mt-1 font-semibold">{{ $shift->cashier?->name ?: $shift->cashier?->username }}</div></div>
             <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Opened at') }}</div><div class="mt-1 font-semibold">{{ $shift->opened_at?->format('Y-m-d H:i') }}</div></div>
-            <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Opening float') }}</div><div class="mt-1 font-semibold"><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></div></div>
+            @if ($canViewExpected)<div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Opening float') }}</div><div class="mt-1 font-semibold"><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></div></div>@endif
             <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Close submitted') }}</div><div class="mt-1 font-semibold">{{ $submission->submitted_at?->format('Y-m-d H:i') }}</div></div>
             <div class="rounded-lg border border-zinc-200 p-4"><div class="text-xs text-zinc-500">{{ __('Status') }}</div><div class="mt-1 font-semibold">{{ $statusLabel }}</div></div>
         </section>
@@ -53,12 +53,16 @@
                     <thead class="bg-zinc-50"><tr><th class="p-3 text-start">{{ __('Method') }}</th>@if ($canViewExpected)<th class="p-3 text-end">{{ __('System expected') }}</th>@endif<th class="p-3 text-end">{{ __('Recorded / counted') }}</th>@if ($canViewExpected)<th class="p-3 text-end">{{ __('Variance') }}</th>@endif</tr></thead>
                     <tbody>
                         <tr class="border-t border-zinc-200"><td class="p-3 font-medium">{{ __('Cash') }}</td>@if ($canViewExpected)<td class="p-3 text-end"><x-money :amount="$submission->expected_cash" :currency="$shift->currency_code" /></td>@endif<td class="p-3 text-end"><x-money :amount="$submission->actual_cash" :currency="$shift->currency_code" /></td>@if ($canViewExpected)<td class="p-3 text-end font-semibold"><x-money :amount="$submission->cash_variance" :currency="$shift->currency_code" /></td>@endif</tr>
+                        @if ($canViewExpected)
                         @forelse ($methodRows as $row)
                             <tr class="border-t border-zinc-200"><td class="p-3 font-medium">{{ $row['code'] }}</td>@if ($canViewExpected)<td class="p-3 text-end"><x-money :amount="$row['expected']" :currency="$shift->currency_code" /></td>@endif<td class="p-3 text-end"><x-money :amount="$row['actual']" :currency="$shift->currency_code" /></td>@if ($canViewExpected)<td class="p-3 text-end font-semibold"><x-money :amount="$row['variance']" :currency="$shift->currency_code" /></td>@endif</tr>
                         @empty
                             <tr class="border-t border-zinc-200"><td class="p-3 text-zinc-500" colspan="{{ $canViewExpected ? 4 : 2 }}">{{ __('No electronic method totals recorded.') }}</td></tr>
                         @endforelse
+                        @endif
+                        @if ($canViewExpected)
                         <tr class="border-t-2 border-zinc-300"><td class="p-3 font-bold">{{ __('Overall total') }}</td>@if ($canViewExpected)<td class="p-3 text-end font-bold"><x-money :amount="$expectedTotal" :currency="$shift->currency_code" /></td>@endif<td class="p-3 text-end font-bold"><x-money :amount="$recordedTotal" :currency="$shift->currency_code" /></td>@if ($canViewExpected)<td></td>@endif</tr>
+                        @endif
                         @if ($canViewExpected)<tr><td class="p-3 font-bold">{{ __('Total variance') }}</td><td></td><td></td><td class="p-3 text-end font-bold"><x-money :amount="$submission->total_variance" :currency="$shift->currency_code" /></td></tr>@endif
                     </tbody>
                 </table>
@@ -71,6 +75,7 @@
             @endif
         </section>
 
+        @if ($canViewExpected)
         <section class="mt-8 grid gap-6 lg:grid-cols-2">
             <div>
                 <h2 class="text-lg font-semibold">{{ __('Cash movements') }}</h2>
@@ -99,6 +104,7 @@
                 @endif
             </div>
         </section>
+        @endif
 
         <footer class="mt-10 border-t border-zinc-300 pt-4 text-sm text-zinc-600">
             <div class="flex flex-wrap justify-between gap-3"><span>{{ __('Status') }}: {{ $statusLabel }}</span><span>{{ $pendingApproval ? __('Physical cash was counted by the cashier; non-cash totals come from the system. Final approval is still pending.') : __('Final approval recorded in the system.') }}</span></div>

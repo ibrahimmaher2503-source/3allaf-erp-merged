@@ -53,6 +53,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $this->user->storeScopes()->create(['store_id' => $this->source->id, 'status' => 'active']);
         Auth::login($this->user);
         Gate::define('transfers.create', static fn (): bool => true);
+        Gate::define('transfers.edit', static fn (): bool => true);
         Gate::define('inventory_stock_card.view', static fn (): bool => true);
         Gate::define('transfers.dispatch', static fn (): bool => true);
         Gate::define('transfers.receive', static fn (): bool => true);
@@ -179,7 +180,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('submitted', $transfer->fresh()->status);
         $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()
             ->assertSee($this->product->item_code)
-            ->assertSee((string) $this->destinationB->code);
+            ->assertSee($this->destinationB->name_en);
         $this->post(route('inventory.transfers.approve', $transfer), [])->assertSessionHasErrors('review_version');
         self::assertSame('submitted', $transfer->fresh()->status);
         $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version]);
@@ -246,15 +247,40 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('99.000000', (string) StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->destinationA->id)->value('on_hand'));
     }
 
-    public function test_source_availability_bounds_requested_quantity_before_draft_save(): void
+    public function test_unavailable_stock_keeps_the_draft_and_submit_does_not_post(): void
     {
         $this->balance($this->source, 0);
-        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '1']], idempotencyKey: 'qa-zero-'.uniqid()), InvalidArgumentException::class);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '6', 'allocations' => [$this->destinationA->id => '4', $this->destinationB->id => '2']]], 'replenishment', 'Keep the note', 'qa-zero-'.uniqid());
+        self::assertSame('draft', $transfer->status);
+        self::assertThrows(fn (): StockTransfer => app(SubmitStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
+        $saved = $transfer->fresh(['lines.allocations']);
+        self::assertSame('draft', $saved->status);
+        self::assertSame('Keep the note', $saved->notes);
+        self::assertSame('6', (string) $saved->lines->first()->quantity_requested);
+        self::assertSame(2, $saved->lines->first()->allocations->count());
+        self::assertSame(0, StockMovement::query()->where('source_id', $transfer->id)->count());
+        $editUrl = route('inventory.transfers.edit', $transfer);
+        $this->get($editUrl)->assertOk()->assertSee('Keep the note')->assertSee('value="6"', false);
+        $this->from($editUrl)->post(route('inventory.transfers.submit', $transfer))->assertRedirect($editUrl)->assertSessionHas('error');
+        self::assertSame('draft', $transfer->fresh()->status);
+        self::assertSame(0, StockMovement::query()->where('source_id', $transfer->id)->count());
+    }
 
-        $this->balance($this->source, 5);
-        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '5']], idempotencyKey: 'qa-max-'.uniqid());
-        self::assertSame('5', (string) $transfer->lines()->firstOrFail()->quantity_requested);
-        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '6']], idempotencyKey: 'qa-over-'.uniqid()), InvalidArgumentException::class);
+    public function test_failed_dispatch_rolls_back_earlier_lines_and_leaves_approved_document(): void
+    {
+        $unavailableProduct = Product::factory()->create(['status' => 'active', 'item_code' => 'QA-UNAVAILABLE-'.uniqid(), 'name_ar' => 'منتج غير متوفر', 'sale_price' => 20]);
+        Barcode::query()->create(['product_id' => $unavailableProduct->id, 'barcode' => 'QA-UNAVAILABLE-BAR-'.uniqid(), 'source' => 'local', 'status' => 'active', 'is_primary' => true]);
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '2'],
+            ['product_id' => $unavailableProduct->id, 'quantity_requested' => '1'],
+        ], idempotencyKey: 'qa-failed-dispatch-'.uniqid());
+        $transfer->update(['status' => 'approved', 'approved_by' => $this->user->id, 'approved_at' => now()]);
+
+        self::assertThrows(fn (): StockTransfer => app(DispatchStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
+        self::assertSame('approved', $transfer->fresh()->status);
+        self::assertSame('10.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->where('product_id', $this->product->id)->value('on_hand'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->where('product_id', $this->product->id)->value('in_transit'));
+        self::assertSame(0, StockMovement::query()->where('source_id', $transfer->id)->count());
     }
 
     public function test_unauthorized_store_is_rejected(): void

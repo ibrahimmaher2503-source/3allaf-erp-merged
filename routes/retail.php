@@ -838,7 +838,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 && (int) $drawer->branch_id === (int) $selectedWorkStore->branch_id
                 && ($selectedWorkStore->type !== 'selling' || (int) $drawer->store_id === (int) $selectedWorkStore->id));
         }
-        $preselectedDrawerId = $availableDrawers->count() === 1 ? $availableDrawers->first()->id : null;
+        $contextBranchId = app(WorkContext::class)->branchId($user);
+        $defaultDrawers = $contextBranchId === null ? $availableDrawers : $availableDrawers->filter(fn (CashDrawer $drawer): bool => (int) $drawer->branch_id === $contextBranchId);
+        $preselectedDrawerId = $defaultDrawers->count() === 1 ? $defaultDrawers->first()->id : null;
         $canManageOwnShift = $shift !== null && PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists();
 
         $closedShifts = PosShift::query()->visibleTo($user)
@@ -1076,8 +1078,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $submission = $shift->closingSubmissions->sortByDesc('attempt')->first();
         abort_unless($submission !== null, 409, __('This closed shift has no immutable closing submission.'));
 
-        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve') || (int) $shift->getAttribute('cashier_id') === $user->id;
-        abort_unless($viewerCanSeeExpected, 403);
+        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve');
+        abort_unless($viewerCanSeeExpected || (int) $shift->getAttribute('cashier_id') === $user->id, 403);
         $pendingApproval = ! $shift->status->isTerminal();
         $event = $format === 'thermal' ? 'shift_thermal_printed' : 'shift_a4_printed';
         $alreadyPrinted = AuditLog::query()
@@ -2078,7 +2080,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         $stores = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->orderBy('code')->get();
 
-        return view('pages.sales.invoices-create', ['stores' => $stores, 'creationToken' => (string) Str::uuid()]);
+        $contextBranchId = app(WorkContext::class)->branchId($user);
+        $branchStores = $contextBranchId === null ? collect() : $stores->where('branch_id', $contextBranchId);
+
+        return view('pages.sales.invoices-create', ['stores' => $stores, 'defaultStoreId' => $branchStores->count() === 1 ? $branchStores->first()->id : null, 'creationToken' => (string) Str::uuid()]);
     })->middleware('can:sales_invoices.create')->name('sales.invoices.create');
 
     Route::post('sales/invoices/drafts', function (Request $request, SaveSalesInvoiceDraftAction $drafts) {
@@ -2137,6 +2142,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         }
         $perPage = in_array($request->integer('per_page'), [20, 50, 100], true) ? $request->integer('per_page') : 20;
         $query = Sale::query()->visibleTo($user)->approved()->with(['store', 'cashier', 'customer'])->withCount('payments');
+        if (! $request->filled('store_id') && ($contextBranchId = app(WorkContext::class)->branchId($user)) !== null) {
+            $query->where('branch_id', $contextBranchId);
+        }
         $query->when($request->filled('q'), fn ($query) => $query->where('document_number', 'like', '%'.trim((string) $request->string('q')).'%'));
         $query->when($request->filled('store_id'), fn ($query) => $query->where('store_id', $request->integer('store_id')));
         $query->when($request->filled('customer_id'), fn ($query) => $query->where('customer_id', $request->integer('customer_id')));

@@ -16,25 +16,23 @@
                     <span class="ms-auto text-text-muted">{{ $lookup==='customers' ? __('Customers') : ($lookup==='invoices' ? __('Invoices') : __('Products')) }}</span>
                 </div>
                 @if($lookup==='customers')
-                    <div class="min-h-[34rem] bg-surface-muted p-2" data-pos-customer-lookup>
-                        <form method="GET" action="{{ route('pos') }}" class="mb-2" x-on:input.debounce.300ms="$el.requestSubmit()"><input type="hidden" name="lookup" value="customers"><label for="pos-customer-search" class="sr-only">{{ __('Search customer by name, phone, code, or email') }}</label><input id="pos-customer-search" name="customer_q" value="{{ $customerQuery }}" autocomplete="off" autofocus dir="auto" class="h-10 w-full border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="{{ __('Search customer by name, phone, code, or email') }}"></form>
+                    <div class="min-h-[34rem] bg-surface-muted p-2" data-pos-customer-lookup x-data="{ query: @js($customerQuery), results: @js($customerSearchResults->map(fn($customer) => ['id'=>$customer->id,'name'=>str_starts_with(app()->getLocale(),'ar')?$customer->name_ar:$customer->name_en,'phone'=>$customer->phone_display,'code'=>$customer->customer_code])->values()), loading: false, timer: null, requestId: 0, async search() { clearTimeout(this.timer); const id = ++this.requestId; if (!this.query.trim()) { this.results = []; this.loading = false; return; } this.loading = true; this.timer = setTimeout(async () => { try { const response = await fetch(@js(route('pos.customers.search')) + '?q=' + encodeURIComponent(this.query), {headers: {'Accept':'application/json'}, cache:'no-store'}); if (!response.ok) throw new Error('search'); const body = await response.json(); if (id === this.requestId) this.results = body.data; } catch { if (id === this.requestId) this.results = []; } finally { if (id === this.requestId) this.loading = false; } }, 300); } }">
+                        <label for="pos-customer-search" class="sr-only">{{ __('Search customer by name, phone, code, or email') }}</label>
+                        <input id="pos-customer-search" x-model="query" x-on:input="search()" autocomplete="off" autofocus dir="auto" class="mb-2 h-10 w-full border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="{{ __('Search customer by name, phone, code, or email') }}">
                         @can('customers.create')<button type="button" onclick="document.getElementById('pos-new-customer').showModal()" class="mb-2 flex h-14 w-full items-center justify-center gap-2 bg-green-700 text-base font-black text-white hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-green-400"><flux:icon name="plus" class="size-5" />{{ __('Add New Customer') }}</button>@endcan
+                        <p x-show="loading" class="p-3 text-xs text-text-muted">{{ __('Searching…') }}</p>
                         <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-4" data-customer-search-results>
-                            @forelse($customerSearchResults as $candidate)
-                                <form method="POST" action="{{ route('pos.customer.select') }}" dir="ltr" class="grid h-36 min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] border border-border bg-surface text-start text-text-primary shadow-sm transition hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-                                    @csrf<input type="hidden" name="customer_id" value="{{ $candidate->id }}">
-                                    <div class="flex flex-col items-center justify-between border-e border-border bg-surface-muted py-2">
-                                        <a href="{{ route('customers.show', $candidate) }}" target="_blank" aria-label="{{ __('View customer') }}" title="{{ __('View customer') }}" class="text-primary focus-visible:outline-2 focus-visible:outline-primary"><flux:icon name="eye" class="size-4" /></a>
-                                        @can('customers.edit')<a href="{{ route('customers.show', $candidate) }}#customer-identity-heading" target="_blank" aria-label="{{ __('Edit') }}" title="{{ __('Edit') }}" class="text-primary focus-visible:outline-2 focus-visible:outline-primary"><flux:icon name="pencil-square" class="size-4" /></a>@endcan
-                                        <button type="submit" aria-label="{{ __('Select') }}" title="{{ __('Select') }}" class="text-primary focus-visible:outline-2 focus-visible:outline-primary"><flux:icon name="check-circle" class="size-4" /></button>
-                                    </div>
-                                    <div dir="{{ str_starts_with(app()->getLocale(), 'ar') ? 'rtl' : 'ltr' }}" class="min-w-0 p-2">
-                                        <strong class="block truncate text-xs font-black">{{ str_starts_with(app()->getLocale(), 'ar') ? $candidate->name_ar : $candidate->name_en }}</strong>
-                                        <span dir="ltr" class="mt-4 block truncate text-[11px] text-text-muted">{{ $candidate->phone_display }}</span>
-                                        <span dir="ltr" class="mt-2 block truncate text-[10px] text-text-muted">{{ $candidate->customer_code }}</span>
-                                    </div>
+                            <template x-for="candidate in results" :key="candidate.id">
+                                <form method="POST" action="{{ route('pos.customer.select') }}" class="flex h-28 min-w-0 flex-col justify-between border border-border bg-surface p-2 text-start text-text-primary shadow-sm hover:border-primary">
+                                    @csrf<input type="hidden" name="customer_id" :value="candidate.id">
+                                    <strong class="truncate text-xs" x-text="candidate.name"></strong>
+                                    <span dir="ltr" class="truncate text-[11px] text-text-muted" x-text="candidate.phone"></span>
+                                    <span dir="ltr" class="truncate text-[10px] text-text-muted" x-text="candidate.code"></span>
+                                    <button type="submit" class="text-start text-xs font-bold text-primary">{{ __('Select') }}</button>
                                 </form>
-                            @empty<p class="col-span-full p-4 text-sm text-text-muted">{{ $customerQuery!=='' ? __('No customer matched this search.') : __('Search for a customer to select.') }}</p>@endforelse</div>
+                            </template>
+                            <p x-show="!loading && results.length === 0" class="col-span-full p-4 text-sm text-text-muted">{{ __('No customer matched this search.') }}</p>
+                        </div>
                     </div>
                 @elseif($lookup==='invoices')
                     <div class="min-h-[34rem] bg-surface-muted p-3" data-pos-invoice-lookup><form method="GET" action="{{ route('pos') }}" class="flex gap-2"><input type="hidden" name="lookup" value="invoices"><input name="invoice_q" value="{{ $invoiceQuery }}" dir="ltr" autofocus class="h-10 min-w-0 flex-1 border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="{{ __('Invoice number or reference') }}"><button class="bg-indigo-800 px-4 text-xs font-bold text-white focus-visible:outline-2 focus-visible:outline-indigo-400">{{ __('Search') }}</button></form>

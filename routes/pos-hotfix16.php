@@ -124,6 +124,39 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
     ]);
 })->middleware('can:pos_sales.view')->name('pos');
 
+Route::get('pos/customers/search', function (Request $request, PosContextResolver $contexts) {
+    /** @var User $user */
+    $user = $request->user();
+    abort_unless($user->can('pos_sales.view') && $user->can('customers.view'), 403);
+    $context = $contexts->resolve($user);
+    abort_unless($context->isReady() && $context->store !== null, 403);
+    $term = trim((string) $request->query('q', ''));
+    if ($term === '') {
+        return response()->json(['data' => []]);
+    }
+    $term = mb_substr($term, 0, 100);
+    $escaped = addcslashes($term, '%_\\');
+    $digits = preg_replace('/[^0-9]+/', '', $term) ?: '';
+    $customerId = preg_match('/^CUS-(\d{7,})$/i', $term, $matches) === 1 ? ltrim($matches[1], '0') : null;
+    $customers = Customer::query()->visibleFrom($user, (int) $context->store->branch_id, (int) $context->store->id)
+        ->where('status', 'active')->where(function ($query) use ($escaped, $digits, $customerId): void {
+            $query->where('name_ar', 'like', '%'.$escaped.'%')->orWhere('name_en', 'like', '%'.$escaped.'%')
+                ->orWhere('public_id', 'like', $escaped.'%')->orWhere('email', 'like', $escaped.'%');
+            if ($customerId !== null && $customerId !== '') {
+                $query->orWhere('id', $customerId);
+            }
+            if ($digits !== '') {
+                $query->orWhere('phone_normalized', 'like', '%'.$digits.'%')
+                    ->orWhere('secondary_phone_normalized', 'like', '%'.$digits.'%');
+            }
+        })->orderBy('name_en')->limit(12)->get(['id', 'name_ar', 'name_en', 'phone_display']);
+
+    return response()->json(['data' => $customers->map(fn (Customer $customer): array => [
+        'id' => $customer->id, 'name' => str_starts_with(app()->getLocale(), 'ar') ? $customer->name_ar : $customer->name_en,
+        'phone' => $customer->phone_display, 'code' => $customer->customer_code,
+    ])->values()]);
+})->middleware(['can:pos_sales.view', 'can:customers.view'])->name('pos.customers.search');
+
 Route::post('pos/orders', function (Request $request, PosContextResolver $contexts, PosOpenOrderManager $orders) {
     $data = $request->validate(['creation_token' => ['required', 'uuid']]);
     /** @var User $user */

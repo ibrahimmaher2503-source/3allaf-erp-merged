@@ -18,6 +18,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Reporting\Actions\CreateExportJobAction;
 use App\Modules\Reporting\Actions\EvaluateAlertsAction;
 use App\Modules\Reporting\Models\Alert;
@@ -52,6 +53,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'product_type', 'product_status', 'brand_id', 'age_label_id', 'character_id', 'colour_id', 'gender_id',
             'search', 'sort', 'direction', 'page',
         ]);
+        if (! $request->has('branch_id') && ! $request->filled('store_id')) {
+            $contextBranchId = app(WorkContext::class)->branchId($user);
+            if ($contextBranchId !== null && $user->canAccessBranch($contextBranchId)) {
+                $filters['branch_id'] = $contextBranchId;
+            }
+        }
         if ($focusedModule !== null) {
             $filters['module'] = $focusedModule;
         }

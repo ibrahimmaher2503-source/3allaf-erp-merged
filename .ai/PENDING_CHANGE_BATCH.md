@@ -1,3 +1,13 @@
+# 2026-10-25 — Commercial and inventory integration batch, undeployed
+
+| Class | Source branch / approved final SHA | Scope | Status |
+|---|---|---|---|
+| D3 | `feature/purchasing-pos-commercial-ux` / `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` | Global branch context, purchasing price/labels, POS payment/search, blind close; DEC-108 and DEC-109 | Integrated first on `feature/integration-commercial-inventory-batch`; focused integration QA PASS as recorded in `.ai/TEST_RESULTS.md`; undeployed |
+| D3 | `feature/inventory-stocktake-and-resilient-drafts` / `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` | Count/review, branchless warehouse, transfer draft resilience and transactional dispatch; DEC-107 | Integrated second on same branch; focused integration QA PASS as recorded in `.ai/TEST_RESULTS.md`; undeployed |
+
+Both source branches were owner-approved for integration. Merge one is `483fd5643941aa64312519bbb9d4ae0aa78bf81e`; merge two and final integration SHAs are in the integration session record. The merge conflicts were in four `.ai` continuity files and were combined semantically; `.ai/TEST_RESULTS.md` and `.ai/PROGRESS.md` auto-merged and were updated for integration. One pre-existing transfer approval test assertion was corrected after focused QA. Neither workstream is pending implementation. Main merge and deployment remain separate owner actions.
+
+
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 
 - Class I4: merged/deployed application `0cf121450502713be385e041cbaf66e2a93ea66e` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; previous R1–R7 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3` is rollback. R9–R16 is closed and no longer pending.

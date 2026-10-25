@@ -26,6 +26,18 @@
             <div class="min-w-0 bg-white px-4 py-3 dark:bg-zinc-900"><span class="block text-xs text-zinc-500">{{ $label }}</span><strong class="mt-0.5 block font-mono text-lg" dir="ltr">{{ $value }}</strong></div>
         @endforeach
     </div>
+    @if($countReviewTotals)
+        <div class="grid min-w-0 grid-cols-2 gap-3 border-b border-zinc-200 px-4 py-3 text-xs dark:border-zinc-800 sm:grid-cols-3" data-stocktake-review-totals>
+            <div><span class="block text-zinc-500">{{ $t('المنتجات المتأثرة', 'Affected products') }}</span><strong class="font-mono text-base" dir="ltr">{{ $countReviewTotals->affected_products }}</strong></div>
+            <div><span class="block text-zinc-500">{{ $t('كمية العجز', 'Shortage quantity') }}</span><strong class="font-mono text-base" dir="ltr">{{ $qty($countReviewTotals->shortage_quantity) }}</strong></div>
+            <div><span class="block text-zinc-500">{{ $t('كمية الزيادة', 'Surplus quantity') }}</span><strong class="font-mono text-base" dir="ltr">{{ $qty($countReviewTotals->surplus_quantity) }}</strong></div>
+            @if($canViewCost)
+                <div><span class="block text-zinc-500">{{ $t('قيمة العجز التقديرية', 'Estimated shortage value') }}</span><strong><x-money :amount="$countReviewTotals->shortage_value" /></strong></div>
+                <div><span class="block text-zinc-500">{{ $t('قيمة الزيادة التقديرية', 'Estimated surplus value') }}</span><strong><x-money :amount="$countReviewTotals->surplus_value" /></strong></div>
+            @endif
+            <p class="col-span-2 text-zinc-500 sm:col-span-3">{{ $t('التقدير وفق متوسط التكلفة الحالي والفروقات المحفوظة؛ يعاد حساب الحركات عند الترحيل.', 'Estimate uses current average cost and saved variances; movements are recalculated when posting.') }}</p>
+        </div>
+    @endif
     <form method="GET" action="{{ route('inventory.counts.reconcile-page', $count) }}" class="grid min-w-0 gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:grid-cols-[minmax(0,2fr)_minmax(9rem,1fr)_auto] sm:items-end sm:px-5">
         <label class="min-w-0 text-xs font-semibold">{{ $t('بحث عن منتج أو باركود', 'Search product or barcode') }}<input name="count_search" value="{{ request('count_search') }}" class="{{ $field }}" placeholder="{{ $t('اسم أو رمز المنتج', 'Product name or code') }}"></label>
         <label class="min-w-0 text-xs font-semibold">{{ $t('حالة المراجعة', 'Review filter') }}<select name="count_filter" class="{{ $field }}"><option value="all" @selected(request('count_filter', 'all') === 'all')>{{ $t('الكل', 'All') }}</option>@foreach(['not_counted' => $t('غير معدود', 'Uncounted'), 'differences' => $t('كل الفروقات', 'All differences'), 'matched' => $t('مطابق', 'Matched'), 'shortage' => $t('عجز', 'Shortage'), 'excess' => $t('زيادة', 'Excess'), 'movements' => $t('مع حركات', 'With movements')] as $value => $label)<option value="{{ $value }}" @selected(request('count_filter') === $value)>{{ $label }}</option>@endforeach</select></label>

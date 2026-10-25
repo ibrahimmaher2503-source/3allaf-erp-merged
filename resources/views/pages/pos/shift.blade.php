@@ -164,7 +164,7 @@
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Cashier') }}</dt><dd>{{ $shift->cashier?->name ?? $shift->cashier?->username ?? '—' }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>
+                    @can('shifts_cash_movements.approve')<div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>@endcan
                     @if ($shift->recount_count > 0)
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Recounts requested') }}</dt><dd>{{ $shift->recount_count }}</dd></div>
                     @endif
@@ -194,7 +194,7 @@
                     @if ($shift->cashMovements->isNotEmpty())
                         <x-tables.table-shell :label="__('Cash movement')" class="mt-5">
                             <table class="data-table w-full text-sm">
-                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th>{{ __('Actor') }}</th><th>{{ __('Reference') }}</th><th class="text-end">{{ __('Amount') }}</th></tr></thead>
+                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th>{{ __('Actor') }}</th><th>{{ __('Reference') }}</th>@can('shifts_cash_movements.approve')<th class="text-end">{{ __('Amount') }}</th>@endcan</tr></thead>
                                 <tbody>
                                     @foreach ($shift->cashMovements as $movement)
                                         <tr>
@@ -202,7 +202,7 @@
                                             <td>{{ $movement->reason }}</td>
                                             <td>{{ $movement->creator?->name ?? '—' }}</td>
                                             <td>{{ $movement->reference ?? '—' }}</td>
-                                            <td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>
+                                            @can('shifts_cash_movements.approve')<td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>@endcan
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -212,18 +212,21 @@
                 </div>
 
                 <div id="shift-close-{{ $shift->id }}" class="mt-6 scroll-mt-24 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <flux:heading size="lg">{{ __('Blind close') }}</flux:heading>
-                    {{-- CSH-02: the cashier counts first and is shown nothing to count towards. --}}
-                    <flux:text class="mt-1">{{ __('Count the physical cash in the drawer and enter only that amount. Electronic totals are calculated from recorded shift transactions.') }}</flux:text>
-                    <form method="POST" action="{{ route('pos.shift.blind-close', $shift) }}" class="mt-4 grid gap-3">
+                    <flux:heading size="lg">{{ __('Close shift') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('Count the physical cash in the drawer before submitting your blind close.') }}</flux:text>
+                    <flux:button type="button" class="mt-4" variant="primary" icon="lock-closed" onclick="document.getElementById('blind-close-dialog-{{ $shift->id }}').showModal()">{{ __('Close shift') }}</flux:button>
+                </div>
+                <dialog id="blind-close-dialog-{{ $shift->id }}" class="m-auto w-[min(94vw,34rem)] rounded-xl border border-zinc-200 bg-white p-0 shadow-2xl backdrop:bg-zinc-950/70 dark:border-zinc-700 dark:bg-zinc-900">
+                    <div class="border-b border-zinc-200 p-5 dark:border-zinc-700"><flux:heading size="lg">{{ __('Count physical cash') }}</flux:heading><flux:text class="mt-1">{{ __('Enter only the cash physically counted. Authorized staff review the close after submission.') }}</flux:text></div>
+                    <form method="POST" action="{{ route('pos.shift.blind-close', $shift) }}" class="grid gap-4 p-5" onsubmit="return window.confirm({{ \Illuminate\Support\Js::from(__('Submit this physical cash count and close the shift?')) }})">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $closeToken }}">
-                        <flux:input type="number" step="0.01" min="0" name="actual_cash" :label="__('Counted cash')" required />
+                        <flux:input type="number" step="0.01" min="0" name="actual_cash" :label="__('Counted cash')" required autofocus />
                         <flux:textarea name="notes" :label="__('Notes (optional)')" rows="2" />
                         @error('actual_cash')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
-                        <flux:button type="submit" variant="primary" icon="lock-closed">{{ __('Submit count') }}</flux:button>
+                        <div class="flex justify-end gap-2"><flux:button type="button" variant="ghost" onclick="this.closest('dialog').close()">{{ __('Cancel') }}</flux:button><flux:button type="submit" variant="primary" icon="lock-closed">{{ __('Confirm cash count') }}</flux:button></div>
                     </form>
-                </div>
+                </dialog>
             @else
                 <flux:callout class="mt-6" variant="secondary" icon="clock">{{ __('Your current shift is awaiting closing approval. A new shift cannot be opened until it is closed.') }} {{ __('Your count has been submitted and is awaiting review. No further sales or cash movements can be recorded on this shift.') }}</flux:callout>
             @endif
