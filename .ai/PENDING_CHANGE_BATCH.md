@@ -1,3 +1,7 @@
+## 2026-10-25 — DEC-107 policy resolution on Inventory branch
+
+- Class V0; owner confirmed that open stocktakes do not block transfers at warehouse or product level. The existing canonical reconciliation handles movements after the count snapshot. Documentation-only resolution; no runtime, test, schema, merge, or deployment change. Policy commit: `155ef22c0e9398a443759d9dcc002cc2af12a75d`; affected files: `.ai/CURRENT_TASK.md`, `.ai/DECISIONS.md`, `.ai/PROGRESS.md`, `.ai/TEST_RESULTS.md`, plus this batch record and `.ai/SESSION_SUMMARY.md` in the continuity commit. Status: completed on the unmerged Inventory branch.
+
 ## 2026-10-25 — Pending Inventory draft and stocktake refinement
 
 - Class I4/D3; branch `feature/inventory-stocktake-and-resilient-drafts`; source development HEAD `8e8cc88`, supplied starting Production reference `7e50a0b`, latest recorded live application `0cf1214`. Transfer draft save retains positive requested quantities despite temporary stock shortage; submit/dispatch still lock and reject insufficient stock without posting. Existing canonical stocktake lifecycle and movement posting remain in place; count entry gains category filtering/reset, list shortage/surplus counts, and permission-scoped review quantity/estimated-cost totals. No migration or dependency change. This batch is unmerged and undeployed; focused verification is recorded in `.ai/TEST_RESULTS.md`.
