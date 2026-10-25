@@ -22,7 +22,7 @@ use InvalidArgumentException;
 final class CreateCustomerAction
 {
     /** @param array<string, mixed> $data */
-    public function execute(User $actor, Store $store, array $data, bool $cityOptional = false): Customer
+    public function execute(User $actor, Store $store, array $data, bool $cityOptional = false, bool $allowWithoutConsent = false): Customer
     {
         Gate::forUser($actor)->authorize('customers.create');
         abort_unless($store->status === 'active' && $actor->canAccessStore((int) $store->id), 403);
@@ -44,7 +44,7 @@ final class CreateCustomerAction
             throw new InvalidArgumentException(__('A customer idempotency key is required.'));
         }
         $consents = $data['consents'] ?? [];
-        if (! is_array($consents) || $consents === []) {
+        if (! is_array($consents) || ($consents === [] && ! $allowWithoutConsent)) {
             throw new InvalidArgumentException(__('At least one customer consent record is required.'));
         }
 
@@ -115,7 +115,7 @@ final class CreateCustomerAction
                     after: $customer->only(['public_id', 'phone_normalized', 'name_ar', 'name_en', 'email', 'customer_group_id', 'status', 'lock_version']),
                     branchId: (int) $store->branch_id,
                     storeId: (int) $store->id,
-                    metadata: ['idempotency_key' => $idempotencyKey, 'purpose_scoped' => true, 'actor_id' => $actor->id],
+                    metadata: ['idempotency_key' => $idempotencyKey, 'purpose_scoped' => $consents !== [], 'actor_id' => $actor->id],
                 );
 
                 $consentAction = app(RecordCustomerConsentAction::class);

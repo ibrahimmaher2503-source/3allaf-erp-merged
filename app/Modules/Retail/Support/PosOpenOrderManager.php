@@ -280,6 +280,26 @@ final class PosOpenOrderManager
         return $this->scope($cashier, $context)->where('uuid', $uuid)->first();
     }
 
+    public function completedCheckout(User $cashier, PosContext $context, string $uuid, string $token): ?PosOpenOrder
+    {
+        if (! $context->isReady() || $context->store === null || $context->branch === null || $context->drawer === null || $context->shift === null) {
+            return null;
+        }
+
+        return PosOpenOrder::query()
+            ->where('company_id', $context->store->company_id)
+            ->where('branch_id', $context->branch->id)
+            ->where('store_id', $context->store->id)
+            ->where('cash_drawer_id', $context->drawer->id)
+            ->where('shift_id', $context->shift->id)
+            ->where('cashier_id', $cashier->id)
+            ->where('uuid', $uuid)
+            ->where('checkout_token', $token)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_sale_id')
+            ->first();
+    }
+
     private function updateOpen(?PosOpenOrder $order, array $attributes): void
     {
         if ($order === null || $order->status !== 'open') {

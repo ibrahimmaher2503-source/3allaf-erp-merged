@@ -65,7 +65,13 @@ final class CheckoutPanel extends Component
         }
         $this->saveDraft($orders, $contexts);
     }
-    
+
+    public function switchCheckoutMode(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
+    {
+        $this->chooseMode($mode, $orders, $contexts);
+        $this->dispatch('open-pos-checkout');
+    }
+
     public function startCheckout(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
         Gate::authorize('pos_sales.create');
@@ -93,6 +99,7 @@ final class CheckoutPanel extends Component
         }
         $this->paymentLines[] = $this->emptyLine();
         $this->saveDraft($orders, $contexts);
+        $this->dispatch('open-pos-checkout');
     }
 
     public function removePaymentLine(int $index, PosOpenOrderManager $orders, PosContextResolver $contexts): void
@@ -104,9 +111,15 @@ final class CheckoutPanel extends Component
         unset($this->paymentLines[$index]);
         $this->paymentLines = array_values($this->paymentLines);
         if ($this->mode !== 'card') {
-            $this->mode = count($this->paymentLines) > 1 ? 'split' : $this->mode;
+            if (count($this->paymentLines) > 1) {
+                $this->mode = 'split';
+            } else {
+                $method = PaymentMethod::query()->whereKey((int) ($this->paymentLines[0]['method_id'] ?? 0))->where('status', 'active')->first();
+                $this->mode = $method?->isCash() ? 'cash' : 'card';
+            }
         }
         $this->saveDraft($orders, $contexts);
+        $this->dispatch('open-pos-checkout');
     }
 
     public function updatedPaymentLines(): void

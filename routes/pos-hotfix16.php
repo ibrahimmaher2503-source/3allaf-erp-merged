@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Customer\Models\CustomerGroup;
-use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Actions\StoreAttachment;
 use App\Modules\Platform\Data\AttachmentSourceReference;
@@ -57,14 +56,7 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
     $lookup = in_array($request->query('lookup'), ['products', 'customers', 'invoices'], true)
         ? $request->query('lookup')
         : ($customerQuery !== '' ? 'customers' : 'products');
-    $customerPurposes = [];
-    $customerPolicyError = null;
     if ($store !== null && $user->can('customers.view')) {
-        try {
-            $customerPurposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
-        } catch (InvalidArgumentException $exception) {
-            $customerPolicyError = $exception->getMessage();
-        }
         if ($lookup === 'customers' && $customerQuery !== '') {
             $escaped = addcslashes($customerQuery, '%_\\');
             $prefix = $escaped.'%';
@@ -127,8 +119,6 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
         'governorates' => $governorates,
         'cities' => $cities,
         'customerGroups' => $customerGroups,
-        'customerPurposes' => $customerPurposes,
-        'customerPolicyError' => $customerPolicyError,
         'previewError' => $snapshot['error'] ?? null,
         'completedSale' => $completedSale,
     ]);
@@ -263,6 +253,18 @@ Route::post('pos/checkout', function (Request $request, CompletePosOpenOrderActi
             throw new InvalidArgumentException($context->disabledReason ?? __('The POS context is no longer active.'));
         }
         $order = $orders->findScoped($user, $context, $validated['open_order_uuid']);
+        if ($order === null && ($completedOrder = $orders->completedCheckout($user, $context, $validated['open_order_uuid'], $validated['checkout_token'])) !== null) {
+            $completedSale = Sale::query()->visibleTo($user)->approved()
+                ->whereKey($completedOrder->completed_sale_id)
+                ->where('idempotency_key', 'CHECKOUT:'.$user->id.':'.$validated['checkout_token'])
+                ->first();
+            if ($completedSale !== null) {
+                $request->session()->forget([PosOpenOrderManager::SESSION_KEY, 'pos.cart', 'pos.checkout_token', 'pos.tax_applicable', 'pos.customer_id']);
+                $request->session()->flash('pos.completed_sale_id', $completedSale->id);
+
+                return to_route('pos')->with('success', __('Sale completed successfully'));
+            }
+        }
         if ($order === null || ! hash_equals((string) $order->checkout_token, (string) $validated['checkout_token'])) {
             throw new InvalidArgumentException(__('This checkout draft is stale or belongs to another POS context. Reload the active order.'));
         }
