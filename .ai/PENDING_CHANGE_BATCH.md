@@ -1,12 +1,12 @@
-# 2026-10-25 — Commercial and inventory batch merged to main; deployment pending
+# 2026-10-25 — Commercial and inventory batch closed by Production release
 
 | Class | Source | Final SHA | Status |
 |---|---|---|---|
-| D3 | User B `feature/purchasing-pos-commercial-ux` | `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` | Integrated first; merged to main; undeployed |
-| D3 | User A `feature/inventory-stocktake-and-resilient-drafts` | `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` | Integrated second; merged to main; undeployed |
-| D3 | `feature/integration-commercial-inventory-batch` | `6b167bdb69e12cecf0225acfb0a3c30c85c81d31` | Main merge `6fe1cbad626be76aa43a8c18cbc3020ee1dcf0c4`; focused post-merge QA PASS; Production deployment pending separate authorization |
+| D3/I4 | User B `feature/purchasing-pos-commercial-ux` | `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` | Integrated first; merged and deployed |
+| D3/I4 | User A `feature/inventory-stocktake-and-resilient-drafts` | `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` | Integrated second; merged and deployed |
+| I4 | `feature/integration-commercial-inventory-batch` | `6b167bdb69e12cecf0225acfb0a3c30c85c81d31` | Main merge `6fe1cbad626be76aa43a8c18cbc3020ee1dcf0c4`, approved main `00f150f7bd7cf80969f143cba171966cbb33eb84`; live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.50-commercial-inventory-00f150f` |
 
-DEC-107 keeps open stocktakes nonblocking for transfers. DEC-108 uses an active explicit outlet mapping or a sole eligible outlet; ambiguous/invalid/inaccessible context blocks labels and never guesses List 0. DEC-109 retains header branch context. Integration acceptance passed at 1440 and 390; no new browser pass was needed after the conflict-free source-equivalent main merge. No application migration was added. Production remains `0cf121450502713be385e041cbaf66e2a93ea66e`. Neither User A nor User B is pending implementation or merge. Exact next step: owner separately authorizes Production deployment; then follow the established immutable release, backup, verification and activation process.
+This batch is closed: integration acceptance at 1440/390 and post-merge focused 40 tests/325 assertions passed; candidate, activation, PHP 8.5 FPM reload and real-host public verification passed. Production migrations pending/executed: 0/0. DEC-107 nonblocking transfers and DEC-108 fail-closed outlet mapping are live; DEC-109 preserves header branch context. Backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261025T181352Z_pre_00f150f.sql.gz` has SHA-256 `ae02ce69a3718af9232675d9e2a9e1bb7c55238dac80b57b7c6f4d6c4d441b35` and passed isolated restore verification. Previous release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2` remains rollback. No User A/User B integration, main merge or deployment action remains pending. Owner operational UAT and live monitoring follow.
 
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 
