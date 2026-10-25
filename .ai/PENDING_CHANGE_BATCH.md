@@ -1,3 +1,11 @@
+# 2026-10-25 — User B commercial UX candidate, undeployed
+
+| Class | Branch / application commit | Scope | Status |
+|---|---|---|---|
+| D3 | `feature/purchasing-pos-commercial-ux` / `ab610c739381e8a0bb04312248d25fad738c4c06` | Global branch default, purchase contextual pricing/line labels, POS payment/customer search, strict blind close | Pushed for review; no merge/deploy; focused browser and MariaDB QA pending |
+
+This candidate is separate from User A inventory/stocktake work. Shared files touched: `resources/views/layouts/app/sidebar.blade.php`, `app/Modules/Platform/Support/WorkContext.php`, `routes/platform.php`, `routes/retail.php`, `routes/reporting.php`, and `app/Modules/Pricing/Services/BarcodeLabelService.php`. No stocktake or inventory transfer implementation was edited. Production continuity below is unchanged.
+
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 
 - Class I4: merged/deployed application `0cf121450502713be385e041cbaf66e2a93ea66e` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; previous R1–R7 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3` is rollback. R9–R16 is closed and no longer pending.

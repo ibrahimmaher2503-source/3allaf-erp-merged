@@ -1,3 +1,9 @@
+# 2026-10-25 — User B commercial UX feature verification (undeployed)
+
+- Application commit `ab610c739381e8a0bb04312248d25fad738c4c06`; source `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f`; branch `feature/purchasing-pos-commercial-ux`. Focused POS calculator Node test PASS, including 64.00 due / 50.00 cash / 14.00 card and revised 40.00 cash / 24.00 card. PHP 8.4 syntax PASS for affected PHP and purchase Blade PHP blocks; Pint PASS; Blade view cache PASS; active POS customer route registration PASS; Node 20 Vite build PASS; `git diff --check` PASS.
+- MariaDB socket login for the local account returned 1045, so no disposable QA DB or user was created, no PHP feature test ran, and no DB/user cleanup was needed. The production database and shared `.env` were untouched. CodeGraph CLI and a worktree-scoped MCP server were unavailable; bounded `rg` and source review were used.
+- Authenticated browser checks at 1440 and 390, RTL/Cairo, overflow, console errors, payment modal continuity, customer creation/search, contextual price/list override, draft-line labels and existing Product/Invoice/Transfer labels, unauthorized branch denial, and branchless warehouses: NOT RUN. No local browser/runtime was available. Do not treat earlier Production or other-branch results as this feature's evidence. Merge readiness remains NO.
+
 # 2026-10-25 — R9–R16 POS completion Production acceptance PASS
 
 - Owner-provided deployment evidence: `/var/lib/toyjoy/r9-r16-deployment/0cf1214-r2-20261025T101832Z`; deployed application `0cf121450502713be385e041cbaf66e2a93ea66e`; active release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; rollback release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`.

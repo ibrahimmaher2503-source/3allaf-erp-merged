@@ -1,3 +1,13 @@
+# Current development task — User B commercial UX candidate (2026-10-25)
+
+D3 branch `feature/purchasing-pos-commercial-ux` started at `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f`. Application commit `ab610c739381e8a0bb04312248d25fad738c4c06` is pushed for review. No merge or deployment occurred. Production remains on `0cf121450502713be385e041cbaf66e2a93ea66e` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`. This feature-branch entry records the owner-requested handoff and does not update Production acceptance.
+
+Scope: one authorized session branch default; purchase-order and purchase-invoice defaults and branch-scoped lists; sales invoice and report defaults; contextual purchase-line sale price through `PriceListResolver`; draft purchase-line barcode shortcut through `BarcodeLabelService`; in-place POS payment state and remaining auto-fill; debounced POS customer lookup; focused blind shift-close dialog. No schema migration or inventory stocktake/transfer change. Header branch selection is a default, never document authorization; All Branches clears it. A selected branch with multiple selling outlets and no active mapping is deliberately unresolved for purchase-line labels (DEC-108).
+
+Verification: PHP syntax, Pint, Blade compilation, POS route registration, one focused Node calculator check, and Node 20 Vite build passed. MariaDB denied the local account, so no disposable QA database was created and no PHP database-backed test ran. No local browser executable/runtime was available; 1440/390 RTL/Cairo, overflow, console, modal, customer search, label workflow, and branchless-warehouse scenarios remain for authenticated QA. Merge readiness: NO until those focused checks and DEC-108 scope are resolved.
+
+---
+
 # Current task — R9–R16 POS completion deployed and closed (2026-10-25)
 
 Class I4 Production deployment of merged application `0cf121450502713be385e041cbaf66e2a93ea66e` succeeded. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`. R9–R16 is merged, deployed and closed; it is no longer pending.
