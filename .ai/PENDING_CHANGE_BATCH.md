@@ -1,3 +1,8 @@
+## 2026-10-25 — R1–R7 operational repair batch closed by Production release
+
+- Class I4: merged/deployed application SHA `99c6f5da55efe339fb07057f5703feed9302dcc5` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`; previous R8 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4` is rollback. R1–R7 is no longer pending. R9–R16 is a separate POS-only development batch handled by User 2.
+- Sole additive transfer-receiving-draft migration is Ran in batch 41; final deployment did not rerun it. Preserved pre-migration backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261025T053617Z_pre_99c6f5d.sql.gz` has SHA-256 `df120219191337f00806520a361149092c7a218fff9b43561ec1573b1fa6983e`. Owner-confirmed journal `/var/lib/toyjoy/r1-r7-deployment/99c6f5d-20261025T054330Z` records candidate/public authenticated browser PASS (60 assertions each), maintenance LIVE, and no final rollback. The five `.ai` continuity files are updated on main after acceptance; this documentation commit does not redeploy the application.
+
 ## 2026-10-24 — R8 POS theme batch closed by Production release
 
 - Class I4: deployed application SHA `b762e57002c78e9444475a5409a49f2826369152` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`; prior `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2` remains rollback. Owner-confirmed `/var/lib/toyjoy/r8-deployment/b762e570-20261024T181522Z` shows candidate and after-activation authenticated Chromium, Light/Dark, theme persistence and POS state preservation PASS. Final public health and PHP 8.5 FPM reload PASS; no new Laravel errors; maintenance UP; rollback NO.

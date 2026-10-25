@@ -1,4 +1,12 @@
-# Current task — R8 POS Light/Dark theme LIVE (2026-10-24)
+# Current task — R1–R7 operational repairs LIVE; R9–R16 next (2026-10-25)
+
+Class I4 owner-confirmed Production deployment of merged application SHA `99c6f5da55efe339fb07057f5703feed9302dcc5` succeeded. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`; previous R8 rollback release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`. The R1–R7 batch is merged and deployed: canonical quantity display, purchase-draft quantity persistence, transfer approval and destination receiving drafts, Transfer/Stock Entry/Stock Exit navigation, barcode document import with destination selling prices, authorized POS branch/store inheritance, and stocktake difference review. R8 Light/Dark and canonical POS payment modes remain intact.
+
+The sole additive migration `2026_10_24_092522_create_stock_transfer_receiving_drafts` is Ran in batch 41 and was **not** re-executed during the final r3 activation. Preserved pre-migration backup: `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261025T053617Z_pre_99c6f5d.sql.gz`, SHA-256 `df120219191337f00806520a361149092c7a218fff9b43561ec1573b1fa6983e`. Owner-confirmed journal `/var/lib/toyjoy/r1-r7-deployment/99c6f5d-20261025T054330Z` records real Apache-vhost candidate and public authenticated browser gates PASS, 60 assertions at each gate, RTL/Cairo, R8 theme toggle/persistence and POS state PASS, no horizontal overflow or console/page/HTTP 500 errors, final maintenance LIVE, and rollback required NO. The failed r1/r2 releases remain inactive forensic candidates.
+
+The next active development batch is the separate **POS-only R9–R16 branch handled by User 2**. This main-only continuity update changes no application code and does not redeploy the application. The deployed application SHA remains `99c6f5da55efe339fb07057f5703feed9302dcc5` even after the documentation commit makes main newer.
+
+# Historical task — R8 POS Light/Dark theme LIVE (2026-10-24)
 
 Class I4 Production deployment of application SHA `b762e57002c78e9444475a5409a49f2826369152` succeeded. Active immutable release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`. Previous release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2` is the rollback target. R8 changes POS presentation and Light/Dark behavior; canonical payment configuration is unchanged and no migration ran.
 
