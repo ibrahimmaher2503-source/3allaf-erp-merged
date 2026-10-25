@@ -217,7 +217,7 @@
                     <flux:button type="button" class="mt-4" variant="primary" icon="lock-closed" onclick="document.getElementById('blind-close-dialog-{{ $shift->id }}').showModal()">{{ __('Close shift') }}</flux:button>
                 </div>
                 <dialog id="blind-close-dialog-{{ $shift->id }}" class="m-auto w-[min(94vw,34rem)] rounded-xl border border-zinc-200 bg-white p-0 shadow-2xl backdrop:bg-zinc-950/70 dark:border-zinc-700 dark:bg-zinc-900">
-                    <div class="border-b border-zinc-200 p-5 dark:border-zinc-700"><flux:heading size="lg">{{ __('Count physical cash') }}</flux:heading><flux:text class="mt-1">{{ __('Enter only the cash physically counted. Expected cash and variance are reviewed after submission by authorized staff.') }}</flux:text></div>
+                    <div class="border-b border-zinc-200 p-5 dark:border-zinc-700"><flux:heading size="lg">{{ __('Count physical cash') }}</flux:heading><flux:text class="mt-1">{{ __('Enter only the cash physically counted. Authorized staff review the close after submission.') }}</flux:text></div>
                     <form method="POST" action="{{ route('pos.shift.blind-close', $shift) }}" class="grid gap-4 p-5" onsubmit="return window.confirm({{ \Illuminate\Support\Js::from(__('Submit this physical cash count and close the shift?')) }})">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $closeToken }}">

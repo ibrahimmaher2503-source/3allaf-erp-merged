@@ -172,3 +172,18 @@ window.posPaymentCalculator = ({ payable }) => ({
         input.dispatchEvent(new Event('change', { bubbles: true }));
     },
 });
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('livewire:init', () => {
+        const pendingDialogs = new Set();
+        window.Livewire.hook('morph.updated', ({ el }) => {
+            const dialog = el.closest?.('dialog[aria-labelledby="pos-checkout-dialog-title"]');
+            if (!dialog?.open || pendingDialogs.has(dialog)) return;
+            pendingDialogs.add(dialog);
+            requestAnimationFrame(() => {
+                pendingDialogs.delete(dialog);
+                if (dialog.isConnected && dialog.open) window.Alpine?.$data(dialog)?.syncRemainingDefaults?.();
+            });
+        });
+    });
+}

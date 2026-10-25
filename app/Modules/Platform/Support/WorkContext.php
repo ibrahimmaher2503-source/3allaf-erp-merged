@@ -73,7 +73,7 @@ final class WorkContext
     {
         $storeBranchIds = $this->stores($actor)->pluck('branch_id')->filter()->unique()->values();
 
-        return Branch::query()->where('status', 'active')
+        return Branch::query()->with('company:id,name_ar,name_en')->where('status', 'active')
             ->where(fn ($query) => $query->whereIn('id', Branch::query()->visibleTo($actor)->select('id'))
                 ->orWhereIn('id', $storeBranchIds))
             ->orderBy('code')->get();

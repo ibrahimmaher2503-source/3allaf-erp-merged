@@ -10,6 +10,7 @@ use App\Modules\Catalog\Actions\ReserveProductIdentityAction;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Models\BranchSellingStore;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Purchasing\Actions\ApprovePurchaseInvoiceAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseInvoiceAction;
@@ -221,14 +222,19 @@ new #[Title('Purchase Invoices')] class extends Component
         if ($warehouse?->branch_id === null) {
             return null;
         }
-        $mappedStoreId = \App\Modules\Platform\Models\Branch::query()->whereKey($warehouse->branch_id)
-            ->with('activeSellingStoreMapping')->first()?->activeSellingStoreMapping?->store_id;
-        if ($mappedStoreId !== null) {
-            $mappedStore = Store::query()->visibleTo($actor)->whereKey($mappedStoreId)->where('branch_id', $warehouse->branch_id)
-                ->where('status', 'active')->where('type', 'selling')->with(['branch.defaultPriceList', 'priceList'])->first();
-            if ($mappedStore !== null) {
-                return $mappedStore;
+        $mappings = BranchSellingStore::query()->where('branch_id', $warehouse->branch_id)
+            ->where('status', 'active')->limit(2)->get();
+        if ($mappings->count() > 1) {
+            return null;
+        }
+        if ($mappings->count() === 1) {
+            $mapping = $mappings->first();
+            if ($mapping->effective_from?->isFuture() || ($mapping->effective_to !== null && $mapping->effective_to->lessThanOrEqualTo(now()))) {
+                return null;
             }
+
+            return Store::query()->visibleTo($actor)->whereKey($mapping->store_id)->where('branch_id', $warehouse->branch_id)
+                ->where('status', 'active')->where('type', 'selling')->with(['branch.defaultPriceList', 'priceList'])->first();
         }
         $outlets = Store::query()->visibleTo($actor)->where('status', 'active')->where('type', 'selling')
             ->where('branch_id', $warehouse->branch_id)->with(['branch.defaultPriceList', 'priceList'])->limit(2)->get();

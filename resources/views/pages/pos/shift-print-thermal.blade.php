@@ -41,17 +41,19 @@
     <div class="row"><span class="label">{{ __('Opened at') }}</span><span class="value">{{ $shift->opened_at?->format('Y-m-d H:i') }}</span></div>
     <div class="row"><span class="label">{{ __('Close submitted') }}</span><span class="value">{{ $submission->submitted_at?->format('Y-m-d H:i') }}</span></div>
     <div class="row"><span class="label">{{ __('Status') }}</span><span class="value">{{ $statusLabel }}</span></div>
-    <div class="row"><span class="label">{{ __('Opening float') }}</span><span class="value"><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></span></div>
+    @if ($canViewExpected)<div class="row"><span class="label">{{ __('Opening float') }}</span><span class="value"><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></span></div>@endif
 
     <div class="rule"></div>
-    <h2>{{ __('System and counted totals') }}</h2>
-    <div class="row"><span class="label">{{ __('System expected cash') }}</span><span class="value"><x-money :amount="$submission->expected_cash" :currency="$shift->currency_code" /></span></div>
+    <h2>{{ $canViewExpected ? __('System and counted totals') : __('Counted cash') }}</h2>
+    @if ($canViewExpected)<div class="row"><span class="label">{{ __('System expected cash') }}</span><span class="value"><x-money :amount="$submission->expected_cash" :currency="$shift->currency_code" /></span></div>@endif
     <div class="row"><span class="label">{{ __('Cash physically counted by cashier') }}</span><span class="value"><x-money :amount="$submission->actual_cash" :currency="$shift->currency_code" /></span></div>
+    @if ($canViewExpected)
     @foreach ($methodRows as $row)
         <div class="row"><span class="label">{{ $row['code'] }}</span><span class="value"><x-money :amount="$row['actual']" :currency="$shift->currency_code" /></span></div>
     @endforeach
 
     <div class="row"><span class="label">{{ __('Overall total') }}</span><span class="value"><x-money :amount="$recordedTotal" :currency="$shift->currency_code" /></span></div>
+    @endif
 
     @if ($canViewExpected)
         <div class="rule"></div>

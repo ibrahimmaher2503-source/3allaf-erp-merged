@@ -1078,8 +1078,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $submission = $shift->closingSubmissions->sortByDesc('attempt')->first();
         abort_unless($submission !== null, 409, __('This closed shift has no immutable closing submission.'));
 
-        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve') || (int) $shift->getAttribute('cashier_id') === $user->id;
-        abort_unless($viewerCanSeeExpected, 403);
+        $viewerCanSeeExpected = $user->can('shifts_cash_movements.approve');
+        abort_unless($viewerCanSeeExpected || (int) $shift->getAttribute('cashier_id') === $user->id, 403);
         $pendingApproval = ! $shift->status->isTerminal();
         $event = $format === 'thermal' ? 'shift_thermal_printed' : 'shift_a4_printed';
         $alreadyPrinted = AuditLog::query()
