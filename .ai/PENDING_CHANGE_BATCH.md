@@ -1,3 +1,8 @@
+## 2026-10-25 — R9–R16 POS completion batch closed by Production release
+
+- Class I4: merged/deployed application `0cf121450502713be385e041cbaf66e2a93ea66e` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.49-pos-completion-r9-r16-0cf1214-r2`; previous R1–R7 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3` is rollback. R9–R16 is closed and no longer pending.
+- Owner-provided journal `/var/lib/toyjoy/r9-r16-deployment/0cf1214-r2-20261025T101832Z` records successful hash-verified handoff, zero pending migrations, no migration run, payment invariant PASS, candidate/activated/public browser and health gates PASS, maintenance LIVE and no database rollback. Failed r1 was a QA-harness failure; the corrected dual-release gate passed 24/24 on each release. Mutable POS behavior remains supported by prior disposable/integration verification. This five-file docs-only main update does not redeploy.
+
 ## 2026-10-25 — R1–R7 operational repair batch closed by Production release
 
 - Class I4: merged/deployed application SHA `99c6f5da55efe339fb07057f5703feed9302dcc5` is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`; previous R8 release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4` is rollback. R1–R7 is no longer pending. R9–R16 is a separate POS-only development batch handled by User 2.
