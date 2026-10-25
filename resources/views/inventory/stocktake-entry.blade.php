@@ -95,10 +95,12 @@
     @endif
     <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-5"><h3 class="text-sm font-bold">{{ $t('قائمة المنتجات والعد', 'Products and counts') }}</h3><span class="text-xs text-zinc-500">{{ $countLines->total() }} {{ $t('نتيجة', 'results') }}</span></div>
     @if($countProgress['total'] > 0)
-    <form method="GET" action="{{ route('inventory.counts.entry', $count) }}" class="grid min-w-0 gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:grid-cols-[minmax(0,2fr)_minmax(9rem,1fr)_auto] sm:items-end sm:px-5">
+    <form method="GET" action="{{ route('inventory.counts.entry', $count) }}" class="grid min-w-0 gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:grid-cols-2 sm:items-end sm:px-5 xl:grid-cols-[minmax(0,2fr)_minmax(9rem,1fr)_minmax(9rem,1fr)_auto_auto]">
         <label class="min-w-0 text-xs font-semibold">{{ $t('بحث عن منتج أو باركود', 'Search product or barcode') }}<input name="count_search" value="{{ request('count_search') }}" class="{{ $field }}" placeholder="{{ $t('اسم أو رمز المنتج', 'Product name or code') }}"></label>
+        <label class="min-w-0 text-xs font-semibold">{{ $t('التصنيف', 'Category') }}<select name="count_category_id" class="{{ $field }}"><option value="">{{ $t('كل التصنيفات', 'All categories') }}</option>@foreach($countCategories as $category)<option value="{{ $category->id }}" @selected(request()->integer('count_category_id') === $category->id)>{{ \App\Support\HumanName::name($category) }}</option>@endforeach</select></label>
         <label class="min-w-0 text-xs font-semibold">{{ $t('حالة العد', 'Count status') }}<select name="count_filter" class="{{ $field }}"><option value="all">{{ $t('الكل', 'All') }}</option>@foreach(['not_counted' => $t('غير معدود', 'Uncounted'), 'matched' => $t('مطابق', 'Matched'), 'shortage' => $t('عجز', 'Shortage'), 'excess' => $t('زيادة', 'Excess'), 'movements' => $t('مع حركات', 'With movements')] as $value => $label)<option value="{{ $value }}" @selected(request('count_filter') === $value)>{{ $label }}</option>@endforeach</select></label>
         <button class="{{ $button }} min-h-10 bg-sky-700 text-white">{{ $t('تصفية', 'Filter') }}</button>
+        <a href="{{ route('inventory.counts.entry', $count) }}" class="{{ $button }} inline-flex min-h-10 items-center justify-center border border-zinc-300">{{ $t('إعادة ضبط', 'Reset') }}</a>
     </form>
     @endif
     <div class="min-w-0 max-w-full overflow-x-auto" data-stocktake-table-scroll><table class="w-full min-w-[1020px] border-collapse text-sm" data-stocktake-count-table>

@@ -56,6 +56,7 @@ use App\Support\UserSafeError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -174,7 +175,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         ->when(request('count_status'), fn ($query, $status) => $query->where('status', (string) $status))
         ->when(request('count_from'), fn ($query, $from) => $query->whereDate('created_at', '>=', $from))
         ->when(request('count_to'), fn ($query, $to) => $query->whereDate('created_at', '<=', $to))
-        ->with(['store', 'creator'])->withCount(['lines as total_lines_count', 'lines as counted_lines_count' => fn ($lines) => $lines->where('is_counted', true), 'lines as matched_lines_count' => fn ($lines) => $lines->where('is_counted', true)->where('variance_quantity', 0), 'lines as different_lines_count' => fn ($lines) => $lines->where('variance_quantity', '!=', 0)])
+        ->with(['store', 'creator'])->withCount(['lines as total_lines_count', 'lines as counted_lines_count' => fn ($lines) => $lines->where('is_counted', true), 'lines as matched_lines_count' => fn ($lines) => $lines->where('is_counted', true)->where('variance_quantity', 0), 'lines as different_lines_count' => fn ($lines) => $lines->where('variance_quantity', '!=', 0), 'lines as shortage_lines_count' => fn ($lines) => $lines->where('variance_quantity', '<', 0), 'lines as surplus_lines_count' => fn ($lines) => $lines->where('variance_quantity', '>', 0)])
         ->latest('id')->paginate(20, ['*'], 'counts_page')->withQueryString() : collect();
     $needsProductOptions = str_starts_with((string) $focus, 'transfer') || str_starts_with((string) $focus, 'adjustment');
     $products = $needsProductOptions ? Product::query()->sellable()->select(['id', 'item_code', 'name_en', 'name_ar', 'fractional_quantity', 'parent_product_id'])->when($search !== '', static function ($query) use ($search): void {
@@ -184,10 +185,21 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
         });
     })->orderBy('item_code')->limit(200)->get() : collect();
     $countAssignees = $focus === 'count-create' ? User::query()->where('status', 'active')->limit(200)->get(['id', 'name', 'email', 'is_super_admin'])->filter(static fn (User $candidate): bool => $candidate->is_super_admin || $candidate->hasPermission('stock_counts.edit') || $candidate->hasPermission('stock_counts.close'))->values() : collect();
-    $countCategories = $focus === 'count-create' ? Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
+    $countCategories = $focus === 'count-create' ? Category::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : ($focus === 'count-entry' && $count ? Category::query()->whereIn('id', Product::query()->whereIn('id', $count->lines()->select('product_id'))->select('category_id'))->orderBy('name_en')->get(['id', 'name_ar', 'name_en']) : collect());
     $countSuppliers = $focus === 'count-create' ? Supplier::query()->where('status', 'active')->orderBy('name_en')->limit(200)->get(['id', 'name_ar', 'name_en']) : collect();
+    $countReviewTotals = $focus === 'count-reconcile' && $count && in_array($count->status, ['submitted', 'reconciled'], true)
+        ? DB::table('stock_count_lines as lines')
+            ->leftJoin('stock_balances as balances', fn ($join) => $join->on('balances.product_id', '=', 'lines.product_id')->on('balances.store_id', '=', 'lines.store_id'))
+            ->where('lines.stock_count_id', $count->id)
+            ->selectRaw('COUNT(DISTINCT CASE WHEN lines.variance_quantity <> 0 THEN lines.product_id END) AS affected_products')
+            ->selectRaw('COALESCE(SUM(CASE WHEN lines.variance_quantity < 0 THEN ABS(lines.variance_quantity) ELSE 0 END), 0) AS shortage_quantity')
+            ->selectRaw('COALESCE(SUM(CASE WHEN lines.variance_quantity > 0 THEN lines.variance_quantity ELSE 0 END), 0) AS surplus_quantity')
+            ->selectRaw('COALESCE(SUM(CASE WHEN lines.variance_quantity < 0 THEN ABS(lines.variance_quantity) * COALESCE(balances.average_cost, 0) ELSE 0 END), 0) AS shortage_value')
+            ->selectRaw('COALESCE(SUM(CASE WHEN lines.variance_quantity > 0 THEN lines.variance_quantity * COALESCE(balances.average_cost, 0) ELSE 0 END), 0) AS surplus_value')
+            ->first()
+        : null;
 
-    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'visibleStores', 'visibleStoreIds', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
+    return view('inventory/index', compact('balances', 'movements', 'transfers', 'transferApprovals', 'adjustments', 'counts', 'inventorySummary', 'focus', 'transfer', 'adjustment', 'count', 'countReviewTotals', 'visibleStores', 'visibleStoreIds', 'products', 'countAssignees', 'countCategories', 'countSuppliers', 'search', 'filterStoreId', 'movementType', 'stockState', 'includeZero', 'inventoryOverview', 'canViewCost', 'movementReferences'));
 };
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router, $renderInventory): void {
@@ -381,6 +393,8 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return back()->with('success', __('Transfer submitted for approval.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', UserSafeError::message($exception));
         } catch (Throwable $exception) {
             report($exception);
 

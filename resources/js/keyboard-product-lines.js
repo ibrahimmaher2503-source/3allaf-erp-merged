@@ -498,16 +498,9 @@ const formatTransferMoney = (value) => {
 
 const syncTransferQuantityLimit = (line, availableValue) => {
     const quantity = line.querySelector('[data-line-quantity]');
-    const available = Number(availableValue);
-    if (!quantity || !Number.isFinite(available)) return;
-
-    quantity.min = '0';
-    quantity.max = available > 0 ? String(availableValue).trim() : '0';
-    const requested = Number(quantity.value);
-    if (available < 1) quantity.value = '0';
-    else if (!Number.isFinite(requested) || requested < 1) quantity.value = '1';
-    else if (requested > available) quantity.value = String(Math.floor(available));
-    quantity.dispatchEvent(new Event('input', { bubbles: true }));
+    if (!quantity) return;
+    quantity.min = '1';
+    quantity.removeAttribute('max');
 };
 
 const appendTransferLine = (editor) => {
@@ -528,7 +521,7 @@ const hydrateTransferLine = (line, product) => {
     const productId = line.querySelector('[data-product-id]');
     const search = line.querySelector('[data-product-search]');
     const available = Number(product.available);
-    const requested = Number.isFinite(available) && available >= 1 ? 1 : 0;
+    const requested = 1;
     const quantity = line.querySelector('[data-line-quantity]');
 
     if (productId) {

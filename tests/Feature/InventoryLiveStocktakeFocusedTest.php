@@ -290,7 +290,7 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
         self::assertSame('95.000000', (string) StockBalance::query()->where('store_id', $source->id)->where('product_id', $product->id)->value('on_hand'));
         self::assertSame(1, StockMovement::query()->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
 
-        $badLines = [['product_id' => $product->id, 'quantity_requested' => '101', 'allocations' => [$destinationA->id => '60', $destinationB->id => '41']]];
+        $badLines = [['product_id' => $product->id, 'quantity_requested' => '101', 'allocations' => [$destinationA->id => '60', $destinationB->id => '42']]];
         $this->from(route('inventory.transfers.create'))->post(route('inventory.transfers.store'), [
             'source_store_id' => $source->id, 'destination_store_id' => $destinationA->id,
             'destination_store_ids' => [$destinationA->id, $destinationB->id], 'reason_code' => 'replenishment',

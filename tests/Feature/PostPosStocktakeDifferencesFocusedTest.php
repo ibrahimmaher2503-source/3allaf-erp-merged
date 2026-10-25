@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockCount;
 use App\Modules\Inventory\Models\StockMovement;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -42,6 +43,9 @@ final class PostPosStocktakeDifferencesFocusedTest extends TestCase
                 'variance_quantity' => $variance, 'is_counted' => $isCounted,
                 'counted_at' => $isCounted ? now() : null,
             ]);
+            if ($isCounted) {
+                StockBalance::query()->create(['product_id' => $product->id, 'store_id' => $fixture['store']->id, 'on_hand' => '10', 'reserved' => '0', 'in_transit' => '0', 'average_cost' => '10', 'total_value' => '100', 'version' => 1]);
+            }
         }
 
         $before = StockMovement::query()->count();
@@ -56,5 +60,12 @@ final class PostPosStocktakeDifferencesFocusedTest extends TestCase
             ->assertSee('QA-R7-MISS')->assertDontSee('QA-R7-MATCH');
         self::assertSame($before, StockMovement::query()->count());
         self::assertSame('in_progress', $count->fresh()->status);
+        $count->update(['status' => 'submitted']);
+        $this->get($base)->assertOk()->assertSee('data-stocktake-review-totals', false)->assertSee('20.00');
+        $this->get(route('inventory.counts', ['count_number' => $count->count_number, 'count_store_id' => $fixture['store']->id, 'count_status' => 'submitted']))
+            ->assertOk()->assertSee($count->count_number);
+        $this->get(route('inventory.counts', ['count_number' => 'QA-NO-MATCH']))
+            ->assertOk()->assertDontSee($count->count_number);
+        self::assertSame($before, StockMovement::query()->count());
     }
 }

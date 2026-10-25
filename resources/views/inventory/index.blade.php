@@ -20,6 +20,9 @@
             $like = '%'.addcslashes($countSearch, '%_\\').'%';
             $lineQuery->whereHas('product', fn ($query) => $query->where('item_code', 'like', $like)->orWhere('name_ar', 'like', $like)->orWhere('name_en', 'like', $like)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', 'like', $like)));
         }
+        if ($focus === 'count-entry' && request()->integer('count_category_id') > 0) {
+            $lineQuery->whereHas('product', fn ($query) => $query->where('category_id', request()->integer('count_category_id')));
+        }
         $lineFilter = (string) request('count_filter', 'all');
         if ($lineFilter === 'differences') $lineQuery->where(fn ($query) => $query->where('is_counted', false)->orWhere('variance_quantity', '!=', 0));
         if ($lineFilter === 'not_counted') $lineQuery->where('is_counted', false);
@@ -224,7 +227,7 @@
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
                                 </div>
-                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الموزع يتجاوز كمية التحويل المطلوبة أو الكمية المتاحة.', 'Allocated quantity exceeds the requested transfer or available stock.') }}</p>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الكمية الموزعة تتجاوز الكمية المطلوبة.', 'Allocated quantity exceeds the requested transfer quantity.') }}</p>
                                 <button type="button" data-remove-line class="inline-flex size-10 items-center justify-center self-end rounded-lg text-rose-700 hover:bg-rose-50" title="{{ $t('حذف البند', 'Delete item') }}" aria-label="{{ $t('حذف البند', 'Delete item') }}"><svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
                             </div>
                         @endforeach
@@ -249,7 +252,7 @@
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('الموزع', 'Allocated') }} <output data-line-allocated dir="ltr">0</output></div>
                                     <div class="rounded-lg bg-zinc-50 p-2">{{ $t('المتبقي', 'Remaining') }} <output data-line-remaining dir="ltr">0</output></div>
                                 </div>
-                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الموزع يتجاوز كمية التحويل المطلوبة أو الكمية المتاحة.', 'Allocated quantity exceeds the requested transfer or available stock.') }}</p>
+                                <p class="text-xs text-rose-700" data-line-allocation-error role="status" hidden>{{ $t('الكمية الموزعة تتجاوز الكمية المطلوبة.', 'Allocated quantity exceeds the requested transfer quantity.') }}</p>
                                 <button type="button" data-remove-line class="inline-flex size-10 items-center justify-center self-end rounded-lg text-rose-700 hover:bg-rose-50" title="{{ $t('حذف البند', 'Delete item') }}" aria-label="{{ $t('حذف البند', 'Delete item') }}"><svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
                             </div>
                         </template>
@@ -422,16 +425,16 @@
                     const availableOutput = line.querySelector('[data-line-available]');
                     const sourceQuantity = numeric(availableOutput?.textContent);
                     if (availableOutput && sourceQuantity === null) availableOutput.textContent = '—';
-                    const ready = Number.isInteger(productId) && productId > 0 && sourceQuantity !== null && sourceQuantity > 0;
+                    const ready = Number.isInteger(productId) && productId > 0;
                     const inputs = [...line.querySelectorAll('[data-allocation-input]')].filter((input) => !input.closest('[data-destination-id]').hidden);
                     const quantities = inputs.map((input) => numeric(input.value));
-                    const available = ready ? sourceQuantity : 0;
+                    const available = ready && sourceQuantity !== null ? sourceQuantity : 0;
                     const total = ready ? quantities.reduce((sum, quantity) => sum + (quantity ?? 0), 0) : 0;
                     const allocated = Number.isFinite(total) ? total : 0;
                     const requested = ready ? numeric(line.querySelector('[data-line-quantity]')?.value) ?? 0 : 0;
                     const remaining = ready ? Math.max(numeric(requested - allocated) ?? 0, 0) : 0;
                     const overAllocated = ready && quantities.some((quantity) => quantity !== null)
-                        && (!Number.isFinite(total) || allocated > requested || allocated > available);
+                        && (!Number.isFinite(total) || allocated > requested);
 
                     line.querySelector('[data-line-summary-available]').value = String(available);
                     line.querySelector('[data-line-summary-requested]').value = String(requested);
@@ -440,7 +443,6 @@
                     line.querySelector('[data-transfer-allocation-summary]').hidden = !ready;
                     line.querySelector('[data-line-allocation-error]').hidden = !overAllocated;
                     inputs.forEach((input) => {
-                        if (!ready && sourceQuantity === 0) input.value = '';
                         input.disabled = !ready;
                     });
                 };

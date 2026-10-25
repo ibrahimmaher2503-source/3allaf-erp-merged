@@ -1009,3 +1009,15 @@ The loopback server was stopped. The named QA database and temporary user were d
 - Page-level horizontal overflow: NONE
 - Migrations: NONE
 - Production deployment: PENDING
+
+## 2026-10-25 — Inventory stocktake and resilient transfer drafts
+
+- Scope: `feature/inventory-stocktake-and-resilient-drafts`; disposable socket-only MariaDB, no shared `.env` or Production data.
+- Initial test attempts stopped on a symlinked Composer autoloader resolving the main worktree and then on a missing fresh-worktree Vite manifest; a private lockfile-matched `vendor` copy and one Vite build resolved setup. The first browser attempt stopped on a temporary harness environment-variable typo; the second used an incomplete disposable product fixture. Both were corrected before the 28-assertion browser pass.
+- Focused Inventory stocktake/transfer suite: 26 of 27 tests passed initially; the one new assertion expected `6.000000` while the canonical model returned `6`. After that assertion and a test-only edit permission fixture were corrected, the changed transfer cases passed 2 tests / 20 assertions. The updated stocktake review/list case passed 1 test / 25 assertions. No unrelated broad suite ran.
+- Draft creation/reopen: requested quantity 6 persisted with zero source stock, note and two destination allocations survived reload, submit showed an inline error, the document remained Draft, and no transfer movement posted. A two-line approved transfer whose later line lacked stock rolled back the earlier dispatch movement and balance change; status remained Approved.
+- Existing focused stocktake cases passed for draft/session continuity, manual add, duplicate rejection, Add All with hundreds of products and bounded pagination, barcode/quantity retry, branchless warehouse, count-only non-posting, approved canonical reconciliation, and duplicate settlement protection. Submitted review now passes the focused shortage/surplus estimated-value and list-filter check.
+- Authenticated disposable Chromium: 28 Inventory assertions passed at 1440 and 390 across list, create, populated count, review, and transfer-create pages. Arabic RTL/Cairo, no page overflow or console/page errors, category filtering, and actual-count autosave surviving reload passed. Physical device camera scanning was not exercised.
+- PHP syntax, Pint, JS syntax, one Node 20/Vite 8 production build, and Git diff hygiene passed. No migration was added or run outside disposable QA.
+- Open stocktake movement policy: the focused existing test passed with transfers allowed during active counts and movement-aware reconciliation. DEC-107 was resolved by the owner on 2026-10-25 in favor of this nonblocking behavior; no blocking error, link, or policy change was required.
+- Disposable QA MariaDB directories/databases and the browser server were removed. Browser fixture accounts existed only inside the deleted private database; no separate SQL QA user was created. No merge, deployment, or Production verification occurred.

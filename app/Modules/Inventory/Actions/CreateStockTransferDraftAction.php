@@ -197,10 +197,6 @@ final class CreateStockTransferDraftAction
                 ->where('store_id', $sourceStoreId)
                 ->lockForUpdate()
                 ->first();
-            $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
-            if (bccomp($available, $quantity, 6) < 0) {
-                throw new InvalidArgumentException(__('The source store does not have enough available stock for this transfer.'));
-            }
 
             $allocations = [];
             foreach ((array) ($line['allocations'] ?? []) as $destinationId => $allocated) {
