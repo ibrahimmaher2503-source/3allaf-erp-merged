@@ -24,6 +24,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Queries\SupplierProductPrice;
 use App\Modules\Purchasing\Services\PurchaseInvoiceCalculator;
 use App\Modules\Purchasing\Support\DefaultReceivingWarehouse;
+use App\Modules\Pricing\Services\PriceListResolver;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -159,12 +160,18 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->pendingSupplierId = '';
         $this->supplierProductsOnly = true;
         $actor = Auth::user();
-        $contextStoreId = $actor instanceof User ? app(\App\Modules\Platform\Support\WorkContext::class)->id($actor) : null;
+        $workContext = app(\App\Modules\Platform\Support\WorkContext::class);
+        $contextStoreId = $actor instanceof User ? $workContext->id($actor) : null;
         $contextStore = $contextStoreId && $actor instanceof User ? Store::query()->visibleTo($actor)->find($contextStoreId) : null;
+        $contextBranch = $actor instanceof User ? $workContext->branch($actor) : null;
         if ($actor instanceof User && $contextStore?->company_id) {
             $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextStore->company_id, $contextStore->branch_id ? (int) $contextStore->branch_id : null);
             $this->invoiceForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
             $this->invoiceForm['currency_code'] = (string) Company::query()->whereKey($contextStore->company_id)->value('currency_code');
+        } elseif ($actor instanceof User && $contextBranch !== null) {
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextBranch->company_id, (int) $contextBranch->id);
+            $this->invoiceForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+            $this->invoiceForm['currency_code'] = (string) Company::query()->whereKey($contextBranch->company_id)->value('currency_code');
         }
         $this->showFormModal = true;
     }
@@ -178,6 +185,85 @@ new #[Title('Purchase Invoices')] class extends Component
         $this->invoiceForm['currency_code'] = $store?->company_id
             ? (string) Company::query()->whereKey($store->company_id)->value('currency_code')
             : '';
+    }
+
+    public function contextualSalePrice(int $productId, string $basePrice): ?string
+    {
+        $actor = Auth::user();
+        $warehouse = $actor instanceof User && filled($this->invoiceForm['store_id'])
+            ? Store::query()->visibleTo($actor)->with('branch.defaultPriceList')->find((int) $this->invoiceForm['store_id'])
+            : null;
+        $product = $warehouse !== null ? Product::query()->sellable()->availableToCompany((int) $warehouse->company_id)->find($productId) : null;
+        if ($warehouse?->branch === null || $product === null || ! $actor instanceof User) {
+            return null;
+        }
+        $outlet = $this->labelOutlet();
+        if ($outlet === null) {
+            return null;
+        }
+        try {
+            $resolver = app(PriceListResolver::class);
+            $list = $resolver->listForOutlet($outlet);
+
+            return $resolver->resolveWithBasePrice($product, $list, $basePrice)->finalPrice;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function labelOutlet(): ?Store
+    {
+        $actor = Auth::user();
+        if (! $actor instanceof User || blank($this->invoiceForm['store_id'])) {
+            return null;
+        }
+        $warehouse = Store::query()->visibleTo($actor)->find((int) $this->invoiceForm['store_id']);
+        if ($warehouse?->branch_id === null) {
+            return null;
+        }
+        $mappedStoreId = \App\Modules\Platform\Models\Branch::query()->whereKey($warehouse->branch_id)
+            ->with('activeSellingStoreMapping')->first()?->activeSellingStoreMapping?->store_id;
+        if ($mappedStoreId !== null) {
+            $mappedStore = Store::query()->visibleTo($actor)->whereKey($mappedStoreId)->where('branch_id', $warehouse->branch_id)
+                ->where('status', 'active')->where('type', 'selling')->with(['branch.defaultPriceList', 'priceList'])->first();
+            if ($mappedStore !== null) {
+                return $mappedStore;
+            }
+        }
+        $outlets = Store::query()->visibleTo($actor)->where('status', 'active')->where('type', 'selling')
+            ->where('branch_id', $warehouse->branch_id)->with(['branch.defaultPriceList', 'priceList'])->limit(2)->get();
+
+        return $outlets->count() === 1 ? $outlets->first() : null;
+    }
+
+    public function printLineLabels(int $index): void
+    {
+        Gate::authorize('purchase_invoices.print_labels');
+        $line = $this->lineItems[$index] ?? null;
+        $productId = (int) ($line['product_id'] ?? 0);
+        $quantity = filter_var($line['quantity'] ?? null, FILTER_VALIDATE_INT);
+        $outlet = $this->labelOutlet();
+        $price = $productId > 0 ? $this->contextualSalePrice($productId, (string) ($line['base_consumer_price'] ?? '0')) : null;
+        if ($productId <= 0 || $quantity === false || $quantity < 1 || $quantity > 500 || $outlet === null || $price === null) {
+            $this->dispatch('purchase-line-label-error');
+            $this->addError('lineItems.'.$index.'.labels', __('Select a product, a quantity from 1 to 500, and a branch with one priced selling outlet.'));
+
+            return;
+        }
+        $product = Product::query()->with(['barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary')])->find($productId);
+        $barcode = $product?->barcodes->first();
+        if ($barcode === null) {
+            $this->dispatch('purchase-line-label-error');
+            $this->addError('lineItems.'.$index.'.labels', __('Only a real active product barcode can be printed.'));
+
+            return;
+        }
+        session(['barcode_label_preview' => [
+            'store_id' => $outlet->id,
+            'rows' => [['product_id' => $productId, 'barcode_id' => $barcode->id, 'copies' => $quantity]],
+            'prices' => [$productId => $price],
+        ]]);
+        $this->dispatch('purchase-line-label-ready', url: route('pricing.labels.preview.show'));
     }
 
     public function openReceivingModal(int $purchaseOrderId): void
@@ -720,6 +806,7 @@ new #[Title('Purchase Invoices')] class extends Component
         $actor = auth()->user();
         abort_unless($actor instanceof User, 403);
         $visibleStoreIds = Store::query()->visibleTo($actor)->select('id');
+        $contextBranchId = $this->storeFilter === 'all' ? app(\App\Modules\Platform\Support\WorkContext::class)->branchId($actor) : null;
 
         $invoices = PurchaseInvoice::query()
             ->whereIn('store_id', $visibleStoreIds)
@@ -731,6 +818,7 @@ new #[Title('Purchase Invoices')] class extends Component
             ->when($this->statusFilter !== 'all', fn ($query) => $query->where('status', $this->statusFilter))
             ->when($this->supplierFilter !== 'all', fn ($query) => $query->where('supplier_id', (int) $this->supplierFilter))
             ->when($this->storeFilter !== 'all', fn ($query) => $query->where('store_id', (int) $this->storeFilter))
+            ->when($contextBranchId !== null, fn ($query) => $query->whereHas('store', fn ($stores) => $stores->where('branch_id', $contextBranchId)))
             ->when($this->dateFrom !== '', fn ($query) => $query->whereDate('invoice_date', '>=', $this->dateFrom))
             ->when($this->dateTo !== '', fn ($query) => $query->whereDate('invoice_date', '<=', $this->dateTo))
             ->latest()
@@ -989,7 +1077,7 @@ new #[Title('Purchase Invoices')] class extends Component
     @endunless
 
     @if ($showFormModal)
-        <flux:card class="space-y-3 p-3 sm:p-4" aria-label="{{ __('Stage 1 — Purchase invoice') }}" data-purchase-invoice-editor>
+        <flux:card class="space-y-3 p-3 sm:p-4" aria-label="{{ __('Stage 1 — Purchase invoice') }}" data-purchase-invoice-editor x-on:purchase-line-label-ready.window="if (window.purchaseLabelWindow) { window.purchaseLabelWindow.location = $event.detail.url; window.purchaseLabelWindow = null }" x-on:purchase-line-label-error.window="window.purchaseLabelWindow?.close(); window.purchaseLabelWindow = null">
             <form wire:submit.prevent="saveInvoice" class="space-y-4" data-product-line-editor data-authoritative-financial-preview data-autofocus="true">
                 <div class="flex flex-wrap items-center justify-between gap-2"><flux:heading size="lg">{{ __('Stage 1 — Purchase invoice') }}</flux:heading><x-context-help :title="__('Stage 1 — Purchase invoice')" :label="__('Open contextual help')"><p>{{ __('Scan or search products, then save the invoice safely as a draft.') }}</p><p>{{ __('Purchase cost uses only the latest approved cost for this product and supplier in the current company. If no history exists, the cost starts at zero.') }}</p><p>{{ __('The Base Consumer Price List 0 value is a separate selling price and is never used as purchase cost. Line and invoice totals use the supplier-gross unit cost, less any configured discount.') }}</p></x-context-help></div>
                 @if (filled($invoiceForm['purchase_order_id']))
@@ -1042,14 +1130,14 @@ new #[Title('Purchase Invoices')] class extends Component
                                     @php($lineProduct=$lineProducts->get((int)($line['product_id'] ?? 0)))
                                     <x-product-line-lookup wire:model.live="lineItems.{{ $index }}.product_id" :value="$line['product_id'] ?? ''" :display="$lineProduct ? ((str_starts_with(app()->getLocale(), 'ar') ? ($lineProduct->name_ar ?: $lineProduct->name_en) : ($lineProduct->name_en ?: $lineProduct->name_ar)).' · '.$lineProduct->item_code) : ''" :required="true" :purchasing="true" :label-visually-hidden="true" result-presentation="name-code" :supplier-id="$invoiceForm['supplier_id']" :supplier-only="$supplierProductsOnly" :currency-code="$invoiceForm['currency_code']" :company-id="filled($invoiceForm['store_id']) ? Store::query()->whereKey($invoiceForm['store_id'])->value('company_id') : ''" :disabled="blank($invoiceForm['supplier_id']) || blank($invoiceForm['store_id'])" x-on:product-selected="$wire.selectInvoiceProduct({{ $index }}, $event.detail.id)" x-on:product-lookup-empty="$wire.openQuickProduct($event.detail.term, {{ $index }})" x-on:invoice-line-search-focus.window="if($event.detail.index==={{ $index }})$nextTick(()=>$el.querySelector('[data-product-search]')?.focus())" />
                                 </div>
-                                <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model.blur="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
+                                <div class="col-span-4 sm:col-span-2 lg:col-auto" x-on:invoice-line-focus.window="if($event.detail.index==={{$index}})$nextTick(()=>$el.querySelector('input')?.focus())"><label class="text-xs font-semibold lg:sr-only">{{ __('Quantity') }}</label><input wire:model.live.debounce.150ms="lineItems.{{ $index }}.quantity" data-line-quantity type="number" min="1" step="1" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" required /></div>
                                 <div class="col-span-4 min-w-[7.5rem] sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Purchase unit cost') }}</label><input wire:model.live="lineItems.{{ $index }}.unit_cost" wire:change="$set('lineItems.{{ $index }}.price_source','manual_authorized_cost')" data-line-price data-price-kind="cost" data-purchase-cost-input type="number" min="0" step="0.0001" placeholder="{{ __('Enter cost') }}" inputmode="decimal" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_cost')) required /></div>
-                                <div class="col-span-4 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Base Consumer Price List 0') }}</label><input wire:model="lineItems.{{ $index }}.base_consumer_price" data-line-step type="number" min="0" step="0.001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_list0_price')) required /></div>
+                                <div class="col-span-4 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Base Consumer Price List 0') }}</label><input wire:model.live.debounce.300ms="lineItems.{{ $index }}.base_consumer_price" data-line-step type="number" min="0" step="0.001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" @disabled(!Gate::allows('purchase_invoices.change_list0_price')) required />@if(filled($line['product_id'] ?? null))<span class="block text-[11px] text-cyan-700 dark:text-cyan-300">{{ __('Branch sale price') }}: {{ $this->contextualSalePrice((int) $line['product_id'], (string) ($line['base_consumer_price'] ?? '0')) ?? __('Unavailable: select a branch with one selling outlet') }}</span>@endif</div>
                                 <div class="col-span-6 sm:col-span-3 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount type') }}</label><select wire:model.live="lineItems.{{ $index }}.discount_type" data-line-discount-type data-line-step class="mt-1 h-10 w-full rounded-lg border-zinc-300 bg-white text-sm dark:border-zinc-700 dark:bg-zinc-900"><option value="">{{ __('None') }}</option><option value="percentage">{{ __('Percentage') }}</option><option value="amount">{{ __('Amount') }}</option></select></div>
                                 <div class="col-span-3 sm:col-span-2 lg:col-auto"><label class="text-xs font-semibold lg:sr-only">{{ __('Discount') }}</label><input wire:model.live="lineItems.{{ $index }}.discount_value" data-line-discount data-line-step type="number" min="0" step="0.0001" class="mt-1 h-10 w-full rounded-lg border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900" /></div>
 
                                 <div class="col-span-10 sm:col-span-2 lg:col-auto"><span class="block text-xs font-semibold lg:sr-only">{{ __('Line total') }}</span><output class="mt-1 flex h-10 items-center justify-end rounded-lg bg-white px-2 font-mono text-sm dark:bg-zinc-900" data-line-total data-raw-total="{{ $invoicePreview['lines'][$index] ?? '0.0000' }}">{{ number_format((float) ($invoicePreview['lines'][$index] ?? 0), 2) }}</output></div>
-                                <div class="col-span-2 pt-1 text-end lg:col-auto">@if(count($lineItems)>1)<flux:button type="button" size="xs" variant="ghost" icon="trash" class="text-rose-600" wire:click="removeLine({{ $index }})" />@endif</div>
+                                <div class="col-span-2 pt-1 text-end lg:col-auto">@can('purchase_invoices.print_labels')<flux:button type="button" size="xs" variant="ghost" icon="printer" title="{{ __('Print barcode labels') }}" aria-label="{{ __('Print barcode labels') }}" x-on:click="window.purchaseLabelWindow = window.open('about:blank', '_blank')" wire:click="printLineLabels({{ $index }})" />@endcan @if(count($lineItems)>1)<flux:button type="button" size="xs" variant="ghost" icon="trash" class="text-rose-600" wire:click="removeLine({{ $index }})" />@endif @error('lineItems.'.$index.'.labels')<small class="text-rose-600">{{ $message }}</small>@enderror</div>
                             </div>
                             @endforeach
                         </div>

@@ -18,7 +18,7 @@
                     <flux:select name="store_id" :label="$isArabic ? 'منفذ البيع' : 'Selling store'" required>
                         <flux:select.option value="">{{ $isArabic ? 'اختر منفذ البيع' : 'Choose a selling store' }}</flux:select.option>
                         @foreach ($stores as $store)
-                            <flux:select.option value="{{ $store->id }}" :selected="(string) old('store_id') === (string) $store->id">{{ $isArabic ? $store->name_ar : $store->name_en }} · {{ $store->code }}</flux:select.option>
+                            <flux:select.option value="{{ $store->id }}" :selected="(string) old('store_id', $defaultStoreId) === (string) $store->id">{{ $isArabic ? $store->name_ar : $store->name_en }} · {{ $store->code }}</flux:select.option>
                         @endforeach
                     </flux:select>
                     <div class="self-end text-sm text-zinc-600 dark:text-zinc-300">{{ $isArabic ? 'رقم الفاتورة يُخصّص بعد الاعتماد. تحفظ هذه الخطوة مسودة فقط.' : 'The invoice number is assigned on approval. This step saves a draft only.' }}</div>

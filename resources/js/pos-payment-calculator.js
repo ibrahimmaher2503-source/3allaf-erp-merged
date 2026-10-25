@@ -112,6 +112,24 @@ window.posPaymentCalculator = ({ payable }) => ({
             .reduce((total, part) => total + (decimalToCents(part.amount) ?? 0n), 0n);
         return payableCents > nonCash ? payableCents - nonCash : 0n;
     },
+    syncRemainingDefaults() {
+        const due = decimalToCents(this.currentPayable()) ?? 0n;
+        const parts = [...this.$root.querySelectorAll('[data-payment-part]')];
+        for (const part of parts) {
+            const target = part.querySelector('[data-auto-remaining]');
+            if (!target) continue;
+            let paid = 0n;
+            for (const other of parts) {
+                if (other === part) continue;
+                const cash = other.hasAttribute('data-cash-payment');
+                const value = other.querySelector(cash ? '[data-cash-received]' : '[data-noncash-amount]')?.value;
+                paid += decimalToCents(value) ?? 0n;
+            }
+            const remaining = due > paid ? due - paid : 0n;
+            const next = formatCents(remaining);
+            if (target.value !== next) target.value = next;
+        }
+    },
     paidAmount() { return formatCents(this.progress().paid); },
     amountRemaining() { return formatCents(this.progress().remaining); },
     changeDue() { return formatCents(this.progress().change); },

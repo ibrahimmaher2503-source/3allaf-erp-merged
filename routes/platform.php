@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\LocaleController;
+use App\Models\User;
 use App\Modules\Platform\Actions\DeliverAttachment;
 use App\Modules\Platform\Actions\ExportAuditLogs;
 use App\Modules\Platform\Actions\RecordSetupDecision;
@@ -30,6 +31,12 @@ $router->post('locale', LocaleController::class)->name('locale.switch');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->post('ui/work-context', function (Request $request, WorkContext $context) {
+        if ($request->has('branch_id')) {
+            $validated = $request->validate(['branch_id' => ['nullable', 'integer', 'min:1']]);
+            $context->selectBranch($request->user(), filled($validated['branch_id'] ?? null) ? (int) $validated['branch_id'] : null);
+
+            return back();
+        }
         $validated = $request->validate(['store_id' => ['nullable', 'integer', 'min:1']]);
         $context->select($request->user(), filled($validated['store_id'] ?? null) ? (int) $validated['store_id'] : null);
 
@@ -43,7 +50,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
 
     $router->get('initial-setup', function (Request $request, AuthenticatedLanding $landing) {
         $user = $request->user();
-        abort_unless($user instanceof \App\Models\User, 403);
+        abort_unless($user instanceof User, 403);
 
         if (($scopeSetup = $landing->scopeSetupDestination($user)) !== null) {
             return redirect()->to($scopeSetup);
@@ -119,6 +126,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router) {
     $router->get('admin/settings/print-templates/{template}/preview', function (PrintTemplate $template) {
         abort_unless(auth()->user()?->can('company_settings.view'), 403);
         $template = PrintTemplate::visibleTo(auth()->user())->findOrFail($template->id);
+
         return view('platform.admin.print-template-preview', compact('template'));
     })->name('admin.settings.template-preview');
     $router->livewire('admin/branches', 'platform::admin.branches')->middleware('can:branches_stores.view')->name('admin.branches');

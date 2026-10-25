@@ -95,6 +95,8 @@ new #[Title('Purchase Orders')] class extends Component
         Gate::authorize(request()->routeIs('purchasing.orders.edit') ? 'purchase_orders.edit' : ($this->createPage ? 'purchase_orders.create' : 'purchase_orders.view'));
         $contextStoreId = app(\App\Modules\Platform\Support\WorkContext::class)->id(auth()->user());
         $this->storeFilter = $contextStoreId === null ? 'all' : (string) $contextStoreId;
+        $contextBranchId = app(\App\Modules\Platform\Support\WorkContext::class)->branchId(auth()->user());
+        $this->branchFilter = $contextBranchId === null ? 'all' : (string) $contextBranchId;
         if (request()->routeIs('purchasing.orders.edit')) {
             $order = request()->route('order');
             $this->loadDraft($order instanceof PurchaseOrder ? $order->id : (int) $order);
@@ -149,6 +151,10 @@ new #[Title('Purchase Orders')] class extends Component
         if ($actor && $contextStore?->branch_id && $contextStore?->company_id) {
             $this->orderForm['branch_id'] = (string) $contextStore->branch_id;
             $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextStore->company_id, (int) $contextStore->branch_id);
+            $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
+        } elseif ($actor && ($contextBranch = app(\App\Modules\Platform\Support\WorkContext::class)->branch($actor)) !== null) {
+            $this->orderForm['branch_id'] = (string) $contextBranch->id;
+            $warehouse = app(DefaultReceivingWarehouse::class)->resolve($actor, (int) $contextBranch->company_id, (int) $contextBranch->id);
             $this->orderForm['store_id'] = $warehouse ? (string) $warehouse->id : '';
         }
     }

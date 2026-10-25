@@ -145,7 +145,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $data = session('barcode_label_preview');
         abort_unless(is_array($data), 404);
 
-        return view('pricing.label-print', $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null) + ['toolbar' => true]);
+        return view('pricing.label-print', $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null, $data['prices'] ?? []) + ['toolbar' => true]);
     })->middleware('auth')->name('pricing.labels.preview.show');
 
     $router->get('pricing/labels/download', function (BarcodeLabelService $service) {
@@ -154,7 +154,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         $data = session('barcode_label_preview');
         abort_unless(is_array($data), 404);
         try {
-            $document = $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null);
+            $document = $service->compose($actor, $data['rows'], $service->profile($actor, $data['template_id'] ?? null, $data['printer_id'] ?? null), $data['store_id'] ?? null, $data['prices'] ?? []);
 
             return $service->pdfResponse($document);
         } catch (Throwable $exception) {
