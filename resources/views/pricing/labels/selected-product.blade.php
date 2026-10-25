@@ -11,6 +11,8 @@
             {{ __('Remove') }}
         </button>
     </div>
+    <p x-show="product.document_quantity" class="mt-2 text-sm text-zinc-600">{{ str_starts_with(app()->getLocale(), 'ar') ? 'كمية المستند' : 'Document quantity' }}: <span dir="ltr" x-text="product.document_quantity"></span></p>
+    <p x-show="product.resolved_price" class="mt-2 text-sm font-semibold text-emerald-800">{{ str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع في الوجهة' : 'Destination selling price' }}: <span dir="ltr" x-text="Number(product.resolved_price).toFixed(2)"></span></p>
 
     <template x-if="primary(product)">
         <div class="mt-3 grid grid-cols-2 gap-3">

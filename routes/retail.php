@@ -832,6 +832,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $occupiedDrawerIds = PosShift::query()->open()->whereIn('cash_drawer_id', $drawers->pluck('id'))
             ->pluck('cash_drawer_id');
         $availableDrawers = $drawers->whereNotIn('id', $occupiedDrawerIds);
+        $selectedWorkStore = app(WorkContext::class)->selected($user);
+        if ($selectedWorkStore !== null) {
+            $availableDrawers = $availableDrawers->filter(fn (CashDrawer $drawer): bool => (int) $drawer->company_id === (int) $selectedWorkStore->company_id
+                && (int) $drawer->branch_id === (int) $selectedWorkStore->branch_id
+                && ($selectedWorkStore->type !== 'selling' || (int) $drawer->store_id === (int) $selectedWorkStore->id));
+        }
+        $preselectedDrawerId = $availableDrawers->count() === 1 ? $availableDrawers->first()->id : null;
         $canManageOwnShift = $shift !== null && PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists();
 
         $closedShifts = PosShift::query()->visibleTo($user)
@@ -886,6 +893,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'pendingShifts' => $pendingShifts,
             'pendingCloseCount' => $pendingCloseCount,
             'drawers' => $availableDrawers,
+            'selectedWorkStore' => $selectedWorkStore,
+            'preselectedDrawerId' => $preselectedDrawerId,
             'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,
             'movementToken' => $movementToken,
@@ -916,6 +925,14 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $drawer = CashDrawer::query()->find((int) $validated['cash_drawer_id']);
             if ($drawer === null) {
                 throw new InvalidArgumentException(__('The selected cash drawer has an invalid company, branch, or store configuration. Ask an administrator to correct the drawer before opening a shift.'));
+            }
+            $selectedWorkStore = app(WorkContext::class)->selected($user);
+            if ($selectedWorkStore !== null && (
+                (int) $drawer->company_id !== (int) $selectedWorkStore->company_id
+                || (int) $drawer->branch_id !== (int) $selectedWorkStore->branch_id
+                || ($selectedWorkStore->type === 'selling' && (int) $drawer->store_id !== (int) $selectedWorkStore->id)
+            )) {
+                throw new InvalidArgumentException(__('The selected cash drawer is outside the active work location.'));
             }
 
             $action->execute(

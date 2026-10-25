@@ -1,3 +1,11 @@
+# 2026-10-25 — R1–R7 operational repairs Production deployment PASS
+
+Merged/deployed application SHA `99c6f5da55efe339fb07057f5703feed9302dcc5` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.48-post-pos-r1-r7-99c6f5d-r3`; rollback target is `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`. R1 quantity formatting, R2 purchase draft persistence, R3 transfer approval/receiving drafts/final receipt, R4 transfer/add/deduct navigation, R5 purchase/transfer barcode import and destination sale pricing, R6 authorized POS context inheritance, and R7 stocktake difference review are in the deployed application. R8 Light/Dark, theme persistence, POS state, and canonical payment modes remain available.
+
+The approved `2026_10_24_092522_create_stock_transfer_receiving_drafts` migration is Ran in batch 41 and was not rerun in the final deployment. The preserved pre-migration backup is `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261025T053617Z_pre_99c6f5d.sql.gz`, SHA-256 `df120219191337f00806520a361149092c7a218fff9b43561ec1573b1fa6983e`. Owner-confirmed journal `/var/lib/toyjoy/r1-r7-deployment/99c6f5d-20261025T054330Z` reports real Apache candidate and public authenticated browser PASS (60 assertions each), RTL/Cairo, no overflow or console/page/HTTP 500 errors, maintenance LIVE, rollback required NO. Earlier r1/r2 stopped safely without activation and remain forensic releases.
+
+The next active development is the separate POS-only R9–R16 branch handled by User 2. This main-only documentation update does not change or redeploy the active application SHA.
+
 # 2026-10-24 — R8 POS theme Production deployment PASS
 
 Application SHA `b762e57002c78e9444475a5409a49f2826369152` is active at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.47-pos-theme-r8-b762e57-r4`; previous `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.46-pos-strict-parity-a61b758-r2` is preserved for rollback. R8 Light/Dark UI passed authenticated Chromium on the real Apache-vhost candidate and after activation, including theme persistence and POS state preservation. Payment invariant after activation passed; payment configuration was not changed. No migration ran and zero remain pending.

@@ -6486,5 +6486,15 @@
     "Numeric keypad": "لوحة الأرقام",
     "Backspace": "حذف آخر رقم",
     "Back to order": "العودة إلى الطلب",
-    "Edit item discounts in cart": "تعديل خصومات الأصناف في السلة"
+    "Edit item discounts in cart": "تعديل خصومات الأصناف في السلة",
+    "Receiving draft saved. No stock was posted.": "تم حفظ مسودة الاستلام. لم تُرحّل أي حركة مخزون.",
+    "Destination receipt finally confirmed.": "تم تأكيد استلام هذه الوجهة نهائيًا.",
+    "The selected cash drawer is outside the active work location.": "خزينة النقد المختارة خارج موقع العمل الحالي.",
+    "Select a selling outlet in the destination branch.": "اختر منفذ بيع داخل فرع الوجهة.",
+    "Select a supported document source.": "اختر مصدر مستند مدعومًا.",
+    "This document has no products allocated to the selected destination.": "لا توجد منتجات مخصصة للوجهة المختارة في هذا المستند.",
+    "No selling price for product :product in destination :destination.": "لا يوجد سعر بيع للمنتج :product في الوجهة :destination.",
+    "The destination does not belong to the invoice receiving branch.": "الوجهة لا تتبع فرع استلام فاتورة الشراء.",
+    "The receipt contains a line outside this destination allocation.": "يتضمن الاستلام بندًا خارج تخصيص هذه الوجهة.",
+    "This destination receipt is already final.": "تم تأكيد استلام هذه الوجهة نهائيًا بالفعل."
 }
