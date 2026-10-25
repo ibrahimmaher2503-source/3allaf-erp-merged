@@ -1,12 +1,12 @@
-# 2026-10-25 — Commercial and inventory integration batch, undeployed
+# 2026-10-25 — Commercial and inventory batch merged to main; deployment pending
 
-| Class | Source branch / approved final SHA | Scope | Status |
+| Class | Source | Final SHA | Status |
 |---|---|---|---|
-| D3 | `feature/purchasing-pos-commercial-ux` / `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` | Global branch context, purchasing price/labels, POS payment/search, blind close; DEC-108 and DEC-109 | Integrated first on `feature/integration-commercial-inventory-batch`; focused integration QA PASS as recorded in `.ai/TEST_RESULTS.md`; undeployed |
-| D3 | `feature/inventory-stocktake-and-resilient-drafts` / `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` | Count/review, branchless warehouse, transfer draft resilience and transactional dispatch; DEC-107 | Integrated second on same branch; focused integration QA PASS as recorded in `.ai/TEST_RESULTS.md`; undeployed |
+| D3 | User B `feature/purchasing-pos-commercial-ux` | `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` | Integrated first; merged to main; undeployed |
+| D3 | User A `feature/inventory-stocktake-and-resilient-drafts` | `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` | Integrated second; merged to main; undeployed |
+| D3 | `feature/integration-commercial-inventory-batch` | `6b167bdb69e12cecf0225acfb0a3c30c85c81d31` | Main merge `6fe1cbad626be76aa43a8c18cbc3020ee1dcf0c4`; focused post-merge QA PASS; Production deployment pending separate authorization |
 
-Both source branches were owner-approved for integration. Merge one is `483fd5643941aa64312519bbb9d4ae0aa78bf81e`; merge two and final integration SHAs are in the integration session record. The merge conflicts were in four `.ai` continuity files and were combined semantically; `.ai/TEST_RESULTS.md` and `.ai/PROGRESS.md` auto-merged and were updated for integration. One pre-existing transfer approval test assertion was corrected after focused QA. Neither workstream is pending implementation. Main merge and deployment remain separate owner actions.
-
+DEC-107 keeps open stocktakes nonblocking for transfers. DEC-108 uses an active explicit outlet mapping or a sole eligible outlet; ambiguous/invalid/inaccessible context blocks labels and never guesses List 0. DEC-109 retains header branch context. Integration acceptance passed at 1440 and 390; no new browser pass was needed after the conflict-free source-equivalent main merge. No application migration was added. Production remains `0cf121450502713be385e041cbaf66e2a93ea66e`. Neither User A nor User B is pending implementation or merge. Exact next step: owner separately authorizes Production deployment; then follow the established immutable release, backup, verification and activation process.
 
 ## 2026-10-25 — R9–R16 POS completion batch closed by Production release
 

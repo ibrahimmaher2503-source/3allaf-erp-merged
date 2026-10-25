@@ -1,3 +1,10 @@
+# 2026-10-25 — Main merge safety PASS; deployment not run
+
+- Main merge `6fe1cbad626be76aa43a8c18cbc3020ee1dcf0c4` has parent baseline `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f` and approved integration `6b167bdb69e12cecf0225acfb0a3c30c85c81d31`. No merge conflict or manual application edit; 41 tracked files were brought in from the integration branch. `git diff --check` passed. PHP syntax passed for all 30 changed PHP files. Focused Node POS calculator passed 1 test.
+- Focused disposable socket-only MariaDB `qa_rajh_20261025180026_14073`: 40 tests / 325 assertions PASS. Selected commercial branch/pricing/blind close, stocktake lifecycle and movement validation, branchless and resilient transfers, canonical reconciliation, and purchase/transfer barcode regressions all passed. QA runtime was removed. No Production test or database mutation occurred.
+- Integration acceptance evidence remains 24 commercial and 39 inventory/purchase authenticated Chromium assertions across 1440/390, with RTL/Cairo, no horizontal overflow, console/page errors or HTTP 5xx. The main merge is source-equivalent; browser acceptance was not rerun.
+- Git migration directory tree was identical on both sides of the main merge (`e52021ff698360c31a7469996dadf3afcd3ec993`). No migration file was introduced and no Production migration was run. This source comparison establishes no newly pending migration from the batch; live Production migration status was not queried. DEC-107 and DEC-108 were preserved. Deployment: NOT RUN.
+
 # 2026-10-25 — Commercial and inventory integration focused QA
 
 - Base: `origin/main` `8e8cc88ec0a187aea0dbf96fa03d1a4666f0912f`. User B final `d9e0e7c6673a89f1891014a2d3d9ad0be674e12a` merged first as `483fd5643941aa64312519bbb9d4ae0aa78bf81e`; User A final `5ac2e631b87b54f2eb32dc5a7dc3d3711bf6cec8` merged second as `40b77e8c7e522af338bb499f05a0d78b8834cc79`. Tests used disposable socket-only MariaDB `qa_rajh_20261025174019_23287` and `qa_rajh_20261025174231_16881`; both were removed. Production was untouched.
