@@ -65,49 +65,92 @@ export const summarizePaymentParts = (payable, parts) => {
     };
 };
 
-window.posPaymentCalculator = ({ payable, cashReceived = '' }) => ({
+export const paymentProgress = (payable, parts) => {
+    const due = decimalToCents(payable) ?? 0n;
+    let nonCash = 0n;
+    let cashReceived = 0n;
+    for (const part of Array.isArray(parts) ? parts : []) {
+        if (String(part.methodId ?? '').trim() === '') continue;
+        const amount = decimalToCents(part.isCash ? part.tendered : part.amount);
+        if (amount === null || amount <= 0n) continue;
+        if (part.isCash) cashReceived += amount;
+        else nonCash += amount;
+    }
+    const paid = nonCash + cashReceived;
+    const cashDue = due > nonCash ? due - nonCash : 0n;
+    return {
+        paid: paid > due ? due : paid,
+        remaining: paid < due ? due - paid : 0n,
+        change: cashReceived > cashDue ? cashReceived - cashDue : 0n,
+    };
+};
+
+window.posPaymentCalculator = ({ payable }) => ({
     payable: String(payable),
-    cashReceived: String(cashReceived),
     revision: 0,
     submitting: false,
+    activeAmountInput: null,
     parts() {
         this.revision;
         return [...this.$root.querySelectorAll('[data-payment-part]')].map((part) => ({
             methodId: part.querySelector('[data-payment-method]')?.value ?? '',
             isCash: part.hasAttribute('data-cash-payment'),
             amount: part.querySelector('[data-noncash-amount]')?.value ?? '',
-            tendered: part.hasAttribute('data-cash-payment') ? this.cashReceived : null,
+            tendered: part.hasAttribute('data-cash-payment') ? (part.querySelector('[data-cash-received]')?.value ?? '') : null,
         }));
     },
+    currentPayable() { return this.$root.querySelector('[data-pos-payable]')?.value ?? this.payable; },
     summary() {
-        return summarizePaymentParts(this.payable, this.parts());
+        return summarizePaymentParts(this.currentPayable(), this.parts());
+    },
+    progress() {
+        return paymentProgress(this.currentPayable(), this.parts());
     },
     cashDueCents() {
-        const payableCents = decimalToCents(this.payable) ?? 0n;
+        const payableCents = decimalToCents(this.currentPayable()) ?? 0n;
         const nonCash = this.parts().filter((part) => !part.isCash)
             .reduce((total, part) => total + (decimalToCents(part.amount) ?? 0n), 0n);
         return payableCents > nonCash ? payableCents - nonCash : 0n;
     },
-    amountRemaining() { return formatCents(this.summary().remaining); },
-    changeDue() { return formatCents(this.summary().change); },
-    hasRemaining() { return this.summary().remaining > 0n; },
-    hasChange() { return this.summary().change > 0n; },
+    paidAmount() { return formatCents(this.progress().paid); },
+    amountRemaining() { return formatCents(this.progress().remaining); },
+    changeDue() { return formatCents(this.progress().change); },
+    hasRemaining() { return this.progress().remaining > 0n; },
+    hasChange() { return this.progress().change > 0n; },
     isExact() { const summary = this.summary(); return summary.valid && summary.remaining === 0n && summary.change === 0n; },
     canComplete() { return this.summary().valid; },
+    setActiveAmount(input) { this.activeAmountInput = input; },
+    pressKey(key) {
+        const input = this.activeAmountInput?.isConnected
+            ? this.activeAmountInput
+            : this.$root.querySelector('[data-pos-amount-input]');
+        if (!input) return;
+        let value = String(input.value ?? '');
+        if (key === 'clear') value = '';
+        else if (key === 'backspace') value = value.slice(0, -1);
+        else if (key === '.') {
+            if (!value.includes('.')) value = `${value || '0'}.`;
+        } else if (/^\d$/.test(key)) {
+            const fraction = value.split('.')[1];
+            if (fraction === undefined || fraction.length < 2) value += key;
+        }
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        this.revision += 1;
+        input.focus();
+    },
     useExactCash(id) {
-        this.cashReceived = formatCents(this.cashDueCents());
-        this.syncCash(id);
+        this.setCashValue(id, formatCents(this.cashDueCents()));
     },
     useQuickCash(value, id) {
-        this.cashReceived = String(value);
-        this.syncCash(id);
+        this.setCashValue(id, String(value));
     },
-    syncCash(id) {
+    setCashValue(id, value) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.value = value;
         this.revision += 1;
-        this.$nextTick(() => {
-            const input = document.getElementById(id);
-            input?.dispatchEvent(new Event('input', { bubbles: true }));
-            input?.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     },
 });

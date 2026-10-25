@@ -3212,5 +3212,11 @@
     "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.": "Enter the approved positive denomination in whole units or cents. Existing 5 EGP settings remain active until changed.",
     "The cash rounding enabled setting must be Yes or No.": "The cash rounding enabled setting must be Yes or No.",
     "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.": "Enable or disable cash rounding for new cash and mixed sales. Existing sale snapshots are unchanged.",
-    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "When enabled, cash tender payable amounts round to the nearest approved configured denomination."
+    "When enabled, cash tender payable amounts round to the nearest approved configured denomination.": "When enabled, cash tender payable amounts round to the nearest approved configured denomination.",
+    "Payment progress": "Payment progress",
+    "Paid": "Paid",
+    "Numeric keypad": "Numeric keypad",
+    "Backspace": "Backspace",
+    "Back to order": "Back to order",
+    "Edit item discounts in cart": "Edit item discounts in cart"
 }

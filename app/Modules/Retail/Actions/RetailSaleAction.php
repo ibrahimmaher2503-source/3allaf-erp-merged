@@ -50,9 +50,9 @@ final class RetailSaleAction
     ) {}
 
     /**
-     * @param array<int, array<string, mixed>> $requestedLines
-     * @param array<int, array{method: PaymentMethod, amount?: numeric-string, tendered?: numeric-string|null, evidence_reference?: string|null, evidence_attachment_id?: string|null, gift_card?: GiftCard|null}> $tenders
-     * @param array{tax_applicable?: bool} $financial
+     * @param  array<int, array<string, mixed>>  $requestedLines
+     * @param  array<int, array{method: PaymentMethod, amount?: numeric-string, tendered?: numeric-string|null, evidence_reference?: string|null, evidence_attachment_id?: string|null, gift_card?: GiftCard|null}>  $tenders
+     * @param  array{tax_applicable?: bool}  $financial
      */
     public function create(
         User $cashier,
@@ -842,7 +842,7 @@ final class RetailSaleAction
      * is captured. Cash settles only the residual left by explicit non-cash
      * portions; excess cash is change, while underpayment fails closed.
      *
-     * @param array<int, array<string, mixed>> $tenders
+     * @param  array<int, array<string, mixed>>  $tenders
      * @return array<int, array<string, mixed>>
      */
     private function validatedTenderAllocation(array $tenders, string $payable): array
@@ -854,6 +854,7 @@ final class RetailSaleAction
         foreach ($tenders as $index => &$tender) {
             if ($this->isCashMethod($tender['method'])) {
                 $cashIndex = $index;
+
                 continue;
             }
             $amount = DecimalMoney::round((string) ($tender['amount'] ?? ''), 2, __('A payment amount must be a valid number.'));
@@ -873,6 +874,7 @@ final class RetailSaleAction
             if (bccomp($residual, '0.00', 2) !== 0) {
                 throw new InvalidArgumentException(__('Payment portions must settle the order total exactly.'));
             }
+
             return $tenders;
         }
         if (bccomp($residual, '0.00', 2) <= 0) {
@@ -887,6 +889,7 @@ final class RetailSaleAction
         }
         $tenders[$cashIndex]['amount'] = $residual;
         $tenders[$cashIndex]['tendered'] = $tendered;
+
         return $tenders;
     }
 
@@ -944,10 +947,9 @@ final class RetailSaleAction
             'lock_version' => ((int) $sale->lock_version) + 1,
         ]);
 
-        // Customer loyalty is part of the same approval transaction. If a
-        // configured rule is missing or the ledger cannot be posted, the sale
-        // and every stock/payment effect roll back together.
-        app(EarnLoyaltyAction::class)->executeForSale($cashier, $sale->fresh(['customer', 'store']));
+        if (config('pos.loyalty_enabled', false) === true) {
+            app(EarnLoyaltyAction::class)->executeForSale($cashier, $sale->fresh(['customer', 'store']));
+        }
 
         if ($sale->suspendedSale !== null) {
             $sale->suspendedSale->update(['status' => 'resumed', 'resumed_at' => now()]);

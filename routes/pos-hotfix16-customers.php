@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Modules\Customer\Actions\CreateCustomerAction;
 use App\Modules\Customer\Models\Customer;
-use App\Modules\Customer\Support\CustomerPolicy;
 use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
@@ -67,21 +66,13 @@ Route::post('pos/customer/create', function (Request $request, CreateCustomerAct
         'customer_group_id' => ['nullable', 'integer'],
         'governorate_id' => ['required', 'integer'],
         'city_id' => ['nullable', 'integer'],
-        'consent_purpose' => ['nullable', 'string', 'max:80'],
     ], ['governorate_id.required' => __('Please select a governorate.')]);
     try {
         $context = $contexts->resolve($user);
         if (! $context->isReady() || $context->store === null) {
             throw new InvalidArgumentException($context->disabledReason ?? __('The active order is unavailable.'));
         }
-        $purposes = CustomerPolicy::allowedPurposes('customer.consent.purpose')['value'];
-        $purpose = in_array('retail', $purposes, true) ? 'retail' : (string) ($validated['consent_purpose'] ?? '');
-        if (! in_array($purpose, $purposes, true)) {
-            throw new InvalidArgumentException(__('Choose an allowed customer consent purpose.'));
-        }
-        $customer = $customers->execute($user, $context->store, $validated + ['consents' => [[
-            'purpose' => $purpose, 'status' => 'granted', 'source' => 'pos',
-        ]]], cityOptional: true);
+        $customer = $customers->execute($user, $context->store, $validated, cityOptional: true, allowWithoutConsent: true);
         $orders->setCustomer($request, $user, $context, $customer);
 
         return back()->with('success', __('Customer created and attached only to the active order.'))->with('pos_customer_code', $customer->customer_code);

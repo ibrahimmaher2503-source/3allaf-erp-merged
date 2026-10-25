@@ -6481,5 +6481,10 @@
     "View customer": "عرض العميل",
     "Invalid invoice delivery method.": "طريقة تسليم الفاتورة غير صحيحة.",
     "Choose purpose": "اختر الغرض",
-    "Choose an allowed customer consent purpose.": "يرجى اختيار غرض موافقة مسموح به."
+    "Choose an allowed customer consent purpose.": "يرجى اختيار غرض موافقة مسموح به.",
+    "Payment progress": "حالة الدفع",
+    "Numeric keypad": "لوحة الأرقام",
+    "Backspace": "حذف آخر رقم",
+    "Back to order": "العودة إلى الطلب",
+    "Edit item discounts in cart": "تعديل خصومات الأصناف في السلة"
 }

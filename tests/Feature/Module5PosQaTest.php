@@ -208,6 +208,50 @@ final class Module5PosQaTest extends TestCase
         self::assertSame(1, SalePayment::query()->count());
     }
 
+    public function test_two_line_customer_cash_checkout_ignores_inactive_loyalty_and_posts_once(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $this->product->update(['sale_price' => '1000.00']);
+        $second = Product::factory()->create(['sale_price' => '1100.00', 'model_number' => 'M5-SECOND']);
+        $second->barcodes()->create(['barcode' => 'M5-SECOND-'.Str::random(12), 'source' => 'local', 'status' => 'active', 'is_primary' => true]);
+        StockBalance::query()->create(['product_id' => $second->id, 'store_id' => $this->store->id, 'on_hand' => '2', 'average_cost' => '10', 'total_value' => '20']);
+        $customer = Customer::query()->create([
+            'idempotency_key' => (string) Str::uuid(), 'name_ar' => 'عميل الاختبار', 'name_en' => 'QA Customer',
+            'phone_normalized' => '201011223344', 'phone_display' => '01011223344', 'status' => 'active',
+            'created_by' => $this->cashier->id, 'created_branch_id' => $this->store->branch_id, 'created_store_id' => $this->store->id,
+        ]);
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        $orders = app(PosOpenOrderManager::class);
+        $order = $orders->active(request(), $this->cashier, $context);
+        $order->lines()->create(['product_id' => $second->id, 'line_position' => 2, 'quantity' => '1', 'draft_payload' => ['product_id' => $second->id, 'quantity' => '1']]);
+        $orders->setCustomer(request(), $this->cashier, $context, $customer);
+        $orders->hydrateSession(request(), $order->fresh());
+        $payload = ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'cash', 'payments' => [['method_id' => $cash->id, 'tendered' => '2200.00']]];
+
+        config()->set('pos.loyalty_enabled', true);
+        $this->post(route('pos.checkout'), $payload)->assertSessionHasErrors('payments');
+        self::assertSame(0, Sale::query()->count());
+        self::assertSame(0, SalePayment::query()->count());
+        self::assertSame(0, DB::table('stock_movements')->count());
+        self::assertSame('open', $order->fresh()->status);
+
+        config()->set('pos.loyalty_enabled', false);
+        session()->forget('errors');
+        $this->post(route('pos.checkout'), $payload)->assertSessionHasNoErrors();
+        $sale = Sale::query()->sole();
+        self::assertSame('2100.00', $sale->payable_total);
+        self::assertSame('2100.00', $sale->paid_total);
+        self::assertSame('100.00', $sale->change_total);
+        self::assertSame('completed', $order->fresh()->status);
+        self::assertSame(1, SalePayment::query()->count());
+        self::assertSame(2, DB::table('stock_movements')->count());
+        self::assertSame(0, DB::table('loyalty_ledger')->count());
+        $this->post(route('pos.checkout'), $payload)->assertRedirect()->assertSessionHasNoErrors();
+        self::assertSame(1, Sale::query()->count());
+        self::assertSame(1, SalePayment::query()->count());
+        self::assertSame(2, DB::table('stock_movements')->count());
+    }
+
     public function test_exact_cash_sale_posts_with_enabled_but_missing_denomination(): void
     {
         $cash = PaymentMethod::factory()->create(['type' => 'cash']);
@@ -352,12 +396,11 @@ final class Module5PosQaTest extends TestCase
             ->assertSee('فئة اختبار السقف 30');
     }
 
-    public function test_customer_lookup_reports_missing_policy_and_finds_the_displayed_code(): void
+    public function test_customer_lookup_and_quick_create_do_not_require_consent_policy(): void
     {
         $customer = Customer::query()->create(['idempotency_key' => (string) Str::uuid(), 'name_ar' => 'عميل الاختبار', 'name_en' => 'QA Customer', 'phone_normalized' => '201011223344', 'phone_display' => '01011223344', 'status' => 'active', 'created_by' => $this->cashier->id, 'created_branch_id' => $this->store->branch_id, 'created_store_id' => $this->store->id]);
-        $this->get(route('pos', ['customer_q' => $customer->public_id]))->assertOk()->assertViewHas('customerPolicyError', __('The required policy value :key is not configured.', ['key' => 'customer.consent.purpose']))->assertViewHas('customerSearchResults', fn ($results) => $results->contains('id', $customer->id));
-        CustomerPolicySettingVersion::query()->create(['key' => 'customer.consent.purpose', 'value' => '["retail"]', 'value_type' => 'json', 'version' => 1, 'created_by' => $this->cashier->id]);
-        $this->get(route('pos', ['customer_q' => '0101122']))->assertOk()->assertViewHas('customerPolicyError', null);
+        $this->get(route('pos', ['customer_q' => $customer->public_id]))->assertOk()->assertViewHas('customerSearchResults', fn ($results) => $results->contains('id', $customer->id))->assertSee(__('Add New Customer'));
+        $this->get(route('pos', ['customer_q' => '0101122']))->assertOk();
         $this->get(route('pos', ['customer_q' => 'M5-NO-MATCH']))->assertOk()->assertViewHas('customerSearchResults', fn ($results) => $results->isEmpty())->assertSee(__('No customer matched this search.'));
         $otherCompany = Company::factory()->create();
         $otherBranch = Branch::factory()->for($otherCompany)->create();
@@ -374,20 +417,20 @@ final class Module5PosQaTest extends TestCase
             'phone' => '01012345678',
             'first_name_ar' => 'أحمد',
             'last_name_ar' => 'محمد',
-            'consent_purpose' => 'retail',
         ])->assertSessionHasErrors(['governorate_id' => 'يرجى اختيار المحافظة.']);
 
         $governorate = Governorate::query()->create(['code' => 'QA-POS', 'name_ar' => 'محافظة الاختبار', 'name_en' => 'QA Governorate', 'status' => 'active']);
         self::assertSame([$governorate->id, null], ResidenceGeography::validate((int) $this->store->company_id, $governorate->id, null, cityOptional: true));
+        CustomerPolicySettingVersion::query()->create(['key' => 'customer.phone_normalization', 'value' => 'digits_only', 'value_type' => 'string', 'version' => 1, 'created_by' => $this->cashier->id]);
         $this->post(route('pos.customer.create'), [
             'idempotency_key' => (string) Str::uuid(),
             'phone' => '01012345678',
             'first_name_ar' => 'أحمد',
             'last_name_ar' => 'محمد',
             'governorate_id' => $governorate->id,
-            'consent_purpose' => 'retail',
-        ])->assertSessionHasErrors(['customer' => 'تعذر حفظ العميل. تحقق من البيانات المدخلة وحاول مرة أخرى.']);
-        self::assertSame(0, Customer::query()->count());
+        ])->assertSessionHasNoErrors();
+        self::assertSame(1, Customer::query()->count());
+        self::assertSame(0, DB::table('customer_consents')->count());
     }
 
     public function test_invoice_lookup_shows_approved_sale_without_mutation(): void
@@ -460,14 +503,7 @@ final class Module5PosQaTest extends TestCase
 
     public function test_pos_quick_create_persists_email_preference_without_internal_purpose_field(): void
     {
-        foreach ([
-            'customer.consent.purpose' => '["retail"]',
-            'customer.phone_normalization' => 'digits_only',
-            'customer.consent.wording' => '{"version":"qa-1","text":"QA consent"}',
-            'customer.consent.retention' => '{"days":365}',
-        ] as $key => $value) {
-            CustomerPolicySettingVersion::query()->create(['key' => $key, 'value' => $value, 'value_type' => str_starts_with($value, '{') || str_starts_with($value, '[') ? 'json' : 'string', 'version' => 1, 'created_by' => $this->cashier->id]);
-        }
+        CustomerPolicySettingVersion::query()->create(['key' => 'customer.phone_normalization', 'value' => 'digits_only', 'value_type' => 'string', 'version' => 1, 'created_by' => $this->cashier->id]);
         $governorate = Governorate::query()->create(['code' => 'QA-EMAIL', 'name_ar' => 'القاهرة', 'name_en' => 'Cairo', 'status' => 'active']);
         $this->post(route('pos.customer.create'), [
             'idempotency_key' => (string) Str::uuid(),
@@ -481,7 +517,7 @@ final class Module5PosQaTest extends TestCase
         $customer = Customer::query()->sole();
         self::assertSame('email', $customer->invoice_delivery_method);
         self::assertSame((int) $this->store->id, (int) $customer->created_store_id);
-        self::assertSame('retail', $customer->consents()->firstOrFail()->purpose);
+        self::assertSame(0, $customer->consents()->count());
     }
 
     public function test_invoice_delivery_defaults_to_print_and_missing_email_falls_back(): void
