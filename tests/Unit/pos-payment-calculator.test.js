@@ -9,7 +9,7 @@ const part = {
 };
 const calculator = window.posPaymentCalculator({ payable: '30' });
 calculator.$el = { querySelectorAll: () => [] };
-calculator.$root = { querySelectorAll: () => [part] };
+calculator.$root = { querySelector: () => null, querySelectorAll: () => [part] };
 assert.equal(calculator.canComplete(), true, 'Exact card amount must use the dialog fields');
 for (const amount of ['29', '31', '', '-1']) {
     field.value = amount;
