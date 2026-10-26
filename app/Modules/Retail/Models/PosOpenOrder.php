@@ -10,13 +10,23 @@ use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use Database\Factories\PosOpenOrderFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class PosOpenOrder extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory(): Factory
+    {
+        return PosOpenOrderFactory::new();
+    }
+
     protected $fillable = [
         'uuid', 'company_id', 'branch_id', 'store_id', 'cash_drawer_id', 'shift_id', 'cashier_id',
         'customer_id', 'completed_sale_id', 'sequence_number', 'status', 'checkout_token',
@@ -36,16 +46,55 @@ final class PosOpenOrder extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function company(): BelongsTo { return $this->belongsTo(Company::class); }
-    public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
-    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
-    public function cashDrawer(): BelongsTo { return $this->belongsTo(CashDrawer::class); }
-    public function shift(): BelongsTo { return $this->belongsTo(PosShift::class, 'shift_id'); }
-    public function cashier(): BelongsTo { return $this->belongsTo(User::class, 'cashier_id'); }
-    public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
-    public function completedSale(): BelongsTo { return $this->belongsTo(Sale::class, 'completed_sale_id'); }
-    public function lines(): HasMany { return $this->hasMany(PosOpenOrderLine::class)->orderBy('line_position'); }
-    public function paymentDrafts(): HasMany { return $this->hasMany(PosOpenOrderPayment::class)->orderBy('line_position'); }
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function cashDrawer(): BelongsTo
+    {
+        return $this->belongsTo(CashDrawer::class);
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(PosShift::class, 'shift_id');
+    }
+
+    public function cashier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function completedSale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class, 'completed_sale_id');
+    }
+
+    public function lines(): HasMany
+    {
+        return $this->hasMany(PosOpenOrderLine::class)->orderBy('line_position');
+    }
+
+    public function paymentDrafts(): HasMany
+    {
+        return $this->hasMany(PosOpenOrderPayment::class)->orderBy('line_position');
+    }
 
     public function scopeOpen(Builder $query): Builder
     {

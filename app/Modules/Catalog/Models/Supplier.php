@@ -4,7 +4,9 @@ namespace App\Modules\Catalog\Models;
 
 use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
+use Database\Factories\SupplierFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
 {
+    protected static function newFactory(): Factory
+    {
+        return SupplierFactory::new();
+    }
+
     use HasFactory;
 
     protected static function booted(): void

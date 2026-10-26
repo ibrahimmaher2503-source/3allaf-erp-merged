@@ -10,7 +10,10 @@ use App\Modules\Platform\Models\City;
 use App\Modules\Platform\Models\Governorate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\Sale;
+use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,6 +22,13 @@ use LogicException;
 
 final class Customer extends Model
 {
+    protected static function newFactory(): Factory
+    {
+        return CustomerFactory::new();
+    }
+
+    use HasFactory;
+
     private bool $namedMutation = false;
 
     protected $fillable = [
