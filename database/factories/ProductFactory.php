@@ -40,4 +40,14 @@ class ProductFactory extends Factory
     {
         return $this->state(['status' => 'inactive']);
     }
+
+    public function unpricedFamilyCandidate(): static
+    {
+        return $this->state([
+            'average_cost' => null,
+            'sale_price' => null,
+            'name_ar' => fake('ar_EG')->words(2, true),
+            'name_en' => fake()->words(2, true),
+        ]);
+    }
 }

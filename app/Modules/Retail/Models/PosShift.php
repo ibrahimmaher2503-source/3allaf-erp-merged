@@ -13,13 +13,23 @@ use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\OperationalCompanyScope;
 use App\Modules\Retail\Enums\ShiftState;
+use Database\Factories\PosShiftFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class PosShift extends Model implements ImmutableSourceContract
 {
+    use HasFactory;
+
+    protected static function newFactory(): Factory
+    {
+        return PosShiftFactory::new();
+    }
+
     use GuardsApprovedDocument;
 
     protected $table = 'pos_shifts';

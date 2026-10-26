@@ -8,6 +8,9 @@ use App\Models\User;
 use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
+use Database\Factories\StockTransferFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +18,13 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 final class StockTransfer extends Model implements ImmutableSourceContract
 {
+    protected static function newFactory(): Factory
+    {
+        return StockTransferFactory::new();
+    }
+
     use GuardsApprovedDocument;
+    use HasFactory;
 
     protected $fillable = ['purchase_invoice_id', 'invoice_reference', 'transfer_number', 'source_store_id', 'destination_store_id', 'status', 'difference_status', 'reason_code', 'reason_notes', 'requested_by', 'approved_by', 'dispatched_by', 'received_by', 'approved_at', 'dispatched_at', 'received_at', 'idempotency_key', 'lock_version', 'notes'];
 

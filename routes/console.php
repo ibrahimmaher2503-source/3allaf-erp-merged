@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\Schema;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Support\ProductPricingReadiness;
+use App\Support\QaDemoSafety;
+use Database\Seeders\CatalogDemoModeSeeder;
+use Database\Seeders\FullDemoSeeder;
+use Database\Seeders\InventoryDemoModeSeeder;
+use Database\Seeders\PosDemoModeSeeder;
+use Database\Seeders\ProductionSeeder;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -68,4 +74,44 @@ if (app()->environment('staging') && (bool) env('STAGING_SCHEDULER_PROBE', false
         ->everyMinute()
         ->name('staging-scheduler-probe')
         ->withoutOverlapping(1);
+}
+
+// This command is never registered in Production's Artisan command list.
+if (app()->environment(['testing', 'qa'])) {
+    Artisan::command('rajeh:qa-reset {--empty} {--demo} {--catalog} {--inventory} {--pos}', function (): int {
+        QaDemoSafety::assertAllowed();
+
+        $modes = array_values(array_filter(['empty', 'demo', 'catalog', 'inventory', 'pos'], fn (string $mode): bool => (bool) $this->option($mode)));
+        if (count($modes) !== 1) {
+            throw new InvalidArgumentException('Select exactly one of --empty, --demo, --catalog, --inventory, or --pos.');
+        }
+
+        if ($modes[0] !== 'empty') {
+            QaDemoSafety::assertDemoPassword();
+        }
+
+        $migrationResult = $this->call('migrate:fresh', ['--force' => true, '--no-interaction' => true]);
+        if ($migrationResult !== 0) {
+            throw new RuntimeException('Disposable QA migration failed; no demo seeder was run.');
+        }
+
+        if ($modes[0] === 'empty') {
+            app(ProductionSeeder::class)->seedAuthorizationOnly();
+        } else {
+            $seeder = match ($modes[0]) {
+                'demo' => FullDemoSeeder::class,
+                'catalog' => CatalogDemoModeSeeder::class,
+                'inventory' => InventoryDemoModeSeeder::class,
+                'pos' => PosDemoModeSeeder::class,
+            };
+            $result = $this->call('db:seed', ['--class' => $seeder, '--force' => true, '--no-interaction' => true]);
+            if ($result !== 0) {
+                throw new RuntimeException('Demo scenario seeding failed.');
+            }
+        }
+
+        $this->info('Disposable QA database reset completed in '.$modes[0].' mode.');
+
+        return 0;
+    })->purpose('Reset only an explicitly enabled disposable QA database with one demo scenario.');
 }

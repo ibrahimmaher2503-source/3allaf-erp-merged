@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Modules\Platform\Models\Branch;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +17,7 @@ class StoreFactory extends Factory
         $code = 'ST-'.$this->faker->unique()->bothify('###');
 
         return [
-            'company_id' => fn (array $attributes) => Branch::find($attributes['branch_id'])?->company_id,
+            'company_id' => null,
             'branch_id' => Branch::factory(),
             'code' => $code,
             'type' => 'selling',
@@ -28,9 +29,23 @@ class StoreFactory extends Factory
         ];
     }
 
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Store $store): void {
+            if ($store->branch_id !== null && $store->company_id === null) {
+                $store->company_id = Branch::query()->findOrFail($store->branch_id)->company_id;
+            }
+        });
+    }
+
     public function warehouse(): static
     {
         return $this->state(['type' => 'warehouse']);
+    }
+
+    public function standaloneWarehouse(Company $company): static
+    {
+        return $this->state(['company_id' => $company->id, 'branch_id' => null, 'type' => 'warehouse']);
     }
 
     public function inactive(): static

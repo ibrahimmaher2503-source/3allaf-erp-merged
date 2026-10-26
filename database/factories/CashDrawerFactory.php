@@ -17,8 +17,8 @@ class CashDrawerFactory extends Factory
         $code = 'DR-'.$this->faker->unique()->bothify('###');
 
         return [
-            'company_id' => fn (array $attributes) => Store::find($attributes['store_id'])?->company_id,
-            'branch_id' => fn (array $attributes) => Store::find($attributes['store_id'])?->branch_id,
+            'company_id' => null,
+            'branch_id' => null,
             'store_id' => $store,
             'code' => $code,
             'name_ar' => 'درج '.$code,
@@ -26,6 +26,17 @@ class CashDrawerFactory extends Factory
             'status' => 'active',
             'policy_notes' => 'Deterministic automated test fixture.',
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (CashDrawer $drawer): void {
+            if ($drawer->store_id !== null) {
+                $store = Store::query()->findOrFail($drawer->store_id);
+                $drawer->company_id ??= $store->company_id;
+                $drawer->branch_id ??= $store->branch_id;
+            }
+        });
     }
 
     public function inactive(): static

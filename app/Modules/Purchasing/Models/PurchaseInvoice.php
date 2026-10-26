@@ -9,6 +9,9 @@ use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Platform\Contracts\ImmutableSourceContract;
 use App\Modules\Platform\Models\Concerns\GuardsApprovedDocument;
 use App\Modules\Platform\Models\Store;
+use Database\Factories\PurchaseInvoiceFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +19,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class PurchaseInvoice extends Model implements ImmutableSourceContract
 {
+    protected static function newFactory(): Factory
+    {
+        return PurchaseInvoiceFactory::new();
+    }
+
     use GuardsApprovedDocument;
+    use HasFactory;
     use SoftDeletes;
 
     protected $fillable = [
