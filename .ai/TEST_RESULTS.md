@@ -1,3 +1,11 @@
+# 2026-10-26 — Barcode and inventory transfer main-merge compact verification
+
+- Previous origin/main `8fb20244e58c9a7fc777f6de8bd13a09741b5a4b`; approved source `f62dc9098046700a4a0289f552a19fa5851f5a39`; history-preserving merge `2d182ffa63f245045f8b19b4ac9b74a0a3d23a79`; conflicts NONE. The main worktree retained only the preexisting untracked `.worktrees/` and `docs/design/` paths, untouched.
+- Focused barcode policy test PASS: 1 test/11 assertions for valid GTIN-8, UPC-12, EAN-13, GTIN-14; invalid 15 digits and check digits; leading zeros, spaces, Arabic/ar-EG localization. Focused canonical barcode persistence PASS: 1 test/4 assertions for leading-zero GTIN-14 stored as a string.
+- Focused transfer tests PASS: 5 tests/57 assertions for approval version/error and redirect, exact/partial destination receipts, actual 2 of 3 stock posting, pending other destination, duplicate receipt protection, invalid over-receipt, preserved input, and zero partial stock/draft mutation. Total post-merge focused checks: 7 tests/72 assertions PASS.
+- Changed PHP syntax PASS (5 files); Arabic JSON parsing PASS; `git diff --check` PASS. Migration delta NONE. The source merge had no conflict, so the prior branch's authenticated local Arabic 1440/390 browser QA was accepted and not rerun. No broad suite, Production browser, Production database, deployment, or release check was run.
+- Disposable socket-only MariaDB `qa_rajh_20261026143222_17306` was named before use, shut down, and removed. Production remains `00f150f7bd7cf80969f143cba171966cbb33eb84` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.50-commercial-inventory-00f150f`. This is merged source, **not deployed**.
+
 # 2026-10-26 — Inventory transfer review and barcode corrective branch (not deployed)
 
 - Source: `origin/main` `8fb20244e58c9a7fc777f6de8bd13a09741b5a4b`; branch `hotfix/inventory-transfer-review-and-barcode-validation-20261026`. Disposable socket-only MariaDB database `qa_rajh_20261026135545_21247` was named before use, shut down, and removed. No Production database, release, migration, or application state changed.

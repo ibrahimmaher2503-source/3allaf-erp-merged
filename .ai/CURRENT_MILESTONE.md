@@ -1,3 +1,7 @@
+# 2026-10-26 — Barcode and inventory transfer correction merged; milestone unchanged
+
+Owner-approved corrective source `f62dc9098046700a4a0289f552a19fa5851f5a39` was merged to main as `2d182ffa63f245045f8b19b4ac9b74a0a3d23a79` without conflicts, migrations, or deployment. Compact post-merge tests passed. The branch corrects GTIN string/Arabic validation, compact transfer editor presentation, editable actual destination receipts, actual-only stock posting, independent multi-destination lifecycle, and approval's stale-page 422 redirect. Production remains `00f150f7bd7cf80969f143cba171966cbb33eb84` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.50-commercial-inventory-00f150f`. No business milestone, Phase Gate, client UAT, or Production release advances through this source merge.
+
 # 2026-10-26 — QA/Demo framework main merge; milestone unchanged
 
 The owner-approved QA/Demo Data Framework is merged at `58413c1217b0fc3bb5fda8686071dff7b22a32c0` from source `36c39a4e4651a844d0ee406b939cfec13ddcc0b0`. Its five reset modes are limited to testing/dedicated QA; the framework is not deployed and does not advance a business milestone or Phase Gate. Production application, business reset, and completed operational-location cleanup remain unchanged.
