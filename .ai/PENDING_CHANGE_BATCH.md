@@ -1,4 +1,12 @@
-# 2026-10-26 — Pending V0 login UI polish
+# 2026-10-26 — Login V0 batch closed by Production release
+
+| Class | Source | Deployed application | Status |
+|---|---|---|---|
+| V0/I4 | `22a030a90dddd4c38cd0283ba5624b0e95771b8f` | `588fc42687f6fd3895da102abe30727bdf43d1ab` | Merged and LIVE at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.53-login-polish-588fc42`; no deployment action pending |
+
+Backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261026T201721Z_pre_588fc42.sql.gz` has SHA-256 `bcf4bf5d34efeaf47877c39a21e7fdb7e6d0370b9db88d4bbacadbfce788f16e`. Previous release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.52-client-facing-polish-a1e08ba` remains rollback. Migrations pending/executed: 0/0.
+
+# Historical pre-deployment record — V0 login UI polish
 
 | Class | Branch | Application commit | Status |
 |---|---|---|---|
