@@ -2,7 +2,7 @@
 
 | Class | Branch | Application commit | Status |
 |---|---|---|---|
-| V1 | `hotfix/client-facing-ui-branding-decimal-polish-20261026` | `11f34f8ab02675509090c03187a0dd4b9b501f0a` | Focused QA PASS; branch publication pending; not merged or deployed |
+| V1 | `hotfix/client-facing-ui-branding-decimal-polish-20261026` | `ecfacae` | Focused QA PASS; branch publication pending; not merged or deployed |
 
 Scope: approved Rajeh logo/favicon, compact transfer allocation presentation, canonical two-decimal display and bounded raw-decimal cleanup. Production remains `72ca966510fe7be11fc33afe5d0194fa344a47ac`.
 
