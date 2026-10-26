@@ -1,4 +1,12 @@
-# 2026-10-26 — Client-facing V1 batch merged; deployment pending authorization
+# 2026-10-26 — Client-facing V1 batch closed by Production release
+
+| Class | Source | Deployed application | Status |
+|---|---|---|---|
+| V1/I4 | `d4a9ce2fbab47be7afcd75c108527b11a3d0da05` | `a1e08baf1c7498d2586bcf330db87b8aae2d1fd5` | LIVE at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.52-client-facing-polish-a1e08ba`; no deployment action pending |
+
+Backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261026T194010Z_pre_a1e08ba.sql.gz` has SHA-256 `1f441847a82cf42dcf7061ed36bfad1f829d64fd1b63534d2002cc8d3b48bf78`. Previous release `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.51-barcode-transfer-72ca966` remains rollback. Production migrations pending/executed: 0/0.
+
+# Historical pre-deployment record — Client-facing V1 batch merged
 
 | Class | Source | Merge | Status |
 |---|---|---|---|
