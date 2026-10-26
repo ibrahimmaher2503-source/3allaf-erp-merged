@@ -176,15 +176,73 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         );
         $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
         $this->actingAs($this->user)->withoutVite();
-        $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version])->assertStatus(409);
+        $this->from(route('inventory.transfers.approval-review', $transfer))
+            ->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version])
+            ->assertRedirect(route('inventory.transfers.approval-review', $transfer))
+            ->assertSessionHas('error', __('The transfer changed during review. Reload the review before confirming.'));
         self::assertSame('submitted', $transfer->fresh()->status);
+        $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()
+            ->assertSee('role="alert"', false)
+            ->assertDontSee('Unprocessable Content');
         $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()
             ->assertSee($this->product->item_code)
             ->assertSee($this->destinationB->name_en);
         $this->post(route('inventory.transfers.approve', $transfer), [])->assertSessionHasErrors('review_version');
         self::assertSame('submitted', $transfer->fresh()->status);
-        $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version]);
+        $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version])->assertRedirect(route('inventory.transfers'));
         self::assertSame('approved', $transfer->fresh()->status);
+    }
+
+    public function test_review_confirmation_posts_only_entered_actual_quantity_and_keeps_other_destination_pending(): void
+    {
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $line = $transfer->fresh('lines.allocations')->lines->first();
+        $allocation = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        $key = $line->id.'.'.$allocation->id;
+        $this->actingAs($this->user)->withoutVite();
+        $this->get(route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $this->destinationA->id]))
+            ->assertOk()->assertSee('name="received_quantities['.$key.']"', false);
+        $this->post(route('inventory.transfers.receive-draft', $transfer), [
+            'destination_store_id' => $this->destinationA->id,
+            'received_quantities' => [$key => '2'],
+            'difference_type' => 'shortage',
+            'difference_reason' => 'One missing',
+            'intent' => 'final',
+        ])->assertRedirect();
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
+        self::assertSame('in_transit', $transfer->fresh()->status);
+        self::assertSame('2.000000', (string) $allocation->fresh()->quantity_received);
+        $this->post(route('inventory.transfers.receive-draft', $transfer), [
+            'destination_store_id' => $this->destinationA->id,
+            'received_quantities' => [$key => '2'],
+            'intent' => 'final',
+        ])->assertSessionHas('error');
+        self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_receipt')->count());
+    }
+
+    public function test_invalid_final_receipt_preserves_input_and_rolls_back_every_stock_change(): void
+    {
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $line = $transfer->fresh('lines.allocations')->lines->first();
+        $allocation = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        $key = $line->id.'.'.$allocation->id;
+        $before = StockMovement::query()->count();
+        $this->actingAs($this->user)->withoutVite();
+        app()->setLocale('ar');
+        $this->from(route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $this->destinationA->id]))
+            ->post(route('inventory.transfers.receive-draft', $transfer), [
+                'destination_store_id' => $this->destinationA->id,
+                'received_quantities' => [$key => '4'],
+                'intent' => 'final',
+            ])->assertRedirect()->assertSessionHasInput('received_quantities', [$key => '4'])
+            ->assertSessionHas('error', 'يجب أن تكون الكمية المستلمة بين صفر والكمية المخصصة لهذه الوجهة.');
+        self::assertSame($before, StockMovement::query()->count());
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->value('on_hand'));
+        self::assertSame('in_transit', $transfer->fresh()->status);
+        self::assertSame(0, StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->count());
     }
 
     public function test_destination_draft_rejects_other_destinations_allocation(): void

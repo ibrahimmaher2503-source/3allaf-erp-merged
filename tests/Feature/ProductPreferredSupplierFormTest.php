@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Catalog\Actions\AddBarcodeAction;
 use App\Modules\Catalog\Actions\SaveProductSupplierAction;
 use App\Modules\Catalog\Models\Barcode;
 use App\Modules\Catalog\Models\Category;
@@ -205,6 +206,25 @@ final class ProductPreferredSupplierFormTest extends TestCase
             ->assertSee('The international barcode check digit is invalid.');
 
         self::assertSame($beforeProductCount, Product::query()->count());
+    }
+
+    public function test_valid_leading_zero_international_barcode_is_saved_as_a_string_on_product_card(): void
+    {
+        Company::factory()->create();
+        $category = Category::factory()->create();
+        $actor = $this->createCatalogEditor();
+        $this->actingAs($actor);
+        $product = Product::factory()->for($category)->create();
+
+        $barcode = app(AddBarcodeAction::class)->addSupplierBarcode($product->id, '  00012345600012  ');
+
+        self::assertSame('00012345600012', $barcode->barcode);
+        self::assertDatabaseHas('barcodes', [
+            'product_id' => $product->id,
+            'barcode' => '00012345600012',
+            'source' => 'international',
+            'status' => 'active',
+        ]);
     }
 
     private function createCatalogEditor(): User

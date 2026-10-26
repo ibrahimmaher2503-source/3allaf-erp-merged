@@ -294,7 +294,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->middleware('can:transfers.view')->name('inventory.transfers.dispatch-page');
     $router->get('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer) {
         app(AssertInventoryStoreScope::class)->transfer($transfer);
-        abort_unless($transfer->status === 'submitted', 422);
+        if ($transfer->status !== 'submitted') {
+            return redirect()->route('inventory.transfers')->with('error', __('Only submitted transfers can be approved.'));
+        }
         session(['transfer_approval_reviews.'.$transfer->id => $transfer->lock_version]);
 
         return view('inventory.transfer-approval-review', ['transfer' => $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination'])]);
@@ -404,13 +406,15 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
     $router->post('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer, ApproveStockTransferAction $action) {
         $review = request()->validate(['review_version' => ['required', 'integer']]);
-        abort_unless((int) $review['review_version'] === (int) $transfer->lock_version, 409);
-        abort_unless((int) session('transfer_approval_reviews.'.$transfer->id) === (int) $review['review_version'], 409);
+        if ((int) $review['review_version'] !== (int) $transfer->lock_version
+            || (int) session('transfer_approval_reviews.'.$transfer->id) !== (int) $review['review_version']) {
+            return back()->withInput()->with('error', __('The transfer changed during review. Reload the review before confirming.'));
+        }
         try {
             $action->execute($transfer->id);
             session()->forget('transfer_approval_reviews.'.$transfer->id);
 
-            return back()->with('success', __('Transfer approved in Local Demo.'));
+            return redirect()->route('inventory.transfers')->with('success', __('Transfer approved in Local Demo.'));
         } catch (AuthorizationException|ValidationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
@@ -457,18 +461,26 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
 
     $router->post('inventory/transfers/{transfer}/receive/draft', function (StockTransfer $transfer, SaveStockTransferReceivingDraftAction $action) {
         try {
-            $validated = request()->validate(['destination_store_id' => ['required', 'integer'], 'received_quantities' => ['required', 'array', 'min:1'], 'received_quantities.*' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'in:shortage,damage,refusal'], 'difference_reason' => ['nullable', 'string', 'max:1000']]);
+            $validated = request()->validate(['destination_store_id' => ['required', 'integer'], 'received_quantities' => ['required', 'array', 'min:1'], 'received_quantities.*' => ['required', 'numeric', 'min:0'], 'difference_type' => ['nullable', 'in:shortage,damage,refusal'], 'difference_reason' => ['nullable', 'string', 'max:1000'], 'intent' => ['nullable', 'in:save,final']]);
+            if (($validated['intent'] ?? 'save') === 'final') {
+                DB::transaction(function () use ($action, $transfer, $validated): void {
+                    $action->execute($transfer->id, (int) $validated['destination_store_id'], $validated['received_quantities'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
+                    app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, (int) $validated['destination_store_id']);
+                });
+
+                return redirect()->route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $validated['destination_store_id']])->with('success', __('Destination receipt finally confirmed.'));
+            }
             $action->execute($transfer->id, (int) $validated['destination_store_id'], $validated['received_quantities'], $validated['difference_type'] ?? null, $validated['difference_reason'] ?? null);
 
             return redirect()->route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $validated['destination_store_id']])->with('success', __('Receiving draft saved. No stock was posted.'));
+        } catch (AuthorizationException|ValidationException $exception) {
+            throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
         } catch (Throwable $exception) {
-            if ($exception instanceof AuthorizationException) {
-                throw $exception;
-            }
-
             report($exception);
 
-            return back()->withInput()->with('error', UserSafeError::message($exception));
+            return back()->withInput()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.receive')->name('inventory.transfers.receive-draft');
     $router->post('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer, ReceiveStockTransferAction $action) {

@@ -141,6 +141,7 @@ new #[Title('Product Card')] class extends Component
         Gate::authorize($this->isEditing ? 'products_categories_brands.edit' : 'products_categories_brands.create');
 
         try {
+            $this->supplierBarcode = trim($this->supplierBarcode);
             $this->productForm['fractional_quantity'] = filter_var(
                 $this->productForm['fractional_quantity'] ?? false,
                 FILTER_VALIDATE_BOOLEAN,
@@ -560,6 +561,7 @@ new #[Title('Product Card')] class extends Component
                 @if ($productForm['barcode_registration_type'] === 'international')
                     @if ($activeBarcodes->isEmpty())
                         <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
+                        <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل رقمًا من 8 أو 12 أو 13 أو 14 خانة مع رقم تحقق صالح. تُحفظ الأصفار البادئة.' : 'Enter 8, 12, 13, or 14 digits with a valid check digit. Leading zeros are preserved.' }}</p>
                     @endif
                 @else
                     <x-context-help :title="__('Local product code help')" :label="__('Open contextual help')"><p>{{ __('The local product code uses the four-digit identity from a canonical SUP-#### supplier code, or the first four digits of a numeric supplier code, followed by a hyphen and the shared six-digit prefix sequence. Leading zeros are preserved, and the international barcode remains a separate identity.') }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
