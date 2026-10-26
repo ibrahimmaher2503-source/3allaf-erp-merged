@@ -1,3 +1,11 @@
+# 2026-10-26 — QA/Demo framework merged, deployment separate
+
+| Class | Source | Final SHA | Status |
+|---|---|---|---|
+| D3 | `feature/qa-demo-data-framework-20261026` | `36c39a4e4651a844d0ee406b939cfec13ddcc0b0` | Merged to main as `58413c1217b0fc3bb5fda8686071dff7b22a32c0`; not deployed |
+
+Supported QA/testing-only modes: `--empty`, `--demo`, `--catalog`, `--inventory`, `--pos`. The command is hidden in Production and new demo seeders fail closed there. No migration or Production auto-seeding was added. The Production business reset and complete branch/warehouse/drawer/location cleanup remain valid; this main merge did not touch Production data or deploy. The prior commercial/inventory Production release remains the active application.
+
 # 2026-10-25 — Commercial and inventory batch closed by Production release
 
 | Class | Source | Final SHA | Status |

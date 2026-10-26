@@ -1,5 +1,7 @@
 # QA/demo data framework branch continuity
 
+This is the preserved pre-merge branch record. The owner-approved source `36c39a4e4651a844d0ee406b939cfec13ddcc0b0` was later merged to main as `58413c1217b0fc3bb5fda8686071dff7b22a32c0` on 2026-10-26. It remains undeployed; current status is in `.ai/CURRENT_TASK.md`.
+
 - Date: 2026-10-26.
 - Branch: `feature/qa-demo-data-framework-20261026`, from main `99bb8b6d12c454f58eadec0520996cb0721eadd1`.
 - Scope: development/QA only. No Production database, user, environment file, release, deployment, or main branch change.

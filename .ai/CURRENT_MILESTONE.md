@@ -1,4 +1,8 @@
-# Current Milestone — Fast Module 1 local QA closure (2026-10-07)
+# 2026-10-26 — QA/Demo framework main merge; milestone unchanged
+
+The owner-approved QA/Demo Data Framework is merged at `58413c1217b0fc3bb5fda8686071dff7b22a32c0` from source `36c39a4e4651a844d0ee406b939cfec13ddcc0b0`. Its five reset modes are limited to testing/dedicated QA; the framework is not deployed and does not advance a business milestone or Phase Gate. Production application, business reset, and completed operational-location cleanup remain unchanged.
+
+# Preserved milestone — Fast Module 1 local QA closure (2026-10-07)
 
 All 16 reported findings are dispositioned: 10 fixes approved/pushed and integrated, 4 already fixed or not reproduced locally, and 2 policy/server blockers. Integration code `65c9c42` is published on `fix/module1-qa-fast-integration`; the fixed subset is ready for PR. The single final full suite remains failed: 243 pass, 32 pre-existing failures, 1 FriBidi environment error; all 12 new cases pass and no new failing name was found. This is an operational QA closure only: no business milestone, Phase Gate, UAT or production release advances; main is unchanged.
 
