@@ -94,7 +94,13 @@ final class ReceiveStockTransferAction
                 'received_at' => $allFinal ? now() : null,
                 'lock_version' => $transfer->lock_version + 1,
             ]);
-            app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $destinationStoreId, reasonCode: $draft->difference_type, reasonText: $draft->difference_reason, metadata: ['receiving_draft_id' => $draft->id, 'destination_store_id' => $destinationStoreId]);
+            app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $destinationStoreId, reasonCode: $draft->difference_type, reasonText: $draft->difference_reason, metadata: [
+                'receiving_draft_id' => $draft->id,
+                'destination_store_id' => $destinationStoreId,
+                'allocated_quantities' => collect($rows)->mapWithKeys(fn (array $row): array => [$row[2] => $row[3]])->all(),
+                'received_quantities' => $draft->received_quantities,
+                'variance_quantities' => collect($rows)->mapWithKeys(fn (array $row): array => [$row[2] => bcsub($row[3], (string) $draft->received_quantities[$row[2]], 6)])->all(),
+            ]);
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);
         });
