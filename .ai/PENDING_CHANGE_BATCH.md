@@ -1,3 +1,11 @@
+# 2026-10-26 — Client-facing V1 batch merged; deployment pending authorization
+
+| Class | Source | Merge | Status |
+|---|---|---|---|
+| V1 | `d4a9ce2fbab47be7afcd75c108527b11a3d0da05` | `cec99bf258f06e25bd94b1dd0c079239e25001fb` | Merged into main, focused checks PASS, NOT DEPLOYED |
+
+Production application remains `72ca966510fe7be11fc33afe5d0194fa344a47ac`. The prior branch-pending record below is historical.
+
 # 2026-10-26 — Pending client-facing V1 UI batch
 
 | Class | Branch | Application commit | Status |
