@@ -1,3 +1,11 @@
+# 2026-10-26 — Pending client-facing V1 UI batch
+
+| Class | Branch | Application commit | Status |
+|---|---|---|---|
+| V1 | `hotfix/client-facing-ui-branding-decimal-polish-20261026` | `ecfacae` | Focused QA PASS; branch publication pending; not merged or deployed |
+
+Scope: approved Rajeh logo/favicon, compact transfer allocation presentation, canonical two-decimal display and bounded raw-decimal cleanup. Production remains `72ca966510fe7be11fc33afe5d0194fa344a47ac`.
+
 # 2026-10-26 — Corrective batch closed by Production release
 
 Approved main application `72ca966510fe7be11fc33afe5d0194fa344a47ac` (source hotfix `f62dc9098046700a4a0289f552a19fa5851f5a39`, merge `2d182ffa63f245045f8b19b4ac9b74a0a3d23a79`) is live at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.51-barcode-transfer-72ca966`. Previous Production SHA `00f150f7bd7cf80969f143cba171966cbb33eb84` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.50-commercial-inventory-00f150f` is retained for rollback. Backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261026T184852Z_pre_72ca966.sql.gz` passed gzip/SQL-readability checks; SHA-256 `e6c5f144a1474ffdcd7a37d574350b2188eadceb6879de70f7bc6e5866442d4d`. Production migration status was zero pending and none ran. Candidate real-vhost checks, atomic activation, PHP 8.5 FPM reload, and public `/`, `/up`, `/login` passed; Product Card create/edit and transfer editor/approval/receiving protected GETs returned expected guest 302 without 5xx. CSS/JS returned 200, FPM remained active, maintenance is off, and no new Laravel errors were found. The first candidate gate had a verification-cookie error and restored the old release before the corrected gate passed. Authenticated Production behavior was not checked; previous focused local tests and browser evidence remain the functional evidence. Barcode validation/localization, compact transfer UX, actual/partial multi-destination receiving, and approval 422 correction are deployed. No Production business transaction, seeding, or database data change was performed. Final deployment rollback: NO. Journal: `/var/lib/toyjoy/barcode-transfer-deployment/72ca966-20261026T185123Z`. This approved I4 release is closed; no corrective-batch deployment remains pending.

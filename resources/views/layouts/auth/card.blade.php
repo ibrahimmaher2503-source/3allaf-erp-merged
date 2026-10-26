@@ -10,8 +10,8 @@
         <div class="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div class="flex w-full max-w-md flex-col gap-6">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-9 w-9 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
+                    <span class="flex items-center justify-center">
+                        <img src="{{ asset('images/rajeh-logo.png') }}" alt="{{ __('Rajeh ERP') }}" class="h-12 w-auto max-w-44 rounded-md bg-white p-1 object-contain sm:h-14">
                     </span>
 
                     <span class="sr-only">{{ config('app.name', 'TOY & JOY') }}</span>

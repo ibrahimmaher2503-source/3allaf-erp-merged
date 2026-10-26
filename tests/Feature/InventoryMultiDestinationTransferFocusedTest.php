@@ -20,9 +20,11 @@ use App\Modules\Inventory\Models\StockTransferReceivingDraft;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
+use App\Support\ProductQuantity;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -85,6 +87,49 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('3.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationA->id)->value('quantity'));
         self::assertSame('2.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
         self::assertNotSame('3', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
+    }
+
+    public function test_client_facing_quantity_money_and_brand_assets(): void
+    {
+        self::assertSame('5', ProductQuantity::format('5.000000'));
+        self::assertSame('5.5', ProductQuantity::format('5.500000'));
+        self::assertSame('5.25', ProductQuantity::format('5.250000'));
+        self::assertStringContainsString('300.00', Blade::render('<x-money :amount="300" />'));
+        self::assertStringContainsString('300.50', Blade::render('<x-money :amount="300.5" />'));
+        self::assertFileExists(public_path('images/rajeh-logo.png'));
+        self::assertFileExists(public_path('images/rajeh-logo-mark.png'));
+        $this->withoutVite();
+        Auth::logout();
+        $this->get('/login')->assertOk()->assertSee('images/rajeh-logo.png')->assertSee('images/rajeh-logo-mark.png');
+    }
+
+    public function test_saved_transfer_draft_hydrates_allocations_without_database_precision(): void
+    {
+        $this->withoutVite();
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']],
+        ], idempotencyKey: 'qa-presentation-'.uniqid());
+
+        $this->actingAs($this->user)->get(route('inventory.transfers.edit', $transfer))
+            ->assertOk()
+            ->assertSee('name="lines[0][allocations]['.$this->destinationA->id.']" value="3"', false)
+            ->assertSee('name="lines[0][allocations]['.$this->destinationB->id.']" value="2"', false)
+            ->assertDontSee('value="3.000000"', false)
+            ->assertDontSee('value="2.000000"', false);
+
+        $this->actingAs($this->user)->post(route('inventory.transfers.update', $transfer), [
+            'source_store_id' => $this->source->id,
+            'destination_store_id' => $this->destinationA->id,
+            'destination_store_ids' => [$this->destinationA->id, $this->destinationB->id],
+            'reason_code' => 'restock',
+            'lock_version' => $transfer->lock_version,
+            'lines' => [['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']]],
+        ])->assertRedirect(route('inventory.transfers.edit', $transfer));
+
+        $this->actingAs($this->user)->get(route('inventory.transfers.edit', $transfer))
+            ->assertOk()
+            ->assertSee('name="lines[0][allocations]['.$this->destinationA->id.']" value="3"', false)
+            ->assertDontSee('value="3.000000"', false);
     }
 
     public function test_partial_and_full_allocations_have_expected_remaining_stock(): void
