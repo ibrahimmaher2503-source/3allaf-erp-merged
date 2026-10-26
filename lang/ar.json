@@ -475,7 +475,7 @@
     "A sequence-counter override reason is required.": "A sequence-counter override السبب is مطلوب.",
     "A shift must be open before any sale can be recorded.": "يجب فتح وردية قبل تسجيل أي عملية بيع.",
     "A shift total must be a valid monetary amount.": "A وردية الإجمالي must be a صحيح monetary المبلغ.",
-    "A shortage/damage/refusal reason is required for a transfer difference.": "A shortage/damage/refusal السبب is مطلوب لـ a transfer difference.",
+    "A shortage/damage/refusal reason is required for a transfer difference.": "يجب إدخال سبب العجز أو التلف أو الرفض عند وجود فرق في الاستلام.",
     "A source invoice line can appear only once.": "A source فاتورة سطر can appear only once.",
     "A source type, source identifier, and requested action are required.": "نوع المصدر ومعرّف المصدر والإجراء المطلوب كلها مطلوبة.",
     "A source version or hash is required.": "إصدار المصدر أو بصمته مطلوب.",
@@ -2368,7 +2368,7 @@
     "Only draft supplier returns can be submitted.": "Only مسودة المورد returns can be submitted.",
     "Only draft transfers can be edited.": "Only مسودة transfers can be edited.",
     "Only draft transfers can be submitted.": "Only مسودة transfers can be submitted.",
-    "Only in-transit transfers can be received.": "Only في-transit transfers can be received.",
+    "Only in-transit transfers can be received.": "يمكن استلام التحويلات قيد النقل فقط.",
     "Only invoices in your authorized Party branch and store scope are shown.": "Only فواتير في your authorized الحفلة الفرع و المخزن scope are shown.",
     "Only one cash tender may settle the residual.": "طريقة دفع كاش واحدة بس ممكن تسوي الباقي.",
     "Only open stock counts can be edited.": "Only فتح stock counts can be edited.",
@@ -2383,7 +2383,7 @@
     "Only submitted stock counts can be reconciled.": "جرد المخازن المرفوع بس هو اللي ممكن يتسوى.",
     "Only submitted supplier returns can be approved.": "Only submitted المورد returns can be معتمد.",
     "Only submitted supplier returns can be rejected.": "Only submitted المورد returns can be مرفوض.",
-    "Only submitted transfers can be approved.": "Only submitted transfers can be معتمد.",
+    "Only submitted transfers can be approved.": "يمكن اعتماد التحويلات المقدمة للمراجعة فقط.",
     "Only submitted transfers can be sent for approval.": "Only submitted transfers can be sent لـ اعتماد.",
     "Only the approved standard, composite, and service types are available. Composite component lines are deferred until their policy is sufficiently defined.": "الأنواع المعتمدة فقط هي القياسي والمركب والخدمي. تؤجل سطور مكونات المنتج حتى تكتمل سياستها.",
     "Only the assigned stock counter can record this count.": "Only the assigned stock counter can record هذا count.",
@@ -5395,6 +5395,10 @@
     ,"Download rejected rows": "تنزيل الصفوف المرفوضة"
     ,"Import template": "نموذج الاستيراد"
     ,"An international barcode is required.": "الباركود الدولي مطلوب."
+    ,"The transfer changed during review. Reload the review before confirming.": "تغيّر التحويل أثناء المراجعة. أعد تحميل صفحة المراجعة قبل التأكيد."
+    ,"International barcodes must be a valid GTIN-8, UPC-12, EAN-13, or GTIN-14 number.": "يجب أن يكون الباركود الدولي رقم GTIN-8 أو UPC-12 أو EAN-13 أو GTIN-14 صالحًا."
+    ,"The international barcode check digit is invalid.": "رقم التحقق في الباركود الدولي غير صالح."
+    ,"Received quantity must be between zero and the allocated quantity.": "يجب أن تكون الكمية المستلمة بين صفر والكمية المخصصة لهذه الوجهة."
     ,"The Arabic product name is required for the product card.": "اسم الصنف بالعربية مطلوب لكارت الصنف."
     ,"Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.": "اعتمد مستند رصيد افتتاحي مستقلًا، أو سجّل القرار المصرح والمدقق للبدء دون مخزون افتتاحي. تأتي تكلفة الوحدة من كروت الأصناف ويستخدم الترحيل سجل المخزون."
     ,"Complete active branches, stores, categories, and product masters before opening inventory.": "أكمل الفروع والمواقع والتصنيفات وكروت الأصناف النشطة قبل تسجيل المخزون الافتتاحي."
