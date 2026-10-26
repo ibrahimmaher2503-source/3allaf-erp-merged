@@ -217,7 +217,7 @@
                                     @foreach($visibleStores->where('status', 'active') as $destination)
                                         <label class="text-xs font-semibold" data-destination-id="{{ $destination->id }}" hidden>
                                             <span>{{ \App\Support\HumanName::name($destination) }}</span>
-                                            <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '') }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
+                                            <input dir="ltr" name="lines[{{ $lineIndex }}][allocations][{{ $destination->id }}]" value="{{ ($allocationValue = old('lines.'.$lineIndex.'.allocations.'.$destination->id, $transferLine?->allocations?->firstWhere('destination_store_id', $destination->id)?->quantity ?? '')) === '' ? '' : $qty($allocationValue) }}" class="{{ $field }}" inputmode="numeric" min="0" step="1" placeholder="0" data-allocation-input>
                                         </label>
                                     @endforeach
                                 </div>
@@ -356,16 +356,16 @@
             }
             [data-transfer-allocation-editor] [data-product-line] > * { min-width: 0; }
             [data-transfer-allocations], [data-line-allocation-error] { grid-column: 1 / -1; min-width: 0; }
-            [data-transfer-allocations] { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); grid-auto-columns: minmax(8.5rem, 1fr); gap: 0.35rem 0.5rem; overflow-x: auto; }
-            [data-transfer-allocations] label { display: flex; flex-direction: column; min-width: 0; gap: 0.25rem; }
-            [data-transfer-allocations] label > span { white-space: normal; word-break: normal; overflow-wrap: break-word; }
+            [data-transfer-allocations] { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; }
+            [data-transfer-allocations] label { display: inline-flex; flex: 0 1 auto; align-items: center; min-width: 0; max-width: 100%; gap: 0.3rem; }
+            [data-transfer-allocations] label > span { min-width: 0; overflow-wrap: anywhere; }
             [data-transfer-allocation-editor] [dir="ltr"] { unicode-bidi: isolate; }
             [data-transfer-allocation-editor] [data-line-available],
             [data-transfer-allocation-editor] [data-line-cost],
             [data-transfer-allocation-editor] [data-line-selling-price] { justify-content: center; text-align: center; }
             [data-transfer-allocation-editor] [data-line-quantity],
             [data-transfer-allocations] input { text-align: center; }
-            [data-transfer-allocations] input { box-sizing: border-box; width: 100%; min-width: 0; }
+            [data-transfer-allocations] input { box-sizing: border-box; width: 4.25rem; min-width: 4.25rem; max-width: 4.25rem; margin-top: 0; padding-inline: 0.35rem; }
             [data-transfer-allocation-editor] [hidden] { display: none !important; }
             @media (min-width: 1024px) {
                 [data-transfer-allocation-editor] [data-remove-line] { grid-column: 6; grid-row: 1; align-self: end; }

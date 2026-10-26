@@ -42,7 +42,7 @@
                         <form method="POST" action="{{ route('customers.loyalty.redeem', $customer) }}" class="mt-4 space-y-3">
                             @csrf
                             <flux:select name="source_sale_id" :label="__('Approved sale')" required>
-                                @foreach ($approvedSales as $sale)<flux:select.option value="{{ $sale->id }}">{{ $sale->document_number ?? '#'.$sale->id }} · {{ $sale->total }}</flux:select.option>@endforeach
+                                @foreach ($approvedSales as $sale)<flux:select.option value="{{ $sale->id }}">{{ $sale->document_number ?? '#'.$sale->id }} · {{ \App\Modules\Retail\Support\DecimalMoney::round((string) $sale->total) }}</flux:select.option>@endforeach
                             </flux:select>
                             <flux:input name="points" :label="__('Points')" type="number" min="1" step="1" required />
                             <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">

@@ -71,7 +71,7 @@
                     @forelse ($sale->payments as $payment)
                         <div class="rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700">
                             <div class="flex justify-between gap-3"><span class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $payment->paymentMethod->name_ar : $payment->paymentMethod->name_en }}</span><span class="font-semibold"><x-money :amount="$payment->amount" :currency="$sale->currency_code" /></span></div>
-                            @if ($payment->tendered_amount !== null)<div class="mt-1 text-xs text-zinc-500">{{ __('Tendered') }} {{ $payment->tendered_amount }} · {{ __('Change') }} {{ $payment->change_amount }}</div>@endif
+                            @if ($payment->tendered_amount !== null)<div class="mt-1 text-xs text-zinc-500">{{ __('Tendered') }} <x-money :amount="$payment->tendered_amount" /> · {{ __('Change') }} <x-money :amount="$payment->change_amount" /></div>@endif
                             @if ($payment->evidenceAttachment && auth()->user()->can('pos_sales.payment_evidence_view'))<a class="mt-2 inline-block text-xs text-blue-600 hover:underline" href="{{ route('payments.evidence.show', $payment->evidenceAttachment) }}" target="_blank">{{ __('View protected payment evidence') }}</a>@endif
                         </div>
                     @empty

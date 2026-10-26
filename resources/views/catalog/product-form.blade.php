@@ -719,7 +719,7 @@ new #[Title('Product Card')] class extends Component
                 @php($volume = collect(['dimension_length', 'dimension_width', 'dimension_height'])->contains(fn ($field) => blank($productForm[$field])) ? null : (float) $productForm['dimension_length'] * (float) $productForm['dimension_width'] * (float) $productForm['dimension_height'])
                 <div class="mt-4 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
                     <span class="font-medium text-text-primary">{{ __('Calculated volume') }}:</span>
-                    {{ $volume === null ? '—' : rtrim(rtrim(number_format($volume, 3, '.', ''), '0'), '.') }} {{ $productForm['dimension_unit'] ? $productForm['dimension_unit'].'³' : '' }}
+                    {{ $volume === null ? '—' : rtrim(rtrim(number_format($volume, 2, '.', ''), '0'), '.') }} {{ $productForm['dimension_unit'] ? $productForm['dimension_unit'].'³' : '' }}
                 </div>
                 <div class="mt-4 space-y-4" id="product-field-filter_value_ids">
                     <flux:heading size="lg">{{ __('Product Filters') }}</flux:heading>
