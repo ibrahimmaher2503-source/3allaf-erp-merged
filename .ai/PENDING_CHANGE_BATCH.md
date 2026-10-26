@@ -1,3 +1,11 @@
+# 2026-10-26 — Pending V0 login UI polish
+
+| Class | Branch | Application commit | Status |
+|---|---|---|---|
+| V0 | `hotfix/login-page-polish-20261026` | `1a7505bac15fad4bf0c15c98a02fc739b0c8b6da` | Focused QA PASS; branch push pending; not merged or deployed |
+
+Scope: Arabic-only username placeholder with empty default, approved Rajeh logo, login-only branded backdrop/card/field/button presentation. Production application remains `a1e08baf1c7498d2586bcf330db87b8aae2d1fd5`.
+
 # 2026-10-26 — Client-facing V1 batch closed by Production release
 
 | Class | Source | Deployed application | Status |

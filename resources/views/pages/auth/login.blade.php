@@ -1,5 +1,5 @@
-<x-layouts::auth :title="__('Log in')">
-    <div class="flex flex-col gap-6">
+<x-layouts::auth :title="__('Log in')" :login-page="true">
+    <div class="flex flex-col gap-6" data-login-polish>
         <x-auth-header :title="__('Log in to your account')" :description="__('Enter your username and password below to log in')" />
 
         <!-- Session Status -->
@@ -7,7 +7,7 @@
 
         <x-passkey-verify :separator="__('Or continue with username')" />
 
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
+        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-5">
             @csrf
 
             <!-- Username -->
@@ -19,7 +19,7 @@
                 required
                 autofocus
                 autocomplete="username"
-                placeholder="ibrahim"
+                placeholder="أدخل اسم المستخدم"
             />
 
             <!-- Password -->
