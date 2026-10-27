@@ -31,11 +31,25 @@ final class UpdateStockTransferDraftAction
     ): StockTransfer {
         Gate::authorize('transfers.edit');
 
-        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference): StockTransfer {
+        return $this->save($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, false);
+    }
+
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
+    public function saveReviewed(int $id, int $sourceStoreId, int $destinationStoreId, array $lines, ?string $reasonCode, ?string $notes, int $expectedVersion, ?string $invoiceReference): StockTransfer
+    {
+        Gate::authorize('transfers.approve');
+
+        return $this->save($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, true);
+    }
+
+    /** @param array<int, array{product_id: int, quantity_requested: string, allocations?: array<int|string, string>}> $lines */
+    private function save(int $id, int $sourceStoreId, int $destinationStoreId, array $lines, ?string $reasonCode, ?string $notes, ?int $expectedVersion, ?string $invoiceReference, bool $reviewed): StockTransfer
+    {
+        return DB::transaction(function () use ($id, $sourceStoreId, $destinationStoreId, $lines, $reasonCode, $notes, $expectedVersion, $invoiceReference, $reviewed): StockTransfer {
             $transfer = StockTransfer::query()->with('lines')->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer);
-            if ($transfer->status !== 'draft') {
-                throw new InvalidArgumentException(__('Only draft transfers can be edited.'));
+            if ($transfer->status !== ($reviewed ? 'submitted' : 'draft')) {
+                throw new InvalidArgumentException($reviewed ? __('Only submitted transfers can be approved.') : __('Only draft transfers can be edited.'));
             }
             if ($expectedVersion !== null && (int) $transfer->lock_version !== $expectedVersion) {
                 throw new InvalidArgumentException(__('This transfer changed in another session. Please reload before saving.'));
@@ -70,7 +84,7 @@ final class UpdateStockTransferDraftAction
                 'reason_code' => $this->nullableTrimmed($reasonCode),
                 'notes' => $this->nullableTrimmed($notes),
                 'invoice_reference' => $this->nullableTrimmed($invoiceReference),
-                'requested_by' => Auth::id(),
+                'requested_by' => $reviewed ? $transfer->requested_by : Auth::id(),
                 'lock_version' => $transfer->lock_version + 1,
             ]);
             $transfer->lines()->delete();
@@ -84,7 +98,7 @@ final class UpdateStockTransferDraftAction
             }
             app(RecordAuditEvent::class)->execute(
                 category: 'inventory',
-                event: 'update_stock_transfer_draft',
+                event: $reviewed ? 'update_stock_transfer_review' : 'update_stock_transfer_draft',
                 source: $transfer,
                 before: $before,
                 after: $transfer->fresh('lines')->only(['transfer_number', 'source_store_id', 'destination_store_id', 'status', 'reason_code', 'notes', 'lock_version']),

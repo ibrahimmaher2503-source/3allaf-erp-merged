@@ -107,15 +107,14 @@ Reprint creates print event, not silent reset.
 ## 9. Stock Transfer
 
 - Draft.
-- Submitted.
-- Approved.
-- Dispatched/In Transit.
+- Submitted / final editable review.
+- Approval and dispatch atomically transition directly to Dispatched/In Transit.
 - Partially Received.
 - Received.
 - Difference Review.
 - Cancelled.
 
-Difference review required for shortage/damage/refusal. Source, transit, destination effects must reconcile.
+Existing approved-but-not-dispatched documents remain legacy records pending a separate controlled decision. Difference review required for shortage/damage/refusal. Source, transit, destination effects must reconcile.
 
 ## 10. Inventory Adjustment
 

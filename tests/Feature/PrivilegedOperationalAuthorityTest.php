@@ -131,7 +131,7 @@ final class PrivilegedOperationalAuthorityTest extends TestCase
                 self::assertTrue((bool) $audit->metadata[$actor->is_super_admin ? 'super_admin_bypass' : 'company_owner_bypass']);
             }
 
-            app(DispatchStockTransferAction::class)->execute($transfer->id);
+            self::assertSame('in_transit', $transfer->fresh()->status);
             $line = $transfer->lines()->firstOrFail();
             $allocation = $line->allocations()->firstOrFail();
             app(ReceiveStockTransferAction::class)->execute($transfer->id, [$line->id.'.'.$allocation->id => '2'], null, null);

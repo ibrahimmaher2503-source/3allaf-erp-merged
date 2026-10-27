@@ -360,11 +360,11 @@ Classifications used: `FULL_IMPLEMENTATION`, `PARTIAL_IMPLEMENTATION`, `READINES
 ### TSK-020 — Implement Stateful Stock Transfers and Difference Review
 
 - **Task ID / Phase / Milestone / Status:** TSK-020; Phase 2; DM 2.4; **Completed for Local/Demo; Production/UAT pending**.
-- **Title / Purpose / Description:** Deliver transfer request/approval/dispatch/in-transit/partial/full receipt and shortage/damage/refusal review with exact movements.
+- **Title / Purpose / Description:** Deliver editable final transfer review with atomic approval/dispatch, in-transit/partial/full receipt, and shortage/damage/refusal review with exact movements.
 - **Traceability:** INV-03, NFR-01–NFR-02, NFR-06; US-014; FLW-INV-02; UI UI-INV-004–007; AC-INV-03; SEC-011–012, SEC-015, SEC-017–021, SEC-027.
 - **Dependencies / Required Inputs:** TSK-019; BLK-012 mitigated by `docs/25-inventory-exception-policy.md`; final state/role separation, difference disposition, reason catalog, and limits remain configurable or pending.
 - **Database Entities:** `stock_transfers`, `transfer_lines`, `stock_movements`, `stock_balances`, `approval_records`, `document_sequences`, attachments if evidence.
-- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; every transfer line is received/reconciled atomically; local list/dispatch/receipt/difference-review surface with submitted → approved → in-transit → received/difference-review flow.
+- **Backend / Livewire / Blade Deliverables:** state actions/locks/idempotency/movements/differences; every transfer line is received/reconciled atomically; local list/final-review/receipt/difference-review surface with submitted → atomic approval and in-transit → received/difference-review flow.
 - **UI / Flux / Alpine / Vite:** Flux Table/Form/Line Editor/Scan Input/Filters/Timeline/Badges/Dialog/Upload; Alpine scanner only if needed; print styles.
 - **Suggested Packages:** Reuse approved barcode/upload/PDF capabilities only.
 - **Permissions / Validation / Audit / States / Print:** source/destination Create/Approve/Dispatch/Receive/Difference/Cancel; stock/location/qty/state/replay; every transition/quantity/reason; transfer/dispatch/receipt/difference prints.

@@ -13,7 +13,6 @@ use App\Modules\Inventory\Actions\AssertInventoryStoreScope;
 use App\Modules\Inventory\Actions\CancelStockCountSessionAction;
 use App\Modules\Inventory\Actions\CompleteStockCountLineAction;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
-use App\Modules\Inventory\Actions\DispatchStockTransferAction;
 use App\Modules\Inventory\Actions\ImportStockCountWorkbookAction;
 use App\Modules\Inventory\Actions\OpenStockCountSessionAction;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
@@ -299,7 +298,17 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         }
         session(['transfer_approval_reviews.'.$transfer->id => $transfer->lock_version]);
 
-        return view('inventory.transfer-approval-review', ['transfer' => $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination'])]);
+        $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']);
+        $visibleStores = Store::query()->visibleTo(request()->user())->where('status', 'active')->orderBy('code')->get();
+        $savedLines = $transfer->lines->map(fn ($line): array => [
+            'product_id' => $line->product_id,
+            'quantity_requested' => $line->quantity_requested,
+            'allocations' => $line->allocations->pluck('quantity', 'destination_store_id')->all(),
+        ])->all();
+        $reviewLines = old('lines', $savedLines);
+        $reviewProducts = Product::query()->whereIn('id', collect($reviewLines)->pluck('product_id')->filter())->get()->keyBy('id');
+
+        return view('inventory.transfer-approval-review', compact('transfer', 'visibleStores', 'reviewLines', 'reviewProducts'));
     })->middleware('can:transfers.approve')->name('inventory.transfers.approval-review');
     $router->get('inventory/transfers/{transfer}/receive', function (StockTransfer $transfer) {
         $actor = request()->user();
@@ -405,25 +414,44 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('transfer')->middleware('can:transfers.submit')->name('inventory.transfers.submit');
 
     $router->post('inventory/transfers/{transfer}/approve', function (StockTransfer $transfer, ApproveStockTransferAction $action) {
-        $review = request()->validate(['review_version' => ['required', 'integer']]);
+        $review = request()->validate([
+            'review_version' => ['required', 'integer'],
+            'source_store_id' => ['required', 'integer', 'exists:stores,id'],
+            'destination_store_id' => ['required', 'integer', 'different:source_store_id', 'exists:stores,id'],
+            'reason_code' => ['required', 'string', 'max:100'],
+            'reason_notes' => ['nullable', 'string', 'max:1000'],
+            'invoice_reference' => ['nullable', 'string', 'max:120'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.product_id' => ['required', 'integer'],
+            'lines.*.quantity_requested' => ['required', 'numeric', 'min:0'],
+            'lines.*.allocations' => ['nullable', 'array'],
+            'lines.*.allocations.*' => ['nullable', 'numeric', 'min:0'],
+        ]);
         if ((int) $review['review_version'] !== (int) $transfer->lock_version
             || (int) session('transfer_approval_reviews.'.$transfer->id) !== (int) $review['review_version']) {
             return back()->withInput()->with('error', __('The transfer changed during review. Reload the review before confirming.'));
         }
         try {
-            $action->execute($transfer->id);
+            $action->execute($transfer->id, [
+                'source_store_id' => (int) $review['source_store_id'],
+                'destination_store_id' => (int) $review['destination_store_id'],
+                'reason_code' => $review['reason_code'],
+                'notes' => $review['reason_notes'] ?? null,
+                'invoice_reference' => $review['invoice_reference'] ?? null,
+                'lines' => $review['lines'],
+            ], (int) $review['review_version']);
             session()->forget('transfer_approval_reviews.'.$transfer->id);
 
-            return redirect()->route('inventory.transfers')->with('success', __('Transfer approved in Local Demo.'));
+            return redirect()->route('inventory.transfers')->with('success', app()->getLocale() === 'en' ? 'Transfer approved and dispatched successfully.' : 'تم اعتماد وإرسال التحويل بنجاح');
         } catch (AuthorizationException|ValidationException $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
-            return back()->withErrors(['transfer' => UserSafeError::message($exception)]);
+            return back()->withInput()->withErrors(['transfer' => $exception->getMessage()]);
         } catch (Throwable $exception) {
 
             report($exception);
 
-            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
+            return back()->withInput()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.approve')->name('inventory.transfers.approve');
 
@@ -442,22 +470,6 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
             return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
         }
     })->whereNumber('transfer')->middleware('can:transfers.submit')->name('inventory.transfers.request-approval');
-
-    $router->post('inventory/transfers/{transfer}/dispatch', function (StockTransfer $transfer, DispatchStockTransferAction $action) {
-        try {
-            $action->execute($transfer->id);
-
-            return back()->with('success', __('Transfer dispatched and source stock posted.'));
-        } catch (Throwable $exception) {
-            if ($exception instanceof AuthorizationException) {
-                throw $exception;
-            }
-
-            report($exception);
-
-            return back()->with('error', __('Inventory operation failed. Please review the record and try again.'));
-        }
-    })->whereNumber('transfer')->middleware('can:transfers.dispatch')->name('inventory.transfers.dispatch');
 
     $router->post('inventory/transfers/{transfer}/receive/draft', function (StockTransfer $transfer, SaveStockTransferReceivingDraftAction $action) {
         try {

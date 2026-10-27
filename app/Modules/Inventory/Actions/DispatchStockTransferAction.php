@@ -20,19 +20,29 @@ final class DispatchStockTransferAction
     {
         Gate::authorize('transfers.dispatch');
 
+        return $this->dispatchApproved($id);
+    }
+
+    public function dispatchApproved(int $id): StockTransfer
+    {
         return DB::transaction(function () use ($id): StockTransfer {
             $transfer = StockTransfer::query()->with(['lines.allocations'])->lockForUpdate()->findOrFail($id);
             $this->scope->transfer($transfer, source: true, destination: false);
             foreach ($transfer->allocations->pluck('destination_store_id')->unique() as $destinationId) {
+                $this->scope->execute((int) $destinationId);
             }
             if ($transfer->status !== 'approved') {
                 throw new InvalidArgumentException(__('Only approved transfers can be dispatched.'));
             }
+            if ($transfer->lines->isEmpty()) {
+                throw new InvalidArgumentException(__('A transfer must contain at least one line.'));
+            }
             $poster = app(PostInventoryMovement::class);
             foreach ($transfer->lines as $line) {
                 $quantity = $line->allocations->isEmpty() ? (string) $line->quantity_requested : (string) $line->allocations->sum('quantity');
-                if (bccomp($quantity, '0', 6) <= 0) {
-                    continue;
+                if (bccomp($quantity, '0', 6) <= 0 || bccomp($quantity, (string) $line->quantity_requested, 6) > 0
+                    || $line->allocations->contains(fn ($allocation): bool => bccomp((string) $allocation->quantity, '0', 6) <= 0)) {
+                    throw new InvalidArgumentException(__('Transfer allocations must be positive and cannot exceed the reviewed quantity.'));
                 }
                 $balance = StockBalance::query()->where('product_id', $line->product_id)->where('store_id', $transfer->source_store_id)->lockForUpdate()->first();
                 $available = $balance === null ? '0' : bcsub((string) $balance->on_hand, (string) $balance->reserved, 6);

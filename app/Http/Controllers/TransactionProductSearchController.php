@@ -24,7 +24,7 @@ final class TransactionProductSearchController extends Controller
         'purchase_orders.create', 'purchase_orders.edit',
         'purchase_invoices.draft', 'purchase_invoices_supplier_returns.create', 'purchase_invoices_supplier_returns.edit',
         'purchase_returns.create', 'purchase_returns.edit',
-        'transfers.create', 'transfers.edit', 'inventory_stock_card.create', 'inventory_stock_card.edit', 'stock_counts.participate',
+        'transfers.create', 'transfers.edit', 'transfers.approve', 'inventory_stock_card.create', 'inventory_stock_card.edit', 'stock_counts.participate',
         'pos_sales.create', 'returns.create',
         'quotations.create', 'quotations.edit',
         'party_bookings_invoices.create', 'party_bookings_invoices.edit',

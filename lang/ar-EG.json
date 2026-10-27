@@ -2349,6 +2349,8 @@
     "Only an unlinked temporary attachment can be linked.": "يمكن ربط المرفق المؤقت غير المرتبط فقط.",
     "Only approved invoices can be reversed.": "يمكن عكس الفواتير المعتمدة بس.",
     "Only approved supplier returns can be reversed.": "يمكن عكس مرتجعات الموردين المعتمدة بس.",
+    "Transfer allocations must be positive and cannot exceed the reviewed quantity.": "يجب أن تكون كميات الوجهات موجبة ولا تتجاوز الكمية التي تمت مراجعتها.",
+    "Open the final transfer review to edit and approve this transfer.": "افتح المراجعة النهائية للتحويل لتعديل البيانات واعتمادها.",
     "Only approved transfers can be dispatched.": "يمكن إرسال التحويلات المعتمدة بس.",
     "Only approved, partially received, or received purchase orders can be closed.": "ممكن إغلاق أوامر الشراء المعتمدة أو المستلمة جزئيًا أو بالكامل بس.",
     "Only approved, source-linked purchasing history is included.": "يظهر هنا سجل المشتريات المعتمد والمرتبط بمصدره فقط.",
