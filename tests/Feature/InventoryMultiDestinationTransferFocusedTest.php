@@ -17,6 +17,8 @@ use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\StockTransferReceivingDraft;
+use App\Modules\Platform\Actions\DecideApprovalSource;
+use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
@@ -27,6 +29,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class InventoryMultiDestinationTransferFocusedTest extends TestCase
@@ -222,7 +225,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
         $this->actingAs($this->user)->withoutVite();
         $this->from(route('inventory.transfers.approval-review', $transfer))
-            ->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version])
+            ->post(route('inventory.transfers.approve', $transfer), $this->reviewPayload($transfer, '3', '2', '5'))
             ->assertRedirect(route('inventory.transfers.approval-review', $transfer))
             ->assertSessionHas('error', __('The transfer changed during review. Reload the review before confirming.'));
         self::assertSame('submitted', $transfer->fresh()->status);
@@ -234,8 +237,9 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
             ->assertSee($this->destinationB->name_en);
         $this->post(route('inventory.transfers.approve', $transfer), [])->assertSessionHasErrors('review_version');
         self::assertSame('submitted', $transfer->fresh()->status);
-        $this->post(route('inventory.transfers.approve', $transfer), ['review_version' => $transfer->lock_version])->assertRedirect(route('inventory.transfers'));
-        self::assertSame('approved', $transfer->fresh()->status);
+        $this->post(route('inventory.transfers.approve', $transfer), $this->reviewPayload($transfer, '3', '2', '5'))->assertRedirect(route('inventory.transfers'));
+        self::assertSame('in_transit', $transfer->fresh()->status);
+        self::assertSame('5.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->where('product_id', $this->product->id)->value('on_hand'));
     }
 
     public function test_review_confirmation_posts_only_entered_actual_quantity_and_keeps_other_destination_pending(): void
@@ -467,6 +471,96 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         $warehouse->save();
 
         return $warehouse;
+    }
+
+    public function test_reviewer_edits_allocations_and_approval_dispatches_final_values_atomically(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']],
+        ], idempotencyKey: 'qa-final-review-'.uniqid());
+        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))
+            ->assertOk()->assertSee('Final transfer review')->assertSee('name="lines[0][quantity_requested]"', false);
+        $payload = $this->reviewPayload($transfer, '2', '4', '6');
+        $this->post(route('inventory.transfers.approve', $transfer), $payload)->assertRedirect(route('inventory.transfers'));
+        $transfer = $transfer->fresh('lines.allocations');
+        self::assertSame('in_transit', $transfer->status);
+        self::assertSame('6', (string) $transfer->lines->first()->quantity_requested);
+        self::assertSame('6', (string) $transfer->lines->first()->quantity_dispatched);
+        self::assertSame('4.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->where('product_id', $this->product->id)->value('on_hand'));
+        self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->where('product_id', $this->product->id)->value('in_transit'));
+        self::assertSame('4.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->where('product_id', $this->product->id)->value('in_transit'));
+        self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
+        $this->post(route('inventory.transfers.approve', $transfer), $payload)->assertRedirect();
+        self::assertSame(1, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_dispatch')->count());
+        $line = $transfer->lines->first();
+        $allocation = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        app(SaveStockTransferReceivingDraftAction::class)->execute($transfer->id, $this->destinationA->id, [$line->id.'.'.$allocation->id => '1'], 'shortage', 'One missing');
+        app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $this->destinationA->id);
+        self::assertSame('1.000000', (string) StockBalance::query()->where('store_id', $this->destinationA->id)->where('product_id', $this->product->id)->value('on_hand'));
+        self::assertSame('in_transit', $transfer->fresh()->status);
+    }
+
+    public function test_failed_automatic_dispatch_rolls_back_review_and_approval_and_preserves_input(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '5', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '2']],
+        ], idempotencyKey: 'qa-review-failure-'.uniqid());
+        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $this->balance($this->source, 0);
+        $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))->assertOk();
+        $payload = $this->reviewPayload($transfer, '2', '4', '6');
+        $this->from(route('inventory.transfers.approval-review', $transfer))
+            ->post(route('inventory.transfers.approve', $transfer), $payload)
+            ->assertRedirect(route('inventory.transfers.approval-review', $transfer))
+            ->assertSessionHasErrors('transfer')
+            ->assertSessionHasInput('lines', $payload['lines']);
+        self::assertSame('submitted', $transfer->fresh()->status);
+        self::assertSame('5', (string) $transfer->fresh('lines')->lines->first()->quantity_requested);
+        self::assertSame(0, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->count());
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->where('product_id', $this->product->id)->value('on_hand'));
+        $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()->assertSee('role="alert"', false)->assertSee('value="6"', false);
+    }
+
+    public function test_shared_inbox_routes_transfer_to_final_review_instead_of_direct_approval(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '3', 'allocations' => [$this->destinationA->id => '3']],
+        ], idempotencyKey: 'qa-inbox-review-'.uniqid());
+        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $approval = ApprovalRecord::query()->where('source_type', 'stock_transfers')->where('source_id', (string) $transfer->id)->firstOrFail();
+        $router = app(DecideApprovalSource::class);
+        self::assertSame(route('inventory.transfers.approval-review', $transfer), $router->sourceRoute($approval));
+        self::assertThrows(fn () => $router->approve($approval), ValidationException::class);
+        self::assertSame('submitted', $transfer->fresh()->status);
+        self::assertSame(0, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->count());
+    }
+
+    public function test_approval_only_reviewer_can_search_transfer_products_on_final_review(): void
+    {
+        $reviewer = User::factory()->create(['status' => 'active']);
+        $reviewer->storeScopes()->create(['store_id' => $this->source->id, 'status' => 'active']);
+        Gate::define('transfers.create', static fn (): bool => false);
+        Gate::define('transfers.edit', static fn (): bool => false);
+        Gate::define('transfers.approve', static fn (): bool => true);
+
+        $this->actingAs($reviewer)->get(route('transaction-products.search', [
+            'q' => $this->product->item_code,
+            'context' => 'transfer',
+            'source_store_id' => $this->source->id,
+        ]))->assertOk()->assertJsonPath('data.0.id', $this->product->id);
+    }
+
+    private function reviewPayload(StockTransfer $transfer, string $a, string $b, string $requested): array
+    {
+        return [
+            'review_version' => $transfer->lock_version,
+            'source_store_id' => $this->source->id,
+            'destination_store_id' => $this->destinationA->id,
+            'reason_code' => 'restock',
+            'reason_notes' => 'Reviewed quantities',
+            'lines' => [['product_id' => $this->product->id, 'quantity_requested' => $requested, 'allocations' => [$this->destinationA->id => $a, $this->destinationB->id => $b]]],
+        ];
     }
 
     private function approvedTransfer(string $requested, string $a, string $b): StockTransfer

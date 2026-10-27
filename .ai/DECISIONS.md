@@ -1,3 +1,7 @@
+# 2026-10-27 — Approved owner override: final transfer review and atomic dispatch
+
+The owner replaces the separate source-side dispatch action for new stock transfers. A creator submits a draft; the reviewer edits final products, quantities, allocations and permitted header fields on the review page, then approves. Final edit, approval record, source movement, destination in-transit balances and status transition to `in_transit` occur in one transaction. Failure rolls back all changes and preserves review input. Destination receipts remain independent and post only actual received quantities. Production transfers 21–24 are legacy approved/not-dispatched records and require a separate controlled disposition; this source change does not alter them. This decision updates INV-03 / FLW-INV-02 / AC-INV-03 while preserving their IDs.
+
 # Owner Decisions
 
 ## 2026-10-19 — Standalone warehouse transfer and purchasing override
