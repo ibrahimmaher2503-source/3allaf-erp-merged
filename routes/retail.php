@@ -814,7 +814,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $shift = PosShift::query()->open()
             ->where('cashier_id', $user->id)
-            ->with(['branch', 'store', 'cashDrawer', 'cashier', 'cashMovements.creator'])
+            ->with(['branch', 'store', 'cashDrawer', 'cashier'])
             ->latest('opened_at')
             ->first();
 
@@ -868,17 +868,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             $openToken = (string) Str::uuid();
             $request->session()->put('pos.shift.open_token', $openToken);
         }
-        $movementToken = null;
         $closeToken = null;
         if ($shift !== null) {
-            $movementTokenKey = 'pos.shift.movement_token.'.$shift->getKey();
             $closeTokenKey = 'pos.shift.close_token.'.$shift->getKey().'.'.$shift->getAttribute('recount_count');
-            $movementToken = (string) $request->session()->get($movementTokenKey, '');
             $closeToken = (string) $request->session()->get($closeTokenKey, '');
-            if ($movementToken === '') {
-                $movementToken = (string) Str::uuid();
-                $request->session()->put($movementTokenKey, $movementToken);
-            }
             if ($closeToken === '') {
                 $closeToken = (string) Str::uuid();
                 $request->session()->put($closeTokenKey, $closeToken);
@@ -897,12 +890,31 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             'drawers' => $availableDrawers,
             'selectedWorkStore' => $selectedWorkStore,
             'preselectedDrawerId' => $preselectedDrawerId,
-            'movementTypes' => CashMovement::TYPES,
             'openToken' => $openToken,
-            'movementToken' => $movementToken,
             'closeToken' => $closeToken,
         ]);
     })->middleware('can:shifts_cash_movements.view')->name('pos.shift');
+
+    Route::get('pos/shift/{shift}/cash-movement', function (Request $request, PosShift $shift) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless(PosShift::query()->visibleTo($user)->whereKey($shift->getKey())->exists(), 403);
+        abort_unless($shift->status->acceptsActivity(), 404);
+        abort_unless((int) $shift->cashier_id === $user->id || $user->can('shifts_cash_movements.approve') || $user->is_super_admin, 403);
+
+        $movementTokenKey = 'pos.shift.movement_token.'.$shift->getKey();
+        $movementToken = (string) $request->session()->get($movementTokenKey, '');
+        if ($movementToken === '') {
+            $movementToken = (string) Str::uuid();
+            $request->session()->put($movementTokenKey, $movementToken);
+        }
+
+        return view('pages.pos.cash-movement', [
+            'shift' => $shift->load(['store', 'cashDrawer', 'cashMovements.creator']),
+            'movementTypes' => CashMovement::TYPES,
+            'movementToken' => $movementToken,
+        ]);
+    })->middleware(['can:shifts_cash_movements.view', 'can:shifts_cash_movements.create'])->name('pos.shift.cash-movement.form');
 
     Route::get('pos/shift/open', fn () => to_route('pos.shift'))
         ->middleware([
@@ -982,7 +994,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         $request->session()->forget('pos.shift.movement_token.'.$shift->getKey());
 
-        return redirect()->route('pos.shift')->with('success', __('Cash movement recorded.'));
+        return redirect()->route('pos.shift.cash-movement.form', $shift)->with('success', __('Cash movement recorded.'));
     })->middleware('can:shifts_cash_movements.create')->name('pos.shift.cash-movement');
 
     Route::post('pos/shift/{shift}/blind-close', function (Request $request, PosShift $shift, SubmitBlindShiftCloseAction $action) {

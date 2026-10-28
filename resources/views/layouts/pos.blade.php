@@ -71,6 +71,9 @@
                         @if($posShift)<x-status.badge :status="$posShift->status->value" />@else<span class="font-semibold">{{ __('Not ready') }}</span>@endif
                     </div>
                     @if($showCloseShift && $posShift?->status->acceptsActivity())
+                        @can('shifts_cash_movements.create')
+                            <a href="{{ route('pos.shift.cash-movement.form', $posShift) }}" class="inline-flex items-center gap-1 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/10"><flux:icon name="banknotes" class="size-4" />{{ __('Cash movement') }}</a>
+                        @endcan
                         @can('shifts_cash_movements.submit')
                             <a href="{{ route('pos.shift').'#shift-close-'.$posShift->id }}" class="inline-flex items-center gap-1 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/10"><flux:icon name="lock-closed" class="size-4" />{{ __('Close shift') }}</a>
                         @endcan

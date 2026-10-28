@@ -32,7 +32,6 @@
                     <dl class="mt-4 grid gap-2 text-sm">
                         <div class="flex justify-between gap-3"><dt>{{ __('Branch / store') }}</dt><dd>{{ $blockingShift->branch?->code ?: $blockingShift->branch_code_snapshot }} / {{ $blockingShift->store?->code ?: $blockingShift->store_code_snapshot }}</dd></div>
                         <div class="flex justify-between gap-3"><dt>{{ __('Opened at') }}</dt><dd>{{ $blockingShift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
-                        <div class="flex justify-between gap-3"><dt>{{ __('Opening float') }}</dt><dd><x-money :amount="$blockingShift->opening_cash" :currency="$blockingShift->currency_code" /></dd></div>
                         <div class="flex justify-between gap-3"><dt>{{ __('Cashier') }}</dt><dd>{{ $blockingShift->cashier?->name ?? $blockingShift->cashier?->username ?? '—' }}</dd></div>
                     </dl>
                     @if ($blockingShift->status->acceptsActivity())
@@ -164,53 +163,22 @@
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Cashier') }}</dt><dd>{{ $shift->cashier?->name ?? $shift->cashier?->username ?? '—' }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
-                    @can('shifts_cash_movements.approve')<div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opening float') }}</dt><dd><x-money :amount="$shift->opening_cash" :currency="$shift->currency_code" /></dd></div>@endcan
                     @if ($shift->recount_count > 0)
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Recounts requested') }}</dt><dd>{{ $shift->recount_count }}</dd></div>
                     @endif
                 </dl>
+                @if ($canManageOwnShift && $shift->status->acceptsActivity())
+                    <nav class="mt-4 flex flex-wrap gap-2" aria-label="{{ __('Shift actions') }}">
+                        @can('pos_sales.create')<flux:button :href="route('pos')" variant="primary" icon="shopping-cart">{{ __('Open POS') }}</flux:button>@endcan
+                        @can('shifts_cash_movements.create')<flux:button :href="route('pos.shift.cash-movement.form', $shift)" variant="subtle" icon="banknotes">{{ __('Cash movement') }}</flux:button>@endcan
+                        @can('shifts_cash_movements.submit')<flux:button :href="'#shift-close-'.$shift->id" variant="subtle" icon="lock-closed">{{ __('Close shift') }}</flux:button>@endcan
+                    </nav>
+                @endif
             </div>
 
             @if (! $canManageOwnShift)
                 <flux:callout class="mt-6" variant="warning" icon="exclamation-triangle">{{ __('Your active shift is outside your current location access. Ask a System Administrator to resolve it.') }}</flux:callout>
             @elseif ($shift->status->acceptsActivity())
-                <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-                    <flux:heading size="lg">{{ __('Cash movement') }}</flux:heading>
-                    <form method="POST" action="{{ route('pos.shift.cash-movement', $shift) }}" class="mt-4 grid gap-3">
-                        @csrf
-                        <input type="hidden" name="idempotency_key" value="{{ $movementToken }}">
-                        <flux:select name="movement_type" :label="__('Type')" required>
-                            @foreach ($movementTypes as $type)
-                                <flux:select.option value="{{ $type }}">{{ __(ucwords(str_replace('_', ' ', $type))) }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:input type="number" step="0.01" min="0.01" name="amount" :label="__('Amount')" required />
-                        <flux:input name="reason" :label="__('Reason')" required />
-                        <flux:input name="reference" :label="__('Reference (optional)')" />
-                        @error('amount')<flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>@enderror
-                        <flux:button type="submit" variant="subtle" icon="banknotes">{{ __('Record movement') }}</flux:button>
-                    </form>
-
-                    @if ($shift->cashMovements->isNotEmpty())
-                        <x-tables.table-shell :label="__('Cash movement')" class="mt-5">
-                            <table class="data-table w-full text-sm">
-                                <thead><tr><th>{{ __('Type') }}</th><th>{{ __('Reason') }}</th><th>{{ __('Actor') }}</th><th>{{ __('Reference') }}</th>@can('shifts_cash_movements.approve')<th class="text-end">{{ __('Amount') }}</th>@endcan</tr></thead>
-                                <tbody>
-                                    @foreach ($shift->cashMovements as $movement)
-                                        <tr>
-                                            <td>{{ __(ucwords(str_replace('_', ' ', $movement->movement_type))) }}</td>
-                                            <td>{{ $movement->reason }}</td>
-                                            <td>{{ $movement->creator?->name ?? '—' }}</td>
-                                            <td>{{ $movement->reference ?? '—' }}</td>
-                                            @can('shifts_cash_movements.approve')<td class="text-end"><x-money :amount="$movement->amount" :currency="$shift->currency_code" class="font-semibold" /></td>@endcan
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </x-tables.table-shell>
-                    @endif
-                </div>
-
                 <div id="shift-close-{{ $shift->id }}" class="mt-6 scroll-mt-24 rounded-xl border border-zinc-200 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     <flux:heading size="lg">{{ __('Close shift') }}</flux:heading>
                     <flux:text class="mt-1">{{ __('Count the physical cash in the drawer before submitting your blind close.') }}</flux:text>

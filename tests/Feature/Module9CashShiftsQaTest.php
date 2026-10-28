@@ -17,6 +17,7 @@ use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Services\ShiftExpectedTotalsService;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
@@ -155,7 +156,13 @@ final class Module9CashShiftsQaTest extends TestCase
         $actor = $shift->cashier;
         app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_in', '125', 'Additional float', (string) Str::uuid(), 'M9-REF-125');
         app(RecordCashMovementAction::class)->execute($actor, $shift, 'cash_out', '25', 'Petty expense', (string) Str::uuid());
-        $this->get(route('pos.shift'))->assertOk()->assertSee('Actor')->assertSee('Reference')
+        $expected = app(ShiftExpectedTotalsService::class)->derive($shift);
+        self::assertSame('100.00', $expected['cash_movements']);
+        self::assertSame(bcadd(bcadd($expected['opening_float'], $expected['cash_sales'], 2), '100.00', 2), $expected['expected_cash']);
+        $this->get(route('pos.shift'))->assertOk()->assertSee(route('pos.shift.cash-movement.form', $shift))
+            ->assertDontSee('name="movement_type"', false)->assertDontSee('name="amount"', false)
+            ->assertDontSee('125.00');
+        $this->get(route('pos.shift.cash-movement.form', $shift))->assertOk()->assertSee('Actor')->assertSee('Reference')
             ->assertSee($actor->name)->assertSee('M9-REF-125')->assertSee('Additional float')->assertSee('125.00')->assertSee('—');
         $movements = collect($this->cashReport($actor)['detail_sections'])->firstWhere('key', 'cash_movements');
         self::assertArrayHasKey('actor', $movements['columns']);
