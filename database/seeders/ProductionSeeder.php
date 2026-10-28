@@ -145,6 +145,7 @@ final class ProductionSeeder extends Seeder
             ['code' => 'returns.submit', 'module' => 'returns', 'action' => 'submit', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.approve', 'module' => 'returns', 'action' => 'approve', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.complete', 'module' => 'returns', 'action' => 'complete', 'sensitivity' => 'sensitive'],
+            ['code' => 'returns.unverified', 'module' => 'returns', 'action' => 'unverified', 'sensitivity' => 'sensitive'],
             ['code' => 'returns.print', 'module' => 'returns', 'action' => 'print', 'sensitivity' => 'normal'],
             ['code' => 'gift_cards.view', 'module' => 'gift_cards', 'action' => 'view', 'sensitivity' => 'normal'],
             ['code' => 'gift_cards.print', 'module' => 'gift_cards', 'action' => 'print', 'sensitivity' => 'normal'],

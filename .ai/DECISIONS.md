@@ -1,3 +1,14 @@
+# 2026-10-28 — Owner decisions: POS split and returns
+
+1. Split payments intelligently auto-fill the remaining amount; manual edits remain authoritative and cash change behavior remains.
+2. F7 and a visible Returns action open the cashier workflow.
+3. Search for the original sale by receipt Code 128 barcode, exact invoice/reference, customer phone/name, or sale date; customer and date results show matching sales newest first with bounded pages and optional date filters.
+4. A sale recovered by any search path is a **verified linked return**, even when the customer has no invoice in hand. Original sale price, discount, tax, payment composition, and remaining quantity determine its refund; cumulative quantity may never exceed sold quantity.
+5. Refund methods default to the original tender. Split refunds follow original payment components and cannot silently exceed them. Override requires existing approval permission.
+6. Confirmed returns currently restock directly to the original operational sale store. Inspection, damaged, and quarantine handling await a later owner decision. Ambiguous stock context fails closed.
+7. Only when no original sale can be identified may a permission-controlled **unverified return** be used. A manager enters an approved refund amount; the document is clearly unlinked and audited.
+8. Existing exchange domain behavior remains available for later POS exchange UI; this batch does not claim a completed unified exchange flow.
+
 # 2026-10-27 — Approved owner override: final transfer review and atomic dispatch
 
 The owner replaces the separate source-side dispatch action for new stock transfers. A creator submits a draft; the reviewer edits final products, quantities, allocations and permitted header fields on the review page, then approves. Final edit, approval record, source movement, destination in-transit balances and status transition to `in_transit` occur in one transaction. Failure rolls back all changes and preserves review input. Destination receipts remain independent and post only actual received quantities. Production transfers 21–24 are legacy approved/not-dispatched records and require a separate controlled disposition; this source change does not alter them. This decision updates INV-03 / FLW-INV-02 / AC-INV-03 while preserving their IDs.
