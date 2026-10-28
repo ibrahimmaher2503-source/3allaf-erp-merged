@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class ApplicationVersion
 {
-    public const RELEASE = '0.1.22-cost-optional';
+    public const RELEASE = '2.0.0';
 
     private function __construct() {}
 }
