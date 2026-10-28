@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\Company;
+use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Reporting\Queries\ReportSnapshot;
@@ -17,6 +18,8 @@ use App\Modules\Retail\Actions\ReviewShiftVarianceAction;
 use App\Modules\Retail\Actions\SubmitBlindShiftCloseAction;
 use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Models\RetailReturn;
+use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Services\ShiftExpectedTotalsService;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Contracts\Console\Kernel;
@@ -173,6 +176,91 @@ final class Module9CashShiftsQaTest extends TestCase
         self::assertSame('cash_in', $row['type']);
         self::assertSame(125.0, $row['amount']);
         self::assertNull(collect($movements['rows'])->firstWhere('reason', 'Petty expense')['reference']);
+    }
+
+    public function test_cash_expected_uses_signed_movements_and_cash_refunds_but_excludes_card(): void
+    {
+        $cashier = $this->reviewer();
+        $this->actingAs($cashier)->withoutVite();
+        $drawer = $this->drawerFor($cashier);
+        $cashier->branchScopes()->create(['branch_id' => $drawer->branch_id, 'status' => 'active']);
+        $shift = app(OpenShiftAction::class)->execute($cashier, $drawer, '500', (string) Str::uuid());
+        $cash = PaymentMethod::factory()->create(['type' => 'cash']);
+        $card = PaymentMethod::factory()->create(['type' => 'card']);
+
+        $sale = Sale::query()->create([
+            'branch_id' => $shift->branch_id, 'store_id' => $shift->store_id,
+            'cash_drawer_id' => $shift->cash_drawer_id, 'shift_id' => $shift->id, 'cashier_id' => $cashier->id,
+            'document_number' => 'QA-CASH-'.Str::random(8), 'status' => 'approved',
+            'idempotency_key' => (string) Str::uuid(), 'subtotal' => '300', 'total' => '300',
+            'paid_total' => '300', 'payable_total' => '300', 'currency_code' => $shift->currency_code,
+            'approved_at' => now(),
+        ]);
+        $sale->payments()->create([
+            'payment_method_id' => $cash->id, 'method_code' => $cash->code,
+            'method_type' => 'cash', 'amount' => '300', 'tendered_amount' => '300',
+            'change_amount' => '0', 'idempotency_key' => (string) Str::uuid(), 'created_by' => $cashier->id,
+        ]);
+        self::assertSame('300.00', app(ShiftExpectedTotalsService::class)->derive($shift)['cash_sales']);
+
+        $deposit = app(RecordCashMovementAction::class)->execute($cashier, $shift, 'cash_in', '100', 'Deposit', (string) Str::uuid(), 'DEP-100');
+        $withdrawal = app(RecordCashMovementAction::class)->execute($cashier, $shift, 'cash_out', '50', 'Withdrawal', (string) Str::uuid(), 'WD-50');
+        foreach ([[$deposit, 'cash_in', '100.00', 'Deposit', 'DEP-100'], [$withdrawal, 'cash_out', '-50.00', 'Withdrawal', 'WD-50']] as [$movement, $type, $amount, $reason, $reference]) {
+            $movement->refresh();
+            self::assertSame($shift->id, $movement->shift_id);
+            self::assertSame($shift->cash_drawer_id, $movement->cash_drawer_id);
+            self::assertSame($cashier->id, $movement->created_by);
+            self::assertSame($type, $movement->movement_type);
+            self::assertSame($amount, $movement->amount);
+            self::assertSame($reason, $movement->reason);
+            self::assertSame($reference, $movement->reference);
+            self::assertNotNull($movement->created_at);
+        }
+        $totals = app(ShiftExpectedTotalsService::class)->derive($shift);
+        self::assertSame('850.00', $totals['expected_cash']);
+        $cardSale = Sale::query()->create([
+            'branch_id' => $shift->branch_id, 'store_id' => $shift->store_id,
+            'cash_drawer_id' => $shift->cash_drawer_id, 'shift_id' => $shift->id, 'cashier_id' => $cashier->id,
+            'document_number' => 'QA-CARD-'.Str::random(8), 'status' => 'approved',
+            'idempotency_key' => (string) Str::uuid(), 'subtotal' => '200', 'total' => '200',
+            'paid_total' => '200', 'payable_total' => '200', 'currency_code' => $shift->currency_code,
+            'approved_at' => now(),
+        ]);
+        $cardSale->payments()->create([
+            'payment_method_id' => $card->id, 'method_code' => $card->code,
+            'method_type' => 'card', 'amount' => '200', 'tendered_amount' => '200',
+            'change_amount' => '0', 'idempotency_key' => (string) Str::uuid(), 'created_by' => $cashier->id,
+        ]);
+        $totals = app(ShiftExpectedTotalsService::class)->derive($shift);
+        self::assertSame('850.00', $totals['expected_cash']);
+        self::assertSame('200.00', $totals['expected_by_method'][$card->code]);
+
+        $return = RetailReturn::query()->create([
+            'branch_id' => $shift->branch_id, 'store_id' => $shift->store_id, 'shift_id' => $shift->id,
+            'cash_drawer_id' => $shift->cash_drawer_id, 'cashier_id' => $cashier->id,
+            'source_sale_id' => $sale->id, 'return_number' => 'QA-REF-'.Str::random(8),
+            'status' => 'completed', 'settlement_type' => 'original_tender', 'reason' => 'Refund',
+            'settlement_value' => '40', 'currency_code' => $shift->currency_code,
+            'idempotency_key' => (string) Str::uuid(), 'completed_at' => now(),
+        ]);
+        $return->settlements()->create([
+            'payment_method_id' => $cash->id, 'method_code_snapshot' => $cash->code,
+            'method_type_snapshot' => 'cash', 'direction' => 'refund', 'amount' => '40',
+            'settlement_type' => 'original_tender', 'idempotency_key' => (string) Str::uuid(),
+            'created_by' => $cashier->id, 'reason' => 'Refund',
+        ]);
+        self::assertSame('810.00', app(ShiftExpectedTotalsService::class)->derive($shift)['expected_cash']);
+
+        $this->get(route('pos.shift'))->assertOk()->assertDontSee('850.00')->assertDontSee('Opening float')
+            ->assertDontSee('name="movement_type"', false)->assertDontSee('DEP-100');
+        $this->get(route('pos.shift.cash-movement.form', $shift))->assertOk()->assertSee('DEP-100');
+        $this->followingRedirects()->from(route('pos.shift.cash-movement.form', $shift))
+            ->post(route('pos.shift.cash-movement', $shift), [
+                'movement_type' => 'cash_in', 'amount' => '0', 'reason' => 'Invalid amount',
+                'idempotency_key' => (string) Str::uuid(),
+            ])->assertOk()->assertSee('greater than 0');
+        $this->actingAs(User::factory()->create(['status' => 'active', 'is_super_admin' => false]))
+            ->get(route('pos.shift.cash-movement.form', $shift))->assertForbidden();
     }
 
     public function test_m9_10_cashier_submits_only_cash_and_can_print_pending_close_sheet(): void
