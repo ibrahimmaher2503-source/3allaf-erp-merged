@@ -24,6 +24,8 @@ No lower-priority document may silently override a higher-priority source. Recor
 
 ## Operational Governance Files
 
+Rajeh v2.0 Core Operations is COMPLETE. For any protected Core edit, major-module integration, Production merge, or recovery, read `.ai/CORE_BASELINE.md`, `.ai/CORE_BASELINE_METADATA.md`, and `.ai/CORE_BASELINE_RECOVERY.md` with `AGENTS.md` and `.ai/ERP_CHANGE_POLICY.md`. The permanent tag `v2.0.0-core-operations` names running application SHA `55d4d5525ced50812f65941bb048dc81c6c7f641`, which is distinct from later documentation-only main commits. Use `scripts/test-core-baseline.sh` for the Core regression gate. A proposed Core behavior change requires an explicit owner decision before implementation.
+
 Active Module 2 BUG-17–29 scope routes to `.ai/CURRENT_TASK.md`, amended DEC-096, TSK-011/012/017/018 and only the linked pricing/import/barcode/approval contracts. Latest owner Git workflow: one `fix/module2-qa` branch, separate bug commits, investigator-only agents and preserved-history cleanup; focused checks only, no full suite/main merge/production access.
 
 Latest named fast QA override: `.ai/CURRENT_TASK.md` and DEC-095 route only BUG-01 through BUG-16 in the new Module 1 report. Read only their applicable TSK-005 through TSK-009 requirements, approved policy decisions and affected implementation. Focused tests and exact task-branch pushes are authorized; one final full suite, no second agent pass, main merge or production access. Compact evidence: `.ai/qa/module1-fast-20261007/results.json`.

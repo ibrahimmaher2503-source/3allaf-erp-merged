@@ -1,3 +1,7 @@
+# 2026-10-28 — Rajeh v2.0 Core Operations freeze
+
+Core Operations and POS are complete at formal `v2.0.0`; permanent application tag `v2.0.0-core-operations` points to running Production SHA `55d4d5525ced50812f65941bb048dc81c6c7f641`. This freeze is documentation, tag, backup/archive, protection-marker, and regression-gate work only. It adds no pending V0/V1 UI or application deployment batch. Existing historical batch entries below remain closed or pending exactly as recorded; no future Core change is implicitly authorized. Next phase is major module expansion, not yet started.
+
 # 2026-10-28 — POS smart split and Returns batch closed by Production release
 
 Class D3/I4 source `c66f2c71967f62827e86b36275dd8ca1b18aa03f` merged without squash at `d418ccbf2227957c72238ff612fa7062c42f7be0` and deployed as `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.55-pos-smart-returns-d418ccb`. Application release status: LIVE. The one additive migration ran; backup and real-vhost validation passed. No pending application deployment action remains for this batch. Post-deployment physical scanner hardware QA is pending by owner decision and is not a deployment blocker. Unified POS exchange UI and damaged/inspection handling remain separate future scope.
