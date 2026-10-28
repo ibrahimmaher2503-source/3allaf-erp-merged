@@ -61,7 +61,7 @@ final class Module7ReturnFormTest extends Module7TestCase
                 'quantity' => 1,
                 'condition' => 'sellable',
                 'disposition' => 'restock',
-                'settlement_type' => 'cash_refund',
+                'settlement_type' => 'original_tender',
                 'reason' => 'Non-exchange return ignores replacement data.',
                 'exchange_lines' => 'malformed and irrelevant for a cash refund',
                 'idempotency_key' => $key,
@@ -70,7 +70,7 @@ final class Module7ReturnFormTest extends Module7TestCase
         $return = RetailReturn::query()->where('idempotency_key', $key)->firstOrFail();
 
         $response->assertRedirect(route('returns.show', $return));
-        self::assertSame('cash_refund', $return->settlement_type);
+        self::assertSame('original_tender', $return->settlement_type);
         self::assertFalse(Exchange::query()->where('retail_return_id', $return->id)->exists());
     }
 

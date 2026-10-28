@@ -102,6 +102,12 @@ final class CheckoutPanel extends Component
         if ($this->mode !== 'card') {
             $this->mode = 'split';
         }
+        foreach ($this->paymentLines as $index => $existing) {
+            if (($existing['auto_remaining'] ?? false) === true) {
+                $this->paymentLines[$index]['amount'] = '';
+                $this->paymentLines[$index]['auto_remaining'] = false;
+            }
+        }
         $line = $this->emptyLine();
         $line['amount'] = $this->remainingForNewLine($orders, $contexts);
         $line['auto_remaining'] = true;
@@ -136,11 +142,10 @@ final class CheckoutPanel extends Component
         if ($key !== null && str_ends_with($key, '.amount')) {
             $index = (int) explode('.', $key)[0];
             $this->paymentLines[$index]['auto_remaining'] = false;
-        } else {
-            foreach ($this->paymentLines as $index => $line) {
-                if (($line['auto_remaining'] ?? false) === true) {
-                    $this->paymentLines[$index]['amount'] = $this->remainingForNewLine(app(PosOpenOrderManager::class), app(PosContextResolver::class), $index);
-                }
+        }
+        foreach ($this->paymentLines as $index => $line) {
+            if (($line['auto_remaining'] ?? false) === true) {
+                $this->paymentLines[$index]['amount'] = $this->remainingForNewLine(app(PosOpenOrderManager::class), app(PosContextResolver::class), $index);
             }
         }
         $this->savedModeLines[$this->mode] = $this->paymentLines;

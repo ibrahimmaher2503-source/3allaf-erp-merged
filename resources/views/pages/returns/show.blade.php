@@ -1,5 +1,5 @@
 <x-layouts::app :title="__('Return :number', ['number' => $return->return_number ?: $return->id])">
-    <x-app.page :title="__('Return :number', ['number' => $return->return_number ?: $return->id])" :description="__('Source-linked document. The original sale remains immutable.')" max-width="5xl">
+    <x-app.page :title="__('Return :number', ['number' => $return->return_number ?: $return->id])" :description="$return->is_verified ? __('Source-linked document. The original sale remains immutable.') : __('Unverified return; no original sale is linked.')" max-width="5xl">
         <x-slot:actions><flux:button href="{{ route('returns.index') }}" variant="subtle" icon="arrow-left" wire:navigate>{{ __('Back to returns') }}</flux:button></x-slot:actions>
         @if (session('success'))
             <flux:callout variant="success">{{ session('success') }}</flux:callout>
@@ -17,7 +17,7 @@
             </flux:card>
             <flux:card>
                 <p class="text-sm text-zinc-500">{{ __('Source') }}</p>
-                <p class="mt-1 font-semibold">{{ $return->sourceSale?->document_number ?: $return->sourceGiftReceipt?->reference }}</p>
+                <p class="mt-1 font-semibold">{{ $return->is_verified ? ($return->sourceSale?->document_number ?: $return->sourceGiftReceipt?->reference) : __('Unverified — no original invoice') }}</p>
             </flux:card>
             <flux:card>
                 <p class="text-sm text-zinc-500">{{ __('Settlement') }}</p>
@@ -42,7 +42,7 @@
                     <tbody>
                         @foreach ($return->lines as $line)
                             <tr class="border-t border-zinc-100 dark:border-zinc-800">
-                                <td><div>{{ str_starts_with(app()->getLocale(), 'ar') ? ($line->saleLine?->name_ar ?: $line->saleLine?->name_en) : ($line->saleLine?->name_en ?: $line->saleLine?->name_ar) }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
+                                <td><div>{{ str_starts_with(app()->getLocale(), 'ar') ? ($line->saleLine?->name_ar ?: $line->product?->name_ar) : ($line->saleLine?->name_en ?: $line->product?->name_en) }}</div><div class="font-mono text-xs text-zinc-500">{{ $line->saleLine?->item_code ?: $line->product?->item_code }}</div><x-variant-snapshot :snapshot="$line->saleLine?->variant_snapshot" class="mt-1 block" /></td>
                                 <td><x-product-quantity :value="$line->quantity" /></td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->condition)) }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $line->disposition)) }}</td>

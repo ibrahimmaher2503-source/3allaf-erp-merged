@@ -71,6 +71,12 @@ final class RetailReturnAction
             if (! in_array($settlementType, ['cash_refund', 'original_tender', 'gift_card', 'exchange'], true)) {
                 throw ValidationException::withMessages(['settlement_type' => __('Select a supported refund method.')]);
             }
+            $cashMatchesOriginal = $settlementType === 'cash_refund'
+                && $sale->payments->isNotEmpty()
+                && $sale->payments->every(fn ($payment): bool => $payment->paymentMethod?->isCash() ?? false);
+            if (in_array($settlementType, ['cash_refund', 'gift_card'], true) && ! $cashMatchesOriginal && ! $actor->can('returns.approve')) {
+                throw ValidationException::withMessages(['settlement_type' => __('Changing the original refund method requires return approval permission.')]);
+            }
             $reason = trim((string) ($data['reason'] ?? ''));
             if ($reason === '') {
                 throw ValidationException::withMessages(['reason' => __('A refund reason is required.')]);
@@ -262,23 +268,19 @@ final class RetailReturnAction
                     if (bccomp((string) $line->quantity, $remaining, 6) > 0) {
                         throw ValidationException::withMessages(['lines' => __('A selected quantity is no longer refundable.')]);
                     }
-                    $legacyReturnStoreId = $line->return_store_id;
-                    if ($legacyReturnStoreId === null && $this->requiresDamagedStore($line)) {
-                        $legacyReturnStoreId = Store::query()->visibleTo($actor)->where('company_id', $sourceSale->store?->company_id)->where('branch_id', $locked->branch_id)->where('type', 'damaged')->where('status', 'active')->value('id');
+                    if ($line->disposition !== 'restock' || ($line->return_store_id !== null && (int) $line->return_store_id !== (int) $sourceSale->store_id)) {
+                        throw ValidationException::withMessages(['return_store' => __('This return requires review before the current direct-restock policy can complete it.')]);
                     }
-                    $returnStore = Store::query()->visibleTo($actor)->whereKey($legacyReturnStoreId ?: $locked->store_id)
+                    $returnStore = Store::query()->visibleTo($actor)->whereKey($sourceSale->store_id)
                         ->where('company_id', $sourceSale->store?->company_id)
                         ->where('branch_id', $locked->branch_id)->where('status', 'active')->lockForUpdate()->first();
                     if ($returnStore === null) {
                         throw ValidationException::withMessages(['return_store' => __('The authorized inventory return location is no longer available.')]);
                     }
-                    if ($this->requiresDamagedStore($line) && $returnStore->type !== 'damaged') {
-                        throw ValidationException::withMessages(['return_store' => __('Damaged or non-saleable items require an active damaged inventory location.')]);
-                    }
                     $unitCost = bccomp((string) $saleLine->quantity, '0', 6) > 0 && $saleLine->consumed_cost !== null
                         ? bcdiv((string) $saleLine->consumed_cost, (string) $saleLine->quantity, 4)
                         : '0.0000';
-                    $movementType = $this->requiresDamagedStore($line) ? 'retail_return_damaged' : 'retail_return';
+                    $movementType = 'retail_return';
                     app(PostInventoryMovement::class)->execute(
                         (int) $line->product_id,
                         (int) $returnStore->id,
@@ -537,11 +539,6 @@ final class RetailReturnAction
         }
 
         return $locked;
-    }
-
-    private function requiresDamagedStore(RetailReturnLine $line): bool
-    {
-        return $line->disposition === 'quarantine' || in_array($line->condition, ['non_sellable', 'damaged', 'manager_review'], true);
     }
 
     private function authorize(User $actor, string $permission): void

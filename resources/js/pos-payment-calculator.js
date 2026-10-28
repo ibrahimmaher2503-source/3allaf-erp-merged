@@ -115,20 +115,19 @@ window.posPaymentCalculator = ({ payable }) => ({
     syncRemainingDefaults() {
         const due = decimalToCents(this.currentPayable()) ?? 0n;
         const parts = [...this.$root.querySelectorAll('[data-payment-part]')];
-        for (const part of parts) {
-            const target = part.querySelector('[data-auto-remaining]');
-            if (!target) continue;
-            let paid = 0n;
-            for (const other of parts) {
-                if (other === part) continue;
-                const cash = other.hasAttribute('data-cash-payment');
-                const value = other.querySelector(cash ? '[data-cash-received]' : '[data-noncash-amount]')?.value;
-                paid += decimalToCents(value) ?? 0n;
-            }
-            const remaining = due > paid ? due - paid : 0n;
-            const next = formatCents(remaining);
-            if (target.value !== next) target.value = next;
+        const part = [...parts].reverse().find((candidate) => candidate.querySelector('[data-auto-remaining]'));
+        if (!part) return;
+        const target = part.querySelector('[data-auto-remaining]');
+        let paid = 0n;
+        for (const other of parts) {
+            if (other === part) continue;
+            const cash = other.hasAttribute('data-cash-payment');
+            const value = other.querySelector(cash ? '[data-cash-received]' : '[data-noncash-amount]')?.value;
+            paid += decimalToCents(value) ?? 0n;
         }
+        const remaining = due > paid ? due - paid : 0n;
+        const next = formatCents(remaining);
+        if (target.value !== next) target.value = next;
     },
     paidAmount() { return formatCents(this.progress().paid); },
     amountRemaining() { return formatCents(this.progress().remaining); },

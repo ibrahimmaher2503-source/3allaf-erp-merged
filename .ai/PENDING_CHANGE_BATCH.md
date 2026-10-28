@@ -1,3 +1,7 @@
+# 2026-10-28 — POS smart split and returns feature branch ready for review
+
+Class D3/I4. `feature/pos-smart-split-and-returns-20261028` from `origin/main` `b7343da`. Adds an unverified return permission/schema path, nullable source line only for unverified return, customer/date lookup indexes, smart split behavior, POS Returns workflow, direct restock, and receipt Code 128. Focused MariaDB 6/6 (42 assertions) and authenticated 1440/390 browser 24/24 passed. Merge and deployment are not authorized. Remaining UAT: decode a physically printed 58mm/80mm barcode with store hardware. Unified POS exchange flow and inspection/quarantine require later scope/owner decision.
+
 # 2026-10-26 — Login V0 batch closed by Production release
 
 | Class | Source | Deployed application | Status |

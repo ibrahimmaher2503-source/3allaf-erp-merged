@@ -67,17 +67,9 @@
                         <option value="gift_card" @selected(old('settlement_type') === 'gift_card')>{{ __('Gift Card') }}</option>
                         <option value="exchange" @selected(old('settlement_type') === 'exchange')>{{ __('Exchange') }}</option>
                     </flux:select>
-                    <flux:select name="condition" label="{{ __('Inspected condition') }}" required x-model="condition" x-on:change="if (condition !== 'sellable') disposition = 'quarantine'">
-                        <option value="">{{ __('Select inspection result') }}</option>
-                        <option value="sellable" @selected(old('condition') === 'sellable')>{{ __('Sellable') }}</option>
-                        <option value="non_sellable" @selected(old('condition') === 'non_sellable')>{{ __('Non-sellable') }}</option>
-                        <option value="damaged" @selected(old('condition') === 'damaged')>{{ __('Damaged') }}</option>
-                        <option value="manager_review" @selected(old('condition') === 'manager_review')>{{ __('Manager review') }}</option>
-                    </flux:select>
-                    <flux:select name="disposition" label="{{ __('Stock disposition') }}" required x-model="disposition">
-                        <option value="restock" x-bind:disabled="condition !== 'sellable'" @selected(old('disposition', 'restock') === 'restock')>{{ __('Restock sellable') }}</option>
-                        <option value="quarantine" @selected(old('disposition') === 'quarantine')>{{ __('Quarantine to the damaged store') }}</option>
-                    </flux:select>
+                    <input type="hidden" name="condition" value="uninspected">
+                    <input type="hidden" name="disposition" value="restock">
+                    <p class="sm:col-span-2 text-sm text-zinc-600 dark:text-zinc-300">{{ __('Confirmed returned products go directly back to the original sale location. Inspection and quarantine are deferred.') }}</p>
                     <flux:textarea name="inspection_notes" label="{{ __('Inspection notes / evidence reference') }}">{{ old('inspection_notes') }}</flux:textarea>
 
                     <fieldset x-show="settlement === 'exchange'" x-bind:disabled="settlement !== 'exchange'" @disabled(old('settlement_type', 'cash_refund') !== 'exchange') x-cloak class="sm:col-span-2 lg:col-span-4 rounded-lg border border-teal-200 p-4 dark:border-teal-900">

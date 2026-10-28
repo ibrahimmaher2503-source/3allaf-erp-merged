@@ -48,9 +48,9 @@ final class Module7ReturnHistoryApprovalTest extends Module7TestCase
         $this->grantPermissions($this->cashier, ['returns.approve', 'returns.complete']);
         self::assertNotSame($this->cashier->id, $this->reviewer->id);
 
-        $data = $this->returnData($this->sale1, inspection: 'damaged', disposition: 'quarantine');
+        $data = $this->returnData($this->sale1, inspection: 'damaged', disposition: 'restock');
         $data['reason'] = 'Damaged package on return';
-        $data['lines'][0]['return_store_id'] = $this->damagedStore->id;
+        $data['lines'][0]['return_store_id'] = $this->store->id;
         $data['lines'][0]['inspection_notes'] = 'Seal was broken at intake';
         $this->actingAs($this->cashier);
         $return = $this->createReturn($this->sale1, $data, $this->cashier);

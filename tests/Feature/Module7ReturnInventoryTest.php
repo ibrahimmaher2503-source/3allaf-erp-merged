@@ -70,12 +70,12 @@ final class Module7ReturnInventoryTest extends Module7TestCase
         self::assertSame(0, RetailReturn::query()->where('source_sale_id', $this->sale2->id)->count());
     }
 
-    public function test_non_sellable_conditions_cannot_be_restocked_and_condition_is_required(): void
+    public function test_quarantine_is_deferred_and_condition_is_required(): void
     {
         foreach ([
-            ['condition' => 'damaged', 'disposition' => 'restock'],
-            ['condition' => 'non_sellable', 'disposition' => 'restock'],
-            ['condition' => 'manager_review', 'disposition' => 'restock'],
+            ['condition' => 'damaged', 'disposition' => 'quarantine'],
+            ['condition' => 'non_sellable', 'disposition' => 'quarantine'],
+            ['condition' => 'manager_review', 'disposition' => 'quarantine'],
         ] as $case) {
             $data = $this->returnData(
                 $this->sale1,
@@ -93,7 +93,7 @@ final class Module7ReturnInventoryTest extends Module7TestCase
         self::assertSame(0, RetailReturn::query()->where('source_sale_id', $this->sale1->id)->count());
     }
 
-    public function test_manager_review_quarantine_posts_only_to_damaged_stock_after_approval(): void
+    public function test_manager_review_condition_restock_posts_to_original_store_after_approval(): void
     {
         $sellingStockBefore = $this->stockOnHand($this->productA->id, $this->store->id);
         $damagedStockBefore = $this->stockOnHand($this->productA->id, $this->damagedStore->id);
@@ -101,7 +101,7 @@ final class Module7ReturnInventoryTest extends Module7TestCase
             $this->sale1,
             quantity: 1,
             inspection: 'manager_review',
-            disposition: 'quarantine',
+            disposition: 'restock',
             settlement: 'original_tender',
         );
 
@@ -118,40 +118,40 @@ final class Module7ReturnInventoryTest extends Module7TestCase
         $this->actingAs($this->reviewer);
         $approved = $action->approve($this->reviewer, $submitted->fresh());
         self::assertSame('approved', $approved->status);
-        $completed = $action->complete($this->reviewer, $approved, 'm7-manager-review-quarantine');
+        $completed = $action->complete($this->reviewer, $approved, 'm7-manager-review-restock');
 
         self::assertSame('completed', $completed->status);
-        self::assertSame($sellingStockBefore, $this->stockOnHand($this->productA->id, $this->store->id));
-        self::assertSame(bcadd($damagedStockBefore, '1', 6), $this->stockOnHand($this->productA->id, $this->damagedStore->id));
+        self::assertSame(bcadd($sellingStockBefore, '1', 6), $this->stockOnHand($this->productA->id, $this->store->id));
+        self::assertSame($damagedStockBefore, $this->stockOnHand($this->productA->id, $this->damagedStore->id));
         $movement = StockMovement::query()->where('source_type', RetailReturn::class)->where('source_id', $completed->id)->sole();
-        self::assertSame('retail_return_damaged', $movement->movement_type);
-        self::assertSame((int) $this->damagedStore->id, (int) $movement->store_id);
+        self::assertSame('retail_return', $movement->movement_type);
+        self::assertSame((int) $this->store->id, (int) $movement->store_id);
     }
 
-    public function test_sellable_damaged_and_non_sellable_returns_only_restore_sellable_units_to_the_selling_store(): void
+    public function test_all_confirmed_return_conditions_restock_the_original_store(): void
     {
         $sellingStockBefore = $this->stockOnHand($this->productA->id, $this->store->id);
         $damagedStockBefore = $this->stockOnHand($this->productA->id, $this->damagedStore->id);
 
         $sellable = $this->completeReturn($this->sale1, 2, 'm7-mixed-sellable');
-        $damaged = $this->completeReturn($this->sale1, 1, 'm7-mixed-damaged', 'damaged', 'quarantine');
-        $nonSellable = $this->completeReturn($this->sale1, 1, 'm7-mixed-non-sellable', 'non_sellable', 'quarantine');
+        $damaged = $this->completeReturn($this->sale1, 1, 'm7-mixed-damaged', 'damaged', 'restock');
+        $nonSellable = $this->completeReturn($this->sale1, 1, 'm7-mixed-non-sellable', 'non_sellable', 'restock');
 
-        self::assertSame(bcadd($sellingStockBefore, '2', 6), $this->stockOnHand($this->productA->id, $this->store->id));
-        self::assertSame(bcadd($damagedStockBefore, '2', 6), $this->stockOnHand($this->productA->id, $this->damagedStore->id));
+        self::assertSame(bcadd($sellingStockBefore, '4', 6), $this->stockOnHand($this->productA->id, $this->store->id));
+        self::assertSame($damagedStockBefore, $this->stockOnHand($this->productA->id, $this->damagedStore->id));
 
         $sellableMovement = StockMovement::query()->where('source_type', RetailReturn::class)->where('source_id', $sellable->id)->sole();
         $damagedMovement = StockMovement::query()->where('source_type', RetailReturn::class)->where('source_id', $damaged->id)->sole();
         $nonSellableMovement = StockMovement::query()->where('source_type', RetailReturn::class)->where('source_id', $nonSellable->id)->sole();
         self::assertSame('retail_return', $sellableMovement->movement_type);
         self::assertSame((int) $this->store->id, (int) $sellableMovement->store_id);
-        self::assertSame('retail_return_damaged', $damagedMovement->movement_type);
-        self::assertSame((int) $this->damagedStore->id, (int) $damagedMovement->store_id);
-        self::assertSame('retail_return_damaged', $nonSellableMovement->movement_type);
-        self::assertSame((int) $this->damagedStore->id, (int) $nonSellableMovement->store_id);
+        self::assertSame('retail_return', $damagedMovement->movement_type);
+        self::assertSame((int) $this->store->id, (int) $damagedMovement->store_id);
+        self::assertSame('retail_return', $nonSellableMovement->movement_type);
+        self::assertSame((int) $this->store->id, (int) $nonSellableMovement->store_id);
     }
 
-    public function test_pos_refund_inspection_starts_unselected_after_sale_lookup(): void
+    public function test_pos_refund_uses_explicit_uninspected_condition_after_sale_lookup(): void
     {
         $lineId = $this->sale1->lines()->firstOrFail()->id;
 
@@ -159,7 +159,7 @@ final class Module7ReturnInventoryTest extends Module7TestCase
             ->test(RefundWizard::class)
             ->set('lookupTerm', $this->sale1->document_number)
             ->call('lookup')
-            ->assertSet('conditions.'.$lineId, '');
+            ->assertSet('conditions.'.$lineId, 'uninspected');
     }
 
     private function completeReturn(
