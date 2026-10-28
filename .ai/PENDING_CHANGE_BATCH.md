@@ -1,6 +1,10 @@
-# 2026-10-28 — POS smart split and returns feature branch ready for review
+# 2026-10-28 — POS smart split and Returns batch closed by Production release
 
-Class D3/I4. `feature/pos-smart-split-and-returns-20261028` from `origin/main` `b7343da`. Adds an unverified return permission/schema path, nullable source line only for unverified return, customer/date lookup indexes, smart split behavior, POS Returns workflow, direct restock, and receipt Code 128. Focused MariaDB 6/6 (42 assertions) and authenticated 1440/390 browser 24/24 passed. Merge and deployment are not authorized. Remaining UAT: decode a physically printed 58mm/80mm barcode with store hardware. Unified POS exchange flow and inspection/quarantine require later scope/owner decision.
+Class D3/I4 source `c66f2c71967f62827e86b36275dd8ca1b18aa03f` merged without squash at `d418ccbf2227957c72238ff612fa7062c42f7be0` and deployed as `/home/rajeh/releases/toyjoy/releases/toyjoy-v0.1.55-pos-smart-returns-d418ccb`. Application release status: LIVE. The one additive migration ran; backup and real-vhost validation passed. No pending application deployment action remains for this batch. Post-deployment physical scanner hardware QA is pending by owner decision and is not a deployment blocker. Unified POS exchange UI and damaged/inspection handling remain separate future scope.
+
+# Historical feature handoff — POS smart split and returns ready for review
+
+Class D3/I4. `feature/pos-smart-split-and-returns-20261028` from `origin/main` `b7343da`. Adds an unverified return permission/schema path, nullable source line only for unverified return, customer/date lookup indexes, smart split behavior, POS Returns workflow, direct restock, and receipt Code 128. Focused MariaDB 6/6 (42 assertions) and authenticated 1440/390 browser 24/24 passed. At this feature-branch handoff, merge and deployment were not yet authorized. Remaining UAT: decode a physically printed 58mm/80mm barcode with store hardware. Unified POS exchange flow and inspection/quarantine require later scope/owner decision.
 
 # 2026-10-26 — Login V0 batch closed by Production release
 

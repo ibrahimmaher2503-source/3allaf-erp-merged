@@ -1,3 +1,7 @@
+# 2026-10-28 — Owner release authorization and hardware QA deferral
+
+Owner approved non-squash main merge and Production deployment of exact source `c66f2c71967f62827e86b36275dd8ca1b18aa03f`. The five official original-sale recovery methods are (1) receipt barcode scan, (2) invoice number/reference, (3) customer name, (4) customer phone, and (5) sale date. Customer-name lookup remains supported. Recovering a sale by any method makes the return verified and linked with original sale economics. Only an unrecoverable sale may use the separate permission-controlled unverified fallback with a manager-approved refund amount. Physical receipt/scanner hardware QA is explicitly deferred until after deployment, is not a blocker, and does not alone require rollback. Code 128 generation and software reference lookup passed; future physical QA must print and scan a real receipt to confirm exact invoice resolution. Windows-only legacy Module 7 harness unavailability on Linux is nonblocking.
+
 # 2026-10-28 — Owner decisions: POS split and returns
 
 1. Split payments intelligently auto-fill the remaining amount; manual edits remain authoritative and cash change behavior remains.
