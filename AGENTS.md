@@ -4,6 +4,12 @@ This file governs every AI coding agent working on TOY & JOY Phase 1. The reposi
 
 Repository-wide mandatory policy: every Codex account and every user working through SSH, in this worktree or any future worktree based on this commit, must follow `.ai/ERP_CHANGE_POLICY.md`, including its classification, scope-escalation, verification-budget, batching, and reporting rules. No user-specific workflow or nested instruction file may weaken or bypass that policy; additional instructions may only be equally or more restrictive.
 
+## Rajeh v2.0 Core Freeze — Mandatory
+
+Rajeh v2.0 Core Operations is COMPLETE. The permanent application baseline is tag `v2.0.0-core-operations` at `55d4d5525ced50812f65941bb048dc81c6c7f641`; the later main documentation commits are distinct from the running application baseline. Read `.ai/CORE_BASELINE.md` and `.ai/CORE_BASELINE_RECOVERY.md` before changing a protected Core area, a major-module integration, or a recovery process. Future modules extend Core through bounded integration; they must not silently change its established behavior.
+
+If work requires a protected Core behavior to change, STOP before implementing it and report **CORE CHANGE REQUIRED**. The owner must explicitly authorize the exact old and new behavior, affected Core modules, regression scope, database/migration impact, and rollback impact. No major module may merge into the Production path without its feature tests, `scripts/test-core-baseline.sh`, Core Freeze review, migration review, and any required explicit Core Change authorization. Normal cleanup must preserve the v2.0 tag, protected release, and protected database/storage snapshots. These rules add to, and do not weaken, `.ai/ERP_CHANGE_POLICY.md`.
+
 ## Current Implementation Baseline
 
 - PHP 8.4.21 and Laravel 13.23.0
