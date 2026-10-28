@@ -33,6 +33,6 @@
 | Backup protection marker | `/home/rajeh/shared/toyjoy/backups/DO_NOT_DELETE_RAJEH_V2_CORE_BASELINE` |
 | Freeze date | 2026-10-28 UTC; database snapshot `18:31:59Z`, storage snapshot `18:33:51Z` |
 
-The formal v2.0.0 milestone supersedes the older `v1.22` footer label. The immutable running release remains unchanged; the canonical PHP footer version can be updated in a later reviewed runtime release. The active application and tag point to the same application SHA, while current main may advance through documentation-only commits.
+The formal v2.0.0 milestone superseded the older `v1.22` footer label. The protected baseline release and tag remain on `55d4d5525ced50812f65941bb048dc81c6c7f641`. A separately authorized post-baseline metadata release `262b298d122bbc0e13c44112fec6d9530a315369` now displays `v2.0.0` through the canonical PHP version source. This later Production SHA is distinct from the frozen application baseline SHA.
 
 This document contains no passwords, API keys, tokens, secret environment values, or database credentials. The named snapshots and release are protected recovery assets. Full historical data restoration requires explicit owner authorization; see [recovery](CORE_BASELINE_RECOVERY.md).

@@ -60,4 +60,4 @@ Normal automated or manual cleanup must preserve the annotated Git tag, the tagg
 
 ## Version presentation boundary
 
-Rajeh v2.0.0 is the formal version from this freeze. The current immutable runtime still derives its footer label from `App\Support\ApplicationVersion::RELEASE = '0.1.22-cost-optional'`, rendered as `v1.22`. Changing that PHP constant would change the tagged runtime source and require a new release, so this documentation-only freeze leaves the running code untouched. Update the one canonical version mechanism consistently in a later explicitly reviewed runtime release; do not scatter display strings.
+Rajeh v2.0.0 is the formal version from this freeze. At freeze time, the protected immutable baseline release displayed `v1.22` through `App\Support\ApplicationVersion::RELEASE`. A separately authorized post-baseline metadata release (`262b298d122bbc0e13c44112fec6d9530a315369`) changed that one canonical value to `2.0.0`, displaying `v2.0.0`. The baseline tag and recovery release remain unchanged.
