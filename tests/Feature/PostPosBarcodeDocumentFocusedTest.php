@@ -13,9 +13,11 @@ use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\BarcodeDocumentSource;
+use App\Modules\Pricing\Services\BarcodeLabelService;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -69,6 +71,38 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
         self::assertSame((string) app(EffectivePriceResolver::class)->resolve($this->product->id, $this->selling->id)?->amount, $prepared['prices'][$this->product->id]);
         self::assertSame('175.000', $prepared['prices'][$this->product->id]);
         self::assertNotSame('12', $prepared['prices'][$this->product->id]);
+    }
+
+    public function test_label_preview_and_print_resolve_the_selected_store_price_each_time(): void
+    {
+        Gate::before(static fn (): bool => true);
+        $otherSelling = Store::factory()->create([
+            'company_id' => $this->selling->company_id,
+            'branch_id' => $this->otherDestination->branch_id,
+            'type' => 'selling',
+        ]);
+        $this->product->update(['sale_price' => '400']);
+        PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
+            'list_number' => 0, 'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price',
+            'percentage_increase' => '0', 'status' => 'active',
+        ]);
+        $this->destinationPrice('460', $this->selling);
+        $this->destinationPrice('520', $otherSelling);
+        $service = app(BarcodeLabelService::class);
+        $rows = [['product_id' => $this->product->id, 'barcode_id' => $this->product->barcodes->first()->id, 'copies' => 1]];
+        $profile = $service->profile($this->actor);
+
+        self::assertSame('460.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id, [$this->product->id => '999'])['labels'][0]['price']);
+        self::assertSame('520.000', (string) $service->compose($this->actor, $rows, $profile, $otherSelling->id)['labels'][0]['price']);
+        $this->actingAs($this->actor)->get(route('pricing.labels.prices', ['store_id' => $otherSelling->id, 'product_ids' => [$this->product->id]]))
+            ->assertOk()->assertJsonPath('prices.'.$this->product->id, '520.000');
+        $fallbackSelling = Store::factory()->create([
+            'company_id' => $this->selling->company_id,
+            'branch_id' => $this->destination->branch_id,
+            'type' => 'selling',
+        ]);
+        self::assertSame('400.000', (string) $service->compose($this->actor, $rows, $profile, $fallbackSelling->id)['labels'][0]['price']);
     }
 
     public function test_multi_destination_transfer_import_is_isolated_to_selected_allocation(): void

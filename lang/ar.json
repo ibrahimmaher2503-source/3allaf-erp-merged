@@ -5398,8 +5398,6 @@
     ,"Import template": "نموذج الاستيراد"
     ,"An international barcode is required.": "الباركود الدولي مطلوب."
     ,"The transfer changed during review. Reload the review before confirming.": "تغيّر التحويل أثناء المراجعة. أعد تحميل صفحة المراجعة قبل التأكيد."
-    ,"International barcodes must be a valid GTIN-8, UPC-12, EAN-13, or GTIN-14 number.": "يجب أن يكون الباركود الدولي رقم GTIN-8 أو UPC-12 أو EAN-13 أو GTIN-14 صالحًا."
-    ,"The international barcode check digit is invalid.": "رقم التحقق في الباركود الدولي غير صالح."
     ,"Received quantity must be between zero and the allocated quantity.": "يجب أن تكون الكمية المستلمة بين صفر والكمية المخصصة لهذه الوجهة."
     ,"The Arabic product name is required for the product card.": "اسم الصنف بالعربية مطلوب لكارت الصنف."
     ,"Approve a dedicated Opening Inventory document, or record the authorized audited decision to start without opening inventory. Unit cost comes from Product Cards and posting uses the inventory ledger.": "اعتمد مستند رصيد افتتاحي مستقلًا، أو سجّل القرار المصرح والمدقق للبدء دون مخزون افتتاحي. تأتي تكلفة الوحدة من كروت الأصناف ويستخدم الترحيل سجل المخزون."
@@ -6560,5 +6558,6 @@
     "The operational return stock location is unavailable.": "موقع مخزون المرتجع التشغيلي غير متاح.",
     "The return note is too long.": "ملاحظة المرتجع طويلة جداً.",
     "This return submission token was already used with different details.": "استُخدم رمز إرسال المرتجع هذا بتفاصيل مختلفة.",
-    "This sale is no longer available in your authorized scope.": "لم يعد هذا البيع متاحاً ضمن نطاق صلاحيتك."
+    "This sale is no longer available in your authorized scope.": "لم يعد هذا البيع متاحاً ضمن نطاق صلاحيتك.",
+    "International barcode must contain digits only.": "يجب أن يحتوي الباركود الدولي على أرقام فقط."
 }

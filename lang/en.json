@@ -3218,5 +3218,6 @@
     "Numeric keypad": "Numeric keypad",
     "Backspace": "Backspace",
     "Back to order": "Back to order",
-    "Edit item discounts in cart": "Edit item discounts in cart"
+    "Edit item discounts in cart": "Edit item discounts in cart",
+    "International barcode must contain digits only.": "International barcode must contain digits only."
 }

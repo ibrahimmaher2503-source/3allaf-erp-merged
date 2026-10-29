@@ -414,3 +414,6 @@ Scope:
 - stocktake-specific `.xlsx` / `.csv` quantity import
 - no migrations
 - no stock posting during import
+# 2026-10-29 — Rajeh v2 owner-authorized Core polish (verified branch, unmerged)
+
+Branch `feature/v2-products-transfers-inventory-pos-polish-20261029` starts at current main `66fe6cd`; D3 protected-Core review. Owner authorization is limited to the nine product barcode, label context, transfer, receiving, Inventory Addition/Deduction, and POS cart areas stated in the batch. The branch remains unmerged and undeployed. Existing canonical pricing, stock movements, transfer dispatch/receipt, document sequence allocation, and POS payment posting are reused; no migration has been introduced. Focused tests, the Core regression gate, and authenticated browser QA passed; exact evidence is in `.ai/TEST_RESULTS.md`.

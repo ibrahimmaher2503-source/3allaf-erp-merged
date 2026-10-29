@@ -149,7 +149,7 @@ new #[Title('Product Card')] class extends Component
             $needsBarcode = ! $saveAsDraft && ($this->productId === null || ! Product::query()->whereKey($this->productId)->whereHas('barcodes', fn ($query) => $query->where('status', 'active'))->exists());
             $validated = $this->validate([
                 ...$this->rules($saveAsDraft),
-                'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^\S+$/', Rule::unique('barcodes', 'barcode')],
+                'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^[0-9]+$/D', Rule::unique('barcodes', 'barcode')],
             ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
             $validated['_save_as_draft'] = $saveAsDraft;
             if (! $saveAsDraft && blank($validated['item_code'])) {
@@ -412,6 +412,7 @@ new #[Title('Product Card')] class extends Component
             'in' => 'القيمة المختارة في حقل :attribute غير صحيحة.',
         ] : [];
         $messages['productForm.preferred_supplier_id.required'] = __('Select an active supplier to generate the product code.');
+        $messages['supplierBarcode.regex'] = __('International barcode must contain digits only.');
 
         return $messages;
     }
@@ -561,7 +562,7 @@ new #[Title('Product Card')] class extends Component
                 @if ($productForm['barcode_registration_type'] === 'international')
                     @if ($activeBarcodes->isEmpty())
                         <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
-                        <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل رقمًا من 8 أو 12 أو 13 أو 14 خانة مع رقم تحقق صالح. تُحفظ الأصفار البادئة.' : 'Enter 8, 12, 13, or 14 digits with a valid check digit. Leading zeros are preserved.' }}</p>
+                        <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل أرقامًا فقط. تُحفظ الأصفار البادئة.' : 'Enter digits only. Leading zeros are preserved.' }}</p>
                     @endif
                 @else
                     <x-context-help :title="__('Local product code help')" :label="__('Open contextual help')"><p>{{ __('The local product code uses the four-digit identity from a canonical SUP-#### supplier code, or the first four digits of a numeric supplier code, followed by a hyphen and the shared six-digit prefix sequence. Leading zeros are preserved, and the international barcode remains a separate identity.') }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
