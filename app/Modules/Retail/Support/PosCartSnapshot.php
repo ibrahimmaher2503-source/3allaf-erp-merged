@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Retail\Support;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\TaxSetting;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
 use App\Modules\Retail\Services\PosCalculationService;
+use App\Support\UserSafeError;
 use InvalidArgumentException;
 
 final class PosCartSnapshot
@@ -35,6 +37,7 @@ final class PosCartSnapshot
         $ids = $cart->pluck('product_id')->map(fn ($id): int => (int) $id)->unique()->values();
         $products = Product::query()->with(['parent.images.attachment', 'images.attachment', 'variantValues.group', 'variantValues.value'])->whereIn('id', $ids)->get()->keyBy('id');
         $prices = $this->prices->resolveForStore($ids->all(), (int) $store->id);
+        $balances = StockBalance::query()->where('store_id', $store->id)->whereIn('product_id', $ids)->get()->keyBy('product_id');
         $lines = [];
         $error = null;
         foreach ($cart as $cartLine) {
@@ -45,7 +48,9 @@ final class PosCartSnapshot
 
                 continue;
             }
-            $lines[] = ['product' => $product, 'quantity' => (string) $cartLine['quantity'], 'unit_price' => (string) ($cartLine['open_price_amount'] ?? $price->amount), 'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'), 'price' => $price, 'cart' => $cartLine];
+            $balance = $balances->get($product->id);
+            $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
+            $lines[] = ['product' => $product, 'quantity' => (string) $cartLine['quantity'], 'available_quantity' => $available, 'unit_price' => (string) ($cartLine['open_price_amount'] ?? $price->amount), 'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'), 'price' => $price, 'cart' => $cartLine];
         }
         $taxApplicable = (bool) request()->session()->get('pos.tax_applicable', false);
         $effectiveTaxes = TaxSetting::query()->where('company_id', $store->company_id)->where('status', 'active')->where('is_default', true)->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>', now()))->limit(2)->get();
@@ -57,7 +62,7 @@ final class PosCartSnapshot
             $preview = $lines === [] ? null : $this->calculator->calculate(array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines), '0.00', $taxApplicable ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)] : ['applicable' => false]);
         } catch (InvalidArgumentException $exception) {
             $preview = null;
-            $error = \App\Support\UserSafeError::message($exception);
+            $error = UserSafeError::message($exception);
         }
 
         return compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting');

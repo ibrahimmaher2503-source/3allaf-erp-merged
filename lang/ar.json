@@ -6559,5 +6559,7 @@
     "The return note is too long.": "ملاحظة المرتجع طويلة جداً.",
     "This return submission token was already used with different details.": "استُخدم رمز إرسال المرتجع هذا بتفاصيل مختلفة.",
     "This sale is no longer available in your authorized scope.": "لم يعد هذا البيع متاحاً ضمن نطاق صلاحيتك.",
-    "International barcode must contain digits only.": "يجب أن يحتوي الباركود الدولي على أرقام فقط."
+    "International barcode must contain digits only.": "يجب أن يحتوي الباركود الدولي على أرقام فقط.",
+    "Only :quantity units of this product are available.": "الكمية المتاحة من هذا المنتج هي :quantity فقط.",
+    "All available units added": "تمت إضافة كامل الكمية المتاحة"
 }

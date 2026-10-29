@@ -37,6 +37,7 @@ use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
+use App\Support\ProductQuantity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -96,6 +97,54 @@ final class Module5PosQaTest extends TestCase
         self::assertTrue($component->getErrorBag()->has('cart'));
         self::assertSame('2.000000', session('pos.cart.0.quantity'));
         self::assertSame('2.000000', StockBalance::query()->firstOrFail()->on_hand);
+    }
+
+    public function test_repeated_card_adds_render_canonical_quantity_and_limit_checkout_line(): void
+    {
+        $this->product->update(['sale_price' => '650']);
+        StockBalance::query()->where('product_id', $this->product->id)->update(['on_hand' => '4', 'total_value' => '40']);
+        $cart = app(PosCartAction::class);
+        $component = new Cart;
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        $cart->quantity(request(), $this->cashier, $this->product->id, '1');
+
+        for ($click = 2; $click <= 4; $click++) {
+            $cart->add(request(), $this->cashier, $this->product->id, '1');
+            self::assertSame((string) $click, ProductQuantity::format(session('pos.cart.0.quantity')));
+        }
+
+        $snapshot = app(PosCartSnapshot::class)->build($context);
+        self::assertCount(1, $snapshot['lines']);
+        self::assertSame('4', ProductQuantity::format($snapshot['lines'][0]['quantity']));
+        self::assertSame('2600.00', $snapshot['preview']['subtotal']);
+        self::assertSame('0.00', $snapshot['preview']['discount_total']);
+        self::assertSame('0.00', $snapshot['preview']['tax_total']);
+        self::assertSame('2600.00', $snapshot['preview']['total']);
+        self::assertSame('4', ProductQuantity::format(app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context)->lines()->firstOrFail()->quantity));
+
+        self::assertSame('3', $component->quantity($this->product->id, '3', $cart));
+        self::assertSame('1950.00', app(PosCartSnapshot::class)->build($context)['preview']['total']);
+
+        StockBalance::query()->where('product_id', $this->product->id)->update(['on_hand' => '2', 'total_value' => '20']);
+        self::assertSame('2', $component->quantity($this->product->id, '2', $cart));
+        for ($click = 0; $click < 5; $click++) {
+            try {
+                $cart->add(request(), $this->cashier, $this->product->id, '1');
+            } catch (\InvalidArgumentException $exception) {
+                self::assertSame('Only 2 units of this product are available.', $exception->getMessage());
+            }
+        }
+        self::assertSame('2', ProductQuantity::format(session('pos.cart.0.quantity')));
+        self::assertSame('1300.00', app(PosCartSnapshot::class)->build($context)['preview']['total']);
+        self::assertSame('2', ProductQuantity::format(app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context)->lines()->firstOrFail()->quantity));
+
+        self::assertSame('2', $component->quantity($this->product->id, '3', $cart));
+        self::assertSame('Only 2 units of this product are available.', $component->getErrorBag()->first('cart'));
+        self::assertSame('2', ProductQuantity::format(session('pos.cart.0.quantity')));
+
+        self::assertSame('1', $component->quantity($this->product->id, '1', $cart));
+        $cart->add(request(), $this->cashier, $this->product->id, '1');
+        self::assertSame('2', ProductQuantity::format(session('pos.cart.0.quantity')));
     }
 
     public function test_card_checkout_rejects_wrong_allocations_and_posts_once(): void

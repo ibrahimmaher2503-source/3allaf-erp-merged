@@ -9,6 +9,8 @@ use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
+use App\Support\ProductQuantity;
+use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\On;
@@ -24,17 +26,22 @@ final class Cart extends Component
     #[On('pos-cart-updated')]
     public function refreshCart(): void {}
 
-    public function quantity(int $productId, string $quantity, PosCartAction $cart): void
+    public function quantity(int $productId, string $quantity, PosCartAction $cart): string
     {
         Gate::authorize('pos_sales.create');
+        $this->resetErrorBag('cart');
         try {
             /** @var User $user */
             $user = auth()->user();
             $cart->quantity(request(), $user, $productId, $quantity);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
-            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+            $this->addError('cart', UserSafeError::message($exception));
         }
+
+        $line = collect(request()->session()->get('pos.cart', []))->first(fn (array $item): bool => (int) ($item['product_id'] ?? 0) === $productId);
+
+        return ProductQuantity::format((string) ($line['quantity'] ?? '1'));
     }
 
     public function remove(int $productId, PosCartAction $cart): void
@@ -46,7 +53,7 @@ final class Cart extends Component
             $cart->remove(request(), $user, $productId);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
-            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+            $this->addError('cart', UserSafeError::message($exception));
         }
     }
 
@@ -59,7 +66,7 @@ final class Cart extends Component
             $cart->clear(request(), $user);
             $this->dispatch('pos-cart-updated');
         } catch (\Throwable $exception) {
-            $this->addError('cart', \App\Support\UserSafeError::message($exception));
+            $this->addError('cart', UserSafeError::message($exception));
         }
     }
 
