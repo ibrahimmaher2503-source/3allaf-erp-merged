@@ -417,3 +417,7 @@ Scope:
 # 2026-10-29 — Rajeh v2 owner-authorized Core polish (verified branch, unmerged)
 
 Branch `feature/v2-products-transfers-inventory-pos-polish-20261029` starts at current main `66fe6cd`; D3 protected-Core review. Owner authorization is limited to the nine product barcode, label context, transfer, receiving, Inventory Addition/Deduction, and POS cart areas stated in the batch. The branch remains unmerged and undeployed. Existing canonical pricing, stock movements, transfer dispatch/receipt, document sequence allocation, and POS payment posting are reused; no migration has been introduced. Focused tests, the Core regression gate, and authenticated browser QA passed; exact evidence is in `.ai/TEST_RESULTS.md`.
+
+# 2026-10-29 — Rajeh v2 Core polish batch CLOSED / deployed
+
+The previously verified branch `feature/v2-products-transfers-inventory-pos-polish-20261029` (source `7546dbc`) was merged without squash as `6125482` and deployed from that exact application SHA. This D3 batch is no longer pending. No schema migration was added or executed. Production release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-post-core-polish-6125482`. Physical scanner and real thermal printer QA are deferred by explicit owner decision and remain post-deployment work.

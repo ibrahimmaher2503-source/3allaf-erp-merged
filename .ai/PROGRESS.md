@@ -835,3 +835,7 @@ Owner-authorized full test-data reset completed against the existing Production 
 # 2026-10-29 — Rajeh v2 Core polish branch verified, unmerged
 
 The nine owner-authorized areas are implemented on `feature/v2-products-transfers-inventory-pos-polish-20261029` from current main `66fe6cd`. Existing document-sequence tables support separate Addition (`IAD`) and Deduction (`IDD`) counters without migration. Focused database tests, the Core regression gate, and authenticated 1440/390 QA passed. The branch is not merged or deployed.
+
+# 2026-10-29 — Rajeh v2 Core polish deployed
+
+The owner-authorized D3 batch from exact source `7546dbc` was merged without squash into unchanged main `66fe6cd` as application SHA `6125482` and deployed to `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-post-core-polish-6125482` from previous `262b298` display release. Merged-main focused QA 42/306 and Rajeh v2 Core gate 21/250 plus payment JS passed. PHP syntax, Blade, Pint, Vite build, candidate real-vhost and public smoke passed; no migration added, pending, or executed. Atomic active-link switch and mandatory PHP 8.5 FPM reload passed. No rollback. Physical scanner and thermal printer QA remain pending by owner decision. No business milestone or Phase Gate is silently advanced.
