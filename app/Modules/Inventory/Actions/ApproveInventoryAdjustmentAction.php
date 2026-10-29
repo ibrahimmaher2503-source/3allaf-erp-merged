@@ -29,16 +29,17 @@ final class ApproveInventoryAdjustmentAction
             if ($adjustment->status === 'approved') {
                 return $adjustment->fresh(['store', 'lines.product']);
             }
-            if ($adjustment->status !== 'submitted') {
+            $directDocument = in_array($adjustment->adjustment_type, ['entry', 'exit'], true) && $adjustment->status === 'draft';
+            if (! $directDocument && $adjustment->status !== 'submitted') {
                 throw new InvalidArgumentException(__('Only submitted adjustments can be approved.'));
             }
-            if ($adjustment->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
+            if (! $directDocument && $adjustment->created_by === Auth::id() && ! Auth::user()?->canBypassApproval()) {
                 throw new InvalidArgumentException(__('The adjustment creator cannot approve the same adjustment.'));
             }
             if ($adjustment->allow_negative) {
                 Gate::authorize('inventory_stock_card.override');
             }
-            $approval = ApprovalRecord::query()
+            $approval = $directDocument ? null : ApprovalRecord::query()
                 ->where('source_type', 'inventory_adjustments')
                 ->where('source_id', (string) $adjustment->id)
                 ->where('requested_action', 'approve')
@@ -54,8 +55,10 @@ final class ApproveInventoryAdjustmentAction
             }
             $before = $adjustment->only(['status', 'lock_version']);
             $adjustment->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now(), 'lock_version' => $adjustment->lock_version + 1]);
-            app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Inventory adjustment and stock movements approved.'));
-            app(RecordAuditEvent::class)->execute('inventory', 'approve_inventory_adjustment', $adjustment, $before, $adjustment->only(['status', 'approved_by', 'approved_at', 'lock_version']), branchId: $adjustment->store->branch_id, storeId: $adjustment->store_id, reasonCode: $adjustment->reason_code, reasonText: $adjustment->reason_notes, metadata: ['approval_record_id' => $approval->id]);
+            if ($approval !== null) {
+                app(ApproveRequest::class)->execute($approval, (string) $before['lock_version'], decisionNote: __('Inventory adjustment and stock movements approved.'));
+            }
+            app(RecordAuditEvent::class)->execute('inventory', 'approve_inventory_adjustment', $adjustment, $before, $adjustment->only(['status', 'approved_by', 'approved_at', 'lock_version']), branchId: $adjustment->store->branch_id, storeId: $adjustment->store_id, reasonCode: $adjustment->reason_code, reasonText: $adjustment->reason_notes, metadata: ['approval_record_id' => $approval?->id, 'direct_posting' => $directDocument]);
 
             return $adjustment->fresh(['store', 'lines.product']);
         });

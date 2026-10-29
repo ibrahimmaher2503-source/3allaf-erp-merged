@@ -6,8 +6,10 @@ namespace Tests\Feature\QA;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Actions\ApproveInventoryAdjustmentAction;
+use App\Modules\Inventory\Actions\ReverseInventoryAdjustmentAction;
 use App\Modules\Inventory\Actions\SaveInventoryAdjustmentAction;
-use App\Modules\Inventory\Actions\SubmitInventoryAdjustmentAction;
+use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
@@ -24,8 +26,10 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
     {
         $this->grantPermissions(
             'inventory_stock_card.create',
+            'inventory_stock_card.view',
             'inventory_stock_card.submit',
             'inventory_stock_card.approve',
+            'inventory_stock_card.reverse',
         );
         $actor = User::factory()->create();
         $actor->forceFill(['status' => 'active', 'is_super_admin' => true])->save();
@@ -49,7 +53,27 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
             [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
         );
 
-        app(SubmitInventoryAdjustmentAction::class)->execute($adjustment->id);
+        $this->withoutVite()->get(route('inventory.additions'))->assertOk()
+            ->assertSee('Inventory addition')->assertDontSee('Filter inventory')->assertDontSee('id="adjustment-type"', false);
+        $this->get(route('inventory.deductions'))->assertOk()
+            ->assertSee('Inventory deduction')->assertDontSee('Filter inventory');
+
+        app(ApproveInventoryAdjustmentAction::class)->execute($adjustment->id);
+        self::assertSame('approved', $adjustment->fresh()->status);
+        self::assertSame('1.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
+        $deduction = app(SaveInventoryAdjustmentAction::class)->execute(
+            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'qa_scope'],
+            [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
+        );
+        self::assertStringContainsString('-IAD-', $adjustment->adjustment_number);
+        self::assertStringContainsString('-IDD-', $deduction->adjustment_number);
+        self::assertStringEndsWith('000001', $adjustment->adjustment_number);
+        self::assertStringEndsWith('000001', $deduction->adjustment_number);
+        app(ApproveInventoryAdjustmentAction::class)->execute($deduction->id);
+        self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
+        $reversal = app(ReverseInventoryAdjustmentAction::class)->execute($deduction->id, 'QA correction');
+        self::assertSame($deduction->id, (int) $reversal->reversal_of_id);
+        self::assertSame('1.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
 
         $event = AuditLog::query()
             ->where('event', 'approve_inventory_adjustment')

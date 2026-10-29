@@ -220,6 +220,10 @@ final class CreateStockTransferDraftAction
             if (bccomp($allocatedTotal, $quantity, 6) > 0) {
                 throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
             }
+            $available = bcsub((string) ($balance?->on_hand ?? '0'), (string) ($balance?->reserved ?? '0'), 6);
+            if (bccomp($allocatedTotal, $available, 6) > 0) {
+                throw new InvalidArgumentException(__('The distributed quantity cannot exceed the available source quantity.'));
+            }
             $normalized[$productId] = [
                 'product_id' => $productId,
                 'quantity_requested' => $quantity,

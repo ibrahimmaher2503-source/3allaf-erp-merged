@@ -87,6 +87,9 @@ final class CheckoutPanel extends Component
         if (! in_array($mode, ['cash', 'card', 'split', 'other'], true)) {
             return;
         }
+        if ($mode === 'cash' && ! PaymentMethod::query()->where('status', 'active')->get()->contains(fn (PaymentMethod $method): bool => $method->isCash())) {
+            $mode = 'card';
+        }
         $this->chooseMode($mode, $orders, $contexts);
         $this->dispatch('open-pos-checkout');
     }

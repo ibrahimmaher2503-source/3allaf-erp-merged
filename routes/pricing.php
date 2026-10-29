@@ -8,6 +8,7 @@ use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\BarcodeDocumentSource;
 use App\Modules\Pricing\Services\BarcodeLabelService;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -87,6 +88,23 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         ]);
     })
         ->name('pricing.labels');
+
+    $router->get('pricing/labels/prices', function () {
+        abort_unless(Gate::allows('pricing_labels.view') || Gate::allows('purchase_invoices.print_labels'), 403);
+        $actor = request()->user();
+        abort_unless($actor instanceof User, 403);
+        $data = request()->validate(['store_id' => ['required', 'integer'], 'product_ids' => ['required', 'array', 'max:100'], 'product_ids.*' => ['required', 'integer']]);
+        if (! Gate::allows('pricing_labels.view')) {
+            $invoiceContext = session('barcode_label_invoice_context');
+            abort_unless(is_array($invoiceContext)
+                && (int) $invoiceContext['store_id'] === (int) $data['store_id']
+                && collect($data['product_ids'])->every(fn ($id) => in_array((int) $id, array_map('intval', $invoiceContext['product_ids']), true)), 403);
+        }
+        $store = Store::query()->visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail((int) $data['store_id']);
+        $prices = app(EffectivePriceResolver::class)->resolveForStore($data['product_ids'], $store->id);
+
+        return response()->json(['prices' => $prices->mapWithKeys(fn ($price, $productId): array => [$productId => (string) $price->amount])->all()]);
+    })->name('pricing.labels.prices');
 
     $router->get('pricing/labels/search', function () {
         Gate::authorize('pricing_labels.view');

@@ -19,6 +19,7 @@ use App\Modules\Platform\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -156,7 +157,7 @@ final class ProductPreferredSupplierFormTest extends TestCase
         self::assertSame(3, AuditLog::query()->where('event', 'change_product_supplier_preference')->count());
     }
 
-    public function test_international_barcode_validation_reports_duplicate_format_and_check_digit_reasons(): void
+    public function test_international_barcode_validation_reports_duplicate_and_non_numeric_reasons(): void
     {
         Company::factory()->create();
         $category = Category::factory()->create();
@@ -175,8 +176,8 @@ final class ProductPreferredSupplierFormTest extends TestCase
 
         foreach ([
             ['6291234500013', 'This barcode is already assigned and cannot be silently reassigned.'],
-            ['ABC123', 'International barcodes must be a valid GTIN-8, UPC-12, EAN-13, or GTIN-14 number.'],
-            ['6291234500012', 'The international barcode check digit is invalid.'],
+            ['ABC123', 'International barcode must contain digits only.'],
+            ['12A3', 'International barcode must contain digits only.'],
         ] as [$barcode, $message]) {
             $component = Livewire::actingAs($actor)
                 ->test('catalog::products')
@@ -200,10 +201,10 @@ final class ProductPreferredSupplierFormTest extends TestCase
             ->set('productForm.model_number', 'QA-BARCODE-'.Str::upper(Str::random(8)))
             ->set('productForm.category_id', (string) $category->id)
             ->set('productForm.sale_price', '25.00')
-            ->set('supplierBarcode', '6291234500014')
+            ->set('supplierBarcode', '629123450001A')
             ->call('save')
             ->assertHasErrors('supplierBarcode')
-            ->assertSee('The international barcode check digit is invalid.');
+            ->assertSee('International barcode must contain digits only.');
 
         self::assertSame($beforeProductCount, Product::query()->count());
     }
@@ -225,6 +226,23 @@ final class ProductPreferredSupplierFormTest extends TestCase
             'source' => 'international',
             'status' => 'active',
         ]);
+        Livewire::actingAs($actor)->test('catalog::products')->set('search', '00012345600012')->assertSee($product->name_en);
+    }
+
+    public function test_arbitrary_numeric_barcode_lengths_persist_and_duplicate_or_alpha_values_are_rejected(): void
+    {
+        Company::factory()->create();
+        $category = Category::factory()->create();
+        $actor = $this->createCatalogEditor();
+        $this->actingAs($actor);
+        $product = Product::factory()->for($category)->create();
+        $action = app(AddBarcodeAction::class);
+        foreach (['123', '9434556010', '98765432101234567890', '00000123'] as $value) {
+            self::assertSame($value, $action->addSupplierBarcode($product->id, $value)->fresh()->barcode);
+        }
+        self::assertThrows(fn () => $action->addSupplierBarcode($product->id, '123'), InvalidArgumentException::class);
+        self::assertThrows(fn () => $action->addSupplierBarcode($product->id, '12A3'), InvalidArgumentException::class);
+        self::assertThrows(fn () => $action->addSupplierBarcode($product->id, 'ABC123'), InvalidArgumentException::class);
     }
 
     private function createCatalogEditor(): User

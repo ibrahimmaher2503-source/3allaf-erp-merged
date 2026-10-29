@@ -40,46 +40,31 @@ final class M52ProductCardsOpeningInventoryTest extends TestCase
         return file_get_contents(dirname(__DIR__, 2).'/'.$path);
     }
 
-    public function test_international_gtin_preserves_leading_zero_and_validates_check_digit(): void
+    public function test_international_barcode_accepts_arbitrary_numeric_strings_and_preserves_leading_zeros(): void
     {
         $policy = new ProductBarcodePolicy;
-        self::assertSame('01234565', $policy->international('01234565'));
-        $this->expectException(InvalidArgumentException::class);
-        $policy->international('01234564');
+        foreach (['123', '9434556010', '000123456789', '98765432101234567890', '01234564'] as $value) {
+            self::assertSame($value, $policy->international($value));
+        }
     }
 
-    public function test_all_supported_international_lengths_and_arabic_errors(): void
+    public function test_international_barcode_rejects_letters_in_english_and_arabic(): void
     {
         $policy = new ProductBarcodePolicy;
-        foreach (['96385074', '036000291452', '4006381333931', '00012345600012'] as $valid) {
-            self::assertSame($valid, $policy->international('  '.$valid.'  '));
-            $invalid = substr($valid, 0, -1).((int) substr($valid, -1) + 1) % 10;
+        foreach (['ABC123', '12A3'] as $invalid) {
             try {
                 $policy->international($invalid);
-                self::fail('Invalid check digit was accepted.');
+                self::fail('Non-numeric barcode was accepted.');
             } catch (InvalidArgumentException $exception) {
-                self::assertSame('The international barcode check digit is invalid.', $exception->getMessage());
+                self::assertSame('International barcode must contain digits only.', $exception->getMessage());
             }
-        }
-        try {
-            $policy->international('999700333187447');
-            self::fail('Unsupported 15-digit value was accepted.');
-        } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('GTIN-14', $exception->getMessage());
         }
         app('translator')->setLocale('ar');
         try {
-            $policy->international('999700333187447');
-            self::fail('Unsupported 15-digit value was accepted.');
+            $policy->international('12A3');
+            self::fail('Non-numeric barcode was accepted.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('يجب أن يكون الباركود الدولي', $exception->getMessage());
-        }
-        app('translator')->setLocale('ar-EG');
-        try {
-            $policy->international('96385075');
-            self::fail('Invalid check digit was accepted.');
-        } catch (InvalidArgumentException $exception) {
-            self::assertSame('رقم التحقق في الباركود الدولي غير صالح.', $exception->getMessage());
+            self::assertSame('يجب أن يحتوي الباركود الدولي على أرقام فقط.', $exception->getMessage());
         }
     }
 

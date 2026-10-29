@@ -12,7 +12,7 @@
         </header>
         @if(session('error') || $errors->any())<div role="alert" class="rounded-xl bg-rose-50 p-3 text-rose-800">{{ session('error') ?: $errors->first() }}</div>@endif
         <p class="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">{{ $t('يمكن تعديل التحويل هنا. الاعتماد يحفظ التعديلات ويرسل الكميات من المصدر فورًا، ثم تصبح الوجهات جاهزة للاستلام الفعلي.', 'Edit the transfer here. Approval saves the final values, dispatches stock from the source immediately, and enables destination receiving.') }}</p>
-        <form method="POST" action="{{ route('inventory.transfers.approve', $transfer) }}" class="space-y-5" x-data="{ source: @js((string) old('source_store_id', $transfer->source_store_id)) }" data-product-line-editor data-next-index="{{ max(1, count($reviewLines)) }}">
+        <form method="POST" action="{{ route('inventory.transfers.approve', $transfer) }}" x-on:input="const row = $event.target.closest('[data-product-line]'); if (row) row.querySelector('[data-review-total]').textContent = [...row.querySelectorAll('input[name*=allocations]')].filter(input => !input.disabled).reduce((sum, input) => sum + (Number(input.value) || 0), 0)" class="space-y-5" x-data="{ source: @js((string) old('source_store_id', $transfer->source_store_id)) }" data-product-line-editor data-next-index="{{ max(1, count($reviewLines)) }}">
             @csrf
             <input type="hidden" name="review_version" value="{{ old('review_version', $transfer->lock_version) }}">
             <section class="grid gap-4 rounded-xl border bg-white p-4 dark:bg-zinc-900 sm:grid-cols-2">
@@ -33,10 +33,13 @@
             <section class="space-y-3 rounded-xl border bg-white p-4 dark:bg-zinc-900">
                 <h2 class="font-bold">{{ $t('المنتجات والوجهات', 'Products and destinations') }}</h2>
                 @foreach($reviewLines as $index => $line)
-                    @php $product = $reviewProducts->get((int) ($line['product_id'] ?? 0)); @endphp
+                    @php
+                        $product = $reviewProducts->get((int) ($line['product_id'] ?? 0));
+                        $allocatedTotal = array_reduce((array) ($line['allocations'] ?? []), fn ($sum, $quantity) => bcadd($sum, (string) ($quantity ?: 0), 6), '0');
+                    @endphp
                     <div class="grid gap-3 rounded-xl border p-3 sm:grid-cols-2" data-product-line>
                         <x-product-line-lookup :name="'lines['.$index.'][product_id]'" :value="$line['product_id'] ?? ''" :display="$product ? (\App\Support\HumanName::name($product).' · '.$product->item_code) : ''" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-review-source" />
-                        <label class="text-sm font-semibold">{{ $t('الكمية المطلوبة', 'Requested quantity') }}<input name="lines[{{ $index }}][quantity_requested]" value="{{ $qty($line['quantity_requested'] ?? 0) }}" type="number" min="1" step="1" required inputmode="numeric" class="{{ $field }}" data-line-quantity></label>
+                        <div class="text-sm font-semibold">{{ $t('إجمالي الكمية الموزعة', 'Allocated total') }}<output class="block" data-review-total>{{ $qty($allocatedTotal) }}</output></div>
                         <div class="grid gap-2 sm:col-span-2 sm:grid-cols-3">
                             @foreach($visibleStores as $store)
                                     <label class="text-xs font-semibold">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}<input name="lines[{{ $index }}][allocations][{{ $store->id }}]" value="{{ $qty($line['allocations'][$store->id] ?? ($transfer->lines->get($index)?->allocations->isEmpty() && (int) $store->id === (int) $transfer->destination_store_id ? ($line['quantity_requested'] ?? 0) : 0)) }}" type="number" min="0" step="1" inputmode="numeric" class="{{ $field }}" :disabled="source === @js((string) $store->id)"></label>
@@ -48,7 +51,7 @@
                 <template data-line-template>
                     <div class="grid gap-3 rounded-xl border p-3 sm:grid-cols-2" data-product-line>
                         <x-product-line-lookup name="lines[__INDEX__][product_id]" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-review-source" />
-                        <label class="text-sm font-semibold">{{ $t('الكمية المطلوبة', 'Requested quantity') }}<input name="lines[__INDEX__][quantity_requested]" value="1" type="number" min="1" step="1" required inputmode="numeric" class="{{ $field }}" data-line-quantity></label>
+                        <div class="text-sm font-semibold">{{ $t('إجمالي الكمية الموزعة', 'Allocated total') }}<output class="block" data-review-total>0</output></div>
                         <div class="grid gap-2 sm:col-span-2 sm:grid-cols-3">@foreach($visibleStores as $store)<label class="text-xs font-semibold">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}<input name="lines[__INDEX__][allocations][{{ $store->id }}]" value="0" type="number" min="0" step="1" inputmode="numeric" class="{{ $field }}" :disabled="source === @js((string) $store->id)"></label>@endforeach</div>
                         <button type="button" data-remove-line class="w-fit text-sm font-semibold text-rose-700">{{ $t('حذف البند', 'Remove line') }}</button>
                     </div>

@@ -82,9 +82,7 @@ final class BarcodeLabelService
             if ($copies === false || $copies < 1 || $copies > 500) {
                 throw ValidationException::withMessages(['products' => __('Copies must be a whole number from 1 to 500.')]);
             }
-            $price = $serverPrices[$product->id] ?? ($store
-                ? $prices->get($product->id)?->amount
-                : $product->sale_price);
+            $price = $prices->get($product->id)?->amount ?? $product->sale_price;
             if ($price === null || bccomp((string) $price, '0', 3) <= 0) {
                 throw ValidationException::withMessages(['products' => __('No selling price')]);
             }

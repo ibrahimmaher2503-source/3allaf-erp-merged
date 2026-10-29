@@ -14,7 +14,7 @@
             <input type="hidden" name="barcode_action" value="manual">
             <input type="hidden" name="return_search" x-model="query">
 
-            <flux:select name="store_id" :label="__('Selling outlet')" required>
+            <flux:select name="store_id" :label="__('Selling outlet')" x-on:change="refreshPrices($event.target.value)" required>
                 <flux:select.option value="">{{ __('Select a selling outlet') }}</flux:select.option>
                 @foreach ($stores as $store)
                     <flux:select.option :value="$store->id" :selected="(int) old('store_id', $documentStoreId ?: request('store')) === $store->id">

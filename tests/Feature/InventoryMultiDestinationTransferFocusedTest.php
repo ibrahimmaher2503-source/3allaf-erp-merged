@@ -157,6 +157,57 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         }
     }
 
+    public function test_transfer_form_derives_quantity_from_destination_allocations_without_manual_total(): void
+    {
+        $this->withoutVite();
+        $this->actingAs($this->user)->post(route('inventory.transfers.store'), [
+            'source_store_id' => $this->source->id,
+            'destination_store_id' => $this->destinationA->id,
+            'destination_store_ids' => [$this->destinationA->id, $this->destinationB->id],
+            'reason_code' => 'restock',
+            'lines' => [['product_id' => $this->product->id, 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '3']]],
+        ])->assertRedirect();
+        $transfer = StockTransfer::query()->latest('id')->firstOrFail();
+        self::assertSame('6', (string) $transfer->lines->first()->quantity_requested);
+        self::assertSame(6.0, (float) $transfer->lines->first()->allocations->sum('quantity'));
+
+        $this->actingAs($this->user)->post(route('inventory.transfers.store'), [
+            'source_store_id' => $this->source->id,
+            'destination_store_id' => $this->destinationA->id,
+            'destination_store_ids' => [$this->destinationA->id, $this->destinationB->id],
+            'reason_code' => 'restock',
+            'lines' => [['product_id' => $this->product->id, 'allocations' => [$this->destinationA->id => '6', $this->destinationB->id => '5']]],
+        ])->assertSessionHas('error');
+        self::assertSame(1, StockTransfer::query()->count());
+    }
+
+    public function test_receiving_inbox_lists_multiple_sources_for_one_destination(): void
+    {
+        $secondSource = Store::factory()->create([
+            'company_id' => $this->source->company_id,
+            'branch_id' => $this->source->branch_id,
+            'type' => 'warehouse',
+            'name_en' => 'Second source',
+            'status' => 'active',
+        ]);
+        foreach ([$this->source, $secondSource] as $index => $source) {
+            $transfer = StockTransfer::query()->create([
+                'transfer_number' => 'QA-INBOX-'.$index.'-'.uniqid(),
+                'source_store_id' => $source->id,
+                'destination_store_id' => $this->destinationA->id,
+                'status' => 'in_transit',
+                'idempotency_key' => 'qa-inbox-'.uniqid(),
+            ]);
+            $line = $transfer->lines()->create(['product_id' => $this->product->id, 'quantity_requested' => '2', 'quantity_dispatched' => '2']);
+            $line->allocations()->create(['destination_store_id' => $this->destinationA->id, 'quantity' => '2']);
+        }
+        $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.receiving-inbox'))
+            ->assertOk()->assertSee('Incoming transfer receipts')->assertSee('Second source')
+            ->assertSee('QA-INBOX-0-')->assertSee('QA-INBOX-1-')->assertSee('Products');
+        $this->get(route('inventory.transfers.receive-page', ['transfer' => $transfer, 'destination_store_id' => $this->destinationA->id]))
+            ->assertOk()->assertSee($transfer->transfer_number)->assertSee('Second source');
+    }
+
     public function test_receive_is_independent_per_destination_and_idempotent(): void
     {
         $transfer = $this->approvedTransfer('5', '3', '2');
@@ -354,23 +405,23 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('99.000000', (string) StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->destinationA->id)->value('on_hand'));
     }
 
-    public function test_unavailable_stock_keeps_the_draft_and_submit_does_not_post(): void
+    public function test_unavailable_stock_rejects_allocations_and_preserves_form_input_without_posting(): void
     {
         $this->balance($this->source, 0);
-        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [['product_id' => $this->product->id, 'quantity_requested' => '6', 'allocations' => [$this->destinationA->id => '4', $this->destinationB->id => '2']]], 'replenishment', 'Keep the note', 'qa-zero-'.uniqid());
-        self::assertSame('draft', $transfer->status);
-        self::assertThrows(fn (): StockTransfer => app(SubmitStockTransferAction::class)->execute($transfer->id), InvalidArgumentException::class);
-        $saved = $transfer->fresh(['lines.allocations']);
-        self::assertSame('draft', $saved->status);
-        self::assertSame('Keep the note', $saved->notes);
-        self::assertSame('6', (string) $saved->lines->first()->quantity_requested);
-        self::assertSame(2, $saved->lines->first()->allocations->count());
-        self::assertSame(0, StockMovement::query()->where('source_id', $transfer->id)->count());
-        $editUrl = route('inventory.transfers.edit', $transfer);
-        $this->get($editUrl)->assertOk()->assertSee('Keep the note')->assertSee('value="6"', false);
-        $this->from($editUrl)->post(route('inventory.transfers.submit', $transfer))->assertRedirect($editUrl)->assertSessionHas('error');
-        self::assertSame('draft', $transfer->fresh()->status);
-        self::assertSame(0, StockMovement::query()->where('source_id', $transfer->id)->count());
+        $movementCount = StockMovement::query()->count();
+        $lines = [['product_id' => $this->product->id, 'quantity_requested' => '6', 'allocations' => [$this->destinationA->id => '4', $this->destinationB->id => '2']]];
+        self::assertThrows(fn (): StockTransfer => app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, $lines, 'replenishment', 'Keep the note', 'qa-zero-'.uniqid()), InvalidArgumentException::class);
+        $createUrl = route('inventory.transfers.create');
+        $this->from($createUrl)->post(route('inventory.transfers.store'), [
+            'source_store_id' => $this->source->id,
+            'destination_store_id' => $this->destinationA->id,
+            'destination_store_ids' => [$this->destinationA->id, $this->destinationB->id],
+            'reason_code' => 'replenishment',
+            'reason_notes' => 'Keep the note',
+            'lines' => [['product_id' => $this->product->id, 'allocations' => [$this->destinationA->id => '4', $this->destinationB->id => '2']]],
+        ])->assertRedirect($createUrl)->assertSessionHas('error')->assertSessionHas('_old_input.reason_notes', 'Keep the note');
+        self::assertSame(0, StockTransfer::query()->where('reason_code', 'replenishment')->count());
+        self::assertSame($movementCount, StockMovement::query()->count());
     }
 
     public function test_failed_dispatch_rolls_back_earlier_lines_and_leaves_approved_document(): void
@@ -480,7 +531,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         ], idempotencyKey: 'qa-final-review-'.uniqid());
         $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
         $this->actingAs($this->user)->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))
-            ->assertOk()->assertSee('Final transfer review')->assertSee('name="lines[0][quantity_requested]"', false);
+            ->assertOk()->assertSee('Final transfer review')->assertDontSee('name="lines[0][quantity_requested]"', false)->assertSee('data-review-total', false);
         $payload = $this->reviewPayload($transfer, '2', '4', '6');
         $this->post(route('inventory.transfers.approve', $transfer), $payload)->assertRedirect(route('inventory.transfers'));
         $transfer = $transfer->fresh('lines.allocations');
@@ -519,7 +570,7 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('5', (string) $transfer->fresh('lines')->lines->first()->quantity_requested);
         self::assertSame(0, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->count());
         self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $this->source->id)->where('product_id', $this->product->id)->value('on_hand'));
-        $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()->assertSee('role="alert"', false)->assertSee('value="6"', false);
+        $this->get(route('inventory.transfers.approval-review', $transfer))->assertOk()->assertSee('role="alert"', false)->assertSee('data-review-total>6</output>', false);
     }
 
     public function test_shared_inbox_routes_transfer_to_final_review_instead_of_direct_approval(): void

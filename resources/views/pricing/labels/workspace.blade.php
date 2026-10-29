@@ -1,7 +1,7 @@
 <flux:card
     class="space-y-5"
     data-label-workspace
-    x-data="labelWorkspace(@js($initial), @js(route('pricing.labels.search')))"
+    x-data="labelWorkspace(@js($initial), @js(route('pricing.labels.search')), @js(route('pricing.labels.prices')))"
     x-init="init()"
 >
     <form method="GET" action="{{ route('pricing.labels') }}" class="grid gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 sm:grid-cols-2" data-barcode-document-source>

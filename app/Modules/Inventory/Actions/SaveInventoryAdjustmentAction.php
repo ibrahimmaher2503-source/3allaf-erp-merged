@@ -43,6 +43,9 @@ final class SaveInventoryAdjustmentAction
             if (! in_array($type, ['entry', 'exit', 'exchange', 'adjustment'], true)) {
                 throw new InvalidArgumentException(__('Select a supported inventory document type.'));
             }
+            if ($adjustment !== null && in_array($adjustment->adjustment_type, ['entry', 'exit'], true) && $type !== $adjustment->adjustment_type) {
+                throw new InvalidArgumentException(__('The inventory document type cannot be changed after creation.'));
+            }
             $reason = trim((string) ($data['reason_code'] ?? ''));
             if ($reason === '') {
                 throw new InvalidArgumentException(__('An inventory document reason is required.'));
@@ -92,7 +95,11 @@ final class SaveInventoryAdjustmentAction
             if ($adjustment === null) {
                 $adjustment = InventoryAdjustment::query()->create([
                     ...$attributes,
-                    'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch('inventory_adjustment', (int) $store->branch_id),
+                    'adjustment_number' => app(AllocateDocumentNumber::class)->executeForBranch(match ($type) {
+                        'entry' => 'inventory_addition',
+                        'exit' => 'inventory_deduction',
+                        default => 'inventory_adjustment',
+                    }, (int) $store->branch_id),
                     'created_by' => Auth::id(),
                     'idempotency_key' => (string) ($data['idempotency_key'] ?? 'inventory-adjustment:'.Str::uuid()),
                     'lock_version' => 1,

@@ -1,5 +1,5 @@
 @php($currency = $store?->company?->currency_code ?? $store?->branch?->currency ?? 'EGP')
-<section class="flex min-w-0 flex-col overflow-hidden bg-surface-muted text-text-primary" aria-labelledby="pos-cart-heading">
+<section class="flex min-h-56 min-w-0 max-h-[calc(100dvh-17rem)] flex-col overflow-hidden bg-surface-muted text-text-primary" aria-labelledby="pos-cart-heading">
     <header class="border-b border-border px-3 py-2">
         <div class="mt-2 flex items-center justify-between"><h2 id="pos-cart-heading" class="text-sm font-extrabold">{{ __('Cart') }} <span class="text-text-muted">({{ $cart->count() }})</span></h2>@if($cart->isNotEmpty())<button wire:click="clear" wire:confirm="{{ __('Clear every item from this cart?') }}" class="rounded px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-600 dark:text-rose-300 dark:hover:bg-rose-950/50">{{ __('Clear cart') }}</button>@endif</div>
     </header>
