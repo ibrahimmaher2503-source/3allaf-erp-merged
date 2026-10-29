@@ -11,6 +11,7 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Data\PosContext;
+use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Support\ProductQuantity;
@@ -23,7 +24,7 @@ final class PosCartAction
         private readonly EffectivePriceResolver $prices,
         private readonly PosContextResolver $contextResolver,
         private readonly PosOpenOrderManager $openOrders,
-        private readonly \App\Modules\Retail\Support\PosCartSnapshot $snapshot,
+        private readonly PosCartSnapshot $snapshot,
     ) {}
 
     public function add(Request $request, User $user, int $productId, string $quantity): void
@@ -46,7 +47,7 @@ final class PosCartAction
         $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->first();
         $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
         if (bccomp($available, $requestedTotal, 6) < 0) {
-            throw new InvalidArgumentException(__('The selected SKU does not have enough available stock.'));
+            throw new InvalidArgumentException(__('Only :quantity units of this product are available.', ['quantity' => ProductQuantity::format($available)]));
         }
 
         if ($key === false) {
@@ -73,7 +74,7 @@ final class PosCartAction
         $balance = StockBalance::query()->where('store_id', $store->id)->where('product_id', $productId)->first();
         $available = $balance ? bcsub((string) $balance->on_hand, (string) $balance->reserved, 6) : '0';
         if (bccomp($available, $quantity, 6) < 0) {
-            throw new InvalidArgumentException(__('The requested quantity exceeds available stock.'));
+            throw new InvalidArgumentException(__('Only :quantity units of this product are available.', ['quantity' => ProductQuantity::format($available)]));
         }
 
         $cart = collect($request->session()->get('pos.cart', []));

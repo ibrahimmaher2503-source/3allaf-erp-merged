@@ -421,3 +421,7 @@ Branch `feature/v2-products-transfers-inventory-pos-polish-20261029` starts at c
 # 2026-10-29 — Rajeh v2 Core polish batch CLOSED / deployed
 
 The previously verified branch `feature/v2-products-transfers-inventory-pos-polish-20261029` (source `7546dbc`) was merged without squash as `6125482` and deployed from that exact application SHA. This D3 batch is no longer pending. No schema migration was added or executed. Production release: `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-post-core-polish-6125482`. Physical scanner and real thermal printer QA are deferred by explicit owner decision and remain post-deployment work.
+
+## 2026-10-29 — POS visible quantity and stock-limit hotfix
+
+Branch `hotfix/pos-visible-quantity-and-stock-limit-20261029` starts at origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2`. Owner-authorized Rajeh v2 POS Core scope: synchronize visible quantity with the canonical session/open-order line and standardize the existing selling-store stock cap and user feedback. This is pending merge/release review. No migration, merge, or deployment is part of this branch task. Production remains application `6125482ab2a633a892f9ae854f5fb5dec10ee906` at `toyjoy-v2-post-core-polish-6125482`.
