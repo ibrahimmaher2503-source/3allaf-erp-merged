@@ -1,3 +1,9 @@
+# 2026-10-30 — Active Core batch verification (branch only)
+
+- Barcode focused disposable MariaDB: PASS, 2 tests/8 assertions, including 300 + 15% = 345 and preview/print parity.
+- `scripts/test-core-baseline.sh`: PASS on rerun after local Vite build; 21 selected PHPUnit tests/251 assertions plus payment JavaScript. Initial run stopped in cash-movement view rendering because the new worktree had no `public/build/manifest.json`; local `npm run build` fixed setup. No Core expectation was weakened.
+- Authenticated browser QA at 1440 and 390: NOT RUN. Other requested focused tests: NOT RUN. No Production verification or deployment.
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).

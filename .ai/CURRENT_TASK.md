@@ -1,3 +1,7 @@
+# 2026-10-30 — Active owner-authorized Rajeh v2 Core batch plus Reports Phase 1
+
+Branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` starts from `origin/main` `53172743bb4477d1cd6d72190972543b7389b037`. Scope is the owner's 12-part Core inventory, barcode, transfer, POS and purchasing request plus Product Sales, Current Inventory, and Daily Branch Sales reports. Current implementation is **IN PROGRESS, NOT MERGE READY, NOT DEPLOYED**. Barcode label preview/print now apply the selected outlet's canonical price list when there is no approved fixed store price. All other newly requested work and batch browser QA remain open. Production's last recorded application release is `9d1363cadecc99c475c0e795cbd1702d4ef05712` at `toyjoy-v2-pos-quantity-9d1363c`; no Production access or deployment occurred in this branch session. Do not merge or deploy this partial branch.
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).

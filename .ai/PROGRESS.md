@@ -1,3 +1,7 @@
+# 2026-10-30 — Owner-approved Core batch and Reports Phase 1 in progress
+
+The new branch starts from current `origin/main` `5317274`. Label price preview and print share a selected-outlet resolver that retains approved fixed store prices and applies the canonical outlet price-list percentage/override to fallback prices. Focused MariaDB tests passed 2 tests/8 assertions. The Core regression gate passed after building the missing local Vite manifest; its first attempt failed solely at the missing-manifest setup. No migration, merge, push, Production change, or deployment at this progress checkpoint. All other requested features, the three reports, and browser QA remain open; merge readiness is NO.
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).

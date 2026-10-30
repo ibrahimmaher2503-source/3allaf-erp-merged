@@ -64,7 +64,7 @@ final class BarcodeLabelService
         }
         $store = $storeId ? Store::visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail($storeId) : null;
         $list = $store ? app(PriceListResolver::class)->listForOutlet($store) : null;
-        $prices = $store ? app(EffectivePriceResolver::class)->resolveForStore(array_column($rows, 'product_id'), $store->id) : collect();
+        $prices = $store ? app(BarcodeSellingPriceResolver::class)->resolveForStore(array_column($rows, 'product_id'), $store) : collect();
         $labels = [];
 
         foreach ($rows as $row) {
@@ -82,7 +82,7 @@ final class BarcodeLabelService
             if ($copies === false || $copies < 1 || $copies > 500) {
                 throw ValidationException::withMessages(['products' => __('Copies must be a whole number from 1 to 500.')]);
             }
-            $price = $prices->get($product->id)?->amount ?? $product->sale_price;
+            $price = $prices->get($product->id);
             if ($price === null || bccomp((string) $price, '0', 3) <= 0) {
                 throw ValidationException::withMessages(['products' => __('No selling price')]);
             }

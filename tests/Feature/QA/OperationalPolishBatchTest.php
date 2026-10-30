@@ -18,6 +18,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\DashboardApprovalPreview;
 use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\BarcodeLabelService;
+use App\Modules\Pricing\Services\BarcodeSellingPriceResolver;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Purchasing\Actions\CreatePurchaseReturnDraftAction;
 use App\Modules\Purchasing\Models\StockBalance;
@@ -91,6 +92,26 @@ final class OperationalPolishBatchTest extends TestCase
         $otherDocument = $service->compose($this->fixture['admin'], $rows, $service->profile($this->fixture['admin']), $secondStore->id);
         $this->assertSame('PL-0002', $otherDocument['labels'][0]['list']->code);
         $this->assertSame(app(EffectivePriceResolver::class)->resolveForStore([$product->id], $secondStore->id)->get($product->id)->amount, $otherDocument['labels'][0]['price']);
+    }
+
+    public function test_barcode_preview_and_print_apply_selected_outlet_percentage_rule(): void
+    {
+        $store = $this->fixture['store'];
+        $this->fixture['admin']->branchScopes()->firstOrCreate(['branch_id' => $this->fixture['branch']->id], ['status' => 'active']);
+        $list = PriceList::query()->updateOrCreate(['company_id' => $store->company_id, 'list_number' => 1], [
+            'code' => 'PL-0015', 'name_ar' => 'الساحل', 'name_en' => 'Sahel',
+            'percentage_increase' => '15', 'status' => 'active',
+        ]);
+        $store->update(['price_list_id' => $list->id]);
+        $product = Product::factory()->create(['category_id' => $this->fixture['category']->id, 'sale_price' => '300.000']);
+        $barcode = $product->barcodes()->create(['barcode' => 'QA-SAH-'.uniqid(), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
+
+        $preview = app(BarcodeSellingPriceResolver::class)->resolveForStore([$product->id], $store);
+        $service = app(BarcodeLabelService::class);
+        $document = $service->compose($this->fixture['admin'], [['product_id' => $product->id, 'barcode_id' => $barcode->id, 'copies' => 1]], $service->profile($this->fixture['admin']), $store->id);
+
+        $this->assertSame('345.000', $preview->get($product->id));
+        $this->assertSame($preview->get($product->id), $document['labels'][0]['price']);
     }
 
     public function test_supplier_return_search_only_clears_after_successful_add(): void

@@ -1,3 +1,9 @@
+# 2026-10-30 — Active D3 Core and Reports Phase 1 batch
+
+| Branch | Source baseline | Status | Implemented so far | Remaining |
+|---|---|---|---|---|
+| `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` | `53172743bb4477d1cd6d72190972543b7389b037` | In progress; not merge ready; not deployed | Barcode label selected-outlet percentage pricing using canonical list and effective-price resolvers | Remaining owner-authorized Core work, all three reports, focused tests, authenticated 1440/390 QA |
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).
