@@ -6,7 +6,9 @@ namespace Tests\Feature\QA;
 
 use App\Livewire\Pos\RefundWizard;
 use App\Models\User;
+use App\Modules\Catalog\Actions\SaveProductOptionAction;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Inventory\Models\StockBalance;
 use App\Modules\Inventory\Models\StockMovement;
@@ -20,7 +22,10 @@ use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\BarcodeSvgRenderer;
 use App\Modules\Retail\Actions\CreateUnverifiedReturnAction;
+use App\Modules\Retail\Actions\GiftCardAction;
 use App\Modules\Retail\Actions\RetailReturnAction;
+use App\Modules\Retail\Models\GiftCard;
+use App\Modules\Retail\Models\GiftReceipt;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\RetailReturnSettlement;
@@ -50,7 +55,7 @@ final class PosSmartSplitReturnsTest extends TestCase
         parent::setUp();
         $this->manager = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
         $role = Role::query()->create(['code' => 'QA-RETURNS-'.str()->random(8), 'name_ar' => 'مدير المرتجعات', 'name_en' => 'Returns manager', 'status' => 'active']);
-        foreach (['returns.create', 'returns.submit', 'returns.approve', 'returns.complete', 'returns.view', 'returns.print', 'pos_sales.view'] as $code) {
+        foreach (['returns.create', 'returns.submit', 'returns.approve', 'returns.complete', 'returns.view', 'returns.print', 'pos_sales.view', 'inventory_stock_card.view', 'gift_receipts.issue', 'gift_receipts.view', 'gift_receipts.print', 'products_categories_brands.view', 'products_categories_brands.create', 'products_categories_brands.edit'] as $code) {
             [$module, $action] = explode('.', $code, 2);
             $permission = Permission::query()->firstOrCreate(['code' => $code], ['module' => $module, 'action' => $action, 'status' => 'active']);
             $role->permissions()->syncWithoutDetaching([$permission->id]);
@@ -105,6 +110,100 @@ final class PosSmartSplitReturnsTest extends TestCase
         self::assertSame('999.00', $this->product->fresh()->sale_price);
     }
 
+    public function test_unverified_return_posts_multiple_editable_price_lines_as_one_document(): void
+    {
+        $second = Product::factory()->create(['sale_price' => '75.00', 'name_en' => 'Second returned item']);
+        $data = [...$this->data(), 'lines' => [
+            ['product_id' => $this->product->id, 'quantity' => '2', 'unit_price' => '20.00'],
+            ['product_id' => $second->id, 'quantity' => '3', 'unit_price' => '15.50'],
+        ]];
+        $action = app(CreateUnverifiedReturnAction::class);
+        $document = $action->execute($this->manager, $data, 'unverified-multiple-0001');
+        self::assertSame($document->id, $action->execute($this->manager, $data, 'unverified-multiple-0001')->id);
+        self::assertSame('86.50', (string) $document->settlement_value);
+        self::assertCount(2, $document->lines);
+        self::assertSame('40.00', (string) $document->lines[0]->gross_value);
+        self::assertSame('46.50', (string) $document->lines[1]->gross_value);
+        self::assertSame(2, StockMovement::query()->where('source_type', RetailReturn::class)->where('source_id', $document->id)->count());
+        self::assertSame('2.000000', StockBalance::query()->where('product_id', $this->product->id)->where('store_id', $this->store->id)->sole()->on_hand);
+        self::assertSame('3.000000', StockBalance::query()->where('product_id', $second->id)->where('store_id', $this->store->id)->sole()->on_hand);
+        self::assertSame(1, AuditLog::query()->where('event', 'unverified_retail_return_completed')->where('source_id', (string) $document->id)->count());
+    }
+
+    public function test_gift_card_code128_and_locked_redeem_refund_keep_one_ledger_entry_per_key(): void
+    {
+        $cards = app(GiftCardAction::class);
+        $card = $cards->issue($this->manager, '500.00', (int) $this->store->branch_id, (int) $this->store->id,
+            Sale::class, 'gift-qa-sale', 'gift-qa-issue-0001');
+        $svg = app(BarcodeSvgRenderer::class)->render((string) $card->identifier, 'code128', 72);
+        self::assertStringContainsString('<svg', $svg);
+        self::assertStringContainsString('rect', $svg);
+        $first = $cards->redeem($this->manager, $card, '350.00', 'gift-qa-redeem-0001', Sale::class, 'gift-qa-sale');
+        self::assertSame($first->id, $cards->redeem($this->manager, $card, '350.00', 'gift-qa-redeem-0001', Sale::class, 'gift-qa-sale')->id);
+        self::assertSame('150.00', (string) $card->fresh()->balance);
+        $credit = $cards->refundRedemption($this->manager, $card, '100.00', 'gift-qa-refund-0001', 'refund-qa-1');
+        self::assertSame($credit->id, $cards->refundRedemption($this->manager, $card, '100.00', 'gift-qa-refund-0001', 'refund-qa-1')->id);
+        self::assertSame('250.00', (string) $card->fresh()->balance);
+        self::assertSame(3, $card->ledger()->count());
+        try {
+            $cards->redeem($this->manager, $card, '300.00', 'gift-qa-redeem-oversized', Sale::class, 'gift-qa-sale');
+            self::fail('An over-balance redemption must be rejected.');
+        } catch (ValidationException) {
+            self::assertSame('250.00', (string) $card->fresh()->balance);
+        }
+    }
+
+    public function test_gift_receipt_issue_resets_selection_and_keeps_print_link_in_history(): void
+    {
+        $sale = $this->sale('QA-GIFT-RESET-001');
+        $key = (string) str()->uuid();
+        $response = $this->post(route('gift.receipts.store'), [
+            'idempotency_key' => $key,
+            'sale_id' => $sale->id,
+            'sale_line_ids' => [$sale->lines()->firstOrFail()->id],
+        ]);
+        $response->assertRedirect(route('gift.receipts.index'));
+        $receipt = GiftReceipt::query()->where('idempotency_key', $key)->firstOrFail();
+        $this->get(route('gift.receipts.index'))->assertOk()->assertSee($receipt->reference)
+            ->assertSee(route('gift.receipts.print', $receipt), false)
+            ->assertDontSee('name="sale_id" value="'.$sale->id.'"', false);
+    }
+
+    public function test_filter_value_create_and_edit_ignore_color_input_and_preserve_legacy_swatch(): void
+    {
+        $group = ProductOptionGroup::query()->create([
+            'code' => 'QA-GROUP-'.str()->upper(str()->random(8)),
+            'name_ar' => 'مجموعة اختبار', 'name_en' => 'QA group', 'status' => 'active', 'sort_order' => 0,
+        ]);
+        $action = app(SaveProductOptionAction::class);
+        $value = $action->saveValue((int) $group->id, [
+            'code' => 'QA-RED', 'name_ar' => 'أحمر', 'name_en' => 'Red', 'status' => 'active', 'sort_order' => 0,
+        ]);
+        self::assertNull($value->colour_swatch);
+        $value->update(['colour_swatch' => '#FF0000']);
+        $edited = $action->saveValue((int) $group->id, [
+            'code' => 'QA-RED', 'name_ar' => 'أحمر', 'name_en' => 'Red edited', 'status' => 'active', 'sort_order' => 0,
+        ], (int) $value->id);
+        self::assertSame('#FF0000', $edited->colour_swatch);
+        $this->get(route('catalog.product-options'))->assertOk()->assertDontSee('Optional swatch');
+    }
+
+    public function test_inventory_balance_search_matches_names_code_and_barcode_in_all_and_store_scope(): void
+    {
+        app(CreateUnverifiedReturnAction::class)->execute($this->manager, $this->data(), 'unverified-search-0001');
+        $terms = [mb_substr((string) $this->product->name_ar, 0, 3), 'Returned',
+            mb_substr((string) $this->product->item_code, 0, 4), 'RET-TEST-'];
+        foreach ($terms as $term) {
+            $response = $this->get(route('inventory.balances', ['q' => $term, 'store_id' => '']))->assertOk();
+            $balances = $response->getOriginalContent()->getData()['balances'];
+            self::assertTrue($balances->contains('product_id', $this->product->id));
+        }
+        $selected = $this->get(route('inventory.balances', ['q' => 'Returned', 'store_id' => $this->store->id]))->assertOk();
+        self::assertTrue($selected->getOriginalContent()->getData()['balances']->contains('product_id', $this->product->id));
+        $missing = $this->get(route('inventory.balances', ['q' => 'not-a-product', 'store_id' => '']))->assertOk();
+        self::assertSame(0, $missing->getOriginalContent()->getData()['balances']->total());
+    }
+
     public function test_unverified_return_rejects_missing_reason_confirmation_and_reused_token(): void
     {
         $action = app(CreateUnverifiedReturnAction::class);
@@ -134,7 +233,7 @@ final class PosSmartSplitReturnsTest extends TestCase
         }
     }
 
-    private function sale(string $number, ?string $phone = null): Sale
+    private function sale(string $number, ?string $phone = null, ?GiftCard $giftCard = null): Sale
     {
         $customerId = null;
         if ($phone !== null) {
@@ -159,9 +258,11 @@ final class PosSmartSplitReturnsTest extends TestCase
             'quantity' => '3', 'unit_price' => '250.0000', 'gross_amount' => '750.00',
             'discount_amount' => '100.00', 'net_amount' => '650.00',
         ]);
+        $firstMethod = $giftCard ? PaymentMethod::factory()->create(['type' => 'gift_card']) : $this->cash;
         $sale->payments()->create([
-            'payment_method_id' => $this->cash->id, 'method_code' => $this->cash->code,
-            'method_type' => 'cash', 'amount' => '500.00', 'tendered_amount' => '500.00',
+            'payment_method_id' => $firstMethod->id, 'method_code' => $firstMethod->code,
+            'method_type' => $giftCard ? 'gift_card' : 'cash', 'gift_card_id' => $giftCard?->id,
+            'amount' => '500.00', 'tendered_amount' => '500.00',
             'change_amount' => '0.00', 'idempotency_key' => (string) str()->uuid(), 'created_by' => $this->manager->id,
         ]);
         $card = PaymentMethod::factory()->create(['type' => 'card', 'requires_evidence' => false]);
@@ -207,6 +308,27 @@ final class PosSmartSplitReturnsTest extends TestCase
         self::assertSame('999.00', $this->product->fresh()->sale_price);
         $this->expectException(ValidationException::class);
         $action->create($this->manager, array_replace($data, ['lines' => [array_replace($data['lines'][0], ['quantity' => '3'])]]), 'linked-qa-too-many');
+    }
+
+    public function test_linked_return_restores_only_the_original_gift_card_share_once(): void
+    {
+        $card = app(GiftCardAction::class)->issue($this->manager, '500.00', (int) $this->store->branch_id,
+            (int) $this->store->id, Sale::class, 'gift-linked-sale', 'gift-linked-issue-0001');
+        $sale = $this->sale('QA-GIFT-RETURN-650', null, $card);
+        app(GiftCardAction::class)->redeem($this->manager, $card, '500.00', 'gift-linked-redeem-0001', Sale::class, (string) $sale->id);
+        $line = $sale->lines->firstOrFail();
+        $action = app(RetailReturnAction::class);
+        $created = $action->create($this->manager, [
+            'source_sale_id' => $sale->id, 'settlement_type' => 'original_tender', 'reason' => 'defective',
+            'lines' => [['sale_line_id' => $line->id, 'quantity' => '1', 'condition' => 'uninspected',
+                'disposition' => 'restock', 'return_store_id' => $this->store->id]],
+        ], 'gift-linked-return-0001');
+        $completed = $action->complete($this->manager, $action->approve($this->manager, $action->submit($this->manager, $created)), 'gift-linked-complete-0001');
+        self::assertSame('completed', $completed->status);
+        self::assertSame('216.67', (string) $card->fresh()->balance);
+        self::assertSame(1, $card->ledger()->where('event_type', 'refund')->count());
+        self::assertSame($card->id, $completed->settlements()->where('gift_card_id', $card->id)->sole()->gift_card_id);
+        self::assertSame(1, $card->ledger()->where('event_type', 'refund')->count());
     }
 
     public function test_receipt_reference_and_customer_date_search_resolve_sales(): void

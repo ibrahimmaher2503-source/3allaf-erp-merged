@@ -1,6 +1,6 @@
 <x-layouts::app :title="__('Gift Receipts')">
     <x-app.page :title="__('Gift Receipts')" :description="__('Issue and reprint a privacy-safe receipt linked to a completed sale. Prices never leave the server-side return calculation.')" max-width="7xl">
-        @if(session('success'))<flux:callout variant="success">{{ session('success') }}</flux:callout>@endif
+        @if(session('success'))<flux:callout variant="success">{{ session('success') }} @if(session('issued_receipt_id'))<a class="ms-2 font-semibold underline" href="{{ route('gift.receipts.print', session('issued_receipt_id')) }}" target="_blank" rel="noopener">{{ __('Print') }}</a>@endif</flux:callout>@endif
         @if(session('errors')?->any())<flux:callout variant="danger">{{ session('errors')->first() }}</flux:callout>@endif
         <x-context-help :title="__('Gift Receipts')" :label="__('Open contextual help')"><p>{{ __('Gift Receipts show item identity and quantity only. They never include price, discount, tax, total, or hidden price metadata.') }}</p></x-context-help>
 

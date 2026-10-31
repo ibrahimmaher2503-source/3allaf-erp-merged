@@ -1865,7 +1865,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->where('branch_id', $store->branch_id)
                     ->where('store_id', $store->id)
                     ->whereIn('status', ['active', 'partially_used'])
-                    ->firstOrFail();
+                    ->first();
+                if ($giftCard === null || bccomp((string) $giftCard->balance, '0.00', 2) <= 0
+                    || ($giftCard->valid_until !== null && $giftCard->valid_until->isPast())) {
+                    return back()->withInput()->withErrors(['payments.'.$index.'.gift_card_identifier' => __('This Gift Card is unavailable, expired, or has no balance.')]);
+                }
             }
 
             $tenders[] = [
@@ -1999,7 +2003,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                     ->where('branch_id', $sale->branch_id)
                     ->where('store_id', $sale->store_id)
                     ->whereIn('status', ['active', 'partially_used'])
-                    ->firstOrFail();
+                    ->first();
+                if ($giftCard === null || bccomp((string) $giftCard->balance, '0.00', 2) <= 0
+                    || ($giftCard->valid_until !== null && $giftCard->valid_until->isPast())) {
+                    return back()->withInput()->withErrors(['payments.'.$index.'.gift_card_identifier' => __('This Gift Card is unavailable, expired, or has no balance.')]);
+                }
             }
 
             $tenders[] = [

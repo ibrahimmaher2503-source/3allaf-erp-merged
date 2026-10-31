@@ -15,6 +15,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Models\Exchange;
 use App\Modules\Retail\Models\ExchangeLine;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\GiftReceipt;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\RetailReturn;
@@ -339,9 +340,20 @@ final class RetailReturnAction
                 } else {
                     $resolved = $this->resolveRefundAllocations($actor, $locked, $sourceSale, $settlementValue, $paymentMethodId, $originalPaymentId, $allocations);
                     foreach ($resolved as $index => $allocation) {
+                        $originalGiftCardId = null;
+                        if ($locked->settlement_type === 'original_tender' && (string) $allocation['method']->type === 'gift_card') {
+                            $originalPayment = $sourceSale->payments->firstWhere('id', $allocation['original_payment_id']);
+                            $originalGiftCardId = (int) ($originalPayment?->gift_card_id ?? 0);
+                            if ($originalGiftCardId < 1) {
+                                throw ValidationException::withMessages(['refund_method' => __('The original Gift Card payment is unavailable.')]);
+                            }
+                            app(GiftCardAction::class)->refundRedemption($actor,
+                                GiftCard::query()->findOrFail($originalGiftCardId), $allocation['amount'],
+                                'return-gift-refund:'.$locked->id.':'.($index + 1), (string) $locked->id);
+                        }
                         RetailReturnSettlement::query()->create($this->settlementAttributes(
                             $locked, $actor, $index + 1, $allocation['amount'], $idempotencyKey,
-                            $locked->settlement_type, $allocation['method'], $allocation['original_payment_id'], $allocation['safe_reference'],
+                            $locked->settlement_type, $allocation['method'], $allocation['original_payment_id'], $allocation['safe_reference'], $originalGiftCardId,
                         ));
                         $paymentSnapshot[] = [
                             'position' => $index + 1,

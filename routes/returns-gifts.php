@@ -166,7 +166,7 @@ Route::middleware('auth')->group(function (): void {
         try {
             $receipt = $action->issue($request->user(), Sale::query()->findOrFail($data['sale_id']), (string) ($request->input('idempotency_key') ?: Str::uuid()), array_map('intval', $data['sale_line_ids'] ?? []));
 
-            return to_route('gift.receipts.print', $receipt)->with('success', __('Gift Receipt issued without prices.'));
+            return to_route('gift.receipts.index')->with('success', __('Gift Receipt issued without prices.'))->with('issued_receipt_id', $receipt->id);
         } catch (Throwable $e) {
             return back()->withInput()->withErrors(['receipt' => UserSafeError::message($e)]);
         }

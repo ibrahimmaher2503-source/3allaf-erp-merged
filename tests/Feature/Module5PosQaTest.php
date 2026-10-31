@@ -25,6 +25,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Retail\Actions\GiftCardAction;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
@@ -55,6 +56,28 @@ final class Module5PosQaTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_scanned_gift_card_routes_to_tender_and_preserves_split_remainder(): void
+    {
+        PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);
+        PaymentMethod::factory()->create(['type' => 'cash', 'status' => 'active']);
+        $card = app(GiftCardAction::class)->issue($this->cashier, '20.00', (int) $this->store->branch_id,
+            (int) $this->store->id, Sale::class, 'scan-test', 'gift-scan-issue-0001');
+        request()->setLaravelSession(app('session')->driver());
+        $browser = new ProductBrowser;
+        $browser->search = (string) $card->identifier;
+        $browser->submitSearch(app(PosCartAction::class));
+        self::assertSame('', $browser->search);
+        $panel = new CheckoutPanel;
+        $panel->mount(app(PosOpenOrderManager::class), app(PosContextResolver::class));
+        $panel->scanGiftCard((string) $card->identifier);
+        self::assertFalse($panel->getErrorBag()->any(), json_encode($panel->getErrorBag()->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame($card->identifier, $panel->giftCardPreview['identifier']);
+        self::assertSame($card->identifier, $panel->paymentLines[0]['gift_card_identifier']);
+        self::assertSame('20.00', $panel->paymentLines[0]['amount']);
+        self::assertCount(2, $panel->paymentLines);
+        self::assertSame('split', $panel->mode);
+    }
+
     private User $cashier;
 
     private Store $store;
@@ -64,7 +87,7 @@ final class Module5PosQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'gift_cards.redeem', 'company_settings.view', 'company_settings.edit'] as $code) {
             Permission::query()->firstOrCreate(['code' => $code], ['module' => strstr($code, '.', true), 'action' => substr(strstr($code, '.'), 1), 'status' => 'active']);
         }
         $this->cashier = User::factory()->create(['status' => 'active']);

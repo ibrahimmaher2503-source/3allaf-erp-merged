@@ -875,3 +875,7 @@ Same task branch. All authorized implementation areas, including Reports Phase 1
 Active v2 batch branch: parent transfer now becomes Received when all destinations confirm, even with recorded shortage; destination receipt remains one confirmation and posts actual quantity only. Compact variance details remain visible on completed transfer cards. Focused transfer suite 34/299 PASS and one authenticated two-destination browser flow PASS. Core gate pending at this entry. No migration, merge, deployment, or Production data change.
 
 **Final verification:** Focused transfer/receiving suite 34 tests/299 assertions PASS; bounded authenticated two-destination shortage browser check PASS; one final Core gate run 21 tests/251 assertions plus payment JavaScript PASS. Disposable runtimes deleted. Branch remains unmerged and undeployed; commit/push pending.
+
+## 2026-10-31 — Cashier/Gift Card/inventory/return batch ready for branch review
+
+Implemented all eight owner-approved areas on `feature/v2-cashier-giftcard-inventory-return-polish-20261031`: drawer cashier scope, filter-value text-only UI, Gift Card Code 128 print and POS tender/refund, Gift Receipt reset, Inventory Balances search, and multi-item editable-price unverified return. Focused 10/91 and linked Gift Card return 1/5 PASS. Authenticated disposable browser 62 checks PASS at 1440/390. Core gate payment JavaScript plus 21/251 PASS. No migration. No merge/deployment/Production mutation. Hardware QA deferred.
