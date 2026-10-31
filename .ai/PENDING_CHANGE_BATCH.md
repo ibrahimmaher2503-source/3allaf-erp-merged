@@ -453,3 +453,5 @@ Owner-authorized D3 scope on `feature/v2-inventory-transfer-barcode-pos-purchase
 Classification D3; branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030`; commit pending. Owner-authorized amendment changes only final parent transfer status after all destination receipts: `received` with recorded variance rather than `difference_review` requiring an additional action. Files: `ReceiveStockTransferAction`, `StockTransfer` relation, inventory transfer register/route, focused transfer test, bounded E2E driver, and matching user guidance. No migration. Focused transfer 34/299 and bounded browser PASS; Core gate pending at this entry. Unmerged and undeployed.
 
 **Final verification for DEC-117 amendment:** Focused transfer 34/299 PASS, bounded authenticated browser PASS, one final Core gate 21/251 plus payment JavaScript PASS. No migration; branch remains unmerged and undeployed. Commit/push pending at this entry.
+
+**Published source for DEC-117 amendment:** implementation commit `65b0ab98dec96db9d5cc75a7f5b290bc49ea1ec3` was pushed only to the active feature branch after the final Core gate. Unmerged and undeployed.
