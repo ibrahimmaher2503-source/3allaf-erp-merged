@@ -10,7 +10,7 @@ use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\GiftCardLedger;
 use App\Modules\Retail\Models\GiftCardPrintEvent;
-use Illuminate\Database\Eloquent\Model;
+use App\Modules\Retail\Models\RetailReturn;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,14 +21,20 @@ final class GiftCardAction
     {
         $this->authorize($actor, 'gift_cards.issue');
         abort_unless(Store::query()->visibleTo($actor)->whereKey($storeId)->where('branch_id', $branchId)->exists(), 403);
-        if (bccomp($amount, '0.00', 2) <= 0) throw ValidationException::withMessages(['amount' => __('Gift Card value must be greater than zero.')]);
+        if (bccomp($amount, '0.00', 2) <= 0) {
+            throw ValidationException::withMessages(['amount' => __('Gift Card value must be greater than zero.')]);
+        }
         $amount = bcadd($amount, '0', 2);
         $currencyCode = strtoupper((string) $currencyCode);
         $sourceReference = $this->nullableText($sourceReference);
+
         return DB::transaction(function () use ($actor, $amount, $branchId, $storeId, $sourceType, $sourceId, $idempotencyKey, $sourceReference, $holderCustomerId, $currencyCode, $validUntil): GiftCard {
             $existing = GiftCard::query()->where('idempotency_key', $idempotencyKey)->lockForUpdate()->first();
             if ($existing !== null) {
-                if (! $this->sameIssueRequest($existing, $amount, $branchId, $storeId, $sourceType, $sourceId, $sourceReference, $holderCustomerId, $currencyCode, $validUntil)) $this->idempotencyConflict();
+                if (! $this->sameIssueRequest($existing, $amount, $branchId, $storeId, $sourceType, $sourceId, $sourceReference, $holderCustomerId, $currencyCode, $validUntil)) {
+                    $this->idempotencyConflict();
+                }
+
                 return $existing->load('ledger');
             }
             $card = GiftCard::query()->create([
@@ -39,6 +45,7 @@ final class GiftCardAction
             ]);
             $this->ledger($card, $actor, 'issue', $amount, '0.00', $amount, $sourceType, $sourceId, $sourceReference, null, $idempotencyKey, []);
             app(RecordAuditEvent::class)->execute('retail', 'gift_card_issued', $card, null, ['identifier' => $card->identifier, 'amount' => $amount, 'balance' => $amount], $branchId, $storeId, metadata: ['actor_id' => $actor->id, 'source_type' => $sourceType, 'source_id' => $sourceId]);
+
             return $card->load('ledger');
         }, 5);
     }
@@ -47,25 +54,75 @@ final class GiftCardAction
     {
         $this->authorize($actor, 'gift_cards.redeem');
         abort_unless(GiftCard::query()->visibleTo($actor)->whereKey($card->id)->exists(), 403);
-        if (bccomp($amount, '0.00', 2) <= 0) throw ValidationException::withMessages(['amount' => __('Redemption amount must be greater than zero.')]);
+        if (bccomp($amount, '0.00', 2) <= 0) {
+            throw ValidationException::withMessages(['amount' => __('Redemption amount must be greater than zero.')]);
+        }
         $amount = bcadd($amount, '0', 2);
         $sourceReference = $this->nullableText($sourceReference);
+
         return DB::transaction(function () use ($actor, $card, $amount, $idempotencyKey, $sourceType, $sourceId, $sourceReference): GiftCardLedger {
             $existing = GiftCardLedger::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                if (! $this->sameLedgerRequest($existing, $card, 'redeem', '-'.$amount, $sourceType, $sourceId, $sourceReference, null)) $this->idempotencyConflict();
+                if (! $this->sameLedgerRequest($existing, $card, 'redeem', '-'.$amount, $sourceType, $sourceId, $sourceReference, null)) {
+                    $this->idempotencyConflict();
+                }
+
                 return $existing;
             }
             $locked = GiftCard::query()->whereKey($card->id)->lockForUpdate()->firstOrFail();
             $this->expireIfNeeded($locked, $actor);
-            if ($locked->status !== 'active' && $locked->status !== 'partially_used') throw ValidationException::withMessages(['card' => __('This Gift Card is not redeemable.')]);
-            if (bccomp($amount, (string) $locked->balance, 2) > 0) throw ValidationException::withMessages(['amount' => __('The Gift Card balance is insufficient.')]);
+            if ($locked->status !== 'active' && $locked->status !== 'partially_used') {
+                throw ValidationException::withMessages(['card' => __('This Gift Card is not redeemable.')]);
+            }
+            if (bccomp($amount, (string) $locked->balance, 2) > 0) {
+                throw ValidationException::withMessages(['amount' => __('The Gift Card balance is insufficient.')]);
+            }
             $before = (string) $locked->balance;
             $after = bcsub($before, $amount, 2);
             $status = bccomp($after, '0.00', 2) === 0 ? 'fully_used' : 'partially_used';
             $locked->update(['balance' => $after, 'status' => $status, 'lock_version' => (int) $locked->lock_version + 1]);
             $entry = $this->ledger($locked, $actor, 'redeem', '-'.$amount, $before, $after, $sourceType, $sourceId, $sourceReference, null, $idempotencyKey, []);
             app(RecordAuditEvent::class)->execute('retail', 'gift_card_redeemed', $locked, ['balance' => $before, 'status' => $locked->getOriginal('status')], ['balance' => $after, 'status' => $status, 'amount' => $amount], (int) $locked->branch_id, (int) $locked->store_id, metadata: ['actor_id' => $actor->id, 'source_type' => $sourceType, 'source_id' => $sourceId]);
+
+            return $entry;
+        }, 5);
+    }
+
+    public function refundRedemption(User $actor, GiftCard $card, string $amount, string $idempotencyKey, string $returnId): GiftCardLedger
+    {
+        $this->authorize($actor, 'returns.complete');
+        abort_unless(GiftCard::query()->visibleTo($actor)->whereKey($card->id)->exists(), 403);
+        if (bccomp($amount, '0.00', 2) <= 0) {
+            throw ValidationException::withMessages(['amount' => __('The Gift Card refund amount must be positive.')]);
+        }
+        $amount = bcadd($amount, '0', 2);
+
+        return DB::transaction(function () use ($actor, $card, $amount, $idempotencyKey, $returnId): GiftCardLedger {
+            $existing = GiftCardLedger::query()->where('idempotency_key', $idempotencyKey)->first();
+            if ($existing !== null) {
+                if ((int) $existing->gift_card_id !== (int) $card->id || $existing->event_type !== 'refund'
+                    || bccomp((string) $existing->amount, $amount, 2) !== 0 || (string) $existing->source_id !== $returnId) {
+                    $this->idempotencyConflict();
+                }
+
+                return $existing;
+            }
+            $locked = GiftCard::query()->whereKey($card->id)->lockForUpdate()->firstOrFail();
+            if (in_array($locked->status, ['voided', 'expired'], true)) {
+                throw ValidationException::withMessages(['card' => __('This Gift Card cannot receive a refund.')]);
+            }
+            $before = (string) $locked->balance;
+            $after = bcadd($before, $amount, 2);
+            if (bccomp($after, (string) $locked->issued_value, 2) > 0) {
+                throw ValidationException::withMessages(['card' => __('The Gift Card refund exceeds its original issued value.')]);
+            }
+            $status = bccomp($after, (string) $locked->issued_value, 2) === 0 ? 'active' : 'partially_used';
+            $locked->update(['balance' => $after, 'status' => $status, 'lock_version' => (int) $locked->lock_version + 1]);
+            $entry = $this->ledger($locked, $actor, 'refund', $amount, $before, $after, RetailReturn::class, $returnId, null, null, $idempotencyKey, []);
+            app(RecordAuditEvent::class)->execute('retail', 'gift_card_redemption_refunded', $locked,
+                ['balance' => $before], ['balance' => $after, 'amount' => $amount],
+                (int) $locked->branch_id, (int) $locked->store_id, metadata: ['actor_id' => $actor->id, 'return_id' => $returnId]);
+
             return $entry;
         }, 5);
     }
@@ -73,12 +130,14 @@ final class GiftCardAction
     public function void(User $actor, GiftCard $card, string $reason, string $idempotencyKey): GiftCard
     {
         $this->authorize($actor, 'gift_cards.void');
+
         return $this->zeroBalance($actor, $card, 'void', 'voided', $reason, $idempotencyKey);
     }
 
     public function expire(User $actor, GiftCard $card, string $idempotencyKey): GiftCard
     {
         $this->authorize($actor, 'gift_cards.expire');
+
         return $this->zeroBalance($actor, $card, 'expire', 'expired', __('Gift Card expired.'), $idempotencyKey);
     }
 
@@ -88,10 +147,14 @@ final class GiftCardAction
         abort_unless(GiftCard::query()->visibleTo($actor)->whereKey($card->id)->exists(), 403);
         $format = in_array($format, ['thermal', 'a4'], true) ? $format : 'thermal';
         $reason = $this->nullableText($reason);
+
         return DB::transaction(function () use ($actor, $card, $idempotencyKey, $format, $reason): GiftCardPrintEvent {
             $existing = GiftCardPrintEvent::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                if ((int) $existing->gift_card_id !== (int) $card->id || $existing->format !== $format || $this->nullableText($existing->reason) !== $reason) $this->idempotencyConflict();
+                if ((int) $existing->gift_card_id !== (int) $card->id || $existing->format !== $format || $this->nullableText($existing->reason) !== $reason) {
+                    $this->idempotencyConflict();
+                }
+
                 return $existing;
             }
             $locked = GiftCard::query()->whereKey($card->id)->lockForUpdate()->firstOrFail();
@@ -102,6 +165,7 @@ final class GiftCardAction
             app(RecordAuditEvent::class)->execute('retail', $event->is_reprint ? 'gift_card_reprinted' : 'gift_card_printed', $locked, null, [
                 'identifier' => $locked->identifier, 'is_reprint' => $event->is_reprint, 'balance' => $locked->balance,
             ], (int) $locked->branch_id, (int) $locked->store_id, reasonText: $reason, metadata: ['actor_id' => $actor->id]);
+
             return $event;
         }, 5);
     }
@@ -109,18 +173,25 @@ final class GiftCardAction
     private function zeroBalance(User $actor, GiftCard $card, string $event, string $status, string $reason, string $idempotencyKey): GiftCard
     {
         abort_unless(GiftCard::query()->visibleTo($actor)->whereKey($card->id)->exists(), 403);
+
         return DB::transaction(function () use ($actor, $card, $event, $status, $reason, $idempotencyKey): GiftCard {
             $existing = GiftCardLedger::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
-                if (! $this->sameLedgerRequest($existing, $card, $event, null, null, null, null, $reason)) $this->idempotencyConflict();
+                if (! $this->sameLedgerRequest($existing, $card, $event, null, null, null, null, $reason)) {
+                    $this->idempotencyConflict();
+                }
+
                 return $card->fresh('ledger');
             }
             $locked = GiftCard::query()->whereKey($card->id)->lockForUpdate()->firstOrFail();
-            if (in_array($locked->status, ['voided', 'expired'], true)) throw ValidationException::withMessages(['card' => __('This Gift Card is already closed.')]);
+            if (in_array($locked->status, ['voided', 'expired'], true)) {
+                throw ValidationException::withMessages(['card' => __('This Gift Card is already closed.')]);
+            }
             $before = (string) $locked->balance;
             $locked->update(['balance' => '0.00', 'status' => $status, 'void_reason' => $reason, 'voided_by' => $event === 'void' ? $actor->id : null, 'voided_at' => $event === 'void' ? now() : null, 'lock_version' => (int) $locked->lock_version + 1]);
             $this->ledger($locked, $actor, $event, '-'.$before, $before, '0.00', null, null, null, $reason, $idempotencyKey, []);
             app(RecordAuditEvent::class)->execute('retail', 'gift_card_'.$event, $locked, ['status' => $locked->getOriginal('status'), 'balance' => $before], ['status' => $status, 'balance' => '0.00'], (int) $locked->branch_id, (int) $locked->store_id, reasonText: $reason, metadata: ['actor_id' => $actor->id]);
+
             return $locked->fresh('ledger');
         }, 5);
     }
@@ -166,7 +237,9 @@ final class GiftCardAction
 
     private function sameDateTime(?\DateTimeInterface $stored, ?\DateTimeInterface $requested): bool
     {
-        if ($stored === null || $requested === null) return $stored === $requested;
+        if ($stored === null || $requested === null) {
+            return $stored === $requested;
+        }
 
         return $stored->format('Y-m-d H:i:s') === $requested->format('Y-m-d H:i:s');
     }
@@ -183,5 +256,8 @@ final class GiftCardAction
         throw ValidationException::withMessages(['idempotency_key' => __('This idempotency key was already used with a different Gift Card request.')]);
     }
 
-    private function authorize(User $actor, string $permission): void { abort_unless($actor->is_super_admin || $actor->can($permission), 403); }
+    private function authorize(User $actor, string $permission): void
+    {
+        abort_unless($actor->is_super_admin || $actor->can($permission), 403);
+    }
 }

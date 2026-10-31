@@ -52,6 +52,9 @@ final class CashDrawerCashierEligibilityTest extends TestCase
 
         $eligibleCashier = $this->createCashier('Eligible '.$suffix, $cashierRole);
         $eligibleCashier->storeScopes()->create(['store_id' => $store->id, 'status' => 'active']);
+        $dokkiCashier = $this->createCashier('Dokki '.$suffix, $cashierRole);
+        $dokkiCashier->branchScopes()->create(['branch_id' => $branch->id, 'status' => 'active']);
+        $dokkiCashier->storeScopes()->create(['store_id' => $store->id, 'status' => 'active']);
 
         $inactiveCashier = $this->createCashier('Inactive '.$suffix, $cashierRole, 'inactive');
         $inactiveCashier->storeScopes()->create(['store_id' => $store->id, 'status' => 'active']);
@@ -61,6 +64,11 @@ final class CashDrawerCashierEligibilityTest extends TestCase
 
         $outOfScopeCashier = $this->createCashier('Out of scope '.$suffix, $cashierRole);
         $outOfScopeCashier->storeScopes()->create(['store_id' => $otherStore->id, 'status' => 'active']);
+        $outsideBranch = Branch::factory()->for($company)->create(['status' => 'active']);
+        $outsideStore = Store::factory()->for($outsideBranch)->create(['company_id' => $company->id, 'status' => 'active', 'type' => 'selling']);
+        $wrongBranchCashier = $this->createCashier('Wrong branch '.$suffix, $cashierRole);
+        $wrongBranchCashier->branchScopes()->create(['branch_id' => $outsideBranch->id, 'status' => 'active']);
+        $wrongBranchCashier->storeScopes()->create(['store_id' => $outsideStore->id, 'status' => 'active']);
 
         $this->actingAs($actor)->withoutVite();
         Livewire::test('platform::admin.drawers')
@@ -68,9 +76,11 @@ final class CashDrawerCashierEligibilityTest extends TestCase
             ->set('drawerForm.branch_id', (string) $branch->id)
             ->set('drawerForm.store_id', (string) $store->id)
             ->assertSee($eligibleCashier->name)
+            ->assertSee($dokkiCashier->name)
             ->assertDontSee($inactiveCashier->name)
             ->assertDontSee($rolelessUser->name)
-            ->assertDontSee($outOfScopeCashier->name);
+            ->assertDontSee($outOfScopeCashier->name)
+            ->assertDontSee($wrongBranchCashier->name);
 
         $action = app(SaveCashDrawerAction::class);
         $baseline = $this->drawerPayload($drawer, $branch, $store);

@@ -10,6 +10,7 @@ use App\Modules\Customer\Support\PhoneNormalizer;
 use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\PaymentMethod;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Retail\Actions\CreateUnverifiedReturnAction;
 use App\Modules\Retail\Actions\RetailReturnAction;
 use App\Modules\Retail\Models\GiftReceipt;
@@ -60,6 +61,9 @@ final class RefundWizard extends Component
     public string $unverifiedQuantity = '1';
 
     public string $unverifiedAmount = '';
+
+    /** @var array<int, array{product_id: int, item_code: string, name: string, quantity: string, unit_price: string}> */
+    public array $unverifiedLines = [];
 
     public string $unverifiedMethodId = '';
 
@@ -122,7 +126,7 @@ final class RefundWizard extends Component
             'lookupTerm', 'customerTerm', 'saleDate', 'branchFilter', 'amountFilter', 'productFilter', 'cashierFilter', 'searched', 'saleId', 'giftReceiptId', 'quantities', 'conditions', 'dispositions',
             'returnStoreIds', 'allocations', 'totals', 'refundMethod', 'reason', 'resultReturnId',
             'resultStatus', 'submitting', 'reasonNote', 'unverifiedProductQuery', 'unverifiedProductId',
-            'unverifiedQuantity', 'unverifiedAmount', 'unverifiedMethodId', 'unverifiedReference',
+            'unverifiedQuantity', 'unverifiedAmount', 'unverifiedLines', 'unverifiedMethodId', 'unverifiedReference',
             'unverifiedReason', 'unverifiedNote', 'unverifiedNoSaleConfirmed',
         ]);
         $this->open = true;
@@ -235,6 +239,8 @@ final class RefundWizard extends Component
         Gate::authorize('returns.approve');
         Gate::authorize('returns.complete');
         $this->step = 8;
+        $this->unverifiedLines = [];
+        $this->idempotencyKey = (string) Str::uuid();
         $this->resetErrorBag();
         $this->dispatch('focus-unverified-product');
     }
@@ -256,8 +262,45 @@ final class RefundWizard extends Component
 
             return;
         }
+        if (count($this->unverifiedLines) >= 50) {
+            $this->addError('unverifiedLines', __('A return supports at most fifty items.'));
+
+            return;
+        }
+        if (collect($this->unverifiedLines)->contains(fn (array $line): bool => (int) $line['product_id'] === (int) $product->id)) {
+            $this->addError('unverifiedLines', __('This product is already in the return. Edit its quantity instead.'));
+
+            return;
+        }
+        $price = app(EffectivePriceResolver::class)->resolveForStore([(int) $product->id], (int) $context->store->id)->get((int) $product->id)?->amount;
+        $this->unverifiedLines[] = [
+            'product_id' => (int) $product->id,
+            'item_code' => (string) $product->item_code,
+            'name' => (string) (str_starts_with(app()->getLocale(), 'ar') ? $product->name_ar : $product->name_en),
+            'quantity' => '1',
+            'unit_price' => bcadd((string) ($price ?? $product->sale_price ?? '0.00'), '0', 2),
+        ];
         $this->unverifiedProductId = (int) $product->id;
-        $this->unverifiedProductQuery = (string) $product->item_code;
+        $this->unverifiedProductQuery = '';
+    }
+
+    public function removeUnverifiedLine(int $index): void
+    {
+        Gate::authorize('returns.unverified');
+        unset($this->unverifiedLines[$index]);
+        $this->unverifiedLines = array_values($this->unverifiedLines);
+    }
+
+    public function unverifiedTotal(): string
+    {
+        $total = '0.00';
+        foreach ($this->unverifiedLines as $line) {
+            if (is_numeric($line['quantity'] ?? null) && is_numeric($line['unit_price'] ?? null)) {
+                $total = bcadd($total, bcmul((string) $line['quantity'], (string) $line['unit_price'], 2), 2);
+            }
+        }
+
+        return $total;
     }
 
     public function updatedUnverifiedProductQuery(): void
@@ -284,9 +327,7 @@ final class RefundWizard extends Component
             /** @var User $actor */
             $actor = auth()->user();
             $document = $action->execute($actor, [
-                'product_id' => $this->unverifiedProductId,
-                'quantity' => $this->unverifiedQuantity,
-                'amount' => $this->unverifiedAmount,
+                'lines' => $this->unverifiedLines,
                 'payment_method_id' => $this->unverifiedMethodId,
                 'safe_reference' => $this->unverifiedReference,
                 'reason' => $this->unverifiedReason,

@@ -461,3 +461,7 @@ Classification D3; branch `feature/v2-inventory-transfer-barcode-pos-purchase-po
 **Final verification for DEC-117 amendment:** Focused transfer 34/299 PASS, bounded authenticated browser PASS, one final Core gate 21/251 plus payment JavaScript PASS. No migration; branch remains unmerged and undeployed. Commit/push pending at this entry.
 
 **Published source for DEC-117 amendment:** implementation commit `65b0ab98dec96db9d5cc75a7f5b290bc49ea1ec3` was pushed only to the active feature branch after the final Core gate. Unmerged and undeployed.
+
+## 2026-10-31 — Cashier/Gift Card/inventory/return polish batch
+
+Classification D3; branch `feature/v2-cashier-giftcard-inventory-return-polish-20261031` from `c6397d13e586a207427b1ffb3dfd2f7f26240add`. All owner-authorized areas are implemented without migration or dependency change. Existing Code 128 renderer and canonical payment, Gift Card ledger, inventory and audit paths are reused. Focused QA 10/91 plus linked original-Gift-Card return 1/5 PASS. Bounded authenticated browser 62 checks PASS at 1440/390 Arabic RTL. Core gate payment JavaScript and 21/251 PASS. Hardware scanner/thermal print verification deferred. Unmerged and undeployed; commit/push pending at this entry.

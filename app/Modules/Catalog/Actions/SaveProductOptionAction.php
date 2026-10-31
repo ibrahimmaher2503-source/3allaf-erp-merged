@@ -67,10 +67,6 @@ class SaveProductOptionAction
             if (ProductOptionValue::query()->where('product_option_group_id', $group->id)->where('code', $code)->when($value, fn ($query) => $query->whereKeyNot($value->id))->exists()) {
                 throw new InvalidArgumentException(__('This option value code already exists in the group.'));
             }
-            $swatch = strtoupper(trim((string) ($data['colour_swatch'] ?? '')));
-            if ($swatch !== '' && ! preg_match('/^#[0-9A-F]{6}([0-9A-F]{2})?$/', $swatch)) {
-                throw new InvalidArgumentException(__('Colour swatches must use a valid six or eight digit hexadecimal value.'));
-            }
             $status = $this->status($data['status'] ?? 'active');
             if ($value && $status === 'inactive' && $value->status === 'active' && DB::table('product_variant_values')->join('products', 'products.id', '=', 'product_variant_values.product_id')->where('product_option_value_id', $value->id)->where('products.status', 'active')->exists()) {
                 throw new InvalidArgumentException(__('An option value referenced by an active variation cannot be inactivated.'));
@@ -81,7 +77,7 @@ class SaveProductOptionAction
                 'code' => $code,
                 'name_ar' => trim((string) $data['name_ar']),
                 'name_en' => trim((string) $data['name_en']),
-                'colour_swatch' => $swatch ?: null,
+                'colour_swatch' => $value?->colour_swatch,
                 'status' => $status,
                 'sort_order' => max(0, (int) ($data['sort_order'] ?? 0)),
             ];

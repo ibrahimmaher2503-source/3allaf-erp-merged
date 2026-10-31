@@ -195,23 +195,42 @@ class User extends Authenticatable implements PasskeyUser
 
         return $query
             ->where('users.status', 'active')
-            ->whereHas('roles', fn (Builder $roles): Builder => $roles
-                ->where('roles.code', 'cashier')
-                ->where('roles.status', 'active'))
-            ->where(function (Builder $scope) use ($branchId, $storeId): void {
+            ->where(function (Builder $eligible): void {
+                $eligible->where('users.is_super_admin', true)
+                    ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                        ->where('roles.status', 'active')
+                        ->where(function (Builder $role): void {
+                            $role->whereIn('roles.code', ['cashier', 'system-administrator'])
+                                ->orWhereHas('permissions', fn (Builder $permissions): Builder => $permissions
+                                    ->where('permissions.code', 'pos_sales.create')
+                                    ->where('permissions.status', 'active'));
+                        }));
+            })
+            ->where(function (Builder $scope) use ($branchId): void {
                 $scope->where('users.is_super_admin', true)
                     ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
                         ->where('roles.code', 'system-administrator')
                         ->where('roles.status', 'active'))
                     ->orWhereHas('branchScopes', fn (Builder $branchScopes): Builder => $branchScopes
                         ->where('branch_id', $branchId)
+                        ->where('status', 'active'))
+                    ->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
+                        ->whereHas('store', fn (Builder $store): Builder => $store->where('branch_id', $branchId))
                         ->where('status', 'active'));
-
-                if ($storeId !== null && $storeId > 0) {
-                    $scope->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
-                        ->where('store_id', $storeId)
-                        ->where('status', 'active'));
-                }
+            })
+            ->when($storeId !== null && $storeId > 0, function (Builder $query) use ($branchId, $storeId): void {
+                $query->where(function (Builder $scope) use ($branchId, $storeId): void {
+                    $scope->where('users.is_super_admin', true)
+                        ->orWhereHas('roles', fn (Builder $roles): Builder => $roles
+                            ->where('roles.code', 'system-administrator')
+                            ->where('roles.status', 'active'))
+                        ->orWhereHas('storeScopes', fn (Builder $storeScopes): Builder => $storeScopes
+                            ->where('store_id', $storeId)
+                            ->where('status', 'active'))
+                        ->orWhereHas('branchScopes', fn (Builder $branchScopes): Builder => $branchScopes
+                            ->where('branch_id', $branchId)
+                            ->where('status', 'active'));
+                });
             });
     }
 

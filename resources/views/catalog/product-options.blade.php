@@ -18,7 +18,7 @@ new #[Title('Product Filters')] class extends Component {
     public string $search = '';
     public string $statusFilter = 'all';
     public array $groupForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
-    public array $valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'colour_swatch' => '', 'status' => 'active', 'sort_order' => 0];
+    public array $valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
     public string $deleteMode = 'archive';
     public ?int $replacementValueId = null;
 
@@ -90,7 +90,7 @@ new #[Title('Product Filters')] class extends Component {
         Gate::authorize('products_categories_brands.edit');
         $this->valueGroupId = ProductOptionGroup::query()->findOrFail($groupId)->id;
         $this->editingValueId = null;
-        $this->valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'colour_swatch' => '', 'status' => 'active', 'sort_order' => 0];
+        $this->valueForm = ['code' => '', 'name_ar' => '', 'name_en' => '', 'status' => 'active', 'sort_order' => 0];
         $this->resetValidation();
     }
 
@@ -100,8 +100,7 @@ new #[Title('Product Filters')] class extends Component {
         $value = ProductOptionValue::query()->findOrFail($id);
         $this->valueGroupId = $value->product_option_group_id;
         $this->editingValueId = $value->id;
-        $this->valueForm = $value->only(['code', 'name_ar', 'name_en', 'colour_swatch', 'status', 'sort_order']);
-        $this->valueForm['colour_swatch'] ??= '';
+        $this->valueForm = $value->only(['code', 'name_ar', 'name_en', 'status', 'sort_order']);
         $this->resetValidation();
     }
 
@@ -131,7 +130,6 @@ new #[Title('Product Filters')] class extends Component {
             'valueForm.code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9_-]*$/'],
             'valueForm.name_ar' => ['required', 'string', 'max:255'],
             'valueForm.name_en' => ['required', 'string', 'max:255'],
-            'valueForm.colour_swatch' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/'],
             'valueForm.status' => ['required', Rule::in(['active', 'inactive'])],
             'valueForm.sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
         ])['valueForm'];
@@ -212,7 +210,7 @@ new #[Title('Product Filters')] class extends Component {
 
     @if ($valueGroupId)
         <form wire:submit="saveValue" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" aria-label="{{ __('Filter value editor') }}">
-            <div class="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-7"><div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="valueForm.code" :label="__('Value code')" required :disabled="$editingValueId !== null" />@if ($editingValueId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateValueCode" wire:loading.attr="disabled" wire:target="generateValueCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><flux:input wire:model="valueForm.name_ar" :label="__('Arabic label')" dir="rtl" required /><flux:input wire:model="valueForm.name_en" :label="__('English label')" dir="ltr" required /><flux:input wire:model="valueForm.colour_swatch" type="color" :label="__('Optional swatch')" /><flux:select wire:model="valueForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><flux:input wire:model="valueForm.sort_order" type="number" min="0" :label="__('Order')" /><div class="flex items-end gap-2"><flux:button type="submit" variant="primary" class="flex-1">{{ __('Save value') }}</flux:button><flux:button type="button" wire:click="$set('valueGroupId', null)" variant="subtle">{{ __('Cancel') }}</flux:button></div></div>
+            <div class="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-7"><div class="flex items-end gap-2"><flux:input class="min-w-0 flex-1" wire:model="valueForm.code" :label="__('Value code')" required :disabled="$editingValueId !== null" />@if ($editingValueId === null)<flux:button type="button" variant="subtle" icon="sparkles" wire:click="generateValueCode" wire:loading.attr="disabled" wire:target="generateValueCode" title="{{ __('Generate code automatically') }}" aria-label="{{ __('Generate code automatically') }}">{{ __('Generate automatically') }}</flux:button>@endif</div><flux:input wire:model="valueForm.name_ar" :label="__('Arabic label')" dir="rtl" required /><flux:input wire:model="valueForm.name_en" :label="__('English label')" dir="ltr" required /><flux:select wire:model="valueForm.status" :label="__('Status')"><flux:select.option value="active">{{ __('Active') }}</flux:select.option><flux:select.option value="inactive">{{ __('Inactive') }}</flux:select.option></flux:select><flux:input wire:model="valueForm.sort_order" type="number" min="0" :label="__('Order')" /><div class="flex items-end gap-2"><flux:button type="submit" variant="primary" class="flex-1">{{ __('Save value') }}</flux:button><flux:button type="button" wire:click="$set('valueGroupId', null)" variant="subtle">{{ __('Cancel') }}</flux:button></div></div>
         </form>
     @endif
 </div>

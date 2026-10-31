@@ -67,7 +67,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $visibleStores = Store::query()->with('branch')->visibleTo($user)->orderBy('branch_id')->orderBy('name_ar')->orderBy('code')->limit(200)->get();
     $visibleStoreIds = $visibleStores->modelKeys();
     $search = trim((string) request()->query('q', ''));
-    $filterStoreId = request()->integer('store_id') ?: app(WorkContext::class)->id($user);
+    $filterStoreId = request()->has('store_id') ? (request()->integer('store_id') ?: null) : app(WorkContext::class)->id($user);
     if ($filterStoreId !== null && ! in_array($filterStoreId, $visibleStoreIds, true)) {
         abort(403);
     }

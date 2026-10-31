@@ -7,6 +7,7 @@ namespace App\Livewire\Pos;
 use App\Models\User;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
+use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
@@ -28,6 +29,11 @@ final class CheckoutPanel extends Component
     public array $savedModeLines = [];
 
     public string $notes = '';
+
+    public string $giftCardScan = '';
+
+    /** @var array<string, string> */
+    public array $giftCardPreview = [];
 
     public function mount(PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
@@ -56,6 +62,71 @@ final class CheckoutPanel extends Component
 
     #[On('pos-cart-updated')]
     public function refreshCheckout(): void {}
+
+    #[On('pos-gift-card-scanned')]
+    public function scanGiftCard(?string $identifier = null): void
+    {
+        Gate::authorize('pos_sales.create');
+        Gate::authorize('gift_cards.redeem');
+        $this->resetErrorBag('giftCardScan');
+        $identifier = trim($identifier ?? $this->giftCardScan);
+        $this->giftCardScan = $identifier;
+        /** @var User $user */
+        $user = auth()->user();
+        $context = app(PosContextResolver::class)->resolve($user);
+        $store = $context->store;
+        if (! $context->isReady() || $store === null) {
+            $this->addError('giftCardScan', __('Open an assigned cashier shift before redeeming a Gift Card.'));
+
+            return;
+        }
+        $card = GiftCard::query()->visibleTo($user)->where('identifier', $identifier)
+            ->where('branch_id', $store->branch_id)->where('store_id', $store->id)->first();
+        if ($card === null || ! in_array($card->status, ['active', 'partially_used'], true)
+            || bccomp((string) $card->balance, '0.00', 2) <= 0
+            || ($card->valid_until !== null && $card->valid_until->isPast())) {
+            $this->giftCardPreview = [];
+            $this->addError('giftCardScan', __('This Gift Card is unavailable, expired, or has no balance.'));
+
+            return;
+        }
+        $method = PaymentMethod::query()->where('type', 'gift_card')->where('status', 'active')->first();
+        $order = app(PosOpenOrderManager::class)->active(request(), $user, $context);
+        $preview = app(PosCartSnapshot::class)->build($context)['preview'] ?? null;
+        app(PosOpenOrderManager::class)->updateTotals($order, $preview);
+        $payable = (string) ($preview['total'] ?? '0.00');
+        if ($method === null || bccomp($payable, '0.00', 2) <= 0) {
+            $this->addError('giftCardScan', __('Add a priced product before redeeming a Gift Card.'));
+
+            return;
+        }
+        $redeemed = bccomp((string) $card->balance, $payable, 2) >= 0 ? $payable : (string) $card->balance;
+        $giftLine = $this->emptyLine((string) $method->id);
+        $giftLine['amount'] = $redeemed;
+        $giftLine['gift_card_identifier'] = $identifier;
+        $this->paymentLines = [$giftLine];
+        $remaining = bcsub($payable, $redeemed, 2);
+        $this->mode = 'other';
+        if (bccomp($remaining, '0.00', 2) > 0) {
+            $other = PaymentMethod::query()->where('status', 'active')->where('type', '!=', 'gift_card')->orderBy('code')->first();
+            if ($other !== null) {
+                $line = $this->emptyLine((string) $other->id);
+                $line[$other->isCash() ? 'tendered' : 'amount'] = $remaining;
+                $this->paymentLines[] = $line;
+                $this->mode = 'split';
+            }
+        }
+        $this->giftCardPreview = [
+            'identifier' => $identifier,
+            'balance' => (string) $card->balance,
+            'status' => (string) $card->status,
+            'expiry' => $card->valid_until?->toDateString() ?? '',
+        ];
+        $this->giftCardScan = '';
+        $this->savedModeLines[$this->mode] = $this->paymentLines;
+        $this->persistDraftUpdate();
+        $this->dispatch('open-pos-checkout');
+    }
 
     public function chooseMode(string $mode, PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {

@@ -48,6 +48,12 @@ final class ProductBrowser extends Component
         if ($term === '') {
             return;
         }
+        if (str_starts_with(strtoupper($term), 'GC-')) {
+            $this->dispatch('pos-gift-card-scanned', identifier: $term);
+            $this->search = '';
+
+            return;
+        }
         $matches = Product::query()->sellable()
             ->where(fn ($query) => $query->where('item_code', $term)->orWhere('model_number', $term)->orWhereHas('barcodes', fn ($barcodes) => $barcodes->active()->where('barcode', $term)))
             ->limit(2)->get();
