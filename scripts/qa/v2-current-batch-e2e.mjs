@@ -132,6 +132,38 @@ async function transferAndReceive(existingId = null) {
     }
     return transferId;
 }
+async function zeroDestination() {
+    await open('/inventory/transfers/create');
+    await page.locator('#transfer-source').selectOption(String(fixture.source));
+    for (const destination of [fixture.destination_a, fixture.destination_b]) {
+        await page.locator(`input[name="destination_store_ids[]"][value="${destination}"]`).check();
+    }
+    const line = page.locator('[data-transfer-allocation-editor] [data-product-line]').first();
+    await selectProduct(line, fixture.products[0].barcode);
+    await line.locator(`input[name="lines[0][allocations][${fixture.destination_a}]"]`).fill('1');
+    await line.locator(`input[name="lines[0][allocations][${fixture.destination_b}]"]`).fill('0');
+    await page.locator('#transfer-reason').fill('QA-E2E-ZERO-DESTINATION');
+    await Promise.all([page.waitForURL(url => /\/inventory\/transfers\/\d+\/edit$/.test(url.pathname)), page.locator('[data-transfer-allocation-editor] button[type=submit]').click()]);
+    const transferId = Number(page.url().match(/\/transfers\/(\d+)\/edit$/)?.[1]);
+    await open('/inventory/transfers');
+    await page.locator(`form[action$="/transfers/${transferId}/submit"] button[type=submit]`).click();
+    await open(`/inventory/transfers/${transferId}/approve`);
+    check(await page.locator(`[data-transfer-approval-review] input[name*="[allocations][${fixture.destination_b}]"]:visible`).count() === 0, 'zero destination omitted from final review');
+    await page.getByRole('button', { name: 'اعتماد التحويل' }).click();
+    await open('/inventory/transfers/receiving');
+    check(await page.locator(`[data-incoming-transfer="${transferId}"]`).count() === 1, 'zero destination creates no receiving allocation');
+    await open(`/inventory/transfers/${transferId}/receive?destination_store_id=${fixture.destination_a}`);
+    check(await page.locator('select[name=destination_store_id] option').count() === 2, 'only nonzero destination selectable for receipt');
+}
+async function completeExactTransfer(transferId = 1) {
+    await open(`/inventory/transfers/${transferId}/receive?destination_store_id=${fixture.destination_a}`);
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'تأكيد الاستلام' }).click();
+    await page.waitForLoadState('networkidle');
+    check((await page.locator('body').innerText()).includes('تم تأكيد استلام هذه الوجهة'), 'exact destination receipt confirmed once');
+    await open('/inventory/transfers');
+    check((await page.locator('[data-transfer-row]').first().innerText()).includes('مستلم'), 'exact final receipt completes parent transfer');
+}
 async function purchaseImport() {
     await open('/purchasing/orders/create');
     await responsiveCheck('purchase order import');
@@ -206,6 +238,58 @@ async function posDiscount() {
     await page.locator('dialog[aria-labelledby="pos-checkout-dialog-title"]').waitFor({ state: 'visible' });
     check(await page.locator('button[wire\\:click^="switchCheckoutMode"]').count() >= 3, 'Complete Sale payment methods unaffected');
 }
+async function discountedSaleAndReturn() {
+    await open('/pos');
+    await page.locator('[data-pos-category-grid] button').nth(1).click();
+    await page.locator('[data-pos-product-grid] article').first().waitFor();
+    await page.locator('[data-pos-product-grid] article').first().getByRole('button', { name: /إضافة/ }).click();
+    await page.locator('[data-cart-line]').first().waitFor();
+    await page.locator('[data-cart-discount] summary').click();
+    await page.locator('select[wire\\:model="invoiceDiscountType"]').selectOption('percentage');
+    await page.locator('input[wire\\:model="invoiceDiscountValue"]').fill('20');
+    await page.locator('button[wire\\:click="saveInvoiceDiscount"]').click();
+    await page.locator('button[wire\\:click="removeInvoiceDiscount"]').waitFor();
+    const discountText = await page.locator('[data-cart-discount] p').innerText();
+    check(discountText.includes('ج.م'), 'discounted sale cart amount displayed');
+    await page.locator('button[wire\\:click^="startCheckout"]').click();
+    const checkout = page.locator('dialog[aria-labelledby="pos-checkout-dialog-title"]');
+    await checkout.waitFor({ state: 'visible' });
+    await checkout.locator('button[wire\\:click="switchCheckoutMode(\'cash\')"]').click();
+    await checkout.locator('[data-cash-received]').waitFor();
+    await checkout.locator('button').filter({ hasText: 'المبلغ المحدد' }).first().click().catch(async () => {
+        await checkout.locator('[data-cash-received]').fill(await checkout.locator('[data-pos-payable]').inputValue());
+    });
+    const submit = checkout.locator('form[action$="/pos/checkout"] button[type=submit]');
+    await submit.waitFor();
+    await Promise.all([page.waitForLoadState('networkidle'), submit.click()]);
+    await page.locator('#pos-sale-success').waitFor({ state: 'visible' });
+    check(await page.locator('#pos-sale-success').count() === 1, 'discounted sale completed through browser');
+    const saleReference = (await page.locator('#pos-sale-success p.font-mono').innerText()).trim();
+    const receiptPath = await page.locator('#pos-sale-success a[href*="/receipt"]').getAttribute('href');
+    await open(new URL(receiptPath, base).pathname);
+    check((await page.locator('body').innerText()).includes('خصم'), 'completed sale receipt shows discount');
+    const receiptReference = await page.locator('[data-receipt-barcode]').first().getAttribute('data-receipt-reference');
+    check(receiptReference === saleReference, 'receipt matches completed discounted sale');
+    check(Boolean(receiptReference), `discounted sale reference ${receiptReference}`);
+    await open('/pos');
+    await page.keyboard.press('F7');
+    await page.locator('#pos-refund-lookup').waitFor();
+    await page.locator('#pos-refund-lookup').fill(receiptReference);
+    await page.locator('[data-pos-refund-wizard] form[wire\\:submit="lookup"] button[type=submit]').click();
+    await page.locator('[data-pos-refund-wizard]').getByText(receiptReference).first().waitFor();
+    await page.locator('[data-pos-refund-wizard] button[wire\\:click="next"]').click();
+    const quantity = page.locator('[data-pos-refund-wizard] input[wire\\:model^="quantities."]').first();
+    await quantity.waitFor();
+    await quantity.fill('1');
+    await page.locator('[data-pos-refund-wizard] button[wire\\:click="next"]').click();
+    await page.locator('[data-pos-refund-wizard] button[wire\\:click="next"]').click();
+    await page.locator('[data-pos-refund-wizard] select[wire\\:model="reason"]').selectOption('defective');
+    await page.locator('[data-pos-refund-wizard] button[wire\\:click="next"]').click();
+    await page.locator('[data-pos-refund-wizard] button[wire\\:click="submit"]').click();
+    const returnReceipt = page.locator('[data-pos-refund-wizard] a[href*="/pos/refunds/"][href$="/receipt"]');
+    await returnReceipt.waitFor({ state: 'visible' });
+    check(await returnReceipt.count() === 1, 'linked discounted return posted through browser');
+}
 async function supplierReturn(store) {
     await open('/purchasing/returns/create');
     await page.getByLabel('المورد', { exact: true }).selectOption(String(fixture.supplier));
@@ -229,6 +313,15 @@ async function postSupplierReturns() {
         await open('/purchasing/returns');
     }
 }
+async function verifySupplierReturns() {
+    const branchStock = await stockQuantity(fixture.source, fixture.products[0].code);
+    check(branchStock < 30, `branch-linked warehouse stock reduced (${branchStock})`);
+    check(await stockQuantity(fixture.main, fixture.products[0].code) === 29, 'branchless Main Warehouse Supplier Return reduced selected warehouse stock to 29');
+    await open('/purchasing/returns/2');
+    check((await page.locator('body').innerText()).includes('المخزن الرئيسي للاختبار'), 'branchless Supplier Return shows actual Main Warehouse');
+    await open('/purchasing/returns/create');
+    check(await page.getByLabel('مخزن الإرجاع', { exact: true }).locator(`option[value="${fixture.inactive}"]`).count() === 0, 'inactive warehouse unavailable in Supplier Return UI');
+}
 async function reports() {
     const today = new Date().toISOString().slice(0, 10);
     await open(`/reports/product-sales?date_from=${today}&date_to=${today}`);
@@ -246,11 +339,33 @@ async function reports() {
     await responsiveCheck('daily sales report');
     check(await page.locator('select[name=branch_id]').count() === 1, 'daily report one branch filter');
     check(await page.locator('[data-report-results] tfoot tr').count() === 1, 'daily report one period total');
+    const dailyRows = page.locator('[data-report-row]');
+    check(await dailyRows.count() === 1, 'posted sales aggregate into one calendar-day row');
+    const dailyCells = await dailyRows.first().locator('td').allInnerTexts();
+    check(Number(dailyCells[1]) > 0 && Number(dailyCells[2]) > 0, 'daily gross and cash columns show posted sale economics');
+    check(Number(dailyCells[4]) > 0 && Number(dailyCells[5]) > 0 && Number(dailyCells[6]) > 0, 'daily discounts, refunds, and net sales reflect posted transactions');
+}
+async function reportAuthorization() {
+    const cashier = JSON.parse(readFileSync(process.env.QA_BROWSER_ACCOUNTS, 'utf8')).find(row => row.role === 'Cashier');
+    const restricted = await browser.newPage();
+    await restricted.goto(base + '/login');
+    await restricted.locator('input[name=username]').fill(cashier.username);
+    await restricted.locator('input[name=password]').fill(cashier.password);
+    await Promise.all([restricted.waitForURL(url => !url.pathname.endsWith('/login')), restricted.locator('[data-test=login-button]').click()]);
+    for (const path of ['/reports/product-sales', '/reports/current-inventory', '/reports/daily-branch-sales']) {
+        const response = await restricted.goto(`${base}${path}?store_id=${fixture.main}&branch_id=${fixture.branch}`);
+        check(response.status() === 403, `restricted cashier cannot access ${path} data by filter URL`);
+    }
+    await restricted.close();
 }
 try {
     await login();
     if (process.env.QA_E2E_START === 'reports') { await reports(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
+    if (process.env.QA_E2E_START === 'report-auth') { await reportAuthorization(); process.exit(0); }
+    if (process.env.QA_E2E_START === 'zero-destination') { await zeroDestination(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
+    if (process.env.QA_E2E_START === 'zero-complete') { await completeExactTransfer(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
     if (process.env.QA_E2E_START === 'supplier-post') { await postSupplierReturns(); process.exit(0); }
+    if (process.env.QA_E2E_START === 'supplier-verify') { await verifySupplierReturns(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
     if (process.env.QA_E2E_START === 'supplier') {
         await supplierReturn(fixture.source);
         await supplierReturn(fixture.main);
@@ -258,6 +373,7 @@ try {
         process.exit(0);
     }
     if (process.env.QA_E2E_START === 'pos') { await posDiscount(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
+    if (process.env.QA_E2E_START === 'sale-return') { await discountedSaleAndReturn(); check(errors.length === 0, `no browser errors: ${errors.join('; ')}`); process.exit(0); }
     if (process.env.QA_E2E_START === 'product') { await productCodes(); process.exit(0); }
     if (process.env.QA_E2E_START === 'purchase') {
         await purchaseImport();
@@ -267,6 +383,7 @@ try {
     if (process.env.QA_E2E_START === 'status-only') {
         await open('/inventory/transfers');
         console.log(`PARENT STATUS VIEW ${(await page.locator('[data-transfer-row]').first().innerText()).slice(0, 260)}`);
+        check((await page.locator('[data-transfer-row]').first().innerText()).includes('مستلم'), 'exact receipt parent status Received');
         process.exit(0);
     }
     if (!['transfer-continue', 'transfer-only'].includes(process.env.QA_E2E_START)) {
