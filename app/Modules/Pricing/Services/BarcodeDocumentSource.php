@@ -33,10 +33,10 @@ final class BarcodeDocumentSource
         if ($quantities === []) {
             throw ValidationException::withMessages(['number' => __('This document has no products allocated to the selected destination.')]);
         }
-        $resolved = app(EffectivePriceResolver::class)->resolveForStore(array_keys($quantities), $sellingStore->id);
+        $resolved = app(BarcodeSellingPriceResolver::class)->resolveForStore(array_keys($quantities), $sellingStore);
         $prices = [];
         foreach ($quantities as $productId => $quantity) {
-            $price = $resolved->get($productId)?->amount;
+            $price = $resolved->get($productId);
             if ($price === null || bccomp((string) $price, '0', 3) <= 0) {
                 $product = Product::query()->find($productId);
                 $productLabel = $product === null ? (string) $productId : HumanName::name($product).' · '.$product->item_code;

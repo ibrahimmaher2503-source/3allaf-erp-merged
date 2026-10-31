@@ -85,11 +85,11 @@ final class ReceiveStockTransferAction
             $completed = StockTransferReceivingDraft::query()->where('stock_transfer_id', $transferId)->whereNotNull('finalized_at')->whereIn('destination_store_id', $destinationIds)->count();
             $allFinal = $completed === $destinationIds->count();
             $hasDifference = $transfer->lines()->where('difference_quantity', '>', 0)->exists();
-            $status = ! $allFinal ? 'in_transit' : ($hasDifference ? 'difference_review' : 'received');
+            $status = $allFinal ? 'received' : 'in_transit';
             $before = $transfer->only(['status', 'difference_status', 'lock_version']);
             $transfer->mutateApprovedDocument([
                 'status' => $status,
-                'difference_status' => $status === 'difference_review' ? 'under_review' : null,
+                'difference_status' => $hasDifference ? 'recorded' : null,
                 'received_by' => $allFinal ? Auth::id() : null,
                 'received_at' => $allFinal ? now() : null,
                 'lock_version' => $transfer->lock_version + 1,
@@ -167,9 +167,9 @@ final class ReceiveStockTransferAction
                 }
                 $line->mutateApprovedParentLine(['quantity_received' => $quantities['received'], 'difference_quantity' => $quantities['difference'], 'difference_type' => $differenceType, 'difference_reason' => $differenceReason]);
             }
-            $status = bccomp($totalDifference, '0', 6) === 0 ? 'received' : 'difference_review';
+            $hasDifference = bccomp($totalDifference, '0', 6) > 0;
             $before = $transfer->only(['status', 'difference_status', 'lock_version']);
-            $transfer->mutateApprovedDocument(['status' => $status, 'difference_status' => $status === 'received' ? null : 'under_review', 'reason_code' => $differenceType, 'reason_notes' => $differenceReason, 'received_by' => Auth::id(), 'received_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
+            $transfer->mutateApprovedDocument(['status' => 'received', 'difference_status' => $hasDifference ? 'recorded' : null, 'reason_code' => $differenceType, 'reason_notes' => $differenceReason, 'received_by' => Auth::id(), 'received_at' => now(), 'lock_version' => $transfer->lock_version + 1]);
             app(RecordAuditEvent::class)->execute('inventory', 'receive_stock_transfer', $transfer, $before, $transfer->only(['status', 'difference_status', 'received_by', 'received_at', 'lock_version']), storeId: $transfer->destination_store_id, reasonCode: $differenceType, reasonText: $differenceReason, metadata: ['received_quantities' => $receivedByLine, 'difference_quantity' => $totalDifference]);
 
             return $transfer->fresh(['sourceStore', 'destinationStore', 'lines.product']);

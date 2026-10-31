@@ -6,6 +6,8 @@ namespace App\Livewire\Pos;
 
 use App\Models\User;
 use App\Modules\Retail\Actions\PosCartAction;
+use App\Modules\Retail\Services\PosCalculationService;
+use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
@@ -18,6 +20,37 @@ use Livewire\Component;
 
 final class Cart extends Component
 {
+    public string $invoiceDiscountType = 'fixed';
+
+    public string $invoiceDiscountValue = '';
+
+    public function saveInvoiceDiscount(PosContextResolver $contexts, PosOpenOrderManager $orders, PosCartSnapshot $snapshot, PosCalculationService $calculator): void
+    {
+        Gate::authorize('pos_sales.apply_discount');
+        try {
+            /** @var User $user */
+            $user = auth()->user();
+            $context = $contexts->resolve($user);
+            $lines = $snapshot->build($context)['lines'];
+            $base = $calculator->calculate(array_map(static fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines));
+            InvoiceDiscount::amount($this->invoiceDiscountType, $this->invoiceDiscountValue, $base['taxable_base']);
+            $orders->setInvoiceDiscount(request(), $user, $context, $this->invoiceDiscountType, $this->invoiceDiscountValue);
+            $this->dispatch('pos-cart-updated');
+        } catch (\Throwable $exception) {
+            $this->addError('invoiceDiscountValue', UserSafeError::message($exception));
+        }
+    }
+
+    public function removeInvoiceDiscount(PosContextResolver $contexts, PosOpenOrderManager $orders): void
+    {
+        Gate::authorize('pos_sales.apply_discount');
+        /** @var User $user */
+        $user = auth()->user();
+        $orders->setInvoiceDiscount(request(), $user, $contexts->resolve($user), null, '0.00');
+        $this->invoiceDiscountValue = '';
+        $this->dispatch('pos-cart-updated');
+    }
+
     public function mount(): void
     {
         Gate::authorize('pos_sales.view');

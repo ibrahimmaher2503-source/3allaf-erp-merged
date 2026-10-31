@@ -273,7 +273,7 @@ final class ApprovePurchaseReturnAction
             );
             $before = $return->only(['return_number', 'status', 'total_amount', 'lock_version']);
             $return->update([
-                'return_number' => $return->return_number ?: app(AllocatePurchaseReturnNumberAction::class)->execute((int) $return->store->branch_id),
+                'return_number' => $return->return_number ?: app(AllocatePurchaseReturnNumberAction::class)->execute($return->store),
                 'status' => 'approved',
                 'approved_at' => now(),
                 'approved_by' => $actorId,

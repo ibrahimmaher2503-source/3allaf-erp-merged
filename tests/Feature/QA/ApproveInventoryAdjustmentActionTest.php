@@ -69,6 +69,17 @@ final class ApproveInventoryAdjustmentActionTest extends TestCase
         self::assertStringContainsString('-IDD-', $deduction->adjustment_number);
         self::assertStringEndsWith('000001', $adjustment->adjustment_number);
         self::assertStringEndsWith('000001', $deduction->adjustment_number);
+        $nextAddition = app(SaveInventoryAdjustmentAction::class)->execute(
+            ['store_id' => $store->id, 'adjustment_type' => 'entry', 'reason_code' => 'qa_scope'],
+            [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
+        );
+        $nextDeduction = app(SaveInventoryAdjustmentAction::class)->execute(
+            ['store_id' => $store->id, 'adjustment_type' => 'exit', 'reason_code' => 'qa_scope'],
+            [['product_id' => $product->id, 'quantity_delta' => '1', 'unit_cost' => '10']],
+        );
+        self::assertStringEndsWith('000002', $nextAddition->adjustment_number);
+        self::assertStringEndsWith('000002', $nextDeduction->adjustment_number);
+        self::assertCount(4, array_unique([$adjustment->adjustment_number, $deduction->adjustment_number, $nextAddition->adjustment_number, $nextDeduction->adjustment_number]));
         app(ApproveInventoryAdjustmentAction::class)->execute($deduction->id);
         self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $store->id)->where('product_id', $product->id)->value('on_hand'));
         $reversal = app(ReverseInventoryAdjustmentAction::class)->execute($deduction->id, 'QA correction');

@@ -8,7 +8,7 @@ use App\Modules\Platform\Models\PrintTemplate;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Pricing\Services\BarcodeDocumentSource;
 use App\Modules\Pricing\Services\BarcodeLabelService;
-use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Pricing\Services\BarcodeSellingPriceResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -101,9 +101,9 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
                 && collect($data['product_ids'])->every(fn ($id) => in_array((int) $id, array_map('intval', $invoiceContext['product_ids']), true)), 403);
         }
         $store = Store::query()->visibleTo($actor)->where('status', 'active')->where('type', 'selling')->findOrFail((int) $data['store_id']);
-        $prices = app(EffectivePriceResolver::class)->resolveForStore($data['product_ids'], $store->id);
+        $prices = app(BarcodeSellingPriceResolver::class)->resolveForStore($data['product_ids'], $store);
 
-        return response()->json(['prices' => $prices->mapWithKeys(fn ($price, $productId): array => [$productId => (string) $price->amount])->all()]);
+        return response()->json(['prices' => $prices->all()]);
     })->name('pricing.labels.prices');
 
     $router->get('pricing/labels/search', function () {

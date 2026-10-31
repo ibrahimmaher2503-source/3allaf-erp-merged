@@ -1,3 +1,7 @@
+# 2026-10-30 — Owner-approved Core batch and Reports Phase 1 in progress
+
+The new branch starts from current `origin/main` `5317274`. Label price preview and print share a selected-outlet resolver that retains approved fixed store prices and applies the canonical outlet price-list percentage/override to fallback prices. Focused MariaDB tests passed 2 tests/8 assertions. The Core regression gate passed after building the missing local Vite manifest; its first attempt failed solely at the missing-manifest setup. No migration, merge, push, Production change, or deployment at this progress checkpoint. All other requested features, the three reports, and browser QA remain open; merge readiness is NO.
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).
@@ -851,3 +855,17 @@ The owner-authorized D3 batch from exact source `7546dbc` was merged without squ
 # 2026-10-29 — POS cart quantity and stock-limit hotfix, branch QA
 
 Owner-authorized D3 POS Core fix on `hotfix/pos-visible-quantity-and-stock-limit-20261029` from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2`. The stale Alpine quantity draft is reconciled with the canonical session/open-order line, and the product card and cart `+` now reflect the existing selling-store stock cap. Inline Arabic available-quantity feedback and rollback on rejected direct entry were verified in authenticated disposable browser QA at 390; 1440 and 390 repeated-add, decrement, stock-cap, checkout-total, RTL, overflow, and console/HTTP checks passed. The Rajeh v2 Core regression gate passed. The final rapid-click browser check passed 42/42 and fresh focused rerun passed 2/31. No migration, merge, deployment, or Production transaction occurred.
+
+# 2026-10-31 — Rajeh v2 active Core batch continuation
+
+Branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` remains unmerged and undeployed. Completed code includes branchless Supplier Return numbering via the existing locked company sequence, purchase Excel import preview/template, three bounded Phase 1 reports, POS invoice discount with allocated sale-line economics, and transfer destination/compactness adjustments. Existing Addition/Deduction pages and serial infrastructure were verified and tightened. Barcode pricing remains verified from the prior pushed commit. Final isolated checks are underway; no Production data changed.
+
+## 2026-10-31 — Rajeh v2 active batch local completion
+
+Same task branch. All authorized implementation areas, including Reports Phase 1 and branchless Supplier Return, are complete locally. Core gate PASS (21/251 plus payment JS); authenticated 1440/390 Arabic/English browser matrix PASS (233 assertions). Focused database tests passed in isolated runs after correcting report fixture economics and the product-code wording expectation. One additive POS discount migration; no Production migration, merge, or deployment. Final commit/push pending.
+
+## 2026-10-31 — Owner-authorized transfer variance closure
+
+Active v2 batch branch: parent transfer now becomes Received when all destinations confirm, even with recorded shortage; destination receipt remains one confirmation and posts actual quantity only. Compact variance details remain visible on completed transfer cards. Focused transfer suite 34/299 PASS and one authenticated two-destination browser flow PASS. Core gate pending at this entry. No migration, merge, deployment, or Production data change.
+
+**Final verification:** Focused transfer/receiving suite 34 tests/299 assertions PASS; bounded authenticated two-destination shortage browser check PASS; one final Core gate run 21 tests/251 assertions plus payment JavaScript PASS. Disposable runtimes deleted. Branch remains unmerged and undeployed; commit/push pending.

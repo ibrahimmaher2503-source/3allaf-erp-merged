@@ -85,6 +85,9 @@
     <x-app.page :title="$reportTitle ?? __('Dashboard & KPI reports')" :description="$reportMeta['description']" :eyebrow="$reportMeta['eyebrow']" max-width="7xl" data-report-dashboard>
         <x-slot:actions>
             <div class="flex flex-wrap items-center justify-end gap-2">
+                <a href="{{ route('reports.phase-one.sales') }}" class="text-xs font-bold text-primary underline">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تقرير المبيعات حسب الأصناف' : 'Product sales report' }}</a>
+                <a href="{{ route('reports.phase-one.inventory') }}" class="text-xs font-bold text-primary underline">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تقرير المخزون الحالي' : 'Current inventory report' }}</a>
+                <a href="{{ route('reports.phase-one.daily') }}" class="text-xs font-bold text-primary underline">{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملخص المبيعات اليومية حسب الفرع' : 'Daily sales by branch' }}</a>
                 @if (Gate::allows('dashboard_reports.export_xlsx') || Gate::allows('dashboard_reports.export_pdf'))
                     @foreach(['csv' => __('CSV'), 'xlsx' => __('Excel'), 'pdf' => __('PDF')] as $format => $label)
                         @can('dashboard_reports.export_'.($format === 'csv' ? 'xlsx' : $format))

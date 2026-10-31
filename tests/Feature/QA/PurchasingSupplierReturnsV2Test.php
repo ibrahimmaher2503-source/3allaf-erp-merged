@@ -112,6 +112,31 @@ final class PurchasingSupplierReturnsV2Test extends TestCase
         self::assertSame(1, SupplierPayableEntry::query()->where('source_type', 'supplier_return')->where('source_id', $return->id)->count());
     }
 
+    public function test_branchless_main_warehouse_return_posts_from_selected_store_without_a_fake_branch(): void
+    {
+        $warehouse = Store::query()->create([
+            'company_id' => $this->fixture['company']->id,
+            'branch_id' => null,
+            'code' => 'QA-MAIN-RETURN',
+            'name_ar' => 'المخزن الرئيسي',
+            'name_en' => 'Main Warehouse',
+            'type' => 'warehouse',
+            'status' => 'active',
+            'allows_negative_stock' => false,
+        ]);
+        StockBalance::query()->create(['product_id' => $this->product->id, 'store_id' => $warehouse->id, 'on_hand' => 5, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 115, 'total_value' => 575, 'version' => 0]);
+        $return = app(CreatePurchaseReturnDraftAction::class)->executeWithoutInvoice($this->supplier->id, $warehouse->id, $this->reason->id, [['product_id' => $this->product->id, 'quantity' => '2']], 'v2-branchless-return');
+        $return = app(SubmitPurchaseReturnAction::class)->execute($return->id, $return->lock_version);
+        $return = app(ApprovePurchaseReturnAction::class)->execute($return->id, $return->lock_version);
+
+        self::assertSame($warehouse->id, $return->store_id);
+        self::assertNull($return->store->branch_id);
+        self::assertStringStartsWith('CENTRAL-', $return->return_number);
+        self::assertSame('3.000000', StockBalance::query()->where('store_id', $warehouse->id)->where('product_id', $this->product->id)->firstOrFail()->on_hand);
+        self::assertSame(1, StockMovement::query()->where('source_id', $return->id)->where('store_id', $warehouse->id)->where('movement_type', 'purchase_return')->count());
+        self::assertTrue(AuditLog::query()->where('event', 'approve_supplier_return')->where('source_id', (string) $return->id)->where('store_id', $warehouse->id)->exists());
+    }
+
     public function test_invoice_linked_return_uses_historical_invoice_cost_and_posts_one_debit(): void
     {
         $invoice = app(SavePurchaseInvoiceAction::class)->execute(

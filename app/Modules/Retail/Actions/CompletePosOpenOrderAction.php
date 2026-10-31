@@ -67,7 +67,7 @@ final class CompletePosOpenOrderAction
                 ($suspend ? 'SUSPEND:' : 'CHECKOUT:').$cashier->id.':'.$locked->checkout_token,
                 $suspend,
                 $tenders,
-                ['tax_applicable' => (bool) $locked->tax_applicable],
+                ['tax_applicable' => (bool) $locked->tax_applicable, 'invoice_discount_type' => $locked->invoice_discount_type, 'invoice_discount_value' => (string) $locked->invoice_discount_value],
                 $customer,
             );
 

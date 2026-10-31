@@ -19,6 +19,7 @@ use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\StockTransferReceivingDraft;
 use App\Modules\Platform\Actions\DecideApprovalSource;
 use App\Modules\Platform\Models\ApprovalRecord;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\Store;
@@ -31,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class InventoryMultiDestinationTransferFocusedTest extends TestCase
 {
@@ -90,6 +92,20 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertSame('3.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationA->id)->value('quantity'));
         self::assertSame('2.000000', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
         self::assertNotSame('3', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
+    }
+
+    public function test_zero_destination_is_not_an_active_receiving_allocation(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '3', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '0']],
+        ], idempotencyKey: 'qa-zero-destination-'.uniqid());
+        self::assertSame([$this->destinationA->id], $transfer->fresh('lines.allocations')->lines->firstOrFail()->allocations->pluck('destination_store_id')->all());
+        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $this->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))->assertOk()->assertSee('data-product-line', false);
+        $this->post(route('inventory.transfers.approve', $transfer), $this->reviewPayload($transfer, '3', '0', '3'))->assertRedirect();
+        $transfer = $transfer->fresh('lines.allocations');
+        self::assertSame([$this->destinationA->id], $transfer->lines->firstOrFail()->allocations->pluck('destination_store_id')->all());
+        $this->get(route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $this->destinationA->id]))->assertOk()->assertSee('data-transfer-receipt-line', false)->assertDontSee('<option value="'.$this->destinationB->id.'"', false);
     }
 
     public function test_client_facing_quantity_money_and_brand_assets(): void
@@ -259,10 +275,62 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
 
         app(SaveStockTransferReceivingDraftAction::class)->execute($transfer->id, $this->destinationB->id, [$line->id.'.'.$b->id => '2'], null, null);
         app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $this->destinationB->id);
-        self::assertSame('difference_review', $transfer->fresh()->status);
+        self::assertSame('received', $transfer->fresh()->status);
+        self::assertSame('recorded', $transfer->fresh()->difference_status);
+        self::assertSame('1.000000', bcadd((string) $line->fresh()->difference_quantity, '0', 6));
+        self::assertSame('shortage', $line->fresh()->difference_type);
+        self::assertSame('One unit missing', $line->fresh()->difference_reason);
         self::assertSame('2.000000', (string) StockBalance::query()->where('store_id', $this->destinationB->id)->value('on_hand'));
         self::assertSame(2, StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->whereNotNull('finalized_at')->count());
         self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $this->destinationA->id), InvalidArgumentException::class);
+    }
+
+    #[DataProvider('finalReceiptCases')]
+    public function test_all_destinations_complete_without_an_extra_variance_review(string $actualA, string $actualB, string $expectedDifference): void
+    {
+        $transfer = $this->approvedTransfer('5', '3', '2');
+        app(DispatchStockTransferAction::class)->execute($transfer->id);
+        $line = $transfer->fresh('lines.allocations')->lines->firstOrFail();
+        $allocationA = $line->allocations->firstWhere('destination_store_id', $this->destinationA->id);
+        $allocationB = $line->allocations->firstWhere('destination_store_id', $this->destinationB->id);
+
+        foreach ([[$this->destinationA, $allocationA, $actualA, '3'], [$this->destinationB, $allocationB, $actualB, '2']] as [$destination, $allocation, $actual, $allocated]) {
+            $hasDifference = bccomp($actual, $allocated, 6) < 0;
+            $key = $line->id.'.'.$allocation->id;
+            app(SaveStockTransferReceivingDraftAction::class)->execute($transfer->id, $destination->id, [$key => $actual], $hasDifference ? 'shortage' : null, $hasDifference ? 'QA shortage reason' : null);
+            app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $destination->id);
+            self::assertSame($destination->id === $this->destinationA->id ? 'in_transit' : 'received', $transfer->fresh()->status);
+            self::assertSame(bcadd($actual, '0', 6), (string) $allocation->fresh()->quantity_received);
+            self::assertSame(bcadd($actual, '0', 6), (string) StockBalance::query()->where('store_id', $destination->id)->value('on_hand'));
+            self::assertSame('0.000000', (string) StockBalance::query()->where('store_id', $destination->id)->value('in_transit'));
+            self::assertNotNull(StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->where('destination_store_id', $destination->id)->value('finalized_at'));
+            self::assertThrows(fn (): StockTransfer => app(ReceiveStockTransferAction::class)->finalizeDraft($transfer->id, $destination->id), InvalidArgumentException::class);
+        }
+
+        self::assertSame('received', $transfer->fresh()->status);
+        self::assertSame(bcadd($expectedDifference, '0', 6), bcadd((string) $line->fresh()->difference_quantity, '0', 6));
+        self::assertSame(bccomp($expectedDifference, '0', 6) > 0 ? 'recorded' : null, $transfer->fresh()->difference_status);
+        self::assertSame(bccomp($expectedDifference, '0', 6) > 0 ? 'shortage' : null, $line->fresh()->difference_type);
+        self::assertSame(bccomp($expectedDifference, '0', 6) > 0 ? 'QA shortage reason' : null, $line->fresh()->difference_reason);
+        self::assertSame(2, StockTransferReceivingDraft::query()->where('stock_transfer_id', $transfer->id)->whereNotNull('finalized_at')->count());
+        self::assertSame(2, StockMovement::query()->where('source_type', StockTransfer::class)->where('source_id', $transfer->id)->where('movement_type', 'transfer_receipt')->count());
+        self::assertSame($this->user->id, $transfer->fresh()->received_by);
+        self::assertNotNull($transfer->fresh()->received_at);
+        $receiptAudits = AuditLog::query()->where('source_type', StockTransfer::class)->where('source_id', (string) $transfer->id)->where('event', 'receive_stock_transfer')->orderBy('id')->get();
+        self::assertCount(2, $receiptAudits);
+        self::assertSame($this->destinationA->id, $receiptAudits[0]->store_id);
+        self::assertSame($this->destinationB->id, $receiptAudits[1]->store_id);
+        self::assertSame(bcadd(bcsub('2', $actualB, 6), '0', 6), $receiptAudits[1]->metadata['variance_quantities'][$line->id.'.'.$allocationB->id]);
+    }
+
+    public static function finalReceiptCases(): array
+    {
+        return [
+            'exact A and exact B' => ['3', '2', '0'],
+            'exact A and short B' => ['3', '1', '1'],
+            'short A and exact B' => ['2', '2', '1'],
+            'short A and short B' => ['2', '1', '2'],
+        ];
     }
 
     public function test_submitted_transfer_requires_line_review_version_before_approval(): void

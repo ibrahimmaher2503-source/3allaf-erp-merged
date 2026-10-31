@@ -176,8 +176,8 @@ final class ProductPreferredSupplierFormTest extends TestCase
 
         foreach ([
             ['6291234500013', 'This barcode is already assigned and cannot be silently reassigned.'],
-            ['ABC123', 'International barcode must contain digits only.'],
-            ['12A3', 'International barcode must contain digits only.'],
+            ['ABC123', 'Product code must contain digits only.'],
+            ['12A3', 'Product code must contain digits only.'],
         ] as [$barcode, $message]) {
             $component = Livewire::actingAs($actor)
                 ->test('catalog::products')
@@ -204,7 +204,7 @@ final class ProductPreferredSupplierFormTest extends TestCase
             ->set('supplierBarcode', '629123450001A')
             ->call('save')
             ->assertHasErrors('supplierBarcode')
-            ->assertSee('International barcode must contain digits only.');
+            ->assertSee('The existing code must contain digits only.');
 
         self::assertSame($beforeProductCount, Product::query()->count());
     }

@@ -1,3 +1,7 @@
+# 2026-10-30 — Active owner-authorized Rajeh v2 Core batch plus Reports Phase 1
+
+Branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` starts from `origin/main` `53172743bb4477d1cd6d72190972543b7389b037`. Scope is the owner's 12-part Core inventory, barcode, transfer, POS and purchasing request plus Product Sales, Current Inventory, and Daily Branch Sales reports. Current implementation is **IN PROGRESS, NOT MERGE READY, NOT DEPLOYED**. Barcode label preview/print now apply the selected outlet's canonical price list when there is no approved fixed store price. All other newly requested work and batch browser QA remain open. Production's last recorded application release is `9d1363cadecc99c475c0e795cbd1702d4ef05712` at `toyjoy-v2-pos-quantity-9d1363c`; no Production access or deployment occurred in this branch session. Do not merge or deploy this partial branch.
+
 # 2026-10-29 — POS quantity/stock-limit hotfix LIVE
 
 Owner-approved POS quantity/stock-limit source `a8837d8950057ec17cb54cacf37314809f299559` merged without squash/conflict from origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2` as application `9d1363cadecc99c475c0e795cbd1702d4ef05712` and pushed to main. Production moved from `6125482ab2a633a892f9ae854f5fb5dec10ee906` (`toyjoy-v2-post-core-polish-6125482`) to `9d1363cadecc99c475c0e795cbd1702d4ef05712` (`toyjoy-v2-pos-quantity-9d1363c`).
@@ -626,3 +630,17 @@ Owner approved exact source `7546dbce4c67dc749a98a8535bd2b70d1325c3f9` for merge
 ## 2026-10-29 — POS cart quantity and stock-limit hotfix branch
 
 Owner-authorized Rajeh v2 POS Core bug fix on `hotfix/pos-visible-quantity-and-stock-limit-20261029`, based on origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2`. The branch synchronizes the visible quantity with the canonical server session/durable open-order quantity after repeated card adds and direct edits. The existing selling-store `on_hand − reserved` limit remains authoritative; the card and cart `+` lock at the cap, direct over-limit entry restores the canonical value, and Arabic feedback states the available quantity. No payment, pricing, discount, return, inventory posting, schema, or unrelated POS layout behavior changes. Rajeh v2 Core gate passed; focused and browser verification is recorded in `.ai/TEST_RESULTS.md` when complete. The branch is pending review, unmerged, and undeployed. Production remains `6125482ab2a633a892f9ae854f5fb5dec10ee906` at `toyjoy-v2-post-core-polish-6125482`.
+
+## 2026-10-31 — Active Rajeh v2 Core batch continuation
+
+Branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030`. Owner-authorized D3 batch covers inventory Addition/Deduction UX and independent numbering, canonical label pricing (completed earlier at `89d9430`), destination receiving/allocation layout, product code UI, POS cart discount, purchase .xlsx import, three Phase 1 reports, and Supplier Return from active branchless warehouse. Implementation is in progress on this branch. No merge or deployment. Final focused QA, clean Core gate, and final browser acceptance must be recorded before merge readiness.
+
+## 2026-10-31 — Active batch completion checkpoint
+
+The authorized implementation is complete on the same branch and remains unmerged and undeployed. The existing barcode label fix was preserved. Addition/Deduction, receiving and allocations, product code method, POS invoice discount, purchase workbook preview/template, Phase 1 reports, and branchless Supplier Return are implemented. The clean Core gate passed 21 tests/251 assertions plus payment JavaScript. Authenticated disposable Chromium passed 233 assertions at 1440/390 in Arabic RTL and English LTR. Focused verification and limitations are recorded in `.ai/TEST_RESULTS.md`. Final commit and branch push follow this checkpoint; no Production operation occurred.
+
+## 2026-10-31 — Transfer variance lifecycle blocker, explicit owner authorization
+
+On the same active branch, the owner explicitly authorized removing the parent `difference_review` blocker after all destinations confirm. New final receipts move the parent directly from `in_transit` to `received` once every allocated destination is final; shortages remain `recorded` with actual quantities, reasons, and audit history. The existing historical difference resolver remains for prior records. Focused transfer suite passed 34 tests/299 assertions; bounded authenticated browser showed the short receipt, final parent Received, visible recorded variance, no extra resolution action, and actual-only stock posting. Final Core gate is running. No migration, merge, deployment, or Production data operation.
+
+**Publication:** The transfer variance lifecycle amendment was committed as `65b0ab98dec96db9d5cc75a7f5b290bc49ea1ec3` and pushed to the active feature branch only. Focused transfer 34/299, bounded browser, and final Core gate 21/251 plus payment JavaScript passed. Merge review is ready; no merge or deployment occurred.

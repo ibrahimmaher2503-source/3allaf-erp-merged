@@ -13,6 +13,7 @@ use App\Modules\Platform\Models\Attachment;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Purchasing\Actions\GeneratePurchaseOrderPdfAction;
+use App\Modules\Purchasing\Actions\PreviewPurchaseOrderWorkbook;
 use App\Modules\Purchasing\Models\FinancialSettingVersion;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use App\Modules\Purchasing\Models\PurchaseInvoiceImportBatch;
@@ -22,6 +23,7 @@ use App\Modules\Purchasing\Models\PurchaseOrderDocument;
 use App\Modules\Purchasing\Models\PurchaseReturn;
 use App\Modules\Purchasing\Models\StockMovement;
 use App\Modules\Purchasing\Policies\SupplierReturnPolicy;
+use App\Support\DataExchange\MasterDataDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +32,22 @@ use Illuminate\Support\Facades\Storage;
 $router = app('router');
 
 $router->middleware(['auth', 'verified'])->group(function () use ($router): void {
+    $router->get('purchasing/orders/import-template', function () {
+        Gate::authorize('purchase_orders.create');
+
+        return app(MasterDataDocument::class)->importTemplate(
+            'rajeh-purchase-order-lines.xlsx',
+            'purchase-order-lines-v1',
+            PreviewPurchaseOrderWorkbook::HEADERS,
+            [],
+            [
+                ['ar' => 'أدخل كود المنتج أو الباركود كنص للحفاظ على الأصفار البادئة.', 'en' => 'Enter product code or barcode as text to preserve leading zeros.'],
+                ['ar' => 'الكمية عدد صحيح موجب؛ تكلفة الوحدة غير سالبة. المورد والمخزن في رأس أمر الشراء.', 'en' => 'Quantity is a positive whole number; unit cost is non-negative. Supplier and warehouse belong to the order header.'],
+            ],
+            requiredColumns: [0, 2, 3],
+            formats: [0 => '@'],
+        );
+    })->name('purchasing.orders.import-template');
     $purchaseHistory = static function (Request $request, string $mode) {
         $user = $request->user();
         abort_unless($user !== null && $user->can('purchase_invoices_supplier_returns.view'), 403);
