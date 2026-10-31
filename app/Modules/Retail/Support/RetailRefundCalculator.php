@@ -72,7 +72,8 @@ final class RetailRefundCalculator
             $returnStore = $this->returnStore($actor, $sale, $storeId, $condition, $disposition, $index);
 
             $gross = $this->portion((string) $saleLine->gross_amount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'gross_value', (string) $saleLine->gross_amount, $excludingReturnId) : null);
-            $discount = $this->portion((string) $saleLine->discount_amount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'discount_value', (string) $saleLine->discount_amount, $excludingReturnId) : null);
+            $originalDiscount = bcadd((string) $saleLine->discount_amount, (string) $saleLine->allocated_invoice_discount, 2);
+            $discount = $this->portion($originalDiscount, $quantity, (string) $saleLine->quantity, bccomp($quantity, $remaining, 6) === 0 ? $this->remainingLineValue($saleLine, 'discount_value', $originalDiscount, $excludingReturnId) : null);
             $net = bcsub($gross, $discount, 2);
             $lineTaxEntitlement = $this->lineTaxEntitlement($sale, $saleLine);
             $taxRemaining = $this->remainingLineValue($saleLine, 'tax_value', $lineTaxEntitlement, $excludingReturnId);

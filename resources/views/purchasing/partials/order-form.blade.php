@@ -60,9 +60,22 @@
             </div>
             <div class="flex flex-wrap items-center gap-3 sm:justify-end">
                 <flux:checkbox wire:model.live="supplierProductsOnly" :label="__('Use supplier products only')" :disabled="blank($orderForm['supplier_id'])" />
+                <flux:button type="button" size="xs" variant="subtle" icon="arrow-up-tray" wire:click="$set('showImportPreview', true)" :disabled="blank($orderForm['supplier_id']) || blank($orderForm['branch_id'])">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استيراد من Excel' : 'Import from Excel' }}</flux:button>
+                <flux:button size="xs" variant="subtle" icon="arrow-down-tray" href="{{ route('purchasing.orders.import-template') }}">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تحميل نموذج Excel' : 'Download Excel template' }}</flux:button>
                 <flux:button type="button" size="xs" variant="subtle" icon="plus" wire:click="addLine" data-add-line :disabled="blank($orderForm['supplier_id'])">{{ __('Add item') }}</flux:button>
             </div>
         </div>
+
+        @if($showImportPreview)
+            <section class="space-y-2 rounded-lg border border-sky-200 bg-sky-50/50 p-3" data-po-import-preview>
+                <div class="flex flex-wrap items-end gap-2"><label class="text-xs font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? 'ملف أمر الشراء (.xlsx)' : 'Purchase order workbook (.xlsx)' }}<input type="file" wire:model="importFile" accept=".xlsx" class="mt-1 block max-w-full text-sm"></label><flux:button type="button" size="sm" wire:click="previewOrderImport">{{ str_starts_with(app()->getLocale(), 'ar') ? 'معاينة الصفوف' : 'Preview rows' }}</flux:button></div>
+                @error('importFile')<p role="alert" class="text-sm text-rose-700">{{ $message }}</p>@enderror
+                @if($importPreview !== [])
+                    <div class="max-h-64 overflow-auto rounded border bg-white"><table class="w-full text-start text-xs"><thead><tr><th class="p-2">#</th><th class="p-2">{{ __('Product') }}</th><th class="p-2">{{ __('Quantity') }}</th><th class="p-2">{{ __('Unit cost') }}</th><th class="p-2">{{ __('Status') }}</th></tr></thead><tbody>@foreach($importPreview as $row)<tr class="border-t" data-po-import-row><td class="p-2">{{ $row['row'] }}</td><td class="p-2"><bdi dir="ltr">{{ $row['identifier'] }}</bdi><span class="block">{{ $row['product_name'] ?: $row['name'] }}</span></td><td class="p-2">{{ $row['quantity'] }}</td><td class="p-2">{{ $row['unit_cost'] }}</td><td class="p-2 {{ $row['error'] ? 'text-rose-700' : 'text-emerald-700' }}">{{ $row['error'] ?? (str_starts_with(app()->getLocale(), 'ar') ? 'صالح' : 'Valid') }}</td></tr>@endforeach</tbody></table></div>
+                    <flux:button type="button" size="sm" variant="primary" wire:click="confirmOrderImport" :disabled="collect($importPreview)->contains(fn (array $row) => $row['error'] !== null)">{{ str_starts_with(app()->getLocale(), 'ar') ? 'تأكيد إضافة البنود' : 'Confirm line import' }}</flux:button>
+                @endif
+            </section>
+        @endif
 
         <div class="max-h-[32rem] overflow-y-auto rounded-lg border border-border" data-order-lines-scroll>
             <div class="sticky top-0 z-20 hidden grid-cols-[minmax(16rem,1fr)_6rem_10rem_9rem_2.5rem] gap-2 border-b border-border bg-zinc-100 px-2 py-1.5 text-[11px] font-semibold text-zinc-600 lg:grid dark:bg-zinc-800 dark:text-zinc-300" aria-hidden="true">

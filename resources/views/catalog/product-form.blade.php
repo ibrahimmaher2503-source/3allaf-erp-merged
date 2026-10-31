@@ -412,7 +412,7 @@ new #[Title('Product Card')] class extends Component
             'in' => 'القيمة المختارة في حقل :attribute غير صحيحة.',
         ] : [];
         $messages['productForm.preferred_supplier_id.required'] = __('Select an active supplier to generate the product code.');
-        $messages['supplierBarcode.regex'] = __('International barcode must contain digits only.');
+        $messages['supplierBarcode.regex'] = str_starts_with(app()->getLocale(), 'ar') ? 'يجب أن يحتوي الكود الموجود على أرقام فقط.' : 'The existing code must contain digits only.';
 
         return $messages;
     }
@@ -434,12 +434,12 @@ new #[Title('Product Card')] class extends Component
                 'productForm.sale_price' => __('Base consumer selling price'),
                 'productForm.fractional_quantity' => __('Fractional quantity'),
                 'productForm.preferred_supplier_id' => __('Preferred supplier'),
-                'supplierBarcode' => __('International barcode'),
+                'supplierBarcode' => str_starts_with(app()->getLocale(), 'ar') ? 'الكود الموجود' : 'Existing code',
             ];
         }
 
         return [
-            'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'نوع تسجيل الباركود',
+            'productForm.item_code' => 'رمز بطاقة المنتج', 'productForm.barcode_registration_type' => 'طريقة الكود',
             'productForm.name_ar' => 'الاسم العربي', 'productForm.name_en' => 'الاسم الإنجليزي',
             'productForm.model_number' => 'رقم الموديل', 'productForm.product_type' => 'نوع المنتج',
             'productForm.status' => 'الحالة', 'productForm.category_id' => 'الفئة', 'productForm.brand_id' => 'العلامة التجارية', 'productForm.tax_setting_id' => 'ضريبة المنتج',
@@ -447,7 +447,7 @@ new #[Title('Product Card')] class extends Component
             'productForm.fractional_quantity' => 'نوع كمية المنتج', 'productForm.preferred_supplier_id' => 'المورد المفضل',
             'productForm.colour' => 'اللون', 'productForm.age_label_ids' => 'الفئات العمرية', 'productForm.age_label_ids.*' => 'الفئات العمرية',
             'productForm.character_ids' => 'الشخصيات', 'productForm.character_ids.*' => 'الشخصيات',
-            'supplierBarcode' => 'الباركود الدولي',
+            'supplierBarcode' => 'الكود الموجود',
         ];
     }
 
@@ -523,9 +523,9 @@ new #[Title('Product Card')] class extends Component
                 <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.') }}</li><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:select wire:model.live="productForm.barcode_registration_type" :label="__('Barcode registration type')" required>
-                    <flux:select.option value="international">{{ __('International barcode') }}</flux:select.option>
-                    <flux:select.option value="local">{{ __('Local generated barcode') }}</flux:select.option>
+                <flux:select wire:model.live="productForm.barcode_registration_type" :label="str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الكود' : 'Code method'" required>
+                    <flux:select.option value="international">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استخدام كود موجود' : 'Use existing code' }}</flux:select.option>
+                    <flux:select.option value="local">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء كود جديد' : 'Generate new code' }}</flux:select.option>
                 </flux:select>
                 @if (blank($productForm['item_code']))
                     <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Preferred supplier')" required>
@@ -561,11 +561,11 @@ new #[Title('Product Card')] class extends Component
                 @endif
                 @if ($productForm['barcode_registration_type'] === 'international')
                     @if ($activeBarcodes->isEmpty())
-                        <flux:input wire:model="supplierBarcode" :label="__('International barcode')" inputmode="numeric" dir="ltr" required />
+                        <flux:input wire:model="supplierBarcode" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الكود الموجود' : 'Existing code'" inputmode="numeric" dir="ltr" required />
                         <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل أرقامًا فقط. تُحفظ الأصفار البادئة.' : 'Enter digits only. Leading zeros are preserved.' }}</p>
                     @endif
                 @else
-                    <x-context-help :title="__('Local product code help')" :label="__('Open contextual help')"><p>{{ __('The local product code uses the four-digit identity from a canonical SUP-#### supplier code, or the first four digits of a numeric supplier code, followed by a hyphen and the shared six-digit prefix sequence. Leading zeros are preserved, and the international barcode remains a separate identity.') }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
+                    <x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء كود جديد' : 'Generate new code'" :label="__('Open contextual help')"><p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'يُنشئ راجح الكود تلقائياً من هوية المورد والتسلسل المعتمد، مع حفظ الأصفار البادئة.' : 'Rajeh generates the code from the approved supplier identity and shared sequence, preserving leading zeros.' }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
                 @endif
                 <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" />
                 @if ($isEditing)

@@ -213,6 +213,12 @@ final class PosOpenOrderManager
         $request->session()->put('pos.tax_applicable', $applicable);
     }
 
+    public function setInvoiceDiscount(Request $request, User $cashier, PosContext $context, ?string $type, string $value): void
+    {
+        $order = $this->active($request, $cashier, $context);
+        $this->updateOpen($order, ['invoice_discount_type' => $type, 'invoice_discount_value' => $type === null ? '0.00' : $value]);
+    }
+
     public function setCustomer(Request $request, User $cashier, PosContext $context, ?Customer $customer): void
     {
         $order = $this->active($request, $cashier, $context);

@@ -92,6 +92,20 @@ final class InventoryMultiDestinationTransferFocusedTest extends TestCase
         self::assertNotSame('3', (string) $transfer->lines->first()->allocations->where('destination_store_id', $this->destinationB->id)->value('quantity'));
     }
 
+    public function test_zero_destination_is_not_an_active_receiving_allocation(): void
+    {
+        $transfer = app(CreateStockTransferDraftAction::class)->execute($this->source->id, $this->destinationA->id, [
+            ['product_id' => $this->product->id, 'quantity_requested' => '3', 'allocations' => [$this->destinationA->id => '3', $this->destinationB->id => '0']],
+        ], idempotencyKey: 'qa-zero-destination-'.uniqid());
+        self::assertSame([$this->destinationA->id], $transfer->fresh('lines.allocations')->lines->firstOrFail()->allocations->pluck('destination_store_id')->all());
+        $transfer = app(SubmitStockTransferAction::class)->execute($transfer->id);
+        $this->withoutVite()->get(route('inventory.transfers.approval-review', $transfer))->assertOk()->assertSee('data-product-line', false);
+        $this->post(route('inventory.transfers.approve', $transfer), $this->reviewPayload($transfer, '3', '0', '3'))->assertRedirect();
+        $transfer = $transfer->fresh('lines.allocations');
+        self::assertSame([$this->destinationA->id], $transfer->lines->firstOrFail()->allocations->pluck('destination_store_id')->all());
+        $this->get(route('inventory.transfers.receive-page', [$transfer, 'destination_store_id' => $this->destinationA->id]))->assertOk()->assertSee('data-transfer-receipt-line', false)->assertDontSee('<option value="'.$this->destinationB->id.'"', false);
+    }
+
     public function test_client_facing_quantity_money_and_brand_assets(): void
     {
         self::assertSame('5', ProductQuantity::format('5.000000'));

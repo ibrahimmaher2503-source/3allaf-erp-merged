@@ -12,8 +12,8 @@
         <div class="space-y-3">
             @forelse($transfers as $transfer)
                 @php
-                    $destinationGroups = $transfer->lines->flatMap->allocations->whereIn('destination_store_id', $visibleIds)->groupBy('destination_store_id');
-                    if ($destinationGroups->isEmpty() && $visibleIds->contains($transfer->destination_store_id)) {
+                    $destinationGroups = $transfer->lines->flatMap->allocations->whereIn('destination_store_id', $visibleIds)->filter(fn ($allocation) => bccomp((string) $allocation->quantity, '0', 6) > 0)->groupBy('destination_store_id');
+                    if ($destinationGroups->isEmpty() && $transfer->lines->every(fn ($line) => $line->allocations->isEmpty()) && $visibleIds->contains($transfer->destination_store_id)) {
                         $destinationGroups = collect([$transfer->destination_store_id => collect()]);
                     }
                 @endphp

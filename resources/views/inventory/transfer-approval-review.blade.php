@@ -37,15 +37,21 @@
                         $product = $reviewProducts->get((int) ($line['product_id'] ?? 0));
                         $allocatedTotal = array_reduce((array) ($line['allocations'] ?? []), fn ($sum, $quantity) => bcadd($sum, (string) ($quantity ?: 0), 6), '0');
                     @endphp
-                    <div class="grid gap-3 rounded-xl border p-3 sm:grid-cols-2" data-product-line>
+                    <div class="grid gap-2 rounded-lg border p-2 lg:grid-cols-[minmax(12rem,2fr)_5rem_minmax(12rem,3fr)_auto] lg:items-center" data-product-line>
                         <x-product-line-lookup :name="'lines['.$index.'][product_id]'" :value="$line['product_id'] ?? ''" :display="$product ? (\App\Support\HumanName::name($product).' · '.$product->item_code) : ''" :label="$t('المنتج', 'Product')" :required="true" :transfer="true" source-store-selector="#transfer-review-source" />
-                        <div class="text-sm font-semibold">{{ $t('إجمالي الكمية الموزعة', 'Allocated total') }}<output class="block" data-review-total>{{ $qty($allocatedTotal) }}</output></div>
-                        <div class="grid gap-2 sm:col-span-2 sm:grid-cols-3">
+                        <div class="text-xs font-semibold">{{ $t('الإجمالي', 'Total') }} <output data-review-total>{{ $qty($allocatedTotal) }}</output></div>
+                        <div class="flex min-w-0 flex-wrap items-end gap-2">
                             @foreach($visibleStores as $store)
-                                    <label class="text-xs font-semibold">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}<input name="lines[{{ $index }}][allocations][{{ $store->id }}]" value="{{ $qty($line['allocations'][$store->id] ?? ($transfer->lines->get($index)?->allocations->isEmpty() && (int) $store->id === (int) $transfer->destination_store_id ? ($line['quantity_requested'] ?? 0) : 0)) }}" type="number" min="0" step="1" inputmode="numeric" class="{{ $field }}" :disabled="source === @js((string) $store->id)"></label>
+                                @php($allocated = $line['allocations'][$store->id] ?? ($transfer->lines->get($index)?->allocations->isEmpty() && (int) $store->id === (int) $transfer->destination_store_id ? ($line['quantity_requested'] ?? 0) : 0))
+                                @if(bccomp((string) $allocated, '0', 6) > 0)
+                                    <label class="min-w-32 text-xs font-semibold">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}<input name="lines[{{ $index }}][allocations][{{ $store->id }}]" value="{{ $qty($allocated) }}" type="number" min="0" step="1" inputmode="numeric" class="{{ $field }}" :disabled="source === @js((string) $store->id)"></label>
+                                @endif
                             @endforeach
+                            @if($visibleStores->contains(fn ($store) => (int) $store->id !== (int) $transfer->source_store_id && bccomp((string) ($line['allocations'][$store->id] ?? 0), '0', 6) <= 0))
+                                <details class="text-xs"><summary class="cursor-pointer font-semibold text-sky-700">{{ $t('إضافة وجهة', 'Add destination') }}</summary><div class="mt-2 flex max-w-full flex-wrap gap-2 rounded-lg border p-2">@foreach($visibleStores as $store)@if((int) $store->id !== (int) $transfer->source_store_id && bccomp((string) ($line['allocations'][$store->id] ?? 0), '0', 6) <= 0)<label class="min-w-32 text-xs font-semibold">{{ \App\Support\HumanName::name($store) }} · {{ $store->code }}<input name="lines[{{ $index }}][allocations][{{ $store->id }}]" value="0" type="number" min="0" step="1" inputmode="numeric" class="{{ $field }}" :disabled="source === @js((string) $store->id)"></label>@endif @endforeach</div></details>
+                            @endif
                         </div>
-                        <button type="button" data-remove-line class="w-fit text-sm font-semibold text-rose-700">{{ $t('حذف البند', 'Remove line') }}</button>
+                        <button type="button" data-remove-line class="w-fit text-xs font-semibold text-rose-700">{{ $t('حذف البند', 'Remove line') }}</button>
                     </div>
                 @endforeach
                 <template data-line-template>

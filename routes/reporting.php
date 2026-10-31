@@ -23,13 +23,17 @@ use App\Modules\Reporting\Actions\CreateExportJobAction;
 use App\Modules\Reporting\Actions\EvaluateAlertsAction;
 use App\Modules\Reporting\Models\Alert;
 use App\Modules\Reporting\Models\ExportJob;
+use App\Modules\Reporting\Queries\PhaseOneReports;
 use App\Modules\Reporting\Queries\ReportSnapshot;
 use App\Modules\Retail\Models\Sale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     $reportTitles = [
@@ -113,6 +117,52 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     Route::get('reports', fn (Request $request, ReportSnapshot $snapshot) => $renderReport($request, $snapshot))
         ->middleware('can:dashboard_reports.view')->name('reports.index');
+
+    foreach (['product-sales' => 'sales', 'current-inventory' => 'inventory', 'daily-branch-sales' => 'daily'] as $path => $type) {
+        Route::get('reports/'.$path, function (Request $request, PhaseOneReports $reports) use ($type) {
+            /** @var User $user */
+            $user = $request->user();
+            Gate::forUser($user)->authorize($type === 'inventory' ? 'inventory_stock_card.view' : 'pos_sales.view');
+            if ($type === 'inventory' || $type === 'sales') {
+                Gate::forUser($user)->authorize('inventory_stock_card.cost_view');
+            }
+            if ($type === 'daily') {
+                Gate::forUser($user)->authorize('pos_sales.payment_view');
+            }
+            if ($type !== 'inventory') {
+                $request->mergeIfMissing(['date_from' => now()->startOfMonth()->toDateString(), 'date_to' => now()->toDateString()]);
+            }
+            $filters = $request->validate([
+                'date_from' => [$type === 'inventory' ? 'nullable' : 'required', 'date'],
+                'date_to' => [$type === 'inventory' ? 'nullable' : 'required', 'date', 'after_or_equal:date_from'],
+                'store_id' => ['nullable', 'integer'],
+                'store_ids' => ['nullable', 'array', 'max:200'], 'store_ids.*' => ['integer'],
+                'supplier_ids' => ['nullable', 'array', 'max:200'], 'supplier_ids.*' => ['integer'],
+                'category_ids' => ['nullable', 'array', 'max:200'], 'category_ids.*' => ['integer'],
+                'branch_id' => ['nullable', 'integer'],
+            ]);
+            if ($type !== 'inventory') {
+                if (Carbon::parse($filters['date_from'])->diffInDays(Carbon::parse($filters['date_to'])) > 366) {
+                    throw ValidationException::withMessages(['date_to' => __('Report date range is limited to one year.')]);
+                }
+            }
+            $stores = Store::query()->visibleTo($user)->where('status', 'active')->with('branch')->orderBy('code')->limit(200)->get();
+            $branches = Branch::query()->visibleTo($user)->where('status', 'active')->whereIn('id', $stores->pluck('branch_id')->filter()->all())->orderBy('code')->get();
+            if ($type === 'daily') {
+                $filters['branch_id'] ??= $branches->first()?->id;
+                abort_if($filters['branch_id'] === null, 403);
+            }
+            $suppliers = Supplier::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
+            $categories = Category::query()->where('status', 'active')->orderBy('code')->limit(200)->get();
+            $report = match ($type) {
+                'sales' => $reports->productSales($user, $filters),
+                'inventory' => $reports->inventory($user, $filters),
+                default => $reports->daily($user, $filters),
+            };
+
+            return view('pages.reports.phase-one', compact('type', 'filters', 'report', 'stores', 'branches', 'suppliers', 'categories'));
+        })->middleware('can:dashboard_reports.view')->name('reports.phase-one.'.$type);
+    }
 
     foreach ([
         'sales' => 'sales',

@@ -53,18 +53,24 @@ final class PosCartSnapshot
             $lines[] = ['product' => $product, 'quantity' => (string) $cartLine['quantity'], 'available_quantity' => $available, 'unit_price' => (string) ($cartLine['open_price_amount'] ?? $price->amount), 'discount_amount' => (string) ($cartLine['discount_amount'] ?? '0.00'), 'price' => $price, 'cart' => $cartLine];
         }
         $taxApplicable = (bool) request()->session()->get('pos.tax_applicable', false);
+        $order = request()->hasSession() ? app(PosOpenOrderManager::class)->active(request(), auth()->user(), $context, false) : null;
+        $discountType = $order?->invoice_discount_type;
+        $discountValue = (string) ($order?->invoice_discount_value ?? '0.00');
         $effectiveTaxes = TaxSetting::query()->where('company_id', $store->company_id)->where('status', 'active')->where('is_default', true)->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>', now()))->limit(2)->get();
         $taxSetting = $effectiveTaxes->count() === 1 && $effectiveTaxes->first()?->rate !== null ? $effectiveTaxes->first() : null;
         if ($taxApplicable && $taxSetting === null) {
             $error = __('Tax cannot be enabled until exactly one effective company default tax rule with a configured rate exists.');
         }
         try {
-            $preview = $lines === [] ? null : $this->calculator->calculate(array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines), '0.00', $taxApplicable ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)] : ['applicable' => false]);
+            $calculationLines = array_map(fn (array $line): array => ['quantity' => $line['quantity'], 'unit_price' => $line['unit_price'], 'discount_amount' => $line['discount_amount']], $lines);
+            $beforeDiscount = $lines === [] ? null : $this->calculator->calculate($calculationLines);
+            $invoiceDiscount = InvoiceDiscount::amount($discountType, $discountValue, (string) ($beforeDiscount['taxable_base'] ?? '0.00'));
+            $preview = $lines === [] ? null : $this->calculator->calculate($calculationLines, $invoiceDiscount, $taxApplicable ? ['applicable' => true, 'rate' => $taxSetting?->rate, 'inclusive' => (bool) ($taxSetting?->is_tax_inclusive ?? false)] : ['applicable' => false]);
         } catch (InvalidArgumentException $exception) {
             $preview = null;
             $error = UserSafeError::message($exception);
         }
 
-        return compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting');
+        return compact('cart', 'products', 'lines', 'preview', 'error', 'taxApplicable', 'taxSetting', 'discountType', 'discountValue');
     }
 }

@@ -439,3 +439,11 @@ The previously verified branch `feature/v2-products-transfers-inventory-pos-poli
 ## 2026-10-29 — POS visible quantity and stock-limit hotfix
 
 Branch `hotfix/pos-visible-quantity-and-stock-limit-20261029` starts at origin/main `ab15c38a094b30f21b09c10620d0146a91ec72c2`. Owner-authorized Rajeh v2 POS Core scope: synchronize visible quantity with the canonical session/open-order line and standardize the existing selling-store stock cap and user feedback. This is pending merge/release review. No migration, merge, or deployment is part of this branch task. Production remains application `6125482ab2a633a892f9ae854f5fb5dec10ee906` at `toyjoy-v2-post-core-polish-6125482`.
+
+## 2026-10-31 — Rajeh v2 Core batch in progress
+
+D3 owner-authorized branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030`. Previously verified barcode label pricing remains done. This continuation adds Supplier Return branchless numbering/stock context, PO Excel template and preview import, report pages, POS invoice discount, and transfer UI/zero-allocation polish. One additive POS open-order migration is included. The branch is unmerged and undeployed; final verification and commit/push are pending.
+
+## 2026-10-31 — Rajeh v2 active batch disposition
+
+Owner-authorized D3 scope on `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` is implemented and locally verified, including the added three Phase 1 reports and Supplier Return from an active branchless Main Warehouse. The selected-outlet barcode pricing fix was already completed at `89d9430` and remains untouched. One additive POS open-order invoice-discount migration is included. Excel/PDF export for the three new reports is deferred because the existing export job architecture does not accept these new aggregated report datasets without a separate expansion. Physical printer/scanner and full browser execution of every document posting path remain owner UAT; focused database tests cover posting. No merge or deployment.

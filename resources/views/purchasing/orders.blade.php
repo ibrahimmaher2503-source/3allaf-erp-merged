@@ -10,6 +10,7 @@ use App\Modules\Purchasing\Actions\ApprovePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\CancelPurchaseOrderAction;
 use App\Modules\Purchasing\Actions\ClosePurchaseOrderAction;
 use App\Modules\Purchasing\Actions\SavePurchaseOrderAction;
+use App\Modules\Purchasing\Actions\PreviewPurchaseOrderWorkbook;
 use App\Modules\Purchasing\Actions\ReturnPurchaseOrderToDraftAction;
 use App\Modules\Purchasing\Actions\SubmitPurchaseOrderAction;
 use App\Modules\Purchasing\Models\PurchaseOrder;
@@ -22,11 +23,19 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new #[Title('Purchase Orders')] class extends Component
 {
     use WithPagination;
+    use WithFileUploads;
+
+    public mixed $importFile = null;
+
+    public array $importPreview = [];
+
+    public bool $showImportPreview = false;
 
     public string $search = '';
 
@@ -312,6 +321,61 @@ new #[Title('Purchase Orders')] class extends Component
             return;
         }
         $this->lineItems[] = $this->emptyOrderLine();
+    }
+
+    public function previewOrderImport(PreviewPurchaseOrderWorkbook $importer): void
+    {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
+        $this->validate([
+            'orderForm.supplier_id' => 'required|exists:suppliers,id',
+            'orderForm.branch_id' => 'required|exists:branches,id',
+            'importFile' => 'required|file|mimes:xlsx|max:2048',
+        ]);
+        $branch = Branch::query()->visibleTo(auth()->user())->where('status', 'active')->findOrFail((int) $this->orderForm['branch_id']);
+        try {
+            $this->importPreview = $importer->execute($this->importFile, (int) $branch->company_id);
+            $this->showImportPreview = true;
+        } catch (\Throwable $exception) {
+            $this->addError('importFile', \App\Support\UserSafeError::message($exception));
+            $this->importPreview = [];
+            $this->showImportPreview = false;
+        }
+    }
+
+    public function confirmOrderImport(): void
+    {
+        Gate::authorize($this->editingOrderId ? 'purchase_orders.edit' : 'purchase_orders.create');
+        if (! $this->showImportPreview || $this->importPreview === []) {
+            $this->addError('importFile', __('Preview a workbook before importing its lines.'));
+
+            return;
+        }
+        if (collect($this->importPreview)->contains(fn (array $row): bool => $row['error'] !== null)) {
+            $this->addError('importFile', __('Fix invalid workbook rows before confirming the import.'));
+
+            return;
+        }
+        $existing = collect($this->lineItems)->filter(fn (array $line): bool => filled($line['product_id'] ?? null))->pluck('product_id')->map(fn ($id): int => (int) $id);
+        if (collect($this->importPreview)->contains(fn (array $row): bool => $existing->contains((int) $row['product_id']))) {
+            $this->addError('importFile', __('A workbook product already exists in this order. Remove the duplicate before importing.'));
+
+            return;
+        }
+        $this->lineItems = array_values(array_filter($this->lineItems, fn (array $line): bool => filled($line['product_id'] ?? null)));
+        foreach ($this->importPreview as $row) {
+            $this->lineItems[] = [
+                ...$this->emptyOrderLine(),
+                'product_id' => (string) $row['product_id'],
+                'quantity_ordered' => $row['quantity'],
+                'unit_cost' => $row['unit_cost'],
+                'notes' => $row['notes'],
+                'price_source' => 'manual_authorized_cost',
+            ];
+        }
+        $this->importFile = null;
+        $this->importPreview = [];
+        $this->showImportPreview = false;
+        Flux::toast(__('Purchase order lines imported into this draft. Save the order to persist them.'), variant: 'success');
     }
 
     public function removeLine(int $index): void

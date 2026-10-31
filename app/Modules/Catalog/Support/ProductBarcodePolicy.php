@@ -12,7 +12,7 @@ final class ProductBarcodePolicy
     {
         $value = trim($value);
         if (! preg_match('/^[0-9]+$/D', $value)) {
-            throw new InvalidArgumentException(__('International barcode must contain digits only.'));
+            throw new InvalidArgumentException(__('Product code must contain digits only.'));
         }
 
         return $value;

@@ -25,7 +25,7 @@ final class ProductBarcodeEditDisplayTest extends TestCase
         Company::factory()->create();
     }
 
-    public function test_edit_shows_every_saved_active_barcode_instead_of_an_empty_international_entry(): void
+    public function test_edit_shows_every_saved_active_code_and_preserves_legacy_product(): void
     {
         $actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
         $product = Product::factory()->create(['barcode_registration_type' => 'international']);
@@ -59,14 +59,18 @@ final class ProductBarcodeEditDisplayTest extends TestCase
         self::assertFalse(str_contains($html, '6291234599999'), 'Inactive barcodes should not be presented as current identities.');
         self::assertFalse(str_contains($html, 'wire:model="supplierBarcode"'), 'An existing active barcode should replace the empty create-only field.');
         self::assertTrue(str_contains($html, route('catalog.products.show', ['product' => $product])), 'The form should keep its link to barcode management.');
+        self::assertStringContainsString('Use existing code', $html);
+        self::assertStringContainsString('Generate new code', $html);
+        self::assertStringNotContainsString('International barcode', $html);
+        self::assertStringNotContainsString('Local barcode', $html);
     }
 
-    public function test_create_and_edit_without_saved_active_barcode_keep_the_international_entry(): void
+    public function test_create_and_edit_without_saved_active_code_keep_existing_code_entry(): void
     {
         $actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
         $createResponse = $this->actingAs($actor)->get(route('catalog.products.create'));
         $createResponse->assertOk();
-        self::assertTrue(str_contains((string) $createResponse->getContent(), 'wire:model="supplierBarcode"'), 'The create form should retain international barcode entry.');
+        self::assertTrue(str_contains((string) $createResponse->getContent(), 'wire:model="supplierBarcode"'), 'The create form should retain existing-code entry.');
 
         $product = Product::factory()->create(['barcode_registration_type' => 'international']);
         Barcode::query()->create([

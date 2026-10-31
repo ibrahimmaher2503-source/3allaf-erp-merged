@@ -30,7 +30,7 @@ final class PosOpenOrder extends Model
     protected $fillable = [
         'uuid', 'company_id', 'branch_id', 'store_id', 'cash_drawer_id', 'shift_id', 'cashier_id',
         'customer_id', 'completed_sale_id', 'sequence_number', 'status', 'checkout_token',
-        'tax_applicable', 'payment_mode', 'notes', 'subtotal', 'discount_total', 'tax_total', 'total',
+        'tax_applicable', 'payment_mode', 'notes', 'subtotal', 'discount_total', 'tax_total', 'total', 'invoice_discount_type', 'invoice_discount_value',
         'revision', 'last_activity_at', 'cancelled_at', 'completed_at',
     ];
 
@@ -38,6 +38,7 @@ final class PosOpenOrder extends Model
         'tax_applicable' => 'boolean',
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',
+        'invoice_discount_value' => 'decimal:2',
         'tax_total' => 'decimal:2',
         'total' => 'decimal:2',
         'revision' => 'integer',

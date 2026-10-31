@@ -350,7 +350,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         $transfers = StockTransfer::query()
             ->whereIn('status', ['in_transit', 'received', 'difference_review'])
             ->where(function ($query) use ($visibleIds) {
-                $query->whereHas('allocations', fn ($allocations) => $allocations->whereIn('destination_store_id', $visibleIds))
+                $query->whereHas('allocations', fn ($allocations) => $allocations->whereIn('destination_store_id', $visibleIds)->where('quantity', '>', 0))
                     ->orWhere(fn ($legacy) => $legacy->whereIn('destination_store_id', $visibleIds)->whereDoesntHave('allocations'));
             })
             ->with(['sourceStore', 'destinationStore', 'lines.allocations.destination', 'lines.product'])
@@ -367,7 +367,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
         abort_unless($actor instanceof User, 403);
         $transfer->load(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination']);
         $destinationIds = $transfer->allocations->isNotEmpty()
-            ? $transfer->allocations->pluck('destination_store_id')->unique()
+            ? $transfer->allocations->filter(fn ($allocation) => bccomp((string) $allocation->quantity, '0', 6) > 0)->pluck('destination_store_id')->unique()
             : collect([$transfer->destination_store_id]);
         $destinations = Store::query()->visibleTo($actor)->whereIn('id', $destinationIds)->orderBy('code')->get();
         abort_if($destinations->isEmpty(), 403);

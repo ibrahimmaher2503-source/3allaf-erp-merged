@@ -34,9 +34,11 @@ use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Services\PosCalculationService;
 use App\Modules\Retail\Support\InvoiceDeliveryService;
+use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosCartSnapshot;
 use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosOpenOrderManager;
+use App\Modules\Retail\Support\RetailRefundCalculator;
 use App\Support\ProductQuantity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -62,7 +64,7 @@ final class Module5PosQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'company_settings.view', 'company_settings.edit'] as $code) {
             Permission::query()->firstOrCreate(['code' => $code], ['module' => strstr($code, '.', true), 'action' => substr(strstr($code, '.'), 1), 'status' => 'active']);
         }
         $this->cashier = User::factory()->create(['status' => 'active']);
@@ -168,6 +170,51 @@ final class Module5PosQaTest extends TestCase
         self::assertSame(1, DB::table('sale_payments')->count());
         self::assertSame(1, DB::table('stock_movements')->count());
         self::assertSame('1.000000', StockBalance::query()->firstOrFail()->on_hand);
+    }
+
+    public function test_cart_discount_fixed_percentage_edit_remove_and_sale_economics(): void
+    {
+        $calculator = app(PosCalculationService::class);
+        $example = [['quantity' => '1', 'unit_price' => '450.00', 'discount_amount' => '0.00']];
+        self::assertSame('400.00', $calculator->calculate($example, InvoiceDiscount::amount('fixed', '50.00', '450.00'))['total']);
+        self::assertSame('405.00', $calculator->calculate($example, InvoiceDiscount::amount('percentage', '10.00', '450.00'))['total']);
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        $orders = app(PosOpenOrderManager::class);
+        $snapshot = app(PosCartSnapshot::class);
+        $orders->setInvoiceDiscount(request(), $this->cashier, $context, 'fixed', '5.00');
+        self::assertSame('25.00', $snapshot->build($context)['preview']['total']);
+        $orders->setInvoiceDiscount(request(), $this->cashier, $context, 'percentage', '10.00');
+        self::assertSame('27.00', $snapshot->build($context)['preview']['total']);
+        $orders->setInvoiceDiscount(request(), $this->cashier, $context, null, '0.00');
+        self::assertSame('30.00', $snapshot->build($context)['preview']['total']);
+        try {
+            InvoiceDiscount::amount('fixed', '31', '30.00');
+            self::fail('Excessive fixed discount was accepted.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertNotSame('', $exception->getMessage());
+        }
+        $this->expectException(\InvalidArgumentException::class);
+        InvoiceDiscount::amount('percentage', '101', '30.00');
+    }
+
+    public function test_cart_discount_is_posted_on_sale_and_line_for_returns(): void
+    {
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        $orders = app(PosOpenOrderManager::class);
+        $orders->setInvoiceDiscount(request(), $this->cashier, $context, 'percentage', '10.00');
+        $method = PaymentMethod::factory()->create(['type' => 'card']);
+        $order = $orders->active(request(), $this->cashier, $context);
+        $this->post(route('pos.checkout'), ['checkout_token' => $order->checkout_token, 'open_order_uuid' => $order->uuid, 'payment_mode' => 'card', 'payments' => [['method_id' => $method->id, 'amount' => '27']]])->assertSessionHasNoErrors();
+        $sale = Sale::query()->firstOrFail();
+        self::assertSame('27.00', $sale->total);
+        self::assertSame('3.00', $sale->discount_total);
+        self::assertSame('percentage', $sale->invoice_discount_type);
+        self::assertSame('3.00', $sale->lines()->firstOrFail()->allocated_invoice_discount);
+        self::assertSame('27.00', $sale->lines()->firstOrFail()->net_amount);
+        $this->get(route('sales.receipt.thermal', $sale))->assertOk()->assertSee('Cart discount (included above)');
+        $refund = app(RetailRefundCalculator::class)->prepare($this->cashier, $sale, [['sale_line_id' => $sale->lines()->firstOrFail()->id, 'quantity' => '1', 'condition' => 'sellable', 'disposition' => 'restock']]);
+        self::assertSame('27.00', $refund['lines'][0]['eligible_value']);
+        self::assertSame('3.00', $refund['lines'][0]['discount_value']);
     }
 
     public function test_hold_preserves_customer_items_and_resumes_once(): void
