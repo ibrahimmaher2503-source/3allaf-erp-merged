@@ -67,7 +67,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $visibleStores = Store::query()->with('branch')->visibleTo($user)->orderBy('branch_id')->orderBy('name_ar')->orderBy('code')->limit(200)->get();
     $visibleStoreIds = $visibleStores->modelKeys();
     $search = trim((string) request()->query('q', ''));
-    $filterStoreId = request()->has('store_id') ? (request()->integer('store_id') ?: null) : app(WorkContext::class)->id($user);
+    $filterStoreId = request()->has('store_id') ? (request()->integer('store_id') ?: null) : ($focus === 'balances' ? null : app(WorkContext::class)->id($user));
     if ($filterStoreId !== null && ! in_array($filterStoreId, $visibleStoreIds, true)) {
         abort(403);
     }
@@ -83,7 +83,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $showCountWorkspace = $focus === null || str_starts_with((string) $focus, 'count') || str_starts_with((string) $focus, 'adjustment') || in_array($focus, ['addition', 'deduction'], true);
     $balancesQuery = StockBalance::query()->with(['product.barcodes', 'store.branch'])->whereIn('store_id', $visibleStoreIds)->orderBy('store_id')->orderBy('product_id');
     $movementsQuery = StockMovement::query()->with(['product', 'store.branch', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
-    if (! $includeZero) {
+    if (! $includeZero && $search === '' && $stockState === '') {
         $balancesQuery->where(fn ($q) => $q->where('on_hand', '!=', 0)->orWhere('reserved', '!=', 0)->orWhere('in_transit', '!=', 0));
     }
     if ($filterStoreId !== null) {

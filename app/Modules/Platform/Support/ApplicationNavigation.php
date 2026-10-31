@@ -45,7 +45,7 @@ final class ApplicationNavigation
     /** @return array<int, array<string, mixed>> */
     public function for(User $user, string $locale): array
     {
-        $configuredGroups = config('navigation', []);
+        $configuredGroups = $user->uiPreference?->menu_variant === 'b' ? config('navigation_b', []) : config('navigation', []);
 
         if (! is_array($configuredGroups)) {
             return [];
@@ -74,7 +74,8 @@ final class ApplicationNavigation
                             && (is_string($permission) || is_array($permission))
                             && ! empty($permission)
                             && Route::has($route)
-                            && $user->canAny((array) $permission);
+                            && $user->canAny((array) $permission)
+                            && collect((array) ($item['permissions_all'] ?? []))->every(fn (string $required): bool => $user->can($required));
                     })
                     ->map(function (array $item) use ($locale, $user): array {
                         $type = $this->entryType($item, 'item');
@@ -335,7 +336,10 @@ final class ApplicationNavigation
                             function (array $child) use (&$seen): bool {
                                 $identity = $this->destinationIdentity($child);
                                 if ($identity === '' || ! isset($seen[$identity])) {
-                                    if ($identity !== '') $seen[$identity] = true;
+                                    if ($identity !== '') {
+                                        $seen[$identity] = true;
+                                    }
+
                                     return true;
                                 }
 
@@ -350,11 +354,14 @@ final class ApplicationNavigation
                     }
                     unset($subcategory);
                     $item['children_active'] = collect($item['subgroups'])->contains('active', true);
+
                     continue;
                 }
 
                 $identity = $this->destinationIdentity($item);
-                if ($identity !== '') $seen[$identity] = true;
+                if ($identity !== '') {
+                    $seen[$identity] = true;
+                }
             }
             unset($item);
             $group['active'] = collect($group['items'])->contains(
@@ -369,14 +376,20 @@ final class ApplicationNavigation
     /** @param array<string,mixed> $entry */
     private function destinationIdentity(array $entry): string
     {
-        if (in_array($entry['type'] ?? '', ['heading', 'separator'], true)) return '';
+        if (in_array($entry['type'] ?? '', ['heading', 'separator'], true)) {
+            return '';
+        }
 
         $url = $this->scalarString($entry['url'] ?? null);
-        if ($url === '' || $url === '#') return '';
+        if ($url === '' || $url === '#') {
+            return '';
+        }
         $parts = parse_url($url);
         parse_str($parts['query'] ?? '', $query);
         unset($query['setup'], $query['setup_step']);
-        if (($query['section'] ?? null) === 'supplier-masters') unset($query['section']);
+        if (($query['section'] ?? null) === 'supplier-masters') {
+            unset($query['section']);
+        }
         ksort($query);
 
         return ($parts['path'] ?? $url).($query === [] ? '' : '?'.http_build_query($query));

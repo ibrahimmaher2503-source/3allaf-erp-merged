@@ -19,6 +19,7 @@ new #[Title('Audit Logs')] class extends Component
 {
     use \Livewire\WithPagination;
 
+    #[Url]
     public string $search = '';
 
     public string $category = '';
@@ -43,7 +44,7 @@ new #[Title('Audit Logs')] class extends Component
     public function mount(): void
     {
         Gate::authorize('access-activity-log');
-        abort_unless(in_array($this->mode, ['all', 'override', 'print'], true), 404);
+        abort_unless(in_array($this->mode, ['all', 'override', 'print', 'product'], true), 404);
     }
 
     public function hydrate(): void
@@ -177,6 +178,15 @@ new #[Title('Audit Logs')] class extends Component
     {
         return $query
             ->when($this->mode === 'print', fn (Builder $query) => $query->where('event', 'like', '%print%'))
+            ->when($this->mode === 'product', fn (Builder $query) => $query->where(function (Builder $product): void {
+                $product->where('source_type', 'like', '%Product%')
+                    ->orWhere('source_type', 'like', '%Price%')
+                    ->orWhere('source_type', 'like', '%Category%')
+                    ->orWhere('source_type', 'like', '%Brand%')
+                    ->orWhere('source_type', 'like', '%Option%')
+                    ->orWhere('event', 'like', '%product%')
+                    ->orWhere('event', 'like', '%pric%');
+            }))
             ->when($this->mode === 'override', fn (Builder $query) => $query->where(function (Builder $mode): void {
                 $mode->where('event', 'like', '%override%')->orWhereJsonContains('metadata->override', true);
             }))
@@ -201,7 +211,7 @@ new #[Title('Audit Logs')] class extends Component
 }; ?>
 
 <x-app.page
-    :title="$mode === 'override' ? __('Override log') : ($mode === 'print' ? __('Print log') : __('Audit logs'))"
+    :title="$mode === 'product' ? (str_starts_with(app()->getLocale(), 'ar') ? 'سجل تغييرات المنتجات' : 'Product change log') : ($mode === 'override' ? __('Override log') : ($mode === 'print' ? __('Print log') : __('Audit logs')))"
     :description="__('Append-only, permission-scoped operational history with protected before and after values.')"
     max-width="7xl"
     class="space-y-5"

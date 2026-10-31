@@ -15,7 +15,7 @@ final class UserUiPreference extends Model
     protected $table = 'user_ui_preferences';
 
     protected $fillable = [
-        'appearance', 'accent_color', 'sidebar_mode', 'navbar_mode',
+        'appearance', 'accent_color', 'sidebar_mode', 'menu_variant', 'navbar_mode',
         'content_width', 'table_density', 'font_scale', 'reduced_motion', 'tutorial_progress',
     ];
 
@@ -32,7 +32,7 @@ final class UserUiPreference extends Model
     public static function defaults(): array
     {
         return [
-            'appearance' => 'system', 'accent_color' => 'teal', 'sidebar_mode' => 'expanded',
+            'appearance' => 'system', 'accent_color' => 'teal', 'sidebar_mode' => 'expanded', 'menu_variant' => 'a',
             'navbar_mode' => 'sticky', 'content_width' => 'wide', 'table_density' => 'comfortable',
             'font_scale' => 'normal', 'reduced_motion' => false, 'tutorial_progress' => [],
         ];
