@@ -863,3 +863,9 @@ Branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` rema
 ## 2026-10-31 — Rajeh v2 active batch local completion
 
 Same task branch. All authorized implementation areas, including Reports Phase 1 and branchless Supplier Return, are complete locally. Core gate PASS (21/251 plus payment JS); authenticated 1440/390 Arabic/English browser matrix PASS (233 assertions). Focused database tests passed in isolated runs after correcting report fixture economics and the product-code wording expectation. One additive POS discount migration; no Production migration, merge, or deployment. Final commit/push pending.
+
+## 2026-10-31 — Owner-authorized transfer variance closure
+
+Active v2 batch branch: parent transfer now becomes Received when all destinations confirm, even with recorded shortage; destination receipt remains one confirmation and posts actual quantity only. Compact variance details remain visible on completed transfer cards. Focused transfer suite 34/299 PASS and one authenticated two-destination browser flow PASS. Core gate pending at this entry. No migration, merge, deployment, or Production data change.
+
+**Final verification:** Focused transfer/receiving suite 34 tests/299 assertions PASS; bounded authenticated two-destination shortage browser check PASS; one final Core gate run 21 tests/251 assertions plus payment JavaScript PASS. Disposable runtimes deleted. Branch remains unmerged and undeployed; commit/push pending.

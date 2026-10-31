@@ -273,6 +273,27 @@
                 @endphp
                 <div class="rounded-2xl border border-zinc-200 p-4" data-transfer-row><div class="flex flex-col gap-3 lg:flex-row lg:justify-between"><div><strong>{{ $item->transfer_number }}</strong><span class="ms-2 rounded-full bg-amber-100 px-2 py-1 text-xs">{{ $status($item->status) }}</span><p class="mt-2 text-sm text-zinc-600">{{ $item->sourceStore?->code }} → {{ $previewDestination?->code }} · {{ $previewLine?->product?->item_code }} · {{ $qty($previewQuantity) }}</p></div><div class="flex flex-wrap gap-2">@if($item->status === 'draft') @can('transfers.edit')<x-actions.button semantic="edit" :label="__('Edit')" :href="route('inventory.transfers.edit', $item)">{{ $t('تعديل', 'Edit') }}</x-actions.button>@endcan @can('transfers.submit')<form method="POST" action="{{ route('inventory.transfers.submit', $item) }}">@csrf<x-actions.button type="submit" semantic="confirm" :label="__('Submit')">{{ $t('إرسال', 'Submit') }}</x-actions.button></form>@endcan @elseif($item->status === 'submitted') @can('transfers.approve')<x-actions.button semantic="approve" :label="__('Review and approve')" :href="route('inventory.transfers.approval-review', $item)">{{ $t('مراجعة واعتماد', 'Review and approve') }}</x-actions.button>@endcan @elseif($item->status === 'approved')<span class="text-xs text-amber-800">{{ $t('تحويل قديم معتمد ينتظر معالجة منفصلة', 'Legacy approved transfer awaiting separate resolution') }}</span> @elseif($item->status === 'in_transit') @can('transfers.receive') @if($canReceiveHere)<x-actions.button semantic="receive" :label="__('Receive')" :href="route('inventory.transfers.receiving-inbox')">{{ $t('استلام', 'Receive') }}</x-actions.button>@endif @endcan @elseif($item->status === 'difference_review') @can('transfers.difference')<x-actions.button semantic="view" :label="__('Review difference')" :href="route('inventory.transfers.differences', $item)">{{ $t('مراجعة الفرق', 'Review difference') }}</x-actions.button>@endcan @endif</div></div>
 
+                @if($item->status === 'received' && $item->difference_status === 'recorded')
+                    <details class="mt-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 text-xs" data-transfer-variance><summary class="cursor-pointer font-semibold">{{ $t('فروق الاستلام المسجلة', 'Recorded receipt variances') }}</summary>
+                        @foreach($item->lines as $line)
+                            @foreach($line->allocations as $allocation)
+                                @php
+                                    $variance = bcsub((string) $allocation->quantity, (string) $allocation->quantity_received, 6);
+                                @endphp
+                                @if(bccomp($variance, '0', 6) > 0)
+                                    @php
+                                        $receiptDraft = $item->receivingDrafts->firstWhere('destination_store_id', $allocation->destination_store_id);
+                                    @endphp
+                                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-amber-200 pt-2" data-transfer-variance-row>
+                                        <strong>{{ \App\Support\HumanName::text($line->product) }}</strong><span>{{ \App\Support\HumanName::text($allocation->destination) }}</span>
+                                        <span>{{ $t('مخصص', 'Allocated') }}: <x-product-quantity :value="$allocation->quantity" /></span><span>{{ $t('فعلي', 'Actual') }}: <x-product-quantity :value="$allocation->quantity_received" /></span><span>{{ $t('فرق', 'Variance') }}: <x-product-quantity :value="$variance" /></span>
+                                        <span>{{ $receiptDraft?->difference_type }} · {{ $receiptDraft?->difference_reason }}</span>
+                                    </div>
+                                @endif
+                            @endforeach
+                        @endforeach
+                    </details>
+                @endif
                 @if($item->status === 'difference_review')<form class="mt-4 grid gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 sm:grid-cols-3" method="POST" action="{{ route('inventory.transfers.differences.resolve', $item) }}">@csrf<div><label for="resolve-difference-{{ $item->id }}" class="text-xs font-semibold">{{ $t('نوع الفرق', 'Difference type') }}</label><select id="resolve-difference-{{ $item->id }}" name="difference_type" class="{{ $field }}" required><option value="shortage">{{ $t('عجز', 'Shortage') }}</option><option value="damage">{{ $t('تالف', 'Damage') }}</option><option value="refusal">{{ $t('رفض', 'Refusal') }}</option></select></div><div><label for="resolve-reason-{{ $item->id }}" class="text-xs font-semibold">{{ $t('سبب الإغلاق', 'Resolution reason') }}</label><input id="resolve-reason-{{ $item->id }}" name="difference_reason" class="{{ $field }}" required></div><div class="flex items-end"><x-actions.button type="submit" semantic="confirm" :label="__('Resolve difference')" class="w-full">{{ $t('إغلاق الفرق', 'Resolve difference') }}</x-actions.button></div></form>@endif
             </div>@empty<div class="py-4 text-sm text-zinc-500">{{ $t('لا توجد تحويلات في النطاق.', 'No transfers in this scope.') }}</div>@endforelse
         </div></section>

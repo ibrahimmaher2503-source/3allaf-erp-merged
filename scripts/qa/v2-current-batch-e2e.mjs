@@ -72,6 +72,7 @@ async function stockQuantity(store, productCode) {
 }
 async function transferAndReceive(existingId = null) {
     let transferId = existingId;
+    const initialDestinationStock = process.env.QA_E2E_START === 'transfer-only' ? await stockQuantity(fixture.destination_a, fixture.products[0].code) : null;
     if (!transferId) {
     await open('/inventory/transfers/create');
     await page.locator('#transfer-source').selectOption(String(fixture.source));
@@ -129,6 +130,16 @@ async function transferAndReceive(existingId = null) {
         check(await page.getByRole('button', { name: 'تأكيد الاستلام' }).count() === 0, `destination ${destination} duplicate receipt blocked`);
         await open('/inventory/transfers');
         console.log(`PARENT STATUS VIEW ${(await page.locator('[data-transfer-row]').first().innerText()).slice(0, 260)}`);
+    }
+    if (process.env.QA_E2E_START === 'transfer-only') {
+        const transferRow = page.locator('[data-transfer-row]').first();
+        check((await transferRow.innerText()).includes('مستلم'), 'shortage receipt completes parent after both destinations confirm');
+        check(await page.locator('form[action*="differences/resolve"]').count() === 0, 'no extra difference resolution action');
+        const variance = page.locator('[data-transfer-variance]').first();
+        await variance.locator('summary').click();
+        check(await variance.locator('[data-transfer-variance-row]').count() === 1, 'shortage remains visible per product and destination');
+        check((await variance.locator('[data-transfer-variance-row]').first().innerText()).includes('QA E2E partial receipt'), 'shortage reason remains visible');
+        check(await stockQuantity(fixture.destination_a, fixture.products[0].code) === initialDestinationStock + 1, 'short destination stock increases by actual received quantity only');
     }
     return transferId;
 }

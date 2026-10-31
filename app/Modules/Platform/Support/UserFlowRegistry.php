@@ -217,7 +217,7 @@ final class UserFlowRegistry
                     ['ar' => 'راجع source وdestination وخطوط التحويل.', 'en' => 'Review source, destination, and transfer lines.'],
                     ['ar' => 'نفذ approve ثم dispatch، وتحقق من حركة الخروج وin-transit.', 'en' => 'Run approve then dispatch, and verify the exit movement and in-transit state.'],
                     ['ar' => 'سجل received_quantities لكل خط عند الوصول.', 'en' => 'Record received_quantities for every line on arrival.'],
-                    ['ar' => 'عند الفرق، اترك الحالة difference_review ثم استخدم resolver بنوع وسبب allowlisted.', 'en' => 'When quantities differ, leave difference_review and use the resolver with an allowlisted type and reason.'],
+                    ['ar' => 'سجل نوع الفرق وسببه عند الاستلام؛ يكتمل التحويل بعد تأكيد كل الوجهات مع حفظ الفرق للتدقيق.', 'en' => 'Record the variance type and reason at receipt; the transfer completes after every destination confirms while the variance remains auditable.'],
                 ],
                 null,
             ),

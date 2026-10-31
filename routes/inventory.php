@@ -162,7 +162,7 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $inventorySummary['balances'] = $balances->total();
     $inventorySummary['movements'] = $movements->total();
     $movementReferences = new StockMovementSourceReferences($movements->getCollection());
-    $transfers = $showTransfers ? (clone $transferQuery)->with(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination'])->latest('id')->limit(20)->get() : collect();
+    $transfers = $showTransfers ? (clone $transferQuery)->with(['sourceStore', 'destinationStore', 'lines.product', 'lines.allocations.destination', 'receivingDrafts'])->latest('id')->limit(20)->get() : collect();
     $transferApprovals = $showTransfers ? ApprovalRecord::query()
         ->where('source_type', 'stock_transfers')
         ->whereIn('source_id', $transfers->pluck('id')->map(fn (int $id): string => (string) $id))

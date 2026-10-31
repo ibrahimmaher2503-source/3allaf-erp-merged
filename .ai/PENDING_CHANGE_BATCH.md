@@ -447,3 +447,9 @@ D3 owner-authorized branch `feature/v2-inventory-transfer-barcode-pos-purchase-p
 ## 2026-10-31 — Rajeh v2 active batch disposition
 
 Owner-authorized D3 scope on `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030` is implemented and locally verified, including the added three Phase 1 reports and Supplier Return from an active branchless Main Warehouse. The selected-outlet barcode pricing fix was already completed at `89d9430` and remains untouched. One additive POS open-order invoice-discount migration is included. Excel/PDF export for the three new reports is deferred because the existing export job architecture does not accept these new aggregated report datasets without a separate expansion. Physical printer/scanner and full browser execution of every document posting path remain owner UAT; focused database tests cover posting. No merge or deployment.
+
+## 2026-10-31 — Active v2 batch transfer variance lifecycle amendment
+
+Classification D3; branch `feature/v2-inventory-transfer-barcode-pos-purchase-polish-20261030`; commit pending. Owner-authorized amendment changes only final parent transfer status after all destination receipts: `received` with recorded variance rather than `difference_review` requiring an additional action. Files: `ReceiveStockTransferAction`, `StockTransfer` relation, inventory transfer register/route, focused transfer test, bounded E2E driver, and matching user guidance. No migration. Focused transfer 34/299 and bounded browser PASS; Core gate pending at this entry. Unmerged and undeployed.
+
+**Final verification for DEC-117 amendment:** Focused transfer 34/299 PASS, bounded authenticated browser PASS, one final Core gate 21/251 plus payment JavaScript PASS. No migration; branch remains unmerged and undeployed. Commit/push pending at this entry.
