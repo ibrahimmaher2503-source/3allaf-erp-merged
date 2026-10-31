@@ -654,3 +654,5 @@ On the same active branch, the owner explicitly authorized removing the parent `
 ## 2026-10-31 — Cashier, Gift Card, inventory search, and unverified-return batch
 
 Owner-authorized D3 work is complete on `feature/v2-cashier-giftcard-inventory-return-polish-20261031`, based on current origin/main `c6397d13e586a207427b1ffb3dfd2f7f26240add`. Scoped cashier eligibility, text-only filter values, Code 128 Gift Card print, POS Gift Card tender and linked original-card refund, Gift Receipt reset, Inventory Balances search scope, and multi-line editable-price Unverified Return are implemented. Focused tests passed 10/91 plus linked Gift Card return 1/5. Authenticated disposable browser passed 62 checks at 1440/390 Arabic RTL. Core gate passed payment JavaScript plus 21/251. No migration, merge, deployment, or Production data change. Physical scanner and thermal printer QA deferred. Branch commit/push follow this checkpoint.
+
+**Implementation commit:** `522135a3fe067db47a011e1555a72ce934b303c4` contains the completed batch and validation record. Feature-branch push follows; no merge or deployment.
