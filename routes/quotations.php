@@ -76,6 +76,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
         return view('pages.quotations.index', compact('quotations', 'customers', 'stores', 'products', 'governorates'));
     })->middleware('can:quotations.view')->name('quotations.index');
+    Route::get('quotations/create', function (Request $request) {
+        /** @var User $user */ $user = $request->user();
+        $customers = Customer::query()->visibleTo($user)->where('status', 'active')->orderBy('name_en')->limit(300)->get();
+        $stores = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->with('branch')->orderBy('name_en')->get();
+        $governorates = Governorate::query()->active()->orderBy('sort_order')->get(['id', 'name_ar', 'name_en']);
+        $products = Product::query()->sellable()->orderBy('name_en')->limit(500)->get(['id', 'item_code', 'name_ar', 'name_en']);
+
+        return view('pages.quotations.index', ['creating' => true, 'customers' => $customers, 'stores' => $stores, 'governorates' => $governorates, 'products' => $products]);
+    })->middleware('can:quotations.create')->name('quotations.create');
     Route::get('quotations/customers/search', function (Request $request) {
         /** @var User $user */ $user = $request->user();
         $store = Store::query()->visibleTo($user)->where('status', 'active')->where('type', 'selling')->findOrFail($request->integer('store_id'));
@@ -125,7 +134,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $data = $request->validate(['activity_type' => ['required', Rule::in(['retail'])], 'customer_id' => ['required', 'integer'], 'branch_id' => ['required', 'integer'], 'store_id' => ['required', 'integer'], 'quotation_date' => ['nullable', 'date'], 'valid_until' => ['required', 'date', 'after_or_equal:today'], 'discount_type' => ['nullable', Rule::in(['fixed', 'percent'])], 'discount_value' => ['nullable', 'numeric', 'min:0'], 'tax_rate' => ['nullable', 'numeric', 'between:0,100'], 'terms' => ['nullable', 'string', 'max:4000'], 'notes' => ['nullable', 'string', 'max:4000'], 'idempotency_key' => ['required', 'uuid'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.line_type' => ['required', Rule::in(['product', 'manual'])], 'lines.*.product_id' => ['nullable', 'integer'], 'lines.*.source_reference' => ['nullable', 'string', 'max:190'], 'lines.*.description_ar' => ['required', 'string', 'max:190'], 'lines.*.description_en' => ['required', 'string', 'max:190'], 'lines.*.quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_price' => ['required', 'numeric', 'min:0']]);
         $action->execute($user, $data);
 
-        return to_route('quotations.index')->with('success', __('Quotation created as a non-posting draft.'));
+        return to_route('quotations.index')->with('success', __('Quotation saved.'));
     })->middleware('can:quotations.create')->name('quotations.store');
     Route::match(['post', 'put'], 'quotations/{quotation}', function (Request $request, Quotation $quotation, UpdateQuotationAction $action) {
         /** @var User $user */ $user = $request->user();

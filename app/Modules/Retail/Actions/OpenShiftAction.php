@@ -44,11 +44,24 @@ final class OpenShiftAction
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'), previous: $e);
             }
             if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->where('status', ShiftState::Open->value)->exists()) {
-                throw new InvalidArgumentException(__('This drawer already has an active shift.'), previous: $e);
+                throw new InvalidArgumentException($this->occupiedDrawerMessage($drawer), previous: $e);
             }
 
             throw $e;
         }
+    }
+
+    private function occupiedDrawerMessage(CashDrawer $drawer): string
+    {
+        $shift = PosShift::query()->open()->where('cash_drawer_id', $drawer->id)->with('cashier:id,name')->first();
+        if ($shift === null) {
+            return __('This drawer already has an active shift.');
+        }
+
+        return __('Drawer :drawer is in use by :cashier on shift #:shift since :time.', [
+            'drawer' => $drawer->code, 'cashier' => $shift->cashier?->name ?? __('Another cashier'),
+            'shift' => $shift->id, 'time' => $shift->opened_at?->format('H:i') ?? '—',
+        ]);
     }
 
     private function attempt(User $cashier, CashDrawer $drawer, string $openingFloat, string $idempotencyKey): PosShift
@@ -123,12 +136,16 @@ final class OpenShiftAction
             }
 
             if (PosShift::query()->where('cash_drawer_id', $drawer->getKey())->whereIn('status', [ShiftState::Open->value])->exists()) {
-                throw new InvalidArgumentException(__('This drawer already has an active shift.'));
+                throw new InvalidArgumentException($this->occupiedDrawerMessage($drawer));
             }
 
             if (PosShift::query()->where('cashier_id', $cashier->id)->where('status', ShiftState::Open->value)->exists()) {
                 throw new InvalidArgumentException(__('This cashier already has an active shift.'));
             }
+
+            abort_unless($drawer->eligibleCashiers()->whereKey($cashier->id)->exists()
+                || ((int) $drawer->assigned_user_id === (int) $cashier->id)
+                || (! $drawer->eligibleCashiers()->exists() && $drawer->assigned_user_id === null), 403);
 
             $pendingCount = PosShift::query()
                 ->where('cashier_id', $cashier->id)

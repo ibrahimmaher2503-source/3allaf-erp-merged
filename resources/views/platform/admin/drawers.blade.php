@@ -43,6 +43,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
         'branch_id' => '',
         'store_id' => '',
         'assigned_user_id' => '',
+        'eligible_cashier_ids' => [],
         'code' => '',
         'name_ar' => '',
         'name_en' => '',
@@ -95,6 +96,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             'branch_id' => (string) $defaultBranchId,
             'store_id' => '',
             'assigned_user_id' => '',
+        'eligible_cashier_ids' => [],
             'code' => '',
             'name_ar' => '',
             'name_en' => '',
@@ -116,6 +118,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
             'branch_id' => (string) $drawer->branch_id,
             'store_id' => (string) ($drawer->store_id ?? ''),
             'assigned_user_id' => (string) ($drawer->assigned_user_id ?? ''),
+            'eligible_cashier_ids' => $drawer->eligibleCashiers()->pluck('users.id')->map(fn ($id) => (string) $id)->all(),
             'code' => $drawer->code,
             'name_ar' => $drawer->name_ar,
             'name_en' => $drawer->name_en,
@@ -149,6 +152,8 @@ new #[Title('Cash Drawer Masters')] class extends Component
                     }
                 },
             ],
+            'drawerForm.eligible_cashier_ids' => ['array'],
+            'drawerForm.eligible_cashier_ids.*' => ['integer', 'distinct'],
             'drawerForm.code' => [
                 'required',
                 'string',
@@ -288,7 +293,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
     </flux:card>
 
     @php
-        $query = CashDrawer::visibleTo(auth()->user())->with(['branch', 'store', 'assignedUser']);
+        $query = CashDrawer::visibleTo(auth()->user())->with(['branch', 'store', 'assignedUser', 'eligibleCashiers']);
 
         if (! empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -337,7 +342,7 @@ new #[Title('Cash Drawer Masters')] class extends Component
                 @foreach($drawers as $drawer)
                     <flux:card class="space-y-3 p-4">
                         <div class="flex items-start justify-between gap-3"><div><div class="font-semibold">{{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_ar : $drawer->name_en }}</div><div class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? $drawer->name_en : $drawer->name_ar }}</div><span class="font-mono text-xs text-primary" dir="ltr">{{ $drawer->code }}</span></div><x-status.badge :status="$drawer->status === 'active' ? 'active' : ($drawer->status === 'maintenance' ? 'warning' : 'inactive')" :label="__($drawer->status === 'active' ? 'Active' : ($drawer->status === 'maintenance' ? 'Maintenance' : 'Inactive'))" /></div>
-                        <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->assignedUser?->name ?? __('Unassigned') }}</dd></div></dl>
+                        <dl class="grid gap-2 text-sm"><div><dt class="text-xs text-text-muted">{{ __('Branch → Sales Outlet → Cashier Till') }}</dt><dd>{{ $drawer->branch?->code ?? '—' }} → {{ $drawer->store?->code ?? '—' }} → <span dir="ltr">{{ $drawer->code }}</span></dd></div><div><dt class="text-xs text-text-muted">{{ __('Assigned Cashier / User') }}</dt><dd>{{ $drawer->eligibleCashiers->pluck('name')->join('، ') ?: ($drawer->assignedUser?->name ?? __('Unassigned')) }}</dd></div></dl>
                         <div class="flex flex-wrap gap-2 border-t border-border pt-3">
                             @can('drawers_payments_tax_numbering_printers.edit')
                                 <x-actions.button semantic="edit" :label="__('Edit')" size="sm" variant="subtle" color="blue" icon="pencil" wire:click="openEditDrawerModal({{ $drawer->id }})">{{ __('Edit') }}</x-actions.button>
@@ -530,6 +535,15 @@ new #[Title('Cash Drawer Masters')] class extends Component
                     <div class="md:col-span-2 -mt-2"><x-context-help :title="__('POS selling location / stock source')" :label="__('Open contextual help')"><p>{{ __('Only the selected branch’s active POS selling location is available; it is also the stock source for this drawer’s shifts.') }}</p></x-context-help></div>
                 @endif
 
+                <div class="md:col-span-2" x-data="{ cashierSearch: '' }">
+                    <label class="mb-1 block text-sm font-medium">{{ __('Eligible cashiers') }}</label>
+                    <input type="search" class="mb-2 w-full rounded-lg border border-zinc-300 p-2 dark:border-zinc-600 dark:bg-zinc-900" placeholder="{{ __('Search cashiers') }}" x-model="cashierSearch">
+                    <div class="max-h-36 overflow-y-auto rounded-lg border border-zinc-300 p-2 dark:border-zinc-600">
+                        @foreach($users as $u)
+                            <label data-cashier-option x-show="!cashierSearch || $el.textContent.toLowerCase().includes(cashierSearch.toLowerCase())" class="flex items-center gap-2 p-1 text-sm"><input type="checkbox" wire:model="drawerForm.eligible_cashier_ids" value="{{ $u->id }}">{{ $u->name }} ({{ $u->username ?? $u->email }})</label>
+                        @endforeach
+                    </div>
+                </div>
                 <flux:select
                     wire:model="drawerForm.assigned_user_id"
                     :label="__('Default Assigned Cashier (Optional)')"

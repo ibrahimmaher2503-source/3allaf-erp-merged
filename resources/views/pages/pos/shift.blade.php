@@ -26,7 +26,7 @@
                     <flux:heading size="lg">{{ __('Blocking active shift') }} #{{ $blockingShift->id }}</flux:heading>
                     <x-status.badge :status="$blockingShift->status->value" />
                 </div>
-                <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('This cash drawer is assigned to another cashier. You cannot open a new shift on it.') }}</flux:callout>
+                <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('Drawer :drawer is in use by :cashier on shift #:shift since :time.', ['drawer' => $blockingShift->cashDrawer?->code ?: $blockingShift->cash_drawer_code_snapshot, 'cashier' => $blockingShift->cashier?->name ?? __('Another cashier'), 'shift' => $blockingShift->id, 'time' => $blockingShift->opened_at?->format('H:i') ?? '—']) }}</flux:callout>
                 <flux:text class="mt-3">{{ __('Drawer') }}: {{ $blockingShift->cashDrawer?->code ?: $blockingShift->cash_drawer_code_snapshot }}</flux:text>
                 @can('pos_sales.view')<a class="mt-2 inline-block text-sm font-semibold text-cyan-700 underline" href="{{ route('pos.shift.receipts', $blockingShift) }}">{{ __('View shift receipts') }}</a>@endcan
                 @if (auth()->user()->hasGlobalApplicationAccess() && auth()->user()->can('shifts_cash_movements.approve'))

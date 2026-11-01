@@ -56,6 +56,27 @@ final class Module5PosQaTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_valid_gift_card_on_empty_cart_shows_balance_without_redeeming(): void
+    {
+        PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);
+        $card = app(GiftCardAction::class)->issue($this->cashier, '500.00', (int) $this->store->branch_id,
+            (int) $this->store->id, Sale::class, 'empty-cart-test', 'gift-empty-cart-issue-0001');
+        request()->setLaravelSession(app('session')->driver());
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context)->lines()->delete();
+        session()->forget('pos.cart');
+        $panel = new CheckoutPanel;
+        $panel->mount(app(PosOpenOrderManager::class), app(PosContextResolver::class));
+        $panel->scanGiftCard((string) $card->identifier);
+
+        self::assertFalse($panel->getErrorBag()->any());
+        self::assertSame($card->identifier, $panel->giftCardPreview['identifier']);
+        self::assertSame('500.00', $panel->giftCardPreview['balance']);
+        self::assertSame($card->identifier, $panel->giftCardScan);
+        self::assertSame('500.00', (string) $card->fresh()->balance);
+        self::assertFalse(collect($panel->paymentLines)->contains(fn (array $line): bool => ($line['gift_card_identifier'] ?? '') !== ''));
+    }
+
     public function test_scanned_gift_card_routes_to_tender_and_preserves_split_remainder(): void
     {
         PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);

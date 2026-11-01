@@ -15,14 +15,14 @@ final class ChangeQuotationStatusAction
 {
     public function execute(User $user, Quotation $quotation, string $status, ?string $reason = null): Quotation
     {
-        if (! in_array($status, ['issued', 'accepted', 'rejected', 'expired', 'cancelled'], true)) {
+        if ($status !== 'cancelled') {
             throw ValidationException::withMessages(['status' => __('This quotation status is not supported.')]);
         }
-        Gate::forUser($user)->authorize($status === 'issued' ? 'quotations.issue' : ($status === 'cancelled' ? 'quotations.cancel' : 'quotations.edit'));
+        Gate::forUser($user)->authorize('quotations.cancel');
 
         return DB::transaction(function () use ($user, $quotation, $status, $reason): Quotation {
             $locked = Quotation::query()->whereKey($quotation->id)->lockForUpdate()->firstOrFail();
-            $allowed = ['draft' => ['issued', 'cancelled'], 'issued' => ['accepted', 'rejected', 'expired', 'cancelled'], 'accepted' => [], 'rejected' => [], 'expired' => [], 'cancelled' => []];
+            $allowed = ['draft' => ['cancelled'], 'issued' => ['cancelled']];
             if (! in_array($status, $allowed[$locked->status] ?? [], true)) {
                 throw ValidationException::withMessages(['status' => __('This quotation transition is not allowed.')]);
             }

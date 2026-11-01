@@ -13,7 +13,7 @@
                     @forelse($receipts as $sale)
                         <tr>
                             <td data-primary class="font-mono font-semibold">{{ $sale->document_number }}</td>
-                            <td data-label="{{ __('Completed') }}">{{ $sale->approved_at?->format('Y-m-d H:i') }}</td>
+                            <td data-label="{{ __('Completed') }}">{{ $sale->approved_at?->locale(app()->getLocale())->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</td>
                             <td data-label="{{ __('Customer') }}">{{ $sale->customer?->name_en ?? $sale->customer?->name_ar ?? '—' }}</td>
                             <td data-label="{{ __('Cashier') }}">{{ $sale->cashier?->name ?? '—' }}</td>
                             <td data-label="{{ __('Total') }}" class="text-end font-mono">{{ number_format((float) $sale->total, 2) }}</td>
