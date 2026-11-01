@@ -2,7 +2,7 @@
 
 | Branch | Source baseline | Status | Migration | Production |
 |---|---|---|---|---|
-| `feature/v2-open-shift-activity-quotation-barcode-fixes-20261101` | `a4607ba515eea0d3d7f415a10cdeee833d8acf32` | Implementation and final verification in progress; not merged | `2026_11_01_000001_add_product_quotation_totals.php` (additive nullable/snapshot fields) | Unchanged at `4bdac01ccecfed0eff9de93903ee48322b87afea` |
+| `feature/v2-open-shift-activity-quotation-barcode-fixes-20261101` | `a4607ba515eea0d3d7f415a10cdeee833d8acf32` | Owner-authorized bounded Core pricing complete; focused/Core/browser gates passed; merge ready for owner review, not merged | `2026_11_01_000001_add_product_quotation_totals.php` (additive nullable/snapshot fields) | Unchanged at `4bdac01ccecfed0eff9de93903ee48322b87afea` |
 
 ## 2026-10-31 — v2 Core batch closed by authorized merge and deployment
 

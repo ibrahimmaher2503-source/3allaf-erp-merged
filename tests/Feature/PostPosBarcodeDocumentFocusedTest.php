@@ -15,6 +15,7 @@ use App\Modules\Pricing\Models\PriceList;
 use App\Modules\Pricing\Services\BarcodeDocumentSource;
 use App\Modules\Pricing\Services\BarcodeLabelService;
 use App\Modules\Pricing\Services\EffectivePriceResolver;
+use App\Modules\Pricing\Services\PriceListResolver;
 use App\Modules\Purchasing\Models\PurchaseInvoice;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Gate;
@@ -50,6 +51,7 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
         $this->otherDestination = Store::factory()->create(['company_id' => $company->id, 'branch_id' => $otherBranch->id, 'type' => 'warehouse']);
         $this->product = Product::factory()->create(['status' => 'active', 'sale_price' => '140']);
         $this->product->barcodes()->create(['barcode' => 'QA-'.Str::random(16), 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
+        PriceList::query()->create(['company_id' => $company->id, 'list_number' => 0, 'code' => 'QA-BASE-'.Str::random(8), 'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price', 'percentage_increase' => '0', 'status' => 'active']);
         $this->actor = User::factory()->create(['status' => 'active', 'is_super_admin' => true]);
         $this->actor->storeScopes()->create(['store_id' => $this->selling->id, 'status' => 'active']);
         $this->actingAs($this->actor)->withoutVite();
@@ -82,18 +84,13 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
             'type' => 'selling',
         ]);
         $this->product->update(['sale_price' => '400']);
-        PriceList::query()->create([
-            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
-            'list_number' => 0, 'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price',
-            'percentage_increase' => '0', 'status' => 'active',
-        ]);
-        $this->destinationPrice('460', $this->selling);
+        $this->destinationPrice('420', $this->selling);
         $this->destinationPrice('520', $otherSelling);
         $service = app(BarcodeLabelService::class);
         $rows = [['product_id' => $this->product->id, 'barcode_id' => $this->product->barcodes->first()->id, 'copies' => 1]];
         $profile = $service->profile($this->actor);
 
-        self::assertSame('460.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id, [$this->product->id => '999'])['labels'][0]['price']);
+        self::assertSame('420.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id, [$this->product->id => '999'])['labels'][0]['price']);
         self::assertSame('520.000', (string) $service->compose($this->actor, $rows, $profile, $otherSelling->id)['labels'][0]['price']);
         $this->actingAs($this->actor)->get(route('pricing.labels.prices', ['store_id' => $otherSelling->id, 'product_ids' => [$this->product->id]]))
             ->assertOk()->assertJsonPath('prices.'.$this->product->id, '520.000');
@@ -108,11 +105,6 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
     public function test_label_uses_manufacturer_barcode_before_internal_barcode(): void
     {
         Gate::before(static fn (): bool => true);
-        PriceList::query()->create([
-            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
-            'list_number' => 0, 'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price',
-            'percentage_increase' => '0', 'status' => 'active',
-        ]);
         $local = $this->product->barcodes->first();
         $local->update(['source' => 'local']);
         $manufacturer = $this->product->barcodes()->create([
@@ -129,15 +121,16 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
     {
         Gate::before(static fn (): bool => true);
         $this->product->update(['sale_price' => '300.00']);
-        $base = PriceList::query()->create([
-            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
-            'list_number' => 0, 'name_ar' => 'أساسي', 'name_en' => 'Base',
-            'percentage_increase' => '0', 'status' => 'active',
-        ]);
+        $base = PriceList::query()->where('company_id', $this->selling->company_id)->where('list_number', 0)->firstOrFail();
         $markup = PriceList::query()->create([
             'company_id' => $this->selling->company_id, 'code' => 'QA-UP-'.Str::random(8),
             'list_number' => 1, 'name_ar' => 'زيادة', 'name_en' => 'Markup',
             'percentage_increase' => '10', 'status' => 'active',
+        ]);
+        $markup15 = PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-UP15-'.Str::random(8),
+            'list_number' => 3, 'name_ar' => 'زيادة 15', 'name_en' => 'Markup 15',
+            'percentage_increase' => '15', 'status' => 'active',
         ]);
         $discount = PriceList::query()->create([
             'company_id' => $this->selling->company_id, 'code' => 'QA-DOWN-'.Str::random(8),
@@ -147,12 +140,29 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
         $service = app(BarcodeLabelService::class);
         $rows = [['product_id' => $this->product->id, 'barcode_id' => $this->product->barcodes->first()->id, 'copies' => 1]];
         $profile = $service->profile($this->actor);
+        $this->selling->update(['price_list_id' => $markup15->id]);
+        self::assertSame('345.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
         $this->selling->update(['price_list_id' => $markup->id]);
         self::assertSame('330.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
         $this->selling->update(['price_list_id' => $discount->id]);
         self::assertSame('270.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
         $this->selling->update(['price_list_id' => $base->id]);
         self::assertSame('300.00', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
+    }
+
+    public function test_percentage_bounds_reject_zero_or_negative_final_price(): void
+    {
+        $resolver = app(PriceListResolver::class);
+        self::assertSame('270.000', $resolver->calculate('300', '-10')['rounded']);
+        self::assertSame('345.000', $resolver->calculate('300', '15')['rounded']);
+        foreach (['-100', '-101', '10000', 'abc'] as $invalid) {
+            try {
+                $resolver->calculate('300', $invalid);
+                self::fail('Invalid percentage accepted: '.$invalid);
+            } catch (ValidationException) {
+                self::assertTrue(true);
+            }
+        }
     }
 
     public function test_multi_destination_transfer_import_is_isolated_to_selected_allocation(): void
