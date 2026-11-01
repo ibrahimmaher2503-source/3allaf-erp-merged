@@ -175,7 +175,7 @@ final class ApprovedPriceConsumptionTest extends TestCase
         }
 
         $document = $service->compose($actor, $rows, $profile, $store->id);
-        self::assertSame('25.000', $document['labels'][0]['price']);
+        self::assertSame('25.00', $document['labels'][0]['price']);
         self::assertTrue($document['settings']['show_outlet']);
         self::assertStringContainsString($store->branch->code, view('pricing.label-print', $document)->render());
 

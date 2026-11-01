@@ -14,9 +14,10 @@
                 'id' => $barcode->id,
                 'barcode' => $barcode->barcode,
                 'is_primary' => (bool) $barcode->is_primary,
+                'source' => $barcode->source,
             ])->values(),
             'copies' => (int) ($prefill[$product->id] ?? ($selection['copies'] ?? 1)),
-            'barcode_id' => (int) ($selection['barcode_id'] ?? $product->barcodes->first()?->id),
+            'barcode_id' => (int) ($product->barcodes->first(fn ($barcode) => in_array($barcode->source, ['international', 'supplier'], true))?->id ?? $product->barcodes->first()?->id),
             'resolved_price' => $documentPrices[$product->id] ?? null,
             'document_quantity' => $prefill[$product->id] ?? null,
         ];

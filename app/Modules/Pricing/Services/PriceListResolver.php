@@ -19,7 +19,10 @@ final class PriceListResolver
     public function calculate(string $basePrice, string $percentage): array
     {
         $base = $this->normalized($basePrice, 3);
-        $percent = $this->normalized($percentage, 4);
+        if (! preg_match('/^-?\d+(?:\.\d{1,4})?$/', trim($percentage)) || bccomp($percentage, '-100', 4) <= 0 || bccomp($percentage, '9999', 4) > 0) {
+            throw ValidationException::withMessages(['price' => __('Enter a percentage greater than -100 and at most 9999.')]);
+        }
+        $percent = $percentage;
         $factor = bcadd('1', bcdiv($percent, '100', 8), 8);
         $calculated = bcmul($base, $factor, 8);
         $multiples = bcdiv($calculated, self::DERIVED_PRICE_INCREMENT, 0);

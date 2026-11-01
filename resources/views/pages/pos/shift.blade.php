@@ -28,6 +28,7 @@
                 </div>
                 <flux:callout class="mt-4" variant="warning" icon="exclamation-triangle">{{ __('This cash drawer is assigned to another cashier. You cannot open a new shift on it.') }}</flux:callout>
                 <flux:text class="mt-3">{{ __('Drawer') }}: {{ $blockingShift->cashDrawer?->code ?: $blockingShift->cash_drawer_code_snapshot }}</flux:text>
+                @can('pos_sales.view')<a class="mt-2 inline-block text-sm font-semibold text-cyan-700 underline" href="{{ route('pos.shift.receipts', $blockingShift) }}">{{ __('View shift receipts') }}</a>@endcan
                 @if (auth()->user()->hasGlobalApplicationAccess() && auth()->user()->can('shifts_cash_movements.approve'))
                     <dl class="mt-4 grid gap-2 text-sm">
                         <div class="flex justify-between gap-3"><dt>{{ __('Branch / store') }}</dt><dd>{{ $blockingShift->branch?->code ?: $blockingShift->branch_code_snapshot }} / {{ $blockingShift->store?->code ?: $blockingShift->store_code_snapshot }}</dd></div>
@@ -163,6 +164,7 @@
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Drawer') }}</dt><dd class="text-end font-semibold">{{ $shift->cashDrawer?->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $shift->cashDrawer?->name_ar : $shift->cashDrawer?->name_en }}<span class="block text-xs font-normal text-zinc-500">{{ $shift->branch?->code }} → {{ $shift->store?->code }}</span></dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Cashier') }}</dt><dd>{{ $shift->cashier?->name ?? $shift->cashier?->username ?? '—' }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Opened at') }}</dt><dd>{{ $shift->opened_at?->translatedFormat(str_starts_with(app()->getLocale(), 'ar') ? 'j M Y، H:i' : 'M j, Y g:i A') }}</dd></div>
+                    @can('pos_sales.view')<div class="flex justify-end"><a class="font-semibold text-cyan-700 underline" href="{{ route('pos.shift.receipts', $shift) }}">{{ __('View shift receipts') }}</a></div>@endcan
                     @if ($shift->recount_count > 0)
                         <div class="flex justify-between gap-3"><dt class="text-zinc-500">{{ __('Recounts requested') }}</dt><dd>{{ $shift->recount_count }}</dd></div>
                     @endif

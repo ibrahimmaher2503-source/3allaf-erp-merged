@@ -21,6 +21,9 @@ final class UpdateQuotationAction
         abort_unless($user->canAccessBranch($quotation->branch_id) || $user->canAccessStore($quotation->store_id), 403);
         $submittedLines = array_values((array) ($data['lines'] ?? []));
         $validatedLines = app(CreateQuotationAction::class)->validateLines($quotation->activity_type, $submittedLines);
+        if (array_key_exists('customer_id', $data) && blank($data['customer_id'])) {
+            throw ValidationException::withMessages(['customer_id' => __('Customer is required.')]);
+        }
         if (filled($data['customer_id'] ?? null)) {
             abort_unless(Customer::query()->whereKey($data['customer_id'])->whereHas('scopes', fn ($scope) => $scope->where('branch_id', $quotation->branch_id)->orWhere('store_id', $quotation->store_id))->exists(), 404);
         }
@@ -54,7 +57,7 @@ final class UpdateQuotationAction
                 }
                 $seenIds[$lineId] = true;
                 if (! isset($removedLookup[$lineId])) {
-                    $existingById->get($lineId)->fill([...$validatedLines[$index], 'source_reference' => $existingById->get($lineId)->source_reference]);
+                    $existingById->get($lineId)->fill($validatedLines[$index]);
                 }
             }
             if ($remainingLines->isEmpty()) {
@@ -72,11 +75,16 @@ final class UpdateQuotationAction
             }
             $locked->mutate([
                 'customer_id' => array_key_exists('customer_id', $data) ? $data['customer_id'] : $locked->customer_id,
+                'quotation_date' => $data['quotation_date'] ?? $locked->quotation_date,
                 'valid_until' => $data['valid_until'],
                 'terms' => array_key_exists('terms', $data) ? $data['terms'] : $locked->terms,
                 'notes' => array_key_exists('notes', $data) ? $data['notes'] : $locked->notes,
                 'subtotal' => $subtotal,
-                'total' => $subtotal,
+                ...app(CalculateQuotationTotals::class)->execute($subtotal, [
+                    'discount_type' => $data['discount_type'] ?? $locked->discount_type,
+                    'discount_value' => $data['discount_value'] ?? $locked->discount_value,
+                    'tax_rate' => $data['tax_rate'] ?? $locked->tax_rate,
+                ]),
                 'updated_by' => $user->id,
                 'lock_version' => $locked->lock_version + 1,
             ]);

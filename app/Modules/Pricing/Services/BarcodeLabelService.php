@@ -74,7 +74,9 @@ final class BarcodeLabelService
                 throw ValidationException::withMessages(['products' => __('No selling price')]);
             }
             $product ??= Product::query()->sellable()->findOrFail($productId);
-            $barcode = $product->barcodes->firstWhere('id', (int) ($row['barcode_id'] ?? 0));
+            $barcode = $product->barcodes->first(fn ($candidate) => in_array($candidate->source, ['international', 'supplier'], true) && filled($candidate->barcode))
+                ?? $product->barcodes->first(fn ($candidate) => $candidate->source === 'local' && filled($candidate->barcode))
+                ?? $product->barcodes->first(fn ($candidate) => filled($candidate->barcode));
             if (! $barcode) {
                 throw ValidationException::withMessages(['products' => __('Only a real active product barcode can be printed.')]);
             }
