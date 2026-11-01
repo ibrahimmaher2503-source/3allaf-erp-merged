@@ -15,6 +15,7 @@ use App\Modules\Retail\Enums\ShiftState;
 use App\Modules\Retail\Models\PosShift;
 use Database\Seeders\ProductionSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -203,6 +204,30 @@ final class PosShiftOpenRouteTest extends TestCase
 
         $this->assertDatabaseCount('pos_shifts', 0);
         $this->assertDatabaseCount('active_pos_shift_assignments', 0);
+    }
+
+    public function test_two_eligible_cashiers_share_a_drawer_but_only_one_shift_can_open(): void
+    {
+        $this->seedCanonicalCashierRole();
+        $first = $this->createCashier();
+        $second = $this->createCashier();
+        [$company, $branch, $store] = $this->createSellingOutlet();
+        $this->scopeCashierToStore($first, $store);
+        $this->scopeCashierToStore($second, $store);
+        $drawer = $this->createDrawer($company, $branch, $store, $first);
+        $drawer->eligibleCashiers()->sync([$first->id, $second->id]);
+
+        $this->actingAs($first)->get(route('pos.shift'))->assertOk()->assertSee($drawer->code);
+        $this->actingAs($second)->get(route('pos.shift'))->assertOk()->assertSee($drawer->code);
+        $this->actingAs($first)->post(route('pos.shift.store'), $this->openPayload($drawer))->assertRedirect(route('pos'));
+        $this->actingAs($second)->from(route('pos.shift'))->post(route('pos.shift.store'), $this->openPayload($drawer))->assertRedirectBackWithErrors('cash_drawer_id');
+        self::assertSame(1, PosShift::query()->open()->where('cash_drawer_id', $drawer->id)->count());
+
+        $firstShift = PosShift::query()->open()->where('cash_drawer_id', $drawer->id)->firstOrFail();
+        $firstShift->update(['status' => ShiftState::Closed->value, 'closed_at' => now()]);
+        DB::table('active_pos_shift_assignments')->where('shift_id', $firstShift->id)->delete();
+        $this->actingAs($second)->post(route('pos.shift.store'), $this->openPayload($drawer))->assertRedirect(route('pos'));
+        self::assertSame(1, PosShift::query()->open()->where('cash_drawer_id', $drawer->id)->count());
     }
 
     private function seedCanonicalCashierRole(): void

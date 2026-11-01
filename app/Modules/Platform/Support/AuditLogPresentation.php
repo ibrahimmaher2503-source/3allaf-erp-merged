@@ -10,6 +10,8 @@ final class AuditLogPresentation
 {
     /** @var array<string,string> */
     private const EVENTS = [
+        'pos_open_order_created' => 'Open sale order created',
+        'unverified_retail_return_complete' => 'Return without invoice completed',
         'create_store' => 'Store created',
         'update_store' => 'Store updated',
         'delete_store' => 'Store archived',
@@ -105,7 +107,17 @@ final class AuditLogPresentation
 
     public function event(string $event): string
     {
-        return __(self::EVENTS[$event] ?? Str::headline(str_replace('_', ' ', $event)));
+        $title = __(self::EVENTS[$event] ?? Str::headline(str_replace('_', ' ', $event)));
+        if (str_starts_with(app()->getLocale(), 'ar') && preg_match('/[A-Za-z]/', $title)) {
+            $parts = preg_split('/[_\s]+/', strtolower($event));
+            $verbs = ['create' => 'إنشاء', 'created' => 'إنشاء', 'update' => 'تعديل', 'updated' => 'تعديل', 'complete' => 'إكمال', 'completed' => 'إكمال', 'approve' => 'اعتماد', 'approved' => 'اعتماد', 'reject' => 'رفض', 'rejected' => 'رفض', 'print' => 'طباعة', 'printed' => 'طباعة', 'open' => 'فتح', 'opened' => 'فتح', 'close' => 'إغلاق', 'closed' => 'إغلاق', 'cancel' => 'إلغاء', 'cancelled' => 'إلغاء'];
+            $nouns = ['pos' => 'نقطة البيع', 'sale' => 'البيع', 'retail' => 'البيع', 'return' => 'المرتجع', 'shift' => 'الوردية', 'cash' => 'النقدية', 'drawer' => 'الدرج', 'product' => 'المنتج', 'quotation' => 'عرض السعر', 'customer' => 'العميل', 'transfer' => 'التحويل', 'stock' => 'المخزون', 'inventory' => 'المخزون', 'order' => 'الطلب', 'gift' => 'الهدية', 'card' => 'البطاقة', 'payment' => 'الدفع', 'user' => 'المستخدم', 'login' => 'تسجيل الدخول', 'logout' => 'تسجيل الخروج'];
+            $words = array_values(array_unique(array_filter(array_map(fn ($part) => $verbs[$part] ?? $nouns[$part] ?? null, $parts))));
+
+            return $words === [] ? __('Activity recorded') : implode(' ', $words);
+        }
+
+        return $title;
     }
 
     public function source(?string $sourceType): string

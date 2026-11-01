@@ -837,12 +837,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $drawers = CashDrawer::query()->visibleTo($user)->operationallyConsistent()
             ->where('status', 'active')
             ->whereHas('store', fn ($query) => $query->where('status', 'active')->where('type', 'selling'))
-            ->with(['branch', 'store'])->orderBy('code')->get();
+            ->with(['branch', 'store', 'eligibleCashiers:id'])->orderBy('code')->get()
+            ->filter(fn (CashDrawer $drawer): bool => $drawer->eligibleCashiers->contains('id', $user->id)
+                || (int) $drawer->assigned_user_id === (int) $user->id
+                || ($drawer->eligibleCashiers->isEmpty() && $drawer->assigned_user_id === null));
         $blockingShifts = PosShift::query()->open()
             ->where('cashier_id', '!=', $user->id)
-            ->whereIn('cash_drawer_id', $user->hasGlobalApplicationAccess() && ! $user->canBypassApproval()
-                ? CashDrawer::query()->select('id')
-                : CashDrawer::query()->visibleTo($user)->select('id'))
+            ->whereIn('cash_drawer_id', $drawers->pluck('id'))
             ->with(['branch', 'store', 'cashDrawer', 'cashier'])
             ->latest('opened_at')->paginate(20);
         $occupiedDrawerIds = PosShift::query()->open()->whereIn('cash_drawer_id', $drawers->pluck('id'))

@@ -30,8 +30,8 @@ final class UpdateQuotationAction
 
         return DB::transaction(function () use ($user, $quotation, $data, $submittedLines, $validatedLines): Quotation {
             $locked = Quotation::query()->whereKey($quotation->id)->lockForUpdate()->firstOrFail();
-            if ($locked->status !== 'draft') {
-                throw ValidationException::withMessages(['quotation' => __('Only draft quotations can be edited.')]);
+            if (! in_array($locked->status, ['draft', 'issued'], true)) {
+                throw ValidationException::withMessages(['quotation' => __('Only active quotations can be edited.')]);
             }
             $before = $locked->only(['customer_id', 'valid_until', 'terms', 'notes', 'subtotal', 'total']);
             $existingLines = $locked->lines()->orderBy('line_number')->orderBy('id')->lockForUpdate()->get();

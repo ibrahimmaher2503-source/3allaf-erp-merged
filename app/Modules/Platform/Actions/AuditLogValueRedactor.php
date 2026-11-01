@@ -88,7 +88,8 @@ class AuditLogValueRedactor
             return true;
         }
 
-        return str_contains($normalizedKey, 'password')
+        return in_array($normalizedKey, ['device_hash', 'ip_hash', 'user_agent'], true)
+            || str_contains($normalizedKey, 'password')
             || str_contains($normalizedKey, 'secret')
             || str_contains($normalizedKey, 'token')
             || str_contains($normalizedKey, 'api_key')

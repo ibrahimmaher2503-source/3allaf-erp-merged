@@ -89,6 +89,18 @@ class SaveCashDrawerAction
                     $assignedUserId = null;
                 }
 
+                $eligibleIds = array_values(array_unique(array_map('intval', $data['eligible_cashier_ids'] ?? [])));
+                if ($assignedUserId !== null && ! in_array($assignedUserId, $eligibleIds, true)) {
+                    $eligibleIds[] = $assignedUserId;
+                }
+                if ($eligibleIds !== []) {
+                    $validIds = User::query()->assignableToCashDrawer((int) $data['branch_id'], $store?->id)
+                        ->whereKey($eligibleIds)->sharedLock()->pluck('id')->map(fn ($id): int => (int) $id)->all();
+                    if (count($validIds) !== count($eligibleIds)) {
+                        throw ValidationException::withMessages(['eligible_cashier_ids' => __('Select only active cashiers permitted for this outlet.')]);
+                    }
+                }
+
                 $attributes = [
                     // Prefer the selected store as the authoritative owner. The
                     // model repeats this derivation so Eloquent seed/update paths
@@ -149,6 +161,8 @@ class SaveCashDrawerAction
                         'after' => $drawer->toArray(),
                     ];
                 }
+
+                $drawer->eligibleCashiers()->sync($eligibleIds);
 
                 app(RecordAuditEvent::class)->execute(
                     category: 'master_data',

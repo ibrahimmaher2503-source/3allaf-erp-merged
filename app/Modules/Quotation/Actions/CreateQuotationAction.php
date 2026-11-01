@@ -56,7 +56,7 @@ final class CreateQuotationAction
             $quotation = Quotation::create([
                 'public_id' => (string) Str::uuid(), 'quotation_number' => app(AllocateDocumentNumber::class)->executeForBranch('quotation', (int) $store->branch_id),
                 'activity_type' => $activity, 'customer_id' => $data['customer_id'] ?? null, 'branch_id' => $store->branch_id, 'store_id' => $store->id,
-                'quotation_date' => $data['quotation_date'] ?? now()->toDateString(), 'valid_until' => $data['valid_until'], 'status' => 'draft', 'currency_code' => $data['currency_code'] ?? 'EGP',
+                'quotation_date' => $data['quotation_date'] ?? now()->toDateString(), 'valid_until' => $data['valid_until'], 'status' => 'issued', 'currency_code' => $data['currency_code'] ?? 'EGP',
                 'terms' => $data['terms'] ?? null, 'notes' => $data['notes'] ?? null, 'subtotal' => 0, 'total' => 0,
                 'source_type' => $data['source_type'] ?? null, 'source_id' => $data['source_id'] ?? null, 'source_reference' => $data['source_reference'] ?? null,
                 'created_by' => $user->id, 'idempotency_key' => $idempotencyKey,

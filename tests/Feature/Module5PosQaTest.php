@@ -47,14 +47,33 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 final class Module5PosQaTest extends TestCase
 {
     use DatabaseTransactions;
+
+    public function test_valid_gift_card_on_empty_cart_shows_balance_without_redeeming(): void
+    {
+        PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);
+        $card = app(GiftCardAction::class)->issue($this->cashier, '500.00', (int) $this->store->branch_id,
+            (int) $this->store->id, Sale::class, 'empty-cart-test', 'gift-empty-cart-issue-0001');
+        request()->setLaravelSession(app('session')->driver());
+        $context = app(PosContextResolver::class)->resolve($this->cashier);
+        app(PosOpenOrderManager::class)->active(request(), $this->cashier, $context)->lines()->delete();
+        session()->forget('pos.cart');
+        $panel = new CheckoutPanel;
+        $panel->mount(app(PosOpenOrderManager::class), app(PosContextResolver::class));
+        $panel->scanGiftCard((string) $card->identifier);
+
+        self::assertFalse($panel->getErrorBag()->any());
+        self::assertSame($card->identifier, $panel->giftCardPreview['identifier']);
+        self::assertSame('500.00', $panel->giftCardPreview['balance']);
+        self::assertSame($card->identifier, $panel->giftCardScan);
+        self::assertSame('500.00', (string) $card->fresh()->balance);
+        self::assertFalse(collect($panel->paymentLines)->contains(fn (array $line): bool => ($line['gift_card_identifier'] ?? '') !== ''));
+    }
 
     public function test_scanned_gift_card_routes_to_tender_and_preserves_split_remainder(): void
     {
@@ -493,9 +512,7 @@ final class Module5PosQaTest extends TestCase
     public function test_arabic_only_product_name_is_visible_in_english_pos(): void
     {
         app()->setLocale('en');
-        Livewire::test(ProductBrowser::class)->call('chooseCategory', $this->product->category_id)->assertSee('لعبة اختبار');
-        request()->setLaravelSession(app('session')->driver());
-        self::assertStringContainsString('لعبة اختبار', app(Cart::class)->render(app(PosCartSnapshot::class), app(PosContextResolver::class), app(PosOpenOrderManager::class))->with('errors', new ViewErrorBag)->render());
+        $this->get(route('pos'))->assertOk()->assertSee('لعبة اختبار');
     }
 
     public function test_pos_category_browser_exposes_all_eligible_categories_beyond_twenty_four(): void
@@ -510,7 +527,8 @@ final class Module5PosQaTest extends TestCase
             Product::factory()->create(['category_id' => $category->id]);
         }
 
-        Livewire::test(ProductBrowser::class)
+        $this->get(route('pos'))
+            ->assertOk()
             ->assertSee('فئة اختبار السقف 25')
             ->assertSee('فئة اختبار السقف 30');
     }

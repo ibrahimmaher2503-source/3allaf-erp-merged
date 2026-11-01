@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 
 class CashDrawer extends Model
@@ -102,6 +103,11 @@ class CashDrawer extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function eligibleCashiers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'cash_drawer_eligible_cashiers')->withTimestamps();
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

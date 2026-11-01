@@ -95,8 +95,19 @@ final class CheckoutPanel extends Component
         $preview = app(PosCartSnapshot::class)->build($context)['preview'] ?? null;
         app(PosOpenOrderManager::class)->updateTotals($order, $preview);
         $payable = (string) ($preview['total'] ?? '0.00');
-        if ($method === null || bccomp($payable, '0.00', 2) <= 0) {
-            $this->addError('giftCardScan', __('Add a priced product before redeeming a Gift Card.'));
+        $this->giftCardPreview = [
+            'identifier' => $identifier,
+            'balance' => (string) $card->balance,
+            'status' => (string) $card->status,
+            'expiry' => $card->valid_until?->toDateString() ?? '',
+        ];
+        if (bccomp($payable, '0.00', 2) <= 0) {
+            $this->dispatch('open-pos-checkout');
+
+            return;
+        }
+        if ($method === null) {
+            $this->addError('giftCardScan', __('Gift Card payment is currently unavailable.'));
 
             return;
         }
