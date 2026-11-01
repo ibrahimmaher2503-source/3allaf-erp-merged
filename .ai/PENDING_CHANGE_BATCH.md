@@ -1,3 +1,7 @@
+## 2026-11-01 — Small quotation and Gift Card UX branch ready for review
+
+`feature/v2-small-quotation-giftcard-ux-fixes-20261101` based on `8b0e3ee1c14b095b2d362730e617adf984147ed7`; implementation `b7217c8a4398a5bd9c900ee8fd0e924e8d0b8d7b`, with a continuity commit following. Three scoped UI items complete. Migration: none. Quotations retain canonical customer create/search, product and non-posting paths. Gift Card recognition/redeem backend and main scanner remain unchanged. Focused 35/305, Core 21/251 plus payment JavaScript, bounded browser 32/32 PASS. Physical scanner deferred. Await owner merge authorization; do not deploy or merge from this branch without it.
+
 ## 2026-11-01 — Corrective UX/operations Production release
 
 Owner approved source `0f33053083ac939a333bef1f4464167ee6128857` on `feature/v2-quotation-activity-cashdrawer-giftcard-ux-fixes-20261101`. Previous origin/main `c1902fd3345e6f68ff60f6b3a059cad8fbca3c3c`; conflict-free, non-squash merge and deployed application SHA `ed8227f38e13a7932618040a60ebb03e8e65597d`, pushed to main. Final pushed main continuity SHA is the follow-up documentation commit; Production remains pinned to the immutable application SHA. Previous Production application `4d34ef93b2c967b3f8fc33b983e2f39df6b788c8` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-open-shift-quotation-barcode-4d34ef9`; new release `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-corrective-ux-ed8227f`.
