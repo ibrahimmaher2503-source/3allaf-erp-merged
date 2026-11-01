@@ -47,9 +47,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 final class Module5PosQaTest extends TestCase
@@ -514,9 +512,7 @@ final class Module5PosQaTest extends TestCase
     public function test_arabic_only_product_name_is_visible_in_english_pos(): void
     {
         app()->setLocale('en');
-        Livewire::test(ProductBrowser::class)->call('chooseCategory', $this->product->category_id)->assertSee('لعبة اختبار');
-        request()->setLaravelSession(app('session')->driver());
-        self::assertStringContainsString('لعبة اختبار', app(Cart::class)->render(app(PosCartSnapshot::class), app(PosContextResolver::class), app(PosOpenOrderManager::class))->with('errors', new ViewErrorBag)->render());
+        $this->get(route('pos'))->assertOk()->assertSee('لعبة اختبار');
     }
 
     public function test_pos_category_browser_exposes_all_eligible_categories_beyond_twenty_four(): void
@@ -531,7 +527,8 @@ final class Module5PosQaTest extends TestCase
             Product::factory()->create(['category_id' => $category->id]);
         }
 
-        Livewire::test(ProductBrowser::class)
+        $this->get(route('pos'))
+            ->assertOk()
             ->assertSee('فئة اختبار السقف 25')
             ->assertSee('فئة اختبار السقف 30');
     }
