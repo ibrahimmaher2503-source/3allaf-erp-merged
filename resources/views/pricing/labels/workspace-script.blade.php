@@ -48,7 +48,9 @@
             },
 
             primary(product) {
-                return (product.barcodes || []).find((barcode) => barcode.is_primary)
+                return (product.barcodes || []).find((barcode) => ['international', 'supplier'].includes(barcode.source) && barcode.barcode)
+                    || (product.barcodes || []).find((barcode) => barcode.source === 'local' && barcode.barcode)
+                    || (product.barcodes || []).find((barcode) => barcode.is_primary)
                     || (product.barcodes || [])[0];
             },
 

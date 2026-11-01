@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Quotation\Models\Quotation;
 use App\Modules\Quotation\Models\QuotationLine;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -42,6 +43,7 @@ final class Issue41QuotationEditTest extends TestCase
             ->assertSee('Second line');
 
         $this->put(route('quotations.update', $quotation), [
+            'customer_id' => $quotation->customer_id,
             'valid_until' => $quotation->valid_until->toDateString(),
             'notes' => 'Notes updated only',
             'lines' => [$this->linePayload($first)],
@@ -60,6 +62,7 @@ final class Issue41QuotationEditTest extends TestCase
         $ids = $quotation->lines()->orderBy('line_number')->pluck('id')->all();
 
         $this->put(route('quotations.update', $quotation), [
+            'customer_id' => $quotation->customer_id,
             'valid_until' => $quotation->valid_until->toDateString(),
             'notes' => 'Remove second intentionally',
             'removed_line_ids' => [$ids[1]],
@@ -69,6 +72,7 @@ final class Issue41QuotationEditTest extends TestCase
         self::assertSame('10.00', $quotation->fresh()->total);
 
         $this->put(route('quotations.update', $quotation), [
+            'customer_id' => $quotation->customer_id,
             'valid_until' => $quotation->valid_until->toDateString(),
             'removed_line_ids' => [$ids[0]],
         ])->assertSessionHasErrors('lines');
@@ -83,11 +87,13 @@ final class Issue41QuotationEditTest extends TestCase
         $foreignLine = $other->lines()->firstOrFail();
 
         $this->put(route('quotations.update', $quotation), [
+            'customer_id' => $quotation->customer_id,
             'valid_until' => $quotation->valid_until->toDateString(),
             'lines' => [$this->linePayload($foreignLine)],
         ])->assertSessionHasErrors('lines');
 
         $this->put(route('quotations.update', $quotation), [
+            'customer_id' => $quotation->customer_id,
             'valid_until' => $quotation->valid_until->toDateString(),
             'removed_line_ids' => [$foreignLine->id],
         ])->assertSessionHasErrors('removed_line_ids');
@@ -98,9 +104,12 @@ final class Issue41QuotationEditTest extends TestCase
 
     private function quotation(): Quotation
     {
+        $customer = Customer::factory()->create(['created_store_id' => $this->fixture['store']->id, 'created_branch_id' => $this->fixture['branch']->id]);
+        $customer->scopes()->create(['branch_id' => $this->fixture['branch']->id, 'store_id' => $this->fixture['store']->id, 'created_by' => $this->fixture['admin']->id]);
         $quotation = Quotation::query()->create([
             'quotation_number' => 'QA-QTN-'.Str::random(12),
             'activity_type' => 'retail',
+            'customer_id' => $customer->id,
             'branch_id' => $this->fixture['branch']->id,
             'store_id' => $this->fixture['store']->id,
             'valid_until' => now()->addDays(7)->toDateString(),

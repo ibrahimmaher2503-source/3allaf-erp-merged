@@ -129,7 +129,7 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router): void
         return response()->json(['data' => $rows->take(20)->map(fn (Product $product): array => [
             'id' => $product->id, 'name_ar' => $product->name_ar, 'name_en' => $product->name_en,
             'item_code' => $product->item_code, 'model_number' => $product->model_number,
-            'barcodes' => $product->barcodes->map(fn ($barcode): array => ['id' => $barcode->id, 'barcode' => $barcode->barcode, 'is_primary' => (bool) $barcode->is_primary])->values(),
+            'barcodes' => $product->barcodes->map(fn ($barcode): array => ['id' => $barcode->id, 'barcode' => $barcode->barcode, 'source' => $barcode->source, 'is_primary' => (bool) $barcode->is_primary])->values(),
         ])->values(), 'next_page' => $more ? $page + 1 : null]);
     })->name('pricing.labels.search');
 

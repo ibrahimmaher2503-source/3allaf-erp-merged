@@ -102,7 +102,57 @@ final class PostPosBarcodeDocumentFocusedTest extends TestCase
             'branch_id' => $this->destination->branch_id,
             'type' => 'selling',
         ]);
-        self::assertSame('400.000', (string) $service->compose($this->actor, $rows, $profile, $fallbackSelling->id)['labels'][0]['price']);
+        self::assertSame('400.00', (string) $service->compose($this->actor, $rows, $profile, $fallbackSelling->id)['labels'][0]['price']);
+    }
+
+    public function test_label_uses_manufacturer_barcode_before_internal_barcode(): void
+    {
+        Gate::before(static fn (): bool => true);
+        PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
+            'list_number' => 0, 'name_ar' => 'السعر الأساسي', 'name_en' => 'Base price',
+            'percentage_increase' => '0', 'status' => 'active',
+        ]);
+        $local = $this->product->barcodes->first();
+        $local->update(['source' => 'local']);
+        $manufacturer = $this->product->barcodes()->create([
+            'barcode' => '6224008875178', 'source' => 'international', 'status' => 'active', 'is_primary' => false,
+        ]);
+        $service = app(BarcodeLabelService::class);
+        $rows = [['product_id' => $this->product->id, 'barcode_id' => $local->id, 'copies' => 1]];
+        self::assertSame($manufacturer->id, $service->compose($this->actor, $rows, $service->profile($this->actor), $this->selling->id)['labels'][0]['barcode']->id);
+        $manufacturer->update(['status' => 'inactive']);
+        self::assertSame($local->id, $service->compose($this->actor, $rows, $service->profile($this->actor), $this->selling->id)['labels'][0]['barcode']->id);
+    }
+
+    public function test_label_percentage_prices_follow_the_selected_list_in_both_directions(): void
+    {
+        Gate::before(static fn (): bool => true);
+        $this->product->update(['sale_price' => '300.00']);
+        $base = PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-BASE-'.Str::random(8),
+            'list_number' => 0, 'name_ar' => 'أساسي', 'name_en' => 'Base',
+            'percentage_increase' => '0', 'status' => 'active',
+        ]);
+        $markup = PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-UP-'.Str::random(8),
+            'list_number' => 1, 'name_ar' => 'زيادة', 'name_en' => 'Markup',
+            'percentage_increase' => '10', 'status' => 'active',
+        ]);
+        $discount = PriceList::query()->create([
+            'company_id' => $this->selling->company_id, 'code' => 'QA-DOWN-'.Str::random(8),
+            'list_number' => 2, 'name_ar' => 'خصم', 'name_en' => 'Discount',
+            'percentage_increase' => '-10', 'status' => 'active',
+        ]);
+        $service = app(BarcodeLabelService::class);
+        $rows = [['product_id' => $this->product->id, 'barcode_id' => $this->product->barcodes->first()->id, 'copies' => 1]];
+        $profile = $service->profile($this->actor);
+        $this->selling->update(['price_list_id' => $markup->id]);
+        self::assertSame('330.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
+        $this->selling->update(['price_list_id' => $discount->id]);
+        self::assertSame('270.000', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
+        $this->selling->update(['price_list_id' => $base->id]);
+        self::assertSame('300.00', (string) $service->compose($this->actor, $rows, $profile, $this->selling->id)['labels'][0]['price']);
     }
 
     public function test_multi_destination_transfer_import_is_isolated_to_selected_allocation(): void

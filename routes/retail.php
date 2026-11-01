@@ -807,6 +807,22 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // TSK-025 - real shift/cash workflow (DEC-066, docs/32). Replaces the
     // previous read-only readiness boundary.
+    Route::get('pos/shift/{shift}/receipts', function (Request $request, PosShift $shift) {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user->can('shifts_cash_movements.view') && $user->can('pos_sales.view'), 403);
+        $shift = PosShift::query()->visibleTo($user)->with(['branch', 'store', 'cashDrawer'])->findOrFail($shift->id);
+        $receipts = Sale::query()->visibleTo($user)->approved()
+            ->where('shift_id', $shift->id)
+            ->where('branch_id', $shift->branch_id)
+            ->where('store_id', $shift->store_id)
+            ->where('cash_drawer_id', $shift->cash_drawer_id)
+            ->with(['customer', 'cashier'])
+            ->latest('approved_at')->paginate(20);
+
+        return view('pages.pos.shift-receipts', compact('shift', 'receipts'));
+    })->middleware('can:shifts_cash_movements.view')->name('pos.shift.receipts');
+
     Route::get('pos/shift', function (Request $request) {
         /** @var User $user */
         $user = $request->user();

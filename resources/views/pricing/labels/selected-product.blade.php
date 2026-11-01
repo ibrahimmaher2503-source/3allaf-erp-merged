@@ -18,15 +18,8 @@
         <div class="mt-3 grid grid-cols-2 gap-3">
             <label>
                 {{ __('Barcode') }}
-                <select
-                    :name="`products[${product.id}][barcode_id]`"
-                    x-model="product.barcode_id"
-                    class="mt-1 min-h-11 w-full rounded-lg border border-border bg-surface"
-                >
-                    <template x-for="barcode in product.barcodes" :key="barcode.id">
-                        <option :value="barcode.id" x-text="barcode.barcode"></option>
-                    </template>
-                </select>
+                <input type="hidden" :name="`products[${product.id}][barcode_id]`" :value="primary(product)?.id">
+                <span class="mt-1 block rounded-lg border border-border bg-surface px-3 py-2 font-mono" dir="ltr" x-text="primary(product)?.barcode"></span>
             </label>
             <label>
                 {{ __('Label copies') }}

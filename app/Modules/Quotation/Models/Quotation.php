@@ -20,9 +20,9 @@ final class Quotation extends Model
 {
     private bool $mutating = false;
 
-    protected $fillable = ['public_id', 'quotation_number', 'activity_type', 'customer_id', 'branch_id', 'store_id', 'valid_until', 'status', 'currency_code', 'terms', 'notes', 'subtotal', 'total', 'source_type', 'source_id', 'source_reference', 'created_by', 'updated_by', 'idempotency_key', 'lock_version'];
+    protected $fillable = ['public_id', 'quotation_number', 'activity_type', 'customer_id', 'branch_id', 'store_id', 'quotation_date', 'valid_until', 'status', 'currency_code', 'terms', 'notes', 'subtotal', 'discount_type', 'discount_value', 'discount_amount', 'tax_rate', 'tax_amount', 'total', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'source_type', 'source_id', 'source_reference', 'created_by', 'updated_by', 'idempotency_key', 'lock_version'];
 
-    protected $casts = ['valid_until' => 'date', 'subtotal' => 'decimal:2', 'total' => 'decimal:2', 'lock_version' => 'integer'];
+    protected $casts = ['quotation_date' => 'date', 'valid_until' => 'date', 'subtotal' => 'decimal:2', 'discount_value' => 'decimal:4', 'discount_amount' => 'decimal:2', 'tax_rate' => 'decimal:4', 'tax_amount' => 'decimal:2', 'total' => 'decimal:2', 'cancelled_at' => 'datetime', 'lock_version' => 'integer'];
 
     protected static function booted(): void
     {

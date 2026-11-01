@@ -32,6 +32,8 @@ new #[Title('Audit Logs')] class extends Component
 
     public string $storeId = '';
 
+    public string $shiftId = '';
+
     public string $dateFrom = '';
 
     public string $dateTo = '';
@@ -78,6 +80,11 @@ new #[Title('Audit Logs')] class extends Component
     }
 
     public function updatedStoreId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedShiftId(): void
     {
         $this->resetPage();
     }
@@ -148,6 +155,7 @@ new #[Title('Audit Logs')] class extends Component
             'selectedAudit' => $selectedAudit,
             'selectedBeforeValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->before_values, $user),
             'selectedAfterValues' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->after_values, $user),
+            'selectedMetadata' => $selectedAudit === null ? null : $redactor->redactForViewer($selectedAudit->metadata, $user),
             'selectedDeviceFingerprint' => $selectedAudit === null ? null : $presentation->fingerprint($selectedAudit->metadata['device_hash'] ?? null),
             'selectedSessionFingerprint' => $selectedAudit === null ? null : $presentation->fingerprint($selectedAudit->metadata['session_hash'] ?? null),
             'canExport' => Gate::allows('export', AuditLog::class),
@@ -161,6 +169,7 @@ new #[Title('Audit Logs')] class extends Component
                 'actor_id' => $this->actorId,
                 'branch_id' => $this->branchId,
                 'store_id' => $this->storeId,
+                'shift_id' => $this->shiftId,
                 'date_from' => $this->dateFrom,
                 'date_to' => $this->dateTo,
             ], fn ($value) => $value !== '')),
@@ -205,6 +214,12 @@ new #[Title('Audit Logs')] class extends Component
             ->when($this->actorId !== '', fn (Builder $query) => $query->where('actor_id', (int) $this->actorId))
             ->when($this->branchId !== '', fn (Builder $query) => $query->where('branch_id', (int) $this->branchId))
             ->when($this->storeId !== '', fn (Builder $query) => $query->where('store_id', (int) $this->storeId))
+            ->when($this->shiftId !== '' && ctype_digit($this->shiftId), fn (Builder $query) => $query->where(function (Builder $shift): void {
+                $shift->where('metadata->shift_id', (int) $this->shiftId)
+                    ->orWhere(function (Builder $source): void {
+                        $source->where('source_type', \App\Modules\Retail\Models\PosShift::class)->where('source_id', $this->shiftId);
+                    });
+            }))
             ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->dateFrom) === 1, fn (Builder $query) => $query->whereDate('created_at', '>=', $this->dateFrom))
             ->when(preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->dateTo) === 1, fn (Builder $query) => $query->whereDate('created_at', '<=', $this->dateTo));
     }
@@ -261,6 +276,7 @@ new #[Title('Audit Logs')] class extends Component
                             <option value="{{ $store->id }}">{{ $store->code }} - {{ str_starts_with(app()->getLocale(), 'ar') ? $store->name_ar : $store->name_en }}</option>
                         @endforeach
                     </flux:select>
+                    <flux:input wire:model.live.debounce.400ms="shiftId" type="number" min="1" :label="__('POS shift ID')" />
                     <flux:input wire:model.live="dateFrom" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" dir="ltr" :label="__('From date')" />
                     <flux:input wire:model.live="dateTo" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" dir="ltr" :label="__('To date')" />
                 </div>
@@ -270,69 +286,42 @@ new #[Title('Audit Logs')] class extends Component
         @if ($this->screen['logs']->isEmpty())
             <x-state.empty :title="__('No audit events found')" :description="__('No visible events match the current filters.')" icon="clock" />
         @else
-        <div class="hidden max-w-full overflow-x-auto sm:block">
-            <flux:table class="min-w-[64rem]" aria-label="{{ __('Audit events') }}">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Time') }} ({{ $this->screen['companyTimezone'] }})</flux:table.column>
-                    <flux:table.column>{{ __('Event') }}</flux:table.column>
-                    <flux:table.column>{{ __('Actor') }}</flux:table.column>
-                    <flux:table.column>{{ __('Source') }}</flux:table.column>
-                    <flux:table.column>{{ __('Scope') }}</flux:table.column>
-                    <flux:table.column>{{ __('Request ID') }}</flux:table.column>
-                    <flux:table.column>{{ __('Actions') }}</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($this->screen['logs'] as $log)
-                        <flux:table.row key="audit-{{ $log->id }}" class="data-table-row">
-                            <flux:table.cell class="whitespace-nowrap font-mono text-xs">{{ $log->created_at->copy()->timezone($this->screen['companyTimezone'])->format('Y-m-d H:i:s') }}</flux:table.cell>
-                            <flux:table.cell><flux:badge size="sm" color="zinc">{{ $this->screen['presentation']->event($log->event) }}</flux:badge></flux:table.cell>
-                            <flux:table.cell>{{ $log->actor_name ?? __('System') }}</flux:table.cell>
-                            <flux:table.cell><span>{{ $this->screen['presentation']->source($log->source_type) }}</span>@if($log->source_id)<span class="ms-1 font-mono text-xs text-text-muted" dir="ltr">#{{ $log->source_id }}</span>@endif</flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">
-                                @if ($log->branch_id)
-                                    <span>{{ __('Branch').' #'.$log->branch_id }}</span>
-                                @endif
-                                @if ($log->store_id)
-                                    <span class="ms-2">{{ __('Store').' #'.$log->store_id }}</span>
-                                @endif
-                                @if (! $log->branch_id && ! $log->store_id)
-                                    {{ __('Global') }}
-                                @endif
-                            </flux:table.cell>
-                            <flux:table.cell class="max-w-40 truncate font-mono text-xs" title="{{ $log->request_id }}">{{ $log->request_id }}</flux:table.cell>
-                            <flux:table.cell><x-actions.button semantic="view" :label="__('View')" size="xs" wire:click="showAudit({{ $log->id }})" data-guide="audit-view-action">{{ __('View') }}</x-actions.button></flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </div>
-
-        <div class="space-y-3 sm:hidden">
+        <ol class="relative ms-5 space-y-5 border-s-2 border-cyan-200 ps-6 dark:border-cyan-900" aria-label="{{ __('Activity timeline') }}">
+            @php
+                $previousDay = null;
+            @endphp
             @foreach ($this->screen['logs'] as $log)
-                <x-cards.section-card class="space-y-3" :title="$this->screen['presentation']->event($log->event)">
-                    <div class="flex items-center justify-between gap-3">
-                        <flux:badge size="sm" color="zinc">{{ $this->screen['presentation']->event($log->event) }}</flux:badge>
-                        <span class="whitespace-nowrap font-mono text-xs text-text-muted">{{ $log->created_at->copy()->timezone($this->screen['companyTimezone'])->format('Y-m-d H:i') }} {{ $this->screen['companyTimezone'] }}</span>
+                @php
+                    $localTime = $log->created_at->copy()->timezone($this->screen['companyTimezone']);
+                    $day = $localTime->toDateString();
+                    $event = strtolower($log->event);
+                    $icon = str_contains($event, 'print') ? '🖨️' : (str_contains($event, 'return') ? '↩️' : (str_contains($event, 'sale') ? '🛍️' : (str_contains($event, 'transfer') ? '📦' : (str_contains($event, 'cash') ? '💵' : (str_contains($event, 'shift') ? '🏪' : (str_contains($event, 'approv') ? '✅' : (str_contains($event, 'reject') ? '⛔' : (str_contains($event, 'login') ? '🔑' : (str_contains($event, 'product') ? '🏷️' : (str_contains($event, 'quotation') ? '📄' : '●'))))))))));
+                @endphp
+                @if($day !== $previousDay)
+                    <li class="-ms-6 rounded-lg bg-zinc-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                        {{ $day === now($this->screen['companyTimezone'])->toDateString() ? __('Today') : ($day === now($this->screen['companyTimezone'])->subDay()->toDateString() ? __('Yesterday') : $localTime->translatedFormat('l, j F Y')) }}
+                    </li>
+                    @php
+                        $previousDay = $day;
+                    @endphp
+                @endif
+                <li class="relative rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900" wire:key="audit-timeline-{{ $log->id }}">
+                    <span class="absolute -start-[2.45rem] top-4 flex size-8 items-center justify-center rounded-full border-2 border-cyan-300 bg-white text-sm shadow-sm dark:bg-zinc-900" aria-hidden="true">{{ $icon }}</span>
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div><h3 class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $this->screen['presentation']->event($log->event) }}</h3>
+                            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{{ $this->screen['presentation']->category($log->category) }} · {{ $this->screen['presentation']->source($log->source_type) }} @if($log->source_id)<span dir="ltr">#{{ $log->source_id }}</span>@endif</p>
+                        </div>
+                        <time class="font-mono text-xs text-zinc-500" datetime="{{ $log->created_at->toIso8601String() }}">{{ $localTime->format('H:i:s') }}</time>
                     </div>
-                    <dl class="grid gap-2 text-sm">
-                        <div><dt class="text-text-muted">{{ __('Actor') }}</dt><dd>{{ $log->actor_name ?? __('System') }}</dd></div>
-                        <div><dt class="text-text-muted">{{ __('Source') }}</dt><dd>{{ $this->screen['presentation']->source($log->source_type) }}@if($log->source_id)<span class="ms-1 font-mono text-xs" dir="ltr">#{{ $log->source_id }}</span>@endif</dd></div>
-                        <div><dt class="text-text-muted">{{ __('Scope') }}</dt><dd>
-                            @if ($log->branch_id)
-                                <span>{{ __('Branch').' #'.$log->branch_id }}</span>
-                            @endif
-                            @if ($log->store_id)
-                                <span class="ms-2">{{ __('Store').' #'.$log->store_id }}</span>
-                            @endif
-                            @if (! $log->branch_id && ! $log->store_id)
-                                {{ __('Global') }}
-                            @endif
-                        </dd></div>
-                    </dl>
-                    <x-actions.button semantic="view" :label="__('View')" wire:click="showAudit({{ $log->id }})">{{ __('View') }}</x-actions.button>
-                </x-cards.section-card>
+                    <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-600 dark:text-zinc-300">
+                        <span>👤 {{ $log->actor_name ?? __('System') }}</span>
+                        @if($log->branch_id)<span>{{ __('Branch') }} #{{ $log->branch_id }}</span>@endif
+                        @if($log->store_id)<span>{{ __('Store') }} #{{ $log->store_id }}</span>@endif
+                        <button type="button" class="font-semibold text-cyan-700 underline dark:text-cyan-300" wire:click="showAudit({{ $log->id }})">{{ __('View details') }}</button>
+                    </div>
+                </li>
             @endforeach
-        </div>
+        </ol>
         @endif
 
         <x-slot:footer>
@@ -382,6 +371,9 @@ new #[Title('Audit Logs')] class extends Component
                     <x-cards.section-card :title="__('Before')"><pre class="overflow-x-auto text-xs">{{ json_encode($this->screen['selectedBeforeValues'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></x-cards.section-card>
                     <x-cards.section-card :title="__('After')"><pre class="overflow-x-auto text-xs">{{ json_encode($this->screen['selectedAfterValues'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></x-cards.section-card>
                 </div>
+                @if($this->screen['selectedMetadata'])
+                    <x-cards.section-card :title="__('Event metadata')"><pre class="overflow-x-auto text-xs">{{ json_encode($this->screen['selectedMetadata'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></x-cards.section-card>
+                @endif
             </div>
         @endif
     </flux:modal>

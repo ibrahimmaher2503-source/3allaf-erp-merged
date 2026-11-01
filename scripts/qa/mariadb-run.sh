@@ -57,11 +57,12 @@ case "$mode" in
  integrity) if [[ ${QA_INTEGRITY_SCAN_ONLY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/catalog-regression.php"; fi; "$QA_PHP" "$QA_ROOT/scripts/qa/db-integrity.php" ;;
  hardening) "$QA_PHP" "$QA_ROOT/scripts/qa/financial-domain.php" ;;
  reconcile) "$QA_PHP" "$QA_ROOT/scripts/qa/reconciliation.php" ;;
-	compact|browser|batch-browser|batch-e2e|v2-core-polish|pos-reference|pos-theme-r8|pos-completion|post-pos-repairs|purchase-approval|purchase-invoice-hotfix|commercial-ux|pos-smart-returns|pos-quantity-hotfix|cashier-gift-batch|inventory-menu-b)
+	compact|browser|batch-browser|batch-e2e|v2-core-polish|pos-reference|pos-theme-r8|pos-completion|post-pos-repairs|purchase-approval|purchase-invoice-hotfix|commercial-ux|pos-smart-returns|pos-quantity-hotfix|cashier-gift-batch|inventory-menu-b|open-shift-quotation-batch)
     if [[ "$mode" == purchase-approval || "$mode" == purchase-invoice-hotfix ]] && [[ ${QA_PURCHASE_FIXTURE_READY:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/purchase-approval-fixture.php"; fi
-    if [[ "$mode" == browser || "$mode" == batch-browser || "$mode" == batch-e2e || "$mode" == v2-core-polish || "$mode" == pos-reference || "$mode" == pos-theme-r8 || "$mode" == pos-completion || "$mode" == post-pos-repairs || "$mode" == commercial-ux || "$mode" == pos-smart-returns || "$mode" == pos-quantity-hotfix || "$mode" == cashier-gift-batch || "$mode" == inventory-menu-b ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"; export QA_BROWSER_ACCOUNTS="$work/accounts.json"; fi
-    if [[ "$mode" == batch-browser || "$mode" == batch-e2e || "$mode" == v2-core-polish || "$mode" == pos-reference || "$mode" == pos-theme-r8 || "$mode" == pos-completion || "$mode" == commercial-ux || "$mode" == pos-smart-returns || "$mode" == pos-quantity-hotfix || "$mode" == cashier-gift-batch || "$mode" == inventory-menu-b ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-reference-fixture.php"; fi
+    if [[ "$mode" == browser || "$mode" == batch-browser || "$mode" == batch-e2e || "$mode" == v2-core-polish || "$mode" == pos-reference || "$mode" == pos-theme-r8 || "$mode" == pos-completion || "$mode" == post-pos-repairs || "$mode" == commercial-ux || "$mode" == pos-smart-returns || "$mode" == pos-quantity-hotfix || "$mode" == cashier-gift-batch || "$mode" == inventory-menu-b || "$mode" == open-shift-quotation-batch ]]; then if [[ "$mode" != open-shift-quotation-batch || ${QA_REUSE_RUNTIME:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/browser-fixture.php" "$work/accounts.json"; fi; export QA_BROWSER_ACCOUNTS="$work/accounts.json"; fi
+    if [[ "$mode" == batch-browser || "$mode" == batch-e2e || "$mode" == v2-core-polish || "$mode" == pos-reference || "$mode" == pos-theme-r8 || "$mode" == pos-completion || "$mode" == commercial-ux || "$mode" == pos-smart-returns || "$mode" == pos-quantity-hotfix || "$mode" == cashier-gift-batch || "$mode" == inventory-menu-b || "$mode" == open-shift-quotation-batch ]]; then if [[ "$mode" != open-shift-quotation-batch || ${QA_REUSE_RUNTIME:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-reference-fixture.php"; fi; fi
     if [[ "$mode" == batch-e2e ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/v2-current-batch-e2e-fixture.php"; export QA_BATCH_E2E_FIXTURE="$QA_STORAGE/v2-current-batch-e2e.json"; fi
+    if [[ "$mode" == open-shift-quotation-batch && ${QA_REUSE_RUNTIME:-0} != 1 ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/open-shift-quotation-fixture.php"; fi
     if [[ "$mode" == cashier-gift-batch || "$mode" == inventory-menu-b ]]; then mkdir -p "$QA_STORAGE/$DB_DATABASE"; export QA_STORAGE_PATH="$QA_STORAGE/$DB_DATABASE"; "$QA_PHP" "$QA_ROOT/scripts/qa/cashier-gift-batch-fixture.php"; export QA_CASHIER_GIFT_FIXTURE="$QA_STORAGE_PATH/cashier-gift-batch.json"; fi
     if [[ "$mode" == pos-smart-returns ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-smart-returns-fixture.php" "$work/pos-smart-returns.json"; export QA_POS_RETURN_FIXTURE="$work/pos-smart-returns.json"; fi
     if [[ "$mode" == pos-quantity-hotfix ]]; then "$QA_PHP" "$QA_ROOT/scripts/qa/pos-quantity-fixture.php"; fi
@@ -74,7 +75,9 @@ case "$mode" in
    "$QA_PHP" -S "127.0.0.1:$port" "$QA_ROOT/scripts/qa/browser-router.php" >"$work/http.log" 2>&1 &
    http_pid=$!
    for _ in $(seq 1 50); do curl -fsS "$QA_BROWSER_URL/up" >/dev/null 2>&1 && break; sleep 0.2; done
-   if [[ "$mode" == inventory-menu-b ]]; then
+   if [[ "$mode" == open-shift-quotation-batch ]]; then
+     node "$QA_ROOT/scripts/qa/open-shift-quotation-browser.mjs"
+   elif [[ "$mode" == inventory-menu-b ]]; then
      node "$QA_ROOT/scripts/qa/inventory-menu-b-browser.mjs"
    elif [[ "$mode" == cashier-gift-batch ]]; then
      node "$QA_ROOT/scripts/qa/cashier-gift-batch-browser.mjs"

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Responses\PosAwareLoginResponse;
 use App\Models\User;
+use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\ApprovalRecord;
 use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Policies\ApprovalRecordPolicy;
@@ -16,14 +17,16 @@ use App\Modules\Platform\Support\TranslationOverrideLoader;
 use App\Modules\Platform\Support\UserManagementScope;
 use App\Modules\Platform\Support\WorkContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -69,6 +72,16 @@ class AppServiceProvider extends ServiceProvider
         Livewire::addNamespace('purchasing', viewPath: resource_path('views/purchasing'));
         Livewire::addNamespace('pricing', viewPath: resource_path('views/pricing'));
         Livewire::addNamespace('inventory', viewPath: resource_path('views/inventory'));
+        Event::listen(Login::class, static function (Login $event): void {
+            if ($event->user instanceof User && request()->isMethod('POST')) {
+                app(RecordAuditEvent::class)->execute('security', 'user_login', $event->user);
+            }
+        });
+        Event::listen(Logout::class, static function (Logout $event): void {
+            if ($event->user instanceof User && request()->isMethod('POST')) {
+                app(RecordAuditEvent::class)->execute('security', 'user_logout', $event->user);
+            }
+        });
         foreach (['saved', 'deleted', 'restored'] as $event) {
             Event::listen("eloquent.{$event}: *", static function (): void {
                 if (! Cache::add('setup-readiness-version', 1)) {
