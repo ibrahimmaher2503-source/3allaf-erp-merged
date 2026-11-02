@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ app()->getLocale() }}" dir="{{ str_starts_with(app()->getLocale(), 'ar') ? 'rtl' : 'ltr' }}">
 <head>
     @include('partials.head', ['title' => 'راجح ERP | إدارة أعمالك اليوم لبناء غدٍ أقوى'])
     <meta name="description" content="راجح ERP منصة عربية متكاملة لإدارة المبيعات والمشتريات والمخزون ونقاط البيع والفروع.">
@@ -14,10 +14,10 @@
                 <a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
             </nav>
             <div class="marketing-header__actions"><a class="marketing-button marketing-button--small marketing-button--outline marketing-header__login" href="{{ route('login') }}">تسجيل الدخول</a><a class="marketing-button marketing-button--small marketing-button--primary marketing-header__cta" href="mailto:hello@s-eg.com?subject=طلب%20تجربة%20راجح">اطلب تجربة مجانية <span aria-hidden="true">←</span></a></div>
-            <button class="marketing-menu-button" type="button" aria-label="فتح القائمة" aria-expanded="false" data-marketing-menu>☰</button>
+            <button class="marketing-menu-button" type="button" aria-label="فتح القائمة" aria-controls="marketing-mobile-navigation" aria-expanded="false" data-marketing-menu><span aria-hidden="true">☰</span></button>
         </div>
-        <nav class="marketing-mobile-nav marketing-shell" aria-label="التنقل للجوال" data-marketing-mobile hidden>
-            <a class="marketing-mobile-nav__login" href="{{ route('login') }}">تسجيل الدخول</a><a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
+        <nav id="marketing-mobile-navigation" class="marketing-mobile-nav marketing-shell" aria-label="التنقل للجوال" data-marketing-mobile hidden>
+            <a href="#top">الرئيسية</a><a href="#product">المنتج</a><a href="#features">المميزات</a><a href="#sectors">القطاعات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="#contact">تواصل معنا</a>
         </nav>
     </header>
 
@@ -26,7 +26,7 @@
             <div class="marketing-shell marketing-hero__grid">
                 <div class="marketing-hero__copy">
                     <span class="marketing-eyebrow"><i></i> منظومة أعمال عربية تنمو معك</span>
-                    <h1>إدارة أعمالك اليوم<br><strong>لبناء غدٍ أقوى</strong></h1>
+                    <h1><span>إدارة أعمالك اليوم</span><strong>لبناء غدٍ أقوى</strong></h1>
                     <p>راجح ERP يمنحك رؤية موحّدة وتحكماً أوضح في المبيعات، المخزون، المشتريات والفروع، لتتخذ القرار المناسب في الوقت المناسب.</p>
                     <div class="marketing-actions"><a class="marketing-button marketing-button--primary" href="mailto:hello@s-eg.com?subject=طلب%20عرض%20راجح">اطلب عرضاً توضيحياً <span aria-hidden="true">←</span></a><a class="marketing-button marketing-button--light" href="#product"><span class="marketing-play" aria-hidden="true">▶</span> اكتشف راجح</a></div>
                     <div class="marketing-trust"><span><b>✓</b> عربي من البداية</span><span><b>✓</b> فروع ومتاجر متعددة</span><span><b>✓</b> صلاحيات وموافقات واضحة</span></div>
@@ -52,7 +52,20 @@
     </main>
     <footer class="marketing-footer"><div class="marketing-shell marketing-footer__inner"><div><img src="{{ asset('images/rajeh-logo.png') }}" alt="راجح ERP" width="135" height="59"><p>إدارة أعمالك اليوم لبناء غدٍ أقوى.</p></div><div class="marketing-footer__links"><a href="#features">المميزات</a><a href="#ai">الذكاء الاصطناعي</a><a href="#roadmap">خارطة الطريق</a><a href="mailto:hello@s-eg.com">hello@s-eg.com</a></div><div class="marketing-footer__contact"><strong>راجح ERP</strong><span>تطوير I.S. Intelligent Solutions</span><a href="https://s-eg.com" target="_blank" rel="noreferrer">s-eg.com</a><a href="tel:01116888073">01116888073</a></div></div><div class="marketing-shell marketing-footer__bottom"><span>© {{ date('Y') }} راجح ERP. جميع الحقوق محفوظة.</span><span>صنع بعناية في مصر</span></div></footer>
     <script>
-        document.addEventListener('DOMContentLoaded', () => { const button = document.querySelector('[data-marketing-menu]'); const menu = document.querySelector('[data-marketing-mobile]'); if (!button || !menu) return; button.addEventListener('click', () => { const open = button.getAttribute('aria-expanded') === 'true'; button.setAttribute('aria-expanded', String(!open)); menu.hidden = open; }); menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => { button.setAttribute('aria-expanded', 'false'); menu.hidden = true; })); });
+        document.addEventListener('DOMContentLoaded', () => {
+            const button = document.querySelector('[data-marketing-menu]');
+            const menu = document.querySelector('[data-marketing-mobile]');
+            if (!button || !menu) return;
+            const closeMenu = () => { button.setAttribute('aria-expanded', 'false'); menu.hidden = true; };
+            button.addEventListener('click', () => {
+                const open = button.getAttribute('aria-expanded') === 'true';
+                button.setAttribute('aria-expanded', String(!open));
+                menu.hidden = open;
+            });
+            menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeMenu(); button.focus(); } });
+            document.addEventListener('click', (event) => { if (!menu.hidden && !menu.contains(event.target) && !button.contains(event.target)) closeMenu(); });
+        });
     </script>
 </body>
 </html>
