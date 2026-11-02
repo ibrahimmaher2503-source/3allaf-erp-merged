@@ -6678,5 +6678,13 @@
     "Open sale order created": "تم إنشاء طلب بيع مفتوح",
     "Return without invoice completed": "تم تنفيذ مرتجع بدون فاتورة",
     "Create a product quotation without posting stock or financial entries.": "أنشئ عرض سعر للمنتجات دون ترحيل مخزني أو مالي.",
-    "selling": "منفذ بيع"
+    "selling": "منفذ بيع",
+    "Search and select customer": "ابحث واختر العميل",
+    "Search by name or phone (3 characters)": "ابحث بالاسم أو الهاتف (٣ أحرف أو أرقام)",
+    "Type at least 3 letters or digits to search.": "اكتب ٣ أحرف أو أرقام على الأقل للبحث.",
+    "Clear selected customer": "مسح العميل المحدد",
+    "More actions": "المزيد من الإجراءات",
+    "Search or scan Gift Card": "ابحث أو امسح بطاقة هدايا",
+    "Type or scan Gift Card code": "اكتب أو امسح كود بطاقة الهدايا",
+    "Gift Card recognized": "تم التعرف على بطاقة الهدايا"
 }
