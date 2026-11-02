@@ -88,7 +88,7 @@ case "$mode" in
    elif [[ "$mode" == inventory-menu-b ]]; then
      node "$QA_ROOT/scripts/qa/inventory-menu-b-browser.mjs"
    elif [[ "$mode" == cashier-gift-batch ]]; then
-     node "$QA_ROOT/scripts/qa/cashier-gift-batch-browser.mjs"
+     if [[ ${QA_CORRECTIVE_SMOKE:-0} == 1 ]]; then node "$QA_ROOT/scripts/qa/corrective-batch-browser.mjs"; else node "$QA_ROOT/scripts/qa/cashier-gift-batch-browser.mjs"; fi
    elif [[ "$mode" == purchase-approval ]]; then node "$QA_ROOT/scripts/qa/purchase-approval-browser.mjs"; elif [[ "$mode" == purchase-invoice-hotfix ]]; then node "$QA_ROOT/scripts/qa/purchase-invoice-hotfix-browser.mjs"; elif [[ "$mode" == pos-quantity-hotfix ]]; then node "$QA_ROOT/scripts/qa/pos-quantity-browser.mjs"; elif [[ "$mode" == pos-smart-returns ]]; then node "$QA_ROOT/scripts/qa/pos-smart-returns-browser.mjs"; elif [[ "$mode" == batch-browser ]]; then node "$QA_ROOT/scripts/qa/v2-current-batch-browser.mjs"; elif [[ "$mode" == batch-e2e ]]; then node "$QA_ROOT/scripts/qa/v2-current-batch-e2e.mjs"; elif [[ "$mode" == v2-core-polish ]]; then node "$QA_ROOT/scripts/qa/v2-core-polish-browser.mjs"; elif [[ "$mode" == pos-reference ]]; then node "$QA_ROOT/scripts/qa/pos-reference-browser.mjs"; elif [[ "$mode" == pos-theme-r8 ]]; then node "$QA_ROOT/scripts/qa/pos-theme-r8-browser.mjs"; elif [[ "$mode" == pos-completion ]]; then node "$QA_ROOT/scripts/qa/pos-completion-browser.mjs"; elif [[ "$mode" == post-pos-repairs ]]; then node "$QA_ROOT/scripts/qa/post-pos-repairs-browser.mjs"; elif [[ "$mode" == commercial-ux ]]; then node "$QA_ROOT/scripts/qa/commercial-ux-browser.mjs"; else node "$QA_ROOT/scripts/qa/browser-smoke.mjs"; fi
    ;;
  export) "$QA_PHP" "$QA_ROOT/scripts/qa/export-check.php" ;;

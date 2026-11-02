@@ -75,6 +75,33 @@ final class Module5PosQaTest extends TestCase
         self::assertFalse(collect($panel->paymentLines)->contains(fn (array $line): bool => ($line['gift_card_identifier'] ?? '') !== ''));
     }
 
+    public function test_manual_gift_card_activation_rejects_repeated_issue_without_second_ledger_entry(): void
+    {
+        $cards = app(GiftCardAction::class);
+        $card = $cards->issue($this->cashier, '500.00', (int) $this->store->branch_id, (int) $this->store->id,
+            'manual', 'manual-'.$this->cashier->id, 'manual-once-0001');
+
+        try {
+            $cards->issue($this->cashier, '500.00', (int) $this->store->branch_id, (int) $this->store->id,
+                'manual', 'manual-'.$this->cashier->id, 'manual-once-0001');
+            self::fail('The same manual issue was accepted twice.');
+        } catch (ValidationException $exception) {
+            self::assertSame('بطاقة الهدايا مفعّلة بالفعل ولا يمكن بيعها مرة أخرى.', $exception->errors()['card'][0]);
+        }
+        self::assertSame(1, $card->ledger()->count());
+    }
+
+    public function test_manual_gift_card_issue_requires_a_branch_warehouse(): void
+    {
+        $warehouse = Store::factory()->create([
+            'company_id' => $this->store->company_id, 'branch_id' => $this->store->branch_id,
+            'type' => 'warehouse', 'status' => 'active', 'name_ar' => 'مخزن الفرع', 'name_en' => 'Branch Warehouse',
+        ]);
+        $this->get(route('gift.cards.index'))->assertOk()->assertSee('Branch Warehouse');
+        $this->post(route('gift.cards.store'), ['store_id' => $this->store->id, 'amount' => '500.00'])->assertNotFound();
+        $this->post(route('gift.cards.store'), ['store_id' => $warehouse->id, 'amount' => '500.00', 'idempotency_key' => (string) Str::uuid()])->assertRedirect();
+    }
+
     public function test_scanned_gift_card_routes_to_tender_and_preserves_split_remainder(): void
     {
         PaymentMethod::factory()->create(['type' => 'gift_card', 'status' => 'active']);
@@ -106,7 +133,7 @@ final class Module5PosQaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'gift_cards.redeem', 'company_settings.view', 'company_settings.edit'] as $code) {
+        foreach (['pos_sales.view', 'pos_sales.create', 'pos_sales.print', 'pos_sales.payment_create', 'pos_sales.apply_discount', 'pos_sales.payment_evidence_upload', 'customers.view', 'customers.create', 'suspended_sales.view', 'suspended_sales.retrieve', 'loyalty.earn', 'gift_cards.redeem', 'gift_cards.issue', 'company_settings.view', 'company_settings.edit'] as $code) {
             Permission::query()->firstOrCreate(['code' => $code], ['module' => strstr($code, '.', true), 'action' => substr(strstr($code, '.'), 1), 'status' => 'active']);
         }
         $this->cashier = User::factory()->create(['status' => 'active']);

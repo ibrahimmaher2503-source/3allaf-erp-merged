@@ -21,6 +21,7 @@ use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\RetailReturn;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Services\ShiftExpectedTotalsService;
+use App\Modules\Retail\Support\PosContextResolver;
 use App\Modules\Retail\Support\PosFinancialSettingRegistry;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
@@ -296,6 +297,57 @@ final class Module9CashShiftsQaTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('two previous shifts awaiting approval');
         app(OpenShiftAction::class)->execute($cashier, $thirdDrawer, '1000', (string) Str::uuid());
+    }
+
+    public function test_two_cashiers_can_open_separate_drawers_and_pos_resolves_each_own_shift(): void
+    {
+        $cashierA = $this->reviewer();
+        $cashierB = $this->reviewer();
+        $drawerA = $this->drawerFor($cashierA);
+        $drawerB = CashDrawer::factory()->create([
+            'company_id' => $drawerA->company_id, 'branch_id' => $drawerA->branch_id,
+            'store_id' => $drawerA->store_id, 'assigned_user_id' => $cashierB->id,
+        ]);
+
+        $this->actingAs($cashierA);
+        $shiftA = app(OpenShiftAction::class)->execute($cashierA, $drawerA, '100.00', (string) Str::uuid());
+        self::assertSame($shiftA->id, app(PosContextResolver::class)->resolve($cashierA)->shift?->id);
+
+        $this->actingAs($cashierB);
+        try {
+            app(OpenShiftAction::class)->execute($cashierB, $drawerA, '300.00', (string) Str::uuid());
+            self::fail('An occupied physical drawer was accepted.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertNotSame('', $exception->getMessage());
+        }
+        $shiftB = app(OpenShiftAction::class)->execute($cashierB, $drawerB, '200.00', (string) Str::uuid());
+        self::assertSame($shiftB->id, app(PosContextResolver::class)->resolve($cashierB)->shift?->id);
+        self::assertSame($shiftA->id, app(PosContextResolver::class)->resolve($cashierA)->shift?->id);
+        self::assertSame('100.00', app(ShiftExpectedTotalsService::class)->derive($shiftA)['expected_cash']);
+        self::assertSame('200.00', app(ShiftExpectedTotalsService::class)->derive($shiftB)['expected_cash']);
+
+    }
+
+    public function test_shift_receipts_include_completed_return_and_original_receipt(): void
+    {
+        $shift = $this->openShift();
+        $sale = Sale::query()->create([
+            'branch_id' => $shift->branch_id, 'store_id' => $shift->store_id, 'cash_drawer_id' => $shift->cash_drawer_id,
+            'shift_id' => $shift->id, 'cashier_id' => $shift->cashier_id, 'status' => 'approved',
+            'document_number' => 'QA-SHIFT-SALE', 'idempotency_key' => (string) Str::uuid(),
+            'subtotal' => '50.00', 'discount_total' => '0.00', 'total' => '50.00', 'paid_total' => '50.00',
+            'payable_total' => '50.00', 'currency_code' => $shift->currency_code, 'approved_at' => now(),
+        ]);
+        RetailReturn::query()->create([
+            'branch_id' => $shift->branch_id, 'store_id' => $shift->store_id, 'cash_drawer_id' => $shift->cash_drawer_id,
+            'shift_id' => $shift->id, 'cashier_id' => $shift->cashier_id, 'source_sale_id' => $sale->id,
+            'status' => 'completed', 'return_number' => 'QA-SHIFT-RETURN', 'settlement_type' => 'cash_refund', 'reason' => 'QA return',
+            'settlement_value' => '10.00', 'currency_code' => $shift->currency_code,
+            'idempotency_key' => (string) Str::uuid(), 'completed_at' => now(),
+        ]);
+
+        $this->get(route('pos.shift.receipts', $shift))->assertOk()
+            ->assertSee('QA-SHIFT-SALE')->assertSee('QA-SHIFT-RETURN')->assertSee('Return');
     }
 
     public function test_m9_12_final_approval_print_shows_approved_status_and_actor(): void

@@ -812,13 +812,24 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         $user = $request->user();
         abort_unless($user->can('shifts_cash_movements.view') && $user->can('pos_sales.view'), 403);
         $shift = PosShift::query()->visibleTo($user)->with(['branch', 'store', 'cashDrawer'])->findOrFail($shift->id);
-        $receipts = Sale::query()->visibleTo($user)->approved()
-            ->where('shift_id', $shift->id)
-            ->where('branch_id', $shift->branch_id)
-            ->where('store_id', $shift->store_id)
-            ->where('cash_drawer_id', $shift->cash_drawer_id)
-            ->with(['customer', 'cashier'])
-            ->latest('approved_at')->paginate(20);
+        $sales = DB::table('sales')->leftJoin('customers', 'customers.id', '=', 'sales.customer_id')
+            ->leftJoin('users', 'users.id', '=', 'sales.cashier_id')
+            ->where('sales.shift_id', $shift->id)->where('sales.branch_id', $shift->branch_id)
+            ->where('sales.store_id', $shift->store_id)->where('sales.cash_drawer_id', $shift->cash_drawer_id)
+            ->whereIn('sales.status', ['approved', 'cancelled', 'reversed'])
+            ->selectRaw("sales.id, 'sale' as kind, sales.document_number as reference, sales.status, sales.approved_at as occurred_at, customers.name_ar as customer_ar, customers.name_en as customer_en, users.name as cashier_name, sales.total as amount, NULL as original_reference");
+        $returns = DB::table('retail_returns')->leftJoin('sales as original_sales', 'original_sales.id', '=', 'retail_returns.source_sale_id')
+            ->leftJoin('exchanges', 'exchanges.retail_return_id', '=', 'retail_returns.id')
+            ->leftJoin('customers', 'customers.id', '=', 'retail_returns.customer_id')
+            ->leftJoin('users', 'users.id', '=', 'retail_returns.cashier_id')
+            ->where(fn ($query) => $query->where('retail_returns.shift_id', $shift->id)
+                ->orWhere(fn ($legacy) => $legacy->whereNull('retail_returns.shift_id')->where('original_sales.shift_id', $shift->id)))
+            ->where('retail_returns.branch_id', $shift->branch_id)
+            ->where('retail_returns.store_id', $shift->store_id)->where('retail_returns.cash_drawer_id', $shift->cash_drawer_id)
+            ->where('retail_returns.status', 'completed')
+            ->selectRaw("retail_returns.id, 'return' as kind, CASE WHEN retail_returns.settlement_type = 'exchange' THEN COALESCE(exchanges.exchange_number, retail_returns.return_number) ELSE retail_returns.return_number END as reference, retail_returns.settlement_type as status, retail_returns.completed_at as occurred_at, customers.name_ar as customer_ar, customers.name_en as customer_en, users.name as cashier_name, retail_returns.settlement_value as amount, original_sales.document_number as original_reference");
+        $receipts = DB::query()->fromSub($sales->unionAll($returns), 'shift_transactions')
+            ->orderByDesc('occurred_at')->orderByDesc('id')->paginate(20);
 
         return view('pages.pos.shift-receipts', compact('shift', 'receipts'));
     })->middleware('can:shifts_cash_movements.view')->name('pos.shift.receipts');

@@ -7,9 +7,9 @@ namespace App\Modules\Retail\Services;
 use App\Modules\Platform\Support\PaymentMethodSemantics;
 use App\Modules\Retail\Models\CashMovement;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Models\RetailReturnSettlement;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
-use App\Modules\Retail\Models\RetailReturnSettlement;
 use App\Modules\Retail\Support\DecimalMoney;
 use Illuminate\Support\Facades\DB;
 
@@ -49,6 +49,9 @@ final class ShiftExpectedTotalsService
             ->get();
 
         $cashSales = '0.00';
+        $grossCashSales = '0.00';
+        $cashRefunds = '0.00';
+        $cardSales = '0.00';
         $expectedByMethod = [];
         foreach ($paymentRows as $row) {
             /** @var string $methodCode */
@@ -64,11 +67,15 @@ final class ShiftExpectedTotalsService
                 // applied amount. `amount` is already net of change by
                 // construction in CapturePaymentAction.
                 $cashSales = bcadd($cashSales, $applied, 2);
+                $grossCashSales = bcadd($grossCashSales, $applied, 2);
 
                 continue;
             }
 
             $expectedByMethod[$methodCode] = bcadd($expectedByMethod[$methodCode] ?? '0.00', $applied, 2);
+            if (in_array($methodType, ['card', 'visa', 'manual_electronic'], true)) {
+                $cardSales = bcadd($cardSales, $applied, 2);
+            }
         }
 
         // Completed refunds are immutable settlement rows linked to the source
@@ -93,13 +100,19 @@ final class ShiftExpectedTotalsService
             $refunded = $this->money((string) $row->getAttribute('refunded'));
             if (PaymentMethodSemantics::isCashType((string) $row->getAttribute('method_type'))) {
                 $cashSales = bcsub($cashSales, $refunded, 2);
+                $cashRefunds = bcadd($cashRefunds, $refunded, 2);
             } else {
                 $methodCode = (string) $row->getAttribute('method_code');
                 $expectedByMethod[$methodCode] = bcsub($expectedByMethod[$methodCode] ?? '0.00', $refunded, 2);
             }
         }
 
-        $movementTotal = $this->money((string) CashMovement::query()->where('shift_id', $shift->getKey())->sum('amount'));
+        $movementTotals = CashMovement::query()->where('shift_id', $shift->getKey())
+            ->selectRaw('COALESCE(SUM(CASE WHEN amount >= 0 THEN amount ELSE 0 END), 0) AS cash_in')
+            ->selectRaw('COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS cash_out')->first();
+        $cashIn = $this->money((string) $movementTotals?->getAttribute('cash_in'));
+        $cashOut = $this->money((string) $movementTotals?->getAttribute('cash_out'));
+        $movementTotal = bcsub($cashIn, $cashOut, 2);
 
         $expectedCash = bcadd(bcadd($openingFloat, $cashSales, 2), $movementTotal, 2);
 
@@ -111,6 +124,11 @@ final class ShiftExpectedTotalsService
         return [
             'opening_float' => $openingFloat,
             'cash_sales' => $cashSales,
+            'gross_cash_sales' => $grossCashSales,
+            'cash_refunds' => $cashRefunds,
+            'card_sales' => $cardSales,
+            'cash_in' => $cashIn,
+            'cash_out' => $cashOut,
             'cash_movements' => $movementTotal,
             'expected_cash' => $expectedCash,
             'expected_by_method' => $expectedByMethod,

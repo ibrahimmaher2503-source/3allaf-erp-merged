@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\StockBalance as InventoryStockBalance;
 use App\Modules\Platform\Actions\SaveUiPreferences;
+use App\Modules\Platform\Models\Branch;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\ApplicationNavigation;
 use App\Modules\Purchasing\Models\StockBalance;
+use App\Modules\Reporting\Actions\EvaluateAlertsAction;
+use App\Modules\Reporting\Models\Alert;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -33,6 +37,34 @@ final class InventoryScannerMenuBFocusedTest extends TestCase
         }
         $this->get(route('inventory.balances', ['q' => 'كوت', 'store_id' => $otherStore->id, 'stock_state' => 'out']))->assertOk()->assertSee('000-INV-42');
         $this->get(route('inventory.balances', ['q' => 'missing-product', 'store_id' => '']))->assertOk()->assertDontSee('000-INV-42');
+    }
+
+    public function test_missing_balance_is_reported_as_zero_and_alert_is_location_specific(): void
+    {
+        require_once base_path('scripts/qa/fixture.php');
+        $fixture = qaFixture();
+        $this->actingAs($fixture['admin'])->withoutVite();
+        $branchB = Branch::factory()->create(['company_id' => $fixture['company']->id]);
+        $storeB = Store::factory()->create(['company_id' => $fixture['company']->id, 'branch_id' => $branchB->id, 'status' => 'active']);
+        $product = Product::factory()->create(['category_id' => $fixture['category']->id, 'item_code' => 'ZERO-62', 'name_ar' => 'عربية سوستة اختبار', 'name_en' => 'Spring car test', 'sale_price' => '300.00']);
+        $product->barcodes()->create(['barcode' => 'ZERO-BAR-62', 'source' => 'manual', 'status' => 'active', 'is_primary' => true]);
+        StockBalance::query()->create(['product_id' => $product->id, 'store_id' => $fixture['store']->id, 'on_hand' => 5, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 10, 'total_value' => 50, 'version' => 1]);
+
+        $rows = InventoryStockBalance::reportRows([$fixture['store']->id, $storeB->id])->where('product_id', $product->id)->orderBy('store_id')->get();
+        self::assertCount(2, $rows);
+        self::assertSame('0.000000', (string) $rows->firstWhere('store_id', $storeB->id)->on_hand);
+        $this->get(route('inventory.balances', ['store_id' => $storeB->id, 'q' => 'سوستة', 'include_zero' => 1, 'stock_state' => 'out']))->assertOk()->assertSee('ZERO-62');
+        $this->get(route('inventory.balances', ['store_id' => $storeB->id, 'q' => 'ZERO-BAR', 'stock_state' => 'out']))->assertOk()->assertSee('ZERO-62');
+
+        $fixture['user']->storeScopes()->create(['store_id' => $fixture['store']->id, 'status' => 'active']);
+        app(EvaluateAlertsAction::class)->execute($fixture['user']);
+        self::assertFalse(Alert::query()->where('alert_key', 'zero-stock:'.$product->id.':'.$storeB->id)->exists());
+        app(EvaluateAlertsAction::class)->execute($fixture['admin']);
+        self::assertTrue(Alert::query()->where('alert_key', 'zero-stock:'.$product->id.':'.$storeB->id)->exists());
+        self::assertFalse(Alert::query()->where('alert_key', 'zero-stock:'.$product->id.':'.$fixture['store']->id)->exists());
+        StockBalance::query()->create(['product_id' => $product->id, 'store_id' => $storeB->id, 'on_hand' => -1, 'reserved' => 0, 'in_transit' => 0, 'average_cost' => 10, 'total_value' => -10, 'version' => 1]);
+        app(EvaluateAlertsAction::class)->execute($fixture['admin']);
+        self::assertSame(-1.0, (float) Alert::query()->where('alert_key', 'zero-stock:'.$product->id.':'.$storeB->id)->firstOrFail()->metadata['available_qty']);
     }
 
     public function test_menu_preference_is_account_owned_and_navigation_is_permission_filtered(): void

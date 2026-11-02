@@ -100,7 +100,7 @@
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $openToken }}">
                         <flux:select name="cash_drawer_id" :label="__('Sales outlet and cash drawer')" required>
-                            @foreach ($drawers as $drawer)
+                            @foreach ($availableDrawers as $drawer)
                                 <flux:select.option value="{{ $drawer->id }}" :selected="(int) old('cash_drawer_id', $preselectedDrawerId) === $drawer->id">{{ \App\Support\HumanName::name($drawer->store) }} — {{ \App\Support\HumanName::code($drawer->store) }} · {{ \App\Support\HumanName::name($drawer) }}</flux:select.option>
                             @endforeach
                         </flux:select>
@@ -173,7 +173,6 @@
                     <nav class="mt-4 flex flex-wrap gap-2" aria-label="{{ __('Shift actions') }}">
                         @can('pos_sales.create')<flux:button :href="route('pos')" variant="primary" icon="shopping-cart">{{ __('Open POS') }}</flux:button>@endcan
                         @can('shifts_cash_movements.create')<flux:button :href="route('pos.shift.cash-movement.form', $shift)" variant="subtle" icon="banknotes">{{ __('Cash movement') }}</flux:button>@endcan
-                        @can('shifts_cash_movements.submit')<flux:button :href="'#shift-close-'.$shift->id" variant="subtle" icon="lock-closed">{{ __('Close shift') }}</flux:button>@endcan
                     </nav>
                 @endif
             </div>

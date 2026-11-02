@@ -1,3 +1,7 @@
+## 2026-11-02 — D3 corrective batch pending owner review
+
+Branch `feature/v2-giftcard-shift-inventory-corrective-20261102`; source `a08d836edb4b7f52b515a3ec1dc1790d9276bf4a`. This is an owner-authorized protected Core corrective batch for Gift Cards, cashier shifts, returns in shift receipts, close reconciliation, inventory balances and location alerts. No migration, merge or deployment. Focused tests, one Core gate and bounded changed-screen browser smoke recorded in TEST_RESULTS. Release decision remains separate.
+
 ## 2026-11-02 — Public mobile homepage batch closed
 
 Owner-approved public mobile source `e0972835adf6930f21c119e80e5f9a9ae4c5891c` merged without squash or conflicts from origin/main `4a457573c8325c019a52bb8d7d321fb885ebee02` as application `b46ca370d86de64fd48c747b42045e4397464715` and pushed to main. Final pushed main continuity SHA is the documentation commit following this entry, reported in the delivery response. Previous Production `b6bd7bf7d472120b63673ff0c4ad8a7f0263ae4d` at `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-small-ux-b6bd7bf`; new immutable release `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-public-mobile-b46ca37` built from exact merged application SHA. No migration in this batch; Production pending count 0 before and after, no schema change run. Fresh full `rajeh_toyjoy` compressed backup `/home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261102T063701Z_pre_b46ca37.sql.gz` (123477 bytes), SHA-256 `92a407b9990d5c235960146cd3ba226b5deadcb8cfe1c4c8917fb18602f37bb4`, gzip and readable SQL PASS.

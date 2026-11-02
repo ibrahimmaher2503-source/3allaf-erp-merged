@@ -17,29 +17,34 @@ final class EvaluateAlertsAction
     public function execute(?User $user = null): int
     {
         $count = app(EvaluateAssetAlertsAction::class)->execute($user);
-        StockBalance::query()
-            ->with(['product', 'store'])
-            ->when($user !== null, fn ($query) => $query->whereIn('store_id', Store::query()->visibleTo($user)->select('id')))
+        $storeIds = Store::query()->when($user !== null, fn ($query) => $query->visibleTo($user))
+            ->whereNotNull('branch_id')->where('status', 'active')->pluck('id')->all();
+        StockBalance::reportRows($storeIds)
+            ->with(['product', 'store.branch'])
             ->where(function ($query): void {
                 $query->whereRaw('(stock_balances.on_hand - stock_balances.reserved) <= 0')->orWhere(fn ($low): mixed => LowStockRule::apply($low));
             })
-            ->chunkById(200, function ($balances) use (&$count): void {
+            ->orderBy('store_id')->orderBy('product_id')->chunk(200, function ($balances) use (&$count): void {
                 foreach ($balances as $balance) {
-                    $store = Store::query()->find($balance->store_id);
+                    $store = $balance->store;
                     if ($store === null) {
                         continue;
                     }
                     $available = (float) $balance->on_hand - (float) $balance->reserved;
                     $isZero = $available <= 0;
+                    $description = ($store->branch?->name_ar ?? $store->branch_id).' — '.$store->name_ar.' — '.($balance->product?->name_ar ?? $balance->product_id).' — '.number_format($available, 2);
+                    $metadata = ['product_id' => $balance->product_id, 'available_qty' => $available, 'reorder_threshold' => (float) ($balance->product?->reorder_threshold ?? 0)];
                     $alert = Alert::query()->firstOrCreate(['alert_key' => ($isZero ? 'zero-stock:' : 'low-stock:').$balance->product_id.':'.$balance->store_id], [
                         'alert_type' => $isZero ? 'zero_stock' : 'low_stock', 'severity' => $isZero ? 'critical' : 'action_required',
                         'title' => $isZero ? 'Zero stock item' : 'Low stock item',
-                        'description' => $isZero ? 'A product has no on-hand quantity in this store.' : 'A product is at or below its reorder threshold.',
+                        'description' => $description,
                         'source_type' => StockBalance::class, 'source_id' => (string) $balance->product_id, 'branch_id' => $store->branch_id, 'store_id' => $store->id,
-                        'status' => 'open', 'metadata' => ['product_id' => $balance->product_id, 'available_qty' => $available, 'reorder_threshold' => (float) ($balance->product?->reorder_threshold ?? 0)],
+                        'status' => 'open', 'metadata' => $metadata,
                     ]);
                     if ($alert->wasRecentlyCreated) {
                         $count++;
+                    } else {
+                        $alert->update(['description' => $description, 'metadata' => $metadata]);
                     }
 
                     if (! $isZero) {
