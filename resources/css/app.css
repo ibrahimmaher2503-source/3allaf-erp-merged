@@ -1466,7 +1466,7 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
     .marketing-page .marketing-header__login { border-color:#b7cce8; color:var(--marketing-navy); background:#fff; }
     .marketing-page .marketing-header__login:hover,.marketing-page .marketing-header__login:focus-visible { border-color:var(--marketing-blue); color:var(--marketing-blue); }
     .marketing-page .marketing-mobile-nav__login { color:var(--marketing-blue); font-weight:900; }
-    @media (max-width:1000px) { .marketing-page .marketing-header__actions { display:none; } }
+    @media (max-width:1000px) { .marketing-page .marketing-header__cta { display:none; } }
 }
 @layer components {
     .marketing-page .marketing-mobile-nav[hidden] { display:none !important; }
@@ -1492,6 +1492,150 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
         padding:.6rem .75rem;
     }
 }
+
+/* Public homepage responsive layout. Keep these rules scoped to the marketing page. */
+@layer components {
+    .marketing-page img { max-inline-size:100%; height:auto; }
+    .marketing-page .marketing-hero__copy,
+    .marketing-page .marketing-dashboard,
+    .marketing-page .marketing-ai__copy,
+    .marketing-page .marketing-section-heading { min-width:0; }
+    .marketing-page .marketing-hero h1 span,
+    .marketing-page .marketing-hero h1 strong { display:block; }
+    .marketing-page .marketing-button { white-space:nowrap; }
+    .marketing-page .marketing-button:active,
+    .marketing-page .marketing-menu-button:active { transform:scale(.97); box-shadow:none; }
+    html[dir="ltr"] .marketing-page .marketing-hero__copy,
+    html[dir="ltr"] .marketing-page .marketing-dashboard { direction:ltr; }
+    html[dir="rtl"] .marketing-page .marketing-hero__copy { direction:rtl; }
+    .marketing-page .marketing-mobile-nav[hidden] { display:none!important; }
+    @media (max-width:920px) {
+        .marketing-page .marketing-nav { display:none; }
+        .marketing-page .marketing-header__actions { display:flex; margin-inline-start:auto; }
+        .marketing-page .marketing-header__login { display:inline-flex; min-height:44px; align-items:center; white-space:nowrap; }
+        .marketing-page .marketing-header__cta { display:none; }
+        .marketing-page .marketing-menu-button {
+            display:grid; flex:none; width:44px; height:44px; margin:0; place-items:center;
+            border:1px solid #bfd0e8; border-radius:.7rem; background:#fff;
+            color:var(--marketing-navy); font-size:1.35rem; line-height:1;
+            cursor:pointer;
+        }
+        .marketing-page .marketing-menu-button[aria-expanded="true"],
+        .marketing-page .marketing-menu-button:hover { background:#edf4ff; border-color:var(--marketing-blue); }
+        .marketing-page .marketing-menu-button:focus-visible,
+        .marketing-page .marketing-header__login:focus-visible { outline:2px solid var(--marketing-blue); outline-offset:2px; }
+        .marketing-page .marketing-mobile-nav {
+            position:absolute; inset-block-start:100%; inset-inline:0; z-index:35;
+            width:min(620px,calc(100% - 1.5rem)); max-height:min(75vh,34rem); overflow-y:auto;
+            border:1px solid var(--marketing-line); border-radius:0 0 1rem 1rem;
+            background:#fff; box-shadow:0 20px 40px rgb(11 45 91 / .16);
+            padding:.45rem 1rem .8rem;
+        }
+        .marketing-page .marketing-mobile-nav a { min-height:44px; display:flex; align-items:center; padding:.55rem .25rem; }
+        .marketing-page .marketing-hero__grid { grid-template-columns:minmax(0,1fr); gap:2rem; direction:inherit; }
+        .marketing-page .marketing-hero__copy { direction:inherit; }
+        .marketing-page .marketing-dashboard { width:min(100%,640px); margin-inline:auto; transform:none; }
+        .marketing-page .marketing-ai__inner,
+        .marketing-page .marketing-why { grid-template-columns:minmax(0,1fr); gap:2rem; }
+        .marketing-page .marketing-feature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .marketing-page .marketing-ai__cards { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .marketing-page .marketing-footer__inner { grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.5rem; }
+        .marketing-page .marketing-footer__contact { grid-column:1/-1; }
+    }
+    @media (max-width:760px) {
+        .marketing-page { --marketing-section-y:2.8rem; }
+        .marketing-page .marketing-shell { width:min(620px,calc(100% - 1.5rem)); }
+        .marketing-page .marketing-header__inner { min-height:62px; gap:.55rem; }
+        .marketing-page .marketing-brand { flex:none; }
+        .marketing-page .marketing-brand img { width:clamp(96px,27vw,116px); height:auto; }
+        .marketing-page .marketing-header__login {
+            display:inline-flex; min-height:44px; align-items:center; justify-content:center;
+            padding:.5rem .8rem; border-color:var(--marketing-blue); border-radius:.7rem;
+            background:var(--marketing-blue); color:#fff; font-size:.76rem;
+            white-space:nowrap; box-shadow:0 5px 14px rgb(10 76 201 / .18);
+        }
+        .marketing-page .marketing-header__login:hover { background:#073fae; color:#fff; }
+        .marketing-page .marketing-hero { padding:2.25rem 0 2.6rem; }
+        .marketing-page .marketing-hero__grid { gap:1.65rem; }
+        .marketing-page .marketing-hero h1 {
+            max-inline-size:22ch; margin:.75rem 0 .55rem;
+            font-size:clamp(1.85rem,8.1vw,2.35rem); line-height:1.35; letter-spacing:-.035em;
+            text-wrap:balance;
+        }
+        .marketing-page .marketing-hero__copy>p { max-inline-size:38rem; margin:0; font-size:.86rem; line-height:1.8; }
+        .marketing-page .marketing-actions { margin-top:1.15rem; gap:.65rem; }
+        .marketing-page .marketing-trust { margin-top:1rem; gap:.35rem .8rem; font-size:.68rem; }
+        .marketing-page .marketing-dashboard { max-inline-size:520px; margin-block-start:0; overflow:hidden; border-radius:.85rem; box-shadow:0 16px 34px rgb(11 45 91 / .12); }
+        .marketing-page .marketing-dashboard__body { min-height:0; }
+        .marketing-page .marketing-section { padding:var(--marketing-section-y) 0; }
+        .marketing-page .marketing-section-heading h2,
+        .marketing-page .marketing-ai h2,
+        .marketing-page .marketing-cta h2 { margin:.65rem 0 .45rem; font-size:clamp(1.55rem,6vw,1.95rem); line-height:1.36; letter-spacing:-.025em; }
+        .marketing-page .marketing-section-heading p,
+        .marketing-page .marketing-ai__copy p,
+        .marketing-page .marketing-cta p { font-size:.84rem; line-height:1.75; }
+        .marketing-page .marketing-feature-grid { gap:.65rem; margin-top:1.45rem; }
+        .marketing-page .marketing-feature-card { min-height:0; padding:1rem; }
+        .marketing-page .marketing-feature-card p { font-size:.75rem; line-height:1.65; }
+        .marketing-page .marketing-feature-card__arrow { display:none; }
+        .marketing-page .marketing-ai { padding:2.8rem 0; }
+        .marketing-page .marketing-ai__inner { gap:1.6rem; }
+        .marketing-page .marketing-ai__cards { grid-template-columns:1fr; gap:.65rem; }
+        .marketing-page .marketing-ai__cards article { min-height:0; padding:1rem; }
+        .marketing-page .marketing-ai__cards b { margin:.55rem 0 .25rem; }
+        .marketing-page .marketing-ai__cards p { font-size:.75rem; }
+        .marketing-page .marketing-benefit-grid { gap:.65rem; }
+        .marketing-page .marketing-benefit-grid article { padding:1rem; }
+        .marketing-page .marketing-benefit-grid p { font-size:.75rem; }
+        .marketing-page .marketing-roadmap { gap:.7rem; margin-top:1.45rem; }
+        .marketing-page .marketing-roadmap>div { padding:1.1rem; }
+        .marketing-page .marketing-roadmap p,
+        .marketing-page .marketing-roadmap li { font-size:.75rem; }
+        .marketing-page .marketing-cta { padding:2.8rem 0; }
+        .marketing-page .marketing-footer { padding:2rem 0 1rem; }
+        .marketing-page .marketing-footer img { width:106px; }
+        .marketing-page .marketing-footer__inner { gap:1.35rem; }
+        .marketing-page .marketing-footer__bottom { margin-top:1.35rem; }
+    }
+    @media (max-width:600px) {
+        .marketing-page .marketing-header__login { min-width:88px; }
+        .marketing-page .marketing-actions { display:grid; grid-template-columns:minmax(0,1fr); }
+        .marketing-page .marketing-actions .marketing-button { width:100%; min-height:48px; font-size:.82rem; }
+        .marketing-page .marketing-feature-grid,
+        .marketing-page .marketing-benefit-grid,
+        .marketing-page .marketing-roadmap { grid-template-columns:minmax(0,1fr); }
+        .marketing-page .marketing-feature-card {
+            display:grid; grid-template-columns:2.3rem minmax(0,1fr);
+            column-gap:.8rem; align-items:start;
+        }
+        .marketing-page .marketing-feature-card__icon { grid-row:span 2; width:2.3rem; height:2.3rem; }
+        .marketing-page .marketing-feature-card h3 { margin:0 0 .1rem; }
+        .marketing-page .marketing-feature-card p { margin:0; }
+        .marketing-page .marketing-dashboard__bar { padding:.55rem .75rem; }
+        .marketing-page .marketing-dashboard__body aside { width:32px; gap:.6rem; }
+        .marketing-page .marketing-dashboard__content { min-width:0; padding:.65rem; }
+        .marketing-page .marketing-stat-grid { gap:.3rem; margin-top:.6rem; }
+        .marketing-page .marketing-stat-grid>div { min-width:0; padding:.4rem; }
+        .marketing-page .marketing-stat-grid strong { font-size:.62rem; white-space:nowrap; }
+        .marketing-page .marketing-chart-row { grid-template-columns:minmax(0,1fr); margin-top:.5rem; }
+        .marketing-page .marketing-chart__line { height:46px; }
+        .marketing-page .marketing-donut,
+        .marketing-page .marketing-dashboard__table { display:none; }
+        .marketing-page .marketing-footer__inner { grid-template-columns:minmax(0,1fr); gap:1.15rem; }
+        .marketing-page .marketing-footer__links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.35rem 1rem; }
+        .marketing-page .marketing-footer__contact { grid-column:auto; gap:.35rem; }
+        .marketing-page .marketing-footer__bottom { flex-direction:column; gap:.35rem; font-size:.7rem; }
+    }
+    @media (max-width:380px) {
+        .marketing-page .marketing-brand img { width:96px; }
+        .marketing-page .marketing-header__inner { gap:.4rem; }
+        .marketing-page .marketing-header__login { min-width:82px; padding-inline:.55rem; font-size:.72rem; }
+        .marketing-page .marketing-hero h1 { font-size:1.85rem; }
+        .marketing-page .marketing-stat-grid strong { font-size:.56rem; }
+        .marketing-page .marketing-chart__labels { font-size:.35rem; }
+    }
+}
+
 
 /* Shared control affordance and press response. */
 :where(input:not([type='checkbox']):not([type='radio']):not([type='hidden']), select, textarea):not(:disabled):not([readonly]) {
