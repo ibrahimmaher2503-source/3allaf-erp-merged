@@ -1,3 +1,7 @@
+## 2026-11-03 — Corrective Core batch deployed; no pending release action
+
+Owner-authorized source `1045e48b3d0a8e20c2d8eacffdb44e84b1828982` (D3 application change) merged as `1aec2ed2625e7be47d6a3966d620ea3d2a4848d8` and deployed as `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-giftcard-shift-inventory-corrective-1aec2ed` (I4 release operation). /home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261103T031905Z_pre_corrective_1aec2ed.sql.gz SHA-256 `3240d49c4ada01724d1c4a188355448a66087f7d5faf6c7ca18205e17086b1d2`. Migrations NONE. Core gate PASS 21/251 and payment JavaScript; candidate and live gates PASS. Previous release retained; activation rollback NO. Final main continuity SHA follows in documentation commit.
+
 ## 2026-11-02 — D3 corrective batch pending owner review
 
 Branch `feature/v2-giftcard-shift-inventory-corrective-20261102`; source `a08d836edb4b7f52b515a3ec1dc1790d9276bf4a`. This is an owner-authorized protected Core corrective batch for Gift Cards, cashier shifts, returns in shift receipts, close reconciliation, inventory balances and location alerts. No migration, merge or deployment. Focused tests, one Core gate and bounded changed-screen browser smoke recorded in TEST_RESULTS. Release decision remains separate.
