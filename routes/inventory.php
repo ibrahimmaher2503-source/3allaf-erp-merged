@@ -81,7 +81,8 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $showMovements = $focus !== 'balances';
     $showTransfers = $focus === null || str_starts_with((string) $focus, 'transfer');
     $showCountWorkspace = $focus === null || str_starts_with((string) $focus, 'count') || str_starts_with((string) $focus, 'adjustment') || in_array($focus, ['addition', 'deduction'], true);
-    $balancesQuery = StockBalance::query()->with(['product.barcodes', 'store.branch'])->whereIn('store_id', $visibleStoreIds)->orderBy('store_id')->orderBy('product_id');
+    $balancesQuery = ($includeZero || $stockState === 'out' ? StockBalance::reportRows($visibleStoreIds) : StockBalance::query()->whereIn('store_id', $visibleStoreIds))
+        ->with(['product.barcodes', 'store.branch'])->orderBy('store_id')->orderBy('product_id');
     $movementsQuery = StockMovement::query()->with(['product', 'store.branch', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
     if (! $includeZero && $search === '' && $stockState === '') {
         $balancesQuery->where(fn ($q) => $q->where('on_hand', '!=', 0)->orWhere('reserved', '!=', 0)->orWhere('in_transit', '!=', 0));
@@ -107,11 +108,14 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     }
     if ($movementType !== '') {
         $movementsQuery->where('movement_type', $movementType);
+        $balancesQuery->whereIn('product_id', StockMovement::query()->whereIn('store_id', $visibleStoreIds)
+            ->when($filterStoreId !== null, fn ($query) => $query->where('store_id', $filterStoreId))
+            ->where('movement_type', $movementType)->select('product_id'));
     }
     match ($stockState) {
         'available' => $balancesQuery->whereRaw('(on_hand - reserved) > 0'),
         'low' => LowStockRule::apply($balancesQuery),
-        'out' => $balancesQuery->whereRaw('(on_hand - reserved) = 0'),
+        'out' => $balancesQuery->whereRaw('(on_hand - reserved) <= 0'),
         'negative' => $balancesQuery->whereRaw('(on_hand - reserved) < 0'),
         default => null,
     };

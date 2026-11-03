@@ -34,6 +34,9 @@ final class GiftCardAction
                 if (! $this->sameIssueRequest($existing, $amount, $branchId, $storeId, $sourceType, $sourceId, $sourceReference, $holderCustomerId, $currencyCode, $validUntil)) {
                     $this->idempotencyConflict();
                 }
+                if ($sourceType === 'manual') {
+                    throw ValidationException::withMessages(['card' => 'بطاقة الهدايا مفعّلة بالفعل ولا يمكن بيعها مرة أخرى.']);
+                }
 
                 return $existing->load('ledger');
             }

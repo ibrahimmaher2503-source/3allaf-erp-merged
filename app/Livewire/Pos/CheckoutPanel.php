@@ -102,8 +102,6 @@ final class CheckoutPanel extends Component
             'expiry' => $card->valid_until?->toDateString() ?? '',
         ];
         if (bccomp($payable, '0.00', 2) <= 0) {
-            $this->dispatch('open-pos-checkout');
-
             return;
         }
         if ($method === null) {

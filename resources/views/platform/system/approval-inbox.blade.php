@@ -10,6 +10,7 @@ use App\Modules\Platform\Support\ApprovalPresentation;
 use App\Modules\Platform\Support\ApprovalInboxReferences;
 use App\Modules\Platform\Support\UiLabel;
 use App\Modules\Retail\Models\PosShift;
+use App\Modules\Retail\Services\ShiftExpectedTotalsService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
@@ -166,6 +167,11 @@ new #[Title('Approval Inbox')] class extends Component
                 ->find($selectedApproval->source_id)
             : null;
         $shiftSubmission = $selectedShift?->closingSubmissions()->orderByDesc('attempt')->first();
+        $shiftBreakdown = $shiftSubmission ? app(ShiftExpectedTotalsService::class)->derive($selectedShift) : null;
+        $shiftCountHistory = $selectedShift?->closingSubmissions()->orderBy('attempt')->get() ?? collect();
+        $shiftRecountRequests = $selectedShift ? ApprovalRecord::query()->where('source_type', 'pos_shifts')
+            ->where('source_id', (string) $selectedShift->id)->where('approval_state', ApprovalState::Rejected->value)
+            ->with('approver:id,name')->orderBy('decided_at')->get() : collect();
 
         $branches = Branch::query()->visibleTo($user)->orderBy('code')->get();
         $stores = Store::query()->visibleTo($user)->orderBy('code')->get();
@@ -176,6 +182,9 @@ new #[Title('Approval Inbox')] class extends Component
             'selectedApproval' => $selectedApproval,
             'selectedShift' => $selectedShift,
             'shiftSubmission' => $shiftSubmission,
+            'shiftBreakdown' => $shiftBreakdown,
+            'shiftCountHistory' => $shiftCountHistory,
+            'shiftRecountRequests' => $shiftRecountRequests,
             'sourceTypes' => (clone $base)->distinct()->orderBy('source_type')->pluck('source_type'),
             'branches' => $branches,
             'branchNames' => $branches->keyBy('id'),
@@ -296,6 +305,36 @@ new #[Title('Approval Inbox')] class extends Component
                 <flux:button :href="$sourceUrl" variant="subtle" icon="arrow-top-right-on-square">{{ __('Open source') }}</flux:button>
 
                 @if($shiftSubmission)
+                    @if($shiftCountHistory->count() > 1)
+                        <x-cards.section-card :title="str_starts_with(app()->getLocale(), 'ar') ? 'سجل إعادة عدّ النقدية' : 'Cash recount history'">
+                            @foreach($shiftCountHistory->skip(1) as $countAttempt)
+                                @php($previousCount = $shiftCountHistory->firstWhere('attempt', $countAttempt->attempt - 1))
+                                @php($recountRequest = $shiftRecountRequests->get($countAttempt->attempt - 2))
+                                <div class="border-b border-border-subtle py-2 text-sm last:border-0">
+                                    <div>{{ str_starts_with(app()->getLocale(), 'ar') ? 'العدّ السابق' : 'Previous count' }}: {{ $previousCount?->actual_cash }} · {{ str_starts_with(app()->getLocale(), 'ar') ? 'العدّ الجديد' : 'New count' }}: {{ $countAttempt->actual_cash }}</div>
+                                    <div>{{ str_starts_with(app()->getLocale(), 'ar') ? 'السبب' : 'Reason' }}: {{ $recountRequest?->decision_note ?? '—' }} · {{ str_starts_with(app()->getLocale(), 'ar') ? 'المدير الطالب' : 'Requesting manager' }}: {{ $recountRequest?->approver?->name ?? '—' }}</div>
+                                    <div>{{ str_starts_with(app()->getLocale(), 'ar') ? 'وقت الطلب' : 'Requested at' }}: {{ $recountRequest?->decided_at?->format('Y-m-d H:i') ?? '—' }} · {{ str_starts_with(app()->getLocale(), 'ar') ? 'وقت إعادة التقديم' : 'Resubmitted at' }}: {{ $countAttempt->submitted_at?->format('Y-m-d H:i') ?? '—' }}</div>
+                                </div>
+                            @endforeach
+                        </x-cards.section-card>
+                    @endif
+                    <x-cards.section-card :title="str_starts_with(app()->getLocale(), 'ar') ? 'تسوية درج النقدية' : 'Cash drawer reconciliation'">
+                        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                            @foreach([
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'النقدية الافتتاحية' : 'Opening cash', $shiftBreakdown['opening_float']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'المبيعات النقدية' : 'Cash sales', $shiftBreakdown['gross_cash_sales']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'مبيعات البطاقة / فيزا' : 'Card / Visa sales', $shiftBreakdown['card_sales']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'المرتجعات النقدية' : 'Cash refunds', $shiftBreakdown['cash_refunds']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'حركات النقدية الداخلة' : 'Cash in', $shiftBreakdown['cash_in']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'حركات النقدية الخارجة' : 'Cash out', $shiftBreakdown['cash_out']],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'النقدية المتوقعة بالدرج' : 'Expected drawer cash', $shiftSubmission->expected_cash],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'النقدية الفعلية المعدودة' : 'Physical cash counted', $shiftSubmission->actual_cash],
+                                [str_starts_with(app()->getLocale(), 'ar') ? 'فرق النقدية' : 'Cash variance', $shiftSubmission->cash_variance],
+                            ] as [$label, $amount])
+                                <div class="flex justify-between gap-3"><dt>{{ $label }}</dt><dd><x-money :amount="$amount" :currency="$selectedShift->currency_code" /></dd></div>
+                            @endforeach
+                        </dl>
+                    </x-cards.section-card>
                     <x-tables.table-shell :label="__('Shift Variance Review')">
                         <table class="data-table w-full text-sm">
                             <thead><tr><th class="text-start">{{ __('Method') }}</th><th class="text-end">{{ __('Expected') }}</th><th class="text-end">{{ __('Actual') }}</th><th class="text-end">{{ __('Variance') }}</th></tr></thead>
@@ -321,7 +360,7 @@ new #[Title('Approval Inbox')] class extends Component
                 @endif
 
                 @if($selectedApproval->approval_state === ApprovalState::Pending && $canDecide)
-                    <div class="space-y-3 border-t border-border-subtle pt-4"><div><flux:textarea wire:model="decisionReason" :label="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" /><x-context-help :title="$selectedApproval->source_type === 'pos_shifts' ? __('Recount reason') : __('Rejection reason')" :label="__('Open contextual help')"><p>{{ $selectedApproval->source_type === 'pos_shifts' ? __('Returning a shift for recount rejects this exact approval request and preserves its history.') : __('Required only when rejecting. The source keeps this reason in its immutable history.') }}</p></x-context-help></div>@error('decisionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror<div class="flex flex-wrap justify-end gap-2"><flux:button variant="subtle" wire:click="closeApproval">{{ __('Close') }}</flux:button>@if($selectedApproval->source_type === 'stock_transfers')<flux:button :href="$sourceUrl" variant="primary">{{ str_starts_with(app()->getLocale(), 'ar') ? 'فتح المراجعة النهائية' : 'Open final review' }}</flux:button>@else @if($canReject)<flux:button variant="danger" wire:click="reject" wire:confirm="{{ $selectedApproval->source_type === 'pos_shifts' ? __('Return this shift for recount?') : __('Reject this source record?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Request recount') : __('Reject') }}</flux:button>@endif<flux:button variant="primary" wire:click="approve" wire:confirm="{{ __('Approve this source record and execute its domain effects?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Approve and close') : __('Approve') }}</flux:button>@endif</div></div>
+                    <div class="space-y-3 border-t border-border-subtle pt-4"><div><flux:textarea wire:model="decisionReason" :label="$selectedApproval->source_type === 'pos_shifts' ? (str_starts_with(app()->getLocale(), 'ar') ? 'سبب طلب إعادة عدّ النقدية' : 'Reason for cash recount request') : __('Rejection reason')" /><x-context-help :title="$selectedApproval->source_type === 'pos_shifts' ? (str_starts_with(app()->getLocale(), 'ar') ? 'سبب طلب إعادة عدّ النقدية' : 'Reason for cash recount request') : __('Rejection reason')" :label="__('Open contextual help')"><p>{{ $selectedApproval->source_type === 'pos_shifts' ? __('Returning a shift for recount rejects this exact approval request and preserves its history.') : __('Required only when rejecting. The source keeps this reason in its immutable history.') }}</p></x-context-help></div>@error('decisionReason')<p class="text-sm text-red-600">{{ $message }}</p>@enderror<div class="flex flex-wrap justify-end gap-2"><flux:button variant="subtle" wire:click="closeApproval">{{ __('Close') }}</flux:button>@if($selectedApproval->source_type === 'stock_transfers')<flux:button :href="$sourceUrl" variant="primary">{{ str_starts_with(app()->getLocale(), 'ar') ? 'فتح المراجعة النهائية' : 'Open final review' }}</flux:button>@else @if($canReject)<flux:button variant="danger" wire:click="reject" wire:confirm="{{ $selectedApproval->source_type === 'pos_shifts' ? (str_starts_with(app()->getLocale(), 'ar') ? 'إعادة الوردية لعدّ النقدية؟' : 'Return this shift for a cash recount?') : __('Reject this source record?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? (str_starts_with(app()->getLocale(), 'ar') ? 'طلب إعادة عدّ النقدية' : 'Request cash recount') : __('Reject') }}</flux:button>@endif<flux:button variant="primary" wire:click="approve" wire:confirm="{{ __('Approve this source record and execute its domain effects?') }}">{{ $selectedApproval->source_type === 'pos_shifts' ? __('Approve and close') : __('Approve') }}</flux:button>@endif</div></div>
                 @else<div class="flex justify-end"><flux:button variant="subtle" wire:click="closeApproval">{{ __('Close') }}</flux:button></div>@endif
             </div>
         @endif
