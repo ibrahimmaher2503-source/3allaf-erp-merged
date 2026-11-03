@@ -81,11 +81,11 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     $showMovements = $focus !== 'balances';
     $showTransfers = $focus === null || str_starts_with((string) $focus, 'transfer');
     $showCountWorkspace = $focus === null || str_starts_with((string) $focus, 'count') || str_starts_with((string) $focus, 'adjustment') || in_array($focus, ['addition', 'deduction'], true);
-    $balancesQuery = ($includeZero || $stockState === 'out' ? StockBalance::reportRows($visibleStoreIds) : StockBalance::query()->whereIn('store_id', $visibleStoreIds))
+    $balancesQuery = StockBalance::reportRows($visibleStoreIds)
         ->with(['product.barcodes', 'store.branch'])->orderBy('store_id')->orderBy('product_id');
     $movementsQuery = StockMovement::query()->with(['product', 'store.branch', 'creator'])->whereIn('store_id', $visibleStoreIds)->latest('posted_at');
-    if (! $includeZero && $search === '' && $stockState === '') {
-        $balancesQuery->where(fn ($q) => $q->where('on_hand', '!=', 0)->orWhere('reserved', '!=', 0)->orWhere('in_transit', '!=', 0));
+    if (! $includeZero && ! in_array($stockState, ['out', 'negative'], true)) {
+        $balancesQuery->whereRaw('(stock_balances.on_hand - stock_balances.reserved) != 0');
     }
     if ($filterStoreId !== null) {
         $balancesQuery->where('store_id', $filterStoreId);
@@ -108,15 +108,18 @@ $renderInventory = static function (?int $productId = null, ?string $focus = nul
     }
     if ($movementType !== '') {
         $movementsQuery->where('movement_type', $movementType);
-        $balancesQuery->whereIn('product_id', StockMovement::query()->whereIn('store_id', $visibleStoreIds)
-            ->when($filterStoreId !== null, fn ($query) => $query->where('store_id', $filterStoreId))
-            ->where('movement_type', $movementType)->select('product_id'));
+        $balancesQuery->whereExists(fn ($query) => $query->selectRaw('1')->from('stock_movements')
+            ->whereColumn('stock_movements.product_id', 'stock_balances.product_id')
+            ->whereColumn('stock_movements.store_id', 'stock_balances.store_id')
+            ->where('stock_movements.movement_type', $movementType));
     }
     match ($stockState) {
-        'available' => $balancesQuery->whereRaw('(on_hand - reserved) > 0'),
+        'available' => $balancesQuery->whereRaw('(stock_balances.on_hand - stock_balances.reserved) > 0')
+            ->whereHas('product', fn ($product) => $product->whereNull('reorder_threshold')
+                ->orWhereRaw('products.reorder_threshold < (stock_balances.on_hand - stock_balances.reserved)')),
         'low' => LowStockRule::apply($balancesQuery),
-        'out' => $balancesQuery->whereRaw('(on_hand - reserved) <= 0'),
-        'negative' => $balancesQuery->whereRaw('(on_hand - reserved) < 0'),
+        'out' => $balancesQuery->whereRaw('(stock_balances.on_hand - stock_balances.reserved) <= 0'),
+        'negative' => $balancesQuery->whereRaw('(stock_balances.on_hand - stock_balances.reserved) < 0'),
         default => null,
     };
     $scopedBalances = StockBalance::query()->whereIn('store_id', $visibleStoreIds);

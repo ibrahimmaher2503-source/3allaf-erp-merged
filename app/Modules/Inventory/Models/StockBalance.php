@@ -22,8 +22,10 @@ class StockBalance extends Model
         $products = Product::query()->sellable()->where('products.product_type', 'standard')->select('products.id');
         $rows = DB::table('stores')->crossJoin('products')
             ->leftJoin('stock_balances as actual', fn ($join) => $join->on('actual.store_id', '=', 'stores.id')->on('actual.product_id', '=', 'products.id'))
-            ->whereIn('stores.id', $storeIds)->whereNotNull('stores.branch_id')->where('stores.status', 'active')
-            ->where(fn ($query) => $query->whereNotNull('actual.id')->orWhereIn('products.id', $products))
+            ->whereIn('stores.id', $storeIds)
+            ->where('stores.status', 'active')
+            ->where(fn ($query) => $query->whereNotNull('actual.id')
+                ->orWhereIn('products.id', $products))
             ->where(function ($query): void {
                 $query->where(fn ($legacy) => $legacy
                     ->whereNotExists(fn ($assignments) => $assignments->selectRaw('1')->from('product_store_assignments')->whereColumn('product_store_assignments.product_id', 'products.id'))

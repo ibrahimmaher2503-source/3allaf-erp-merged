@@ -21,7 +21,7 @@ enum ShiftState: string
     /** A shift that still occupies its drawer and cashier. */
     public function isActive(): bool
     {
-        return $this !== self::Closed && $this !== self::Cancelled;
+        return $this === self::Open;
     }
 
     /** A shift that may still accept sales and cash movements. */

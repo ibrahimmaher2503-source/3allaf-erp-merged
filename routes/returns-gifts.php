@@ -186,7 +186,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('gift-cards', function (Request $request) { /** @var User $user */ $user = $request->user();
         abort_unless($user->is_super_admin || $user->can('gift_cards.view') || $user->can('returns_exchanges_gift_instruments.view'), 403);
         $cards = GiftCard::query()->visibleTo($user)->with(['holder', 'store'])->latest('id')->paginate(20)->withQueryString();
-        $stores = Store::query()->visibleTo($user)->with('branch')->where('status', 'active')->where('type', 'warehouse')->whereHas('branch', fn ($branch) => $branch->where('status', 'active'))
+        $stores = Store::query()->visibleTo($user)->with('branch')->where('status', 'active')->whereHas('branch', fn ($branch) => $branch->where('status', 'active'))
             ->when(app(WorkContext::class)->branchId($user), fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->orderBy('branch_id')->orderBy('name_ar')->get();
 
@@ -194,7 +194,7 @@ Route::middleware('auth')->group(function (): void {
     })->name('gift.cards.index');
     Route::post('gift-cards', function (Request $request, GiftCardAction $action) {
         $data = $request->validate(['amount' => ['required', 'numeric', 'gt:0'], 'store_id' => ['required', 'integer'], 'valid_until' => ['nullable', 'date']]);
-        $store = Store::query()->visibleTo($request->user())->whereKey($data['store_id'])->where('type', 'warehouse')->whereHas('branch', fn ($branch) => $branch->where('status', 'active'))
+        $store = Store::query()->visibleTo($request->user())->whereKey($data['store_id'])->where('status', 'active')->whereHas('branch', fn ($branch) => $branch->where('status', 'active'))
             ->when(app(WorkContext::class)->branchId($request->user()), fn ($query, $branchId) => $query->where('branch_id', $branchId))->firstOrFail();
         try {
             $card = $action->issue($request->user(), (string) $data['amount'], (int) $store->branch_id, (int) $store->id, 'manual', 'manual-'.$request->user()->id, (string) ($request->input('idempotency_key') ?: Str::uuid()), __('Manual issue'), null, 'EGP', isset($data['valid_until']) ? new DateTimeImmutable((string) $data['valid_until']) : null);

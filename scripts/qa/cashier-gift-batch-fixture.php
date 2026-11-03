@@ -8,6 +8,7 @@ require __DIR__.'/fixture.php';
 use App\Models\User;
 use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Platform\Models\BranchSellingStore;
+use App\Modules\Platform\Models\CashDrawer;
 use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Retail\Actions\GiftCardAction;
@@ -28,6 +29,11 @@ $cashier = User::query()->firstOrCreate(['username' => 'qa-dokki-cashier'], [
 $cashier->roles()->syncWithoutDetaching([Role::query()->where('code', 'cashier')->firstOrFail()->id]);
 $cashier->branchScopes()->updateOrCreate(['branch_id' => $fixture['branch']->id], ['status' => 'active']);
 $cashier->storeScopes()->updateOrCreate(['store_id' => $fixture['store']->id], ['status' => 'active']);
+CashDrawer::query()->firstOrCreate(['code' => 'QA-CASHIER-TILL'], [
+    'company_id' => $fixture['company']->id, 'branch_id' => $fixture['branch']->id,
+    'store_id' => $fixture['store']->id, 'name_ar' => 'درج كاشير الاختبار',
+    'name_en' => 'QA cashier drawer', 'status' => 'active', 'assigned_user_id' => User::query()->where('username', 'qa-cashier')->firstOrFail()->id,
+]);
 ProductOptionGroup::query()->firstOrCreate(['code' => 'QA-OPTION-GROUP'], [
     'name_ar' => 'مجموعة اختبار', 'name_en' => 'QA option group', 'status' => 'active', 'sort_order' => 1,
 ]);

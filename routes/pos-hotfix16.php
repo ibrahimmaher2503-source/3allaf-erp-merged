@@ -14,7 +14,6 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Retail\Actions\CompletePosOpenOrderAction;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Models\GiftCard;
-use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\PaymentReferenceGuard;
@@ -106,8 +105,7 @@ Route::get('pos', function (Request $request, PosContextResolver $contexts, PosO
     return view('pages.pos.index', [
         'context' => $context,
         'store' => $store,
-        'shift' => $shift ?? PosShift::query()->visibleTo($user)->active()->where('cashier_id', $user->id)
-            ->with(['cashDrawer', 'store.branch'])->latest('opened_at')->first(),
+        'shift' => $shift,
         'activeOrder' => $activeOrder?->fresh(['customer']),
         'openOrders' => $openOrders,
         'selectedCustomer' => $selectedCustomer,

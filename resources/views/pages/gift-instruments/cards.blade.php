@@ -15,7 +15,10 @@
                     @csrf
                     <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
                     <flux:input name="amount" type="number" min="0.01" step="0.01" label="{{ __('Value') }}" required />
-                    <flux:select name="store_id" label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'مخزن الإصدار' : 'Issuing warehouse' }}" required>@foreach($stores as $store)<option value="{{ $store->id }}" @selected(old('store_id', $stores->count() === 1 ? $store->id : null) == $store->id)>{{ \App\Support\HumanName::name($store->branch) }} — {{ \App\Support\HumanName::name($store) }}</option>@endforeach</flux:select>
+                    <flux:select name="store_id" label="{{ str_starts_with(app()->getLocale(), 'ar') ? 'مخزن الإصدار' : 'Issuing warehouse' }}" required>
+                        @if($stores->count() !== 1)<flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختر مخزن الإصدار' : 'Choose issuing warehouse' }}</flux:select.option>@endif
+                        @foreach($stores as $store)<flux:select.option value="{{ $store->id }}" :selected="(string) old('store_id', $stores->count() === 1 ? $store->id : '') === (string) $store->id">{{ \App\Support\HumanName::name($store->branch) }} — {{ \App\Support\HumanName::name($store) }}</flux:select.option>@endforeach
+                    </flux:select>
                     <flux:input name="valid_until" type="date" label="{{ __('Expires on (optional)') }}" />
                     <div class="sm:col-span-3"><flux:button type="submit" variant="primary">{{ __('Issue card') }}</flux:button></div>
                 </form>

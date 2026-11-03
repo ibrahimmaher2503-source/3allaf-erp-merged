@@ -25,6 +25,7 @@ use App\Modules\Platform\Models\PaymentMethod;
 use App\Modules\Platform\Models\Permission;
 use App\Modules\Platform\Models\Role;
 use App\Modules\Platform\Models\Store;
+use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Retail\Actions\GiftCardAction;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
@@ -93,13 +94,23 @@ final class Module5PosQaTest extends TestCase
 
     public function test_manual_gift_card_issue_requires_a_branch_warehouse(): void
     {
+        $unlinked = Store::factory()->standaloneWarehouse($this->store->company)->create(['name_ar' => 'مخزن عام', 'name_en' => 'Global Warehouse']);
         $warehouse = Store::factory()->create([
             'company_id' => $this->store->company_id, 'branch_id' => $this->store->branch_id,
             'type' => 'warehouse', 'status' => 'active', 'name_ar' => 'مخزن الفرع', 'name_en' => 'Branch Warehouse',
         ]);
-        $this->get(route('gift.cards.index'))->assertOk()->assertSee('Branch Warehouse');
-        $this->post(route('gift.cards.store'), ['store_id' => $this->store->id, 'amount' => '500.00'])->assertNotFound();
+        $this->get(route('gift.cards.index'))->assertOk()->assertSee('Branch Warehouse')->assertSee($this->store->name_en)->assertDontSee('Global Warehouse');
+        $this->post(route('gift.cards.store'), ['store_id' => $this->store->id, 'amount' => '500.00', 'idempotency_key' => (string) Str::uuid()])->assertRedirect();
         $this->post(route('gift.cards.store'), ['store_id' => $warehouse->id, 'amount' => '500.00', 'idempotency_key' => (string) Str::uuid()])->assertRedirect();
+        $this->post(route('gift.cards.store'), ['store_id' => $unlinked->id, 'amount' => '500.00', 'idempotency_key' => (string) Str::uuid()])->assertNotFound();
+        $otherBranch = Branch::factory()->for($this->store->company)->create();
+        $otherStore = Store::factory()->create([
+            'company_id' => $this->store->company_id, 'branch_id' => $otherBranch->id,
+            'name_en' => 'Other Branch Warehouse',
+        ]);
+        $this->withSession([WorkContext::SESSION_KEY => $this->store->id]);
+        $this->get(route('gift.cards.index'))->assertOk()->assertDontSee('Other Branch Warehouse');
+        $this->post(route('gift.cards.store'), ['store_id' => $otherStore->id, 'amount' => '500.00', 'idempotency_key' => (string) Str::uuid()])->assertNotFound();
     }
 
     public function test_scanned_gift_card_routes_to_tender_and_preserves_split_remainder(): void
