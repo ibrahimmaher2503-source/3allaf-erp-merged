@@ -1,3 +1,8 @@
+## 2026-11-03 — Postdeployment corrective feature branch pending review
+
+Branch `feature/v2-postdeploy-giftcard-shift-inventory-filter-fixes-20261103` from `origin/main` `24831e817785c4ded95ca040dec19fe1e3a64267`; implementation commit `7fcbbaad72ec4293904a3a5971f96996c0198ed9`. No migration, Production write, merge, or deployment. Final branch SHA is reported in the delivery response.
+Owner-requested D3 protected Core correction. Gift Card dropdown, shift eligibility/POS resolution, and inventory report filters are implemented. Code-only rollback restores the previous defects; no historical transaction is rewritten. Focused tests, final Core gate and bounded browser smoke passed. Merge/deploy remain pending separate owner authorization.
+
 ## 2026-11-03 — Corrective Core batch deployed; no pending release action
 
 Owner-authorized source `1045e48b3d0a8e20c2d8eacffdb44e84b1828982` (D3 application change) merged as `1aec2ed2625e7be47d6a3966d620ea3d2a4848d8` and deployed as `/home/rajeh/releases/toyjoy/releases/toyjoy-v2-giftcard-shift-inventory-corrective-1aec2ed` (I4 release operation). /home/rajeh/shared/toyjoy/backups/rajeh_toyjoy_20261103T031905Z_pre_corrective_1aec2ed.sql.gz SHA-256 `3240d49c4ada01724d1c4a188355448a66087f7d5faf6c7ca18205e17086b1d2`. Migrations NONE. Core gate PASS 21/251 and payment JavaScript; candidate and live gates PASS. Previous release retained; activation rollback NO. Final main continuity SHA follows in documentation commit.
