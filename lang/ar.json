@@ -6429,7 +6429,7 @@
 "Only the physical cash count may be entered. Electronic totals are calculated from recorded shift transactions.": "يُسمح بإدخال العد النقدي الفعلي فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة.",
 "Count the physical cash only. Electronic totals are calculated from recorded shift transactions, then reviewed in the canonical approval inbox.": "اعدّ النقد الفعلي فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة ثم تُراجع في صندوق الاعتمادات المعتمد.",
 "Count the physical cash in the drawer and enter only that amount. Electronic totals are calculated from recorded shift transactions.": "اعدّ النقد الفعلي في الدرج وأدخل هذا المبلغ فقط. تُحسب الإجماليات الإلكترونية من معاملات الوردية المسجلة.",
-"You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.": "لديك ورديتان سابقتان في انتظار الاعتماد. احسم إغلاقًا معلقًا واحدًا على الأقل قبل فتح وردية أخرى.",
+"You have two previous shifts awaiting approval. Resolve at least one pending close before opening another shift.": "لديك ورديتان مغلقتان بانتظار الاعتماد. يجب اعتماد وردية واحدة على الأقل قبل فتح وردية جديدة.",
 "Submitted": "تم الإرسال",
 "In review": "قيد المراجعة",
     "Product archived. Historical and operational records remain unchanged.": "تمت أرشفة الصنف مع الاحتفاظ بالسجلات التشغيلية والتاريخية دون تغيير.",

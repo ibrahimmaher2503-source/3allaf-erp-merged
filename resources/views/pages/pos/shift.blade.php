@@ -100,7 +100,7 @@
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ $openToken }}">
                         <flux:select name="cash_drawer_id" :label="__('Sales outlet and cash drawer')" required>
-                            @foreach ($availableDrawers as $drawer)
+                            @foreach ($drawers as $drawer)
                                 <flux:select.option value="{{ $drawer->id }}" :selected="(int) old('cash_drawer_id', $preselectedDrawerId) === $drawer->id">{{ \App\Support\HumanName::name($drawer->store) }} — {{ \App\Support\HumanName::code($drawer->store) }} · {{ \App\Support\HumanName::name($drawer) }}</flux:select.option>
                             @endforeach
                         </flux:select>

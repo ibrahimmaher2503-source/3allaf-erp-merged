@@ -290,13 +290,43 @@ final class Module9CashShiftsQaTest extends TestCase
         $cashier = $this->reviewer();
         $first = $this->openShiftForCashier($cashier);
         app(SubmitBlindShiftCloseAction::class)->execute($cashier, $first, '1000', [], (string) Str::uuid());
-        $second = $this->openShiftForCashier($cashier);
+        self::assertSame(ShiftState::ClosingSubmitted, $first->fresh()->status);
+        $second = app(OpenShiftAction::class)->execute($cashier, $first->cashDrawer, '1000', (string) Str::uuid());
+        self::assertSame(ShiftState::Open, $second->status);
         app(SubmitBlindShiftCloseAction::class)->execute($cashier, $second, '1000', [], (string) Str::uuid());
+        self::assertSame(2, PosShift::query()->where('cashier_id', $cashier->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])->count());
 
-        $thirdDrawer = $this->drawerFor($cashier);
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('two previous shifts awaiting approval');
-        app(OpenShiftAction::class)->execute($cashier, $thirdDrawer, '1000', (string) Str::uuid());
+        $thirdDrawer = $first->cashDrawer;
+        try {
+            app(OpenShiftAction::class)->execute($cashier, $thirdDrawer, '1000', (string) Str::uuid());
+            self::fail('A third shift opened with two closes pending approval.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('two previous shifts awaiting approval', $exception->getMessage());
+        }
+
+        $otherCashier = $this->reviewer();
+        $otherDrawer = CashDrawer::factory()->create([
+            'company_id' => $first->cashDrawer->company_id, 'branch_id' => $first->branch_id,
+            'store_id' => $first->store_id, 'assigned_user_id' => $otherCashier->id,
+        ]);
+        $this->actingAs($otherCashier);
+        $otherShift = app(OpenShiftAction::class)->execute($otherCashier, $otherDrawer, '1000', (string) Str::uuid());
+        self::assertSame(ShiftState::Open, $otherShift->status);
+        app(SubmitBlindShiftCloseAction::class)->execute($otherCashier, $otherShift, '1000', [], (string) Str::uuid());
+        $otherSecond = app(OpenShiftAction::class)->execute($otherCashier, $otherShift->cashDrawer, '1000', (string) Str::uuid());
+        app(SubmitBlindShiftCloseAction::class)->execute($otherCashier, $otherSecond, '1000', [], (string) Str::uuid());
+
+        $manager = $this->reviewer();
+        $this->actingAs($manager);
+        $first = $first->fresh();
+        app(ReviewShiftVarianceAction::class)->approveAndClose($manager, $first, $first->varianceApprovalRecord, $first->lock_version);
+        $this->actingAs($cashier);
+        $third = app(OpenShiftAction::class)->execute($cashier, $thirdDrawer, '1000', (string) Str::uuid());
+        self::assertSame(ShiftState::Open, $third->status);
+        self::assertSame($third->id, app(PosContextResolver::class)->resolve($cashier)->shift?->id);
+        self::assertSame(2, PosShift::query()->where('cashier_id', $otherCashier->id)
+            ->whereIn('status', [ShiftState::ClosingSubmitted->value, ShiftState::VarianceReview->value])->count());
     }
 
     public function test_two_cashiers_can_open_separate_drawers_and_pos_resolves_each_own_shift(): void
