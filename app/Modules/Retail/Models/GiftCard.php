@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class GiftCard extends Model
 {
@@ -43,6 +44,11 @@ final class GiftCard extends Model
     public function ledger(): HasMany
     {
         return $this->hasMany(GiftCardLedger::class);
+    }
+
+    public function posSale(): HasOne
+    {
+        return $this->hasOne(GiftCardPosSale::class);
     }
 
     public function printEvents(): HasMany

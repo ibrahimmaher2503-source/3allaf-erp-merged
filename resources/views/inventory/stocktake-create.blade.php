@@ -36,18 +36,22 @@
             <textarea name="notes" rows="3" class="{{ $field }}" placeholder="{{ $t('تعليمات النطاق أو المناطق', 'Scope or zone instructions') }}">{{ old('notes') }}</textarea>
         </label>
 
-        <details class="rounded-xl border border-zinc-200 dark:border-zinc-800" data-stocktake-advanced @if($errors->any()) open @endif>
-            <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-zinc-700 dark:text-zinc-200">{{ $t('خيارات متقدمة', 'Advanced options') }}</summary>
-            <div class="grid min-w-0 gap-4 border-t border-zinc-100 p-4 dark:border-zinc-800 sm:grid-cols-2">
+        <section class="rounded-xl border border-zinc-200 dark:border-zinc-800" aria-labelledby="stocktake-settings-heading" data-stocktake-settings>
+            <h3 id="stocktake-settings-heading" class="border-b border-zinc-100 px-4 py-3 text-sm font-bold text-zinc-700 dark:border-zinc-800 dark:text-zinc-200">{{ $t('إعدادات الجرد', 'Count settings') }}</h3>
+            <div class="grid min-w-0 gap-4 p-4 sm:grid-cols-2">
                 <label class="text-xs font-semibold text-zinc-600">{{ $t('الفرع', 'Branch') }}<select name="branch_id" class="{{ $field }}"><option value="">{{ $t('مخزن مستقل بدون فرع', 'Independent warehouse without branch') }}</option>@foreach($visibleStores->pluck('branch')->filter()->unique('id') as $branch)<option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ \App\Support\HumanName::name($branch) }} — {{ $branch->code }}</option>@endforeach</select></label>
-                <label class="text-xs font-semibold text-zinc-600">{{ $t('نوع الجرد', 'Count type') }}<select name="count_type" class="{{ $field }}"><option value="partial" @selected(old('count_type', 'partial') === 'partial')>{{ $t('جرد جزئي', 'Partial') }}</option><option value="full" @selected(old('count_type') === 'full')>{{ $t('جرد كامل', 'Full') }}</option></select></label>
-                <label class="text-xs font-semibold text-zinc-600">{{ $t('نطاق الجرد', 'Scope') }}<select name="scope_type" class="{{ $field }}"><option value="partial" @selected(old('scope_type', 'partial') === 'partial')>{{ $t('نطاق صريح عند المسح', 'Explicit scan scope') }}</option><option value="full" @selected(old('scope_type') === 'full')>{{ $t('كل المنتجات', 'All products') }}</option><option value="category" @selected(old('scope_type') === 'category')>{{ $t('فئة', 'Category') }}</option><option value="supplier" @selected(old('scope_type') === 'supplier')>{{ $t('مورد', 'Supplier') }}</option></select></label>
-                <label class="text-xs font-semibold text-zinc-600">{{ $t('فئة اختيارية', 'Optional category') }}<select name="category_id" class="{{ $field }}"><option value="">{{ $t('كل الفئات', 'All categories') }}</option>@foreach($countCategories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>{{ \App\Support\HumanName::name($category) }}</option>@endforeach</select></label>
-                <label class="text-xs font-semibold text-zinc-600">{{ $t('مورد اختياري', 'Optional supplier') }}<select name="supplier_id" class="{{ $field }}"><option value="">{{ $t('كل الموردين', 'All suppliers') }}</option>@foreach($countSuppliers as $supplier)<option value="{{ $supplier->id }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ \App\Support\HumanName::name($supplier) }}</option>@endforeach</select></label>
+                <label class="text-xs font-semibold text-zinc-600">{{ $t('نوع الجرد', 'Count type') }}<select name="count_type" class="{{ $field }}" required><option value="partial" @selected(old('count_type', 'partial') === 'partial')>{{ $t('جرد جزئي', 'Partial count') }}</option><option value="full" @selected(old('count_type') === 'full')>{{ $t('جرد كلي', 'Full count') }}</option><option value="random" @selected(old('count_type') === 'random')>{{ $t('جرد عشوائي', 'Random count') }}</option></select></label>
+                <input type="hidden" name="scope_type" value="{{ old('scope_type', 'category') }}" data-stocktake-scope-fallback>
+                <div data-stocktake-partial-scope class="space-y-3 sm:col-span-2">
+                    <label class="block text-xs font-semibold text-zinc-600">{{ $t('تحديد نطاق الجرد', 'Select count scope') }}<select name="scope_type" class="{{ $field }}"><option value="category" @selected(old('scope_type', 'category') === 'category')>{{ $t('حسب التصنيف', 'By category') }}</option><option value="supplier" @selected(old('scope_type') === 'supplier')>{{ $t('حسب المورد', 'By supplier') }}</option></select></label>
+                    <label data-stocktake-category class="block text-xs font-semibold text-zinc-600">{{ $t('التصنيف', 'Category') }}<select name="category_id" class="{{ $field }}"><option value="">{{ $t('اختر التصنيف', 'Select category') }}</option>@foreach($countCategories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>{{ \App\Support\HumanName::name($category) }}</option>@endforeach</select></label>
+                    <label data-stocktake-supplier class="block text-xs font-semibold text-zinc-600">{{ $t('المورد', 'Supplier') }}<select name="supplier_id" class="{{ $field }}"><option value="">{{ $t('اختر المورد', 'Select supplier') }}</option>@foreach($countSuppliers as $supplier)<option value="{{ $supplier->id }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ \App\Support\HumanName::name($supplier) }}</option>@endforeach</select></label>
+                </div>
+                <fieldset class="min-w-0 space-y-2 sm:col-span-2" data-stocktake-execution><legend class="text-xs font-bold text-zinc-600">{{ $t('طريقة تنفيذ الجرد', 'Count execution method') }}</legend><div class="flex flex-wrap gap-4 text-sm"><label class="flex items-center gap-2"><input type="radio" name="execution_method" value="scan" @checked(old('execution_method', 'scan') === 'scan')>{{ $t('مسح ضوئي', 'Scanning') }}</label><label data-stocktake-excel class="flex items-center gap-2"><input type="radio" name="execution_method" value="excel" @checked(old('execution_method') === 'excel')>{{ $t('ملف Excel', 'Excel file') }}</label><label class="flex items-center gap-2"><input type="radio" name="execution_method" value="mobile" @checked(old('execution_method') === 'mobile')>{{ $t('موبايل', 'Mobile') }}</label></div></fieldset>
                 <label class="text-xs font-semibold text-zinc-600">{{ $t('مدير الجلسة والمراجع', 'Session manager / reviewer') }}<select name="manager_id" class="{{ $field }}" required>@foreach($countAssignees as $assignee)<option value="{{ $assignee->id }}" @selected((string) old('manager_id') === (string) $assignee->id)>{{ $assignee->name }}</option>@endforeach</select></label>
                 <fieldset class="min-w-0 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 sm:col-span-2"><legend class="px-1 text-xs font-bold">{{ $t('فريق الجرد', 'Count team') }}</legend><div class="grid max-h-32 gap-1.5 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">@foreach($countAssignees as $assignee)<label class="flex min-w-0 items-center gap-2 text-xs"><input type="checkbox" name="member_ids[]" value="{{ $assignee->id }}" @checked(in_array($assignee->id, array_map('intval', (array) old('member_ids', [])), true))><span class="truncate">{{ $assignee->name }}</span></label>@endforeach</div></fieldset>
             </div>
-        </details>
+        </section>
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800"><p class="text-xs text-zinc-500">{{ $t('إنشاء الجلسة لا يغير رصيد المخزون.', 'Creating a session does not change stock balances.') }}</p><button type="submit" class="{{ $button }} min-h-10 bg-emerald-700 px-6 text-white">{{ $t('إنشاء الجرد', 'Create stocktake') }}</button></div>
     </form>
@@ -60,6 +64,31 @@
             summary.textContent = names.length ? names.join('، ') : @js($t('اختر المخزن أو المنفذ', 'Choose warehouse or store'));
         };
         picker.addEventListener('change', update);
+        update();
+    });
+    document.querySelectorAll('[data-stocktake-settings]').forEach((settings) => {
+        const type = settings.querySelector('[name="count_type"]');
+        const scope = settings.querySelector('select[name="scope_type"]');
+        const fallback = settings.querySelector('[data-stocktake-scope-fallback]');
+        const category = settings.querySelector('[data-stocktake-category]');
+        const supplier = settings.querySelector('[data-stocktake-supplier]');
+        const partial = settings.querySelector('[data-stocktake-partial-scope]');
+        const excel = settings.querySelector('[data-stocktake-excel]');
+        const update = () => {
+            const isPartial = type.value === 'partial';
+            partial.hidden = !isPartial;
+            scope.disabled = !isPartial;
+            fallback.value = type.value === 'full' ? 'full' : (type.value === 'random' ? 'random' : scope.value);
+            category.hidden = !isPartial || scope.value !== 'category';
+            supplier.hidden = !isPartial || scope.value !== 'supplier';
+            category.querySelector('select').disabled = category.hidden;
+            supplier.querySelector('select').disabled = supplier.hidden;
+            excel.hidden = type.value === 'random';
+            excel.querySelector('input').disabled = excel.hidden;
+            if (excel.hidden && excel.querySelector('input').checked) settings.querySelector('[value="scan"]').checked = true;
+        };
+        type.addEventListener('change', update);
+        scope.addEventListener('change', update);
         update();
     });
 </script>

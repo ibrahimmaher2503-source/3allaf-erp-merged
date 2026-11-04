@@ -6255,6 +6255,7 @@
     ,"Choose the business name customers and staff recognize. The method type remains its accounting classification.": "اختر الاسم التجاري الذي يعرفه العملاء والموظفون. ويظل نوع الطريقة هو تصنيفها المحاسبي."
     ,"Historical document tax snapshots do not change when a tax rule changes.": "لا تتغير لقطات ضريبة المستندات التاريخية عند تغيير قاعدة ضريبية."
     ,"Purchase unit cost": "تكلفة شراء الوحدة"
+    ,"Purchase unit cost (tax-inclusive)": "تكلفة وحدة الشراء شاملة الضريبة"
     ,"Enter cost": "أدخل التكلفة"
     ,"Purchase cost and totals": "تكلفة الشراء والإجماليات"
     ,"Purchase cost uses the latest approved cost from this supplier, then the latest approved general purchase cost, then the product average cost. If none exists, enter the purchase cost manually.": "تُستخدم أحدث تكلفة معتمدة من هذا المورد، ثم أحدث تكلفة شراء عامة معتمدة، ثم متوسط تكلفة المنتج. إذا لم تتوفر أي منها، فأدخل تكلفة الشراء يدوياً."
@@ -6625,5 +6626,26 @@
     "More actions": "المزيد من الإجراءات",
     "Search or scan Gift Card": "ابحث أو امسح بطاقة هدايا",
     "Type or scan Gift Card code": "اكتب أو امسح كود بطاقة الهدايا",
-    "Gift Card recognized": "تم التعرف على بطاقة الهدايا"
+    "Gift Card recognized": "تم التعرف على بطاقة الهدايا",
+    "Close submitted": "تم تقديم طلب إغلاق الوردية",
+    "System and counted totals": "إجماليات النظام والعد الفعلي",
+    "System expected cash": "النقد المتوقع حسب النظام",
+    "Cash physically counted by cashier": "النقد الذي عده الكاشير فعليًا",
+    "Overall total": "الإجمالي",
+    "Awaiting final approval.": "بانتظار الاعتماد النهائي.",
+    "Final approval recorded in the system.": "تم تسجيل الاعتماد النهائي في النظام.",
+    "Physical cash was counted by the cashier; non-cash totals come from the system. Final approval is still pending.": "عدّ الكاشير النقد فعليًا، واستُخرجت مبالغ الدفع الأخرى من النظام. الاعتماد النهائي معلق.",
+    "Variance details are restricted to authorized reviewers.": "تفاصيل الفروقات متاحة للمراجعين المصرح لهم فقط.",
+    "Variance summary": "ملخص الفروقات",
+    "POS / cash drawer": "نقطة البيع / درج النقدية",
+    "This Gift Card was already created. Scan its code at POS to sell it.": "أُنشئت بطاقة الهدايا بالفعل. امسح كودها في نقطة البيع لبيعها.",
+    "Gift Card sold and activated: :code": "تم بيع بطاقة الهدايا وتفعيلها: :code",
+    "This Gift Card has already been sold or is unavailable.": "بيعت بطاقة الهدايا بالفعل أو أنها غير متاحة.",
+    "Complete Gift Card payment before activation.": "أكمل دفع قيمة بطاقة الهدايا قبل تفعيلها.",
+    "Gift Card not found.": "بطاقة الهدايا غير موجودة.",
+    "Use an active normal payment method to buy a Gift Card.": "استخدم وسيلة دفع عادية ونشطة لشراء بطاقة الهدايا.",
+    "Use a normal payment method to buy a Gift Card.": "استخدم وسيلة دفع عادية لشراء بطاقة الهدايا.",
+    "Gift Card payment must equal its full face value before activation.": "يجب سداد القيمة الاسمية كاملة قبل تفعيل بطاقة الهدايا.",
+    "The Gift Card branch or currency does not match this cashier shift.": "فرع بطاقة الهدايا أو عملتها لا يطابق وردية الكاشير.",
+    "This Gift Card has expired and cannot be sold.": "انتهت صلاحية بطاقة الهدايا ولا يمكن بيعها."
 }

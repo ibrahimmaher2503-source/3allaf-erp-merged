@@ -29,12 +29,15 @@ use App\Modules\Platform\Support\WorkContext;
 use App\Modules\Retail\Actions\GiftCardAction;
 use App\Modules\Retail\Actions\PosCartAction;
 use App\Modules\Retail\Actions\SavePosFinancialSettingAction;
+use App\Modules\Retail\Actions\SellGiftCardAtPosAction;
 use App\Modules\Retail\Exceptions\PosFinancialConfigurationException;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\PosFinancialSettingVersion;
 use App\Modules\Retail\Models\PosShift;
 use App\Modules\Retail\Models\Sale;
 use App\Modules\Retail\Models\SalePayment;
 use App\Modules\Retail\Services\PosCalculationService;
+use App\Modules\Retail\Services\ShiftExpectedTotalsService;
 use App\Modules\Retail\Support\InvoiceDeliveryService;
 use App\Modules\Retail\Support\InvoiceDiscount;
 use App\Modules\Retail\Support\PosCartSnapshot;
@@ -87,9 +90,51 @@ final class Module5PosQaTest extends TestCase
                 'manual', 'manual-'.$this->cashier->id, 'manual-once-0001');
             self::fail('The same manual issue was accepted twice.');
         } catch (ValidationException $exception) {
-            self::assertSame('بطاقة الهدايا مفعّلة بالفعل ولا يمكن بيعها مرة أخرى.', $exception->errors()['card'][0]);
+            self::assertSame(__('This Gift Card was already created. Scan its code at POS to sell it.'), $exception->errors()['card'][0]);
         }
-        self::assertSame(1, $card->ledger()->count());
+        self::assertSame('unsold', $card->fresh()->status);
+        self::assertSame(0, $card->ledger()->count());
+    }
+
+    public function test_unsold_gift_card_sale_activates_once_after_full_normal_tender_without_stock_posting(): void
+    {
+        $cash = PaymentMethod::factory()->create(['type' => 'cash', 'status' => 'active']);
+        $card = app(GiftCardAction::class)->issue($this->cashier, '1500.00', (int) $this->store->branch_id,
+            (int) $this->store->id, 'manual', 'pos-card-test', 'pos-card-create-'.Str::uuid());
+        $stockBefore = (string) StockBalance::query()->where('product_id', $this->product->id)->value('on_hand');
+
+        self::assertSame('unsold', $card->status);
+        self::assertSame('0.00', (string) $card->balance);
+        self::assertSame(0, $card->ledger()->count());
+
+        $sell = app(SellGiftCardAtPosAction::class);
+        try {
+            $sell->execute($this->cashier, $card, [['method_id' => $cash->id, 'amount' => '1500.00', 'tendered' => '1499.00']], (string) Str::uuid());
+            self::fail('Underpaid Gift Card sale completed.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertNotSame('', $exception->getMessage());
+        }
+        self::assertSame('unsold', $card->fresh()->status);
+        self::assertSame(0, GiftCardPosSale::query()->where('gift_card_id', $card->id)->count());
+
+        $token = (string) Str::uuid();
+        $completed = $sell->execute($this->cashier, $card, [['method_id' => $cash->id, 'amount' => '1500.00', 'tendered' => '1500.00']], $token);
+        self::assertSame($completed->id, $sell->execute($this->cashier, $card, [['method_id' => $cash->id, 'amount' => '1500.00']], $token)->id);
+        self::assertSame('gift_card_sold', $completed->sale->status);
+        self::assertSame('1500.00', (string) $completed->sale->paid_total);
+        self::assertNotNull($completed->activated_at);
+        self::assertSame('active', $card->fresh()->status);
+        self::assertSame('1500.00', (string) $card->fresh()->balance);
+        self::assertSame(1, $card->ledger()->where('event_type', 'issue')->count());
+        self::assertSame($stockBefore, (string) StockBalance::query()->where('product_id', $this->product->id)->value('on_hand'));
+        self::assertSame('1500.00', app(ShiftExpectedTotalsService::class)->derive($completed->shift)['cash_sales']);
+
+        try {
+            $sell->execute($this->cashier, $card, [['method_id' => $cash->id, 'amount' => '1500.00']], (string) Str::uuid());
+            self::fail('A sold Gift Card was sold again.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('card', $exception->errors());
+        }
     }
 
     public function test_manual_gift_card_issue_requires_a_branch_warehouse(): void

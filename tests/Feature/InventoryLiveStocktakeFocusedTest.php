@@ -12,6 +12,7 @@ use App\Modules\Inventory\Actions\AssertInventoryStoreScope;
 use App\Modules\Inventory\Actions\CompleteStockCountLineAction;
 use App\Modules\Inventory\Actions\CreateStockTransferDraftAction;
 use App\Modules\Inventory\Actions\DispatchStockTransferAction;
+use App\Modules\Inventory\Actions\ImportStockCountWorkbookAction;
 use App\Modules\Inventory\Actions\OpenStockCountSessionAction;
 use App\Modules\Inventory\Actions\PostInventoryMovement;
 use App\Modules\Inventory\Actions\ReceiveStockTransferAction;
@@ -90,6 +91,29 @@ final class InventoryLiveStocktakeFocusedTest extends TestCase
         unlink($path);
 
         return $upload;
+    }
+
+    public function test_random_count_keeps_only_selected_products_and_full_count_snapshots_all_without_stock_posting(): void
+    {
+        $setup = $this->setupInventory();
+        $this->get(route('inventory.counts.create'))->assertOk()->assertSee('data-stocktake-settings', false)
+            ->assertSee('value="random"', false);
+        $random = $this->openCount($setup['branchless'], $setup['admin'], 'random');
+        self::assertSame('random', $random->scope_type);
+        self::assertSame(0, $random->lines()->count());
+
+        try {
+            app(ImportStockCountWorkbookAction::class)->execute($random->id, $setup['branchless']->id,
+                $this->stocktakeWorkbook([[$setup['product']->item_code, '2']]));
+            self::fail('Random count accepted an Excel import.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertNotSame('', $exception->getMessage());
+        }
+
+        $full = $this->openCount($setup['branchless'], $setup['admin'], 'full');
+        self::assertGreaterThan(0, $full->lines()->count());
+        self::assertTrue($full->lines()->where('product_id', $setup['product']->id)->exists());
+        self::assertSame(0, StockMovement::query()->count());
     }
 
     public function test_stocktake_excel_import_matches_sku_and_barcode_and_is_retry_safe_without_posting(): void

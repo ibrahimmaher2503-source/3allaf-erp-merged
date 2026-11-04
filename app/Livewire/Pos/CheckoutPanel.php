@@ -15,6 +15,7 @@ use App\Modules\Retail\Support\PosOpenOrderManager;
 use App\Support\UserSafeError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -34,6 +35,11 @@ final class CheckoutPanel extends Component
 
     /** @var array<string, string> */
     public array $giftCardPreview = [];
+
+    /** @var array<string, string> */
+    public array $giftCardSalePreview = [];
+
+    public string $giftCardSaleToken = '';
 
     public function mount(PosOpenOrderManager $orders, PosContextResolver $contexts): void
     {
@@ -67,7 +73,6 @@ final class CheckoutPanel extends Component
     public function scanGiftCard(?string $identifier = null): void
     {
         Gate::authorize('pos_sales.create');
-        Gate::authorize('gift_cards.redeem');
         $this->resetErrorBag('giftCardScan');
         $identifier = trim($identifier ?? $this->giftCardScan);
         $this->giftCardScan = $identifier;
@@ -81,7 +86,19 @@ final class CheckoutPanel extends Component
             return;
         }
         $card = GiftCard::query()->visibleTo($user)->where('identifier', $identifier)
-            ->where('branch_id', $store->branch_id)->where('store_id', $store->id)->first();
+            ->where('branch_id', $store->branch_id)->first();
+        if ($card?->status === 'unsold') {
+            $this->giftCardPreview = [];
+            $this->giftCardSalePreview = ['identifier' => $card->identifier, 'face_value' => (string) $card->issued_value, 'status' => 'unsold'];
+            $this->giftCardSaleToken = (string) Str::uuid();
+
+            return;
+        }
+        Gate::authorize('gift_cards.redeem');
+        $this->giftCardSalePreview = [];
+        if ($card !== null && (int) $card->store_id !== (int) $store->id) {
+            $card = null;
+        }
         if ($card === null || ! in_array($card->status, ['active', 'partially_used'], true)
             || bccomp((string) $card->balance, '0.00', 2) <= 0
             || ($card->valid_until !== null && $card->valid_until->isPast())) {

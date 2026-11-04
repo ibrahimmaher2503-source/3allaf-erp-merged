@@ -41,7 +41,9 @@ final class ImportStockCountWorkbookAction
         if ($count->status !== 'in_progress') {
             throw new InvalidArgumentException(__('Count input is closed for this session.'));
         }
-
+        if ($count->scope_type === 'random') {
+            throw new InvalidArgumentException(__('Excel import is unavailable for random counts. Scan or enter products individually.'));
+        }
         $extension = strtolower($file->getClientOriginalExtension());
         if (! in_array($extension, ['xlsx', 'csv'], true)) {
             throw new InvalidArgumentException(__('Upload an .xlsx or .csv stocktake file.'));

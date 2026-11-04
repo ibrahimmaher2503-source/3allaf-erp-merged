@@ -9,8 +9,10 @@ use App\Modules\Platform\Actions\RecordAuditEvent;
 use App\Modules\Platform\Models\Store;
 use App\Modules\Retail\Models\GiftCard;
 use App\Modules\Retail\Models\GiftCardLedger;
+use App\Modules\Retail\Models\GiftCardPosSale;
 use App\Modules\Retail\Models\GiftCardPrintEvent;
 use App\Modules\Retail\Models\RetailReturn;
+use App\Modules\Retail\Models\Sale;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -35,21 +37,47 @@ final class GiftCardAction
                     $this->idempotencyConflict();
                 }
                 if ($sourceType === 'manual') {
-                    throw ValidationException::withMessages(['card' => 'بطاقة الهدايا مفعّلة بالفعل ولا يمكن بيعها مرة أخرى.']);
+                    throw ValidationException::withMessages(['card' => __('This Gift Card was already created. Scan its code at POS to sell it.')]);
                 }
 
                 return $existing->load('ledger');
             }
             $card = GiftCard::query()->create([
-                'identifier' => 'GC-'.strtoupper(Str::random(28)), 'status' => 'active', 'issued_value' => $amount, 'balance' => $amount,
+                'identifier' => 'GC-'.strtoupper(Str::random(28)), 'status' => $sourceType === 'manual' ? 'unsold' : 'active', 'issued_value' => $amount, 'balance' => $sourceType === 'manual' ? '0.00' : $amount,
                 'currency_code' => strtoupper((string) $currencyCode), 'holder_customer_id' => $holderCustomerId, 'branch_id' => $branchId, 'store_id' => $storeId,
                 'issued_by' => $actor->id, 'source_type' => $sourceType, 'source_id' => $sourceId, 'source_reference' => $sourceReference,
                 'valid_from' => now(), 'valid_until' => $validUntil, 'idempotency_key' => $idempotencyKey, 'lock_version' => 1,
             ]);
-            $this->ledger($card, $actor, 'issue', $amount, '0.00', $amount, $sourceType, $sourceId, $sourceReference, null, $idempotencyKey, []);
-            app(RecordAuditEvent::class)->execute('retail', 'gift_card_issued', $card, null, ['identifier' => $card->identifier, 'amount' => $amount, 'balance' => $amount], $branchId, $storeId, metadata: ['actor_id' => $actor->id, 'source_type' => $sourceType, 'source_id' => $sourceId]);
+            if ($sourceType !== 'manual') {
+                $this->ledger($card, $actor, 'issue', $amount, '0.00', $amount, $sourceType, $sourceId, $sourceReference, null, $idempotencyKey, []);
+            }
+            app(RecordAuditEvent::class)->execute('retail', $sourceType === 'manual' ? 'gift_card_created_for_sale' : 'gift_card_issued', $card, null, ['identifier' => $card->identifier, 'amount' => $amount, 'balance' => $card->balance, 'status' => $card->status], $branchId, $storeId, metadata: ['actor_id' => $actor->id, 'source_type' => $sourceType, 'source_id' => $sourceId]);
 
             return $card->load('ledger');
+        }, 5);
+    }
+
+    public function activateSold(User $actor, GiftCard $card, GiftCardPosSale $posSale): GiftCard
+    {
+        $this->authorize($actor, 'pos_sales.create');
+
+        return DB::transaction(function () use ($actor, $card, $posSale): GiftCard {
+            $locked = GiftCard::query()->whereKey($card->id)->lockForUpdate()->firstOrFail();
+            $sale = Sale::query()->whereKey($posSale->sale_id)->lockForUpdate()->firstOrFail();
+            if ($locked->status !== 'unsold' || (int) $posSale->gift_card_id !== (int) $locked->id || $sale->status !== 'gift_card_sold') {
+                throw ValidationException::withMessages(['card' => __('This Gift Card has already been sold or is unavailable.')]);
+            }
+            $paid = app(CapturePaymentAction::class)->paidSoFar($sale);
+            if (bccomp($paid, (string) $locked->issued_value, 2) !== 0) {
+                throw ValidationException::withMessages(['card' => __('Complete Gift Card payment before activation.')]);
+            }
+            $activatedAt = now();
+            $locked->update(['status' => 'active', 'balance' => $locked->issued_value, 'store_id' => $sale->store_id, 'valid_from' => $activatedAt, 'source_type' => GiftCardPosSale::class, 'source_id' => (string) $posSale->id, 'source_reference' => $sale->document_number, 'lock_version' => (int) $locked->lock_version + 1]);
+            $posSale->update(['activated_at' => $activatedAt]);
+            $this->ledger($locked, $actor, 'issue', (string) $locked->issued_value, '0.00', (string) $locked->issued_value, GiftCardPosSale::class, (string) $posSale->id, $sale->document_number, null, 'GIFT-CARD-POS-SALE:'.$posSale->id, ['sale_id' => $sale->id, 'shift_id' => $posSale->shift_id]);
+            app(RecordAuditEvent::class)->execute('retail', 'gift_card_sold_activated', $locked, ['status' => 'unsold', 'balance' => '0.00'], ['status' => 'active', 'balance' => $locked->balance, 'valid_from' => $activatedAt], (int) $locked->branch_id, (int) $locked->store_id, metadata: ['sale_id' => $sale->id, 'shift_id' => $posSale->shift_id, 'cashier_id' => $actor->id]);
+
+            return $locked->fresh('ledger');
         }, 5);
     }
 

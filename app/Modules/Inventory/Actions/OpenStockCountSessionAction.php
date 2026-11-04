@@ -35,7 +35,7 @@ final class OpenStockCountSessionAction
                     $query->where('category_id', $count->category_id);
                 }if ($count->scope_type === 'supplier') {
                     $query->whereHas('productSuppliers', fn ($q) => $q->where('supplier_id', $count->supplier_id));
-                }if ($count->scope_type !== 'partial') {
+                }if (! in_array($count->scope_type, ['partial', 'random'], true)) {
                     $query->select('id')->chunkById(500, function ($products) use ($count, $location): void {
                         $productIds = $products->pluck('id');
                         $balances = StockBalance::query()->where('store_id', $location->store_id)->whereIn('product_id', $productIds)->pluck('on_hand', 'product_id');

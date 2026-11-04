@@ -71,7 +71,7 @@ final class SaveStockCountAction
             }
             $countType = ($data['count_type'] ?? 'partial') === 'full' ? 'full' : 'partial';
             $scopeType = (string) ($data['scope_type'] ?? ($countType === 'full' ? 'full' : 'partial'));
-            if (! in_array($scopeType, ['full', 'category', 'supplier', 'partial'], true)) {
+            if (! in_array($scopeType, ['full', 'category', 'supplier', 'partial', 'random'], true)) {
                 throw new InvalidArgumentException(__('Select a supported count scope.'));
             }
             $categoryId = filled($data['category_id'] ?? null) ? (int) $data['category_id'] : null;

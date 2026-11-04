@@ -29,6 +29,7 @@ final class TransactionProductSearchController extends Controller
         'quotations.create', 'quotations.edit',
         'party_bookings_invoices.create', 'party_bookings_invoices.edit',
         'party_operating_orders_consumables.create', 'party_operating_orders_consumables.edit',
+        'products_categories_brands.create', 'products_categories_brands.edit',
     ];
 
     public function __invoke(Request $request, SupplierProductPrice $prices): JsonResponse
@@ -43,6 +44,10 @@ final class TransactionProductSearchController extends Controller
         }
 
         $supplierReturnLookup = $request->query('context') === 'purchase_return';
+        $catalogLookup = $request->query('context') === 'catalog';
+        if ($catalogLookup) {
+            abort_unless($actor->can('products_categories_brands.create') || $actor->can('products_categories_brands.edit'), 403);
+        }
         if ($supplierReturnLookup) {
             abort_unless($actor->can('purchase_returns.create') || $actor->can('purchase_returns.edit'), 403);
         }
@@ -82,7 +87,7 @@ final class TransactionProductSearchController extends Controller
         $escaped = addcslashes($term, '\\%_');
         $prefix = $escaped.'%';
         $contained = '%'.$escaped.'%';
-        $productsQuery = Product::query()->sellable()
+        $productsQuery = Product::query()->when(! $catalogLookup, fn ($query) => $query->sellable())
             ->availableToCompany((int) $company->id)
             ->with([
                 'barcodes' => fn ($query) => $query->active()->orderByDesc('is_primary'),

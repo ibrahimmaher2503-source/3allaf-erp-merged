@@ -18,6 +18,7 @@
     'transfer' => false,
     'sourceStoreSelector' => '',
     'labelVisuallyHidden' => false,
+    'catalog' => false,
 ])
 
 <div
@@ -25,7 +26,7 @@
     data-product-lookup
     data-search-url="{{ route('transaction-products.search') }}"
     data-value-field="{{ $valueField }}"
-    data-context="{{ $supplierReturn ? 'purchase_return' : ($transfer ? 'transfer' : ($purchasing ? 'purchasing' : 'transaction')) }}"
+    data-context="{{ $catalog ? 'catalog' : ($supplierReturn ? 'purchase_return' : ($transfer ? 'transfer' : ($purchasing ? 'purchasing' : 'transaction'))) }}"
     data-source-store-selector="{{ $sourceStoreSelector }}"
     data-supplier-id="{{ $supplierId }}"
     data-supplier-only="{{ $supplierOnly ? '1' : '0' }}"
