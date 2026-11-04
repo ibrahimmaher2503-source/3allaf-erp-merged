@@ -1343,6 +1343,14 @@ select:focus[data-flux-control] {
 input[type="number"]{-moz-appearance:textfield}
 input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
+body.app-layout :where(input[type="number"],input[inputmode="decimal"],input[inputmode="numeric"],[data-money],[data-line-total]) {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif !important;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+body.app-layout :where(input[type="number"],input[inputmode="decimal"],input[inputmode="numeric"]) { text-align: right; }
+
 /* Public Rajeh marketing frontend: all selectors are scoped to preserve the ERP shell. */
 @layer components {
     .marketing-page { --marketing-blue:#0a4cc9; --marketing-green:#13b67a; --marketing-navy:#0b2d5b; --marketing-ink:#102d4d; --marketing-muted:#60738a; --marketing-line:#dce7f1; margin:0; overflow-x:hidden; background:#f8fbff; color:var(--marketing-ink); font-family:'Cairo',ui-sans-serif,sans-serif; }

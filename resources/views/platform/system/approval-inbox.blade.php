@@ -329,7 +329,6 @@ new #[Title('Approval Inbox')] class extends Component
                                 [str_starts_with(app()->getLocale(), 'ar') ? 'حركات النقدية الخارجة' : 'Cash out', $shiftBreakdown['cash_out']],
                                 [str_starts_with(app()->getLocale(), 'ar') ? 'النقدية المتوقعة بالدرج' : 'Expected drawer cash', $shiftSubmission->expected_cash],
                                 [str_starts_with(app()->getLocale(), 'ar') ? 'النقدية الفعلية المعدودة' : 'Physical cash counted', $shiftSubmission->actual_cash],
-                                [str_starts_with(app()->getLocale(), 'ar') ? 'فرق النقدية' : 'Cash variance', $shiftSubmission->cash_variance],
                             ] as [$label, $amount])
                                 <div class="flex justify-between gap-3"><dt>{{ $label }}</dt><dd><x-money :amount="$amount" :currency="$selectedShift->currency_code" /></dd></div>
                             @endforeach

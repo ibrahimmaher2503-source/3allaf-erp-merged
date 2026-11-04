@@ -43,7 +43,7 @@ final class ShiftExpectedTotalsService
         $paymentRows = SalePayment::query()
             ->join('sales', 'sales.id', '=', 'sale_payments.sale_id')
             ->where('sales.shift_id', $shift->getKey())
-            ->where('sales.status', 'approved')
+            ->whereIn('sales.status', ['approved', 'gift_card_sold'])
             ->groupBy('sale_payments.method_code', 'sale_payments.method_type', 'sales.currency_code')
             ->select('sale_payments.method_code', 'sale_payments.method_type', 'sales.currency_code', DB::raw('SUM(sale_payments.amount) as applied'))
             ->get();

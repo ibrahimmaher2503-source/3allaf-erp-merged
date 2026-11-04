@@ -707,11 +707,25 @@ $router->middleware(['auth', 'verified'])->group(function () use ($router, $rend
     })->whereNumber('count')->middleware('can:stock_counts.submit')->name('inventory.counts.submit');
 
     $router->post('inventory/counts', function (SaveStockCountAction $action) {
-        $validated = request()->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial'], 'scope_type' => ['required', 'in:full,category,supplier,partial'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
+        $validated = request()->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id'], 'location_ids' => ['required', 'array', 'min:1'], 'location_ids.*' => ['integer', 'distinct', 'exists:stores,id'], 'member_ids' => ['required', 'array', 'min:1'], 'member_ids.*' => ['integer', 'distinct', 'exists:users,id'], 'manager_id' => ['required', 'integer', 'exists:users,id'], 'count_type' => ['required', 'in:full,partial,random'], 'scope_type' => ['required', 'in:full,category,supplier,partial,random'], 'category_id' => ['nullable', 'integer'], 'supplier_id' => ['nullable', 'integer'], 'execution_method' => ['required', 'in:scan,excel,mobile'], 'notes' => ['nullable', 'string', 'max:1000'], 'assignments' => ['nullable', 'array'], 'assignments.*.store_id' => ['integer'], 'assignments.*.user_id' => ['integer'], 'assignments.*.zone' => ['nullable', 'string', 'max:120']]);
+        $requestedType = $validated['count_type'];
+        $expectedScopes = ['full' => ['full'], 'partial' => ['category', 'supplier'], 'random' => ['random']];
+        if (! in_array($validated['scope_type'], $expectedScopes[$requestedType], true) || ($requestedType === 'random' && $validated['execution_method'] === 'excel')) {
+            throw ValidationException::withMessages(['count_type' => __('The count type, scope, and execution method do not match.')]);
+        }
+        if ($validated['scope_type'] === 'category' && blank($validated['category_id'] ?? null)) {
+            throw ValidationException::withMessages(['category_id' => __('Select a category for this count.')]);
+        }
+        if ($validated['scope_type'] === 'supplier' && blank($validated['supplier_id'] ?? null)) {
+            throw ValidationException::withMessages(['supplier_id' => __('Select a supplier for this count.')]);
+        }
+        $validated['count_type'] = $requestedType === 'full' ? 'full' : 'partial';
+        $validated['category_id'] = $validated['scope_type'] === 'category' ? $validated['category_id'] : null;
+        $validated['supplier_id'] = $validated['scope_type'] === 'supplier' ? $validated['supplier_id'] : null;
         try {
             $count = $action->execute($validated);
 
-            return redirect()->route('inventory.counts.entry', $count)->with('success', __('Count session created. Review its scope and open it when the team is ready.'));
+            return redirect()->route('inventory.counts.entry', [$count, 'mode' => $validated['execution_method']])->with('success', __('Count session created. Review its scope and open it when the team is ready.'));
         } catch (AuthorizationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {

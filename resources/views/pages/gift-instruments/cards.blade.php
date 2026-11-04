@@ -10,7 +10,7 @@
 
         @can('gift_cards.issue')
             <flux:card class="mt-6">
-                <flux:heading size="lg">{{ __('Issue Gift Card') }}</flux:heading>
+                <flux:heading size="lg">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء بطاقة هدايا للبيع' : 'Create Gift Card for sale' }}</flux:heading>
                 <form method="POST" action="{{ route('gift.cards.store') }}" class="mt-4 grid gap-4 sm:grid-cols-3">
                     @csrf
                     <input type="hidden" name="idempotency_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
@@ -20,7 +20,7 @@
                         @foreach($stores as $store)<flux:select.option value="{{ $store->id }}" :selected="(string) old('store_id', $stores->count() === 1 ? $store->id : '') === (string) $store->id">{{ \App\Support\HumanName::name($store->branch) }} — {{ \App\Support\HumanName::name($store) }}</flux:select.option>@endforeach
                     </flux:select>
                     <flux:input name="valid_until" type="date" label="{{ __('Expires on (optional)') }}" />
-                    <div class="sm:col-span-3"><flux:button type="submit" variant="primary">{{ __('Issue card') }}</flux:button></div>
+                    <div class="sm:col-span-3"><flux:button type="submit" variant="primary">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء البطاقة غير المباعة' : 'Create unsold card' }}</flux:button></div>
                 </form>
             </flux:card>
         @endcan
@@ -32,7 +32,7 @@
                     <tbody>
                         @forelse($cards as $card)
                             <tr class="border-t border-zinc-100 align-top dark:border-zinc-800">
-                                <td class="font-mono font-semibold">{{ $card->identifier }}</td><td><x-status.badge :status="$card->status" /></td>
+                                <td class="font-mono font-semibold">{{ $card->identifier }}</td><td><x-status.badge :status="$card->status" :label="$card->status === 'unsold' ? (str_starts_with(app()->getLocale(), 'ar') ? 'غير مباعة' : 'Unsold') : null" /></td>
                                 <td>{{ number_format((float) $card->issued_value, 2) }} {{ $card->currency_code }}</td><td class="font-semibold">{{ number_format((float) $card->balance, 2) }} {{ $card->currency_code }}</td><td>{{ $card->store?->name_en ?: $card->store_id }}</td>
                                 <td class="flex flex-wrap gap-3">
                                     <x-actions.button semantic="history" :label="__('History')" href="{{ route('gift.cards.show', $card) }}">{{ __('History') }}</x-actions.button>
@@ -45,7 +45,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6"><x-state.empty :title="__('No Gift Cards yet')" :description="__('Issue a card to create its first immutable ledger entry.')" /></td></tr>
+                            <tr><td colspan="6"><x-state.empty :title="__('No Gift Cards yet')" :description="str_starts_with(app()->getLocale(), 'ar') ? 'أنشئ بطاقة ثم بعها من نقطة البيع لتفعيل رصيدها.' : 'Create a card, then sell it at POS to activate its balance.'" /></td></tr>
                         @endforelse
                     </tbody>
                 </table>

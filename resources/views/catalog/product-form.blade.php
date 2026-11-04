@@ -14,8 +14,10 @@ use App\Modules\Catalog\Models\ProductOptionGroup;
 use App\Modules\Catalog\Models\Supplier;
 use App\Modules\Catalog\Support\ProductPricingContract;
 use App\Modules\Platform\Models\TaxSetting;
+use App\Modules\Platform\Models\Store;
 use App\Modules\Platform\Support\AuthorizedCompanyContext;
 use App\Modules\Platform\Support\ProductPricingReadiness;
+use App\Modules\Pricing\Services\EffectivePriceResolver;
 use App\Modules\Reporting\Models\Alert;
 use App\Support\UserSafeError;
 use Flux\Flux;
@@ -42,6 +44,10 @@ new #[Title('Product Card')] class extends Component
     public string $mediaRole = 'additional';
 
     public string $supplierBarcode = '';
+
+    public bool $autoLocalCode = false;
+
+    public string $pricingStoreId = '';
 
     public string $stage = 'basic';
 
@@ -98,7 +104,7 @@ new #[Title('Product Card')] class extends Component
 
     public function localProductCodePreview(): ?string
     {
-        if (($this->isEditing && filled($this->productForm['item_code'])) || $this->productForm['barcode_registration_type'] !== 'local' || blank($this->productForm['preferred_supplier_id'])) {
+        if ($this->isEditing || ! $this->autoLocalCode || blank($this->productForm['preferred_supplier_id'])) {
             return null;
         }
 
@@ -111,7 +117,7 @@ new #[Title('Product Card')] class extends Component
 
     public function localProductCodePreviewError(): ?string
     {
-        if (($this->isEditing && filled($this->productForm['item_code'])) || $this->productForm['barcode_registration_type'] !== 'local' || blank($this->productForm['preferred_supplier_id'])) {
+        if ($this->isEditing || ! $this->autoLocalCode || blank($this->productForm['preferred_supplier_id'])) {
             return null;
         }
 
@@ -124,6 +130,29 @@ new #[Title('Product Card')] class extends Component
         } catch (Throwable $exception) {
             return UserSafeError::message($exception);
         }
+    }
+
+    public function updatedAutoLocalCode(bool $enabled): void
+    {
+        if ($enabled && blank($this->productForm['preferred_supplier_id'])) {
+            $this->autoLocalCode = false;
+            $this->addError('productForm.preferred_supplier_id', 'اختر المورد المفضل أولًا لإنشاء كود محلي.');
+
+            return;
+        }
+
+        $this->resetErrorBag('productForm.preferred_supplier_id');
+        if ($enabled) {
+            $this->productForm['item_code'] = '';
+            $this->supplierBarcode = '';
+        }
+    }
+
+    public function openExistingProduct(int $id): void
+    {
+        Gate::authorize('products_categories_brands.edit');
+        $product = Product::query()->findOrFail($id);
+        $this->redirectRoute('catalog.products.edit', ['product' => $product], navigate: true);
     }
 
     public function save(SaveProductAction $action, AddBarcodeAction $barcodeAction): void
@@ -142,6 +171,16 @@ new #[Title('Product Card')] class extends Component
 
         try {
             $this->supplierBarcode = trim($this->supplierBarcode);
+            $this->productForm['item_code'] = trim((string) $this->productForm['item_code']);
+            if (! $this->isEditing) {
+                $this->productForm['barcode_registration_type'] = $this->autoLocalCode ? 'local' : 'international';
+            }
+            if ($this->autoLocalCode && blank($this->productForm['preferred_supplier_id'])) {
+                throw ValidationException::withMessages(['productForm.preferred_supplier_id' => 'اختر المورد المفضل أولًا لإنشاء كود محلي.']);
+            }
+            if ($this->autoLocalCode) {
+                $this->productForm['item_code'] = '';
+            }
             $this->productForm['fractional_quantity'] = filter_var(
                 $this->productForm['fractional_quantity'] ?? false,
                 FILTER_VALIDATE_BOOLEAN,
@@ -149,7 +188,7 @@ new #[Title('Product Card')] class extends Component
             $needsBarcode = ! $saveAsDraft && ($this->productId === null || ! Product::query()->whereKey($this->productId)->whereHas('barcodes', fn ($query) => $query->where('status', 'active'))->exists());
             $validated = $this->validate([
                 ...$this->rules($saveAsDraft),
-                'supplierBarcode' => [Rule::requiredIf(fn (): bool => $needsBarcode && $this->productForm['barcode_registration_type'] === 'international'), 'nullable', 'string', 'max:64', 'regex:/^[0-9]+$/D', Rule::unique('barcodes', 'barcode')],
+                'supplierBarcode' => ['nullable', 'string', 'max:64', 'regex:/^[0-9]+$/D', Rule::unique('barcodes', 'barcode')],
             ], $this->productValidationMessages(), $this->productValidationAttributes())['productForm'];
             $validated['_save_as_draft'] = $saveAsDraft;
             if (! $saveAsDraft && blank($validated['item_code'])) {
@@ -354,7 +393,7 @@ new #[Title('Product Card')] class extends Component
         $savedCharacterIds = $savedLookups?->characters->pluck('id')->all() ?? [];
 
         return [
-            'productForm.item_code' => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
+            'productForm.item_code' => [Rule::requiredIf(fn (): bool => ! $this->isEditing && ! $saveAsDraft && ! $this->autoLocalCode), 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/', Rule::unique('products', 'item_code')->ignore($this->productId)],
             'productForm.barcode_registration_type' => ['required', Rule::in(['international', 'local'])],
             'productForm.open_price' => ['boolean'],
             'productForm.sell_online' => ['boolean'],
@@ -387,7 +426,7 @@ new #[Title('Product Card')] class extends Component
             'productForm.average_cost' => [Rule::excludeIf(! auth()->user()?->hasPermission('products_categories_brands.cost_view')), ...app(ProductPricingContract::class)->costRules()],
             'productForm.sale_price' => [$saveAsDraft ? 'nullable' : 'required', 'numeric', 'min:0.01'],
             'productForm.battery_required' => ['boolean'], 'productForm.battery_details' => ['nullable', 'string', 'max:255'],
-            'productForm.preferred_supplier_id' => [! $saveAsDraft && blank($this->productForm['item_code']) ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
+            'productForm.preferred_supplier_id' => [! $saveAsDraft && ! $this->isEditing ? 'required' : 'nullable', 'integer', Rule::exists('suppliers', 'id')->where('status', 'active')],
             'productForm.supplier_item_code' => ['nullable', 'string', 'max:100'],
             'productForm.age_label_ids' => ['array'],
             'productForm.age_label_ids.*' => ['integer', 'distinct', Rule::exists('age_labels', 'id')->where(fn ($query) => $query->where('status', 'active')->orWhereIn('id', $savedAgeIds))],
@@ -461,9 +500,15 @@ new #[Title('Product Card')] class extends Component
         $savedFilterIds = $product?->filterValues->pluck('id')->all() ?? [];
         $savedAgeIds = $product?->ages->pluck('id')->all() ?? [];
         $savedCharacterIds = $product?->characters->pluck('id')->all() ?? [];
+        $pricingStores = $product === null ? collect() : Store::query()->visibleTo(auth()->user())->where('status', 'active')->where('type', 'selling')->where('company_id', $companyId)->orderBy('code')->limit(100)->get();
+        $pricingStore = $this->pricingStoreId === '' ? null : $pricingStores->firstWhere('id', (int) $this->pricingStoreId);
+        $effectivePrice = $product !== null && $pricingStore !== null ? app(EffectivePriceResolver::class)->resolve($product->id, $pricingStore->id) : null;
 
         return view('catalog.product-form', [
             'product' => $product,
+            'pricingStores' => $pricingStores,
+            'pricingStore' => $pricingStore,
+            'effectivePrice' => $effectivePrice,
             'categories' => Category::query()->active()->with('parent:id,code,name_ar,name_en')->orderBy('sort_order')->orderBy('code')->get(['id', 'parent_id', 'code', 'name_ar', 'name_en']),
             'brands' => Brand::query()->active()->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en']),
             'taxSettings' => TaxSetting::query()->forCompany($companyId)->where('status', 'active')->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', now()))->where(fn ($query) => $query->whereNull('effective_to')->orWhere('effective_to', '>=', now()))->orderBy('code')->get(['id', 'code', 'name_ar', 'name_en', 'rate']),
@@ -523,56 +568,21 @@ new #[Title('Product Card')] class extends Component
                 <x-context-help :title="__('Product identity help')" :label="__('Open product identity help')"><ul class="list-disc space-y-2 ps-5"><li>{{ __('Complete barcode, model, identity, consumer price, category, product type, and the applicable supplier before activating the Product Card.') }}</li><li>{{ __('The internal item code remains permanent.') }}</li><li>{{ __('Supplier code, model, and barcode stay separate and are all searchable.') }}</li><li>{{ __('Scanner input works in any barcode search field; camera capture is not required.') }}</li></ul></x-context-help>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
-                <flux:select wire:model.live="productForm.barcode_registration_type" :label="str_starts_with(app()->getLocale(), 'ar') ? 'طريقة الكود' : 'Code method'" required>
-                    <flux:select.option value="international">{{ str_starts_with(app()->getLocale(), 'ar') ? 'استخدام كود موجود' : 'Use existing code' }}</flux:select.option>
-                    <flux:select.option value="local">{{ str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء كود جديد' : 'Generate new code' }}</flux:select.option>
+                <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Preferred supplier')" required>
+                    <flux:select.option value="">{{ __('Select supplier') }}</flux:select.option>
+                    @foreach ($suppliers as $supplier)
+                        <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
+                    @endforeach
                 </flux:select>
-                @if (blank($productForm['item_code']))
-                    <flux:select wire:model.live="productForm.preferred_supplier_id" :label="__('Preferred supplier')" required>
-                        <flux:select.option value="">{{ __('Select supplier to generate a product code') }}</flux:select.option>
-                        @foreach ($suppliers as $supplier)
-                            <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    @if ($productForm['barcode_registration_type'] === 'local')
-                        <div class="rounded-lg border border-border bg-surface-muted/30 p-3 text-sm">
-                            <span class="block text-xs text-text-muted">{{ __('Generated product-code preview') }}</span>
-                            @php($previewError = $this->localProductCodePreviewError())
-                            <strong class="font-mono" dir="ltr">{{ $this->localProductCodePreview() ?? ($previewError ? '—' : __('Select supplier first')) }}</strong>
-                            @if ($previewError)
-                                <span class="mt-1 block text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</span>
-                            @endif
-                        </div>
-                    @endif
-                @endif
-                @php($activeBarcodes = $isEditing ? ($product?->barcodes ?? collect())->where('status', 'active')->sortByDesc('is_primary')->values() : collect())
-                @if ($activeBarcodes->isNotEmpty())
-                    <div class="space-y-2 rounded-lg border border-border bg-surface-muted/30 p-3" role="group" aria-label="{{ __('Barcode summary') }}" data-saved-active-barcodes>
-                        <span class="block text-xs text-text-muted">{{ __('Barcode summary') }}</span>
-                        @foreach ($activeBarcodes as $barcode)
-                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2">
-                                <bdi dir="ltr" class="catalog-code-chip">{{ $barcode->barcode }}</bdi>
-                                @if ($barcode->is_primary)
-                                    <flux:badge size="sm">{{ __('Primary') }}</flux:badge>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-                @if ($productForm['barcode_registration_type'] === 'international')
-                    @if ($activeBarcodes->isEmpty())
-                        <flux:input wire:model="supplierBarcode" :label="str_starts_with(app()->getLocale(), 'ar') ? 'الكود الموجود' : 'Existing code'" inputmode="numeric" dir="ltr" required />
-                        <p class="text-xs text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'أدخل أرقامًا فقط. تُحفظ الأصفار البادئة.' : 'Enter digits only. Leading zeros are preserved.' }}</p>
-                    @endif
-                @else
-                    <x-context-help :title="str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء كود جديد' : 'Generate new code'" :label="__('Open contextual help')"><p>{{ str_starts_with(app()->getLocale(), 'ar') ? 'يُنشئ راجح الكود تلقائياً من هوية المورد والتسلسل المعتمد، مع حفظ الأصفار البادئة.' : 'Rajeh generates the code from the approved supplier identity and shared sequence, preserving leading zeros.' }}</p><p>{{ __('The final unique code is allocated atomically when the product is completed.') }}</p></x-context-help>
-                @endif
-                <flux:input id="product-field-model_number" wire:model="productForm.model_number" :label="__('Model / item number')" />
-                @if ($isEditing)
-                    <flux:input wire:model="productForm.item_code" :label="__('Product Card code')" disabled dir="ltr" />
-                @endif
-                <flux:input id="product-field-name_ar" wire:model="productForm.name_ar" :label="__('Arabic product name')" dir="rtl" required />
-                <flux:input wire:model="productForm.name_en" :label="__('English product name')" dir="ltr" />
+                <div class="min-w-0 space-y-2">
+                    <x-product-line-lookup :catalog="true" :label="str_starts_with(app()->getLocale(), 'ar') ? 'كود الصنف' : 'Product code'" :display="$autoLocalCode ? ($this->localProductCodePreview() ?? '') : ($productForm['item_code'] ?? '')" :disabled="$autoLocalCode" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.item_code = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
+                    @if(! $isEditing)<flux:checkbox wire:model.live="autoLocalCode" :label="str_starts_with(app()->getLocale(), 'ar') ? 'إنشاء كود محلي تلقائيًا' : 'Generate a local code automatically'" />@endif
+                    @if($autoLocalCode && ($previewError = $this->localProductCodePreviewError()))<p class="text-xs font-semibold text-rose-600" role="alert">{{ $previewError }}</p>@endif
+                    <flux:error name="productForm.item_code" />
+                </div>
+                <x-product-line-lookup :catalog="true" :label="str_starts_with(app()->getLocale(), 'ar') ? 'رقم الموديل / Item No' : 'Model / Item No'" :display="$productForm['model_number'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.model_number = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
+                <x-product-line-lookup :catalog="true" :label="__('Arabic product name')" :display="$productForm['name_ar'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.name_ar = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
+                <x-product-line-lookup :catalog="true" :label="__('English product name')" :display="$productForm['name_en'] ?? ''" :company-id="app(AuthorizedCompanyContext::class)->resolve(auth()->user())->id" x-on:input="if ($event.target.matches('[data-product-search]')) $wire.productForm.name_en = $event.target.value" x-on:product-selected="$wire.openExistingProduct($event.detail.id)" />
             </div>
             @if ($isEditing && $product)
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
@@ -612,14 +622,6 @@ new #[Title('Product Card')] class extends Component
                         <flux:select.option :value="$taxSetting->id">{{ $taxSetting->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $taxSetting->name_ar : $taxSetting->name_en }} @if($taxSetting->rate !== null)({{ number_format((float) $taxSetting->rate, 2) }}%)@endif</flux:select.option>
                     @endforeach
                 </flux:select>
-                @if(filled($productForm['item_code']))
-                    <flux:select wire:model="productForm.preferred_supplier_id" :label="__('Supplier')">
-                        <flux:select.option value="">{{ __('No supplier') }}</flux:select.option>
-                        @foreach ($suppliers as $supplier)
-                            <flux:select.option :value="$supplier->id">{{ $supplier->code }} · {{ str_starts_with(app()->getLocale(), 'ar') ? $supplier->name_ar : $supplier->name_en }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                @endif
                 <flux:input wire:model="productForm.supplier_item_code" :label="__('Supplier product / local code')" dir="ltr" />
                 <flux:select wire:model.live="productForm.product_type" :label="__('Product type')" required>
                     <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
@@ -651,6 +653,20 @@ new #[Title('Product Card')] class extends Component
                 <div id="base-consumer-price"><flux:input id="product-field-sale_price" wire:model="productForm.sale_price" type="number" min="0.01" step="0.01" :label="__('Base consumer selling price')" /><x-context-help :title="__('Base consumer selling price')" :label="__('Open contextual help')"><p>{{ __('Required for sellable products and must be greater than zero.') }}</p></x-context-help></div>
                 <flux:checkbox wire:model="productForm.open_price" :label="__('Open-price product')" />
             </div>
+            @if($isEditing)
+                <div class="rounded-xl border border-border p-3 text-sm">
+                    <flux:select wire:model.live="pricingStoreId" :label="str_starts_with(app()->getLocale(), 'ar') ? 'سعر البيع الفعلي في المنفذ' : 'Effective outlet selling price'"><flux:select.option value="">{{ str_starts_with(app()->getLocale(), 'ar') ? 'اختر منفذ البيع' : 'Select outlet' }}</flux:select.option>@foreach($pricingStores as $store)<flux:select.option :value="$store->id">{{ \App\Support\HumanName::name($store) }}</flux:select.option>@endforeach</flux:select>
+                    @if($pricingStore)
+                        <p class="mt-2">{{ str_starts_with(app()->getLocale(), 'ar') ? 'السعر الذي يستخدمه POS:' : 'Price used by POS:' }} <strong dir="ltr">{{ $effectivePrice?->amount ?? '—' }}</strong></p>
+                        @if($effectivePrice?->price_version_id)
+                            <p class="text-amber-700">{{ str_starts_with(app()->getLocale(), 'ar') ? 'يوجد سعر معتمد لهذا المنفذ يتجاوز سعر بطاقة المنتج. غيّر السعر من مسار التسعير والاعتماد.' : 'An approved outlet price overrides the Product Card base price. Change it through pricing approval.' }}</p>
+                            <flux:button href="{{ route('pricing.index') }}" variant="subtle" size="sm" wire:navigate>{{ str_starts_with(app()->getLocale(), 'ar') ? 'فتح التسعير' : 'Open pricing' }}</flux:button>
+                        @else
+                            <p class="text-text-muted">{{ str_starts_with(app()->getLocale(), 'ar') ? 'يستخدم هذا المنفذ سعر بطاقة المنتج الأساسي.' : 'This outlet uses the Product Card base price.' }}</p>
+                        @endif
+                    @endif
+                </div>
+            @endif
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted/40 p-3 text-sm text-text-muted">
                 <span>{{ __('Open-price rules are configured in Pricing and enforced in POS.') }}</span>
                 @can('pricing_labels.view')
@@ -677,33 +693,6 @@ new #[Title('Product Card')] class extends Component
                     <flux:textarea wire:model="productForm.key_points_en" :label="__('Key points English')" rows="3" dir="ltr" />
                     <flux:textarea wire:model="productForm.keywords_ar" :label="__('Search keywords Arabic')" rows="2" dir="rtl" />
                     <flux:textarea wire:model="productForm.keywords_en" :label="__('Search keywords English')" rows="2" dir="ltr" />
-                </div>
-                <div class="mb-4 grid gap-4 md:grid-cols-2">
-                    <flux:input wire:model="productForm.colour" :label="__('Colour')" maxlength="100" />
-                    <div class="space-y-3">
-                        <flux:heading size="sm">{{ __('Age labels') }}</flux:heading>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            @forelse ($ageLabels as $ageLabel)
-                                <flux:checkbox wire:key="product-age-label-{{ $ageLabel->id }}" wire:model="productForm.age_label_ids" :value="$ageLabel->id" :label="str_starts_with(app()->getLocale(), 'ar') ? $ageLabel->name_ar : $ageLabel->name_en" :disabled="$ageLabel->status !== 'active' && ! in_array((string) $ageLabel->id, $productForm['age_label_ids'], true)" />
-                            @empty
-                                <flux:text>{{ __('No age labels configured.') }}</flux:text>
-                            @endforelse
-                        </div>
-                        <flux:error name="productForm.age_label_ids" />
-                        <flux:error name="productForm.age_label_ids.*" />
-                    </div>
-                    <div class="space-y-3">
-                        <flux:heading size="sm">{{ __('Characters') }}</flux:heading>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            @forelse ($characters as $character)
-                                <flux:checkbox wire:key="product-character-{{ $character->id }}" wire:model="productForm.character_ids" :value="$character->id" :label="str_starts_with(app()->getLocale(), 'ar') ? $character->name_ar : $character->name_en" :disabled="$character->status !== 'active' && ! in_array((string) $character->id, $productForm['character_ids'], true)" />
-                            @empty
-                                <flux:text>{{ __('No characters configured.') }}</flux:text>
-                            @endforelse
-                        </div>
-                        <flux:error name="productForm.character_ids" />
-                        <flux:error name="productForm.character_ids.*" />
-                    </div>
                 </div>
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <flux:input wire:model="productForm.unit_of_measure" :label="__('Unit of measure')" placeholder="{{ __('Owner-configurable') }}" />

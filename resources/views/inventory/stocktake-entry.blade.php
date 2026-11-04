@@ -29,14 +29,14 @@
         <div class="flex min-w-0 flex-wrap items-center gap-2 border-b border-zinc-200 bg-zinc-50/70 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-800/20 sm:px-5" data-stocktake-action-bar>
             @can('stock_counts.edit')
                 <a href="#stocktake-manual-add" onclick="document.getElementById('stocktake-manual-add').open = true; requestAnimationFrame(() => document.querySelector('[data-product-line-editor] [data-product-search]')?.focus())" class="{{ $button }} inline-flex min-h-10 items-center bg-emerald-700 text-white">{{ $t('إضافة عنصر', 'Add item') }}</a>
-                <a href="#stocktake-import" onclick="document.getElementById('stocktake-import').open = true" class="{{ $button }} inline-flex min-h-10 items-center border border-emerald-700 bg-white text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300" data-stocktake-import-open>{{ $t('استيراد Excel', 'Import Excel') }}</a>
+                @if($count->scope_type !== 'random')<a href="#stocktake-import" onclick="document.getElementById('stocktake-import').open = true" class="{{ $button }} inline-flex min-h-10 items-center border border-emerald-700 bg-white text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300" data-stocktake-import-open>{{ $t('استيراد Excel', 'Import Excel') }}</a>@endif
                 <a href="#stocktake-scan-controls" onclick="event.preventDefault(); document.querySelector('[data-scan-input]')?.focus()" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('مسح باركود', 'Scan barcode') }}</a>
                 <button type="button" onclick="document.querySelector('[data-scan-camera]')?.click()" class="{{ $button }} inline-flex min-h-10 items-center border border-zinc-300 dark:border-zinc-700">{{ $t('مسح بالكاميرا', 'Camera scan') }}</button>
-                <form method="POST" action="{{ route('inventory.counts.add-all', $count) }}" class="flex min-w-0 flex-wrap items-end gap-2" data-stocktake-add-all>
+                @if($count->scope_type !== 'random')<form method="POST" action="{{ route('inventory.counts.add-all', $count) }}" class="flex min-w-0 flex-wrap items-end gap-2" data-stocktake-add-all>
                     @csrf
                     <label class="min-w-0 text-xs font-semibold">{{ $t('المستودع', 'Warehouse') }}<select name="store_id" class="{{ $field }} min-w-32">@foreach($count->locations as $location)<option value="{{ $location->store_id }}">{{ \App\Support\HumanName::name($location->store) }}</option>@endforeach</select></label>
                     <button class="{{ $button }} min-h-10 border border-emerald-700 bg-white text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300">{{ $t('إضافة جميع المنتجات من المستودع', 'Add all warehouse products') }}</button>
-                </form>
+                </form>@endif
             @endcan
         </div>
     @endif
@@ -60,7 +60,7 @@
             <button type="submit" data-add-line class="{{ $button }} min-h-10 bg-emerald-700 text-white">{{ $t('إضافة بند', 'Add item') }}</button>
             </form>
         </details>
-        @can('stock_counts.edit')
+        @if($count->scope_type !== 'random')@can('stock_counts.edit')
         <details id="stocktake-import" class="border-b border-zinc-100 dark:border-zinc-800" data-stocktake-import-panel @if(session('stocktake_import_summary') || session('stocktake_import_open') || $errors->has('import_file')) open @endif>
             <summary class="sr-only">{{ $t('استيراد Excel', 'Import Excel') }}</summary>
             <div class="space-y-3 px-4 py-3 sm:px-5">
@@ -91,7 +91,7 @@
                 @endif
             </div>
         </details>
-        @endcan
+        @endcan @endif
     @endif
     <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-5"><h3 class="text-sm font-bold">{{ $t('قائمة المنتجات والعد', 'Products and counts') }}</h3><span class="text-xs text-zinc-500">{{ $countLines->total() }} {{ $t('نتيجة', 'results') }}</span></div>
     @if($countProgress['total'] > 0)

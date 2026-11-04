@@ -24,6 +24,9 @@ final class AddAllStockCountProductsAction
             if ($count->status !== 'in_progress') {
                 throw new InvalidArgumentException(__('Products can only be added while counting is active.'));
             }
+            if ($count->scope_type === 'random') {
+                throw new InvalidArgumentException(__('Random counts include only individually selected or scanned products.'));
+            }
             abort_unless($count->locations()->where('store_id', $storeId)->exists(), 404);
             app(AssertInventoryStoreScope::class)->execute($storeId);
             $before = $count->lines()->where('store_id', $storeId)->count();

@@ -199,7 +199,7 @@ Route::middleware('auth')->group(function (): void {
         try {
             $card = $action->issue($request->user(), (string) $data['amount'], (int) $store->branch_id, (int) $store->id, 'manual', 'manual-'.$request->user()->id, (string) ($request->input('idempotency_key') ?: Str::uuid()), __('Manual issue'), null, 'EGP', isset($data['valid_until']) ? new DateTimeImmutable((string) $data['valid_until']) : null);
 
-            return back()->with('success', __('Gift Card :identifier issued.', ['identifier' => $card->identifier]));
+            return back()->with('success', str_starts_with(app()->getLocale(), 'ar') ? 'تم إنشاء بطاقة الهدايا '.$card->identifier.' وهي بانتظار البيع من POS.' : 'Gift Card '.$card->identifier.' created and awaiting POS sale.');
         } catch (Throwable $e) {
             return back()->withInput()->withErrors(['card' => UserSafeError::message($e)]);
         }

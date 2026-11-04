@@ -12,9 +12,9 @@
         h1 { font-size: 15px; }
         h2 { font-size: 12px; margin-top: 10px; }
         .center { text-align: center; }
-        .row { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; }
-        .label { color: #4b5563; }
-        .value { font-weight: 700; text-align: end; }
+        .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 4px 0; }
+        .label { color: #4b5563; min-width: 0; overflow-wrap: anywhere; }
+        .value { font-weight: 700; text-align: end; flex: none; max-width: 45%; unicode-bidi: plaintext; overflow-wrap: anywhere; font-variant-numeric: lining-nums tabular-nums; }
         .rule { border-top: 1px dashed #374151; margin: 9px 0; }
         .small { color: #4b5563; font-size: 9px; }
         .notice { border: 1px solid #9ca3af; padding: 6px; margin-top: 8px; }
@@ -28,9 +28,9 @@
     @endphp
 
     <header class="center">
-        <h1>{{ $shift->store?->company?->name_en ?: $shift->company_name_en_snapshot ?: 'TOY & JOY' }}</h1>
+        <h1>{{ str_starts_with(app()->getLocale(), 'ar') ? ($shift->store?->company?->name_ar ?: $shift->company_name_ar_snapshot ?: 'TOY & JOY') : ($shift->store?->company?->name_en ?: $shift->company_name_en_snapshot ?: 'TOY & JOY') }}</h1>
         <p>{{ $storeName ?: $shift->store_code_snapshot }}</p>
-        <p class="small">{{ __('Branch') }}: {{ $shift->branch?->name_en ?: $shift->branch_name_en_snapshot }} · {{ __('POS / cash drawer') }}: {{ $shift->cashDrawer?->code ?: $shift->cash_drawer_code_snapshot }}</p>
+        <p class="small">{{ __('Branch') }}: {{ str_starts_with(app()->getLocale(), 'ar') ? ($shift->branch?->name_ar ?: $shift->branch_name_ar_snapshot) : ($shift->branch?->name_en ?: $shift->branch_name_en_snapshot) }} · {{ __('POS / cash drawer') }}: <bdi dir="ltr">{{ $shift->cashDrawer?->code ?: $shift->cash_drawer_code_snapshot }}</bdi></p>
         <p class="small">{{ __('Shift closing receipt') }} · {{ $shift->closing_document_number ?: '#'.$shift->id }}</p>
     </header>
 
