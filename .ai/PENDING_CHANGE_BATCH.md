@@ -558,3 +558,7 @@ The approved batch is no longer pending for merge/deployment. Production runs ap
 ## 2026-11-04 — Consolidated corrective branch final acceptance disposition
 
 Application SHA `5cf68e605f4d6f8439f376bfc4e0e8dd4a37125a` remains intact. All owner-listed final software acceptance checks passed in disposable MariaDB/local Chromium, including POS price update and Gift Card split redemption checkout. The single additive Gift Card sale migration remains committed. Hardware QA is deferred; there is no outstanding software acceptance blocker. Merge readiness YES for owner review only. Branch remains unmerged and undeployed; documentation-only commit/push follows.
+
+## 2026-11-04 — Consolidated corrective batch closed by authorized release
+
+Approved feature tip `09bd5c87e366c797e62b974a538b1e954eae6aee` merged without conflict as application `c6f4607d5ab68ecd53d58b7528882779169271fc`, pushed to main and activated at `toyjoy-v2-consolidated-c6f4607`. Backup `rajeh_toyjoy_20261104T080108Z_pre_consolidated_c6f4607.sql.gz` verified; the sole additive migration is Ran and pending 0. Core gate and actual Apache candidate/live checks passed. This batch is no longer pending. Hardware QA deferred; previous release and protected baseline retained. Documentation continuity commit/push follows.

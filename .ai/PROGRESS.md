@@ -976,3 +976,7 @@ Branch `feature/v2-count-productcard-purchase-pos-giftcard-shift-ui-20261104` fr
 ## 2026-11-04 — Consolidated corrective branch final targeted acceptance
 
 Application SHA `5cf68e605f4d6f8439f376bfc4e0e8dd4a37125a` unchanged. Targeted disposable software acceptance and five shared caller regressions passed; evidence in `.ai/TEST_RESULTS.md`. One additive Gift Card POS sale migration retained. No Core rerun because implementation did not change. Physical hardware QA deferred. Merge readiness YES for owner review; no merge/deployment/Production write. Documentation-only push follows.
+
+## 2026-11-04 — Consolidated corrective release SUCCESS
+
+Owner-approved `09bd5c8` merged without conflict as application `c6f4607d5ab68ecd53d58b7528882779169271fc` from origin/main `43a88e7`; merged main pushed. Production moved from `toyjoy-v2-postdeploy-filter-fixes-523f5e5` to immutable `toyjoy-v2-consolidated-c6f4607`. Fresh full DB backup `rajeh_toyjoy_20261104T080108Z_pre_consolidated_c6f4607.sql.gz` SHA-256 `448aa36dfb1ba6109081c23705c44ea97ea6880c3c9f5bca53c00c931acbb900` passed. Sole approved migration Ran, pending 1→0. Focused 2/25, Core 21/251 plus payment JS, Apache candidate and live routes/assets/Livewire passed. Atomic switch and immediate PHP 8.5 FPM reload passed; maintenance OFF, no new Laravel/FPM errors. Baseline tag/recovery assets unchanged. Hardware scanner/mobile/printer QA deferred; rollback NO. Continuity commit/push follows.
