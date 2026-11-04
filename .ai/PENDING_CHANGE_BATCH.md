@@ -554,3 +554,7 @@ The approved batch is no longer pending for merge/deployment. Production runs ap
 ## 2026-11-04 — Consolidated corrective feature branch pending owner review
 
 `feature/v2-count-productcard-purchase-pos-giftcard-shift-ui-20261104` from latest fetched `origin/main` `43a88e7ae0e0164c440e98ae0e0ab0f9df7aba31`. Owner approved protected Core behavior and the additive Gift Card POS sale schema/rollback impact. New `gift_card_pos_sales` links uniquely to Gift Card and Sale, and links shift, branch, store, cashier, and an idempotency key; canonical SalePayment rows link tender methods to the Sale; canonical GiftCardLedger records activation. Historical records are untouched. Application rollback does not reverse completed tender or card history; the additive table stays unless separately authorized. Merge/deployment remain pending. Final branch SHA is the pushed branch HEAD reported in delivery.
+
+## 2026-11-04 — Consolidated corrective branch final acceptance disposition
+
+Application SHA `5cf68e605f4d6f8439f376bfc4e0e8dd4a37125a` remains intact. All owner-listed final software acceptance checks passed in disposable MariaDB/local Chromium, including POS price update and Gift Card split redemption checkout. The single additive Gift Card sale migration remains committed. Hardware QA is deferred; there is no outstanding software acceptance blocker. Merge readiness YES for owner review only. Branch remains unmerged and undeployed; documentation-only commit/push follows.
